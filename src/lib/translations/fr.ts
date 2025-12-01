@@ -782,7 +782,12 @@ export const translations = {
     },
 
     search: {
-      placeholder: "Rechercher un produit...",
+      placeholder: "Rechercher par titre, marque, SKU, mots-clés...",
+    },
+    
+    filters: {
+      allCollections: "Toutes les collections",
+      selectCollection: "Filtrer par collection...",
     },
 
     table: {

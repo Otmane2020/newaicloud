@@ -94,6 +94,7 @@ interface Product {
   status: string | null;
   vision_ai_data?: any;
   variants?: ProductVariant[];
+  collection_ids?: string[];
 }
 
 interface ProductVariant {
@@ -208,6 +209,8 @@ export default function ProductTitleDescription() {
   const [whiteBgMode, setWhiteBgMode] = useState<"standard" | "google_shopping">("standard");
   const [selectedSimilarity, setSelectedSimilarity] = useState<string>("medium");
   const [statusFilter, setStatusFilter] = useState<"all" | "optimized" | "notOptimized" | "toSync">("all");
+  const [collectionFilter, setCollectionFilter] = useState<string>("all");
+  const [collections, setCollections] = useState<Array<{id: string, title: string}>>([]);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -248,13 +251,32 @@ export default function ProductTitleDescription() {
     // Reset filters when store changes
     setSearchTerm("");
     setStatusFilter("all");
+    setCollectionFilter("all");
     setCurrentPage(1);
 
     if (selectedStore?.id) {
       console.log("🔄 [STORE_CHANGE] Fetching products for new store...");
       fetchProducts();
+      fetchCollections();
     }
   }, [selectedStore]);
+  
+  const fetchCollections = async () => {
+    if (!selectedStore) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("shopify_collections")
+        .select("id, title")
+        .eq("store_id", selectedStore.id)
+        .order("title");
+        
+      if (error) throw error;
+      setCollections(data || []);
+    } catch (error) {
+      console.error("Error fetching collections:", error);
+    }
+  };
 
   // Rafraîchir les limites au montage et toutes les 10 secondes
   useEffect(() => {
@@ -308,7 +330,7 @@ export default function ProductTitleDescription() {
         const { data: pageData, error: pageError } = await supabase
           .from("shopify_products")
           .select(
-            "id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id",
+            "id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id, collection_ids",
           )
           .eq("seller_id", user.id)
           .eq("store_id", selectedStore.id)
@@ -447,6 +469,14 @@ export default function ProductTitleDescription() {
     const matchesSearch = searchKeywords.every((keyword) => searchableText.includes(keyword));
 
     if (!matchesSearch) return false;
+    
+    // Filter by collection if selected
+    if (collectionFilter !== "all") {
+      const productCollectionIds = Array.isArray(product.collection_ids) ? product.collection_ids : [];
+      if (!productCollectionIds.includes(collectionFilter)) {
+        return false;
+      }
+    }
 
     // Appliquer les filtres de statut
     if (statusFilter === "optimized") return hasRichHtmlDescription(product);
@@ -1996,8 +2026,8 @@ export default function ProductTitleDescription() {
         {/* Actions Bar */}
         <Card className="p-4">
           <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 justify-between">
-            <div className="flex-1 w-full lg:max-w-md">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
+              <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t.contentOptimization.search.placeholder}
@@ -2006,6 +2036,20 @@ export default function ProductTitleDescription() {
                   className="pl-9"
                 />
               </div>
+              
+              <Select value={collectionFilter} onValueChange={setCollectionFilter}>
+                <SelectTrigger className="w-full sm:w-[240px]">
+                  <SelectValue placeholder={t.contentOptimization.filters.selectCollection} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t.contentOptimization.filters.allCollections}</SelectItem>
+                  {collections.map((collection) => (
+                    <SelectItem key={collection.id} value={collection.id}>
+                      {collection.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex flex-wrap gap-2">

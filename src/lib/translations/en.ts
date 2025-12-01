@@ -770,7 +770,12 @@ export const translations = {
     },
 
     search: {
-      placeholder: "Search for a product...",
+      placeholder: "Search by title, brand, SKU, keywords...",
+    },
+    
+    filters: {
+      allCollections: "All collections",
+      selectCollection: "Filter by collection...",
     },
 
     table: {
