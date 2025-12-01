@@ -269,11 +269,14 @@ ${elements.bodyText}
         
         console.log('🏪 Contact page detected - fetching store with ID:', storeIdToUse);
         
-        const { data: storeData } = await supabaseClient
+        const { data: storeData, error: storeError } = await supabaseClient
           .from('shopify_connections')
-          .select('store_name, store_label, store_phone, store_email, store_address, store_url')
+          .select('store_name, store_label, store_phone, store_email, store_address, store_url, store_language')
           .eq('id', storeIdToUse)
+          .eq('user_id', user.id)
           .single();
+        
+        console.log('🏪 storeData query result:', JSON.stringify(storeData), 'error:', storeError);
         
         if (storeData) {
           // Priorité: store_label (nom commercial explicite) UNIQUEMENT

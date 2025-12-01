@@ -422,12 +422,14 @@ export function PageOptimization() {
             optimization_count: p.optimization_count || 0
           }));
           
-          setOptimizedPages(mappedFreshPages);
-          toast.success(`✅ ${results.success} page(s) optimisée(s)`);
-          
-          setTimeout(() => {
-            setShowResultsDialog(true);
-          }, 800);
+          if (mappedFreshPages.length > 0) {
+            setOptimizedPages(mappedFreshPages);
+            toast.success(`✅ ${results.success} page(s) optimisée(s)`);
+            
+            setTimeout(() => {
+              setShowResultsDialog(true);
+            }, 800);
+          }
         }
       }
     );
@@ -527,12 +529,14 @@ export function PageOptimization() {
             optimization_count: p.optimization_count || 0
           }));
           
-          setOptimizedPages(mappedFreshPages);
-          toast.success(`✅ ${results.success}/${pagesToOptimize.length} page(s) optimisée(s)`);
-          
-          setTimeout(() => {
-            setShowResultsDialog(true);
-          }, 800);
+          if (mappedFreshPages.length > 0) {
+            setOptimizedPages(mappedFreshPages);
+            toast.success(`✅ ${results.success}/${pagesToOptimize.length} page(s) optimisée(s)`);
+            
+            setTimeout(() => {
+              setShowResultsDialog(true);
+            }, 800);
+          }
         }
       }
     );
@@ -1365,12 +1369,12 @@ export function PageOptimization() {
       )}
       
       <ProgressDialog
-        open={showProgressDialog}
-        onOpenChange={setShowProgressDialog}
+        open={optimizationState.isRunning && optimizationState.type === 'pages'}
+        onOpenChange={(open) => !open && setShowProgressDialog(false)}
         type="seo"
-        operation={optimizing ? 'optimizing' : 'syncing'}
-        current={progress.current}
-        total={progress.total}
+        operation={optimizationState.operation}
+        current={optimizationState.current}
+        total={optimizationState.total}
       />
 
       <ResultsDialog
