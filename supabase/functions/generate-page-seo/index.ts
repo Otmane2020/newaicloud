@@ -244,27 +244,58 @@ ${elements.bodyText}
       pageTitle = page.title;
       let baseContent = page.body_html?.replace(/<[^>]*>/g, ' ').substring(0, 800) || '';
       
-      // Si c'est une page de contact, récupérer le nom de la boutique via user_id
-      const isContactPage = page.title.toLowerCase().includes('contact') || 
-                           page.handle?.toLowerCase().includes('contact') ||
-                           baseContent.toLowerCase().includes('contact');
+      // Détection de page contact avec critères étendus
+      const titleLower = page.title.toLowerCase();
+      const handleLower = page.handle?.toLowerCase() || '';
+      const contentLower = baseContent.toLowerCase();
+      
+      const isContactPage = titleLower.includes('contact') || 
+                           handleLower.includes('contact') ||
+                           titleLower.includes('nous joindre') ||
+                           titleLower.includes('contactez') ||
+                           contentLower.includes('formulaire de contact');
+      
+      // Récupérer le nom commercial de la boutique pour les pages contact
+      let storeCommercialName = '';
       
       if (isContactPage) {
         const { data: storeData } = await supabaseClient
           .from('shopify_connections')
-          .select('store_name, store_label, store_phone, store_email, store_address')
+          .select('store_name, store_label, store_phone, store_email, store_address, store_url')
           .eq('user_id', user.id)
           .eq('is_active', true)
           .single();
         
         if (storeData) {
-          const storeName = storeData.store_label || storeData.store_name || '';
-          textContent = `PAGE DE CONTACT - Boutique: ${storeName}
-${storeData.store_phone ? `Téléphone: ${storeData.store_phone}` : ''}
-${storeData.store_email ? `Email: ${storeData.store_email}` : ''}
-${storeData.store_address ? `Adresse: ${storeData.store_address}` : ''}
+          // Priorité: store_label (nom commercial) > store_name > extraction de l'URL
+          storeCommercialName = storeData.store_label || storeData.store_name || '';
+          
+          // Si pas de nom, extraire du domaine Shopify
+          if (!storeCommercialName && storeData.store_url) {
+            const urlParts = storeData.store_url.replace('.myshopify.com', '').split('.');
+            storeCommercialName = urlParts[0].charAt(0).toUpperCase() + urlParts[0].slice(1);
+          }
+          
+          textContent = `⚠️ PAGE DE CONTACT - INSTRUCTIONS OBLIGATOIRES ⚠️
 
-${baseContent}`;
+NOM COMMERCIAL DE LA BOUTIQUE : "${storeCommercialName}"
+
+RÈGLES CRITIQUES POUR LE SEO DE CETTE PAGE :
+1. Le seo_title DOIT OBLIGATOIREMENT contenir "${storeCommercialName}" 
+   Exemple: "Contactez ${storeCommercialName} | Service Client & Support"
+   
+2. La seo_description DOIT OBLIGATOIREMENT mentionner "${storeCommercialName}"
+   Exemple: "Contactez l'équipe ${storeCommercialName}. Service client réactif..."
+
+INFORMATIONS DE CONTACT DISPONIBLES :
+${storeData.store_phone ? `- Téléphone: ${storeData.store_phone}` : '- Téléphone: non renseigné'}
+${storeData.store_email ? `- Email: ${storeData.store_email}` : '- Email: non renseigné'}
+${storeData.store_address ? `- Adresse: ${storeData.store_address}` : '- Adresse: non renseignée'}
+
+CONTENU ACTUEL DE LA PAGE :
+${baseContent}
+
+⚠️ RAPPEL : N'oublie PAS d'inclure "${storeCommercialName}" dans le titre ET la description SEO !`;
         } else {
           textContent = baseContent;
         }
@@ -272,7 +303,7 @@ ${baseContent}`;
         textContent = baseContent;
       }
       
-      console.log(`Generating SEO for page: ${pageTitle}${isContactPage ? ' (Contact page)' : ''}`);
+      console.log(`Generating SEO for page: ${pageTitle}${isContactPage ? ` (Contact page - Store: ${storeCommercialName})` : ''}`);
     }
 
     // 🛡️ LANGUAGE GUARD - Detect language from content
