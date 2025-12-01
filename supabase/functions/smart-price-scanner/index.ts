@@ -9,6 +9,7 @@ const corsHeaders = {
 
 interface VisionAnalysis {
   title: string;
+  searchQuery?: string; // AI-optimized search query (3-5 words)
   brand: string | null;
   category: string;
   keywords: string[];
@@ -91,16 +92,32 @@ async function fetchImageAsDataUri(url: string): Promise<string> {
   }
 }
 
-// Extract numeric price from string
+// Simplify query for shopping search (remove stop words, keep 4 key words)
+function simplifyForShopping(query: string): string {
+  const stopWords = [
+    'the', 'a', 'an', 'with', 'and', 'or', 'for', 'of', 'in', 'on', 
+    'top', 'base', 'style', 'design', 'room', 'living', 'bedroom'
+  ];
+  
+  const keywords = query.toLowerCase()
+    .split(/\s+/)
+    .filter(w => !stopWords.includes(w) && w.length > 2)
+    .slice(0, 4); // Max 4 words
+    
+  return keywords.join(' ');
+}
+
+// Extract numeric price from string with support for various formats
 function parsePrice(str?: string | number | null): number | null {
   if (str === null || str === undefined) return null;
   if (typeof str === "number") return str;
   
-  // Clean string and extract number
+  // Clean string and extract number - support thousand separators
   const cleaned = str.toString()
     .replace(/\s/g, "")
-    .replace(",", ".")
-    .replace(/[€$£]/g, "");
+    .replace(/[€$£]/g, "")
+    .replace(/(\d),(\d{3})/g, "$1$2") // Remove thousand separator (1,299 -> 1299)
+    .replace(",", "."); // Convert decimal comma to dot
   
   const match = cleaned.match(/(\d+(?:\.\d+)?)/);
   return match ? parseFloat(match[1]) : null;
@@ -218,13 +235,17 @@ serve(async (req) => {
                   type: "text",
                   text: `Analyze this product image and extract:
 {
-  "title": "product name for search (concise, max 8 words)",
+  "title": "full product name (max 8 words)",
+  "searchQuery": "SHORT search query for shopping (3-5 MAIN keywords only, e.g. 'coffee table marble hexagonal')",
   "brand": "brand name if visible, null otherwise",
   "category": "product category (furniture, electronics, clothing, etc.)",
   "keywords": ["keyword1", "keyword2", "keyword3", "keyword4"],
   "description": "brief description (max 20 words)",
   "segment": "price segment: budget, mid-range, premium, luxury"
 }
+
+CRITICAL: searchQuery must be SHORT (3-5 words) with MAIN keywords only for Google Shopping.
+Example: "Nesting Coffee Tables with Marble Top" -> searchQuery: "coffee table marble"
 Return ONLY valid JSON, no markdown.`,
                 },
                 {
@@ -250,24 +271,15 @@ Return ONLY valid JSON, no markdown.`,
         
         visionAnalysis = JSON.parse(cleanContent);
         
-        // Build optimized search query - simplified to avoid duplicates
-        const queryParts = [];
+        // Use AI-generated searchQuery if available, otherwise build from title
         if (!productTitle) {
-          if (visionAnalysis?.brand) queryParts.push(visionAnalysis.brand);
-          if (visionAnalysis?.title) queryParts.push(visionAnalysis.title);
-          // Remove duplicate words from keywords
-          const titleWords = (visionAnalysis?.title || "").toLowerCase().split(/\s+/);
-          const uniqueKeywords = (visionAnalysis?.keywords || [])
-            .filter(kw => !titleWords.some(tw => kw.toLowerCase().includes(tw)))
-            .slice(0, 2);
-          queryParts.push(...uniqueKeywords);
-          searchQuery = queryParts.filter(Boolean).join(" ");
+          searchQuery = (visionAnalysis as any)?.searchQuery || visionAnalysis?.title || "";
         } else {
           searchQuery = productTitle;
         }
         
         console.log("✅ [VISION] Analysis complete:", visionAnalysis?.title);
-        console.log("🔍 [SEARCH QUERY] Generated:", searchQuery);
+        console.log("🔍 [SEARCH QUERY] AI-generated:", searchQuery);
       } else {
         console.error("❌ [VISION] API error:", visionResponse.status);
       }
@@ -287,130 +299,120 @@ Return ONLY valid JSON, no markdown.`,
     let imagesCount = 0;
 
     // =================================================================
-    // 2️⃣ DATAFORSEO SHOPPING API - Real prices from merchants (SYNCHRONOUS)
+    // 2️⃣ DATAFORSEO SHOPPING API - Progressive search strategy
     // =================================================================
     if (DATAFORSEO_LOGIN && DATAFORSEO_PASSWORD) {
-      try {
-        console.log("🛒 [SHOPPING] Searching DataForSEO SERP Shopping for:", searchQuery);
-        
-        const authToken = btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`);
-        
-        const shoppingResponse = await fetch(
-          "https://api.dataforseo.com/v3/serp/google/shopping/live/advanced",
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify([
-              {
-                keyword: searchQuery,
-                location_code: getLocationCode(country),
-                language_code: country === "uk" || country === "us" ? "en" : country,
-                device: "desktop",
-                os: "windows",
-                depth: 20,
-              },
-            ]),
-          }
-        );
-
-        if (shoppingResponse.ok) {
-          const shoppingData = await shoppingResponse.json();
-          console.log("📦 [SHOPPING] Full API response:", JSON.stringify(shoppingData).substring(0, 500));
-          
-          const items = shoppingData.tasks?.[0]?.result?.[0]?.items || [];
-          
-          console.log(`📊 [SHOPPING] DataForSEO returned ${items.length} items`);
-          
-          items.forEach((item: any) => {
-            // SERP Shopping API returns price in different formats
-            const priceValue = item.price?.current || item.price?.value || item.price;
-            const price = parsePrice(priceValue);
-            
-            if (price && price > 0) {
-              allPrices.push(price);
-              shoppingCount++;
-              
-              if (allMerchants.length < 10) {
-                allMerchants.push({
-                  title: item.title || "Unknown",
-                  source: item.seller?.name || item.source || "Google Shopping",
-                  price,
-                  link: item.url || "",
-                });
-              }
-            } else {
-              console.log(`⚠️ [SHOPPING] Failed to parse price for item:`, item.title, "price:", priceValue);
-            }
-          });
-          
-          console.log(`✅ [SHOPPING] Found ${shoppingCount} products with prices`);
-          
-          // If no results, try simplified query (first 3 words)
-          if (shoppingCount === 0 && searchQuery.split(" ").length > 3) {
-            console.log("🔄 [SHOPPING] Trying simplified query...");
-            const simplifiedQuery = searchQuery.split(" ").slice(0, 3).join(" ");
-            console.log("🔍 [SHOPPING] Simplified to:", simplifiedQuery);
-            
-            const retryResponse = await fetch(
-              "https://api.dataforseo.com/v3/serp/google/shopping/live/advanced",
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Basic ${authToken}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify([
-                  {
-                    keyword: simplifiedQuery,
-                    location_code: getLocationCode(country),
-                    language_code: country === "uk" || country === "us" ? "en" : country,
-                    device: "desktop",
-                    os: "windows",
-                    depth: 20,
-                  },
-                ]),
-              }
-            );
-            
-            if (retryResponse.ok) {
-              const retryData = await retryResponse.json();
-              const retryItems = retryData.tasks?.[0]?.result?.[0]?.items || [];
-              
-              console.log(`📊 [SHOPPING-RETRY] DataForSEO returned ${retryItems.length} items`);
-              
-              retryItems.forEach((item: any) => {
-                const priceValue = item.price?.current || item.price?.value || item.price;
-                const price = parsePrice(priceValue);
-                
-                if (price && price > 0) {
-                  allPrices.push(price);
-                  shoppingCount++;
-                  
-                  if (allMerchants.length < 10) {
-                    allMerchants.push({
-                      title: item.title || "Unknown",
-                      source: item.seller?.name || item.source || "Google Shopping",
-                      price,
-                      link: item.url || "",
-                    });
-                  }
-                }
-              });
-              
-              console.log(`✅ [SHOPPING-RETRY] Found ${shoppingCount} products with prices after retry`);
-            } else {
-              console.error(`❌ [SHOPPING-RETRY] API error: ${retryResponse.status}`);
-            }
-          }
-        } else {
-          const errorText = await shoppingResponse.text();
-          console.error(`❌ [SHOPPING] API error: ${shoppingResponse.status}`, errorText.substring(0, 200));
+      const authToken = btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`);
+      
+      // Progressive search: 3 attempts with different query simplifications
+      const searchAttempts: { query: string; label: string }[] = [];
+      
+      // Attempt 1: Simplified query (remove stop words, 4 words max)
+      const simplifiedQuery = simplifyForShopping(searchQuery);
+      if (simplifiedQuery && simplifiedQuery !== searchQuery) {
+        searchAttempts.push({ query: simplifiedQuery, label: "Simplified (4 words)" });
+      }
+      
+      // Attempt 2: Category + main keyword (2-3 words)
+      if (visionAnalysis?.category && visionAnalysis?.keywords?.[0]) {
+        const categoryQuery = `${visionAnalysis.category} ${visionAnalysis.keywords[0]}`.toLowerCase();
+        if (categoryQuery !== simplifiedQuery) {
+          searchAttempts.push({ query: categoryQuery, label: "Category + keyword" });
         }
-      } catch (err) {
-        console.error("❌ [SHOPPING] Error:", err instanceof Error ? err.message : "Unknown error");
+      }
+      
+      // Attempt 3: Main keyword only (first word of simplified query)
+      const mainKeyword = simplifiedQuery.split(" ")[0];
+      if (mainKeyword && mainKeyword.length > 3 && searchAttempts.length < 3) {
+        searchAttempts.push({ query: mainKeyword, label: "Main keyword only" });
+      }
+      
+      // Always include original query as first attempt if it's different
+      if (searchQuery !== simplifiedQuery) {
+        searchAttempts.unshift({ query: searchQuery, label: "Original query" });
+      } else {
+        searchAttempts.unshift({ query: searchQuery, label: "Optimized query" });
+      }
+      
+      console.log(`🛒 [SHOPPING] Progressive search with ${searchAttempts.length} attempts:`, searchAttempts.map(a => `${a.label}: "${a.query}"`).join(", "));
+      
+      // Try each query until we get results
+      for (let i = 0; i < searchAttempts.length && shoppingCount === 0; i++) {
+        const attempt = searchAttempts[i];
+        
+        try {
+          console.log(`🔍 [SHOPPING-${i + 1}] Trying ${attempt.label}: "${attempt.query}"`);
+          
+          const shoppingResponse = await fetch(
+            "https://api.dataforseo.com/v3/serp/google/shopping/live/advanced",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Basic ${authToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify([
+                {
+                  keyword: attempt.query,
+                  location_code: getLocationCode(country),
+                  language_code: country === "uk" || country === "us" ? "en" : country,
+                  device: "desktop",
+                  os: "windows",
+                  depth: 20,
+                },
+              ]),
+            }
+          );
+
+          if (shoppingResponse.ok) {
+            const shoppingData = await shoppingResponse.json();
+            const items = shoppingData.tasks?.[0]?.result?.[0]?.items || [];
+            
+            console.log(`📊 [SHOPPING-${i + 1}] DataForSEO returned ${items.length} items`);
+            
+            items.forEach((item: any) => {
+              // Enhanced price extraction supporting multiple formats
+              const priceValue = 
+                item.price?.current || 
+                item.price?.regular || 
+                item.price?.value || 
+                item.price_from || 
+                item.price;
+              
+              const price = parsePrice(priceValue);
+              
+              if (price && price > 0) {
+                allPrices.push(price);
+                shoppingCount++;
+                
+                if (allMerchants.length < 10) {
+                  allMerchants.push({
+                    title: item.title || "Unknown",
+                    source: item.seller?.name || item.source || "Google Shopping",
+                    price,
+                    link: item.url || "",
+                  });
+                }
+              }
+            });
+            
+            if (shoppingCount > 0) {
+              console.log(`✅ [SHOPPING-${i + 1}] Success! Found ${shoppingCount} products with "${attempt.label}"`);
+              break; // Stop trying once we have results
+            } else {
+              console.log(`⚠️ [SHOPPING-${i + 1}] No prices found with "${attempt.label}", trying next...`);
+            }
+          } else {
+            const errorText = await shoppingResponse.text();
+            console.error(`❌ [SHOPPING-${i + 1}] API error: ${shoppingResponse.status}`, errorText.substring(0, 200));
+          }
+        } catch (attemptErr) {
+          console.error(`❌ [SHOPPING-${i + 1}] Error:`, attemptErr instanceof Error ? attemptErr.message : "Unknown error");
+        }
+      }
+      
+      if (shoppingCount === 0) {
+        console.log("⚠️ [SHOPPING] No results after all attempts");
       }
 
       // =================================================================
