@@ -95,7 +95,7 @@ type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function ArticleManagement() {
-  const { t } = useTranslation();
+  const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
   const [searchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
@@ -260,10 +260,10 @@ export function ArticleManagement() {
 
 const handleOptimizeArticle = async (articleId: string) => {
     if (!canDoAction('optimizations')) {
-      toast.error('Limite d\'optimisations atteinte', {
+      toast.error(t.articleManagementExtended.optimizationLimitReached, {
         description: limits?.isTrialing 
-          ? 'Passez à un plan payant pour continuer.'
-          : 'Limite mensuelle atteinte. Passez à un plan supérieur.'
+          ? t.articleManagementExtended.trialLimitDesc
+          : t.articleManagementExtended.monthlyLimitDesc
       });
       setShowUpgradeDialog(true);
       return;
@@ -280,7 +280,7 @@ const handleOptimizeArticle = async (articleId: string) => {
 
       if (error) {
         if (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
-          toast.error('Limite d\'optimisations atteinte');
+          toast.error(t.articleManagementExtended.optimizationLimitReached);
           setShowUpgradeDialog(true);
           setShowProgressDialog(false);
           return;
@@ -307,11 +307,11 @@ const handleOptimizeArticle = async (articleId: string) => {
         setShowProgressDialog(false);
         setShowResultsDialog(true);
       } else {
-        throw new Error(data?.results?.[0]?.error || 'Erreur d\'optimisation');
+        throw new Error(data?.results?.[0]?.error || t.articleManagementExtended.optimizationError);
       }
     } catch (error: any) {
       console.error('Error optimizing article:', error);
-      toast.error(error.message || 'Erreur lors de l\'optimisation');
+      toast.error(error.message || t.articleManagementExtended.optimizationError);
       setShowProgressDialog(false);
     } finally {
       setOptimizing(false);
@@ -338,12 +338,12 @@ const handleOptimizeArticle = async (articleId: string) => {
         if (error) throw error;
       }
       
-      toast.success(`${optimizedArticles.length} article(s) synchronisé(s)`);
+      toast.success(tf('articleManagementExtended.articlesSynced', { count: optimizedArticles.length }));
       await fetchArticles();
       setOptimizedArticles([]);
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Erreur lors de la synchronisation');
+      toast.error(error.message || t.blog.management.messages.syncError);
     } finally {
       setSyncing(false);
     }

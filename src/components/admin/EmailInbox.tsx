@@ -283,8 +283,8 @@ export function EmailInbox() {
         .eq("id", template.id);
 
       toast({
-        title: "Template appliqué",
-        description: `Template "${template.name}" appliqué avec succès`,
+        title: t.emailInboxPage.templateApplied,
+        description: tf('emailInboxPage.templateAppliedDesc', { name: template.name }),
       });
     } catch (error) {
       console.error("Error applying template:", error);
@@ -294,8 +294,8 @@ export function EmailInbox() {
   const sendEmail = async () => {
     if (!to || !subject || !body) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs",
+        title: t.emailInboxPage.error,
+        description: t.emailInboxPage.fillAllFields,
         variant: "destructive",
       });
       return;
@@ -315,8 +315,8 @@ export function EmailInbox() {
       if (error) throw error;
 
       toast({
-        title: "Succès",
-        description: "Email envoyé avec succès",
+        title: t.emailInboxExtended.success,
+        description: t.emailInboxPage.emailSent,
       });
 
       // Reset form
@@ -330,8 +330,8 @@ export function EmailInbox() {
     } catch (error: any) {
       console.error("Error sending email:", error);
       toast({
-        title: "Erreur",
-        description: error.message || "Impossible d'envoyer l'email",
+        title: t.emailInboxPage.error,
+        description: error.message || t.emailInboxPage.unableToSend,
         variant: "destructive",
       });
     } finally {
@@ -346,8 +346,8 @@ export function EmailInbox() {
       if (error) throw error;
 
       toast({
-        title: "Email déplacé",
-        description: `Email déplacé vers ${folder}`,
+        title: t.emailInboxPage.emailMoved,
+        description: tf('emailInboxPage.movedTo', { folder }),
       });
 
       loadEmails();
@@ -355,8 +355,8 @@ export function EmailInbox() {
     } catch (error) {
       console.error("Error moving email:", error);
       toast({
-        title: "Erreur",
-        description: "Impossible de déplacer l'email",
+        title: t.emailInboxPage.error,
+        description: t.emailInboxPage.unableToMove,
         variant: "destructive",
       });
     }
@@ -407,8 +407,8 @@ export function EmailInbox() {
       console.log("✅ Email de test créé avec succès");
 
       toast({
-        title: "Email de test reçu",
-        description: "Un email de test a été ajouté à votre boîte de réception",
+        title: t.emailInboxPage.testReceived,
+        description: t.emailInboxPage.testReceivedDesc,
       });
 
       await loadEmails();
@@ -416,8 +416,8 @@ export function EmailInbox() {
     } catch (error: any) {
       console.error("❌ Error simulating email:", error);
       toast({
-        title: "Erreur",
-        description: "Impossible de simuler l'email: " + error.message,
+        title: t.emailInboxPage.error,
+        description: t.emailInboxPage.unableToSimulate + ": " + error.message,
         variant: "destructive",
       });
     }
@@ -458,8 +458,8 @@ export function EmailInbox() {
       if (error) throw error;
 
       toast({
-        title: "Email supprimé",
-        description: "L'email a été supprimé avec succès",
+        title: t.emailInboxExtended.emailDeleted,
+        description: t.emailInboxExtended.emailDeletedDesc,
       });
 
       if (selectedEmail?.id === emailId) {
@@ -470,8 +470,8 @@ export function EmailInbox() {
     } catch (error) {
       console.error("Error deleting email:", error);
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'email",
+        title: t.emailInboxPage.error,
+        description: t.emailInboxExtended.unableToDelete,
         variant: "destructive",
       });
     }
@@ -494,8 +494,8 @@ export function EmailInbox() {
       if (error) throw error;
 
       toast({
-        title: "Emails supprimés",
-        description: "Tous les emails du dossier ont été supprimés",
+        title: t.emailInboxExtended.emailsDeleted,
+        description: t.emailInboxExtended.allEmailsDeletedDesc,
       });
 
       setSelectedEmail(null);
@@ -504,8 +504,8 @@ export function EmailInbox() {
     } catch (error) {
       console.error("Error deleting all emails:", error);
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer les emails",
+        title: t.emailInboxPage.error,
+        description: t.emailInboxExtended.unableToDelete,
         variant: "destructive",
       });
     }
@@ -539,11 +539,11 @@ export function EmailInbox() {
               onClick={() => setActiveFolder(folder)}
               className="whitespace-nowrap"
             >
-              {folder === "inbox" && "Reçus"}
-              {folder === "sent" && "Envoyés"}
-              {folder === "drafts" && "Brouillons"}
-              {folder === "trash" && "Corbeille"}
-              {folder === "spam" && "Spam"}
+              {folder === "inbox" && t.emailInboxPage.folders.inbox}
+              {folder === "sent" && t.emailInboxPage.folders.sent}
+              {folder === "drafts" && t.emailInboxPage.folders.drafts}
+              {folder === "trash" && t.emailInboxPage.folders.trash}
+              {folder === "spam" && t.emailInboxPage.folders.spam}
               {unreadCount > 0 && (
                 <Badge variant="secondary" className="ml-1 text-xs">
                   {unreadCount}
@@ -561,15 +561,15 @@ export function EmailInbox() {
             <h2 className="text-xl lg:text-2xl font-bold flex items-center gap-2">
               <Mail className="w-5 h-5 lg:w-6 lg:h-6" />
               <span className="hidden sm:inline">
-                {activeFolder === "inbox" && "Boîte de réception"}
-                {activeFolder === "sent" && "Emails envoyés"}
-                {activeFolder === "drafts" && "Brouillons"}
-                {activeFolder === "trash" && "Corbeille"}
-                {activeFolder === "spam" && "Spam"}
+                {activeFolder === "inbox" && t.emailInboxPage.folders.inbox}
+                {activeFolder === "sent" && t.emailInboxPage.folders.sent}
+                {activeFolder === "drafts" && t.emailInboxPage.folders.drafts}
+                {activeFolder === "trash" && t.emailInboxPage.folders.trash}
+                {activeFolder === "spam" && t.emailInboxPage.folders.spam}
               </span>
               {getUnreadCount(activeFolder) > 0 && (
                 <Badge variant="default" className="ml-2">
-                  {getUnreadCount(activeFolder)} non lu{getUnreadCount(activeFolder) > 1 ? "s" : ""}
+                  {getUnreadCount(activeFolder)} {t.emailInboxPage.unread}
                 </Badge>
               )}
             </h2>
@@ -598,7 +598,7 @@ export function EmailInbox() {
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>{replyTo ? "Répondre à l'email" : "Composer un email"}</DialogTitle>
+                    <DialogTitle>{replyTo ? t.emailInboxPage.replyToEmail : t.emailInboxPage.composeEmail}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b">

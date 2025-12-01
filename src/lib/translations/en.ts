@@ -9039,10 +9039,73 @@ export const translations = {
 
   // ============= Code Translation Analyzer =============
   codeAnalyzer: {
+    title: "Translation Analyzer",
     noHardcodedText: "No hardcoded text detected!",
     noTranslations: "No translations to generate",
     translationsGenerated: "Translations generated!",
     copiedToClipboard: "Copied to clipboard",
+    copiedFix: "Copied: {{fix}}",
+    issuesDetected: "{{count}} hardcoded text(s) detected",
+    pasteCodeLabel: "Paste the code to analyze (TSX/JSX)",
+    pasteCodePlaceholder: "// Paste your code here...\n// Example:\n<Button>Save</Button>\ntoast.success(\"Operation successful\")\n<DialogTitle>Confirm deletion</DialogTitle>",
+    analyzeCode: "Analyze code",
+    analyzing: "Analyzing...",
+    generateTranslations: "Generate translations",
+    issuesFound: "{{count}} Hardcoded text(s) detected",
+    line: "Line",
+    hardcodedText: "Hardcoded text",
+    missingTranslation: "Missing translation",
+    suggestedKey: "Suggested key:",
+    generatedTranslations: "Generated Translations",
+    copyAll: "Copy all",
+    codeCorrectlyInternationalized: "The analyzed code seems correctly internationalized.",
+  },
+
+  // ============= Email Inbox Extended =============
+  emailInboxExtended: {
+    success: "Success",
+    emailDeleted: "Email deleted",
+    emailDeletedDesc: "The email has been deleted successfully",
+    unableToDelete: "Unable to delete email",
+    emailsDeleted: "Emails deleted",
+    allEmailsDeletedDesc: "All emails in the folder have been deleted",
+  },
+
+  // ============= Smart Pricing Extended =============
+  smartPricingExtended: {
+    dataLoadError: "Error loading data",
+    saveError: "Error saving",
+    validAmountRequired: "Please enter a valid amount",
+    applyingChanges: "Applying changes...",
+    changesApplied: "Changes applied successfully",
+    syncingPrices: "Syncing prices...",
+    pricesSynced: "{{count}} price(s) synchronized",
+    syncError: "Synchronization error",
+    noProductSelected: "Please select at least one product",
+    analysisInProgress: "Price analysis in progress...",
+    analysisComplete: "Price analysis complete",
+    skuGeneratedSuccess: "SKU generated: {{sku}}",
+    imageGenerating: "Generating image...",
+    imageGenerated: "Image generated successfully",
+    imageError: "Error generating image",
+  },
+
+  // ============= Article Management Extended =============
+  articleManagementExtended: {
+    optimizationLimitReached: "Optimization limit reached",
+    trialLimitDesc: "Upgrade to a paid plan to continue.",
+    monthlyLimitDesc: "Monthly limit reached. Upgrade to a higher plan.",
+    optimizationError: "Optimization error",
+    articlesSynced: "{{count}} article(s) synchronized",
+    articleNotFound: "Article not found",
+    storeNotFound: "Store not found",
+    domainNotFound: "Store domain not found",
+    indexingRequestSent: "Indexing request sent successfully",
+    connectGSCFirst: "Please connect Google Search Console first",
+    quotaExceeded: "Indexing quota exceeded, try again tomorrow",
+    indexingError: "Error sending indexing request",
+    articlesLimitReached: "Articles limit reached",
+    importToAddMore: "Upgrade to a paid plan to import more articles.",
   },
 
 };

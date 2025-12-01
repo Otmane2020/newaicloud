@@ -9088,10 +9088,73 @@ export const translations = {
 
   // ============= Code Translation Analyzer =============
   codeAnalyzer: {
+    title: "Analyseur de Traductions",
     noHardcodedText: "Aucun texte en dur détecté !",
     noTranslations: "Aucune traduction à générer",
     translationsGenerated: "Traductions générées !",
     copiedToClipboard: "Copié dans le presse-papier",
+    copiedFix: "Copié : {{fix}}",
+    issuesDetected: "{{count}} texte(s) en dur détecté(s)",
+    pasteCodeLabel: "Collez le code à analyser (TSX/JSX)",
+    pasteCodePlaceholder: "// Collez votre code ici...\n// Exemple:\n<Button>Enregistrer</Button>\ntoast.success(\"Opération réussie\")\n<DialogTitle>Confirmer la suppression</DialogTitle>",
+    analyzeCode: "Analyser le code",
+    analyzing: "Analyse...",
+    generateTranslations: "Générer traductions",
+    issuesFound: "{{count}} Texte(s) en dur détecté(s)",
+    line: "Ligne",
+    hardcodedText: "Texte en dur",
+    missingTranslation: "Traduction manquante",
+    suggestedKey: "Clé suggérée :",
+    generatedTranslations: "Traductions Générées",
+    copyAll: "Copier tout",
+    codeCorrectlyInternationalized: "Le code analysé semble correctement internationalisé.",
+  },
+
+  // ============= Email Inbox Extended =============
+  emailInboxExtended: {
+    success: "Succès",
+    emailDeleted: "Email supprimé",
+    emailDeletedDesc: "L'email a été supprimé avec succès",
+    unableToDelete: "Impossible de supprimer l'email",
+    emailsDeleted: "Emails supprimés",
+    allEmailsDeletedDesc: "Tous les emails du dossier ont été supprimés",
+  },
+
+  // ============= Smart Pricing Extended =============
+  smartPricingExtended: {
+    dataLoadError: "Erreur lors du chargement des données",
+    saveError: "Erreur lors de la sauvegarde",
+    validAmountRequired: "Veuillez entrer un montant valide",
+    applyingChanges: "Application des modifications...",
+    changesApplied: "Modifications appliquées avec succès",
+    syncingPrices: "Synchronisation des prix...",
+    pricesSynced: "{{count}} prix synchronisé(s)",
+    syncError: "Erreur de synchronisation",
+    noProductSelected: "Veuillez sélectionner au moins un produit",
+    analysisInProgress: "Analyse des prix en cours...",
+    analysisComplete: "Analyse des prix terminée",
+    skuGeneratedSuccess: "SKU généré : {{sku}}",
+    imageGenerating: "Génération de l'image...",
+    imageGenerated: "Image générée avec succès",
+    imageError: "Erreur lors de la génération de l'image",
+  },
+
+  // ============= Article Management Extended =============
+  articleManagementExtended: {
+    optimizationLimitReached: "Limite d'optimisations atteinte",
+    trialLimitDesc: "Passez à un plan payant pour continuer.",
+    monthlyLimitDesc: "Limite mensuelle atteinte. Passez à un plan supérieur.",
+    optimizationError: "Erreur d'optimisation",
+    articlesSynced: "{{count}} article(s) synchronisé(s)",
+    articleNotFound: "Article introuvable",
+    storeNotFound: "Boutique introuvable",
+    domainNotFound: "Domaine de boutique introuvable",
+    indexingRequestSent: "Demande d'indexation envoyée avec succès",
+    connectGSCFirst: "Veuillez connecter Google Search Console d'abord",
+    quotaExceeded: "Quota d'indexation dépassé, réessayez demain",
+    indexingError: "Erreur lors de la demande d'indexation",
+    articlesLimitReached: "Limite d'articles atteinte",
+    importToAddMore: "Passez à un plan payant pour importer plus d'articles.",
   },
 
 };
