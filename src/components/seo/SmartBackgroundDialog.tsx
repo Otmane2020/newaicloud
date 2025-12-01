@@ -49,7 +49,7 @@ interface ProductGalleryImage {
 }
 
 type BackgroundFormat = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
-type BackgroundMode = 'white_shopping' | 'smart_serp';
+type BackgroundMode = 'white_shopping' | 'smart_serp' | '3d_shopping' | '3d_generate';
 type BackgroundStyle = 'shopping' | 'lifestyle' | 'moderne' | 'living_room' | 'studio' | 'nature';
 
 interface ProductVariant {
@@ -362,12 +362,20 @@ export const SmartBackgroundDialog = ({
           const productDescription = productDetails?.body_html || productDetails?.seo_description || null;
 
           // Generate - skip SERP fetch in bulk mode for speed (use existing data only)
+          // Determine format: 3d_shopping forces 1:1
+          const effectiveFormat = bgMode === '3d_shopping' ? 'square' : formatMap[bgFormat];
+          
+          // Determine mode for API
+          const apiMode = bgMode === '3d_shopping' ? '3d_google_shopping' 
+            : bgMode === '3d_generate' ? '3d_generate' 
+            : 'google_shopping';
+          
           const result = await generateWhiteBackground.mutateAsync({
             imageUrl: selectedImage.url,
             productTitle: product.title,
             resolution: '2000x2000',
-            format: formatMap[bgFormat],
-            mode: 'google_shopping',
+            format: effectiveFormat,
+            mode: apiMode,
             product_id: product.id,
             serpData,
             visionAiData,
@@ -629,24 +637,37 @@ export const SmartBackgroundDialog = ({
                         White Background - Google Shopping
                       </div>
                     </SelectItem>
+                    <SelectItem value="3d_shopping">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-primary">3D</span>
+                        3D Google Shopping 1×1 - White
+                      </div>
+                    </SelectItem>
                     <SelectItem value="smart_serp">
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-primary" />
                         Smart Background - SERP + Vision AI
                       </div>
                     </SelectItem>
+                    <SelectItem value="3d_generate">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-purple-500">3D</span>
+                        3D Generate - Recréer produit en 3D
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {bgMode === 'white_shopping'
-                    ? getText('Fond blanc pur avec SERP + Vision AI, éclairage studio, effet 3D, conforme Google Merchant Center', 'Pure white background with SERP + Vision AI, studio lighting, 3D effect, Google Merchant Center compliant')
-                    : getText('Enrichissement SERP (dimensions, matériaux), Vision AI, effet 3D professionnel', 'SERP enrichment (dimensions, materials), Vision AI, professional 3D effect')}
+                  {bgMode === 'white_shopping' && getText('Fond blanc pur avec SERP + Vision AI, éclairage studio, effet 3D, conforme Google Merchant Center', 'Pure white background with SERP + Vision AI, studio lighting, 3D effect, Google Merchant Center compliant')}
+                  {bgMode === '3d_shopping' && getText('Produit 3D réaliste sur fond blanc 1:1, éclairage studio professionnel, conforme Google Shopping', 'Realistic 3D product on white 1:1 background, professional studio lighting, Google Shopping compliant')}
+                  {bgMode === 'smart_serp' && getText('Enrichissement SERP (dimensions, matériaux), Vision AI, effet 3D professionnel', 'SERP enrichment (dimensions, materials), Vision AI, professional 3D effect')}
+                  {bgMode === '3d_generate' && getText('Recréation complète du produit en 3D avec modélisation réaliste et nouveau background', 'Complete 3D recreation of product with realistic modeling and new background')}
                 </p>
               </div>
             </div>
 
-            {/* Style Buttons - Only for smart_serp mode */}
-            {bgMode === 'smart_serp' && (
+            {/* Style Buttons - Only for smart_serp or 3d_generate mode */}
+            {(bgMode === 'smart_serp' || bgMode === '3d_generate') && (
               <div className="space-y-2">
                 <Label className="text-sm">Style de background</Label>
                 <div className="flex flex-wrap gap-2">
