@@ -3809,6 +3809,7 @@ export const translations = {
       successDescription: "Your SEO optimized article has been generated successfully.",
       viewArticle: "View Article",
       viewOnShopify: "View on Shopify",
+      workOnSEO: "Work on SEO",
       steps: {
         start: "🚀 Starting AI generation...",
         analyzingProducts: "📦 Analyzing selected products",
