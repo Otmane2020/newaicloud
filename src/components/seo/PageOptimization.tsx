@@ -377,43 +377,60 @@ export function PageOptimization() {
     
     if (idsToUse.length === 0) return;
     
-    setOptimizing(true);
-    let successCount = 0;
+    const pagesToOptimize = pages.filter(p => idsToUse.includes(p.id));
     
-    for (let i = 0; i < idsToUse.length; i++) {
-      try {
-        const { error } = await supabase.functions.invoke('generate-page-seo', {
-          body: { pageId: idsToUse[i], force: true }
-        });
-        
-        if (error) throw error;
-        
-        successCount++;
-        toast.success(`Page ${i + 1}/${idsToUse.length} optimized`);
-      } catch (error: any) {
-        console.error('Error optimizing page:', error);
-        
-        if (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
-          toast.error('Limite d\'optimisations atteinte');
-          setShowUpgradeDialog(true);
-          setOptimizing(false);
-          break;
+    // Use global context processor - continues even if user changes tabs
+    processBulkOperation(
+      'pages',
+      pagesToOptimize,
+      async (page) => {
+        try {
+          const { error } = await supabase.functions.invoke('generate-page-seo', {
+            body: { pageId: page.id, force: true }
+          });
+          return !error;
+        } catch (error: any) {
+          console.error('Error optimizing page:', error);
+          if (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
+            setShowUpgradeDialog(true);
+          }
+          return false;
         }
+      },
+      'optimizing',
+      async (results) => {
+        await fetchPages();
+        await refreshLimits();
+        setSelectedPages(new Set());
         
-        toast.error(`Error for page ${i + 1}`);
+        if (results.success > 0) {
+          // Fetch fresh pages data for the dialog
+          const { data: freshPages } = await supabase
+            .from('shopify_pages')
+            .select('*')
+            .in('id', idsToUse);
+          
+          const mappedFreshPages: ShopifyPage[] = (freshPages || []).map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            handle: p.handle,
+            body_html: p.body_html || '',
+            seo_title: p.seo_title,
+            seo_description: p.seo_description,
+            optimized: (p.optimization_count || 0) > 0,
+            last_synced_at: p.last_synced_at,
+            optimization_count: p.optimization_count || 0
+          }));
+          
+          setOptimizedPages(mappedFreshPages);
+          toast.success(`✅ ${results.success} page(s) optimisée(s)`);
+          
+          setTimeout(() => {
+            setShowResultsDialog(true);
+          }, 800);
+        }
       }
-    }
-    
-    setOptimizing(false);
-    setSelectedPages(new Set());
-    await fetchPages();
-    await refreshLimits();
-    
-    if (successCount === idsToUse.length) {
-      toast.success('🎉 All pages optimized!');
-    } else {
-      toast.warning(`${successCount}/${idsToUse.length} pages optimized`);
-    }
+    );
   };
 
   const handleOptimizeAll = async () => {
@@ -469,6 +486,7 @@ export function PageOptimization() {
     }
 
     setShowOptimizeAllConfirmDialog(false);
+    const pageIdsToOptimize = pagesToOptimize.map(p => p.id);
     
     // Use global context processor - continues even if user changes tabs
     processBulkOperation(
@@ -487,9 +505,35 @@ export function PageOptimization() {
       },
       'optimizing',
       async (results) => {
-        toast.success(`${results.success}/${pagesToOptimize.length} pages optimized!`);
         await fetchPages();
         await refreshLimits();
+        
+        if (results.success > 0) {
+          // Fetch fresh pages data for the dialog
+          const { data: freshPages } = await supabase
+            .from('shopify_pages')
+            .select('*')
+            .in('id', pageIdsToOptimize);
+          
+          const mappedFreshPages: ShopifyPage[] = (freshPages || []).map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            handle: p.handle,
+            body_html: p.body_html || '',
+            seo_title: p.seo_title,
+            seo_description: p.seo_description,
+            optimized: (p.optimization_count || 0) > 0,
+            last_synced_at: p.last_synced_at,
+            optimization_count: p.optimization_count || 0
+          }));
+          
+          setOptimizedPages(mappedFreshPages);
+          toast.success(`✅ ${results.success}/${pagesToOptimize.length} page(s) optimisée(s)`);
+          
+          setTimeout(() => {
+            setShowResultsDialog(true);
+          }, 800);
+        }
       }
     );
   };
