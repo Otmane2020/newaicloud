@@ -759,4 +759,5 @@ if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY && authHeader) {
 return new Response(JSON.stringify(result), {
   status: 200,
   headers: { ...corsHeaders, "Content-Type": "application/json" },
+ }); 
 }); // ← **FINALE ET UNIQUE FERMETURE**
