@@ -324,7 +324,7 @@ export const PRODUCT_DELETE_MUTATION = `
  */
 export const PRODUCTS_COUNT_QUERY = `
   query getProductsCount {
-    productsCount {
+    productsCount(limit: null) {
       count
     }
   }

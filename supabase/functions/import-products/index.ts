@@ -494,7 +494,7 @@ Deno.serve(async (req: Request) => {
     try {
       const countQuery = `
         query {
-          productsCount {
+          productsCount(limit: null) {
             count
           }
         }
