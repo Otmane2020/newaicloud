@@ -1862,7 +1862,7 @@ export function SmartPricingAI() {
             return (
               <Card 
                 key={product.id} 
-                className={`overflow-hidden hover:shadow-lg transition-all ${product.selected ? 'ring-2 ring-primary' : ''}`}
+                className={`overflow-hidden hover:shadow-lg transition-all flex flex-col ${product.selected ? 'ring-2 ring-primary' : ''}`}
               >
                 {/* Header with image and selection */}
                 <div className="relative">
@@ -1891,25 +1891,36 @@ export function SmartPricingAI() {
                       checked={product.selected} 
                       onCheckedChange={() => toggleProductSelection(product.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm"
+                      className="absolute top-2 right-2 bg-background/90 backdrop-blur-sm border-2"
                     />
                   </div>
-                  {/* Product info */}
-                  <div className="p-4">
-                    <h4 className="font-medium text-sm line-clamp-2">{product.title}</h4>
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      {product.vendor && (
-                        <span className="text-xs text-muted-foreground">{product.vendor}</span>
-                      )}
-                      {product.sku && (
-                        <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">{product.sku}</span>
-                      )}
-                      {product.hasMultipleVariants && (
-                        <Badge variant="outline" className="text-[10px]">
-                          {product.variants.length} variantes
-                        </Badge>
-                      )}
-                    </div>
+                </div>
+                
+                {/* Product info - flex-1 to push bottom content down */}
+                <div className="flex-1 flex flex-col p-4 space-y-3">
+                  {/* Title section - fixed height */}
+                  <div className="min-h-[3rem]">
+                    <h4 className="font-semibold text-sm line-clamp-2">{product.title}</h4>
+                  </div>
+                  
+                  {/* Vendor badge */}
+                  {product.vendor && (
+                    <Badge variant="outline" className="w-fit text-[10px] px-2 py-0">
+                      {product.vendor}
+                    </Badge>
+                  )}
+                  
+                  {/* SKU and variants info */}
+                  <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                    {product.hasMultipleVariants ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        {product.variants.length} variantes
+                      </Badge>
+                    ) : (
+                      <span className="font-mono">
+                        SKU: {product.sku || '—'}
+                      </span>
+                    )}
                   </div>
                 </div>
                 

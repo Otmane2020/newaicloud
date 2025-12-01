@@ -2291,100 +2291,100 @@ export default function ProductTitleDescription() {
                     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
                     : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
                 }`}>
-                  {paginatedProducts.map((product) => (
-                    <Card
-                      key={product.id}
-                      className="group cursor-pointer hover:shadow-lg transition-all overflow-hidden"
-                      onClick={() => {
+                   {paginatedProducts.map((product) => (
+                     <Card
+                       key={product.id}
+                       className="group cursor-pointer hover:shadow-lg transition-all overflow-hidden flex flex-col"
+                       onClick={() => {
                         setPreviewProduct(product);
-                        setShowPreviewDialog(true);
-                      }}
-                    >
-                      {/* Image with action buttons */}
-                      <div className="aspect-square bg-muted/50 relative overflow-hidden">
-                        {product.image_url ? (
-                          <img
-                            src={product.image_url}
-                            alt={product.title}
-                            className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setGalleryProduct(product);
-                              setShowGalleryDialog(true);
-                            }}
-                          />
-                        ) : (
-                          <div
-                            className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-muted/70 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setGalleryProduct(product);
-                              setShowGalleryDialog(true);
-                            }}
-                          >
-                            <Package className="w-12 h-12 text-muted-foreground" />
-                          </div>
-                        )}
+                         setShowPreviewDialog(true);
+                       }}
+                     >
+                       {/* Image with action buttons */}
+                       <div className="aspect-square bg-muted/50 relative overflow-hidden">
+                         {product.image_url ? (
+                           <img
+                             src={product.image_url}
+                             alt={product.title}
+                             className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               setGalleryProduct(product);
+                               setShowGalleryDialog(true);
+                             }}
+                           />
+                         ) : (
+                           <div
+                             className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-muted/70 transition-colors"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               setGalleryProduct(product);
+                               setShowGalleryDialog(true);
+                             }}
+                           >
+                             <Package className="w-12 h-12 text-muted-foreground" />
+                           </div>
+                         )}
 
-                        {/* Status badge - top left - CLICKABLE */}
-                        <div className="absolute top-2 left-2">
-                          <Badge
-                            className={`cursor-pointer transition-all hover:scale-105 ${
-                              product.status === "active"
-                                ? "bg-green-600 text-white shadow-sm hover:bg-green-700"
-                                : "bg-gray-100 text-gray-600 shadow-sm hover:bg-gray-200"
-                            }`}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (!product.shopify_id) {
-                                toast.error("Ce produit n'est pas synchronisé avec Shopify");
-                                return;
-                              }
-                              if (!selectedStore) {
-                                toast.error("Aucun store sélectionné");
-                                return;
-                              }
-                              const newStatus = product.status === "active" ? "draft" : "active";
-                              const toastId = toast.loading("Mise à jour du statut...");
-                              try {
-                                const { data: { session } } = await supabase.auth.getSession();
-                                if (!session) throw new Error("Session non trouvée");
-                                const { data, error } = await supabase.functions.invoke("update-product-status", {
-                                  body: {
-                                    productId: product.id,
-                                    shopifyId: product.shopify_id,
-                                    newStatus: newStatus,
-                                    storeId: selectedStore.id,
-                                  },
-                                });
-                                if (error) throw error;
-                                if (!data?.success) throw new Error("Échec de la mise à jour");
-                                setProducts((prev) =>
-                                  prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p))
-                                );
-                                toast.success(newStatus === "active" ? "Produit publié" : "Produit en brouillon", { id: toastId });
-                              } catch (error) {
-                                console.error("Error updating status:", error);
-                                toast.error("Erreur lors de la mise à jour du statut", { id: toastId });
-                              }
-                            }}
-                          >
-                            {product.status === "active" ? (
-                              <>
-                                <Power className="h-3 w-3 mr-1" />
-                                Actif
-                              </>
-                            ) : (
-                              <>
-                                <PowerOff className="h-3 w-3 mr-1" />
-                                Draft
-                              </>
-                            )}
-                          </Badge>
-                        </div>
+                         {/* Status badge - top left - CLICKABLE */}
+                         <div className="absolute top-2 left-2">
+                           <Badge
+                             className={`cursor-pointer transition-all hover:scale-105 ${
+                               product.status === "active"
+                                 ? "bg-green-600 text-white shadow-sm hover:bg-green-700"
+                                 : "bg-gray-100 text-gray-600 shadow-sm hover:bg-gray-200"
+                             }`}
+                             onClick={async (e) => {
+                               e.stopPropagation();
+                               if (!product.shopify_id) {
+                                 toast.error("Ce produit n'est pas synchronisé avec Shopify");
+                                 return;
+                               }
+                               if (!selectedStore) {
+                                 toast.error("Aucun store sélectionné");
+                                 return;
+                               }
+                               const newStatus = product.status === "active" ? "draft" : "active";
+                               const toastId = toast.loading("Mise à jour du statut...");
+                               try {
+                                 const { data: { session } } = await supabase.auth.getSession();
+                                 if (!session) throw new Error("Session non trouvée");
+                                 const { data, error } = await supabase.functions.invoke("update-product-status", {
+                                   body: {
+                                     productId: product.id,
+                                     shopifyId: product.shopify_id,
+                                     newStatus: newStatus,
+                                     storeId: selectedStore.id,
+                                   },
+                                 });
+                                 if (error) throw error;
+                                 if (!data?.success) throw new Error("Échec de la mise à jour");
+                                 setProducts((prev) =>
+                                   prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p))
+                                 );
+                                 toast.success(newStatus === "active" ? "Produit publié" : "Produit en brouillon", { id: toastId });
+                               } catch (error) {
+                                 console.error("Error updating status:", error);
+                                 toast.error("Erreur lors de la mise à jour du statut", { id: toastId });
+                               }
+                             }}
+                           >
+                             {product.status === "active" ? (
+                               <>
+                                 <Power className="h-3 w-3 mr-1" />
+                                 Actif
+                               </>
+                             ) : (
+                               <>
+                                 <PowerOff className="h-3 w-3 mr-1" />
+                                 Draft
+                               </>
+                             )}
+                           </Badge>
+                         </div>
 
-                        {/* Action buttons - always visible */}
-                        <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-100">
+                         {/* Action buttons - always visible */}
+                         <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-100">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -2556,138 +2556,73 @@ export default function ProductTitleDescription() {
                         </div>
                       </div>
 
-                      {/* Product info */}
-                      <div className="p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-start gap-2">
-                          <Checkbox
-                            checked={selectedProducts.has(product.id)}
-                            onCheckedChange={() => handleSelectProduct(product.id)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                              {product.seo_title || product.title}
-                            </h3>
-                            <input
-                              type="text"
-                              defaultValue={product.vendor || ''}
-                              placeholder="Marque..."
-                              className="text-xs border rounded px-1.5 py-0.5 w-full max-w-[140px] bg-background"
-                              onClick={(e) => e.stopPropagation()}
-                              onBlur={async (e) => {
-                                const newVendor = e.target.value.trim();
-                                if (newVendor !== (product.vendor || '')) {
-                                  try {
-                                    await supabase
-                                      .from('shopify_products')
-                                      .update({ vendor: newVendor })
-                                      .eq('id', product.id);
-                                    setProducts(prev => prev.map(p => 
-                                      p.id === product.id ? { ...p, vendor: newVendor } : p
-                                    ));
-                                    toast.success('Marque mise à jour');
-                                  } catch (error) {
-                                    toast.error('Erreur lors de la mise à jour');
-                                  }
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  (e.target as HTMLInputElement).blur();
-                                }
-                              }}
-                            />
-                          </div>
-                        </div>
+                       {/* Product info */}
+                       <div className="flex-1 flex flex-col p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+                         {/* Title section - fixed height */}
+                         <div className="min-h-[3rem]">
+                           <h3 className="font-semibold text-sm line-clamp-2">
+                             {product.seo_title || product.title}
+                           </h3>
+                         </div>
 
-                        <p className="text-xs text-muted-foreground">
-                          SKU: {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
-                        </p>
-                        
-                        {/* Price info */}
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-muted-foreground">Prix: </span>
-                            <span className="font-medium">
-                              {(product as any).variants?.[0]?.price 
-                                ? `${Number((product as any).variants[0].price).toFixed(2)} €` 
-                                : '—'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Coût: </span>
-                            <span className="font-medium">
-                              {(product as any).variants?.[0]?.cost_price 
-                                ? `${Number((product as any).variants[0].cost_price).toFixed(2)} €` 
-                                : '—'}
-                            </span>
-                          </div>
-                        </div>
+                         {/* Vendor badge */}
+                         {product.vendor && (
+                           <Badge variant="outline" className="w-fit text-[10px] px-2 py-0">
+                             {product.vendor}
+                           </Badge>
+                         )}
 
-                        {/* Status badge */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            {hasRichHtmlDescription(product) ? (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                                <FileText className="h-3 w-3 mr-1" />
-                                Landing
-                              </Badge>
-                            ) : product.seo_title || product.seo_description ? (
-                              <Badge variant="secondary" className="text-xs">
-                                {t.contentOptimization.table.status.basicContent} ✓
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs">
-                                {t.contentOptimization.table.status.toOptimize}
-                              </Badge>
-                            )}
-                          </div>
-                          {/* Status toggle button */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (!product.shopify_id) {
-                                toast.error("Ce produit n'est pas synchronisé avec Shopify");
-                                return;
-                              }
-                              if (!selectedStore) {
-                                toast.error("Aucun store sélectionné");
-                                return;
-                              }
-                              const newStatus = product.status === "active" ? "draft" : "active";
-                              const toastId = toast.loading("Mise à jour du statut...");
-                              try {
-                                const { data: { session } } = await supabase.auth.getSession();
-                                if (!session) throw new Error("Session non trouvée");
-                                const { data, error } = await supabase.functions.invoke("update-product-status", {
-                                  body: {
-                                    productId: product.id,
-                                    shopifyId: product.shopify_id,
-                                    newStatus: newStatus,
-                                    storeId: selectedStore.id,
-                                  },
-                                });
-                                if (error) throw error;
-                                if (!data?.success) throw new Error("Échec de la mise à jour");
-                                setProducts((prev) =>
-                                  prev.map((p) => (p.id === product.id ? { ...p, status: newStatus } : p))
-                                );
-                                toast.success(newStatus === "active" ? "Produit publié" : "Produit en brouillon", { id: toastId });
-                              } catch (error) {
-                                console.error("Error updating status:", error);
-                                toast.error("Erreur lors de la mise à jour du statut", { id: toastId });
-                              }
-                            }}
-                            className={`h-6 px-2 text-xs ${product.status === "active" ? "text-green-600" : "text-muted-foreground"}`}
-                          >
-                            {product.status === "active" ? "Actif" : "Draft"}
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                         {/* SKU */}
+                         <p className="text-xs text-muted-foreground font-mono">
+                           SKU: {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
+                         </p>
+                         
+                         {/* Price info */}
+                         <div className="flex items-center justify-between gap-2 text-xs pt-2 border-t">
+                           <div>
+                             <span className="text-muted-foreground">Prix: </span>
+                             <span className="font-semibold">
+                               {(product as any).variants?.[0]?.price 
+                                 ? `${Number((product as any).variants[0].price).toFixed(2)} €` 
+                                 : '—'}
+                             </span>
+                           </div>
+                           <div>
+                             <span className="text-muted-foreground">Coût: </span>
+                             <span className="font-medium">
+                               {(product as any).variants?.[0]?.cost_price 
+                                 ? `${Number((product as any).variants[0].cost_price).toFixed(2)} €` 
+                                 : '—'}
+                             </span>
+                           </div>
+                         </div>
+
+                         {/* Status section - bottom aligned */}
+                         <div className="flex items-center justify-between gap-2 mt-auto pt-3 border-t">
+                           <Checkbox
+                             checked={selectedProducts.has(product.id)}
+                             onCheckedChange={() => handleSelectProduct(product.id)}
+                             onClick={(e) => e.stopPropagation()}
+                           />
+                           
+                           {hasRichHtmlDescription(product) ? (
+                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                               <CheckCircle className="h-3 w-3 mr-1" />
+                               Optimisé
+                             </Badge>
+                           ) : product.seo_title || product.seo_description ? (
+                             <Badge variant="secondary" className="text-xs">
+                               {t.contentOptimization.table.status.basicContent} ✓
+                             </Badge>
+                           ) : (
+                             <Badge variant="outline" className="text-xs">
+                               {t.contentOptimization.table.status.toOptimize}
+                             </Badge>
+                           )}
+                         </div>
+                       </div>
+                     </Card>
+                   ))}
                 </div>
               </TooltipProvider>
 
