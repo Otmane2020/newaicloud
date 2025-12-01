@@ -1,0 +1,20 @@
+name = "NewAI"
+client_id = "e2dcca4c7ea2d9fa4f7d2c5c48c2b430"
+application_url = "https://newai.sale/app"
+embedded = false
+handle = "newai-seo"
+
+[access_scopes]
+scopes = "read_products,write_products,read_orders,read_customers,read_content,write_content,read_themes,write_themes,read_locales,write_locales,read_publications,write_publications,read_product_listings,read_inventory,write_inventory,read_price_rules,write_price_rules,read_discounts,write_discounts"
+
+[auth]
+redirect_urls = [
+  "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-oauth"
+]
+
+[webhooks]
+api_version = "2025-01"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+uri = "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-gdpr-webhook"
