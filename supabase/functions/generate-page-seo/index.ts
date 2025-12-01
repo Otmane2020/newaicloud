@@ -259,11 +259,15 @@ ${elements.bodyText}
       let storeCommercialName = '';
       
       if (isContactPage) {
+        // Utiliser storeId du body OU store_id de la page
+        const storeIdToUse = body.storeId || page.store_id;
+        
+        console.log('🏪 Contact page detected - fetching store with ID:', storeIdToUse);
+        
         const { data: storeData } = await supabaseClient
           .from('shopify_connections')
           .select('store_name, store_label, store_phone, store_email, store_address, store_url')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
+          .eq('id', storeIdToUse)
           .single();
         
         if (storeData) {
