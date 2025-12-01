@@ -167,6 +167,7 @@ export function SmartPricingAI() {
     } | null;
   }>({ open: false, data: null });
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
 
   useEffect(() => {
     fetchData();
@@ -1711,10 +1712,26 @@ export function SmartPricingAI() {
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
-              onClick={() => setViewMode("grid")}
-              className="rounded-none h-8 px-3"
+              onClick={() => {
+                if (viewMode === "grid") {
+                  // Cycle through 2, 3, 4 columns
+                  setGridColumns((prev) => {
+                    if (prev === 2) return 3;
+                    if (prev === 3) return 4;
+                    return 2;
+                  });
+                } else {
+                  setViewMode("grid");
+                }
+              }}
+              className="rounded-none h-8 px-3 relative"
             >
               <LayoutGrid className="w-4 h-4" />
+              {viewMode === "grid" && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-bold">
+                  {gridColumns}
+                </span>
+              )}
             </Button>
           </div>
         </div>
@@ -1830,7 +1847,13 @@ export function SmartPricingAI() {
 
       {/* Products Table or Grid */}
       {viewMode === "grid" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className={`grid gap-4 ${
+          gridColumns === 2 
+            ? 'grid-cols-1 sm:grid-cols-2' 
+            : gridColumns === 3 
+            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
+            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+        }`}>
           {paginatedItems.map((product) => {
             const discount = calculateDiscount(product.price || 0, product.compare_at_price);
             const netMargin = calculateNetMargin(product.price, product.cost_price, product.shipping_cost);
