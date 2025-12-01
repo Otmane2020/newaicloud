@@ -10,6 +10,7 @@ interface ShopifyStore {
   is_active: boolean | null;
   public_domain: string | null;
   access_token: string | null;
+  store_language: string | null;
 }
 
 interface StoreContextType {
@@ -41,7 +42,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.log('🚨🚨🚨 [STORE_CONTEXT] Loading stores for user:', user.id);
       const { data, error } = await supabase
         .from('shopify_connections')
-        .select('id, store_name, store_url, store_label, is_active, public_domain, access_token')
+        .select('id, store_name, store_url, store_label, is_active, public_domain, access_token, store_language')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .order('created_at', { ascending: true });
