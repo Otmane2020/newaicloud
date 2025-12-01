@@ -1496,29 +1496,17 @@ export function TagOptimization() {
         onOpenChange={setShowResultsDialog}
         type="tags"
         items={optimizedItems}
-        onSyncClick={() => {
+        onSyncClick={async () => {
           setShowResultsDialog(false);
           const itemsWithTags = optimizedItems.filter(item => item.tags);
           if (itemsWithTags.length > 0) {
             setItemsToSync(itemsWithTags);
-            setShowSyncDialog(true);
+            await handleBulkSync(itemsWithTags.map(item => item.id));
           }
         }}
         onClose={handleCloseResultsDialog}
       />
 
-      {/* Sync Confirmation Dialog */}
-      <SyncConfirmationDialog
-        open={showSyncDialog}
-        onOpenChange={setShowSyncDialog}
-        type="tags"
-        itemCount={itemsToSync.length}
-        onConfirm={async () => {
-          setShowSyncDialog(false);
-          await handleBulkSync(itemsToSync.map(item => item.id));
-        }}
-        loading={showProgressDialog && currentOperation === 'syncing'}
-      />
 
       <SuccessDialog
         open={showSuccessDialog}

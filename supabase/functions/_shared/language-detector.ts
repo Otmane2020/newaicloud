@@ -29,7 +29,7 @@ export function detectContentLanguage(text: string): string {
       // Furniture & materials
       "wood", "metal", "fabric", "leather", "modern", "elegant", "sofa", "table", "chair", "desk", "bed", "storage", "cabinet", "drawer", "furniture",
       // E-commerce English
-      "snowboard", "board", "premium", "hidden", "collection", "shop", "buy", "new", "sale", "free", "shipping", "product", "style", "design", "price", "quality", "delivery", "order", "cart", "checkout",
+      "home", "snowboard", "board", "premium", "hidden", "collection", "shop", "buy", "new", "sale", "free", "shipping", "product", "style", "design", "price", "quality", "delivery", "order", "cart", "checkout",
       // Sports & products
       "freestyle", "ski", "surf", "bike", "outdoor", "gear", "equipment", "accessories", "performance", "pro", "edition", "limited", "exclusive"
     ],
@@ -106,14 +106,26 @@ export function resolveLanguage(options: {
     }
   }
   
-  // 2. Detect from content text (title + description) - PRIORITY over store language
+  // 2. Check if content is too short or generic to detect reliably
+  const isContentTooShort = !options.contentText || options.contentText.length < 10;
+  
+  // 3. For short/generic content, prioritize store_language
+  if (isContentTooShort && options.storeLanguage) {
+    const lang = options.storeLanguage.split('-')[0].toLowerCase();
+    if (['fr', 'en', 'de', 'es', 'it'].includes(lang)) {
+      console.log(`🌍 Using store language (content too short): ${lang}`);
+      return lang;
+    }
+  }
+  
+  // 4. Detect from content text (title + description)
   if (options.contentText && options.contentText.length >= 3) {
     const detected = detectContentLanguage(options.contentText);
     console.log(`🌍 Language detected from content "${options.contentText.substring(0, 30)}...": ${detected}`);
     return detected;
   }
   
-  // 3. Use store language as fallback
+  // 5. Use store language as fallback
   if (options.storeLanguage) {
     const lang = options.storeLanguage.split('-')[0].toLowerCase();
     if (['fr', 'en', 'de', 'es', 'it'].includes(lang)) {
@@ -122,7 +134,7 @@ export function resolveLanguage(options: {
     }
   }
   
-  // 4. Default to French
+  // 6. Default to French
   console.log(`🌍 Using default language: fr`);
   return 'fr';
 }

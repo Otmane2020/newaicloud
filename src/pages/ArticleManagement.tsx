@@ -88,6 +88,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [optimizing, setOptimizing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -473,6 +474,8 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
       });
       return;
     }
+    
+    setSyncing(true);
     
     const loadingToast = toast.loading('📤 Synchronisation Shopify', {
       description: `Publication de ${articlesToSync.length} article(s) AI-optimisé(s)...`

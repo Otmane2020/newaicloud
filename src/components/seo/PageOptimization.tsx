@@ -1409,18 +1409,10 @@ export function PageOptimization() {
           seo_description: p.seo_description || undefined,
           body_html: p.body_html
         }))}
-        onSyncClick={handleOpenSyncDialog}
+        onSyncClick={handleConfirmSync}
         onClose={() => setShowResultsDialog(false)}
       />
 
-      <SyncConfirmationDialog
-        open={showSyncDialog}
-        onOpenChange={setShowSyncDialog}
-        onConfirm={handleConfirmSync}
-        itemCount={optimizedPages.length}
-        type="seo"
-        loading={syncing}
-      />
       
       <OptimizationConfirmDialog
         open={showOptimizeAllConfirmDialog}
