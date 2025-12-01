@@ -249,6 +249,14 @@ export function SmartPricingAI() {
 
       const productsData = allProducts;
 
+      // Fetch variant pricing analyses for all products
+      const { data: pricingAnalyses } = await supabase
+        .from("variant_pricing_analyses")
+        .select("*")
+        .eq("user_id", user.id);
+
+      console.log(`📊 [SMART_PRICING] Loaded ${pricingAnalyses?.length || 0} pricing analyses`);
+
       if (productsData) {
         // Map collection IDs to names
         const enrichedProducts: ProductPricing[] = productsData.map((product) => {
@@ -257,19 +265,32 @@ export function SmartPricingAI() {
             .filter(Boolean) as string[];
 
           const rawVariants = (product as any).product_variants || [];
-          const variants: ProductVariant[] = rawVariants.map((v: any) => ({
-            id: v.id,
-            title: v.title || "Default",
-            sku: v.sku || null,
-            price: v.price || product.price || 0,
-            compare_at_price: v.compare_at_price || null,
-            cost_price: v.cost_price || null,
-            option1: v.option1 || null,
-            option2: v.option2 || null,
-            option3: v.option3 || null,
-            image_url: v.image_url || null,
-            selected: false,
-          }));
+          const variants: ProductVariant[] = rawVariants.map((v: any) => {
+            // Find pricing analysis for this variant
+            const analysis = pricingAnalyses?.find(
+              a => a.variant_id === v.id && a.product_id === product.id
+            );
+
+            return {
+              id: v.id,
+              title: v.title || "Default",
+              sku: v.sku || null,
+              price: v.price || product.price || 0,
+              compare_at_price: v.compare_at_price || null,
+              cost_price: v.cost_price || null,
+              option1: v.option1 || null,
+              option2: v.option2 || null,
+              option3: v.option3 || null,
+              image_url: v.image_url || null,
+              market_price: analysis?.market_price || null,
+              smart_price: analysis?.smart_price || null,
+              ai_reasoning: analysis?.ai_reasoning || null,
+              competitors: Array.isArray(analysis?.competitors)
+                ? (analysis.competitors as unknown as CompetitorPrice[])
+                : [],
+              selected: false,
+            };
+          });
 
           const firstVariant = variants[0];
 
@@ -288,11 +309,13 @@ export function SmartPricingAI() {
             shopify_product_id: product.shopify_id ? String(product.shopify_id) : null,
             currency: product.currency || "EUR",
             selected: false,
-            market_price: product.market_price || null,
-            smart_price: product.smart_price || null,
+            market_price: firstVariant?.market_price || product.market_price || null,
+            smart_price: firstVariant?.smart_price || product.smart_price || null,
             net_margin: null,
-            ai_reasoning: product.ai_reasoning || null,
-            competitors: Array.isArray(product.competitors)
+            ai_reasoning: firstVariant?.ai_reasoning || product.ai_reasoning || null,
+            competitors: firstVariant?.competitors?.length
+              ? firstVariant.competitors
+              : Array.isArray(product.competitors)
               ? (product.competitors as unknown as CompetitorPrice[])
               : [],
             variants,
@@ -677,6 +700,31 @@ export function SmartPricingAI() {
       if (data?.results?.[0]) {
         const result = data.results[0];
         
+        // Save to database for persistence
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          const { error: dbError } = await supabase
+            .from("variant_pricing_analyses")
+            .upsert({
+              user_id: currentUser.id,
+              product_id: productId,
+              variant_id: variantId,
+              market_price: result.marketPrice,
+              smart_price: result.smartPrice,
+              ai_reasoning: result.reasoning,
+              competitors: result.competitors || [],
+              currency: "EUR",
+            }, {
+              onConflict: "user_id,variant_id"
+            });
+
+          if (dbError) {
+            console.error("❌ Failed to save pricing analysis:", dbError);
+          } else {
+            console.log("✅ Pricing analysis saved to database");
+          }
+        }
+        
         setProducts(prev => prev.map(p => {
           if (p.id === productId) {
             return {
@@ -700,7 +748,6 @@ export function SmartPricingAI() {
 
         // Track usage: 2 optimizations per pricing analysis
         try {
-          const { data: { user: currentUser } } = await supabase.auth.getUser();
           if (currentUser) {
             await supabase.rpc("increment_usage", {
               p_seller_id: currentUser.id,
