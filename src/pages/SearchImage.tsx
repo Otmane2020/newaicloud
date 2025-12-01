@@ -9,70 +9,12 @@ import { Loader2, Search, ExternalLink, TrendingUp, ShoppingBag } from "lucide-r
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-const SHOPIFY_API_VERSION = '2025-07';
-const SHOPIFY_STORE_PERMANENT_DOMAIN = 'store-sync-optimizer-heqly.myshopify.com';
-const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
-const SHOPIFY_STOREFRONT_TOKEN = 'e63a0a4d8d2b11bc0c61386c8aaa978d';
-
 interface ShopifyProduct {
   id: string;
   title: string;
   price: number;
   description: string;
   imageUrl: string;
-  handle: string;
-}
-
-const STOREFRONT_QUERY = `
-  query GetProducts($first: Int!) {
-    products(first: $first) {
-      edges {
-        node {
-          id
-          title
-          description
-          handle
-          priceRange {
-            minVariantPrice {
-              amount
-              currencyCode
-            }
-          }
-          images(first: 1) {
-            edges {
-              node {
-                url
-                altText
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-async function storefrontApiRequest(query: string, variables: any = {}) {
-  const response = await fetch(SHOPIFY_STOREFRONT_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN
-    },
-    body: JSON.stringify({ query, variables }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  const data = await response.json();
-  
-  if (data.errors) {
-    throw new Error(`Error calling Shopify: ${data.errors.map((e: any) => e.message).join(', ')}`);
-  }
-
-  return data;
 }
 
 interface Merchant {
@@ -128,36 +70,36 @@ export default function SearchImage() {
   const loadShopifyProducts = async () => {
     try {
       setLoadingProducts(true);
-      const data = await storefrontApiRequest(STOREFRONT_QUERY, { first: 10 });
-      
-      if (!data?.data?.products?.edges) {
-        console.warn("No products found in Shopify response");
-        setProducts([]);
-        return;
-      }
+      const { data: products, error } = await supabase
+        .from("shopify_products")
+        .select("id, title, body_html, price, image_url")
+        .not("image_url", "is", null)
+        .limit(20)
+        .order("title");
 
-      const shopifyProducts: ShopifyProduct[] = data.data.products.edges.map((edge: any) => ({
-        id: edge.node.id,
-        title: edge.node.title,
-        price: parseFloat(edge.node.priceRange.minVariantPrice.amount),
-        description: edge.node.description,
-        imageUrl: edge.node.images.edges[0]?.node.url || '',
-        handle: edge.node.handle,
-      }));
-
-      setProducts(shopifyProducts);
+      if (error) throw error;
       
-      if (shopifyProducts.length === 0) {
+      const formattedProducts: ShopifyProduct[] = products?.map(p => ({
+        id: p.id,
+        title: p.title || "",
+        price: p.price || 0,
+        description: p.body_html || "",
+        imageUrl: p.image_url || "",
+      })) || [];
+
+      setProducts(formattedProducts);
+      
+      if (formattedProducts.length === 0) {
         toast({
           title: "Aucun produit",
-          description: "Votre catalogue Shopify est vide. Ajoutez des produits pour les analyser.",
+          description: "Aucun produit avec image trouvé dans votre catalogue.",
         });
       }
     } catch (error) {
-      console.error("Error loading Shopify products:", error);
+      console.error("Error loading products:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les produits Shopify",
+        description: "Impossible de charger les produits",
         variant: "destructive",
       });
       setProducts([]);
