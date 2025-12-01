@@ -8,7 +8,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Upload } from "lucide-react";
-import { useTranslation } from "@/lib/language";
+import { useStore } from "@/contexts/StoreContext";
+import { translations as enTranslations } from "@/lib/translations/en";
+import { translations as frTranslations } from "@/lib/translations/fr";
 
 interface OptimizationCompletedDialogProps {
   open: boolean;
@@ -25,10 +27,26 @@ export function OptimizationCompletedDialog({
   type,
   totalOptimized,
 }: OptimizationCompletedDialogProps) {
-  const { t, tf } = useTranslation();
+  const { selectedStore } = useStore();
+  
+  // Don't show dialog if no items were optimized
+  if (totalOptimized === 0) {
+    return null;
+  }
 
+  // Use store language for translations
+  const storeLanguage = selectedStore?.store_language || 'fr';
+  const t = storeLanguage.startsWith('en') ? enTranslations : frTranslations;
+  
   const getTypeLabel = () => {
     return t.optimizationCompleted.types[type as keyof typeof t.optimizationCompleted.types] || type;
+  };
+
+  const formatMessage = (template: string, vars: Record<string, any>): string => {
+    return Object.entries(vars).reduce(
+      (str, [key, val]) => str.replace(`{{${key}}}`, String(val)),
+      template
+    );
   };
 
   return (
@@ -42,7 +60,7 @@ export function OptimizationCompletedDialog({
             {t.optimizationCompleted.title}
           </DialogTitle>
           <DialogDescription className="text-center text-base">
-            {tf('optimizationCompleted.description', { count: totalOptimized, type: getTypeLabel() })}
+            {formatMessage(t.optimizationCompleted.description, { count: totalOptimized, type: getTypeLabel() })}
           </DialogDescription>
         </DialogHeader>
 
