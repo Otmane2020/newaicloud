@@ -3810,6 +3810,7 @@ export const translations = {
       viewArticle: "View Article",
       viewOnShopify: "View on Shopify",
       workOnSEO: "Work on SEO",
+      previewArticle: "Preview Article",
       steps: {
         start: "🚀 Starting AI generation...",
         analyzingProducts: "📦 Analyzing selected products",
