@@ -15,6 +15,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 
 interface DetectedIssue {
   id: string;
@@ -30,6 +31,7 @@ interface DetectedIssue {
 }
 
 export default function CodeTranslationAnalyzer() {
+  const { t, tf } = useTranslation();
   const [code, setCode] = useState("");
   const [issues, setIssues] = useState<DetectedIssue[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -154,9 +156,9 @@ export default function CodeTranslationAnalyzer() {
     setIsAnalyzing(false);
 
     if (detectedIssues.length === 0) {
-      toast.success("Aucun texte en dur détecté !");
+      toast.success(t.codeAnalyzer.noHardcodedText);
     } else {
-      toast.warning(`${detectedIssues.length} texte(s) en dur détecté(s)`);
+      toast.warning(tf('codeAnalyzer.issuesDetected', { count: detectedIssues.length }));
     }
   };
 
@@ -222,7 +224,7 @@ export default function CodeTranslationAnalyzer() {
 
   const generateTranslationFile = () => {
     if (issues.length === 0) {
-      toast.error("Aucune traduction à générer");
+      toast.error(t.codeAnalyzer.noTranslations);
       return;
     }
 
@@ -255,23 +257,23 @@ ${JSON.stringify(enTranslations, null, 2)}
 
 // ===== CODE FIXES =====
 ${issues.map(issue => `
-// Ligne ${issue.line}: "${issue.text}"
-// Remplacer par: {t.${issue.suggestedKey}}
+// ${t.codeAnalyzer.line} ${issue.line}: "${issue.text}"
+// Replace with: {t.${issue.suggestedKey}}
 `).join('')}`;
 
     setGeneratedTranslations(output);
-    toast.success("Traductions générées !");
+    toast.success(t.codeAnalyzer.translationsGenerated);
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Copié dans le presse-papier");
+    toast.success(t.codeAnalyzer.copiedToClipboard);
   };
 
   const copyFix = (issue: DetectedIssue) => {
     const fix = `{t.${issue.suggestedKey}}`;
     navigator.clipboard.writeText(fix);
-    toast.success(`Copié: ${fix}`);
+    toast.success(tf('codeAnalyzer.copiedFix', { fix }));
   };
 
   return (
@@ -280,22 +282,18 @@ ${issues.map(issue => `
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Languages className="h-5 w-5 text-primary" />
-            Analyseur de Traductions
+            {t.codeAnalyzer.title}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Collez le code à analyser (TSX/JSX)
+              {t.codeAnalyzer.pasteCodeLabel}
             </label>
             <Textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder={`// Collez votre code ici...
-// Exemple:
-<Button>Enregistrer</Button>
-toast.success("Opération réussie")
-<DialogTitle>Confirmer la suppression</DialogTitle>`}
+              placeholder={t.codeAnalyzer.pasteCodePlaceholder}
               className="min-h-[200px] font-mono text-sm"
             />
           </div>
@@ -307,7 +305,7 @@ toast.success("Opération réussie")
               className="flex-1"
             >
               <Search className="h-4 w-4 mr-2" />
-              {isAnalyzing ? "Analyse..." : "Analyser le code"}
+              {isAnalyzing ? t.codeAnalyzer.analyzing : t.codeAnalyzer.analyzeCode}
             </Button>
             <Button 
               onClick={generateTranslationFile}
@@ -315,7 +313,7 @@ toast.success("Opération réussie")
               variant="outline"
             >
               <Wand2 className="h-4 w-4 mr-2" />
-              Générer traductions
+              {t.codeAnalyzer.generateTranslations}
             </Button>
           </div>
         </CardContent>
@@ -327,7 +325,7 @@ toast.success("Opération réussie")
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
-                {issues.length} Texte(s) en dur détecté(s)
+                {tf('codeAnalyzer.issuesFound', { count: issues.length })}
               </span>
               <Badge variant="destructive">{issues.length} issues</Badge>
             </CardTitle>
@@ -344,13 +342,13 @@ toast.success("Opération réussie")
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <Badge variant="outline" className="text-xs">
-                            Ligne {issue.line}
+                            {t.codeAnalyzer.line} {issue.line}
                           </Badge>
                           <Badge 
                             variant={issue.type === 'hardcoded' ? 'destructive' : 'secondary'}
                             className="text-xs"
                           >
-                            {issue.type === 'hardcoded' ? 'Texte en dur' : 'Traduction manquante'}
+                            {issue.type === 'hardcoded' ? t.codeAnalyzer.hardcodedText : t.codeAnalyzer.missingTranslation}
                           </Badge>
                         </div>
                         <p className="font-medium text-sm mb-1">
@@ -365,7 +363,7 @@ toast.success("Opération réussie")
                     <div className="pt-2 border-t space-y-2">
                       <div className="flex items-center gap-2 text-sm">
                         <Sparkles className="h-4 w-4 text-primary" />
-                        <span className="text-muted-foreground">Clé suggérée:</span>
+                        <span className="text-muted-foreground">{t.codeAnalyzer.suggestedKey}</span>
                         <code className="bg-primary/10 px-2 py-0.5 rounded text-primary font-mono text-xs">
                           t.{issue.suggestedKey}
                         </code>
@@ -404,7 +402,7 @@ toast.success("Opération réussie")
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
                 <FileCode className="h-5 w-5 text-green-500" />
-                Traductions Générées
+                {t.codeAnalyzer.generatedTranslations}
               </span>
               <Button 
                 size="sm" 
@@ -412,7 +410,7 @@ toast.success("Opération réussie")
                 onClick={() => copyToClipboard(generatedTranslations)}
               >
                 <Copy className="h-4 w-4 mr-2" />
-                Copier tout
+                {t.codeAnalyzer.copyAll}
               </Button>
             </CardTitle>
           </CardHeader>
@@ -430,9 +428,9 @@ toast.success("Opération réussie")
         <Card>
           <CardContent className="py-8 text-center">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <p className="text-lg font-medium">Aucun texte en dur détecté</p>
+            <p className="text-lg font-medium">{t.codeAnalyzer.noHardcodedText}</p>
             <p className="text-sm text-muted-foreground">
-              Le code analysé semble correctement internationalisé.
+              {t.codeAnalyzer.codeCorrectlyInternationalized}
             </p>
           </CardContent>
         </Card>
