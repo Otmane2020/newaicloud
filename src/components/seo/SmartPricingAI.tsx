@@ -325,7 +325,7 @@ export function SmartPricingAI() {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast.error("Erreur lors du chargement des données");
+      toast.error(t.smartPricingExtended.dataLoadError);
     } finally {
       setLoading(false);
     }
@@ -381,7 +381,7 @@ export function SmartPricingAI() {
 
       if (error) {
         console.error("Error updating price:", error);
-        toast.error("Erreur lors de la sauvegarde");
+        toast.error(t.smartPricingExtended.saveError);
       }
     } catch (error) {
       console.error("Error updating price:", error);
@@ -462,11 +462,11 @@ export function SmartPricingAI() {
 
   const applyBulkOperation = async () => {
     if (bulkOperation.amount <= 0) {
-      toast.error("Veuillez entrer un montant valide");
+      toast.error(t.smartPricingExtended.validAmountRequired);
       return;
     }
 
-    const toastId = toast.loading("🔄 Application des modifications...");
+    const toastId = toast.loading(t.smartPricingExtended.applyingChanges);
     
     try {
       const productsToUpdate: { id: string; newPrice: number; newComparePrice: number | null }[] = [];
@@ -532,10 +532,10 @@ export function SmartPricingAI() {
       // Update local state
       setProducts(updatedProducts);
 
-      toast.success(`💰 ${savedCount} produit(s) modifié(s) et sauvegardé(s)`, { id: toastId });
+      toast.success(tf('smartPricingExtended.pricesSynced', { count: savedCount }), { id: toastId });
     } catch (error) {
       console.error("Bulk operation error:", error);
-      toast.error("Erreur lors de l'application des modifications", { id: toastId });
+      toast.error(t.smartPricingExtended.syncError, { id: toastId });
     }
   };
 
@@ -543,8 +543,8 @@ export function SmartPricingAI() {
     try {
       setImporting(true);
       setShowImportDialog(false);
-      const toastId = toast.loading("🔄 Import des coûts en cours...", {
-        description: "Cette opération peut prendre plusieurs minutes",
+      const toastId = toast.loading(t.toasts.info.importing, {
+        description: t.toasts.info.processing,
       });
 
       const { data, error } = await supabase.functions.invoke("import-costs-from-shopify");
@@ -552,9 +552,9 @@ export function SmartPricingAI() {
       if (error) {
         // Handle edge function not deployed error
         if (error.message.includes("not found") || error.message.includes("FunctionsRelayError")) {
-          toast.error("❌ La fonction d'import n'est pas encore déployée", {
+          toast.error(t.toasts.error.generic, {
             id: toastId,
-            description: "Veuillez patienter quelques instants et réessayer.",
+            description: t.toasts.info.processing,
           });
           return;
         }
@@ -562,23 +562,20 @@ export function SmartPricingAI() {
       }
 
       if (!data.success) {
-        toast.error(`❌ ${data.error}`, { id: toastId });
+        toast.error(`${data.error}`, { id: toastId });
         return;
       }
 
-      toast.success(`✅ Import terminé : ${data.imported} coûts importés`, {
+      toast.success(t.toasts.success.syncSuccess, {
         id: toastId,
-        description:
-          data.errors > 0
-            ? `⚠️ ${data.errors} produits n'ont pas pu être importés`
-            : "Tous les coûts ont été récupérés avec succès",
+        description: tf('smartPricingExtended.pricesSynced', { count: data.imported }),
       });
 
       await fetchData();
     } catch (error: any) {
       console.error("Import costs error:", error);
-      toast.error("❌ Erreur lors de l'import", {
-        description: error.message || "Une erreur inattendue est survenue",
+      toast.error(t.toasts.error.generic, {
+        description: error.message || t.toasts.error.generic,
       });
     } finally {
       setImporting(false);
@@ -588,8 +585,8 @@ export function SmartPricingAI() {
   const importShippingCosts = async () => {
     try {
       setImporting(true);
-      const toastId = toast.loading("🚚 Import des frais de livraison...", {
-        description: "Estimation basée sur le poids des produits",
+      const toastId = toast.loading(t.toasts.info.importing, {
+        description: t.toasts.info.processing,
       });
 
       // Get first store (for now, assuming single store)
@@ -597,7 +594,7 @@ export function SmartPricingAI() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Utilisateur non connecté", { id: toastId });
+        toast.error(t.toasts.error.generic, { id: toastId });
         return;
       }
 
@@ -608,7 +605,7 @@ export function SmartPricingAI() {
         .limit(1);
 
       if (storesError || !stores || stores.length === 0) {
-        toast.error("Aucune boutique Shopify connectée", { id: toastId });
+        toast.error(t.toasts.collections.noStore, { id: toastId });
         return;
       }
 
@@ -618,9 +615,9 @@ export function SmartPricingAI() {
 
       if (error) {
         if (error.message.includes("not found") || error.message.includes("FunctionsRelayError")) {
-          toast.error("❌ La fonction d'import n'est pas encore déployée", {
+          toast.error(t.toasts.error.generic, {
             id: toastId,
-            description: "Veuillez patienter quelques instants et réessayer.",
+            description: t.toasts.info.processing,
           });
           return;
         }
@@ -628,26 +625,26 @@ export function SmartPricingAI() {
       }
 
       if (!data.success) {
-        toast.error(`❌ ${data.error}`, { id: toastId });
+        toast.error(`${data.error}`, { id: toastId });
         return;
       }
 
-      toast.success(`✅ Frais de livraison Shopify importés`, {
+      toast.success(t.toasts.success.syncSuccess, {
         id: toastId,
-        description: data.message || `${data.updated} produits mis à jour avec les tarifs réels`,
+        description: data.message || tf('smartPricingExtended.pricesSynced', { count: data.updated }),
       });
 
       if (data.failed > 0) {
-        toast.warning(`⚠️ ${data.failed} produits n'ont pas pu être traités`, {
-          description: data.errors?.join(", ") || "Certains produits n'ont pas de tarifs disponibles",
+        toast.warning(t.toasts.warning.limitReached, {
+          description: data.errors?.join(", ") || t.toasts.error.generic,
         });
       }
 
       await fetchData();
     } catch (error: any) {
       console.error("Import shipping error:", error);
-      toast.error("❌ Erreur lors de l'import", {
-        description: error.message || "Une erreur inattendue est survenue",
+      toast.error(t.toasts.error.generic, {
+        description: error.message || t.toasts.error.generic,
       });
     } finally {
       setImporting(false);
@@ -658,8 +655,8 @@ export function SmartPricingAI() {
     try {
       setAnalyzingVariant(variantId);
       
-      const toastId = toast.loading("🤖 Analyse IA de la variante...", {
-        description: "Recherche des prix concurrents par photo et calcul du prix optimal",
+      const toastId = toast.loading(t.smartPricingExtended.analysisInProgress, {
+        description: t.toasts.info.processing,
       });
 
       const { data, error } = await supabase.functions.invoke("analyze-competitor-pricing", {
@@ -672,7 +669,7 @@ export function SmartPricingAI() {
 
       if (error) {
         console.error("Erreur analyse variante:", error);
-        toast.error("Erreur lors de l'analyse de la variante", { id: toastId });
+        toast.error(t.toasts.error.generic, { id: toastId });
         return;
       }
 
@@ -715,14 +712,14 @@ export function SmartPricingAI() {
           console.error("⚠️ Failed to track usage:", trackError);
         }
 
-        toast.success(`✅ Analyse terminée - Prix conseillé: ${result.smartPrice?.toFixed(2)}€`, { 
+        toast.success(t.smartPricingExtended.analysisComplete, { 
           id: toastId,
-          description: "2 optimisations utilisées" 
+          description: `${result.smartPrice?.toFixed(2)}€` 
         });
       }
     } catch (error) {
       console.error("Erreur analyse variante:", error);
-      toast.error("Erreur lors de l'analyse de la variante");
+      toast.error(t.toasts.error.generic);
     } finally {
       setAnalyzingVariant(null);
     }
@@ -732,24 +729,24 @@ export function SmartPricingAI() {
     try {
       setSyncingVariant(variantId);
       
-      const toastId = toast.loading("🔄 Synchronisation avec Shopify...");
+      const toastId = toast.loading(t.smartPricingExtended.syncingPrices);
 
       const variant = products
         .find(p => p.id === productId)
         ?.variants.find(v => v.id === variantId);
 
       if (!variant || !variant.smart_price) {
-        toast.error("Prix intelligent non disponible", { id: toastId });
+        toast.error(t.toasts.error.generic, { id: toastId });
         return;
       }
 
       // TODO: Implémenter la synchronisation avec Shopify
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      toast.success("✅ Prix synchronisé avec Shopify", { id: toastId });
+      toast.success(t.toasts.success.syncSuccess, { id: toastId });
     } catch (error) {
       console.error("Erreur sync variante:", error);
-      toast.error("Erreur lors de la synchronisation");
+      toast.error(t.smartPricingExtended.syncError);
     } finally {
       setSyncingVariant(null);
     }
@@ -761,12 +758,12 @@ export function SmartPricingAI() {
       const productsToAnalyze = selectedOnly ? products.filter((p) => p.selected) : products;
 
       if (productsToAnalyze.length === 0) {
-        toast.error("Aucun produit sélectionné");
+        toast.error(t.smartPricingExtended.noProductSelected);
         return;
       }
 
-      const toastId = toast.loading(`🤖 Analyse IA de ${productsToAnalyze.length} produit(s)...`, {
-        description: "Recherche des prix concurrents et calcul des prix optimaux",
+      const toastId = toast.loading(t.smartPricingExtended.analysisInProgress, {
+        description: t.toasts.info.processing,
       });
 
       console.log('📊 [SMART-PRICING] Calling edge function with:', {
@@ -790,28 +787,28 @@ export function SmartPricingAI() {
       if (error) {
         console.error('❌ [SMART-PRICING] Edge function error:', error);
         if (error.message.includes("not found") || error.message.includes("FunctionsRelayError")) {
-          toast.error("❌ Fonction d'analyse non déployée", {
+          toast.error(t.toasts.error.generic, {
             id: toastId,
-            description: "Veuillez réessayer dans quelques instants.",
+            description: t.toasts.info.processing,
           });
           return;
         }
-        toast.error(`❌ Erreur: ${error.message}`, { id: toastId });
+        toast.error(`${error.message}`, { id: toastId });
         throw error;
       }
 
       if (!data || !data.results) {
         console.error('❌ [SMART-PRICING] Invalid response structure:', data);
-        toast.error("Erreur: réponse invalide de l'analyse", { 
+        toast.error(t.toasts.error.generic, { 
           id: toastId,
-          description: "La fonction d'analyse n'a pas retourné de résultats" 
+          description: t.toasts.error.generic 
         });
         return;
       }
 
       if (!data.success) {
         console.error('❌ [SMART-PRICING] Analysis failed:', data.error);
-        toast.error(`❌ ${data.error || "Échec de l'analyse"}`, { id: toastId });
+        toast.error(`${data.error || t.toasts.error.generic}`, { id: toastId });
         return;
       }
 
@@ -873,17 +870,17 @@ export function SmartPricingAI() {
 
       console.log('✅ [SMART-PRICING] Analysis complete:', { analyzedCount, failedCount });
 
-      toast.success(`✅ Analyse terminée : ${analyzedCount} produit(s) analysé${analyzedCount > 1 ? 's' : ''}${failedCount > 0 ? `, ${failedCount} échec${failedCount > 1 ? 's' : ''}` : ''}`, {
+      toast.success(t.smartPricingExtended.analysisComplete, {
         id: toastId,
-        description: "Prix intelligents calculés avec succès (2 optimisations utilisées)",
+        description: tf('smartPricingExtended.pricesSynced', { count: analyzedCount }),
       });
 
       // Update last analysis time
       setLastAnalysisTime(new Date());
     } catch (error: any) {
       console.error("❌ [SMART-PRICING] Price analysis error:", error);
-      toast.error("❌ Erreur lors de l'analyse", {
-        description: error.message || "Une erreur inattendue est survenue. Consultez la console pour plus de détails.",
+      toast.error(t.toasts.error.generic, {
+        description: error.message || t.toasts.error.generic,
       });
     } finally {
       setAnalyzingPrices(false);
@@ -893,7 +890,7 @@ export function SmartPricingAI() {
   const testSingleProductAnalysis = async (productId: string) => {
     try {
       console.log('🧪 [TEST] Starting test analysis for product:', productId);
-      const toastId = toast.loading("🧪 Test d'analyse en cours...");
+      const toastId = toast.loading(t.smartPricingExtended.analysisInProgress);
 
       const { data, error } = await supabase.functions.invoke("analyze-competitor-pricing", {
         body: {
