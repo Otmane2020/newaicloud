@@ -30,7 +30,7 @@ export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl h-[95vh] p-0">
+      <DialogContent className="max-w-[98vw] h-[98vh] p-0">
         {/* Compact Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b bg-background sticky top-0 z-10">
           <div className="flex items-center gap-2">
