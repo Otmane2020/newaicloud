@@ -287,16 +287,16 @@ Return ONLY valid JSON, no markdown.`,
     let imagesCount = 0;
 
     // =================================================================
-    // 2️⃣ DATAFORSEO SHOPPING API - Real prices from merchants
+    // 2️⃣ DATAFORSEO SHOPPING API - Real prices from merchants (SYNCHRONOUS)
     // =================================================================
     if (DATAFORSEO_LOGIN && DATAFORSEO_PASSWORD) {
       try {
-        console.log("🛒 [SHOPPING] Searching DataForSEO Shopping for:", searchQuery);
+        console.log("🛒 [SHOPPING] Searching DataForSEO SERP Shopping for:", searchQuery);
         
         const authToken = btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`);
         
         const shoppingResponse = await fetch(
-          "https://api.dataforseo.com/v3/merchant/google/products/task_post",
+          "https://api.dataforseo.com/v3/serp/google/shopping/live/advanced",
           {
             method: "POST",
             headers: {
@@ -308,7 +308,8 @@ Return ONLY valid JSON, no markdown.`,
                 keyword: searchQuery,
                 location_code: getLocationCode(country),
                 language_code: country === "uk" || country === "us" ? "en" : country,
-                priority: 2,
+                device: "desktop",
+                os: "windows",
                 depth: 20,
               },
             ]),
@@ -317,125 +318,96 @@ Return ONLY valid JSON, no markdown.`,
 
         if (shoppingResponse.ok) {
           const shoppingData = await shoppingResponse.json();
-          const taskId = shoppingData.tasks?.[0]?.id;
+          console.log("📦 [SHOPPING] Full API response:", JSON.stringify(shoppingData).substring(0, 500));
           
-            if (taskId) {
-            // Wait for task to complete (increased to 5 seconds)
-            await new Promise(resolve => setTimeout(resolve, 5000));
+          const items = shoppingData.tasks?.[0]?.result?.[0]?.items || [];
+          
+          console.log(`📊 [SHOPPING] DataForSEO returned ${items.length} items`);
+          
+          items.forEach((item: any) => {
+            // SERP Shopping API returns price in different formats
+            const priceValue = item.price?.current || item.price?.value || item.price;
+            const price = parsePrice(priceValue);
             
-            // Get results
-            const resultsResponse = await fetch(
-              `https://api.dataforseo.com/v3/merchant/google/products/task_get/advanced/${taskId}`,
+            if (price && price > 0) {
+              allPrices.push(price);
+              shoppingCount++;
+              
+              if (allMerchants.length < 10) {
+                allMerchants.push({
+                  title: item.title || "Unknown",
+                  source: item.seller?.name || item.source || "Google Shopping",
+                  price,
+                  link: item.url || "",
+                });
+              }
+            } else {
+              console.log(`⚠️ [SHOPPING] Failed to parse price for item:`, item.title, "price:", priceValue);
+            }
+          });
+          
+          console.log(`✅ [SHOPPING] Found ${shoppingCount} products with prices`);
+          
+          // If no results, try simplified query (first 3 words)
+          if (shoppingCount === 0 && searchQuery.split(" ").length > 3) {
+            console.log("🔄 [SHOPPING] Trying simplified query...");
+            const simplifiedQuery = searchQuery.split(" ").slice(0, 3).join(" ");
+            console.log("🔍 [SHOPPING] Simplified to:", simplifiedQuery);
+            
+            const retryResponse = await fetch(
+              "https://api.dataforseo.com/v3/serp/google/shopping/live/advanced",
               {
-                method: "GET",
+                method: "POST",
                 headers: {
                   Authorization: `Basic ${authToken}`,
+                  "Content-Type": "application/json",
                 },
+                body: JSON.stringify([
+                  {
+                    keyword: simplifiedQuery,
+                    location_code: getLocationCode(country),
+                    language_code: country === "uk" || country === "us" ? "en" : country,
+                    device: "desktop",
+                    os: "windows",
+                    depth: 20,
+                  },
+                ]),
               }
             );
             
-            if (resultsResponse.ok) {
-              const resultsData = await resultsResponse.json();
-              const items = resultsData.tasks?.[0]?.result?.[0]?.items || [];
+            if (retryResponse.ok) {
+              const retryData = await retryResponse.json();
+              const retryItems = retryData.tasks?.[0]?.result?.[0]?.items || [];
               
-              console.log(`📊 [SHOPPING] DataForSEO returned ${items.length} items`);
+              console.log(`📊 [SHOPPING-RETRY] DataForSEO returned ${retryItems.length} items`);
               
-              items.forEach((item: any) => {
-                const price = parsePrice(item.price_from || item.price);
-                if (price) {
+              retryItems.forEach((item: any) => {
+                const priceValue = item.price?.current || item.price?.value || item.price;
+                const price = parsePrice(priceValue);
+                
+                if (price && price > 0) {
                   allPrices.push(price);
                   shoppingCount++;
                   
                   if (allMerchants.length < 10) {
                     allMerchants.push({
                       title: item.title || "Unknown",
-                      source: item.seller || item.source || "Google Shopping",
+                      source: item.seller?.name || item.source || "Google Shopping",
                       price,
-                      link: item.url || item.product_link || "",
+                      link: item.url || "",
                     });
                   }
                 }
               });
               
-              console.log(`✅ [SHOPPING] Found ${shoppingCount} products with prices`);
-              
-              // If no results, try simplified query
-              if (shoppingCount === 0 && searchQuery.split(" ").length > 3) {
-                console.log("🔄 [SHOPPING] Trying simplified query...");
-                const simplifiedQuery = searchQuery.split(" ").slice(0, 3).join(" ");
-                console.log("🔍 [SHOPPING] Simplified to:", simplifiedQuery);
-                
-                const retryResponse = await fetch(
-                  "https://api.dataforseo.com/v3/merchant/google/products/task_post",
-                  {
-                    method: "POST",
-                    headers: {
-                      Authorization: `Basic ${authToken}`,
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify([
-                      {
-                        keyword: simplifiedQuery,
-                        location_code: getLocationCode(country),
-                        language_code: country === "uk" || country === "us" ? "en" : country,
-                        priority: 2,
-                        depth: 20,
-                      },
-                    ]),
-                  }
-                );
-                
-                if (retryResponse.ok) {
-                  const retryData = await retryResponse.json();
-                  const retryTaskId = retryData.tasks?.[0]?.id;
-                  
-                  if (retryTaskId) {
-                    await new Promise(resolve => setTimeout(resolve, 5000));
-                    
-                    const retryResultsResponse = await fetch(
-                      `https://api.dataforseo.com/v3/merchant/google/products/task_get/advanced/${retryTaskId}`,
-                      {
-                        method: "GET",
-                        headers: {
-                          Authorization: `Basic ${authToken}`,
-                        },
-                      }
-                    );
-                    
-                    if (retryResultsResponse.ok) {
-                      const retryResultsData = await retryResultsResponse.json();
-                      const retryItems = retryResultsData.tasks?.[0]?.result?.[0]?.items || [];
-                      
-                      console.log(`📊 [SHOPPING-RETRY] DataForSEO returned ${retryItems.length} items`);
-                      
-                      retryItems.forEach((item: any) => {
-                        const price = parsePrice(item.price_from || item.price);
-                        if (price) {
-                          allPrices.push(price);
-                          shoppingCount++;
-                          
-                          if (allMerchants.length < 10) {
-                            allMerchants.push({
-                              title: item.title || "Unknown",
-                              source: item.seller || item.source || "Google Shopping",
-                              price,
-                              link: item.url || item.product_link || "",
-                            });
-                          }
-                        }
-                      });
-                      
-                      console.log(`✅ [SHOPPING-RETRY] Found ${shoppingCount} products with prices after retry`);
-                    }
-                  }
-                }
-              }
+              console.log(`✅ [SHOPPING-RETRY] Found ${shoppingCount} products with prices after retry`);
             } else {
-              console.error(`❌ [SHOPPING] Results API error: ${resultsResponse.status}`);
+              console.error(`❌ [SHOPPING-RETRY] API error: ${retryResponse.status}`);
             }
-          } else {
-            console.error("❌ [SHOPPING] No task ID returned");
           }
+        } else {
+          const errorText = await shoppingResponse.text();
+          console.error(`❌ [SHOPPING] API error: ${shoppingResponse.status}`, errorText.substring(0, 200));
         }
       } catch (err) {
         console.error("❌ [SHOPPING] Error:", err instanceof Error ? err.message : "Unknown error");
@@ -488,7 +460,8 @@ Return ONLY valid JSON, no markdown.`,
           
           console.log(`✅ [ORGANIC] Found ${organicCount} price mentions`);
         } else {
-          console.error(`❌ [ORGANIC] API error: ${organicResponse.status}`);
+          const errorText = await organicResponse.text();
+          console.error(`❌ [ORGANIC] API error: ${organicResponse.status}`, errorText.substring(0, 200));
         }
       } catch (err) {
         console.error("❌ [ORGANIC] Error:", err instanceof Error ? err.message : "Unknown error");
@@ -531,7 +504,8 @@ Return ONLY valid JSON, no markdown.`,
           
           console.log(`✅ [IMAGES] Found ${imagesCount} price mentions`);
         } else {
-          console.error(`❌ [IMAGES] API error: ${imageResponse.status}`);
+          const errorText = await imageResponse.text();
+          console.error(`❌ [IMAGES] API error: ${imageResponse.status}`, errorText.substring(0, 200));
         }
       } catch (err) {
         console.error("❌ [IMAGES] Error:", err instanceof Error ? err.message : "Unknown error");

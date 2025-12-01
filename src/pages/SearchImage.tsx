@@ -98,6 +98,8 @@ export default function SearchImage() {
 
       if (error) throw error;
 
+      console.log("smart-price-scanner result:", data);
+
       setResult(data);
       toast({
         title: "Analyse terminée",
@@ -235,21 +237,19 @@ export default function SearchImage() {
                 )}
 
                 {/* Price Statistics */}
-                {result.price.avg && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="p-3 bg-primary/10 rounded-lg text-center">
-                      <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
-                      <Label className="text-xs text-muted-foreground">Prix moyen</Label>
-                      <p className="text-xl font-bold text-primary">{formatPrice(result.price.avg)}</p>
-                    </div>
-                    <div className="p-3 bg-muted rounded-lg text-center">
-                      <Label className="text-xs text-muted-foreground">Fourchette</Label>
-                      <p className="text-sm font-medium">
-                        {formatPrice(result.price.min)} - {formatPrice(result.price.max)}
-                      </p>
-                    </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-3 bg-primary/10 rounded-lg text-center">
+                    <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
+                    <Label className="text-xs text-muted-foreground">Prix moyen</Label>
+                    <p className="text-xl font-bold text-primary">{formatPrice(result.price.avg)}</p>
                   </div>
-                )}
+                  <div className="p-3 bg-muted rounded-lg text-center">
+                    <Label className="text-xs text-muted-foreground">Fourchette</Label>
+                    <p className="text-sm font-medium">
+                      {formatPrice(result.price.min)} - {formatPrice(result.price.max)}
+                    </p>
+                  </div>
+                </div>
 
                 {/* Confidence & Sources */}
                 <div className="flex items-center justify-between text-sm">
@@ -271,7 +271,7 @@ export default function SearchImage() {
                 </div>
 
                 {/* Merchants List */}
-                {result.merchants.length > 0 && (
+                {result.merchants.length > 0 ? (
                   <div className="mt-4 pt-4 border-t">
                     <Label className="text-sm font-semibold mb-2 block">
                       🏪 Top {result.merchants.length} marchands
@@ -304,6 +304,10 @@ export default function SearchImage() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 pt-4 border-t text-center text-sm text-muted-foreground">
+                    Aucun prix trouvé pour cette image.
                   </div>
                 )}
 
