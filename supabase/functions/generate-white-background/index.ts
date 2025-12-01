@@ -212,20 +212,56 @@ serve(async (req) => {
     const formatKey = (format as string) || "square";
     const targetDims = formatDimensions[formatKey] || formatDimensions["square"];
     
-    // Ultra-strict format instruction with canvas metaphor
+    // Ultra-strict format instruction with canvas metaphor and extreme repetition
     const formatInstruction = `
-⚠️⚠️⚠️ ABSOLUTE FORMAT REQUIREMENT - THIS IS NON-NEGOTIABLE ⚠️⚠️⚠️
-You MUST output an image that is EXACTLY ${targetDims.width}x${targetDims.height} pixels.
-The canvas size is ${targetDims.width} pixels WIDE and ${targetDims.height} pixels TALL.
-${formatKey === "square" ? "WIDTH = HEIGHT. The image must be a PERFECT SQUARE. Same width and height." : ""}
-${formatKey === "portrait" ? "HEIGHT > WIDTH. The image must be TALLER than it is wide (vertical orientation)." : ""}
-${formatKey === "landscape" ? "WIDTH > HEIGHT. The image must be WIDER than it is tall (horizontal orientation)." : ""}
-Ratio: ${targetDims.ratio}
+🚨🚨🚨 ABSOLUTE FORMAT REQUIREMENT - THIS IS NON-NEGOTIABLE 🚨🚨🚨
+🚨🚨🚨 READ THIS 3 TIMES BEFORE STARTING 🚨🚨🚨
+
+STEP 1: CREATE A CANVAS FIRST
+📐 Create a blank canvas that is EXACTLY ${targetDims.width} pixels WIDE × ${targetDims.height} pixels TALL
+📐 Canvas dimensions: ${targetDims.width}px WIDTH × ${targetDims.height}px HEIGHT
+📐 Aspect ratio: ${targetDims.ratio}
+
+${formatKey === "square" ? `
+🟦 PERFECT SQUARE REQUIRED 🟦
+- Width = Height = ${targetDims.width} pixels
+- This is a SQUARE. Not a rectangle. SQUARE.
+- Same number of pixels horizontally and vertically
+- 1:1 ratio means IDENTICAL width and height
+- ${targetDims.width} × ${targetDims.width} pixels SQUARE canvas
+` : ""}
+
+${formatKey === "portrait" ? `
+📱 VERTICAL PORTRAIT FORMAT 📱
+- Height (${targetDims.height}px) > Width (${targetDims.width}px)
+- TALLER than wide (vertical orientation)
+- Portrait like a phone screen
+- ${targetDims.width} × ${targetDims.height} pixels
+` : ""}
+
+${formatKey === "landscape" ? `
+🖼️ HORIZONTAL LANDSCAPE FORMAT 🖼️
+- Width (${targetDims.width}px) > Height (${targetDims.height}px)
+- WIDER than tall (horizontal orientation)
+- Landscape like a monitor screen
+- ${targetDims.width} × ${targetDims.height} pixels
+` : ""}
+
+STEP 2: PLACE PRODUCT ON THIS CANVAS
+Only AFTER creating your ${targetDims.width}×${targetDims.height} canvas, place the product on it.
+
+⚠️ IF YOU OUTPUT ANY OTHER SIZE, THIS WILL BE A COMPLETE FAILURE ⚠️
+⚠️ The output MUST be ${targetDims.width}×${targetDims.height} pixels ⚠️
+⚠️ ${targetDims.ratio} ratio is MANDATORY ⚠️
     `.trim();
 
     // Google Shopping optimized prompt - ULTRA STRICT FORMAT + PRODUCT PRESERVATION
     const googleShoppingPrompt = `
-⚠️⚠️⚠️ MOST IMPORTANT RULE - READ THIS FIRST ⚠️⚠️⚠️
+🚨🚨🚨 CRITICAL FORMAT INSTRUCTION - READ FIRST 🚨🚨🚨
+
+${formatInstruction}
+
+⚠️⚠️⚠️ SECOND MOST IMPORTANT RULE ⚠️⚠️⚠️
 
 YOU MUST KEEP THE EXACT SAME PRODUCT from the input image. Do NOT generate a different product. 
 Do NOT create a similar product. Use the EXACT product shown in the input image.
@@ -236,32 +272,32 @@ ${serpData?.materials?.length > 0 ? `🪵 Materials: ${serpData.materials.join('
 ${productDescription ? `📝 Description: ${productDescription.slice(0, 200)}` : ''}
 
 🎯 YOUR TASK:
-1. LOOK at the product in the input image carefully
-2. REMOVE only the background from the input image
-3. PLACE the EXACT SAME product (unchanged) onto a new ${backgroundStyle} background
-4. DO NOT modify, recreate, or interpret the product - use it AS-IS from the input
-
-📐 **FORMAT REQUIREMENT - NON-NEGOTIABLE**:
-${formatInstruction}
+1. CREATE your ${targetDims.width}×${targetDims.height} canvas FIRST
+2. LOOK at the product in the input image carefully
+3. REMOVE only the background from the input image
+4. PLACE the EXACT SAME product (unchanged) onto your ${targetDims.width}×${targetDims.height} canvas
+5. DO NOT modify, recreate, or interpret the product - use it AS-IS from the input
 
 ⛔ FAILURE CONDITIONS:
+- Output is NOT ${targetDims.width}×${targetDims.height} pixels = COMPLETE FAILURE
+- Wrong aspect ratio (not ${targetDims.ratio}) = COMPLETE FAILURE
 - Generating a DIFFERENT product than the input = FAILURE
-- Wrong aspect ratio = FAILURE
 - Modifying the product's appearance = FAILURE
 
 ✅ SUCCESS CONDITIONS:
+- Output is EXACTLY ${targetDims.width}×${targetDims.height} pixels (${targetDims.ratio})
 - SAME exact product from input image
 - Clean ${backgroundStyle} background
-- ${targetDims.width}x${targetDims.height} pixels (${targetDims.ratio})
 
 🎨 **BACKGROUND STYLE**: ${styleInstruction}
 
-STEP BY STEP:
-1. CREATE a ${targetDims.width}x${targetDims.height} canvas
-2. EXTRACT the exact product from the input image (background removal)
-3. PLACE the extracted product centered on your canvas (fill 70-80%)
+STEP BY STEP EXECUTION:
+1. CREATE a ${targetDims.width}×${targetDims.height} pixels canvas (${targetDims.ratio} ratio)
+2. EXTRACT the exact product from the input image (background removal only)
+3. PLACE the extracted product centered on your ${targetDims.width}×${targetDims.height} canvas (fill 70-80%)
 4. ADD subtle drop shadow for 3D depth
-5. DO NOT recreate or reinterpret the product - it must be identical to input
+5. VERIFY output is ${targetDims.width}×${targetDims.height} pixels before returning
+6. DO NOT recreate or reinterpret the product - it must be identical to input
 
 BACKGROUND STYLE DETAILS:
 ${backgroundStyle === 'shopping' ? '- Pure white (#FFFFFF) e-commerce background, clean and professional' : ''}
@@ -276,35 +312,47 @@ FINAL CHECK: The output must show THE EXACT SAME "${productTitle || 'product'}" 
 
     // Standard white background prompt (simplified but with strict format + product preservation)
     const standardPrompt = `
-⚠️ MOST IMPORTANT: KEEP THE EXACT SAME PRODUCT from the input image. Do NOT generate a different product.
+🚨🚨🚨 FORMAT FIRST - READ THIS BEFORE ANYTHING ELSE 🚨🚨🚨
+
+${formatInstruction}
+
+⚠️ SECOND: KEEP THE EXACT SAME PRODUCT from the input image. Do NOT generate a different product.
 
 The product is: "${productTitle || 'Unknown product'}"
 
 🎯 BACKGROUND REMOVAL & WHITE REPLACEMENT
 
-📐 **MANDATORY FORMAT - NON-NEGOTIABLE**:
-${formatInstruction}
-
 YOUR TASK:
-1. LOOK at the exact product in the input image
-2. REMOVE only the background
-3. PLACE the EXACT SAME product (unchanged) on a pure white (#FFFFFF) background
+1. CREATE a ${targetDims.width}×${targetDims.height} pixels white canvas FIRST
+2. LOOK at the exact product in the input image
+3. REMOVE only the background from the input
+4. PLACE the EXACT SAME product (unchanged) on your white canvas
 
-STEPS:
-1. Create ${targetDims.width}x${targetDims.height} white canvas
+EXECUTION STEPS:
+1. Create ${targetDims.width}×${targetDims.height} white canvas (#FFFFFF)
 2. EXTRACT the exact product from input (do not recreate it)
-3. Center extracted product on canvas (70-80% of frame)
+3. Center extracted product on your ${targetDims.width}×${targetDims.height} canvas (70-80% of frame)
 4. Add subtle drop shadow for 3D depth
+5. VERIFY your output is ${targetDims.width}×${targetDims.height} pixels
 
-⚠️ CRITICAL: 
+⚠️ CRITICAL REQUIREMENTS: 
+- Output MUST be EXACTLY ${targetDims.width}×${targetDims.height} pixels
+- Output MUST be ${targetDims.ratio} aspect ratio
 - Keep the EXACT product from input (same colors, shape, details)
-- Output MUST be ${targetDims.ratio} ratio (${targetDims.width}x${targetDims.height} pixels)
 
-OUTPUT: ${targetDims.width}x${targetDims.height} image with THE SAME product on white background.
+FINAL OUTPUT: ${targetDims.width}×${targetDims.height} pixels image with THE SAME product on white background.
     `.trim();
 
     // 3D Google Shopping prompt - Product rendered in 3D on white 1:1 background
     const threeD_ShoppingPrompt = `
+🚨🚨🚨 FORMAT INSTRUCTION - ABSOLUTE PRIORITY 🚨🚨🚨
+
+📐 CREATE A 1024×1024 PIXELS SQUARE CANVAS FIRST
+📐 This is a PERFECT SQUARE: 1024 pixels wide × 1024 pixels tall
+📐 WIDTH = HEIGHT = 1024 pixels
+📐 1:1 ratio means IDENTICAL width and height
+📐 Not 1024×768. Not 1024×1536. EXACTLY 1024×1024.
+
 ⚠️⚠️⚠️ CRITICAL 3D GOOGLE SHOPPING MODE ⚠️⚠️⚠️
 
 You MUST recreate this product in HIGH-QUALITY 3D rendering style.
@@ -315,14 +363,16 @@ ${serpData?.materials?.length > 0 ? `🪵 Materials: ${serpData.materials.join('
 ${productDescription ? `📝 Description: ${productDescription.slice(0, 200)}` : ''}
 
 🎯 YOUR TASK - 3D PRODUCT VISUALIZATION:
-1. ANALYZE the product in the input image carefully (shape, colors, materials, details)
-2. RECREATE the product as a PHOTOREALISTIC 3D render
-3. Place it on a PURE WHITE (#FFFFFF) background
-4. Format: SQUARE 1:1 (1024x1024 pixels) - MANDATORY
+1. CREATE your 1024×1024 SQUARE canvas FIRST
+2. ANALYZE the product in the input image carefully (shape, colors, materials, details)
+3. RECREATE the product as a PHOTOREALISTIC 3D render
+4. Place it on your 1024×1024 canvas with PURE WHITE (#FFFFFF) background
 
-📐 **FORMAT REQUIREMENT - NON-NEGOTIABLE**:
-Output MUST be EXACTLY 1024x1024 pixels (1:1 SQUARE).
-The canvas is a PERFECT SQUARE. Same width and height.
+📐 **FORMAT VERIFICATION CHECKLIST**:
+✓ Canvas created: 1024×1024 pixels? (SQUARE)
+✓ Width = 1024 pixels?
+✓ Height = 1024 pixels?
+✓ Ratio = 1:1? (SQUARE)
 
 🎨 **3D RENDERING STYLE**:
 - Professional 3D modeling/rendering aesthetic
@@ -344,6 +394,10 @@ OUTPUT: 1024x1024 pixel 3D rendered product on white background.
 
     // 3D Generate prompt - Full 3D recreation with custom background
     const threeD_GeneratePrompt = `
+🚨🚨🚨 FORMAT REQUIREMENT - READ THIS FIRST 🚨🚨🚨
+
+${formatInstruction}
+
 ⚠️⚠️⚠️ CREATIVE 3D PRODUCT RECREATION MODE ⚠️⚠️⚠️
 
 RECREATE this product as a stunning 3D visualization in a beautiful environment.
@@ -354,13 +408,11 @@ ${serpData?.materials?.length > 0 ? `🪵 Materials: ${serpData.materials.join('
 ${productDescription ? `📝 Description: ${productDescription.slice(0, 200)}` : ''}
 
 🎯 YOUR TASK - CREATIVE 3D VISUALIZATION:
-1. ANALYZE the product in the input image (shape, colors, materials, ALL details)
-2. RECREATE it as a PHOTOREALISTIC 3D model
-3. Place it in a beautiful ${backgroundStyle} environment
-4. Create a magazine-quality 3D product visualization
-
-📐 **FORMAT REQUIREMENT**:
-${formatInstruction}
+1. CREATE your ${targetDims.width}×${targetDims.height} canvas FIRST (${targetDims.ratio} ratio)
+2. ANALYZE the product in the input image (shape, colors, materials, ALL details)
+3. RECREATE it as a PHOTOREALISTIC 3D model
+4. Place it in a beautiful ${backgroundStyle} environment on your canvas
+5. Ensure final output is EXACTLY ${targetDims.width}×${targetDims.height} pixels
 
 🎨 **BACKGROUND STYLE**: ${styleInstruction}
 
