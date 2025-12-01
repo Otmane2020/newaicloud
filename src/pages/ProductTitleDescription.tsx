@@ -12,6 +12,7 @@ import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useStore } from "@/contexts/StoreContext";
 import { guardStoreData, verifyStateCoherence } from "@/lib/storeGuard";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
+import { useImageOptimization } from "@/hooks/useImageOptimization";
 import {
   Sparkles,
   Wand2,
@@ -155,6 +156,7 @@ export default function ProductTitleDescription() {
   const { t, tf } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { selectedStore } = useStore();
+  const { saveToHistory } = useImageOptimization();
   // Removed local background removal hook - using edge function instead
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -1111,6 +1113,28 @@ export default function ProductTitleDescription() {
 
           if (imageType === "primary") {
             await supabase.from("shopify_products").update({ image_url: preview.generatedUrl }).eq("id", productId);
+            
+            // Save to history for primary image
+            const { data: primaryImage } = await supabase
+              .from("product_images")
+              .select("id")
+              .eq("product_id", productId)
+              .eq("position", 1)
+              .maybeSingle();
+            
+            if (primaryImage) {
+              await saveToHistory({
+                productId,
+                imageId: primaryImage.id,
+                optimizationType: "white_background",
+                originalUrl: preview.originalUrl,
+                optimizedUrl: preview.generatedUrl,
+                aiModel: "gemini-2.5-flash-image-preview",
+                aiPrompt: `White background generation - ${format} format`,
+                resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
+                qualityScore: 95
+              });
+            }
           } else {
             const maxPosition = await supabase
               .from("product_images")
@@ -1122,12 +1146,27 @@ export default function ProductTitleDescription() {
 
             const nextPosition = (maxPosition?.data?.position || 0) + 1;
 
-            await supabase.from("product_images").insert({
+            const { data: newImage } = await supabase.from("product_images").insert({
               product_id: productId,
               src: preview.generatedUrl,
               alt_text: `${preview.productTitle} - Fond blanc IA`,
               position: nextPosition,
-            });
+            }).select().single();
+            
+            // Save to history for secondary image
+            if (newImage) {
+              await saveToHistory({
+                productId,
+                imageId: newImage.id,
+                optimizationType: "white_background",
+                originalUrl: preview.originalUrl,
+                optimizedUrl: preview.generatedUrl,
+                aiModel: "gemini-2.5-flash-image-preview",
+                aiPrompt: `White background generation - ${format} format`,
+                resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
+                qualityScore: 95
+              });
+            }
           }
         }
       } else {
@@ -1160,13 +1199,28 @@ export default function ProductTitleDescription() {
 
           const nextPosition = (maxPosData?.position || 0) + 1;
 
-          await supabase.from("product_images").insert({
+          const { data: variantImage } = await supabase.from("product_images").insert({
             product_id: preview.productId,
             variant_id: preview.variantId,
             src: preview.generatedUrl,
             alt_text: `${preview.productTitle} - ${preview.variantTitle} - Fond blanc IA`,
             position: nextPosition,
-          });
+          }).select().single();
+          
+          // Save to history for variant image
+          if (variantImage) {
+            await saveToHistory({
+              productId: preview.productId,
+              imageId: variantImage.id,
+              optimizationType: "white_background",
+              originalUrl: preview.originalUrl,
+              optimizedUrl: preview.generatedUrl,
+              aiModel: "gemini-2.5-flash-image-preview",
+              aiPrompt: `White background generation - ${format} format - Variant: ${preview.variantTitle}`,
+              resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
+              qualityScore: 95
+            });
+          }
         }
       }
 
