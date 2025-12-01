@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { X, Eye, Monitor, Smartphone } from 'lucide-react';
+import { X, Eye, Monitor, Smartphone, ExternalLink } from 'lucide-react';
 import { GoogleSearchPreview } from '../seo/GoogleSearchPreview';
 import { cn } from '@/lib/utils';
 import { useTranslation } from '@/lib/language';
@@ -20,13 +20,21 @@ interface ArticlePreviewDialogProps {
     handle?: string;
     published_at?: string;
   } | null;
+  shopifyUrl?: string;
+  onPublishToShopify?: () => void;
 }
 
-export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePreviewDialogProps) {
+export function ArticlePreviewDialog({ open, onOpenChange, article, shopifyUrl, onPublishToShopify }: ArticlePreviewDialogProps) {
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const { t } = useTranslation();
   
   if (!article) return null;
+  
+  const handleViewOnShopify = () => {
+    if (shopifyUrl) {
+      window.open(shopifyUrl, '_blank');
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -118,7 +126,7 @@ export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePre
         </div>
 
         {/* Compact Footer */}
-        <div className="flex justify-end gap-2 px-4 py-2 border-t bg-background">
+        <div className="flex justify-between gap-2 px-4 py-3 border-t bg-background">
           <Button
             variant="outline"
             size="sm"
@@ -126,6 +134,28 @@ export function ArticlePreviewDialog({ open, onOpenChange, article }: ArticlePre
           >
             {t.dialogs.articlePreview.close}
           </Button>
+          
+          <div className="flex gap-2">
+            {shopifyUrl ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleViewOnShopify}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                {t.blog.articleGeneration.viewOnShopify}
+              </Button>
+            ) : onPublishToShopify && (
+              <Button
+                size="sm"
+                onClick={onPublishToShopify}
+                className="bg-[#95BF47] hover:bg-[#7DA839] text-white"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                {t.blog.articleGeneration.publishToShopify}
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

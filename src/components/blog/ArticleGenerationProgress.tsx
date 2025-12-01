@@ -44,15 +44,23 @@ export function ArticleGenerationProgress({
       setProgress(0);
       setCurrentMessage("");
       setIsComplete(false);
+      setShowPreview(false);
       return;
     }
     
-    // If article is already generated, show complete state
+    // If article is already generated, show complete state and auto-open preview
     if (generatedArticle) {
       setProgress(100);
       setCurrentMessage(t.blog.articleGeneration.steps.complete);
       setIsComplete(true);
-      return;
+      
+      // Auto-open preview after a short delay
+      const timer = setTimeout(() => {
+        setShowPreview(true);
+        onClose(); // Close the progress dialog
+      }, 1000);
+      
+      return () => clearTimeout(timer);
     }
     
     let currentStep = 0;
@@ -67,7 +75,7 @@ export function ArticleGenerationProgress({
     }, 1500);
     
     return () => clearInterval(interval);
-  }, [open, generatedArticle]);
+  }, [open, generatedArticle, onClose]);
   
   const handleViewArticle = () => {
     if (generatedArticle && onViewArticle) {
@@ -195,6 +203,7 @@ export function ArticleGenerationProgress({
           meta_description: null,
           seo_title: null,
         }}
+        shopifyUrl={generatedArticle.shopifyUrl}
       />
     )}
     </>

@@ -3811,6 +3811,7 @@ export const translations = {
       viewOnShopify: "View on Shopify",
       workOnSEO: "Work on SEO",
       previewArticle: "Preview Article",
+      publishToShopify: "Publish to Shopify",
       steps: {
         start: "🚀 Starting AI generation...",
         analyzingProducts: "📦 Analyzing selected products",
