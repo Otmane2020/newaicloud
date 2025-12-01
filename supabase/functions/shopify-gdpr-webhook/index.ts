@@ -175,10 +175,10 @@ Deno.serve(async (req) => {
         timestamp: new Date().toISOString(),
       }));
 
-      // ✅ IMPORTANT: Return 200 OK even on HMAC failure for verification tests
-      // Real malicious requests will be logged but not processed
-      return new Response('OK', {
-        status: 200,
+      // ✅ SHOPIFY STAFF REQUIREMENT (Kellan): Return 400 for invalid HMAC
+      // "you do need to ensure you are also passing 400 error responses on requests that fail validation"
+      return new Response('Invalid HMAC signature', {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
       });
     }
