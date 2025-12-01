@@ -35,12 +35,38 @@ Deno.serve(async (req) => {
       { loc: `${baseUrl}/features`, changefreq: 'weekly', priority: 0.8 },
     );
 
+    // Footer pages
+    urls.push(
+      { loc: `${baseUrl}/contact`, changefreq: 'monthly', priority: 0.4 },
+      { loc: `${baseUrl}/privacy`, changefreq: 'yearly', priority: 0.3 },
+      { loc: `${baseUrl}/terms`, changefreq: 'yearly', priority: 0.3 },
+      { loc: `${baseUrl}/about`, changefreq: 'monthly', priority: 0.5 },
+    );
+
     // Auth pages - lower priority
     urls.push(
       { loc: `${baseUrl}/auth`, changefreq: 'monthly', priority: 0.3 },
       { loc: `${baseUrl}/signup`, changefreq: 'monthly', priority: 0.3 },
       { loc: `${baseUrl}/login`, changefreq: 'monthly', priority: 0.3 },
     );
+
+    // NewAI blog articles (promotional_articles table)
+    const { data: blogArticles } = await supabase
+      .from('promotional_articles')
+      .select('id, title, updated_at, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (blogArticles) {
+      blogArticles.forEach(article => {
+        urls.push({
+          loc: `${baseUrl}/blog-NewAI/${article.id}`,
+          lastmod: article.updated_at || article.created_at,
+          changefreq: 'weekly',
+          priority: 0.7,
+        });
+      });
+    }
 
     // Generate XML sitemap
     const xml = generateSitemapXml(urls);
