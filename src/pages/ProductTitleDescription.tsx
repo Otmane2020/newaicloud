@@ -1219,22 +1219,18 @@ export default function ProductTitleDescription() {
           if (!preview?.generatedUrl) continue;
 
           if (imageType === "primary") {
-            // Update main product image in shopify_products
-            await supabase.from("shopify_products").update({ 
-              image_url: preview.generatedUrl,
-              updated_at: new Date().toISOString()
-            }).eq("id", productId);
+            // 🔥 CRITICAL FIX: Get or create product_images entry FIRST
+            let imageId: string | null = null;
             
-            // 🔥 CRITICAL FIX: Also update the product_images entry for position 1
             const { data: primaryImage } = await supabase
               .from("product_images")
-              .select("id")
+              .select("id, src")
               .eq("product_id", productId)
               .eq("position", 1)
               .maybeSingle();
             
             if (primaryImage) {
-              // Update the src URL in product_images to show the new image
+              // Update existing primary image
               await supabase
                 .from("product_images")
                 .update({ 
@@ -1243,20 +1239,9 @@ export default function ProductTitleDescription() {
                 })
                 .eq("id", primaryImage.id);
               
-              // Save to history after updating the image
-              await saveToHistory({
-                productId,
-                imageId: primaryImage.id,
-                optimizationType: "white_background",
-                originalUrl: preview.originalUrl,
-                optimizedUrl: preview.generatedUrl,
-                aiModel: "gemini-2.5-flash-image-preview",
-                aiPrompt: `White background generation - ${format} format`,
-                resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
-                qualityScore: 95
-              });
+              imageId = primaryImage.id;
             } else {
-              // If no primary image exists, create one
+              // Create new primary image
               const { data: newPrimaryImage } = await supabase
                 .from("product_images")
                 .insert({
@@ -1265,22 +1250,31 @@ export default function ProductTitleDescription() {
                   alt_text: `${preview.productTitle} - Fond blanc IA`,
                   position: 1,
                 })
-                .select()
+                .select("id")
                 .single();
               
-              if (newPrimaryImage) {
-                await saveToHistory({
-                  productId,
-                  imageId: newPrimaryImage.id,
-                  optimizationType: "white_background",
-                  originalUrl: preview.originalUrl,
-                  optimizedUrl: preview.generatedUrl,
-                  aiModel: "gemini-2.5-flash-image-preview",
-                  aiPrompt: `White background generation - ${format} format`,
-                  resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
-                  qualityScore: 95
-                });
-              }
+              imageId = newPrimaryImage?.id || null;
+            }
+            
+            // Update shopify_products.image_url
+            await supabase.from("shopify_products").update({ 
+              image_url: preview.generatedUrl,
+              updated_at: new Date().toISOString()
+            }).eq("id", productId);
+            
+            // Save to history with confirmed imageId
+            if (imageId) {
+              await saveToHistory({
+                productId,
+                imageId,
+                optimizationType: "white_background",
+                originalUrl: preview.originalUrl,
+                optimizedUrl: preview.generatedUrl,
+                aiModel: "gemini-2.5-flash-image-preview",
+                aiPrompt: `White background generation - ${format} format`,
+                resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
+                qualityScore: 95
+              });
             }
           } else {
             const maxPosition = await supabase
@@ -2078,7 +2072,12 @@ export default function ProductTitleDescription() {
                   }
                   // Auto-détecter si les produits ont des variantes
                   const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
-                  const hasVariants = selectedProductsList.some((p) => p.variants && p.variants.length > 0);
+                  const hasVariants = selectedProductsList.some((p) => {
+                    if (!p.variants || p.variants.length === 0) return false;
+                    // Ignorer produits simples avec variante "Default Title"
+                    if (p.variants.length === 1 && p.variants[0].title === "Default Title") return false;
+                    return true;
+                  });
                   setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
                   setShowWhiteBgConfigDialog(true);
                   loadGalleryImages(Array.from(selectedProducts)); // Chargement en arrière-plan
@@ -2353,7 +2352,8 @@ export default function ProductTitleDescription() {
                                     }
                                     setSelectedProducts(new Set([product.id]));
                                     // Auto-détecter si le produit a des variantes
-                                    const hasVariants = product.variants && product.variants.length > 0;
+                                    const hasVariants = product.variants && product.variants.length > 0 
+                                      && !(product.variants.length === 1 && product.variants[0].title === "Default Title");
                                     setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
                                     setShowWhiteBgConfigDialog(true);
                                     loadGalleryImages([product.id]); // Chargement en arrière-plan
@@ -2623,7 +2623,8 @@ export default function ProductTitleDescription() {
                                   }
                                   setSelectedProducts(new Set([product.id]));
                                   // Auto-détecter si le produit a des variantes
-                                  const hasVariants = product.variants && product.variants.length > 0;
+                                  const hasVariants = product.variants && product.variants.length > 0 
+                                    && !(product.variants.length === 1 && product.variants[0].title === "Default Title");
                                   setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
                                   setShowWhiteBgConfigDialog(true);
                                   loadGalleryImages([product.id]);
@@ -3284,9 +3285,15 @@ export default function ProductTitleDescription() {
                 .map((id) => products.find((p) => p.id === id))
                 .filter(Boolean);
 
-              // Ne montrer la section variantes que si au moins un produit a des variantes
+              // Ne montrer la section variantes que si au moins un produit a des vraies variantes
+              // (ignorer les produits avec uniquement une variante "Default Title")
               const productsWithVariants = selectedProductsList.filter(
-                (product) => product?.variants && product.variants.length > 0,
+                (product) => {
+                  if (!product?.variants || product.variants.length === 0) return false;
+                  // Produit simple avec variante par défaut
+                  if (product.variants.length === 1 && product.variants[0].title === "Default Title") return false;
+                  return true;
+                }
               );
 
               if (productsWithVariants.length === 0) return null;
