@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   X,
   ShoppingCart,
@@ -33,6 +33,7 @@ const formatPrice = (price: number, currency: string = 'EUR', language: string =
 
 export default function ProductLanding() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { t, tf, language } = useTranslation();
   const [product, setProduct] = useState<any>(null);
   const [variants, setVariants] = useState<any[]>([]);
@@ -196,7 +197,7 @@ export default function ProductLanding() {
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <button
-            onClick={() => window.history.back()}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-lg transition"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -301,7 +302,7 @@ export default function ProductLanding() {
               </div>
 
               {/* Note (simulée) */}
-              <div className="flex items-center gap-2">
+              <div className="hidden flex items-center gap-2">
                 <div className="flex">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star key={star} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
@@ -499,7 +500,7 @@ export default function ProductLanding() {
         )}
 
         {/* Informations additionnelles */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="hidden mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
               <Package className="w-6 h-6 text-blue-600" />
