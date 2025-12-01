@@ -1872,6 +1872,16 @@ export const translations = {
         feature4: "Rapports de conversion en temps réel",
       },
     },
+    toasts: {
+      connectionFailed: "Échec de connexion Google Ads",
+      connectionCancelled: "Connexion annulée",
+      accessDenied: "Vous avez refusé l'accès à Google Ads.",
+      invalidCredentials: "Identifiants Google invalides. Veuillez contacter le support.",
+      strategiesGenerated: "Stratégies IA générées",
+      strategiesError: "Erreur lors de la génération des stratégies",
+      searchTermsImported: "Termes de recherche importés",
+      searchTermsError: "Erreur lors de l'importation des termes",
+    },
   },
 
   searchConsole: {
@@ -9046,4 +9056,42 @@ export const translations = {
       copied: "{{label}} copié !",
     },
   },
+
+  // ============= Progress Banner =============
+  progressBanner: {
+    inProgress: "{{label}} en cours...",
+    cancel: "Annuler",
+    backgroundProcessing: "💡 Le traitement continue en arrière-plan",
+  },
+
+  // ============= Auto Translation Scanner =============
+  translationScanner: {
+    pasteCode: "Veuillez coller du code à analyser",
+    noIssues: "Aucun problème de traduction détecté !",
+    analysisError: "Erreur lors de l'analyse",
+    aggregationError: "Erreur lors de l'agrégation",
+    globalScanError: "Erreur lors du scan global",
+    noValidFiles: "Aucun fichier valide trouvé dans l'entrée",
+    batchError: "Erreur lors du traitement batch",
+    scannerStarted: "🔍 Scanner automatique démarré - lecture des fichiers depuis GitHub...",
+    noFilesScanned: "Aucun fichier scanné - utilisez le mode manuel",
+    nothingToCopy: "Aucun texte à copier",
+    copied: "Copié dans le presse-papiers !",
+    copiedAlt: "Copié (méthode alternative) !",
+    copyError: "Erreur de copie - Copiez manuellement",
+    deleted: "Supprimé",
+    deleteError: "Erreur de suppression",
+    codeReplaced: "Code remplacé ! Copiez-le dans votre IDE.",
+    placeholder: "Collez ici le code d'un fichier TSX/TS à analyser...\n\nExemple:\ntoast.success('Message hardcodé');\n<Button>Cliquez ici</Button>",
+    placeholderAlt: "Collez votre code React/TypeScript ici...\n\nExemples de textes détectés:\n- toast.success(\"Opération réussie\")\n- <Button>Enregistrer</Button>\n- placeholder=\"Entrez votre email\"",
+  },
+
+  // ============= Code Translation Analyzer =============
+  codeAnalyzer: {
+    noHardcodedText: "Aucun texte en dur détecté !",
+    noTranslations: "Aucune traduction à générer",
+    translationsGenerated: "Traductions générées !",
+    copiedToClipboard: "Copié dans le presse-papier",
+  },
+
 };

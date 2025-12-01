@@ -1860,6 +1860,16 @@ export const translations = {
         feature4: "Real-time conversion reports",
       },
     },
+    toasts: {
+      connectionFailed: "Google Ads connection failed",
+      connectionCancelled: "Connection cancelled",
+      accessDenied: "You denied access to Google Ads.",
+      invalidCredentials: "Invalid Google credentials. Please contact support.",
+      strategiesGenerated: "AI strategies generated",
+      strategiesError: "Error generating strategies",
+      searchTermsImported: "Search terms imported",
+      searchTermsError: "Error importing search terms",
+    },
   },
 
   searchConsole: {
@@ -8997,6 +9007,44 @@ export const translations = {
       copied: "{{label}} copied!",
     },
   },
+
+  // ============= Progress Banner =============
+  progressBanner: {
+    inProgress: "{{label}} in progress...",
+    cancel: "Cancel",
+    backgroundProcessing: "💡 Processing continues in the background",
+  },
+
+  // ============= Auto Translation Scanner =============
+  translationScanner: {
+    pasteCode: "Please paste code to analyze",
+    noIssues: "No translation issues detected!",
+    analysisError: "Error during analysis",
+    aggregationError: "Error during aggregation",
+    globalScanError: "Error during global scan",
+    noValidFiles: "No valid files found in input",
+    batchError: "Error during batch processing",
+    scannerStarted: "🔍 Auto scanner started - reading files from GitHub...",
+    noFilesScanned: "No files scanned - use manual mode",
+    nothingToCopy: "Nothing to copy",
+    copied: "Copied to clipboard!",
+    copiedAlt: "Copied (alternative method)!",
+    copyError: "Copy error - Copy manually",
+    deleted: "Deleted",
+    deleteError: "Delete error",
+    codeReplaced: "Code replaced! Copy it to your IDE.",
+    placeholder: "Paste here the code of a TSX/TS file to analyze...\n\nExample:\ntoast.success('Hardcoded message');\n<Button>Click here</Button>",
+    placeholderAlt: "Paste your React/TypeScript code here...\n\nExamples of detected text:\n- toast.success(\"Operation successful\")\n- <Button>Save</Button>\n- placeholder=\"Enter your email\"",
+  },
+
+  // ============= Code Translation Analyzer =============
+  codeAnalyzer: {
+    noHardcodedText: "No hardcoded text detected!",
+    noTranslations: "No translations to generate",
+    translationsGenerated: "Translations generated!",
+    copiedToClipboard: "Copied to clipboard",
+  },
+
 };
 
 export type Translations = typeof translations;
