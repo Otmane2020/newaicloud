@@ -64,12 +64,44 @@ export function OpportunitiesSettings() {
       if (error) throw error;
       
       if (data?.authUrl) {
-        window.location.href = data.authUrl;
+        // Open in popup window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+        
+        const popup = window.open(
+          data.authUrl,
+          'facebook-oauth',
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+
+        // Listen for OAuth callback
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data.success) {
+            toast.success('Facebook page connected successfully');
+            loadFacebookConnection();
+            window.removeEventListener('message', handleMessage);
+            setLoading(false);
+          } else if (event.data.error) {
+            toast.error(event.data.error);
+            window.removeEventListener('message', handleMessage);
+            setLoading(false);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Check if popup was blocked
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+          toast.error('Popup blocked. Please allow popups for this site.');
+          window.removeEventListener('message', handleMessage);
+          setLoading(false);
+        }
       }
     } catch (error: any) {
       console.error('Facebook connection error:', error);
       toast.error(t.toasts.error.generic);
-    } finally {
       setLoading(false);
     }
   };
@@ -128,12 +160,44 @@ export function OpportunitiesSettings() {
       if (error) throw error;
       
       if (data?.authUrl) {
-        window.location.href = data.authUrl;
+        // Open in popup window
+        const width = 600;
+        const height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
+        
+        const popup = window.open(
+          data.authUrl,
+          'instagram-oauth',
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+
+        // Listen for OAuth callback
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data.success) {
+            toast.success('Instagram account connected successfully');
+            loadInstagramConnection();
+            window.removeEventListener('message', handleMessage);
+            setLoading(false);
+          } else if (event.data.error) {
+            toast.error(event.data.error);
+            window.removeEventListener('message', handleMessage);
+            setLoading(false);
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Check if popup was blocked
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+          toast.error('Popup blocked. Please allow popups for this site.');
+          window.removeEventListener('message', handleMessage);
+          setLoading(false);
+        }
       }
     } catch (error: any) {
       console.error('Instagram connection error:', error);
       toast.error(t.toasts.error.generic);
-    } finally {
       setLoading(false);
     }
   };
