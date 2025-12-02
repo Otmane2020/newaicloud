@@ -27,11 +27,15 @@ Deno.serve(async (req) => {
       if (error) {
         console.error('Facebook OAuth error:', error, errorDescription);
         return new Response(
-          `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><script>
-            window.opener.postMessage({ error: '${error}: ${errorDescription}' }, '*');
-            setTimeout(() => window.close(), 100);
+          `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script>
+            if (window.opener) {
+              window.opener.postMessage({ error: '${error}: ${errorDescription}' }, '*');
+            }
+            setTimeout(() => {
+              try { window.open('', '_self'); window.close(); } catch(e) {}
+            }, 300);
           </script></body></html>`,
-          { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=UTF-8' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
         );
       }
 
@@ -74,11 +78,15 @@ Deno.serve(async (req) => {
 
       if (!pagesData.data || pagesData.data.length === 0) {
         return new Response(
-          `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><script>
-            window.opener.postMessage({ error: 'No Facebook pages found. Please create a Facebook Page first.' }, '*');
-            setTimeout(() => window.close(), 100);
+          `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script>
+            if (window.opener) {
+              window.opener.postMessage({ error: 'No Facebook pages found. Please create a Facebook Page first.' }, '*');
+            }
+            setTimeout(() => {
+              try { window.open('', '_self'); window.close(); } catch(e) {}
+            }, 300);
           </script></body></html>`,
-          { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=UTF-8' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
         );
       }
 
@@ -92,12 +100,12 @@ Deno.serve(async (req) => {
 
         return new Response(
           `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"></head>
+<html><head><meta charset="utf-8"></head>
 <body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f9fafb;">
   <div style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 300px;">
-    <div style="font-size: 32px; margin-bottom: 12px;">📋</div>
-    <h2 style="margin: 0 0 8px; font-size: 16px; color: #111827;">Plusieurs pages détectées</h2>
-    <p style="color: #6b7280; font-size: 14px; margin: 0;">Sélectionnez une page dans l'application...</p>
+    <div style="font-size: 32px; margin-bottom: 12px;">&#128203;</div>
+    <h2 style="margin: 0 0 8px; font-size: 16px; color: #111827;">Plusieurs pages detectees</h2>
+    <p style="color: #6b7280; font-size: 14px; margin: 0;">Selectionnez une page dans l'application...</p>
   </div>
   <script>
     const data = {
@@ -109,11 +117,11 @@ Deno.serve(async (req) => {
       window.opener.postMessage(data, '*');
     }
     setTimeout(() => {
-      try { window.close(); } catch(e) {}
+      try { window.open('', '_self'); window.close(); } catch(e) {}
     }, 500);
   </script>
 </body></html>`,
-          { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=UTF-8' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
         );
       }
 
@@ -189,18 +197,18 @@ Deno.serve(async (req) => {
 
       // Close the popup and notify parent window
       const successMessage = instagramAccountName 
-        ? `Facebook (${page.name}) et Instagram (${instagramAccountName}) connectés avec succès!`
-        : `Facebook (${page.name}) connecté avec succès!`;
+        ? `Facebook (${page.name}) et Instagram (${instagramAccountName}) connectes avec succes!`
+        : `Facebook (${page.name}) connecte avec succes!`;
 
       return new Response(
-        `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+        `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
 <body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f9fafb;">
   <div style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
-    <h2 style="margin: 0 0 8px; color: #111827;">Connexion réussie !</h2>
-    <p style="color: #6b7280; margin: 0 0 16px;">${page.name} connecté</p>
-    <p style="font-size: 14px; color: #9ca3af;">Cette fenêtre va se fermer...</p>
-    <button onclick="window.close()" style="margin-top: 16px; padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">
+    <div style="font-size: 48px; margin-bottom: 16px;">&#9989;</div>
+    <h2 style="margin: 0 0 8px; color: #111827;">Connexion reussie !</h2>
+    <p style="color: #6b7280; margin: 0 0 16px;">${page.name} connecte</p>
+    <p style="font-size: 14px; color: #9ca3af;">Cette fenetre va se fermer...</p>
+    <button onclick="try { window.open('', '_self'); window.close(); } catch(e) {}" style="margin-top: 16px; padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">
       Fermer manuellement
     </button>
   </div>
@@ -214,11 +222,11 @@ Deno.serve(async (req) => {
       }, '*');
     }
     setTimeout(() => {
-      try { window.close(); } catch(e) {}
+      try { window.open('', '_self'); window.close(); } catch(e) {}
     }, 1500);
   </script>
 </body></html>`,
-        { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=UTF-8' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
       );
     }
 

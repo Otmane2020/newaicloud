@@ -106,7 +106,8 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
       const data = await response.json();
 
       if (data.authUrl) {
-        window.open(data.authUrl, 'facebook-oauth', 'width=600,height=700');
+        // noopener=no prevents Chrome from blocking window.opener reference
+        window.open(data.authUrl, 'facebook-oauth', 'width=600,height=700,noopener=no');
       } else {
         throw new Error(data.error || 'Erreur de connexion');
       }
