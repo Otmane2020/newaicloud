@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, TrendingUp, ShoppingBag, ExternalLink, CheckCircle, Sparkles, Target, Users } from "lucide-react";
 import { useTranslation } from "@/lib/language";
+import { responsiveDialogClasses } from "@/lib/dialogUtils";
 
 interface Merchant {
   title: string;
@@ -11,6 +12,7 @@ interface Merchant {
   price: number | null;
   link: string;
   image?: string;
+  thumbnail?: string;
 }
 
 interface SmartAIResult {
@@ -36,6 +38,8 @@ interface SmartAIResult {
     name: string;
     url: string;
     price: number | null;
+    image?: string;
+    thumbnail?: string;
   }[];
   seoSuggestions: {
     title: string;
@@ -87,7 +91,7 @@ export function SmartPriceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className={`${responsiveDialogClasses.xxlarge} max-h-[90vh] overflow-y-auto`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
@@ -106,7 +110,7 @@ export function SmartPriceDialog({
           </div>
         ) : result ? (
           <Tabs defaultValue="pricing" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
               <TabsTrigger value="pricing">
                 <TrendingUp className="w-4 h-4 mr-1" />
                 Prix
@@ -127,24 +131,24 @@ export function SmartPriceDialog({
 
             <TabsContent value="pricing" className="space-y-4 mt-4">
               {/* Product Preview */}
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 {imageUrl && (
                   <img 
                     src={imageUrl} 
                     alt={productTitle} 
-                    className="w-24 h-24 object-cover rounded-lg border"
+                    className="w-full sm:w-24 h-32 sm:h-24 object-cover rounded-lg border"
                   />
                 )}
                 <div className="flex-1">
                   {result.vision && (
                     <div className="space-y-1">
-                      <p className="font-medium">{result.vision.title}</p>
+                      <p className="font-medium text-sm sm:text-base">{result.vision.title}</p>
                       {result.vision.brand && (
-                        <p className="text-sm text-muted-foreground">Marque : {result.vision.brand}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Marque : {result.vision.brand}</p>
                       )}
                       <div className="flex gap-2 flex-wrap">
-                        <Badge variant="outline">{result.vision.category}</Badge>
-                        <Badge variant="secondary">{result.vision.segment}</Badge>
+                        <Badge variant="outline" className="text-xs">{result.vision.category}</Badge>
+                        <Badge variant="secondary" className="text-xs">{result.vision.segment}</Badge>
                       </div>
                     </div>
                   )}
@@ -152,18 +156,18 @@ export function SmartPriceDialog({
               </div>
 
               {/* Price Statistics */}
-              <div className="grid grid-cols-4 gap-3">
-                <div className="p-4 bg-muted rounded-lg text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                <div className="p-2 sm:p-4 bg-muted rounded-lg text-center">
                   <p className="text-xs text-muted-foreground mb-1">Prix Min</p>
-                  <p className="text-lg font-bold">{formatPrice(result.pricing.min)}</p>
+                  <p className="text-sm sm:text-lg font-bold">{formatPrice(result.pricing.min)}</p>
                 </div>
-                <div className="p-4 bg-muted rounded-lg text-center">
+                <div className="p-2 sm:p-4 bg-muted rounded-lg text-center">
                   <p className="text-xs text-muted-foreground mb-1">Médiane</p>
-                  <p className="text-lg font-bold">{formatPrice(result.pricing.median)}</p>
+                  <p className="text-sm sm:text-lg font-bold">{formatPrice(result.pricing.median)}</p>
                 </div>
-                <div className="p-4 bg-primary/10 rounded-lg text-center border-2 border-primary">
+                <div className="p-2 sm:p-4 bg-primary/10 rounded-lg text-center border-2 border-primary col-span-2 sm:col-span-1">
                   <p className="text-xs text-muted-foreground mb-1">Prix Recommandé</p>
-                  <p className="text-xl font-bold text-primary">{formatPrice(result.pricing.recommendedPrice)}</p>
+                  <p className="text-lg sm:text-xl font-bold text-primary">{formatPrice(result.pricing.recommendedPrice)}</p>
                   {currentPrice && result.pricing.recommendedPrice && (
                     <p className="text-xs text-muted-foreground mt-1">
                       {currentPrice > result.pricing.recommendedPrice ? "+" : ""}
@@ -171,23 +175,23 @@ export function SmartPriceDialog({
                     </p>
                   )}
                 </div>
-                <div className="p-4 bg-muted rounded-lg text-center">
+                <div className="p-2 sm:p-4 bg-muted rounded-lg text-center col-span-2 sm:col-span-1">
                   <p className="text-xs text-muted-foreground mb-1">Prix Max</p>
-                  <p className="text-lg font-bold">{formatPrice(result.pricing.max)}</p>
+                  <p className="text-sm sm:text-lg font-bold">{formatPrice(result.pricing.max)}</p>
                 </div>
               </div>
 
               {/* Confidence & Sources */}
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div className="flex gap-3 text-sm">
-                  <Badge variant="outline">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-muted rounded-lg">
+                <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
+                  <Badge variant="outline" className="text-xs">
                     <ShoppingBag className="w-3 h-3 mr-1" />
                     Shopping: {result.sources.shopping}
                   </Badge>
-                  <Badge variant="outline">SERP: {result.sources.organic}</Badge>
-                  <Badge variant="outline">Visual: {result.sources.visual}</Badge>
+                  <Badge variant="outline" className="text-xs">SERP: {result.sources.organic}</Badge>
+                  <Badge variant="outline" className="text-xs">Visual: {result.sources.visual}</Badge>
                 </div>
-                <div className="text-sm">
+                <div className="text-xs sm:text-sm whitespace-nowrap">
                   Confiance : <strong className="text-primary">{Math.round(result.confidence * 100)}%</strong>
                 </div>
               </div>
@@ -201,33 +205,31 @@ export function SmartPriceDialog({
                   </h4>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
                     {result.merchants.map((merchant, idx) => (
-                      <div
+                      <a
                         key={idx}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                        href={merchant.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {merchant.image && (
-                            <img src={merchant.image} alt="" className="w-10 h-10 object-cover rounded" />
+                          {(merchant.image || merchant.thumbnail) && (
+                            <img 
+                              src={merchant.image || merchant.thumbnail} 
+                              alt="" 
+                              className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded flex-shrink-0" 
+                            />
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{merchant.title}</p>
-                            <p className="text-xs text-muted-foreground">{merchant.source}</p>
+                            <p className="text-xs sm:text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">{merchant.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">{merchant.source}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold text-primary">{formatPrice(merchant.price)}</span>
-                          {merchant.link && (
-                            <a
-                              href={merchant.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 hover:bg-background rounded-md transition-colors"
-                            >
-                              <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                            </a>
-                          )}
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <span className="font-semibold text-primary text-sm sm:text-base">{formatPrice(merchant.price)}</span>
+                          <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
-                      </div>
+                      </a>
                     ))}
                   </div>
                 </div>
@@ -332,29 +334,34 @@ export function SmartPriceDialog({
             <TabsContent value="competitors" className="space-y-4 mt-4">
               {result.competitors && result.competitors.length > 0 ? (
                 <div>
-                  <h4 className="font-semibold mb-3">Concurrents détectés ({result.competitors.length})</h4>
+                  <h4 className="font-semibold mb-3 text-sm sm:text-base">Concurrents détectés ({result.competitors.length})</h4>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {result.competitors.map((competitor, idx) => (
-                      <div
+                      <a
                         key={idx}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                        href={competitor.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer group"
                       >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">{competitor.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{competitor.url}</p>
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {(competitor.image || competitor.thumbnail) && (
+                            <img 
+                              src={competitor.image || competitor.thumbnail} 
+                              alt="" 
+                              className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded flex-shrink-0" 
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm font-medium group-hover:text-primary transition-colors">{competitor.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{competitor.url}</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold text-primary">{formatPrice(competitor.price)}</span>
-                          <a
-                            href={competitor.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 hover:bg-background rounded-md transition-colors"
-                          >
-                            <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-primary" />
-                          </a>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <span className="font-semibold text-primary text-sm sm:text-base">{formatPrice(competitor.price)}</span>
+                          <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
-                      </div>
+                      </a>
                     ))}
                   </div>
                 </div>
@@ -371,26 +378,28 @@ export function SmartPriceDialog({
           </div>
         )}
 
-        <DialogFooter className="flex gap-2 sm:gap-2">
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
             {t.common.cancel}
           </Button>
           {(result?.pricing.recommendedPrice || result?.pricing.avg) && (
             <>
               <Button 
                 onClick={() => handleApplyPrice("regular")}
-                className="gap-2"
+                className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
               >
                 <CheckCircle className="w-4 h-4" />
-                Appliquer comme prix régulier
+                <span className="hidden sm:inline">Appliquer comme prix régulier</span>
+                <span className="sm:hidden">Prix régulier</span>
               </Button>
               <Button 
                 onClick={() => handleApplyPrice("promo")}
                 variant="secondary"
-                className="gap-2"
+                className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
               >
                 <CheckCircle className="w-4 h-4" />
-                Appliquer comme prix promo
+                <span className="hidden sm:inline">Appliquer comme prix promo</span>
+                <span className="sm:hidden">Prix promo</span>
               </Button>
             </>
           )}
