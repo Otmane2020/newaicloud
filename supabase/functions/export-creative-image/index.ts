@@ -1,226 +1,184 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface Product {
-  id: string;
-  title: string;
-  image: string | null;
-  price: string | null;
-  compare_at_price: string | null;
-}
-
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const body = await req.json();
-
-    // Health check
+    
     if (body?.healthCheck === true) {
-      return new Response(JSON.stringify({ status: 'ok' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      return new Response(JSON.stringify({ status: "ok" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    const { product, template, caption } = body as {
-      product: Product;
-      template: string;
-      caption: string;
-    };
-
-    if (!product) {
-      throw new Error('Product is required');
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const { product, template } = body;
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!product) {
+      throw new Error("Product is required");
     }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY not configured");
+    }
+
+    console.log("🎨 Generating creative for:", product.title);
+    console.log("📐 Template:", template?.id);
 
     // Calculate discount
-    let discountText = "";
-    if (product.price && product.compare_at_price) {
-      const discount = Math.round((1 - parseFloat(product.price) / parseFloat(product.compare_at_price)) * 100);
-      if (discount > 0) {
-        discountText = `-${discount}%`;
-      }
+    const originalPrice = parseFloat(product.compare_at_price) || 0;
+    const salePrice = parseFloat(product.price) || 0;
+    const discount = originalPrice > salePrice && salePrice > 0
+      ? Math.round((1 - salePrice / originalPrice) * 100)
+      : 0;
+
+    // Determine dimensions based on template size
+    let aspectHint = "square 1:1 (1024x1024)";
+    if (template?.size === "story") {
+      aspectHint = "vertical 9:16 story format (576x1024)";
+    } else if (template?.size === "landscape") {
+      aspectHint = "horizontal 16:9 banner (1024x576)";
     }
 
-    // Build a descriptive prompt based on template
-    const templateStyles: Record<string, string> = {
-      "bf-neon": "Dark black background with neon yellow/gold accents, Black Friday sale style, dramatic lighting",
-      "bf-red": "Deep red and black gradient, bold sale typography, urgency-driven design",
-      "bf-gold": "Black and gold luxury Black Friday design, premium feel",
-      "bf-electric": "Purple and blue neon gradients, electric/cyber aesthetic",
-      "promo-red": "Vibrant red promotional poster, yellow accent badges, fire/hot sale energy",
-      "promo-flash": "Orange to pink gradient, flash sale urgency, bold white text",
-      "promo-summer": "Cyan to purple ocean gradient, summer vibes, fresh and bright",
-      "promo-limited": "Emerald green luxury, limited edition feel, exclusive",
-      "minimal-white": "Clean white background, minimalist design, elegant shadows",
-      "minimal-beige": "Soft beige/cream tones, sophisticated and warm",
-      "minimal-gray": "Modern gray gradient, professional and sleek",
-      "minimal-cream": "Elegant cream and amber tones, classic luxury",
-      "bold-gradient": "Vibrant violet to indigo gradient, modern and bold",
-      "bold-sunset": "Orange to purple sunset gradient, warm and energetic",
-      "bold-ocean": "Deep blue ocean gradient, calm yet powerful",
-      "bold-forest": "Forest green gradient, eco-friendly natural feel",
-      "gold-premium": "Golden amber gradient, premium luxury, exclusive feel",
-      "gold-elegant": "Soft gold and yellow tones, elegant and refined",
-      "tech-dark": "Dark purple tech gradient with cyan accents, futuristic",
-      "tech-neon": "Fuchsia and purple neon glow, cyberpunk aesthetic",
-      "story-gradient": "Pink to indigo vertical gradient, Instagram story format",
-      "story-sunset": "Orange to purple vertical gradient, sunset story style",
-      "story-ocean": "Cyan to indigo vertical gradient, ocean story vibes",
-      "story-dark": "Dark gray to black vertical gradient, moody story",
-      "testimonial-soft": "Soft blue to purple pastel, review/testimonial style",
-      "testimonial-dark": "Dark slate background, gold star ratings, review style",
-    };
+    // Build rich prompt for stunning ad creative
+    const imagePrompt = `Create a STUNNING ${aspectHint} professional advertising creative for social media.
 
-    const styleDescription = templateStyles[template] || "Clean professional e-commerce style";
+PRODUCT TO FEATURE:
+- Name: ${product.title}
+${product.vendor ? `- Brand: ${product.vendor}` : ''}
+${product.product_type ? `- Category: ${product.product_type}` : ''}
+${product.description ? `- Description: ${product.description.substring(0, 200)}` : ''}
 
-    const imagePrompt = `Create a professional e-commerce promotional image advertisement.
+PRICING (display prominently):
+${discount > 0 ? `- DISCOUNT: -${discount}% (make this VERY visible with a badge/burst)` : ''}
+${salePrice > 0 ? `- Price: ${salePrice}€` : ''}
+${discount > 0 && originalPrice > 0 ? `- Original: ${originalPrice}€ (crossed out)` : ''}
 
-PRODUCT: "${product.title}"
-${product.price ? `PRICE: ${product.price}€` : ''}
-${discountText ? `DISCOUNT: ${discountText}` : ''}
-${caption ? `TAGLINE: "${caption}"` : ''}
+STYLE DIRECTION:
+- Aesthetic: ${template?.style || "promotional, eye-catching"}
+- Accent color: ${template?.accentColor || "#FFD700"}
+- Mood: ${template?.category || "promo"}
 
-STYLE: ${styleDescription}
+CRITICAL COMPOSITION RULES:
+1. The PRODUCT IMAGE must be the HERO - large, centered, dramatic lighting, drop shadow
+2. Add depth: reflections, glow effects, floating particles, light rays
+3. Background should be ${template?.category === 'neon' ? 'dark with glowing neon effects, cyberpunk grid lines, pink/cyan accents' : 
+   template?.category === 'luxury' ? 'elegant dark or gold gradients, subtle shine, premium feel' :
+   template?.category === 'minimal' ? 'clean, simple, soft shadows, lots of breathing room' :
+   template?.category === 'bold' ? 'vibrant gradient colors, dynamic shapes, energetic' :
+   template?.category === 'seasonal' ? 'seasonal themed elements matching the color palette' :
+   'promotional energy with dynamic shapes and gradients'}
+4. Add decorative elements: geometric shapes, light bursts, abstract patterns
+5. Include a clear "SHOP NOW" call-to-action button
+6. ${discount > 0 ? 'Make the DISCOUNT BADGE extremely visible - bright, bold, attention-grabbing' : 'Display the price prominently'}
 
-REQUIREMENTS:
-- Square 1:1 aspect ratio (1024x1024 pixels)
-- Product should be the focal point, centered
-- Include the product name as stylish typography
-- If there's a price, display it prominently
-- If there's a discount, make it stand out with a badge or burst
-- Professional advertising quality
-- No watermarks or logos
-- Make it look like a real social media ad
+IMPORTANT:
+- DO NOT put the product name/title as text on the image (it goes in the caption)
+- Focus on making the PRODUCT visually stunning and the PRICE/DISCOUNT eye-catching
+- The final result should look like a paid ad from a major brand
+- Professional quality, no watermarks`;
 
-The image should look like a professional advertisement ready for Instagram or Facebook.`;
+    let generatedImageBase64: string | null = null;
 
-    console.log(`[EXPORT] Generating creative for: ${product.title} with template: ${template}`);
-
-    // If product has an image, use image editing
+    // Generate with product image
     if (product.image) {
+      console.log("🖼️ Generating with product image...");
+      
       try {
-        const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
           headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            'Content-Type': 'application/json',
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash-image-preview',
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  { type: 'text', text: imagePrompt },
-                  { type: 'image_url', image_url: { url: product.image } }
-                ]
-              }
-            ],
-            modalities: ['image', 'text']
-          }),
+            model: "google/gemini-2.5-flash-image-preview",
+            messages: [{
+              role: "user",
+              content: [
+                { type: "text", text: imagePrompt },
+                { type: "image_url", image_url: { url: product.image } }
+              ]
+            }],
+            modalities: ["image", "text"]
+          })
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[EXPORT] AI API error:', response.status, errorText);
-          throw new Error(`AI API error: ${response.status}`);
+          console.error("❌ AI error:", response.status);
+          throw new Error(`AI error: ${response.status}`);
         }
 
         const data = await response.json();
-        const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-        if (generatedImageUrl) {
-          // Extract base64 from data URL
-          const base64Match = generatedImageUrl.match(/^data:image\/[^;]+;base64,(.+)$/);
-          const base64Data = base64Match ? base64Match[1] : generatedImageUrl;
-          
-          console.log('[EXPORT] Successfully generated promotional image');
-          return new Response(JSON.stringify({ 
-            base64: base64Data,
-            format: 'png',
-            success: true
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+        const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        
+        if (imageUrl?.startsWith("data:image")) {
+          generatedImageBase64 = imageUrl.split(",")[1];
+          console.log("✅ Image generated successfully");
         }
-      } catch (aiError) {
-        console.error('[EXPORT] AI image generation failed:', aiError);
+      } catch (err) {
+        console.error("⚠️ Generation failed:", err);
       }
     }
 
-    // Fallback: Generate without product image
-    try {
-      const textOnlyPrompt = `Create a professional e-commerce promotional banner.
+    // Fallback generation
+    if (!generatedImageBase64) {
+      console.log("🔄 Fallback generation...");
+      
+      const fallbackPrompt = `Create a stunning ${aspectHint} promotional banner:
 
-TEXT TO DISPLAY: "${product.title}"
-${product.price ? `PRICE: ${product.price}€` : ''}
-${discountText ? `DISCOUNT: ${discountText}` : ''}
+Product: ${product.title}
+${discount > 0 ? `Discount: -${discount}%` : ''}
+${salePrice > 0 ? `Price: ${salePrice}€` : ''}
+${product.vendor ? `Brand: ${product.vendor}` : ''}
 
-STYLE: ${styleDescription}
+Style: ${template?.style || "promotional"}
+Make it look like a professional social media ad with bold design, prominent pricing, and a "SHOP NOW" button.`;
 
-Create a square 1024x1024 promotional banner with stylish typography showing the product name and price. Make it look like a professional social media advertisement.`;
-
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-image-preview',
-          messages: [
-            { role: 'user', content: textOnlyPrompt }
-          ],
-          modalities: ['image', 'text']
-        }),
+          model: "google/gemini-2.5-flash-image-preview",
+          messages: [{ role: "user", content: fallbackPrompt }],
+          modalities: ["image", "text"]
+        })
       });
 
       if (response.ok) {
         const data = await response.json();
-        const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-        if (generatedImageUrl) {
-          const base64Match = generatedImageUrl.match(/^data:image\/[^;]+;base64,(.+)$/);
-          const base64Data = base64Match ? base64Match[1] : generatedImageUrl;
-          
-          console.log('[EXPORT] Generated text-only promotional banner');
-          return new Response(JSON.stringify({ 
-            base64: base64Data,
-            format: 'png',
-            success: true
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
+        const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        if (imageUrl?.startsWith("data:image")) {
+          generatedImageBase64 = imageUrl.split(",")[1];
         }
       }
-    } catch (fallbackError) {
-      console.error('[EXPORT] Fallback generation failed:', fallbackError);
     }
 
-    // Final fallback
-    return new Response(JSON.stringify({ 
-      error: 'Image generation failed',
-      message: 'Could not generate promotional image. Please try again.'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    if (!generatedImageBase64) {
+      throw new Error("Failed to generate image");
+    }
+
+    return new Response(
+      JSON.stringify({ base64: generatedImageBase64 }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 
   } catch (error: any) {
-    console.error('[EXPORT] Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.error("❌ Error:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });
