@@ -263,8 +263,59 @@ Return ONLY valid JSON, no markdown.`;
     }
 
     // ============================================================================
-    // 🕷️ FONCTION UTILITAIRE : Extraction de prix par crawling
+    // 🕷️ FONCTION UTILITAIRE : Extraction de prix par crawling avec JSON-LD prioritaire
     // ============================================================================
+    
+    // Patterns de pages collection/catégorie à EXCLURE
+    const collectionPatterns = [
+      '/collections/',
+      '/collection/',
+      '/categories/',
+      '/category/',
+      '/c/',
+      '/shop/',
+      '/acheter-',
+      '/canapes-d-angle--c',
+      '-c\\d+',  // URLs avec -c111 etc
+    ];
+
+    function isProductPage(url: string): boolean {
+      const urlLower = url.toLowerCase();
+      return !collectionPatterns.some(pattern => 
+        urlLower.includes(pattern) || new RegExp(pattern).test(urlLower)
+      );
+    }
+
+    function isLikelyProductPage(html: string): boolean {
+      // Indicateurs d'une vraie fiche produit
+      const productIndicators = [
+        /<script[^>]*type="application\/ld\+json"[^>]*>.*"@type"\s*:\s*"Product"/is,
+        /itemprop="product"/i,
+        /data-product-id/i,
+        /add.to.cart/i,
+        /buy.now/i,
+        /ajouter.au.panier/i,
+        /acheter/i,
+      ];
+      
+      // Indicateurs d'une page collection
+      const collectionIndicators = [
+        /(\d+)\s*(produits?|articles?|résultats?)/i,
+        /filter.*by/i,
+        /sort.*by/i,
+        /trier.*par/i,
+        /filtrer/i,
+      ];
+      
+      const hasProductIndicators = productIndicators.some(p => p.test(html));
+      const hasCollectionIndicators = collectionIndicators.some(p => p.test(html));
+      
+      // Si clairement une collection, ne pas extraire
+      if (hasCollectionIndicators && !hasProductIndicators) return false;
+      
+      return hasProductIndicators;
+    }
+
     async function extractPriceFromPage(url: string): Promise<number | null> {
       try {
         const response = await fetch(url, {
@@ -278,13 +329,57 @@ Return ONLY valid JSON, no markdown.`;
         
         const html = await response.text();
         
-        // Multi-pattern price extraction
+        // Vérifier si c'est une vraie page produit
+        if (!isLikelyProductPage(html)) {
+          console.log("[SMART-AI] ⊘ Skipping collection/category page:", url);
+          return null;
+        }
+        
+        // 1️⃣ PRIORITÉ 1 : JSON-LD Schema.org (le plus fiable)
+        const jsonLdMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi);
+        if (jsonLdMatch) {
+          for (const scriptTag of jsonLdMatch) {
+            try {
+              const jsonContent = scriptTag.replace(/<script[^>]*>|<\/script>/gi, '');
+              const data = JSON.parse(jsonContent);
+              
+              // Product avec offers
+              if (data['@type'] === 'Product' && data.offers) {
+                const price = data.offers.price || data.offers[0]?.price;
+                if (price && price > minPriceForSegment && price < 50000) {
+                  console.log("[SMART-AI] 💰 JSON-LD price from", url, ":", price);
+                  return parseFloat(price);
+                }
+              }
+            } catch {}
+          }
+        }
+        
+        // 2️⃣ PRIORITÉ 2 : Meta tags Schema.org
+        const schemaPrice = html.match(/itemprop="price"\s*content="(\d+\.?\d*)"/i);
+        if (schemaPrice) {
+          const price = parseFloat(schemaPrice[1]);
+          if (price > minPriceForSegment && price < 50000) {
+            console.log("[SMART-AI] 💰 Schema.org price from", url, ":", price);
+            return price;
+          }
+        }
+        
+        // 3️⃣ PRIORITÉ 3 : Data attributes (Shopify, WooCommerce)
+        const dataPrice = html.match(/data-price="(\d+\.?\d*)"/i);
+        if (dataPrice) {
+          const price = parseFloat(dataPrice[1]);
+          if (price > minPriceForSegment && price < 50000) {
+            console.log("[SMART-AI] 💰 Data attribute price from", url, ":", price);
+            return price;
+          }
+        }
+        
+        // 4️⃣ PRIORITÉ 4 : Regex générique (moins fiable)
         const pricePatterns = [
           /(?:€|EUR)\s*(\d+[.,]?\d*)/gi,           // €1,799.00 or EUR 1799
           /(\d+[.,]?\d*)\s*(?:€|EUR)/gi,           // 1,799.00€ or 1799 EUR
           /"price":\s*"?(\d+\.?\d*)"?/gi,          // JSON price field
-          /data-price="(\d+\.?\d*)"/gi,            // Data attribute
-          /itemprop="price"\s*content="(\d+\.?\d*)"/gi, // Schema.org
           /class="[^"]*price[^"]*"[^>]*>.*?(\d+[.,]\d{2})/gi, // Price class
         ];
         
@@ -294,8 +389,8 @@ Return ONLY valid JSON, no markdown.`;
             const numMatch = match[0].match(/(\d+[.,]?\d*)/);
             if (numMatch) {
               const price = parseFloat(numMatch[1].replace(",", ".").replace(/\s/g, ""));
-              if (price > 10 && price < 50000) {
-                console.log("[SMART-AI] 💰 Extracted price from", url, ":", price);
+              if (price > minPriceForSegment && price < 50000) {
+                console.log("[SMART-AI] 💰 Regex price from", url, ":", price);
                 return price;
               }
             }
@@ -326,14 +421,14 @@ Return ONLY valid JSON, no markdown.`;
     let organicCount = 0;
     let visualCount = 0;
 
-    // Segment-based min price filtering
+    // Segment-based min price filtering (seuils plus réalistes pour meubles)
     const segmentMinPrice: Record<string, number> = {
-      budget: 10,
-      "mid-range": 50,
-      premium: 150,
-      luxury: 500,
+      budget: 100,      // Augmenté de 10 à 100
+      "mid-range": 400, // Augmenté de 50 à 400
+      premium: 800,     // Augmenté de 150 à 800
+      luxury: 1500,     // Augmenté de 500 à 1500
     };
-    const minPriceForSegment = segmentMinPrice[vision?.segment || "mid-range"] || 50;
+    const minPriceForSegment = segmentMinPrice[vision?.segment || "mid-range"] || 400;
 
     // Enhanced query for premium/luxury
     let enhancedQuery = searchQuery;
@@ -378,16 +473,43 @@ Return ONLY valid JSON, no markdown.`;
 
             for (const match of visualMatches) {
               const price = match.price?.extracted_value || parsePrice(match.price?.value);
-              console.log(`[SMART-AI] Lens match (${market}):`, match.title, "Price:", price, "Source:", match.source);
 
               if (match.link && match.source) {
-                // Filtrer les sites non-marchands
-                const nonCommercialDomains = ['edu', 'gov', 'org', 'wikipedia'];
+                // Blocklist sites non-marchands
+                const nonCommercialDomains = [
+                  'instagram.com',
+                  'facebook.com',
+                  'm.facebook.com',
+                  'pinterest.com',
+                  'twitter.com',
+                  'youtube.com',
+                  'tiktok.com',
+                  'wikipedia.org',
+                  '.edu',
+                  '.gov',
+                ];
                 const domain = new URL(match.link).hostname.toLowerCase();
-                const isNonCommercial = nonCommercialDomains.some(d => domain.includes(`.${d}`));
+                const isNonCommercial = nonCommercialDomains.some(d => domain.includes(d));
+                
+                // Vérifier si c'est une page produit (pas collection)
+                const isProduct = isProductPage(match.link);
+                
+                console.log(`[SMART-AI] URL analysis (${market}):`, {
+                  url: match.link,
+                  title: match.title,
+                  source: match.source,
+                  isProductPage: isProduct,
+                  isNonCommercial,
+                  priceFromLens: price || null,
+                });
                 
                 if (isNonCommercial) {
                   console.log(`[SMART-AI] ⊘ Skipping non-commercial site (${market}):`, domain);
+                  continue;
+                }
+                
+                if (!isProduct) {
+                  console.log(`[SMART-AI] ⊘ Skipping collection/category page (${market}):`, match.link);
                   continue;
                 }
                 
@@ -449,7 +571,7 @@ Return ONLY valid JSON, no markdown.`;
       for (const market of markets) {
         try {
           console.log(`[SMART-AI] 🛒 Calling DataForSEO Shopping API for market ${market}...`);
-          const r = await fetch("https://api.dataforseo.com/v3/serp/google/shopping/live/regular", {
+          const r = await fetch("https://api.dataforseo.com/v3/serp/google/shopping/live/advanced", {
             method: "POST",
             headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
             body: JSON.stringify([
