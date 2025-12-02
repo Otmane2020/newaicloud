@@ -213,3 +213,168 @@ export default function BlogCampaignMonitoring() {
     }
     return parts.join(', ');
   };
+
+  return (
+    <div className="container mx-auto py-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">{language === 'fr' ? 'Campagnes IA' : 'AI Campaigns'}</h1>
+          <p className="text-muted-foreground mt-1">
+            {language === 'fr' ? 'Gérez vos campagnes de génération automatique' : 'Manage your automated generation campaigns'}
+          </p>
+        </div>
+      </div>
+
+      <Tabs defaultValue="campaigns" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="campaigns">
+            <CalendarClock className="w-4 h-4 mr-2" />
+            {language === 'fr' ? 'Campagnes' : 'Campaigns'} ({campaigns.length})
+          </TabsTrigger>
+          <TabsTrigger value="articles">
+            <FileText className="w-4 h-4 mr-2" />
+            {language === 'fr' ? 'Articles récents' : 'Recent Articles'} ({articles.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Campaigns Tab */}
+        <TabsContent value="campaigns" className="space-y-4">
+          {campaigns.length === 0 ? (
+            <Card className="p-12 text-center">
+              <CalendarClock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {language === 'fr' 
+                  ? 'Aucune campagne trouvée. Créez votre première campagne automatique !' 
+                  : 'No campaigns found. Create your first automated campaign!'}
+              </p>
+            </Card>
+          ) : (
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{language === 'fr' ? 'Campagne' : 'Campaign'}</TableHead>
+                    <TableHead>{language === 'fr' ? 'Fréquence' : 'Frequency'}</TableHead>
+                    <TableHead>{language === 'fr' ? 'Contenu' : 'Content'}</TableHead>
+                    <TableHead>{language === 'fr' ? 'Prochaine' : 'Next'}</TableHead>
+                    <TableHead>{language === 'fr' ? 'Statut' : 'Status'}</TableHead>
+                    <TableHead>{language === 'fr' ? 'Actions' : 'Actions'}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {campaigns.map((campaign) => {
+                    const status = getCampaignStatus(campaign);
+                    const StatusIcon = status.icon;
+                    
+                    return (
+                      <TableRow 
+                        key={campaign.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setEditingCampaign(campaign)}
+                      >
+                        <TableCell>
+                          <div>
+                            <p className="font-semibold">{campaign.name}</p>
+                            <p className="text-xs text-muted-foreground">{campaign.topic_niche}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{campaign.frequency}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">{getContentSummary(campaign)}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {format(new Date(campaign.next_execution_at), 'dd/MM HH:mm')}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={status.variant}>
+                            <StatusIcon className="w-3 h-3 mr-1" />
+                            {status.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              onClick={() => handleForceGeneration(campaign)}
+                              disabled={generatingCampaignId === campaign.id}
+                              size="sm"
+                              variant="outline"
+                            >
+                              {generatingCampaignId === campaign.id ? (
+                                <RefreshCw className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Play className="w-4 h-4" />
+                              )}
+                            </Button>
+                            <Button
+                              onClick={() => setEditingCampaign(campaign)}
+                              size="sm"
+                              variant="outline"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Articles Tab */}
+        <TabsContent value="articles" className="space-y-4">
+          {articles.length === 0 ? (
+            <Card className="p-12 text-center">
+              <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {language === 'fr' ? 'Aucun article trouvé' : 'No articles found'}
+              </p>
+            </Card>
+          ) : (
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{language === 'fr' ? 'Titre' : 'Title'}</TableHead>
+                    <TableHead>{language === 'fr' ? 'Date de création' : 'Created at'}</TableHead>
+                    <TableHead>{language === 'fr' ? 'Statut' : 'Status'}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {articles.map((article) => (
+                    <TableRow key={article.id}>
+                      <TableCell className="font-medium">{article.title}</TableCell>
+                      <TableCell>
+                        {format(new Date(article.created_at), 'PPP', { 
+                          locale: language === 'fr' ? fr : enUS 
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={article.status === 'published' ? 'default' : 'secondary'}>
+                          {article.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <CampaignEditDialog
+        campaign={editingCampaign}
+        open={!!editingCampaign}
+        onOpenChange={(open) => !open && setEditingCampaign(null)}
+        onSuccess={loadData}
+      />
+    </div>
+  );
+}
