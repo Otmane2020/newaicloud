@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
         return new Response(
           `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><script>
             window.opener.postMessage({ error: '${error}: ${errorDescription}' }, '*');
-            window.close();
+            setTimeout(() => window.close(), 100);
           </script></body></html>`,
           { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=UTF-8' } }
         );
@@ -74,118 +74,51 @@ Deno.serve(async (req) => {
 
       if (!pagesData.data || pagesData.data.length === 0) {
         return new Response(
-          `<html><body><script>
+          `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><script>
             window.opener.postMessage({ error: 'No Facebook pages found. Please create a Facebook Page first.' }, '*');
-            window.close();
+            setTimeout(() => window.close(), 100);
           </script></body></html>`,
-          { headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
-        );
-      }
-
-      // Check if a specific page was selected
-      const selectedPageId = url.searchParams.get('page_id');
-      
-      // If multiple pages and no selection, show selection UI
-      if (pagesData.data.length > 1 && !selectedPageId) {
-        return new Response(
-          `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Selectionner une page Facebook</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f9fafb; }
-    .container { max-width: 400px; margin: 0 auto; background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    h2 { margin: 0 0 8px 0; color: #111827; font-size: 18px; }
-    p { margin: 0 0 16px 0; color: #6b7280; font-size: 14px; }
-    .pages-list { max-height: 400px; overflow-y: auto; }
-    .page-item { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; background: white; }
-    .page-item:hover { background-color: #f3f4f6; border-color: #6366f1; }
-    .page-name { font-weight: 600; color: #111827; }
-    .page-id { font-size: 12px; color: #6b7280; }
-    .loading { display: none; text-align: center; padding: 20px; }
-    .spinner { border: 3px solid #f3f4f6; border-top: 3px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>Selectionnez une page Facebook</h2>
-    <p>${pagesData.data.length} pages trouvees. Choisissez celle a connecter:</p>
-    <div class="pages-list" id="pagesList">
-      ${pagesData.data.map((p: any) => `
-        <div class="page-item" onclick="selectPage('${p.id}', '${p.access_token}')">
-          <div class="page-name">${p.name}</div>
-          <div class="page-id">ID: ${p.id}</div>
-        </div>
-      `).join('')}
-    </div>
-    <div class="loading" id="loading">
-      <div class="spinner"></div>
-      <p>Connexion en cours...</p>
-    </div>
-  </div>
-  <script>
-    const pages = ${JSON.stringify(pagesData.data.map((p: any) => ({ id: p.id, token: p.access_token, name: p.name })))};
-    const userId = '${state}';
-    
-    async function selectPage(pageId, pageToken) {
-      const page = pages.find(p => p.id === pageId);
-      
-      document.getElementById('pagesList').style.display = 'none';
-      document.getElementById('loading').style.display = 'block';
-      
-      try {
-        const response = await fetch('${supabaseUrl}/functions/v1/facebook-page-oauth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            action: 'save_page',
-            userId: userId,
-            pageId: pageId,
-            pageToken: pageToken,
-            pageName: page.name
-          })
-        });
-        
-        const result = await response.json();
-        console.log('Save page result:', result);
-        
-        if (result.success) {
-          if (window.opener) {
-            window.opener.postMessage({ 
-              success: true, 
-              pageName: result.pageName,
-              instagramName: result.instagramName || null,
-              message: result.message
-            }, '*');
-          }
-          window.close();
-        } else {
-          document.getElementById('pagesList').style.display = 'block';
-          document.getElementById('loading').style.display = 'none';
-          alert('Erreur: ' + (result.error || 'Echec de la connexion'));
-        }
-      } catch (err) {
-        console.error('Connection error:', err);
-        document.getElementById('pagesList').style.display = 'block';
-        document.getElementById('loading').style.display = 'none';
-        alert('Erreur de connexion: ' + err.message);
-      }
-    }
-  </script>
-</body>
-</html>`,
           { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=UTF-8' } }
         );
       }
 
-      // Single page or page already selected - proceed with connection
-      const page = selectedPageId 
-        ? pagesData.data.find((p: any) => p.id === selectedPageId) || pagesData.data[0]
-        : pagesData.data[0];
+      // If multiple pages, send data to React parent and close popup
+      if (pagesData.data.length > 1) {
+        const pages = pagesData.data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          token: p.access_token
+        }));
+
+        return new Response(
+          `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f9fafb;">
+  <div style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 300px;">
+    <div style="font-size: 32px; margin-bottom: 12px;">📋</div>
+    <h2 style="margin: 0 0 8px; font-size: 16px; color: #111827;">Plusieurs pages détectées</h2>
+    <p style="color: #6b7280; font-size: 14px; margin: 0;">Sélectionnez une page dans l'application...</p>
+  </div>
+  <script>
+    const data = {
+      needsPageSelection: true,
+      pages: ${JSON.stringify(pages)},
+      userId: '${state}'
+    };
+    if (window.opener) {
+      window.opener.postMessage(data, '*');
+    }
+    setTimeout(() => {
+      try { window.close(); } catch(e) {}
+    }, 500);
+  </script>
+</body></html>`,
+          { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=UTF-8' } }
+        );
+      }
+
+      // Single page - proceed with connection directly
+      const page = pagesData.data[0];
         
       console.log('Storing page connection:', { pageName: page.name, userId: state });
 
@@ -260,16 +193,32 @@ Deno.serve(async (req) => {
         : `Facebook (${page.name}) connecté avec succès!`;
 
       return new Response(
-        `<html><body><script>
-          window.opener.postMessage({ 
-            success: true, 
-            pageName: '${page.name}',
-            instagramName: ${instagramAccountName ? `'${instagramAccountName}'` : 'null'},
-            message: '${successMessage}'
-          }, '*');
-          window.close();
-        </script></body></html>`,
-        { headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+        `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f9fafb;">
+  <div style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+    <h2 style="margin: 0 0 8px; color: #111827;">Connexion réussie !</h2>
+    <p style="color: #6b7280; margin: 0 0 16px;">${page.name} connecté</p>
+    <p style="font-size: 14px; color: #9ca3af;">Cette fenêtre va se fermer...</p>
+    <button onclick="window.close()" style="margin-top: 16px; padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">
+      Fermer manuellement
+    </button>
+  </div>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ 
+        success: true, 
+        pageName: '${page.name}',
+        instagramName: ${instagramAccountName ? `'${instagramAccountName}'` : 'null'},
+        message: '${successMessage}'
+      }, '*');
+    }
+    setTimeout(() => {
+      try { window.close(); } catch(e) {}
+    }, 1500);
+  </script>
+</body></html>`,
+        { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=UTF-8' } }
       );
     }
 
