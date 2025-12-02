@@ -36,6 +36,7 @@ interface SmartAIResult {
   merchants: Merchant[];
   competitors: {
     name: string;
+    title?: string;
     url: string;
     price: number | null;
     image?: string;
@@ -334,9 +335,9 @@ export function SmartPriceDialog({
             <TabsContent value="competitors" className="space-y-4 mt-4">
               {result.competitors && result.competitors.length > 0 ? (
                 <div>
-                  <h4 className="font-semibold mb-3 text-sm sm:text-base">Concurrents détectés ({result.competitors.length})</h4>
+                  <h4 className="font-semibold mb-3 text-sm sm:text-base">Concurrents détectés ({Math.min(result.competitors.length, 15)})</h4>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {result.competitors.map((competitor, idx) => (
+                    {result.competitors.slice(0, 15).map((competitor, idx) => (
                       <a
                         key={idx}
                         href={competitor.url}
@@ -353,8 +354,10 @@ export function SmartPriceDialog({
                             />
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs sm:text-sm font-medium group-hover:text-primary transition-colors">{competitor.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{competitor.url}</p>
+                            <p className="text-xs sm:text-sm font-medium group-hover:text-primary transition-colors line-clamp-1">
+                              {competitor.title || competitor.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">{competitor.name}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
