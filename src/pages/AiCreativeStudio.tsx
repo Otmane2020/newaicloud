@@ -90,26 +90,28 @@ export default function AiCreativeStudio() {
       toast.error("Erreur lors du chargement des produits");
     } else if (data) {
       // Get first variant for price
-      const productIds = data.map(p => p.id);
-      const { data: variants } = await supabase
-        .from("product_variants")
+      const productIds: string[] = data.map(p => p.id);
+      
+      // Use type assertion at from() level to avoid deep type instantiation
+      const variantsResult = await (supabase.from("product_variants") as any)
         .select("product_id, price, compare_at_price")
         .in("product_id", productIds)
-        .eq("position", 1) as { data: { product_id: string; price: number | null; compare_at_price: number | null }[] | null };
+        .eq("position", 1);
+      const variants: Array<{ product_id: string; price: number | null; compare_at_price: number | null }> = variantsResult.data || [];
 
-      const variantMap = new Map(variants?.map(v => [v.product_id, v]) || []);
+      const variantMap = new Map(variants.map(v => [v.product_id, v]));
 
       // Fetch images separately
-      const { data: images } = await supabase
-        .from("product_images")
+      const imagesResult = await (supabase.from("product_images") as any)
         .select("product_id, src, position")
         .in("product_id", productIds)
-        .eq("position", 1) as { data: { product_id: string; src: string; position: number }[] | null };
+        .eq("position", 1);
+      const images: Array<{ product_id: string; src: string; position: number }> = imagesResult.data || [];
 
-      const imageMap = new Map(images?.map(img => [img.product_id, img.src]) || []);
+      const imageMap = new Map(images.map(img => [img.product_id, img.src]));
 
       setProducts(
-        data.map((p) => {
+        data.map((p): ShopifyProduct => {
           const variant = variantMap.get(p.id);
           return {
             id: p.id,
