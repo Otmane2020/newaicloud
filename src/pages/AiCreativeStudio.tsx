@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { 
   Loader2, Wand2, Download, Search, Sparkles, 
   ImageIcon, Check, Grid3X3, LayoutGrid, X,
-  Facebook, Instagram, Share2
+  Facebook, Instagram, Share2, Eraser
 } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
 import { CreativeTemplateGrid, CREATIVE_TEMPLATES, TemplateCategory, TemplateSize } from "@/components/social/creative/CreativeTemplateGrid";
@@ -36,6 +36,8 @@ export default function AiCreativeStudio() {
   const [searchQuery, setSearchQuery] = useState("");
   const [caption, setCaption] = useState("");
   const [showProductPanel, setShowProductPanel] = useState(true);
+  const [applyingWhiteBg, setApplyingWhiteBg] = useState(false);
+  const [whiteBgImage, setWhiteBgImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadShopifyProducts();
@@ -124,6 +126,38 @@ export default function AiCreativeStudio() {
   const handleSelectProduct = (product: ShopifyProduct) => {
     setSelectedProduct(product);
     setGeneratedImage(null);
+    setWhiteBgImage(null);
+  };
+
+  const applyWhiteBackground = async () => {
+    if (!selectedProduct?.image) {
+      toast.error("Ce produit n'a pas d'image");
+      return;
+    }
+
+    setApplyingWhiteBg(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-white-background', {
+        body: { 
+          imageUrl: selectedProduct.image,
+          productTitle: selectedProduct.title
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.imageUrl) {
+        setWhiteBgImage(data.imageUrl);
+        toast.success("Fond blanc appliqué !");
+      } else {
+        throw new Error(data.error || "Échec de la génération");
+      }
+    } catch (error: any) {
+      console.error("Error applying white background:", error);
+      toast.error(error.message || "Erreur lors de l'application du fond blanc");
+    } finally {
+      setApplyingWhiteBg(false);
+    }
   };
 
   const generateCreative = async () => {
@@ -134,9 +168,15 @@ export default function AiCreativeStudio() {
 
     setGenerating(true);
     try {
+      // Use white background image if available
+      const productForGeneration = {
+        ...selectedProduct,
+        image: whiteBgImage || selectedProduct.image
+      };
+
       const { data, error } = await supabase.functions.invoke('export-creative-image', {
         body: { 
-          product: selectedProduct,
+          product: productForGeneration,
           template: selectedTemplate,
           caption,
           format: 'png'
@@ -320,6 +360,47 @@ export default function AiCreativeStudio() {
                   className="resize-none text-sm"
                 />
               </div>
+
+              {/* White Background Option */}
+              {selectedProduct?.image && (
+                <div className="bg-card rounded-xl border p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-sm">Fond blanc IA</h3>
+                    {whiteBgImage && (
+                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                        Appliqué
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Détourez automatiquement le produit sur fond blanc pour un rendu professionnel
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={applyWhiteBackground}
+                    disabled={applyingWhiteBg || !!whiteBgImage}
+                    className="w-full gap-2"
+                  >
+                    {applyingWhiteBg ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Eraser className="h-4 w-4" />
+                    )}
+                    {whiteBgImage ? "Fond blanc appliqué" : "Appliquer fond blanc"}
+                  </Button>
+                  {whiteBgImage && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setWhiteBgImage(null)}
+                      className="w-full text-xs text-muted-foreground"
+                    >
+                      Réinitialiser l'image originale
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -335,6 +416,7 @@ export default function AiCreativeStudio() {
                 sizeFilter={sizeFilter}
                 onSizeChange={setSizeFilter}
                 product={selectedProduct}
+                whiteBgImage={whiteBgImage}
               />
             </div>
 
@@ -382,10 +464,10 @@ export default function AiCreativeStudio() {
                         </div>
                       )}
                       
-                      {selectedProduct?.image ? (
+                      {(whiteBgImage || selectedProduct?.image) ? (
                         <div className="absolute inset-0 flex items-center justify-center p-8">
                           <img 
-                            src={selectedProduct.image}
+                            src={whiteBgImage || selectedProduct.image}
                             alt={selectedProduct.title}
                             className="max-w-full max-h-full object-contain drop-shadow-2xl"
                           />

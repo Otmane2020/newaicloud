@@ -341,6 +341,7 @@ interface CreativeTemplateGridProps {
     price: string | null;
     compare_at_price: string | null;
   } | null;
+  whiteBgImage?: string | null;
 }
 
 export function CreativeTemplateGrid({ 
@@ -350,7 +351,8 @@ export function CreativeTemplateGrid({
   onCategoryChange,
   sizeFilter,
   onSizeChange,
-  product
+  product,
+  whiteBgImage
 }: CreativeTemplateGridProps) {
   const filteredTemplates = CREATIVE_TEMPLATES.filter(t => {
     const matchCategory = category === "all" || t.category === category;
@@ -457,10 +459,10 @@ export function CreativeTemplateGrid({
               )}
 
               {/* Product Image Preview */}
-              {product?.image ? (
+              {(whiteBgImage || product?.image) ? (
                 <div className="absolute inset-0 flex items-center justify-center p-2">
                   <img 
-                    src={product.image}
+                    src={whiteBgImage || product?.image || ''}
                     alt=""
                     className="max-w-[70%] max-h-[70%] object-contain drop-shadow-lg"
                   />
