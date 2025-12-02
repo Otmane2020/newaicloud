@@ -99,6 +99,7 @@ import TestGdprWebhook from "./pages/TestGdprWebhook";
 import ShopifyWebhooksAdmin from "./pages/ShopifyWebhooksAdmin";
 import Demo from "./pages/Demo";
 import SitemapXml from "./pages/SitemapXml";
+import SocialMedia from "./pages/SocialMedia";
 
 const queryClient = new QueryClient();
 
@@ -561,6 +562,14 @@ const App = () => (
             />
             <Route path="/test-gdpr-webhook" element={<TestGdprWebhook />} />
             <Route path="/admin/shopify-webhooks" element={<ShopifyWebhooksAdmin />} />
+            <Route
+              path="/social-media"
+              element={
+                <ProtectedLayout>
+                  <SocialMedia />
+                </ProtectedLayout>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

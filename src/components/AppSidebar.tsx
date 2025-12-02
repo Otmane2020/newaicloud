@@ -40,6 +40,7 @@ import {
   Edit3,
   Key,
   Code,
+  Share2,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -139,6 +140,7 @@ export function AppSidebar() {
   const bottomMenuItems = [
     ...(isTestAccount ? [{ title: t.navigation.aiSearch, url: "/search", icon: Search, key: "aiSearch" }] : []),
     { title: t.navigation.googleShopping, url: "/shopping", icon: ShoppingCart, key: "googleShopping" },
+    { title: "Social Media", url: "/social-media", icon: Share2, key: "socialMedia" },
   ];
 
   const chatSubItems = [
