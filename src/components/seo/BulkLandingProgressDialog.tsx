@@ -145,23 +145,23 @@ export function BulkLandingProgressDialog({
   const { t } = useTranslation();
   const [previews, setPreviews] = useState<LandingPreviewItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isCancelled, setIsCancelled] = useState(false);
   const [syncingToShopify, setSyncingToShopify] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewProductTitle, setPreviewProductTitle] = useState<string>('');
+  const cancelledRef = useRef(false);
   const generationStartedRef = useRef(false);
 
   // Initialize previews when dialog opens
   useEffect(() => {
     if (open && products.length > 0 && !generationStartedRef.current) {
       generationStartedRef.current = true;
+      cancelledRef.current = false; // Reset cancellation on open
       setPreviews(products.map(p => ({
         productId: p.id,
         productTitle: p.title,
         imageUrl: p.image_url,
         status: 'pending',
       })));
-      setIsCancelled(false);
       startGeneration();
     }
     
@@ -173,9 +173,11 @@ export function BulkLandingProgressDialog({
 
   const startGeneration = async () => {
     setIsProcessing(true);
+    let localSuccessCount = 0; // Local counter to avoid stale state
 
     for (let i = 0; i < products.length; i++) {
-      if (isCancelled) break;
+      // Check ref for cancellation (not stale state)
+      if (cancelledRef.current) break;
 
       // Add shorter delay between requests for bulk function (2 seconds)
       if (i > 0) {
@@ -216,6 +218,7 @@ export function BulkLandingProgressDialog({
         }
 
         // Generate landing page with BULK function (faster, lighter)
+        // Edge function already saves to database, no need to save again here
         const productTitle = productData.seo_title || productData.title;
         const result = await callWithRetry<{ html: string }>(
           () => supabase.functions.invoke('generate-landing-bulk', {
@@ -236,17 +239,8 @@ export function BulkLandingProgressDialog({
           5000 // 5s base delay (faster for bulk)
         );
 
-        // Save to database
-        const { error: updateError } = await supabase
-          .from('shopify_products')
-          .update({
-            landing_page_html: result.html,
-            has_landing_page: true,
-            last_landing_generation_at: new Date().toISOString(),
-          })
-          .eq('id', product.id);
-
-        if (updateError) throw updateError;
+        // Increment local counter
+        localSuccessCount++;
 
         // Update status to success
         setPreviews(prev => prev.map(p => 
@@ -272,14 +266,14 @@ export function BulkLandingProgressDialog({
 
     setIsProcessing(false);
     
-    const successCount = previews.filter(p => p.status === 'success').length;
-    if (successCount > 0) {
-      toast.success(`${successCount} landing page(s) générée(s) avec succès`);
+    // Use local counter instead of stale previews state
+    if (localSuccessCount > 0) {
+      toast.success(`${localSuccessCount} landing page(s) générée(s) avec succès`);
     }
   };
 
   const handleCancel = () => {
-    setIsCancelled(true);
+    cancelledRef.current = true;
     toast.info('Génération annulée');
   };
 
