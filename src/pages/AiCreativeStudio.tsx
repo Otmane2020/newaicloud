@@ -5,11 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { 
   Loader2, Wand2, Download, Search, Sparkles, 
-  ImageIcon, Check, Grid3X3, LayoutGrid, X,
-  Facebook, Instagram, Share2, Eraser, Eye, Star, Edit2
+  ImageIcon, Check, X,
+  Facebook, Instagram, Eraser, Eye, Star, Edit2,
+  DollarSign, ChevronRight
 } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
 import { CreativeTemplateGrid, CREATIVE_TEMPLATES, TemplateCategory, TemplateSize } from "@/components/social/creative/CreativeTemplateGrid";
@@ -25,7 +28,6 @@ interface ShopifyProduct {
   compare_at_price: string | null;
   vendor?: string | null;
   product_type?: string | null;
-  // Enrichment data
   vision_attributes?: {
     color?: string;
     material?: string;
@@ -47,12 +49,12 @@ export default function AiCreativeStudio() {
   const [sizeFilter, setSizeFilter] = useState<TemplateSize | "all">("square");
   const [searchQuery, setSearchQuery] = useState("");
   const [caption, setCaption] = useState("");
-  const [showProductPanel, setShowProductPanel] = useState(true);
   const [applyingWhiteBg, setApplyingWhiteBg] = useState(false);
   const [whiteBgImage, setWhiteBgImage] = useState<string | null>(null);
   const [generationMode, setGenerationMode] = useState<GenerationMode>("showcase");
   const [generatedCaption, setGeneratedCaption] = useState("");
   const [isEditingCaption, setIsEditingCaption] = useState(false);
+  const [showPrice, setShowPrice] = useState(true);
 
   useEffect(() => {
     loadShopifyProducts();
@@ -69,7 +71,6 @@ export default function AiCreativeStudio() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get products with enrichment data
       const { data: productsData, error: productsError } = await (supabase.from("shopify_products") as any)
         .select("id, title, vendor, product_type, vision_attributes")
         .eq("seller_id", user.id)
@@ -84,10 +85,10 @@ export default function AiCreativeStudio() {
       }
 
       const productIds = productsData.map((p: any) => p.id);
-
-      // Batch fetch images (max 50 IDs per request to avoid URL limit)
       const imageMap = new Map<string, string>();
+      const variantMap = new Map<string, { price: number | null; compare_at_price: number | null }>();
       const batchSize = 50;
+
       for (let i = 0; i < productIds.length; i += batchSize) {
         const batchIds = productIds.slice(i, i + batchSize);
         const { data: imagesData } = await (supabase.from("product_images") as any)
@@ -100,12 +101,7 @@ export default function AiCreativeStudio() {
             imageMap.set(img.product_id, img.src);
           }
         });
-      }
 
-      // Batch fetch variants for pricing
-      const variantMap = new Map<string, { price: number | null; compare_at_price: number | null }>();
-      for (let i = 0; i < productIds.length; i += batchSize) {
-        const batchIds = productIds.slice(i, i + batchSize);
         const { data: variantsData } = await (supabase.from("product_variants") as any)
           .select("product_id, price, compare_at_price")
           .in("product_id", batchIds)
@@ -188,22 +184,24 @@ export default function AiCreativeStudio() {
 
     setGenerating(true);
     try {
-      // Get the full template object
       const templateData = CREATIVE_TEMPLATES.find(t => t.id === selectedTemplate);
       
-      // Use white background image if available
       const productForGeneration = {
         ...selectedProduct,
-        image: whiteBgImage || selectedProduct.image
+        image: whiteBgImage || selectedProduct.image,
+        // Include price only if showPrice is enabled
+        price: showPrice ? selectedProduct.price : null,
+        compare_at_price: showPrice ? selectedProduct.compare_at_price : null,
       };
 
       const { data, error } = await supabase.functions.invoke('export-creative-image', {
         body: { 
           product: productForGeneration,
-          template: templateData, // Send full template object with aiPromptStyle
+          template: templateData,
           caption,
           format: 'png',
-          mode: generationMode // "showcase" or "strengths"
+          mode: generationMode,
+          showPrice
         }
       });
 
@@ -211,9 +209,8 @@ export default function AiCreativeStudio() {
 
       if (data.base64) {
         setGeneratedImage(`data:image/png;base64,${data.base64}`);
-        // Generate auto caption based on mode and product
         const autoCaption = generationMode === "showcase" 
-          ? `✨ ${selectedProduct.title}${selectedProduct.price ? ` - ${selectedProduct.price}€` : ''}`
+          ? `✨ ${selectedProduct.title}${showPrice && selectedProduct.price ? ` - ${selectedProduct.price}€` : ''}`
           : `💪 Points forts: ${selectedProduct.vision_attributes?.material || 'Qualité premium'} • ${selectedProduct.vision_attributes?.style || 'Design moderne'}`;
         setGeneratedCaption(caption || autoCaption);
         toast.success("Créatif généré avec succès !");
@@ -244,143 +241,160 @@ export default function AiCreativeStudio() {
 
   const selectedTemplateData = CREATIVE_TEMPLATES.find(t => t.id === selectedTemplate);
 
+  // Check completion status
+  const isStep1Complete = !!selectedProduct;
+  const isStep2Complete = !!selectedTemplate;
+  const canGenerate = isStep1Complete && isStep2Complete;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-purple-500/20">
-                <Sparkles className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Ad Library</h1>
-                <p className="text-sm text-muted-foreground hidden sm:block">
-                  Créez des visuels professionnels pour vos réseaux sociaux
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-purple-500/20">
+              <Sparkles className="h-6 w-6 text-primary" />
             </div>
-
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowProductPanel(!showProductPanel)}
-                className="gap-2"
-              >
-                {showProductPanel ? <X className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-                <span className="hidden sm:inline">
-                  {showProductPanel ? "Masquer" : "Produits"}
-                </span>
-              </Button>
-              
-              <Button 
-                size="sm"
-                onClick={generateCreative}
-                disabled={!selectedProduct || generating}
-                className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
-              >
-                {generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Wand2 className="h-4 w-4" />
-                )}
-                <span className="hidden sm:inline">Générer</span>
-              </Button>
+            <div>
+              <h1 className="text-xl font-bold">Ad Library</h1>
+              <p className="text-sm text-muted-foreground hidden sm:block">
+                Créez des visuels professionnels en 5 étapes
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar - Product Selection */}
-          {showProductPanel && (
-            <div className="w-80 shrink-0 space-y-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher un produit..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        
+        {/* STEP 1 - Select Product */}
+        <section className="bg-card rounded-xl border overflow-hidden">
+          <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+              isStep1Complete ? "bg-green-500 text-white" : "bg-primary text-primary-foreground"
+            )}>
+              {isStep1Complete ? <Check className="h-4 w-4" /> : "1"}
+            </div>
+            <div className="flex-1">
+              <h2 className="font-semibold">Sélectionnez un produit</h2>
+              <p className="text-xs text-muted-foreground">Choisissez le produit à mettre en avant</p>
+            </div>
+            {selectedProduct && (
+              <Badge variant="secondary" className="gap-2">
+                <Check className="h-3 w-3" />
+                {selectedProduct.title.slice(0, 30)}...
+              </Badge>
+            )}
+          </div>
+          
+          <div className="p-4 space-y-4">
+            {/* Search */}
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher un produit..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Product Grid */}
+            {loadingProducts ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
-
-              {/* Product List */}
-              <div className="bg-card rounded-xl border p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-sm">Produits</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {filteredProducts.length}
-                  </Badge>
-                </div>
-
-                {loadingProducts ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  </div>
-                ) : (
-                  <ScrollArea className="h-[400px] -mx-2 px-2">
-                    <div className="space-y-2">
-                      {filteredProducts.map((product) => (
-                        <button
-                          key={product.id}
-                          onClick={() => handleSelectProduct(product)}
-                          className={cn(
-                            "w-full flex items-center gap-3 p-2.5 rounded-lg transition-all text-left",
-                            "hover:bg-muted/80",
-                            selectedProduct?.id === product.id 
-                              ? "bg-primary/10 ring-1 ring-primary" 
-                              : "bg-muted/30"
-                          )}
-                        >
-                          {product.image ? (
-                            <img 
-                              src={product.image}
-                              alt={product.title}
-                              className="w-14 h-14 object-cover rounded-lg"
-                            />
-                          ) : (
-                            <div className="w-14 h-14 bg-muted rounded-lg flex items-center justify-center">
-                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{product.title}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              {product.compare_at_price && (
-                                <span className="text-xs text-muted-foreground line-through">
-                                  {product.compare_at_price}€
-                                </span>
-                              )}
-                              {product.price && (
-                                <span className="text-xs font-semibold text-primary">
-                                  {product.price}€
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {selectedProduct?.id === product.id && (
-                            <Check className="h-4 w-4 text-primary shrink-0" />
-                          )}
-                        </button>
-                      ))}
-                      {filteredProducts.length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground text-sm">
-                          Aucun produit trouvé
+            ) : (
+              <ScrollArea className="h-[200px]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {filteredProducts.map((product) => (
+                    <button
+                      key={product.id}
+                      onClick={() => handleSelectProduct(product)}
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-3 rounded-lg transition-all text-center",
+                        "hover:bg-muted/80 border-2",
+                        selectedProduct?.id === product.id 
+                          ? "border-primary bg-primary/5" 
+                          : "border-transparent bg-muted/30"
+                      )}
+                    >
+                      {product.image ? (
+                        <img 
+                          src={product.image}
+                          alt={product.title}
+                          className="w-16 h-16 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
-                    </div>
-                  </ScrollArea>
-                )}
-              </div>
+                      <p className="text-xs font-medium truncate w-full">{product.title}</p>
+                      {product.price && (
+                        <span className="text-xs text-primary font-semibold">{product.price}€</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        </section>
 
-              {/* Generation Mode Toggle */}
-              <div className="bg-card rounded-xl border p-4 space-y-3">
-                <h3 className="font-semibold text-sm">Mode de génération</h3>
+        {/* STEP 2 - Choose Template */}
+        <section className="bg-card rounded-xl border overflow-hidden">
+          <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
+            <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+              isStep2Complete ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+            )}>
+              {isStep2Complete ? <Check className="h-4 w-4" /> : "2"}
+            </div>
+            <div className="flex-1">
+              <h2 className="font-semibold">Choisissez un template</h2>
+              <p className="text-xs text-muted-foreground">Sélectionnez le style visuel</p>
+            </div>
+            {selectedTemplateData && (
+              <Badge variant="secondary" className="gap-2">
+                <Check className="h-3 w-3" />
+                {selectedTemplateData.name}
+              </Badge>
+            )}
+          </div>
+          
+          <div className="p-4">
+            <CreativeTemplateGrid
+              selected={selectedTemplate}
+              onSelect={setSelectedTemplate}
+              category={category}
+              onCategoryChange={setCategory}
+              sizeFilter={sizeFilter}
+              onSizeChange={setSizeFilter}
+              product={selectedProduct}
+              whiteBgImage={whiteBgImage}
+            />
+          </div>
+        </section>
+
+        {/* STEP 3 - Options */}
+        <section className="bg-card rounded-xl border overflow-hidden">
+          <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">
+              3
+            </div>
+            <div className="flex-1">
+              <h2 className="font-semibold">Options de génération</h2>
+              <p className="text-xs text-muted-foreground">Personnalisez votre créatif</p>
+            </div>
+          </div>
+          
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Mode Toggle */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Mode</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setGenerationMode("showcase")}
@@ -393,7 +407,6 @@ export default function AiCreativeStudio() {
                   >
                     <Eye className="h-5 w-5" />
                     <span className="text-xs font-medium">Showcase</span>
-                    <span className="text-[10px] text-muted-foreground">Mise en valeur</span>
                   </button>
                   <button
                     onClick={() => setGenerationMode("strengths")}
@@ -406,66 +419,31 @@ export default function AiCreativeStudio() {
                   >
                     <Star className="h-5 w-5" />
                     <span className="text-xs font-medium">Points forts</span>
-                    <span className="text-[10px] text-muted-foreground">USP & Bénéfices</span>
                   </button>
                 </div>
+              </div>
+
+              {/* Price Toggle */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Affichage</Label>
+                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Afficher le prix</span>
+                  </div>
+                  <Switch
+                    checked={showPrice}
+                    onCheckedChange={setShowPrice}
+                  />
+                </div>
                 
-                {/* Show enrichment data if available */}
-                {selectedProduct?.vision_attributes && (
-                  <div className="mt-3 p-2 bg-muted/50 rounded-lg">
-                    <p className="text-[10px] font-medium text-muted-foreground mb-1">Données enrichies :</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedProduct.vision_attributes.color && (
-                        <Badge variant="secondary" className="text-[9px]">
-                          {selectedProduct.vision_attributes.color}
-                        </Badge>
-                      )}
-                      {selectedProduct.vision_attributes.material && (
-                        <Badge variant="secondary" className="text-[9px]">
-                          {selectedProduct.vision_attributes.material}
-                        </Badge>
-                      )}
-                      {selectedProduct.vision_attributes.style && (
-                        <Badge variant="secondary" className="text-[9px]">
-                          {selectedProduct.vision_attributes.style}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Caption Input */}
-              <div className="bg-card rounded-xl border p-4 space-y-3">
-                <h3 className="font-semibold text-sm">Texte personnalisé</h3>
-                <Textarea
-                  placeholder="Ajoutez une accroche ou laissez vide pour génération auto..."
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  rows={3}
-                  className="resize-none text-sm"
-                />
-              </div>
-
-              {/* White Background Option */}
-              {selectedProduct?.image && (
-                <div className="bg-card rounded-xl border p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-sm">Fond blanc IA</h3>
-                    {whiteBgImage && (
-                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
-                        Appliqué
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Détourez automatiquement le produit sur fond blanc pour un rendu professionnel
-                  </p>
+                {/* White Background */}
+                {selectedProduct?.image && (
                   <Button 
-                    variant="outline" 
+                    variant={whiteBgImage ? "secondary" : "outline"}
                     size="sm" 
-                    onClick={applyWhiteBackground}
-                    disabled={applyingWhiteBg || !!whiteBgImage}
+                    onClick={whiteBgImage ? () => setWhiteBgImage(null) : applyWhiteBackground}
+                    disabled={applyingWhiteBg}
                     className="w-full gap-2"
                   >
                     {applyingWhiteBg ? (
@@ -473,178 +451,194 @@ export default function AiCreativeStudio() {
                     ) : (
                       <Eraser className="h-4 w-4" />
                     )}
-                    {whiteBgImage ? "Fond blanc appliqué" : "Appliquer fond blanc"}
+                    {whiteBgImage ? "Réinitialiser fond" : "Fond blanc IA"}
                   </Button>
-                  {whiteBgImage && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setWhiteBgImage(null)}
-                      className="w-full text-xs text-muted-foreground"
-                    >
-                      Réinitialiser l'image originale
-                    </Button>
-                  )}
+                )}
+              </div>
+
+              {/* Enrichment Data */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Données produit</Label>
+                {selectedProduct?.vision_attributes ? (
+                  <div className="p-3 rounded-lg border bg-muted/30 space-y-2">
+                    <div className="flex flex-wrap gap-1">
+                      {selectedProduct.vision_attributes.color && (
+                        <Badge variant="secondary" className="text-xs">
+                          {selectedProduct.vision_attributes.color}
+                        </Badge>
+                      )}
+                      {selectedProduct.vision_attributes.material && (
+                        <Badge variant="secondary" className="text-xs">
+                          {selectedProduct.vision_attributes.material}
+                        </Badge>
+                      )}
+                      {selectedProduct.vision_attributes.style && (
+                        <Badge variant="secondary" className="text-xs">
+                          {selectedProduct.vision_attributes.style}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Ces données enrichissent la génération
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg border bg-muted/30 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      {selectedProduct ? "Aucune donnée enrichie" : "Sélectionnez un produit"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* STEP 4 - Highlighted Text */}
+        <section className="bg-card rounded-xl border overflow-hidden">
+          <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">
+              4
+            </div>
+            <div className="flex-1">
+              <h2 className="font-semibold">Texte d'accroche</h2>
+              <p className="text-xs text-muted-foreground">Optionnel - laissez vide pour génération auto</p>
+            </div>
+          </div>
+          
+          <div className="p-4">
+            <Textarea
+              placeholder="Ex: Offre limitée ! -30% sur ce produit..."
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              rows={2}
+              className="resize-none"
+            />
+          </div>
+        </section>
+
+        {/* STEP 5 - Generate Button */}
+        <section className="bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-xl border border-primary/20 p-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <Wand2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold">Prêt à générer ?</h2>
+                <p className="text-sm text-muted-foreground">
+                  {canGenerate 
+                    ? "Tous les paramètres sont configurés" 
+                    : "Complétez les étapes ci-dessus"
+                  }
+                </p>
+              </div>
+            </div>
+            
+            <Button 
+              size="lg"
+              onClick={generateCreative}
+              disabled={!canGenerate || generating}
+              className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 px-8"
+            >
+              {generating ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Sparkles className="h-5 w-5" />
+              )}
+              Générer l'aperçu
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </section>
+
+        {/* Preview Section */}
+        {(generatedImage || generating) && (
+          <section className="bg-card rounded-xl border overflow-hidden">
+            <div className="bg-muted/30 px-4 py-3 border-b flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center">
+                  <Check className="h-4 w-4" />
+                </div>
+                <h2 className="font-semibold">Résultat</h2>
+              </div>
+              
+              {generatedImage && (
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Facebook className="h-4 w-4 text-blue-600" />
+                    Facebook
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Instagram className="h-4 w-4 text-pink-600" />
+                    Instagram
+                  </Button>
+                  <Button size="sm" onClick={downloadImage} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Télécharger
+                  </Button>
                 </div>
               )}
             </div>
-          )}
+            
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Generated Image */}
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">Image générée</p>
+                  <div className="aspect-square rounded-xl overflow-hidden bg-muted border-2 border-dashed border-muted-foreground/20 flex items-center justify-center">
+                    {generating ? (
+                      <div className="text-center">
+                        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-3" />
+                        <p className="text-sm text-muted-foreground">Génération en cours...</p>
+                      </div>
+                    ) : generatedImage ? (
+                      <img 
+                        src={generatedImage}
+                        alt="Generated creative"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : null}
+                  </div>
+                </div>
 
-          {/* Main Content */}
-          <div className="flex-1 space-y-6">
-            {/* Template Grid */}
-            <div className="bg-card rounded-xl border p-4">
-              <CreativeTemplateGrid
-                selected={selectedTemplate}
-                onSelect={setSelectedTemplate}
-                category={category}
-                onCategoryChange={setCategory}
-                sizeFilter={sizeFilter}
-                onSizeChange={setSizeFilter}
-                product={selectedProduct}
-                whiteBgImage={whiteBgImage}
-              />
-            </div>
-
-            {/* Preview Section */}
-            {(selectedProduct || generatedImage) && (
-              <div className="bg-card rounded-xl border p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold">Aperçu</h3>
+                {/* Editable Caption */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">Caption éditable</p>
+                    {generatedImage && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setIsEditingCaption(!isEditingCaption)}
+                        className="h-7 px-2 gap-1"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                        {isEditingCaption ? "Fermer" : "Éditer"}
+                      </Button>
+                    )}
+                  </div>
+                  
                   {generatedImage && (
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <Facebook className="h-4 w-4 text-blue-600" />
-                        Facebook
-                      </Button>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <Instagram className="h-4 w-4 text-pink-600" />
-                        Instagram
-                      </Button>
-                      <Button size="sm" onClick={downloadImage} className="gap-2">
-                        <Download className="h-4 w-4" />
-                        Télécharger
-                      </Button>
+                    <div className="bg-muted/30 rounded-xl p-4 h-full min-h-[200px]">
+                      {isEditingCaption ? (
+                        <Textarea
+                          value={generatedCaption}
+                          onChange={(e) => setGeneratedCaption(e.target.value)}
+                          rows={8}
+                          className="resize-none h-full"
+                          placeholder="Ajoutez votre caption..."
+                        />
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap">{generatedCaption || "Aucune caption générée"}</p>
+                      )}
                     </div>
                   )}
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Template Preview */}
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">Template sélectionné</p>
-                    <div 
-                      className={cn(
-                        "aspect-square rounded-xl overflow-hidden relative",
-                        selectedTemplateData?.preview || "bg-muted"
-                      )}
-                    >
-                      {selectedTemplateData?.badge && (
-                        <div className="absolute top-4 left-4">
-                          <span className={cn(
-                            "px-3 py-1.5 text-sm font-bold rounded-lg shadow",
-                            selectedTemplateData.badgeColor || "bg-white text-gray-900"
-                          )}>
-                            {selectedTemplateData.badge}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {(whiteBgImage || selectedProduct?.image) ? (
-                        <div className="absolute inset-0 flex items-center justify-center p-8">
-                          <img 
-                            src={whiteBgImage || selectedProduct.image}
-                            alt={selectedProduct.title}
-                            className="max-w-full max-h-full object-contain drop-shadow-2xl"
-                          />
-                        </div>
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center text-muted-foreground">
-                            <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">Sélectionnez un produit</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedProduct && (
-                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                          <h4 className="text-white font-bold text-lg truncate">{selectedProduct.title}</h4>
-                          {selectedProduct.price && (
-                            <div className="flex items-center gap-2 mt-1">
-                              {selectedProduct.compare_at_price && (
-                                <span className="text-white/60 text-sm line-through">
-                                  {selectedProduct.compare_at_price}€
-                                </span>
-                              )}
-                              <span className="text-yellow-400 font-bold text-xl">
-                                {selectedProduct.price}€
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Generated Image */}
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">Image générée par IA</p>
-                    <div className="aspect-square rounded-xl overflow-hidden bg-muted border-2 border-dashed border-muted-foreground/20 flex items-center justify-center">
-                      {generating ? (
-                        <div className="text-center">
-                          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-3" />
-                          <p className="text-sm text-muted-foreground">Génération en cours...</p>
-                        </div>
-                      ) : generatedImage ? (
-                        <img 
-                          src={generatedImage}
-                          alt="Generated creative"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-center text-muted-foreground">
-                          <Wand2 className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                          <p className="text-sm">Cliquez sur "Générer" pour créer</p>
-                          <p className="text-xs mt-1">votre visuel publicitaire</p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Editable Caption */}
-                    {generatedImage && (
-                      <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-medium text-muted-foreground">Caption</p>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => setIsEditingCaption(!isEditingCaption)}
-                            className="h-6 px-2"
-                          >
-                            <Edit2 className="h-3 w-3 mr-1" />
-                            <span className="text-xs">{isEditingCaption ? "Fermer" : "Éditer"}</span>
-                          </Button>
-                        </div>
-                        {isEditingCaption ? (
-                          <Textarea
-                            value={generatedCaption}
-                            onChange={(e) => setGeneratedCaption(e.target.value)}
-                            rows={3}
-                            className="resize-none text-sm"
-                            placeholder="Ajoutez votre caption..."
-                          />
-                        ) : (
-                          <p className="text-sm">{generatedCaption || "Aucune caption"}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
