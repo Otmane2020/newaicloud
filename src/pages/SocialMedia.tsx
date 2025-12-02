@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "@/lib/language";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,6 +28,8 @@ interface SocialSettings {
 
 const SocialMedia = () => {
   const { user } = useAuth();
+  const { selectedStore } = useStore();
+  const { t } = useTranslation();
   
   const [activeTab, setActiveTab] = useState("posts");
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
@@ -147,11 +151,11 @@ const SocialMedia = () => {
         </TabsList>
 
         <TabsContent value="posts" className="space-y-4">
-          <SocialPostsList userId={user?.id} storeId={undefined} />
+          <SocialPostsList userId={user?.id} storeId={selectedStore?.id} />
         </TabsContent>
 
         <TabsContent value="campaigns" className="space-y-4">
-          <SocialCampaignsList userId={user?.id} storeId={undefined} />
+          <SocialCampaignsList userId={user?.id} storeId={selectedStore?.id} />
         </TabsContent>
 
         <TabsContent value="connections" className="space-y-4">
@@ -253,7 +257,7 @@ const SocialMedia = () => {
       {showCampaignWizard && (
         <SocialCampaignWizard
           userId={user?.id}
-          storeId={undefined}
+          storeId={selectedStore?.id}
           onClose={() => setShowCampaignWizard(false)}
           onCreated={() => {
             setShowCampaignWizard(false);

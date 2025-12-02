@@ -5,6 +5,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Analyze image with AI Vision
+async function analyzeProductImage(imageUrl: string, lovableApiKey: string): Promise<string> {
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Décris cette image de produit de manière concise et attrayante pour une publication sur les réseaux sociaux. 
+                       Inclus: couleurs, matériaux visibles, style, ambiance.
+                       Maximum 50 mots. En français.`
+              },
+              {
+                type: 'image_url',
+                image_url: { url: imageUrl }
+              }
+            ]
+          }
+        ],
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || '';
+    }
+  } catch (error) {
+    console.error('Vision analysis error:', error);
+  }
+  return '';
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -35,6 +76,7 @@ Deno.serve(async (req) => {
     let productLink: string | null = null;
     let variants: any[] = [];
     let priceRange: { min: number; max: number } | null = null;
+    let visionDescription = '';
 
     if (contentType === 'product') {
       const { data: product } = await supabase
@@ -55,6 +97,12 @@ Deno.serve(async (req) => {
           .sort((a: any, b: any) => (a.position || 0) - (b.position || 0));
         images = sortedImages.map((img: any) => img.src).filter(Boolean);
         mainImage = images[0] || null;
+        
+        // Analyze main image with AI Vision
+        if (mainImage && lovableApiKey) {
+          visionDescription = await analyzeProductImage(mainImage, lovableApiKey);
+          console.log('[generate-social-post] Vision analysis:', visionDescription);
+        }
         
         // Get variants with prices
         variants = product.product_variants || [];
@@ -91,7 +139,13 @@ Deno.serve(async (req) => {
       if (collection) {
         contentData = collection;
         mainImage = collection.image_src || null;
-        if (mainImage) images = [mainImage];
+        if (mainImage) {
+          images = [mainImage];
+          // Analyze collection image
+          if (lovableApiKey) {
+            visionDescription = await analyzeProductImage(mainImage, lovableApiKey);
+          }
+        }
       }
     } else if (contentType === 'article') {
       const { data: article } = await supabase
@@ -139,7 +193,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Generate caption with AI
+    // Generate caption with AI - enriched with vision analysis
     const platformName = channels?.includes('instagram') ? 'Instagram' : 'Facebook';
     const isReel = postFormat === 'reel' || postFormat === 'video';
     
@@ -147,20 +201,24 @@ Deno.serve(async (req) => {
       ? `Tu es un expert en marketing social media. Génère une légende engageante pour un post ${platformName}${isReel ? ' Reel/vidéo' : ''}.
          La légende doit être concise (max 150 caractères), accrocheuse et inclure des emojis pertinents.
          ${isReel ? 'Adapte le ton pour une vidéo courte et dynamique.' : ''}
-         Ne pas inclure de hashtags.`
+         Ne pas inclure de hashtags.
+         UTILISE la description visuelle de l'image pour rendre le texte plus authentique et descriptif.`
       : `You are a social media marketing expert. Generate an engaging caption for a ${platformName}${isReel ? ' Reel/video' : ''} post.
          The caption should be concise (max 150 characters), catchy and include relevant emojis.
          ${isReel ? 'Adapt the tone for a short, dynamic video.' : ''}
-         Do not include hashtags.`;
+         Do not include hashtags.
+         USE the visual description of the image to make the text more authentic and descriptive.`;
 
     const userPrompt = language === 'fr'
       ? `Génère une légende pour ce contenu:
 Titre: ${title}
-Description: ${cleanDescription}${variantInfo}${priceInfo}
+Description produit: ${cleanDescription}${variantInfo}${priceInfo}
+${visionDescription ? `\nAnalyse visuelle de l'image: ${visionDescription}` : ''}
 ${images.length > 1 ? `Photos disponibles: ${images.length} images du produit` : ''}`
       : `Generate a caption for this content:
 Title: ${title}
-Description: ${cleanDescription}${variantInfo}${priceInfo}
+Product description: ${cleanDescription}${variantInfo}${priceInfo}
+${visionDescription ? `\nVisual analysis of image: ${visionDescription}` : ''}
 ${images.length > 1 ? `Available photos: ${images.length} product images` : ''}`;
 
     let caption = title;
@@ -202,6 +260,7 @@ ${images.length > 1 ? `Available photos: ${images.length} product images` : ''}`
       imageUrl: mainImage,
       images: images, // All product images for carousel
       productLink,
+      visionDescription, // Include vision analysis in response
       variants: variants.map(v => ({
         title: v.title,
         price: v.price,
