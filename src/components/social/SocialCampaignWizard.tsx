@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Facebook, Instagram, Calendar, Sparkles } from "lucide-react";
+import { Loader2, Facebook, Instagram, Calendar, Sparkles, Video, Image, Music } from "lucide-react";
 
 interface SocialCampaignWizardProps {
   userId?: string;
@@ -18,6 +18,15 @@ interface SocialCampaignWizardProps {
   onCreated: () => void;
 }
 
+const FREE_MUSIC_TRACKS = [
+  { id: 'upbeat_corporate', name: '🎵 Upbeat Corporate', duration: '30s' },
+  { id: 'chill_lofi', name: '🎶 Chill Lo-Fi', duration: '30s' },
+  { id: 'energetic_pop', name: '🎸 Energetic Pop', duration: '30s' },
+  { id: 'soft_piano', name: '🎹 Soft Piano', duration: '30s' },
+  { id: 'modern_tech', name: '🔊 Modern Tech', duration: '30s' },
+  { id: 'happy_acoustic', name: '🎻 Happy Acoustic', duration: '30s' },
+];
+
 const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCampaignWizardProps) => {
   const [step, setStep] = useState(1);
   
@@ -25,12 +34,18 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
   const [name, setName] = useState('');
   const [contentType, setContentType] = useState<'products' | 'collections' | 'articles'>('products');
   const [frequency, setFrequency] = useState('daily');
+  const [postsPerRun, setPostsPerRun] = useState(1);
   const [executionHour, setExecutionHour] = useState(12);
   const [channels, setChannels] = useState<string[]>(['facebook', 'instagram']);
+  const [postFormat, setPostFormat] = useState<'image' | 'carousel' | 'video' | 'reel'>('image');
   const [templateStyle, setTemplateStyle] = useState('overlay');
   const [includeLogo, setIncludeLogo] = useState(true);
   const [includeLink, setIncludeLink] = useState(true);
   const [customPrompt, setCustomPrompt] = useState('');
+  
+  // Video/Reel options
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [musicTrack, setMusicTrack] = useState('');
   
   // Content selection
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -53,12 +68,12 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
       const [productsRes, collectionsRes] = await Promise.all([
         supabase
           .from('shopify_products')
-          .select('id, title')
+          .select('id, title, product_images(src)')
           .eq('seller_id', userId)
           .limit(100),
         supabase
           .from('shopify_collections')
-          .select('id, title')
+          .select('id, title, image_src')
           .eq('user_id', userId)
           .limit(50),
       ]);
@@ -107,12 +122,16 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
           name,
           content_type: contentType,
           frequency,
+          posts_per_run: postsPerRun,
           execution_hour: executionHour,
           channels,
+          post_format: postFormat,
           template_style: templateStyle,
           include_logo: includeLogo,
           include_link: includeLink,
           custom_prompt: customPrompt || null,
+          voice_enabled: voiceEnabled,
+          music_track: musicTrack || null,
           product_ids: selectedProducts.length > 0 ? selectedProducts : null,
           collection_ids: selectedCollections.length > 0 ? selectedCollections : null,
           next_run_at: nextRun.toISOString(),
@@ -129,7 +148,9 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
     }
   };
 
-  const totalCreditsPerPost = channels.length * 3;
+  const isVideoFormat = postFormat === 'video' || postFormat === 'reel';
+  const creditsPerPost = channels.length * (isVideoFormat ? 5 : 3);
+  const totalCreditsPerRun = creditsPerPost * postsPerRun;
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -162,31 +183,49 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="products">🏷️ Produits</SelectItem>
+                    <SelectItem value="products">🏷️ Produits (titre, description, photos, variations)</SelectItem>
                     <SelectItem value="collections">📁 Collections</SelectItem>
                     <SelectItem value="articles">📝 Articles de blog</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {/* Frequency */}
-              <div className="space-y-2">
-                <Label>Fréquence de publication</Label>
-                <Select value={frequency} onValueChange={setFrequency}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">📅 Quotidien</SelectItem>
-                    <SelectItem value="weekly">📆 Hebdomadaire</SelectItem>
-                    <SelectItem value="monthly">🗓️ Mensuel</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Frequency & Posts per run */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Fréquence de publication</Label>
+                  <Select value={frequency} onValueChange={setFrequency}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">📅 Quotidien</SelectItem>
+                      <SelectItem value="weekly">📆 Hebdomadaire</SelectItem>
+                      <SelectItem value="monthly">🗓️ Mensuel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Posts par exécution</Label>
+                  <Select value={postsPerRun.toString()} onValueChange={(v) => setPostsPerRun(parseInt(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 5, 10].map((n) => (
+                        <SelectItem key={n} value={n.toString()}>
+                          {n} post{n > 1 ? 's' : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Execution Hour */}
               <div className="space-y-2">
-                <Label>Heure de publication</Label>
+                <Label>Heure de publication (UTC)</Label>
                 <Select value={executionHour.toString()} onValueChange={(v) => setExecutionHour(parseInt(v))}>
                   <SelectTrigger>
                     <SelectValue />
@@ -244,6 +283,106 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
 
           {step === 2 && (
             <>
+              {/* Post Format */}
+              <div className="space-y-2">
+                <Label>Format des publications</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPostFormat('image')}
+                    className={`p-4 border rounded-lg text-left transition-colors ${
+                      postFormat === 'image' ? 'border-primary bg-primary/5' : 'hover:border-muted-foreground'
+                    }`}
+                  >
+                    <Image className="h-5 w-5 mb-2" />
+                    <div className="font-medium">📷 Image</div>
+                    <div className="text-xs text-muted-foreground">Photo simple avec texte</div>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setPostFormat('carousel')}
+                    className={`p-4 border rounded-lg text-left transition-colors ${
+                      postFormat === 'carousel' ? 'border-primary bg-primary/5' : 'hover:border-muted-foreground'
+                    }`}
+                  >
+                    <Image className="h-5 w-5 mb-2" />
+                    <div className="font-medium">🎠 Carrousel</div>
+                    <div className="text-xs text-muted-foreground">Multi-images (toutes les photos)</div>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setPostFormat('video')}
+                    className={`p-4 border rounded-lg text-left transition-colors ${
+                      postFormat === 'video' ? 'border-primary bg-primary/5' : 'hover:border-muted-foreground'
+                    }`}
+                  >
+                    <Video className="h-5 w-5 mb-2" />
+                    <div className="font-medium">🎬 Vidéo</div>
+                    <div className="text-xs text-muted-foreground">Slideshow animé + musique</div>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setPostFormat('reel')}
+                    className={`p-4 border rounded-lg text-left transition-colors ${
+                      postFormat === 'reel' ? 'border-primary bg-primary/5' : 'hover:border-muted-foreground'
+                    }`}
+                  >
+                    <Video className="h-5 w-5 mb-2" />
+                    <div className="font-medium">📱 Reel</div>
+                    <div className="text-xs text-muted-foreground">Format vertical 9:16</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Video/Reel Options */}
+              {isVideoFormat && (
+                <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Video className="h-4 w-4" />
+                    Options vidéo
+                  </h4>
+                  
+                  {/* Music Selection */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Music className="h-4 w-4" />
+                      Musique de fond (gratuite)
+                    </Label>
+                    <Select value={musicTrack} onValueChange={setMusicTrack}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner une musique..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Aucune musique</SelectItem>
+                        {FREE_MUSIC_TRACKS.map((track) => (
+                          <SelectItem key={track.id} value={track.id}>
+                            {track.name} ({track.duration})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Voice Option (ElevenLabs - coming soon) */}
+                  <div className="flex items-center justify-between opacity-60">
+                    <div>
+                      <Label>Voix IA (ElevenLabs)</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Bientôt disponible - Narration automatique
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={voiceEnabled} 
+                      onCheckedChange={setVoiceEnabled} 
+                      disabled 
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Template Style */}
               <div className="space-y-2">
                 <Label>Style des visuels</Label>
@@ -254,7 +393,9 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
                   <SelectContent>
                     <SelectItem value="simple">📷 Photo simple</SelectItem>
                     <SelectItem value="overlay">✨ Template avec overlay texte</SelectItem>
-                    <SelectItem value="carousel">🎠 Carrousel multi-images</SelectItem>
+                    <SelectItem value="product_spotlight">🎯 Product Spotlight</SelectItem>
+                    <SelectItem value="promo">🔥 Promo / Black Friday</SelectItem>
+                    <SelectItem value="testimonial">💬 Testimonial</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -265,7 +406,7 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
                   <div>
                     <Label>Inclure le logo</Label>
                     <p className="text-sm text-muted-foreground">
-                      Ajoute votre logo sur les visuels (overlay)
+                      Ajoute votre logo sur les visuels
                     </p>
                   </div>
                   <Switch checked={includeLogo} onCheckedChange={setIncludeLogo} />
@@ -293,16 +434,24 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
                 />
               </div>
 
+              <Button onClick={() => setStep(3)} className="w-full">
+                Suivant - Sélection contenu
+              </Button>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
               {/* Content Selection */}
               {contentType === 'products' && products.length > 0 && (
                 <div className="space-y-2">
                   <Label>Produits à promouvoir (optionnel)</Label>
                   <p className="text-sm text-muted-foreground mb-2">
-                    Laissez vide pour sélectionner aléatoirement
+                    Laissez vide pour rotation automatique de tous vos produits
                   </p>
-                  <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1">
+                  <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-1">
                     {products.map((product) => (
-                      <label key={product.id} className="flex items-center gap-2 cursor-pointer p-1 hover:bg-muted rounded">
+                      <label key={product.id} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-muted rounded">
                         <Checkbox
                           checked={selectedProducts.includes(product.id)}
                           onCheckedChange={(checked) => {
@@ -313,19 +462,31 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
                             }
                           }}
                         />
-                        <span className="text-sm truncate">{product.title}</span>
+                        {product.product_images?.[0]?.src && (
+                          <img 
+                            src={product.product_images[0].src} 
+                            alt="" 
+                            className="h-10 w-10 object-cover rounded"
+                          />
+                        )}
+                        <span className="text-sm truncate flex-1">{product.title}</span>
                       </label>
                     ))}
                   </div>
+                  {selectedProducts.length > 0 && (
+                    <p className="text-sm text-primary">
+                      {selectedProducts.length} produit(s) sélectionné(s)
+                    </p>
+                  )}
                 </div>
               )}
 
               {contentType === 'collections' && collections.length > 0 && (
                 <div className="space-y-2">
                   <Label>Collections à promouvoir (optionnel)</Label>
-                  <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-1">
+                  <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-1">
                     {collections.map((collection) => (
-                      <label key={collection.id} className="flex items-center gap-2 cursor-pointer p-1 hover:bg-muted rounded">
+                      <label key={collection.id} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-muted rounded">
                         <Checkbox
                           checked={selectedCollections.includes(collection.id)}
                           onCheckedChange={(checked) => {
@@ -336,27 +497,51 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
                             }
                           }}
                         />
-                        <span className="text-sm truncate">{collection.title}</span>
+                        {collection.image_src && (
+                          <img 
+                            src={collection.image_src} 
+                            alt="" 
+                            className="h-10 w-10 object-cover rounded"
+                          />
+                        )}
+                        <span className="text-sm truncate flex-1">{collection.title}</span>
                       </label>
                     ))}
                   </div>
                 </div>
               )}
 
+              {contentType === 'articles' && (
+                <div className="p-4 bg-muted rounded-lg text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Les articles publiés seront automatiquement partagés
+                  </p>
+                </div>
+              )}
+
               {/* Cost Info */}
-              <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2">💰 Coût estimé</h4>
-                <p className="text-sm text-muted-foreground">
-                  {totalCreditsPerPost} crédits par publication
-                  {frequency === 'daily' && ` (~${totalCreditsPerPost * 30} crédits/mois)`}
-                  {frequency === 'weekly' && ` (~${totalCreditsPerPost * 4} crédits/mois)`}
-                  {frequency === 'monthly' && ` (~${totalCreditsPerPost} crédits/mois)`}
-                </p>
+              <div className="p-4 bg-muted rounded-lg space-y-2">
+                <h4 className="font-medium">💰 Coût estimé</h4>
+                <div className="text-sm space-y-1">
+                  <p>
+                    <span className="text-muted-foreground">Par post:</span> {creditsPerPost} crédits
+                    {isVideoFormat && ' (vidéo)'}
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Par exécution:</span> {totalCreditsPerRun} crédits 
+                    ({postsPerRun} post{postsPerRun > 1 ? 's' : ''})
+                  </p>
+                  <p className="font-medium text-primary">
+                    {frequency === 'daily' && `~${totalCreditsPerRun * 30} crédits/mois`}
+                    {frequency === 'weekly' && `~${totalCreditsPerRun * 4} crédits/mois`}
+                    {frequency === 'monthly' && `~${totalCreditsPerRun} crédits/mois`}
+                  </p>
+                </div>
               </div>
 
               {/* Actions */}
               <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
                   Retour
                 </Button>
                 <Button onClick={saveCampaign} disabled={saving || !name} className="flex-1">
