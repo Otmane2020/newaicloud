@@ -10,15 +10,17 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { 
   Loader2, Wand2, Download, Search, Sparkles, 
-  ImageIcon, Check, X,
-  Facebook, Instagram, Eraser, Eye, Star, Edit2,
-  DollarSign, ChevronRight
+  ImageIcon, Check, Facebook, Instagram, Eraser, Eye, Star, Edit2,
+  DollarSign, Send, Link, Image as ImageIconLucide, Hash, FileText
 } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
 import { CreativeTemplateGrid, CREATIVE_TEMPLATES, TemplateCategory, TemplateSize } from "@/components/social/creative/CreativeTemplateGrid";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/language";
 
 type GenerationMode = "showcase" | "strengths";
+type PostLength = "short" | "long";
+type PostType = "image" | "withLink";
 
 interface ShopifyProduct {
   id: string;
@@ -28,6 +30,7 @@ interface ShopifyProduct {
   compare_at_price: string | null;
   vendor?: string | null;
   product_type?: string | null;
+  handle?: string | null;
   vision_attributes?: {
     color?: string;
     material?: string;
@@ -37,8 +40,15 @@ interface ShopifyProduct {
   } | null;
 }
 
+interface ConnectedPage {
+  id: string;
+  name: string;
+  platform: "facebook" | "instagram";
+}
+
 export default function AiCreativeStudio() {
   const { selectedStore } = useStore();
+  const { t } = useTranslation();
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<ShopifyProduct | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -55,10 +65,51 @@ export default function AiCreativeStudio() {
   const [generatedCaption, setGeneratedCaption] = useState("");
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [showPrice, setShowPrice] = useState(true);
+  
+  // Social posting state
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [connectedPages, setConnectedPages] = useState<ConnectedPage[]>([]);
+  const [postLength, setPostLength] = useState<PostLength>("short");
+  const [postType, setPostType] = useState<PostType>("withLink");
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     loadShopifyProducts();
+    loadConnectedPages();
   }, [selectedStore]);
+
+  const loadConnectedPages = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const pages: ConnectedPage[] = [];
+
+      // Load Facebook pages
+      const { data: fbPages } = await supabase
+        .from("facebook_page_connections")
+        .select("page_id, page_name")
+        .eq("user_id", user.id);
+      
+      (fbPages || []).forEach((p: any) => {
+        pages.push({ id: p.page_id, name: p.page_name, platform: "facebook" });
+      });
+
+      // Load Instagram accounts
+      const { data: igAccounts } = await supabase
+        .from("instagram_account_connections")
+        .select("account_id, account_name")
+        .eq("user_id", user.id);
+      
+      (igAccounts || []).forEach((a: any) => {
+        pages.push({ id: a.account_id, name: a.account_name || "Instagram", platform: "instagram" });
+      });
+
+      setConnectedPages(pages);
+    } catch (error) {
+      console.error("Error loading connected pages:", error);
+    }
+  };
 
   const loadShopifyProducts = async () => {
     if (!selectedStore?.id) {
@@ -72,7 +123,7 @@ export default function AiCreativeStudio() {
       if (!user) return;
 
       const { data: productsData, error: productsError } = await (supabase.from("shopify_products") as any)
-        .select("id, title, vendor, product_type, vision_attributes")
+        .select("id, title, vendor, product_type, vision_attributes, handle")
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id)
         .order("title", { ascending: true });
@@ -125,13 +176,14 @@ export default function AiCreativeStudio() {
             compare_at_price: variant?.compare_at_price?.toString() || null,
             vendor: p.vendor,
             product_type: p.product_type,
+            handle: p.handle,
             vision_attributes: p.vision_attributes,
           };
         })
       );
     } catch (error) {
       console.error("Error loading products:", error);
-      toast.error("Erreur lors du chargement des produits");
+      toast.error(t.toasts.error.loading);
     } finally {
       setLoadingProducts(false);
     }
@@ -147,7 +199,7 @@ export default function AiCreativeStudio() {
 
   const applyWhiteBackground = async () => {
     if (!selectedProduct?.image) {
-      toast.error("Ce produit n'a pas d'image");
+      toast.error(t.creativeStudio.toast.noImage);
       return;
     }
 
@@ -164,13 +216,13 @@ export default function AiCreativeStudio() {
 
       if (data.success && data.imageUrl) {
         setWhiteBgImage(data.imageUrl);
-        toast.success("Fond blanc appliqué !");
+        toast.success(t.creativeStudio.toast.whiteBackgroundApplied);
       } else {
-        throw new Error(data.error || "Échec de la génération");
+        throw new Error(data.error || t.creativeStudio.toast.whiteBackgroundError);
       }
     } catch (error: any) {
       console.error("Error applying white background:", error);
-      toast.error(error.message || "Erreur lors de l'application du fond blanc");
+      toast.error(error.message || t.creativeStudio.toast.whiteBackgroundError);
     } finally {
       setApplyingWhiteBg(false);
     }
@@ -178,7 +230,7 @@ export default function AiCreativeStudio() {
 
   const generateCreative = async () => {
     if (!selectedProduct) {
-      toast.error("Sélectionnez un produit");
+      toast.error(t.creativeStudio.toast.selectProduct);
       return;
     }
 
@@ -189,7 +241,6 @@ export default function AiCreativeStudio() {
       const productForGeneration = {
         ...selectedProduct,
         image: whiteBgImage || selectedProduct.image,
-        // Include price only if showPrice is enabled
         price: showPrice ? selectedProduct.price : null,
         compare_at_price: showPrice ? selectedProduct.compare_at_price : null,
       };
@@ -211,15 +262,13 @@ export default function AiCreativeStudio() {
         setGeneratedImage(`data:image/png;base64,${data.base64}`);
         const autoCaption = generationMode === "showcase" 
           ? `✨ ${selectedProduct.title}${showPrice && selectedProduct.price ? ` - ${selectedProduct.price}€` : ''}`
-          : `💪 Points forts: ${selectedProduct.vision_attributes?.material || 'Qualité premium'} • ${selectedProduct.vision_attributes?.style || 'Design moderne'}`;
+          : `💪 ${t.creativeStudio.steps.options.strengths}: ${selectedProduct.vision_attributes?.material || 'Premium'} • ${selectedProduct.vision_attributes?.style || 'Design'}`;
         setGeneratedCaption(caption || autoCaption);
-        toast.success("Créatif généré avec succès !");
-      } else if (data.html) {
-        toast.info("Génération en mode fallback - HTML disponible");
+        toast.success(t.creativeStudio.toast.generated);
       }
     } catch (error: any) {
       console.error("Error generating creative:", error);
-      toast.error(error.message || "Erreur lors de la génération");
+      toast.error(error.message || t.creativeStudio.toast.generationError);
     } finally {
       setGenerating(false);
     }
@@ -232,7 +281,64 @@ export default function AiCreativeStudio() {
     link.href = generatedImage;
     link.download = `${selectedProduct?.title?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'creative'}.png`;
     link.click();
-    toast.success("Image téléchargée !");
+    toast.success(t.creativeStudio.toast.downloaded);
+  };
+
+  const publishToSocial = async () => {
+    if (!generatedImage || selectedPlatforms.length === 0) {
+      toast.error(t.creativeStudio.toast.selectPlatform);
+      return;
+    }
+
+    setPublishing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Create the post in social_posts table
+      const { data: post, error: postError } = await supabase
+        .from("social_posts")
+        .insert({
+          user_id: user.id,
+          store_id: selectedStore?.id,
+          status: "pending",
+          channels: selectedPlatforms,
+          content: generatedCaption,
+          image_url: generatedImage,
+          product_id: selectedProduct?.id,
+          product_link: postType === "withLink" && selectedProduct?.handle 
+            ? `https://${selectedStore?.public_domain || selectedStore?.store_url?.replace('https://', '') || ''}/products/${selectedProduct.handle}` 
+            : null,
+          template_style: selectedTemplate,
+          credits_consumed: 10,
+        })
+        .select()
+        .single();
+
+      if (postError) throw postError;
+
+      // Publish the post
+      const { error: publishError } = await supabase.functions.invoke('publish-social-post', {
+        body: { postId: post.id, userId: user.id }
+      });
+
+      if (publishError) throw publishError;
+
+      toast.success(t.creativeStudio.toast.published);
+    } catch (error: any) {
+      console.error("Error publishing:", error);
+      toast.error(error.message || t.creativeStudio.toast.publishError);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const togglePlatform = (platform: string) => {
+    setSelectedPlatforms(prev => 
+      prev.includes(platform) 
+        ? prev.filter(p => p !== platform)
+        : [...prev, platform]
+    );
   };
 
   const filteredProducts = products.filter(p => 
@@ -242,9 +348,20 @@ export default function AiCreativeStudio() {
   const selectedTemplateData = CREATIVE_TEMPLATES.find(t => t.id === selectedTemplate);
 
   // Check completion status
-  const isStep1Complete = !!selectedProduct;
-  const isStep2Complete = !!selectedTemplate;
-  const canGenerate = isStep1Complete && isStep2Complete;
+  const isProductSelected = !!selectedProduct;
+  const isTemplateSelected = !!selectedTemplate;
+  const canGenerate = isProductSelected && isTemplateSelected;
+  const canPublish = !!generatedImage && selectedPlatforms.length > 0;
+
+  // Step check indicator component
+  const StepIndicator = ({ completed }: { completed: boolean }) => (
+    <div className={cn(
+      "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
+      completed ? "bg-green-500 text-white" : "bg-primary/20 text-primary"
+    )}>
+      <Check className="h-3.5 w-3.5" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -256,9 +373,9 @@ export default function AiCreativeStudio() {
               <Sparkles className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Ad Library</h1>
+              <h1 className="text-xl font-bold">{t.creativeStudio.title}</h1>
               <p className="text-sm text-muted-foreground hidden sm:block">
-                Créez des visuels professionnels en 5 étapes
+                {t.creativeStudio.subtitle}
               </p>
             </div>
           </div>
@@ -267,67 +384,65 @@ export default function AiCreativeStudio() {
 
       <div className="container mx-auto px-4 py-6 space-y-6">
         
-        {/* STEP 1 - Select Product */}
+        {/* Product Selection */}
         <section className="bg-card rounded-xl border overflow-hidden">
           <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
-            <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-              isStep1Complete ? "bg-green-500 text-white" : "bg-primary text-primary-foreground"
-            )}>
-              {isStep1Complete ? <Check className="h-4 w-4" /> : "1"}
-            </div>
+            <StepIndicator completed={isProductSelected} />
             <div className="flex-1">
-              <h2 className="font-semibold">Sélectionnez un produit</h2>
-              <p className="text-xs text-muted-foreground">Choisissez le produit à mettre en avant</p>
+              <h2 className="font-semibold">{t.creativeStudio.steps.product.title}</h2>
+              <p className="text-xs text-muted-foreground">{t.creativeStudio.steps.product.subtitle}</p>
             </div>
             {selectedProduct && (
               <Badge variant="secondary" className="gap-2">
                 <Check className="h-3 w-3" />
-                {selectedProduct.title.slice(0, 30)}...
+                {selectedProduct.title.slice(0, 25)}...
               </Badge>
             )}
           </div>
           
           <div className="p-4 space-y-4">
-            {/* Search */}
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher un produit..."
+                placeholder={t.creativeStudio.steps.product.search}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
             </div>
 
-            {/* Product Grid */}
             {loadingProducts ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             ) : (
-              <ScrollArea className="h-[200px]">
+              <ScrollArea className="h-[180px]">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {filteredProducts.map((product) => (
                     <button
                       key={product.id}
                       onClick={() => handleSelectProduct(product)}
                       className={cn(
-                        "flex flex-col items-center gap-2 p-3 rounded-lg transition-all text-center",
+                        "flex flex-col items-center gap-2 p-3 rounded-lg transition-all text-center relative",
                         "hover:bg-muted/80 border-2",
                         selectedProduct?.id === product.id 
-                          ? "border-primary bg-primary/5" 
+                          ? "border-green-500 bg-green-500/5" 
                           : "border-transparent bg-muted/30"
                       )}
                     >
+                      {selectedProduct?.id === product.id && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                          <Check className="h-3 w-3 text-white" />
+                        </div>
+                      )}
                       {product.image ? (
                         <img 
                           src={product.image}
                           alt={product.title}
-                          className="w-16 h-16 object-cover rounded-lg"
+                          className="w-14 h-14 object-cover rounded-lg"
                         />
                       ) : (
-                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                        <div className="w-14 h-14 bg-muted rounded-lg flex items-center justify-center">
                           <ImageIcon className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
@@ -343,18 +458,13 @@ export default function AiCreativeStudio() {
           </div>
         </section>
 
-        {/* STEP 2 - Choose Template */}
+        {/* Template Selection */}
         <section className="bg-card rounded-xl border overflow-hidden">
           <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
-            <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-              isStep2Complete ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
-            )}>
-              {isStep2Complete ? <Check className="h-4 w-4" /> : "2"}
-            </div>
+            <StepIndicator completed={isTemplateSelected} />
             <div className="flex-1">
-              <h2 className="font-semibold">Choisissez un template</h2>
-              <p className="text-xs text-muted-foreground">Sélectionnez le style visuel</p>
+              <h2 className="font-semibold">{t.creativeStudio.steps.template.title}</h2>
+              <p className="text-xs text-muted-foreground">{t.creativeStudio.steps.template.subtitle}</p>
             </div>
             {selectedTemplateData && (
               <Badge variant="secondary" className="gap-2">
@@ -378,15 +488,13 @@ export default function AiCreativeStudio() {
           </div>
         </section>
 
-        {/* STEP 3 - Options */}
+        {/* Generation Options */}
         <section className="bg-card rounded-xl border overflow-hidden">
           <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">
-              3
-            </div>
+            <StepIndicator completed={isProductSelected && isTemplateSelected} />
             <div className="flex-1">
-              <h2 className="font-semibold">Options de génération</h2>
-              <p className="text-xs text-muted-foreground">Personnalisez votre créatif</p>
+              <h2 className="font-semibold">{t.creativeStudio.steps.options.title}</h2>
+              <p className="text-xs text-muted-foreground">{t.creativeStudio.steps.options.subtitle}</p>
             </div>
           </div>
           
@@ -394,50 +502,51 @@ export default function AiCreativeStudio() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Mode Toggle */}
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Mode</Label>
+                <Label className="text-sm font-medium">{t.creativeStudio.steps.options.mode}</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setGenerationMode("showcase")}
                     className={cn(
                       "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all",
                       generationMode === "showcase" 
-                        ? "border-primary bg-primary/10" 
+                        ? "border-green-500 bg-green-500/10" 
                         : "border-muted hover:border-primary/50"
                     )}
                   >
+                    {generationMode === "showcase" && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
                     <Eye className="h-5 w-5" />
-                    <span className="text-xs font-medium">Showcase</span>
+                    <span className="text-xs font-medium">{t.creativeStudio.steps.options.showcase}</span>
                   </button>
                   <button
                     onClick={() => setGenerationMode("strengths")}
                     className={cn(
                       "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all",
                       generationMode === "strengths" 
-                        ? "border-primary bg-primary/10" 
+                        ? "border-green-500 bg-green-500/10" 
                         : "border-muted hover:border-primary/50"
                     )}
                   >
                     <Star className="h-5 w-5" />
-                    <span className="text-xs font-medium">Points forts</span>
+                    <span className="text-xs font-medium">{t.creativeStudio.steps.options.strengths}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Price Toggle */}
+              {/* Price & Background */}
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Affichage</Label>
+                <Label className="text-sm font-medium">{t.creativeStudio.steps.options.display}</Label>
                 <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Afficher le prix</span>
+                    <span className="text-sm">{t.creativeStudio.steps.options.showPrice}</span>
                   </div>
-                  <Switch
-                    checked={showPrice}
-                    onCheckedChange={setShowPrice}
-                  />
+                  <Switch checked={showPrice} onCheckedChange={setShowPrice} />
                 </div>
                 
-                {/* White Background */}
                 {selectedProduct?.image && (
                   <Button 
                     variant={whiteBgImage ? "secondary" : "outline"}
@@ -451,41 +560,33 @@ export default function AiCreativeStudio() {
                     ) : (
                       <Eraser className="h-4 w-4" />
                     )}
-                    {whiteBgImage ? "Réinitialiser fond" : "Fond blanc IA"}
+                    {whiteBgImage ? t.creativeStudio.steps.options.resetBackground : t.creativeStudio.steps.options.whiteBackground}
                   </Button>
                 )}
               </div>
 
-              {/* Enrichment Data */}
+              {/* Product Data */}
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Données produit</Label>
+                <Label className="text-sm font-medium">{t.creativeStudio.steps.options.productData}</Label>
                 {selectedProduct?.vision_attributes ? (
                   <div className="p-3 rounded-lg border bg-muted/30 space-y-2">
                     <div className="flex flex-wrap gap-1">
                       {selectedProduct.vision_attributes.color && (
-                        <Badge variant="secondary" className="text-xs">
-                          {selectedProduct.vision_attributes.color}
-                        </Badge>
+                        <Badge variant="secondary" className="text-xs">{selectedProduct.vision_attributes.color}</Badge>
                       )}
                       {selectedProduct.vision_attributes.material && (
-                        <Badge variant="secondary" className="text-xs">
-                          {selectedProduct.vision_attributes.material}
-                        </Badge>
+                        <Badge variant="secondary" className="text-xs">{selectedProduct.vision_attributes.material}</Badge>
                       )}
                       {selectedProduct.vision_attributes.style && (
-                        <Badge variant="secondary" className="text-xs">
-                          {selectedProduct.vision_attributes.style}
-                        </Badge>
+                        <Badge variant="secondary" className="text-xs">{selectedProduct.vision_attributes.style}</Badge>
                       )}
                     </div>
-                    <p className="text-[10px] text-muted-foreground">
-                      Ces données enrichissent la génération
-                    </p>
+                    <p className="text-[10px] text-muted-foreground">{t.creativeStudio.steps.options.dataEnrichment}</p>
                   </div>
                 ) : (
                   <div className="p-3 rounded-lg border bg-muted/30 text-center">
                     <p className="text-xs text-muted-foreground">
-                      {selectedProduct ? "Aucune donnée enrichie" : "Sélectionnez un produit"}
+                      {selectedProduct ? t.creativeStudio.steps.options.noEnrichedData : t.creativeStudio.steps.options.selectProduct}
                     </p>
                   </div>
                 )}
@@ -494,21 +595,19 @@ export default function AiCreativeStudio() {
           </div>
         </section>
 
-        {/* STEP 4 - Highlighted Text */}
+        {/* Caption */}
         <section className="bg-card rounded-xl border overflow-hidden">
           <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">
-              4
-            </div>
+            <StepIndicator completed={!!caption} />
             <div className="flex-1">
-              <h2 className="font-semibold">Texte d'accroche</h2>
-              <p className="text-xs text-muted-foreground">Optionnel - laissez vide pour génération auto</p>
+              <h2 className="font-semibold">{t.creativeStudio.steps.caption.title}</h2>
+              <p className="text-xs text-muted-foreground">{t.creativeStudio.steps.caption.subtitle}</p>
             </div>
           </div>
           
           <div className="p-4">
             <Textarea
-              placeholder="Ex: Offre limitée ! -30% sur ce produit..."
+              placeholder={t.creativeStudio.steps.caption.placeholder}
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
               rows={2}
@@ -517,7 +616,156 @@ export default function AiCreativeStudio() {
           </div>
         </section>
 
-        {/* STEP 5 - Generate Button */}
+        {/* Social Posting */}
+        <section className="bg-card rounded-xl border overflow-hidden">
+          <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
+            <StepIndicator completed={selectedPlatforms.length > 0} />
+            <div className="flex-1">
+              <h2 className="font-semibold">{t.creativeStudio.steps.social.title}</h2>
+              <p className="text-xs text-muted-foreground">{t.creativeStudio.steps.social.subtitle}</p>
+            </div>
+            <Badge variant="outline" className="gap-1 text-orange-600 border-orange-300">
+              <Sparkles className="h-3 w-3" />
+              {t.creativeStudio.steps.social.cost}
+            </Badge>
+          </div>
+          
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Platform Selection */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">{t.creativeStudio.steps.social.platform}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => togglePlatform("facebook")}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all relative",
+                      selectedPlatforms.includes("facebook")
+                        ? "border-green-500 bg-green-500/10" 
+                        : "border-muted hover:border-blue-500/50"
+                    )}
+                  >
+                    {selectedPlatforms.includes("facebook") && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
+                    <Facebook className="h-5 w-5 text-blue-600" />
+                    <span className="text-xs font-medium">Facebook</span>
+                  </button>
+                  <button
+                    onClick={() => togglePlatform("instagram")}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all relative",
+                      selectedPlatforms.includes("instagram")
+                        ? "border-green-500 bg-green-500/10" 
+                        : "border-muted hover:border-pink-500/50"
+                    )}
+                  >
+                    {selectedPlatforms.includes("instagram") && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
+                    <Instagram className="h-5 w-5 text-pink-600" />
+                    <span className="text-xs font-medium">Instagram</span>
+                  </button>
+                </div>
+                {connectedPages.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center">{t.creativeStudio.steps.social.noPages}</p>
+                )}
+              </div>
+
+              {/* Post Length */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">{t.creativeStudio.steps.social.postLength}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPostLength("short")}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all relative",
+                      postLength === "short"
+                        ? "border-green-500 bg-green-500/10" 
+                        : "border-muted hover:border-primary/50"
+                    )}
+                  >
+                    {postLength === "short" && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
+                    <Hash className="h-5 w-5" />
+                    <span className="text-xs font-medium">{t.creativeStudio.steps.social.short}</span>
+                    <span className="text-[10px] text-muted-foreground">{t.creativeStudio.steps.social.shortDesc}</span>
+                  </button>
+                  <button
+                    onClick={() => setPostLength("long")}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all relative",
+                      postLength === "long"
+                        ? "border-green-500 bg-green-500/10" 
+                        : "border-muted hover:border-primary/50"
+                    )}
+                  >
+                    {postLength === "long" && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
+                    <FileText className="h-5 w-5" />
+                    <span className="text-xs font-medium">{t.creativeStudio.steps.social.long}</span>
+                    <span className="text-[10px] text-muted-foreground">{t.creativeStudio.steps.social.longDesc}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Post Type */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">{t.creativeStudio.steps.social.postType}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPostType("image")}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all relative",
+                      postType === "image"
+                        ? "border-green-500 bg-green-500/10" 
+                        : "border-muted hover:border-primary/50"
+                    )}
+                  >
+                    {postType === "image" && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
+                    <ImageIconLucide className="h-5 w-5" />
+                    <span className="text-xs font-medium">{t.creativeStudio.steps.social.imageOnly}</span>
+                    <span className="text-[10px] text-muted-foreground">{t.creativeStudio.steps.social.imageOnlyDesc}</span>
+                  </button>
+                  <button
+                    onClick={() => setPostType("withLink")}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all relative",
+                      postType === "withLink"
+                        ? "border-green-500 bg-green-500/10" 
+                        : "border-muted hover:border-primary/50"
+                    )}
+                  >
+                    {postType === "withLink" && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
+                    <Link className="h-5 w-5" />
+                    <span className="text-xs font-medium">{t.creativeStudio.steps.social.withLink}</span>
+                    <span className="text-[10px] text-muted-foreground">{t.creativeStudio.steps.social.withLinkDesc}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Generate Button */}
         <section className="bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-xl border border-primary/20 p-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -525,12 +773,9 @@ export default function AiCreativeStudio() {
                 <Wand2 className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="font-semibold">Prêt à générer ?</h2>
+                <h2 className="font-semibold">{t.creativeStudio.generate.ready}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {canGenerate 
-                    ? "Tous les paramètres sont configurés" 
-                    : "Complétez les étapes ci-dessus"
-                  }
+                  {canGenerate ? t.creativeStudio.generate.configured : t.creativeStudio.generate.incomplete}
                 </p>
               </div>
             </div>
@@ -546,8 +791,7 @@ export default function AiCreativeStudio() {
               ) : (
                 <Sparkles className="h-5 w-5" />
               )}
-              Générer l'aperçu
-              <ChevronRight className="h-4 w-4" />
+              {t.creativeStudio.generate.button}
             </Button>
           </div>
         </section>
@@ -557,25 +801,31 @@ export default function AiCreativeStudio() {
           <section className="bg-card rounded-xl border overflow-hidden">
             <div className="bg-muted/30 px-4 py-3 border-b flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center">
-                  <Check className="h-4 w-4" />
+                <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center">
+                  <Check className="h-3.5 w-3.5" />
                 </div>
-                <h2 className="font-semibold">Résultat</h2>
+                <h2 className="font-semibold">{t.creativeStudio.result.title}</h2>
               </div>
               
               {generatedImage && (
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Facebook className="h-4 w-4 text-blue-600" />
-                    Facebook
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Instagram className="h-4 w-4 text-pink-600" />
-                    Instagram
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={publishToSocial}
+                    disabled={!canPublish || publishing}
+                    className="gap-2"
+                  >
+                    {publishing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                    {t.creativeStudio.result.publish}
                   </Button>
                   <Button size="sm" onClick={downloadImage} className="gap-2">
                     <Download className="h-4 w-4" />
-                    Télécharger
+                    {t.creativeStudio.result.download}
                   </Button>
                 </div>
               )}
@@ -585,19 +835,15 @@ export default function AiCreativeStudio() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Generated Image */}
                 <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">Image générée</p>
+                  <p className="text-sm text-muted-foreground">{t.creativeStudio.result.generatedImage}</p>
                   <div className="aspect-square rounded-xl overflow-hidden bg-muted border-2 border-dashed border-muted-foreground/20 flex items-center justify-center">
                     {generating ? (
                       <div className="text-center">
                         <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">Génération en cours...</p>
+                        <p className="text-sm text-muted-foreground">{t.creativeStudio.generate.generating}</p>
                       </div>
                     ) : generatedImage ? (
-                      <img 
-                        src={generatedImage}
-                        alt="Generated creative"
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={generatedImage} alt="Generated creative" className="w-full h-full object-cover" />
                     ) : null}
                   </div>
                 </div>
@@ -605,7 +851,7 @@ export default function AiCreativeStudio() {
                 {/* Editable Caption */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">Caption éditable</p>
+                    <p className="text-sm text-muted-foreground">{t.creativeStudio.result.editableCaption}</p>
                     {generatedImage && (
                       <Button 
                         variant="ghost" 
@@ -614,7 +860,7 @@ export default function AiCreativeStudio() {
                         className="h-7 px-2 gap-1"
                       >
                         <Edit2 className="h-3 w-3" />
-                        {isEditingCaption ? "Fermer" : "Éditer"}
+                        {isEditingCaption ? t.creativeStudio.result.close : t.creativeStudio.result.edit}
                       </Button>
                     )}
                   </div>
@@ -627,10 +873,9 @@ export default function AiCreativeStudio() {
                           onChange={(e) => setGeneratedCaption(e.target.value)}
                           rows={8}
                           className="resize-none h-full"
-                          placeholder="Ajoutez votre caption..."
                         />
                       ) : (
-                        <p className="text-sm whitespace-pre-wrap">{generatedCaption || "Aucune caption générée"}</p>
+                        <p className="text-sm whitespace-pre-wrap">{generatedCaption || t.creativeStudio.result.noCaption}</p>
                       )}
                     </div>
                   )}
