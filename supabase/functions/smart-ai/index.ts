@@ -262,11 +262,56 @@ Return ONLY valid JSON, no markdown.`;
     }
 
     // ============================================================================
+    // 🕷️ FONCTION UTILITAIRE : Extraction de prix par crawling
+    // ============================================================================
+    async function extractPriceFromPage(url: string): Promise<number | null> {
+      try {
+        const response = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "text/html,application/xhtml+xml",
+          },
+        });
+        
+        if (!response.ok) return null;
+        
+        const html = await response.text();
+        
+        // Multi-pattern price extraction
+        const pricePatterns = [
+          /(?:€|EUR)\s*(\d+[.,]?\d*)/gi,           // €1,799.00 or EUR 1799
+          /(\d+[.,]?\d*)\s*(?:€|EUR)/gi,           // 1,799.00€ or 1799 EUR
+          /"price":\s*"?(\d+\.?\d*)"?/gi,          // JSON price field
+          /data-price="(\d+\.?\d*)"/gi,            // Data attribute
+          /itemprop="price"\s*content="(\d+\.?\d*)"/gi, // Schema.org
+          /class="[^"]*price[^"]*"[^>]*>.*?(\d+[.,]\d{2})/gi, // Price class
+        ];
+        
+        for (const pattern of pricePatterns) {
+          const match = html.match(pattern);
+          if (match) {
+            const numMatch = match[0].match(/(\d+[.,]?\d*)/);
+            if (numMatch) {
+              const price = parseFloat(numMatch[1].replace(",", ".").replace(/\s/g, ""));
+              if (price > 10 && price < 50000) {
+                console.log("[SMART-AI] 💰 Extracted price from", url, ":", price);
+                return price;
+              }
+            }
+          }
+        }
+        return null;
+      } catch (error) {
+        console.error("[SMART-AI] Failed to extract price from", url, error);
+        return null;
+      }
+    }
+
     // 2️⃣ SERPAPI GOOGLE LENS — Recherche visuelle par image (SOURCE PRINCIPALE)
     // ============================================================================
     const allPrices: number[] = [];
     const allMerchants: Merchant[] = [];
-    const competitors: { name: string; url: string; price: number | null; image?: string; thumbnail?: string }[] = [];
+    const competitors: { name: string; title?: string; url: string; price: number | null; image?: string; thumbnail?: string }[] = [];
 
     let shoppingCount = 0;
     let organicCount = 0;
@@ -336,22 +381,30 @@ Return ONLY valid JSON, no markdown.`;
               visualCount++;
 
               // Ajouter aux concurrents avec image ET titre du produit
+              // Si pas de prix, tenter d'extraire par crawling
+              let finalPrice = price || null;
+              if (!finalPrice && match.link) {
+                console.log("[SMART-AI] 🕷️ Crawling", match.link, "for price...");
+                finalPrice = await extractPriceFromPage(match.link);
+              }
+              
               competitors.push({
                 name: match.source,
                 title: match.title || "",
                 url: match.link,
-                price: price || null,
+                price: finalPrice,
                 image: match.thumbnail,
                 thumbnail: match.thumbnail,
               });
 
               // Ajouter aux merchants si prix valide
-              if (price && price >= minPriceForSegment && price < 10000) {
-                allPrices.push(price);
+              if (finalPrice && finalPrice >= minPriceForSegment && finalPrice < 10000) {
+                allPrices.push(finalPrice);
+
                 allMerchants.push({
                   title: match.title || "Product",
                   source: match.source,
-                  price: price,
+                  price: finalPrice,
                   link: match.link,
                   image: match.thumbnail,
                 });
