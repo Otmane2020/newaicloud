@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Facebook, Instagram, Plus, Calendar, Send, Settings, Loader2, Trash2, Zap } from "lucide-react";
+import { Facebook, Instagram, Plus, Calendar, Send, Settings, Loader2, Trash2, Zap, Palette } from "lucide-react";
 import SocialCampaignWizard from "@/components/social/SocialCampaignWizard";
 import SocialPostsList from "@/components/social/SocialPostsList";
 import SocialConnections from "@/components/social/SocialConnections";
@@ -160,8 +160,14 @@ const SocialMedia = () => {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs value={activeTab} onValueChange={(value) => {
+        if (value === 'creative') {
+          navigate('/ai-creative-studio');
+        } else {
+          setActiveTab(value);
+        }
+      }}>
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="posts" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
             Posts
@@ -169,6 +175,10 @@ const SocialMedia = () => {
           <TabsTrigger value="campaigns" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Campagnes
+          </TabsTrigger>
+          <TabsTrigger value="creative" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Créa
           </TabsTrigger>
           <TabsTrigger value="connections" className="flex items-center gap-2">
             <Facebook className="h-4 w-4" />

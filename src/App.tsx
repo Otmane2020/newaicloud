@@ -575,6 +575,14 @@ const App = () => (
                 </ProtectedLayout>
               }
             />
+            <Route
+              path="/ai-creative-studio"
+              element={
+                <ProtectedLayout>
+                  <AiCreativeStudio />
+                </ProtectedLayout>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
