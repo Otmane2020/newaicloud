@@ -2533,6 +2533,50 @@ export type Database = {
           },
         ]
       }
+      instagram_account_connections: {
+        Row: {
+          access_token: string
+          account_id: string
+          account_name: string
+          auto_share_enabled: boolean | null
+          created_at: string | null
+          id: string
+          store_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          account_id: string
+          account_name: string
+          auto_share_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          store_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          account_id?: string
+          account_name?: string
+          auto_share_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          store_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_account_connections_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_failures: {
         Row: {
           context: Json | null

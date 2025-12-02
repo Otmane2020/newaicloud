@@ -31,11 +31,11 @@ export function OpportunitiesSettings() {
       .from('facebook_page_connections')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
     
     if (data) {
       setFacebookPage(data);
-      setAutoShareEnabled(data.auto_share_enabled);
+      setAutoShareEnabled(data.auto_share_enabled || true);
     }
   };
 
@@ -46,11 +46,11 @@ export function OpportunitiesSettings() {
       .from('instagram_account_connections')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
     
     if (data) {
       setInstagramAccount(data);
-      setAutoShareInstagram(data.auto_share_enabled);
+      setAutoShareInstagram(data.auto_share_enabled || true);
     }
   };
 
@@ -222,60 +222,129 @@ export function OpportunitiesSettings() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Facebook className="w-5 h-5" />
-            Facebook Integration
-          </CardTitle>
-          <CardDescription>
-            Connect your Facebook page to automatically share articles after publication
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {facebookPage ? (
-            <>
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <p className="font-medium">{facebookPage.page_name}</p>
-                  <p className="text-sm text-muted-foreground">Connected</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Facebook className="w-5 h-5 text-[#1877F2]" />
+              <span>Facebook Integration</span>
+            </CardTitle>
+            <CardDescription>
+              Connect your Facebook page to automatically share articles after publication
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {facebookPage ? (
+              <>
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center">
+                      <Facebook className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{facebookPage.page_name}</p>
+                      <p className="text-sm text-muted-foreground">Connected</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDisconnect}
+                    disabled={loading}
+                    size="sm"
+                  >
+                    Disconnect
+                  </Button>
                 </div>
-                <Button 
-                  variant="outline" 
-                  onClick={handleDisconnect}
-                  disabled={loading}
-                >
-                  Disconnect
-                </Button>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="auto-share">Auto-share articles after publication</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Automatically post new articles to your Facebook page
-                  </p>
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <Label htmlFor="auto-share">Auto-share articles after publication</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically post new articles to your Facebook page
+                    </p>
+                  </div>
+                  <Switch 
+                    id="auto-share"
+                    checked={autoShareEnabled}
+                    onCheckedChange={handleToggleAutoShare}
+                    disabled={loading}
+                  />
                 </div>
-                <Switch 
-                  id="auto-share"
-                  checked={autoShareEnabled}
-                  onCheckedChange={handleToggleAutoShare}
-                  disabled={loading}
-                />
-              </div>
-            </>
-          ) : (
-            <Button 
-              className="w-full" 
-              onClick={handleConnectFacebook}
-              disabled={loading}
-            >
-              <Facebook className="w-4 h-4 mr-2" />
-              Connect Facebook Page
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+              </>
+            ) : (
+              <Button 
+                className="w-full bg-[#1877F2] hover:bg-[#1877F2]/90" 
+                onClick={handleConnectFacebook}
+                disabled={loading}
+              >
+                <Facebook className="w-4 h-4 mr-2" />
+                Connect Facebook Page
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Instagram className="w-5 h-5 text-[#E4405F]" />
+              <span>Instagram Integration</span>
+            </CardTitle>
+            <CardDescription>
+              Connect your Instagram account to automatically share articles after publication
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {instagramAccount ? (
+              <>
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] flex items-center justify-center">
+                      <Instagram className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{instagramAccount.account_name}</p>
+                      <p className="text-sm text-muted-foreground">Connected</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDisconnectInstagram}
+                    disabled={loading}
+                    size="sm"
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <Label htmlFor="auto-share-instagram">Auto-share articles after publication</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically post new articles to your Instagram account
+                    </p>
+                  </div>
+                  <Switch 
+                    id="auto-share-instagram"
+                    checked={autoShareInstagram}
+                    onCheckedChange={handleToggleAutoShareInstagram}
+                    disabled={loading}
+                  />
+                </div>
+              </>
+            ) : (
+              <Button 
+                className="w-full bg-gradient-to-r from-[#F58529] via-[#DD2A7B] to-[#8134AF] hover:opacity-90" 
+                onClick={handleConnectInstagram}
+                disabled={loading}
+              >
+                <Instagram className="w-4 h-4 mr-2" />
+                Connect Instagram Account
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
