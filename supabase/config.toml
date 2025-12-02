@@ -419,6 +419,10 @@ verify_jwt = true
 verify_jwt = true
 memory_limit_mb = 512
 
+[functions.smart-ai]
+verify_jwt = true
+memory_limit_mb = 512
+
 [functions.import-google-ads-search-terms]
 verify_jwt = true
 
