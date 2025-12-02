@@ -7,7 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Loader2, Facebook, Instagram, Wand2, Image } from "lucide-react";
+import { Loader2, Facebook, Instagram, Wand2, ChevronDown, ChevronUp } from "lucide-react";
+import { TemplateSelector } from "./templates/TemplateSelector";
+import { TemplatePreview } from "./templates/TemplatePreview";
+import { SOCIAL_TEMPLATES, SocialTemplate } from "./templates/socialTemplates";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface CreatePostDialogProps {
   userId?: string;
@@ -22,8 +26,9 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
   const [caption, setCaption] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [channels, setChannels] = useState<string[]>(['facebook', 'instagram']);
-  const [templateStyle, setTemplateStyle] = useState('simple');
+  const [selectedTemplate, setSelectedTemplate] = useState<SocialTemplate | null>(SOCIAL_TEMPLATES[0]);
   const [includeLink, setIncludeLink] = useState(true);
+  const [showTemplates, setShowTemplates] = useState(false);
   
   const [products, setProducts] = useState<any[]>([]);
   const [collections, setCollections] = useState<any[]>([]);
@@ -90,7 +95,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
           body: JSON.stringify({
             contentType,
             contentId,
-            templateStyle,
+            templateStyle: selectedTemplate?.id || 'product_spotlight',
             channels,
             includeLink,
             language: 'fr',
@@ -152,7 +157,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
         caption,
         image_url: imageUrl || null,
         channels,
-        template_style: templateStyle,
+        template_style: selectedTemplate?.id || 'product_spotlight',
         link_url: includeLink ? null : null, // Will be set by backend
         status: 'draft',
       };
@@ -273,20 +278,51 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
             />
           </div>
 
-          {/* Template Style */}
-          <div className="space-y-2">
-            <Label>Style du template</Label>
-            <Select value={templateStyle} onValueChange={setTemplateStyle}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="simple">📷 Photo simple</SelectItem>
-                <SelectItem value="overlay">✨ Template avec overlay</SelectItem>
-                <SelectItem value="carousel">🎠 Carrousel</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Template Selection */}
+          <Collapsible open={showTemplates} onOpenChange={setShowTemplates}>
+            <div className="space-y-2">
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    🎨 Template: {selectedTemplate?.name || 'Sélectionner'}
+                  </span>
+                  {showTemplates ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              
+              {/* Mini preview of selected template */}
+              {selectedTemplate && !showTemplates && (
+                <div className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
+                  <TemplatePreview
+                    template={selectedTemplate}
+                    productImage={imageUrl}
+                    productTitle={getContentOptions().find(c => c.id === contentId)?.title}
+                    size="small"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{selectedTemplate.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedTemplate.description}</p>
+                  </div>
+                </div>
+              )}
+              
+              <CollapsibleContent>
+                <div className="pt-3 border-t">
+                  <TemplateSelector
+                    selectedTemplate={selectedTemplate}
+                    onSelectTemplate={(t) => {
+                      setSelectedTemplate(t);
+                      setShowTemplates(false);
+                    }}
+                    productImage={imageUrl}
+                    productTitle={getContentOptions().find(c => c.id === contentId)?.title}
+                    contentType={contentType}
+                    language="fr"
+                  />
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
 
           {/* Channels */}
           <div className="space-y-2">
