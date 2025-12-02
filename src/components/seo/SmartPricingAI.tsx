@@ -138,6 +138,7 @@ export function SmartPricingAI() {
   const [syncingVariant, setSyncingVariant] = useState<string | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string>("all");
   const [selectedVendor, setSelectedVendor] = useState<string>("all");
+  const [marketCountry, setMarketCountry] = useState<string>("fr");
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 10000 });
   const [sortBy, setSortBy] = useState<"title" | "price" | "margin">("title");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -502,6 +503,7 @@ export function SmartPricingAI() {
           productDescription,
           productId,
           storeId: selectedStore?.id,
+          country: marketCountry,
         },
       });
 
@@ -1677,6 +1679,19 @@ export function SmartPricingAI() {
                   {col.title}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={marketCountry} onValueChange={setMarketCountry}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fr">🇫🇷 France</SelectItem>
+              <SelectItem value="de">🇩🇪 Allemagne</SelectItem>
+              <SelectItem value="es">🇪🇸 Espagne</SelectItem>
+              <SelectItem value="it">🇮🇹 Italie</SelectItem>
+              <SelectItem value="uk">🇬🇧 UK</SelectItem>
+              <SelectItem value="us">🇺🇸 USA</SelectItem>
             </SelectContent>
           </Select>
 
