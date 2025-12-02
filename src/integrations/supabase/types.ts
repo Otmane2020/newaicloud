@@ -1606,6 +1606,50 @@ export type Database = {
         }
         Relationships: []
       }
+      facebook_page_connections: {
+        Row: {
+          auto_share_enabled: boolean | null
+          created_at: string | null
+          id: string
+          page_access_token: string
+          page_id: string
+          page_name: string
+          store_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_share_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          page_access_token: string
+          page_id: string
+          page_name: string
+          store_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_share_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          page_access_token?: string
+          page_id?: string
+          page_name?: string
+          store_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_page_connections_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_usage: {
         Row: {
           feature_name: string
