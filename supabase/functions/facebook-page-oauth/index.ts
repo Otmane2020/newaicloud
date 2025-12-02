@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
               access_token: page.access_token, // Use page token for Instagram Business API
               auto_share_enabled: true,
             }, {
-              onConflict: 'user_id'
+              onConflict: 'user_id,account_id'
             });
 
           if (igInsertError) {
@@ -247,7 +247,7 @@ Deno.serve(async (req) => {
                 access_token: pageToken,
                 auto_share_enabled: true,
               }, {
-                onConflict: 'user_id'
+                onConflict: 'user_id,account_id'
               });
           }
         } catch (igError) {

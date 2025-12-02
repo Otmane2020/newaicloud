@@ -20,6 +20,34 @@ function = "generate-sitemap"
 schedule = "0 * * * *"
 function = "process-blog-campaigns"
 
+[cron.cleanup-stuck-syncs]
+schedule = "*/5 * * * *"
+function = "cleanup-stuck-syncs"
+
+[cron.generate-daily-notifications-morning]
+schedule = "0 8 * * *"
+function = "generate-daily-notifications"
+
+[cron.generate-daily-notifications-afternoon]
+schedule = "0 15 * * *"
+function = "generate-daily-notifications"
+
+[cron.send-trial-expiring]
+schedule = "0 9 * * *"
+function = "send-trial-expiring"
+
+[cron.send-weekly-seo-digest]
+schedule = "0 9 * * 0"
+function = "send-weekly-seo-digest"
+
+[cron.send-monthly-report]
+schedule = "0 9 1 * *"
+function = "send-monthly-report"
+
+[cron.process-social-campaigns-hourly]
+schedule = "0 * * * *"
+function = "process-social-campaigns"
+
 [functions.trigger-hourly-sync]
 verify_jwt = false
 
@@ -365,30 +393,6 @@ verify_jwt = true
 [functions.cleanup-stuck-syncs]
 verify_jwt = false
 
-[cron.cleanup-stuck-syncs]
-schedule = "*/5 * * * *"
-function = "cleanup-stuck-syncs"
-
-[cron.generate-daily-notifications-morning]
-schedule = "0 8 * * *"
-function = "generate-daily-notifications"
-
-[cron.generate-daily-notifications-afternoon]
-schedule = "0 15 * * *"
-function = "generate-daily-notifications"
-
-[cron.send-trial-expiring]
-schedule = "0 9 * * *"
-function = "send-trial-expiring"
-
-[cron.send-weekly-seo-digest]
-schedule = "0 9 * * 0"
-function = "send-weekly-seo-digest"
-
-[cron.send-monthly-report]
-schedule = "0 9 1 * *"
-function = "send-monthly-report"
-
 [functions.send-trial-expiring]
 verify_jwt = false
 
@@ -507,10 +511,6 @@ verify_jwt = true
 [functions.process-social-campaigns]
 verify_jwt = false
 
-[cron.process-social-campaigns-hourly]
-schedule = "0 * * * *"
-function = "process-social-campaigns"
-
 [functions.generate-social-caption]
 verify_jwt = true
 
@@ -520,3 +520,8 @@ verify_jwt = true
 [functions.share-article-instagram]
 verify_jwt = true
 
+[functions.generate-creative-content]
+verify_jwt = true
+
+[functions.export-creative-image]
+verify_jwt = true

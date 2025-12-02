@@ -102,6 +102,7 @@ import SitemapXml from "./pages/SitemapXml";
 import SocialMedia from "./pages/SocialMedia";
 import SocialCallback from "./pages/SocialCallback";
 import ShareFacebookTest from "./pages/ShareFacebookTest";
+import AiCreativeStudio from "./pages/AiCreativeStudio";
 
 const queryClient = new QueryClient();
 
