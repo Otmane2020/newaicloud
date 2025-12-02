@@ -42,8 +42,8 @@ Deno.serve(async (req) => {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
       // Exchange code for access token
-      const appId = Deno.env.get('FACEBOOK_APP_ID')!; // Instagram uses Facebook OAuth
-      const appSecret = Deno.env.get('FACEBOOK_APP_SECRET')!;
+      const appId = Deno.env.get('INSTAGRAM_APP_ID')!;
+      const appSecret = Deno.env.get('INSTAGRAM_APP_SECRET')!;
       const redirectUri = `${supabaseUrl}/functions/v1/instagram-oauth`;
 
       console.log('Exchanging code for token...');
@@ -133,13 +133,14 @@ Deno.serve(async (req) => {
       const { action } = await req.json();
 
       if (action === 'connect') {
-        const appId = Deno.env.get('FACEBOOK_APP_ID')!; // Instagram uses Facebook OAuth
+        const appId = Deno.env.get('INSTAGRAM_APP_ID')!;
         const redirectUri = `${supabaseUrl}/functions/v1/instagram-oauth`;
         
+        // Instagram Business API scopes
         const authUrl = `https://api.instagram.com/oauth/authorize?` +
           `client_id=${appId}&` +
           `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-          `scope=user_profile,user_media&` +
+          `scope=instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages&` +
           `response_type=code&` +
           `state=${user.id}`;
 
