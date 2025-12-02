@@ -68,32 +68,38 @@ export default function AiCreativeStudio() {
 
       const productIds = productsData.map((p: any) => p.id);
 
-      // Get images - without position filter to get any image
-      const { data: imagesData } = await (supabase.from("product_images") as any)
-        .select("product_id, src")
-        .in("product_id", productIds)
-        .order("position", { ascending: true });
-
-      // Get first image per product
+      // Batch fetch images (max 50 IDs per request to avoid URL limit)
       const imageMap = new Map<string, string>();
-      (imagesData || []).forEach((img: any) => {
-        if (!imageMap.has(img.product_id)) {
-          imageMap.set(img.product_id, img.src);
-        }
-      });
+      const batchSize = 50;
+      for (let i = 0; i < productIds.length; i += batchSize) {
+        const batchIds = productIds.slice(i, i + batchSize);
+        const { data: imagesData } = await (supabase.from("product_images") as any)
+          .select("product_id, src")
+          .in("product_id", batchIds)
+          .order("position", { ascending: true });
 
-      // Get variants for pricing
-      const { data: variantsData } = await (supabase.from("product_variants") as any)
-        .select("product_id, price, compare_at_price")
-        .in("product_id", productIds)
-        .order("position", { ascending: true });
+        (imagesData || []).forEach((img: any) => {
+          if (!imageMap.has(img.product_id)) {
+            imageMap.set(img.product_id, img.src);
+          }
+        });
+      }
 
+      // Batch fetch variants for pricing
       const variantMap = new Map<string, { price: number | null; compare_at_price: number | null }>();
-      (variantsData || []).forEach((v: any) => {
-        if (!variantMap.has(v.product_id)) {
-          variantMap.set(v.product_id, { price: v.price, compare_at_price: v.compare_at_price });
-        }
-      });
+      for (let i = 0; i < productIds.length; i += batchSize) {
+        const batchIds = productIds.slice(i, i + batchSize);
+        const { data: variantsData } = await (supabase.from("product_variants") as any)
+          .select("product_id, price, compare_at_price")
+          .in("product_id", batchIds)
+          .order("position", { ascending: true });
+
+        (variantsData || []).forEach((v: any) => {
+          if (!variantMap.has(v.product_id)) {
+            variantMap.set(v.product_id, { price: v.price, compare_at_price: v.compare_at_price });
+          }
+        });
+      }
 
       setProducts(
         productsData.map((p: any): ShopifyProduct => {
