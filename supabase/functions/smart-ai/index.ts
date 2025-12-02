@@ -51,6 +51,7 @@ interface SmartAnalysisResult {
   merchants: Merchant[];
   competitors: {
     name: string;
+    title?: string;
     url: string;
     price: number | null;
     image?: string;
@@ -322,11 +323,22 @@ Return ONLY valid JSON, no markdown.`;
             console.log("[SMART-AI] Lens match:", match.title, "Price:", price, "Source:", match.source);
 
             if (match.link && match.source) {
+              // Filtrer les sites non-marchands
+              const nonCommercialDomains = ['edu', 'gov', 'org', 'wikipedia'];
+              const domain = new URL(match.link).hostname.toLowerCase();
+              const isNonCommercial = nonCommercialDomains.some(d => domain.includes(`.${d}`));
+              
+              if (isNonCommercial) {
+                console.log("[SMART-AI] ⊘ Skipping non-commercial site:", domain);
+                continue;
+              }
+              
               visualCount++;
 
-              // Ajouter aux concurrents avec image
+              // Ajouter aux concurrents avec image ET titre du produit
               competitors.push({
                 name: match.source,
+                title: match.title || "",
                 url: match.link,
                 price: price || null,
                 image: match.thumbnail,
