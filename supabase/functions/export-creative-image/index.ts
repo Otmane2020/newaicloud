@@ -19,7 +19,7 @@ serve(async (req) => {
       });
     }
 
-    const { product, template } = body;
+    const { product, template, whiteBgImage } = body;
     
     if (!product) {
       throw new Error("Product is required");
@@ -32,6 +32,7 @@ serve(async (req) => {
 
     console.log("🎨 Generating creative for:", product.title);
     console.log("📐 Template:", template?.id);
+    console.log("🎯 AI Style:", template?.aiPromptStyle?.substring(0, 100));
 
     // Calculate discount
     const originalPrice = parseFloat(product.compare_at_price) || 0;
@@ -48,49 +49,57 @@ serve(async (req) => {
       aspectHint = "horizontal 16:9 banner (1024x576)";
     }
 
+    // Use the template's aiPromptStyle for realistic generation
+    const visualStyle = template?.aiPromptStyle || "premium furniture ad, professional lighting, clean background";
+
     // Build rich prompt for stunning ad creative
     const imagePrompt = `Create a STUNNING ${aspectHint} professional advertising creative for social media.
 
-PRODUCT TO FEATURE:
+VISUAL STYLE (FOLLOW THIS EXACTLY):
+${visualStyle}
+
+PRODUCT TO FEATURE (CENTER HERO):
 - Name: ${product.title}
 ${product.vendor ? `- Brand: ${product.vendor}` : ''}
 ${product.product_type ? `- Category: ${product.product_type}` : ''}
-${product.description ? `- Description: ${product.description.substring(0, 200)}` : ''}
 
-PRICING (display prominently):
-${discount > 0 ? `- DISCOUNT: -${discount}% (make this VERY visible with a badge/burst)` : ''}
-${salePrice > 0 ? `- Price: ${salePrice}€` : ''}
-${discount > 0 && originalPrice > 0 ? `- Original: ${originalPrice}€ (crossed out)` : ''}
-
-STYLE DIRECTION:
-- Aesthetic: ${template?.style || "promotional, eye-catching"}
-- Accent color: ${template?.accentColor || "#FFD700"}
-- Mood: ${template?.category || "promo"}
+PRICING (display prominently with accent color ${template?.accentColor || "#FFD700"}):
+${discount > 0 ? `- DISCOUNT: -${discount}% (make this VERY visible with a glowing badge/burst)` : ''}
+${salePrice > 0 ? `- Price: ${salePrice}€ (large, bold)` : ''}
+${discount > 0 && originalPrice > 0 ? `- Original: ${originalPrice}€ (crossed out, smaller)` : ''}
 
 CRITICAL COMPOSITION RULES:
-1. The PRODUCT IMAGE must be the HERO - large, centered, dramatic lighting, drop shadow
-2. Add depth: reflections, glow effects, floating particles, light rays
-3. Background should be ${template?.category === 'neon' ? 'dark with glowing neon effects, cyberpunk grid lines, pink/cyan accents' : 
-   template?.category === 'luxury' ? 'elegant dark or gold gradients, subtle shine, premium feel' :
-   template?.category === 'minimal' ? 'clean, simple, soft shadows, lots of breathing room' :
-   template?.category === 'bold' ? 'vibrant gradient colors, dynamic shapes, energetic' :
-   template?.category === 'seasonal' ? 'seasonal themed elements matching the color palette' :
-   'promotional energy with dynamic shapes and gradients'}
-4. Add decorative elements: geometric shapes, light bursts, abstract patterns
-5. Include a clear "SHOP NOW" call-to-action button
-6. ${discount > 0 ? 'Make the DISCOUNT BADGE extremely visible - bright, bold, attention-grabbing' : 'Display the price prominently'}
+1. PRODUCT is the HERO - large, centered, with dramatic spotlight and floor reflection
+2. Add realistic effects: glossy floor reflection, volumetric light beams, floating sparkle particles
+3. Background must match the visual style: ${template?.category === 'showcase' ? 'luxury showroom with gold/white rays, dramatic spotlights' : 
+   template?.category === 'promo' ? 'energetic with explosion rays, gold bursts, urgent feel' :
+   template?.category === 'strength' ? 'clean structured layout with icons space' :
+   template?.category === 'neon' ? 'dark cyberpunk with neon glows, pink/cyan accents' :
+   template?.category === 'minimal' ? 'pure clean, soft shadows, lots of breathing room' :
+   'premium commercial style with dynamic elements'}
+4. Add decorative elements: geometric gold shapes, light rays from corners, lens flares
+5. Include a premium "SHOP NOW" CTA button (gold gradient, rounded, at bottom)
+6. ${discount > 0 ? 'DISCOUNT BADGE must GLOW and be extremely visible - top corner, bright accent color' : 'Price displayed prominently in accent color'}
 
-IMPORTANT:
-- DO NOT put the product name/title as text on the image (it goes in the caption)
-- Focus on making the PRODUCT visually stunning and the PRICE/DISCOUNT eye-catching
-- The final result should look like a paid ad from a major brand
-- Professional quality, no watermarks`;
+IMPORTANT - DO NOT:
+- DO NOT put product name/title text on the image (caption will have it)
+- DO NOT use generic stock backgrounds
+- DO NOT make it look amateur
+
+IMPORTANT - DO:
+- Make it look like a REAL paid ad from a luxury furniture brand
+- Product must have realistic shadows and reflections
+- Background must have depth: rays, particles, geometric shapes
+- Professional 8K quality render`;
 
     let generatedImageBase64: string | null = null;
+    
+    // Use whiteBgImage if available, otherwise product.image
+    const productImageUrl = whiteBgImage || product.image;
 
     // Generate with product image
-    if (product.image) {
-      console.log("🖼️ Generating with product image...");
+    if (productImageUrl) {
+      console.log("🖼️ Generating with product image:", productImageUrl.substring(0, 80));
       
       try {
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -105,7 +114,7 @@ IMPORTANT:
               role: "user",
               content: [
                 { type: "text", text: imagePrompt },
-                { type: "image_url", image_url: { url: product.image } }
+                { type: "image_url", image_url: { url: productImageUrl } }
               ]
             }],
             modalities: ["image", "text"]
@@ -140,8 +149,15 @@ ${discount > 0 ? `Discount: -${discount}%` : ''}
 ${salePrice > 0 ? `Price: ${salePrice}€` : ''}
 ${product.vendor ? `Brand: ${product.vendor}` : ''}
 
-Style: ${template?.style || "promotional"}
-Make it look like a professional social media ad with bold design, prominent pricing, and a "SHOP NOW" button.`;
+Visual Style: ${visualStyle}
+
+Make it look like a professional social media ad with:
+- Dramatic lighting and reflections
+- ${template?.category === 'showcase' ? 'Luxury gold rays and sparkles' : 
+   template?.category === 'promo' ? 'Energetic explosion rays' : 
+   'Premium clean design'}
+- Bold pricing display
+- "SHOP NOW" CTA button`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
