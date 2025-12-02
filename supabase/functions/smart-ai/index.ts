@@ -53,6 +53,8 @@ interface SmartAnalysisResult {
     name: string;
     url: string;
     price: number | null;
+    image?: string;
+    thumbnail?: string;
   }[];
   seoSuggestions: {
     title: string;
@@ -259,11 +261,11 @@ Return ONLY valid JSON, no markdown.`;
     }
 
     // ============================================================================
-    // 2️⃣ DATAFORSEO — Google Shopping + Organic Search
+    // 2️⃣ SERPAPI GOOGLE LENS — Recherche visuelle par image (SOURCE PRINCIPALE)
     // ============================================================================
     const allPrices: number[] = [];
     const allMerchants: Merchant[] = [];
-    const competitors: { name: string; url: string; price: number | null }[] = [];
+    const competitors: { name: string; url: string; price: number | null; image?: string; thumbnail?: string }[] = [];
 
     let shoppingCount = 0;
     let organicCount = 0;
@@ -290,6 +292,76 @@ Return ONLY valid JSON, no markdown.`;
     console.log("[SMART-AI] DataForSEO credentials available:", !!DATAFORSEO_LOGIN && !!DATAFORSEO_PASSWORD);
     console.log("[SMART-AI] SerpAPI key available:", !!SERPAPI_KEY);
 
+    // ============================================================================
+    // SERPAPI GOOGLE LENS — Recherche visuelle par image (PRIORITÉ 1)
+    // ============================================================================
+    if (SERPAPI_KEY && imageUrl) {
+      try {
+        console.log("[SMART-AI] 🔍 Calling SerpAPI Google Lens (Reverse Image Search)...");
+        const lensUrl = new URL("https://serpapi.com/search.json");
+        lensUrl.searchParams.set("engine", "google_lens");
+        lensUrl.searchParams.set("api_key", SERPAPI_KEY);
+        lensUrl.searchParams.set("url", imageUrl);
+        lensUrl.searchParams.set("gl", country);
+        lensUrl.searchParams.set("hl", country === "us" || country === "uk" ? "en" : country);
+
+        console.log("[SMART-AI] Google Lens URL:", lensUrl.toString());
+
+        const r = await fetch(lensUrl.toString());
+        console.log("[SMART-AI] Google Lens response status:", r.status);
+
+        if (r.ok) {
+          const j = await r.json();
+          console.log("[SMART-AI] Google Lens full response:", JSON.stringify(j, null, 2));
+
+          const visualMatches = j.visual_matches || [];
+          console.log("[SMART-AI] Google Lens visual_matches found:", visualMatches.length);
+
+          for (const match of visualMatches) {
+            const price = match.price?.extracted_value || parsePrice(match.price?.value);
+            console.log("[SMART-AI] Lens match:", match.title, "Price:", price, "Source:", match.source);
+
+            if (match.link && match.source) {
+              visualCount++;
+
+              // Ajouter aux concurrents avec image
+              competitors.push({
+                name: match.source,
+                url: match.link,
+                price: price || null,
+                image: match.thumbnail,
+                thumbnail: match.thumbnail,
+              });
+
+              // Ajouter aux merchants si prix valide
+              if (price && price >= minPriceForSegment && price < 10000) {
+                allPrices.push(price);
+                allMerchants.push({
+                  title: match.title || "Product",
+                  source: match.source,
+                  price: price,
+                  link: match.link,
+                  image: match.thumbnail,
+                });
+              }
+            }
+          }
+
+          console.log("[SMART-AI] ✅ Google Lens results: visual matches =", visualCount, "with prices =", allPrices.length);
+        } else {
+          const errorText = await r.text();
+          console.error("[SMART-AI] ❌ Google Lens HTTP error:", r.status, errorText);
+        }
+      } catch (error) {
+        console.error("[SMART-AI] ❌ Google Lens exception:", error);
+      }
+    } else {
+      console.log("[SMART-AI] ⚠️ SerpAPI Google Lens skipped - key or imageUrl missing");
+    }
+
+    // ============================================================================
+    // DATAFORSEO — Google Shopping + Organic Search (FALLBACK)
+    // ============================================================================
     // DataForSEO Shopping
     if (DATAFORSEO_LOGIN && DATAFORSEO_PASSWORD) {
       const auth = btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`);
@@ -423,11 +495,11 @@ Return ONLY valid JSON, no markdown.`;
     }
 
     // ============================================================================
-    // 3️⃣ SERPAPI — Google Shopping (PRIMARY SOURCE)
+    // SERPAPI — Google Shopping (FALLBACK TEXTE)
     // ============================================================================
     if (SERPAPI_KEY) {
       try {
-        console.log("[SMART-AI] 🛒 Calling SerpAPI Google Shopping...");
+        console.log("[SMART-AI] 🛒 Calling SerpAPI Google Shopping (text search fallback)...");
         const url = new URL("https://serpapi.com/search.json");
         url.searchParams.set("engine", "google_shopping");
         url.searchParams.set("api_key", SERPAPI_KEY);
@@ -452,13 +524,14 @@ Return ONLY valid JSON, no markdown.`;
           console.log("[SMART-AI] SerpAPI item:", it.title, "Price:", price, "Source:", it.source);
           
           if (price && price >= minPriceForSegment && price < 10000) {
-            visualCount++;
+            shoppingCount++;
             allPrices.push(price);
             allMerchants.push({
               title: it.title || "Product",
               source: it.source || "Google Shopping",
               price,
               link: it.link || "",
+              image: it.thumbnail,
             });
 
             // Add to competitors
@@ -467,12 +540,13 @@ Return ONLY valid JSON, no markdown.`;
                 name: it.source,
                 url: it.link,
                 price,
+                image: it.thumbnail,
               });
             }
           }
         }
 
-        console.log("[SMART-AI] ✅ SerpAPI Google Shopping results: merchants =", visualCount, "prices =", allPrices.length);
+        console.log("[SMART-AI] ✅ SerpAPI Google Shopping results: merchants =", shoppingCount, "prices =", allPrices.length);
       } catch (error) {
         console.error("[SMART-AI] ❌ SerpAPI exception:", error);
       }
