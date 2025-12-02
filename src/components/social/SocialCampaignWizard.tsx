@@ -164,11 +164,11 @@ const SocialCampaignWizard = ({ userId, onClose, onCreated }: SocialCampaignWiza
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Nouvelle campagne Social Media
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Sparkles className="h-5 w-5 text-primary flex-shrink-0" />
+            <span className="truncate">Nouvelle campagne Social Media</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -201,7 +201,7 @@ const SocialCampaignWizard = ({ userId, onClose, onCreated }: SocialCampaignWiza
               </div>
 
               {/* Frequency & Posts per run */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Fréquence de publication</Label>
                   <Select value={frequency} onValueChange={setFrequency}>
@@ -296,7 +296,7 @@ const SocialCampaignWizard = ({ userId, onClose, onCreated }: SocialCampaignWiza
               {/* Post Format */}
               <div className="space-y-2">
                 <Label>Format des publications</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setPostFormat('image')}
@@ -490,7 +490,7 @@ const SocialCampaignWizard = ({ userId, onClose, onCreated }: SocialCampaignWiza
                               className="h-10 w-10 object-cover rounded"
                             />
                           )}
-                          <span className="text-sm truncate flex-1">{product.title}</span>
+                          <span className="text-sm truncate flex-1 max-w-[120px] sm:max-w-none">{product.title}</span>
                         </label>
                       ))}
                     </div>
@@ -531,7 +531,7 @@ const SocialCampaignWizard = ({ userId, onClose, onCreated }: SocialCampaignWiza
                               className="h-10 w-10 object-cover rounded"
                             />
                           )}
-                          <span className="text-sm truncate flex-1">{collection.title}</span>
+                          <span className="text-sm truncate flex-1 max-w-[120px] sm:max-w-none">{collection.title}</span>
                           {collection.products_count > 0 && (
                             <span className="text-xs text-muted-foreground">
                               {collection.products_count} produits
