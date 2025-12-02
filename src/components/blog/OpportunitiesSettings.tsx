@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Settings, Save, Facebook } from 'lucide-react';
+import { Settings, Save, Facebook, Instagram } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,11 +14,14 @@ export function OpportunitiesSettings() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [facebookPage, setFacebookPage] = useState<any>(null);
+  const [instagramAccount, setInstagramAccount] = useState<any>(null);
   const [autoShareEnabled, setAutoShareEnabled] = useState(true);
+  const [autoShareInstagram, setAutoShareInstagram] = useState(true);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadFacebookConnection();
+    loadInstagramConnection();
   }, [user]);
 
   const loadFacebookConnection = async () => {
@@ -33,6 +36,21 @@ export function OpportunitiesSettings() {
     if (data) {
       setFacebookPage(data);
       setAutoShareEnabled(data.auto_share_enabled);
+    }
+  };
+
+  const loadInstagramConnection = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('instagram_account_connections')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (data) {
+      setInstagramAccount(data);
+      setAutoShareInstagram(data.auto_share_enabled);
     }
   };
 
@@ -97,6 +115,70 @@ export function OpportunitiesSettings() {
       console.error('Toggle error:', error);
       toast.error(t.toasts.error.generic);
       setAutoShareEnabled(!newValue);
+    }
+  };
+
+  const handleConnectInstagram = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('instagram-oauth', {
+        body: { action: 'connect' }
+      });
+
+      if (error) throw error;
+      
+      if (data?.authUrl) {
+        window.location.href = data.authUrl;
+      }
+    } catch (error: any) {
+      console.error('Instagram connection error:', error);
+      toast.error(t.toasts.error.generic);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDisconnectInstagram = async () => {
+    if (!instagramAccount) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('instagram_account_connections')
+        .delete()
+        .eq('id', instagramAccount.id);
+
+      if (error) throw error;
+      
+      setInstagramAccount(null);
+      toast.success('Instagram account disconnected');
+    } catch (error: any) {
+      console.error('Disconnect error:', error);
+      toast.error(t.toasts.error.generic);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleAutoShareInstagram = async () => {
+    if (!instagramAccount) return;
+    
+    const newValue = !autoShareInstagram;
+    setAutoShareInstagram(newValue);
+    
+    try {
+      const { error } = await supabase
+        .from('instagram_account_connections')
+        .update({ auto_share_enabled: newValue })
+        .eq('id', instagramAccount.id);
+
+      if (error) throw error;
+      
+      toast.success(newValue ? 'Auto-share enabled' : 'Auto-share disabled');
+    } catch (error: any) {
+      console.error('Toggle error:', error);
+      toast.error(t.toasts.error.generic);
+      setAutoShareInstagram(!newValue);
     }
   };
   
