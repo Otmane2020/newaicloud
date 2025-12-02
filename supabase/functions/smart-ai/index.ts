@@ -296,7 +296,7 @@ Return ONLY valid JSON, no markdown.`;
 
       try {
         console.log("[SMART-AI] 🛒 Calling DataForSEO Shopping API...");
-        const r = await fetch("https://api.dataforseo.com/v3/serp/google/shopping/live/advanced", {
+        const r = await fetch("https://api.dataforseo.com/v3/serp/google/shopping/live/regular", {
           method: "POST",
           headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
           body: JSON.stringify([
@@ -313,7 +313,12 @@ Return ONLY valid JSON, no markdown.`;
 
         if (r.ok) {
           const j = await r.json();
-          console.log("[SMART-AI] DataForSEO Shopping response:", JSON.stringify(j, null, 2));
+          console.log("[SMART-AI] DataForSEO Shopping full response:", JSON.stringify(j, null, 2));
+          
+          // Check for API errors
+          if (j.status_code && j.status_code !== 20000) {
+            console.error("[SMART-AI] ❌ DataForSEO API error:", j.status_code, j.status_message);
+          }
           
           const items = j.tasks?.[0]?.result?.[0]?.items || [];
           console.log("[SMART-AI] DataForSEO Shopping items found:", items.length);
@@ -347,7 +352,7 @@ Return ONLY valid JSON, no markdown.`;
           console.log("[SMART-AI] ✅ Shopping results: merchants =", shoppingCount, "prices =", allPrices.length);
         } else {
           const errorText = await r.text();
-          console.error("[SMART-AI] ❌ DataForSEO Shopping API error:", r.status, errorText);
+          console.error("[SMART-AI] ❌ DataForSEO Shopping HTTP error:", r.status, errorText);
         }
       } catch (error) {
         console.error("[SMART-AI] ❌ DataForSEO Shopping exception:", error);
@@ -356,12 +361,17 @@ Return ONLY valid JSON, no markdown.`;
       // DataForSEO Organic
       try {
         console.log("[SMART-AI] 🌐 Calling DataForSEO Organic API...");
+        
+        // Adapt query based on language
+        const priceKeyword = country === "us" || country === "uk" ? "price buy" : "prix achat";
+        const organicQuery = searchQuery + " " + priceKeyword;
+        
         const r = await fetch("https://api.dataforseo.com/v3/serp/google/organic/live/advanced", {
           method: "POST",
           headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
           body: JSON.stringify([
             {
-              keyword: searchQuery + " prix achat",
+              keyword: organicQuery,
               location_code: loc(country),
               language_code: country === "us" || country === "uk" ? "en" : country,
               depth: 20,
@@ -378,8 +388,11 @@ Return ONLY valid JSON, no markdown.`;
           const items = j.tasks?.[0]?.result?.[0]?.items || [];
           console.log("[SMART-AI] DataForSEO Organic items found:", items.length);
 
+          // Multi-currency price extraction regex
+          const priceRegex = country === "us" ? /\$(\d+[,.]?\d*)/ : country === "uk" ? /£(\d+[,.]?\d*)/ : /(\d+[,.]?\d*)\s*€/;
+
           for (const it of items) {
-            const match = (it.title || it.description)?.match(/(\d+[,.]?\d*)\s*€/);
+            const match = (it.title || it.description)?.match(priceRegex);
             if (match) {
               const p = parsePrice(match[1]);
               console.log("[SMART-AI] Organic item:", it.title, "Price extracted:", p);
@@ -388,7 +401,7 @@ Return ONLY valid JSON, no markdown.`;
                 organicCount++;
                 allPrices.push(p);
                 allMerchants.push({
-                  title: it.title || "Produit",
+                  title: it.title || "Product",
                   source: it.domain || new URL(it.url || "").hostname || "Web",
                   price: p,
                   link: it.url || "",
@@ -400,7 +413,7 @@ Return ONLY valid JSON, no markdown.`;
           console.log("[SMART-AI] ✅ Organic results: merchants =", organicCount);
         } else {
           const errorText = await r.text();
-          console.error("[SMART-AI] ❌ DataForSEO Organic API error:", r.status, errorText);
+          console.error("[SMART-AI] ❌ DataForSEO Organic HTTP error:", r.status, errorText);
         }
       } catch (error) {
         console.error("[SMART-AI] ❌ DataForSEO Organic exception:", error);
@@ -410,17 +423,18 @@ Return ONLY valid JSON, no markdown.`;
     }
 
     // ============================================================================
-    // 3️⃣ SERPAPI — Google Images Visual Search
+    // 3️⃣ SERPAPI — Google Shopping (PRIMARY SOURCE)
     // ============================================================================
     if (SERPAPI_KEY) {
       try {
-        console.log("[SMART-AI] 📸 Calling SerpAPI Google Images...");
+        console.log("[SMART-AI] 🛒 Calling SerpAPI Google Shopping...");
         const url = new URL("https://serpapi.com/search.json");
-        url.searchParams.set("engine", "google_images");
+        url.searchParams.set("engine", "google_shopping");
         url.searchParams.set("api_key", SERPAPI_KEY);
         url.searchParams.set("q", searchQuery);
         url.searchParams.set("gl", country);
-        url.searchParams.set("hl", country);
+        url.searchParams.set("hl", country === "us" || country === "uk" ? "en" : country);
+        url.searchParams.set("num", "30");
 
         console.log("[SMART-AI] SerpAPI URL:", url.toString());
 
@@ -428,28 +442,37 @@ Return ONLY valid JSON, no markdown.`;
         console.log("[SMART-AI] SerpAPI response status:", r.status);
         
         const j = await r.json();
-        console.log("[SMART-AI] SerpAPI response:", JSON.stringify(j, null, 2));
+        console.log("[SMART-AI] SerpAPI full response:", JSON.stringify(j, null, 2));
 
         const shop = j.shopping_results || [];
         console.log("[SMART-AI] SerpAPI shopping_results found:", shop.length);
 
         for (const it of shop) {
           const price = it.extracted_price || parsePrice(it.price);
-          console.log("[SMART-AI] SerpAPI item:", it.title, "Price:", price);
+          console.log("[SMART-AI] SerpAPI item:", it.title, "Price:", price, "Source:", it.source);
           
           if (price && price >= minPriceForSegment && price < 10000) {
             visualCount++;
             allPrices.push(price);
             allMerchants.push({
-              title: it.title,
-              source: it.source || "Google Images",
+              title: it.title || "Product",
+              source: it.source || "Google Shopping",
               price,
               link: it.link || "",
             });
+
+            // Add to competitors
+            if (it.source && it.link) {
+              competitors.push({
+                name: it.source,
+                url: it.link,
+                price,
+              });
+            }
           }
         }
 
-        console.log("[SMART-AI] ✅ SerpAPI results: merchants =", visualCount);
+        console.log("[SMART-AI] ✅ SerpAPI Google Shopping results: merchants =", visualCount, "prices =", allPrices.length);
       } catch (error) {
         console.error("[SMART-AI] ❌ SerpAPI exception:", error);
       }
