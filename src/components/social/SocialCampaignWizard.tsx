@@ -65,19 +65,36 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
     if (!userId) return;
     
     try {
+      // Filter by store_id if available, otherwise by seller_id/user_id
+      const productQuery = supabase
+        .from('shopify_products')
+        .select('id, title, product_images(src)')
+        .limit(100);
+      
+      if (storeId) {
+        productQuery.eq('store_id', storeId);
+      } else {
+        productQuery.eq('seller_id', userId);
+      }
+
+      const collectionQuery = supabase
+        .from('shopify_collections')
+        .select('id, title, image_src')
+        .limit(50);
+      
+      if (storeId) {
+        collectionQuery.eq('store_id', storeId);
+      } else {
+        collectionQuery.eq('user_id', userId);
+      }
+
       const [productsRes, collectionsRes] = await Promise.all([
-        supabase
-          .from('shopify_products')
-          .select('id, title, product_images(src)')
-          .eq('seller_id', userId)
-          .limit(100),
-        supabase
-          .from('shopify_collections')
-          .select('id, title, image_src')
-          .eq('user_id', userId)
-          .limit(50),
+        productQuery,
+        collectionQuery,
       ]);
 
+      console.log('[SocialCampaignWizard] Products loaded:', productsRes.data?.length, 'Collections:', collectionsRes.data?.length);
+      
       setProducts(productsRes.data || []);
       setCollections(collectionsRes.data || []);
     } catch (error) {
