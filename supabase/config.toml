@@ -489,3 +489,10 @@ verify_jwt = false
 [functions.process-blog-campaigns]
 verify_jwt = false
 
+[functions.facebook-page-oauth]
+verify_jwt = false
+
+[functions.instagram-oauth]
+verify_jwt = false
+
+
