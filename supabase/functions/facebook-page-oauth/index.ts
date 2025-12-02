@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       if (error) {
         console.error('Facebook OAuth error:', error, errorDescription);
         const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
-        const redirectUrl = `${frontendUrl}/social-callback?error=${encodeURIComponent(`${error}: ${errorDescription}`)}`;
+        const redirectUrl = `${frontendUrl}/social-media?error=${encodeURIComponent(`${error}: ${errorDescription}`)}`;
         return Response.redirect(redirectUrl, 302);
       }
 
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
 
       if (!pagesData.data || pagesData.data.length === 0) {
         const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
-        const redirectUrl = `${frontendUrl}/social-callback?error=${encodeURIComponent('Aucune page Facebook trouvée. Veuillez créer une page Facebook.')}`;
+        const redirectUrl = `${frontendUrl}/social-media?error=${encodeURIComponent('Aucune page Facebook trouvée. Veuillez créer une page Facebook.')}`;
         return Response.redirect(redirectUrl, 302);
       }
 
@@ -163,13 +163,13 @@ Deno.serve(async (req) => {
         // Don't fail the whole flow if Instagram fetch fails
       }
 
-      // Redirect to React callback page with success message
+      // Redirect directly to /social-media with success message
       const successMessage = instagramAccountName 
         ? `Facebook (${page.name}) et Instagram (${instagramAccountName}) connectés avec succès!`
         : `Facebook (${page.name}) connecté avec succès!`;
 
       const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
-      const redirectUrl = `${frontendUrl}/social-callback?success=true&message=${encodeURIComponent(successMessage)}`;
+      const redirectUrl = `${frontendUrl}/social-media?success=true&message=${encodeURIComponent(successMessage)}`;
 
       console.log('Single page connected, redirecting to:', redirectUrl);
 

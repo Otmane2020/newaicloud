@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/lib/language";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,8 +32,10 @@ const SocialMedia = () => {
   const { user } = useAuth();
   const { selectedStore } = useStore();
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   
-  const [activeTab, setActiveTab] = useState("posts");
+  const [activeTab, setActiveTab] = useState("connections");
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
   const [showQuickPost, setShowQuickPost] = useState(false);
   const [settings, setSettings] = useState<SocialSettings>({
@@ -44,6 +47,25 @@ const SocialMedia = () => {
   });
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
+
+  // Handle OAuth redirect with success/error messages
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const message = searchParams.get('message');
+    const error = searchParams.get('error');
+
+    if (success === 'true' && message) {
+      toast.success(decodeURIComponent(message));
+      // Switch to connections tab to show the new connection
+      setActiveTab('connections');
+      // Clean up URL
+      navigate('/social-media', { replace: true });
+    } else if (error) {
+      toast.error(decodeURIComponent(error));
+      setActiveTab('connections');
+      navigate('/social-media', { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   useEffect(() => {
     if (user?.id) {

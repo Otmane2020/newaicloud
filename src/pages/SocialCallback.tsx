@@ -58,7 +58,10 @@ const SocialCallback = () => {
   }, [searchParams, navigate]);
 
   const handleSuccess = (pageName: string, instagramName?: string | null) => {
-    navigate('/social-media', { replace: true });
+    const successMessage = instagramName 
+      ? `Facebook (${pageName}) et Instagram (${instagramName}) connectés avec succès!`
+      : `Facebook (${pageName}) connecté avec succès!`;
+    navigate(`/social-media?success=true&message=${encodeURIComponent(successMessage)}`, { replace: true });
   };
 
   const handleClose = () => {
