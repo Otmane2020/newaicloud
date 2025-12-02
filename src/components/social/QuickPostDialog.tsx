@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Loader2, Facebook, Instagram, Zap, Search, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Loader2, Facebook, Instagram, Zap, Search, Image as ImageIcon, Sparkles, Eye, ArrowLeft } from "lucide-react";
 
 interface QuickPostDialogProps {
   userId?: string;
@@ -26,6 +26,7 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
   const [channels, setChannels] = useState<string[]>(['facebook', 'instagram']);
   const [posting, setPosting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -62,7 +63,6 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
     
     setGeneratingCaption(true);
     try {
-      // Simple caption generation based on product info
       const productName = selectedProduct.title;
       const description = selectedProduct.body_html?.replace(/<[^>]*>/g, '').substring(0, 200) || '';
       
@@ -88,7 +88,6 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
 
     setPosting(true);
     try {
-      // Get the first image
       const imageUrl = selectedProduct.product_images?.[0]?.src;
       
       if (!imageUrl) {
@@ -97,7 +96,6 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
         return;
       }
 
-      // Call share functions for each channel
       for (const channel of channels) {
         const functionName = channel === 'facebook' ? 'share-article-facebook' : 'share-article-instagram';
         
@@ -131,7 +129,88 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
   const selectProduct = (product: any) => {
     setSelectedProduct(product);
     setCaption('');
+    setShowPreview(false);
   };
+
+  const canShowPreview = selectedProduct && caption && channels.length > 0;
+
+  // Preview Mode
+  if (showPreview && selectedProduct) {
+    const imageUrl = selectedProduct.product_images?.[0]?.src;
+    
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="p-4 pb-0">
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" />
+              Aperçu de la publication
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 p-4">
+            {/* Preview Card */}
+            <div className="border rounded-xl overflow-hidden bg-card shadow-sm">
+              {/* Header */}
+              <div className="flex items-center gap-3 p-3 border-b">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-bold text-sm">
+                  {selectedStore?.store_name?.[0]?.toUpperCase() || 'S'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{selectedStore?.store_name || 'Ma boutique'}</p>
+                  <p className="text-xs text-muted-foreground">À l'instant</p>
+                </div>
+              </div>
+
+              {/* Image */}
+              {imageUrl && (
+                <div className="aspect-square bg-muted">
+                  <img 
+                    src={imageUrl} 
+                    alt={selectedProduct.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Caption */}
+              <div className="p-3 space-y-2">
+                <div className="flex gap-2">
+                  {channels.includes('facebook') && <Facebook className="h-4 w-4 text-blue-600 flex-shrink-0" />}
+                  {channels.includes('instagram') && <Instagram className="h-4 w-4 text-pink-600 flex-shrink-0" />}
+                </div>
+                <p className="text-sm whitespace-pre-wrap break-words">{caption}</p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowPreview(false)}
+                className="flex-1"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Modifier
+              </Button>
+              <Button 
+                onClick={handlePost} 
+                disabled={posting}
+                className="flex-1"
+              >
+                {posting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="h-4 w-4 mr-2" />
+                )}
+                Publier
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -185,7 +264,9 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
                           <ImageIcon className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
-                      <span className="text-sm font-medium truncate">{product.title}</span>
+                      <span className="text-sm font-medium line-clamp-2 break-words flex-1 min-w-0">
+                        {product.title}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -203,11 +284,11 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{selectedProduct.title}</p>
+                  <p className="font-medium line-clamp-2 break-words text-sm">{selectedProduct.title}</p>
                   <button 
                     type="button"
                     onClick={() => setSelectedProduct(null)}
-                    className="text-sm text-primary hover:underline"
+                    className="text-xs text-primary hover:underline mt-1"
                   >
                     Changer de produit
                   </button>
@@ -245,7 +326,7 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
               {/* Channels */}
               <div className="space-y-2">
                 <Label>Publier sur</Label>
-                <div className="flex gap-4">
+                <div className="flex flex-wrap gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
                       checked={channels.includes('facebook')}
@@ -277,19 +358,30 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
                 </div>
               </div>
 
-              {/* Post Button */}
-              <Button 
-                onClick={handlePost} 
-                disabled={posting || !caption || channels.length === 0}
-                className="w-full"
-              >
-                {posting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Zap className="h-4 w-4 mr-2" />
-                )}
-                Publier maintenant
-              </Button>
+              {/* Preview & Post Buttons */}
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowPreview(true)} 
+                  disabled={!canShowPreview}
+                  className="flex-1"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Aperçu
+                </Button>
+                <Button 
+                  onClick={handlePost} 
+                  disabled={posting || !caption || channels.length === 0}
+                  className="flex-1"
+                >
+                  {posting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Zap className="h-4 w-4 mr-2" />
+                  )}
+                  Publier
+                </Button>
+              </div>
             </>
           )}
         </div>
