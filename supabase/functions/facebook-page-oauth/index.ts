@@ -105,10 +105,65 @@ Deno.serve(async (req) => {
 
       console.log('Facebook page connected successfully');
 
+      // Now fetch the Instagram Business account linked to this page
+      let instagramAccountName = null;
+      try {
+        console.log('Fetching Instagram Business account for page:', page.id);
+        const igResponse = await fetch(
+          `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+        );
+        const igData = await igResponse.json();
+        console.log('Instagram Business account response:', igData);
+
+        if (igData.instagram_business_account) {
+          // Get Instagram account details
+          const igDetailsResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${igData.instagram_business_account.id}?fields=username,name&access_token=${page.access_token}`
+          );
+          const igDetails = await igDetailsResponse.json();
+          console.log('Instagram account details:', igDetails);
+
+          instagramAccountName = igDetails.username || igDetails.name || 'Instagram Business';
+
+          // Store Instagram connection (using page_access_token for Instagram Business API)
+          const { error: igInsertError } = await supabase
+            .from('instagram_account_connections')
+            .upsert({
+              user_id: state,
+              account_id: igData.instagram_business_account.id,
+              account_name: instagramAccountName,
+              access_token: page.access_token, // Use page token for Instagram Business API
+              auto_share_enabled: true,
+            }, {
+              onConflict: 'user_id'
+            });
+
+          if (igInsertError) {
+            console.error('Error storing Instagram connection:', igInsertError);
+          } else {
+            console.log('Instagram Business account connected successfully:', instagramAccountName);
+          }
+        } else {
+          console.log('No Instagram Business account linked to this Facebook page');
+        }
+      } catch (igError) {
+        console.error('Error fetching Instagram Business account:', igError);
+        // Don't fail the whole flow if Instagram fetch fails
+      }
+
       // Close the popup and notify parent window
+      const successMessage = instagramAccountName 
+        ? `Facebook (${page.name}) et Instagram (${instagramAccountName}) connectés avec succès!`
+        : `Facebook (${page.name}) connecté avec succès!`;
+
       return new Response(
         `<html><body><script>
-          window.opener.postMessage({ success: true, pageName: '${page.name}' }, '*');
+          window.opener.postMessage({ 
+            success: true, 
+            pageName: '${page.name}',
+            instagramName: ${instagramAccountName ? `'${instagramAccountName}'` : 'null'},
+            message: '${successMessage}'
+          }, '*');
           window.close();
         </script></body></html>`,
         { headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
@@ -136,10 +191,11 @@ Deno.serve(async (req) => {
         const appId = Deno.env.get('FACEBOOK_APP_ID')!;
         const redirectUri = `${supabaseUrl}/functions/v1/facebook-page-oauth`;
         
+        // Extended scope to include Instagram Business permissions
         const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +
           `client_id=${appId}&` +
           `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-          `scope=pages_manage_posts,pages_read_engagement,pages_show_list&` +
+          `scope=pages_manage_posts,pages_read_engagement,pages_show_list,instagram_basic,instagram_content_publish&` +
           `response_type=code&` +
           `state=${user.id}`;
 

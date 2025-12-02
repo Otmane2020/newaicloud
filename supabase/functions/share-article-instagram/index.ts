@@ -23,7 +23,7 @@ serve(async (req) => {
       throw new Error('Article ID and User ID are required');
     }
 
-    console.log('Sharing article to Instagram:', articleId, 'for user:', userId);
+    console.log('[SHARE-INSTAGRAM] Sharing article to Instagram:', articleId, 'for user:', userId);
 
     // Get article details
     const { data: article, error: articleError } = await supabaseClient
@@ -37,7 +37,7 @@ serve(async (req) => {
       throw new Error('Article not found');
     }
 
-    // Get Instagram connection
+    // Get Instagram connection (now using page_access_token from Facebook OAuth)
     const { data: instagramConnection, error: connectionError } = await supabaseClient
       .from('instagram_account_connections')
       .select('*')
@@ -46,7 +46,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (connectionError || !instagramConnection) {
-      console.log('No Instagram connection found or auto-share disabled');
+      console.log('[SHARE-INSTAGRAM] No Instagram connection found or auto-share disabled');
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -56,34 +56,51 @@ serve(async (req) => {
       );
     }
 
-    console.log('Posting to Instagram account:', instagramConnection.account_name);
+    console.log('[SHARE-INSTAGRAM] Posting to Instagram account:', instagramConnection.account_name);
 
-    // Create Instagram post
-    // Note: Instagram requires an image URL for posts
-    const imageUrl = article.featured_image || 'https://placehold.co/1080x1080';
+    // Validate image URL - Instagram requires a publicly accessible image
+    const imageUrl = article.featured_image;
+    if (!imageUrl || imageUrl.includes('placehold')) {
+      console.log('[SHARE-INSTAGRAM] No valid featured image for Instagram post');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'A valid featured image is required for Instagram posts' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const caption = `${article.title}\n\n${article.meta_description || ''}`;
 
-    // First, create a media container
+    // Use Instagram Business API with the page access token
+    console.log('[SHARE-INSTAGRAM] Creating media container...');
     const containerResponse = await fetch(
-      `https://graph.instagram.com/v21.0/${instagramConnection.account_id}/media`,
+      `https://graph.facebook.com/v18.0/${instagramConnection.account_id}/media`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image_url: imageUrl,
           caption: caption,
-          access_token: instagramConnection.access_token,
+          access_token: instagramConnection.access_token, // This is now the page_access_token
         }),
       }
     );
 
     const containerData = await containerResponse.json();
-    console.log('Instagram container response:', containerData);
+    console.log('[SHARE-INSTAGRAM] Container response:', containerData);
+
+    if (containerData.error) {
+      console.error('[SHARE-INSTAGRAM] Container creation error:', containerData.error);
+      throw new Error(containerData.error.message || 'Failed to create Instagram media container');
+    }
 
     if (containerData.id) {
       // Publish the media
+      console.log('[SHARE-INSTAGRAM] Publishing media...');
       const publishResponse = await fetch(
-        `https://graph.instagram.com/v21.0/${instagramConnection.account_id}/media_publish`,
+        `https://graph.facebook.com/v18.0/${instagramConnection.account_id}/media_publish`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -95,10 +112,15 @@ serve(async (req) => {
       );
 
       const publishData = await publishResponse.json();
-      console.log('Instagram publish response:', publishData);
+      console.log('[SHARE-INSTAGRAM] Publish response:', publishData);
+
+      if (publishData.error) {
+        console.error('[SHARE-INSTAGRAM] Publish error:', publishData.error);
+        throw new Error(publishData.error.message || 'Failed to publish Instagram media');
+      }
 
       if (publishData.id) {
-        console.log('Article shared successfully to Instagram');
+        console.log('[SHARE-INSTAGRAM] ✅ Article shared successfully to Instagram');
         
         return new Response(
           JSON.stringify({ 
@@ -113,7 +135,7 @@ serve(async (req) => {
 
     throw new Error('Failed to share article on Instagram');
   } catch (error: any) {
-    console.error('Error sharing article on Instagram:', error);
+    console.error('[SHARE-INSTAGRAM] Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
