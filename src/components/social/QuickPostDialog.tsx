@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Loader2, Facebook, Instagram, Zap, Search, Image as ImageIcon, Sparkles, Eye, ArrowLeft } from "lucide-react";
+import { Loader2, Zap, Search, Image as ImageIcon, Sparkles, Eye, ArrowLeft } from "lucide-react";
+import { SocialPageSelector } from "./SocialPageSelector";
+import { SocialPostPreview } from "./SocialPostPreview";
+import { SOCIAL_TEMPLATES } from "./templates/socialTemplates";
 
 interface QuickPostDialogProps {
   userId?: string;
@@ -23,10 +25,14 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [caption, setCaption] = useState('');
   const [generatingCaption, setGeneratingCaption] = useState(false);
-  const [channels, setChannels] = useState<string[]>(['facebook', 'instagram']);
+  const [selectedFacebookPages, setSelectedFacebookPages] = useState<string[]>([]);
+  const [selectedInstagramAccounts, setSelectedInstagramAccounts] = useState<string[]>([]);
   const [posting, setPosting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  
+  // Get default template
+  const defaultTemplate = SOCIAL_TEMPLATES.find(t => t.id === 'product_spotlight') || SOCIAL_TEMPLATES[0];
 
   useEffect(() => {
     loadProducts();
@@ -41,7 +47,7 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
     try {
       const { data } = await supabase
         .from('shopify_products')
-        .select('id, title, body_html, product_images(src)')
+        .select('id, title, body_html, product_images(src), product_variants(price, compare_at_price)')
         .eq('store_id', selectedStore.id)
         .order('title', { ascending: true })
         .limit(100);
@@ -64,25 +70,50 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
     setGeneratingCaption(true);
     try {
       const productName = selectedProduct.title;
-      const description = selectedProduct.body_html?.replace(/<[^>]*>/g, '').substring(0, 200) || '';
+      const description = selectedProduct.body_html?.replace(/<[^>]*>/g, '').substring(0, 300) || '';
+      const price = selectedProduct.product_variants?.[0]?.price;
+      const comparePrice = selectedProduct.product_variants?.[0]?.compare_at_price;
       
+      // Use AI to generate engaging caption
+      const { data, error } = await supabase.functions.invoke('generate-social-caption', {
+        body: {
+          productTitle: productName,
+          productDescription: description,
+          productPrice: price ? `${price}€` : undefined,
+          comparePrice: comparePrice ? `${comparePrice}€` : undefined,
+          storeName: selectedStore?.store_name,
+          language: 'fr',
+          tone: 'engaging',
+          platform: selectedInstagramAccounts.length > 0 ? 'instagram' : 'facebook'
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.caption) {
+        setCaption(data.caption);
+        toast.success('Caption générée avec AI !');
+      } else {
+        throw new Error('No caption returned');
+      }
+    } catch (error: any) {
+      console.error('Error generating caption:', error);
+      // Fallback to simple caption
       const emojis = ['✨', '🛍️', '💫', '🎁', '⭐', '🔥', '💎', '🌟'];
       const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-      
-      const generatedCaption = `${randomEmoji} ${productName}\n\n${description ? description + '...\n\n' : ''}Découvrez ce produit sur notre boutique! 🛒\n\n#shopping #nouveaute #promo`;
-      
-      setCaption(generatedCaption);
-      toast.success('Caption générée !');
-    } catch (error: any) {
-      toast.error('Erreur lors de la génération');
+      const fallbackCaption = `${randomEmoji} ${selectedProduct.title}\n\n🛒 Découvrez ce produit exclusif sur notre boutique !\n\n#shopping #nouveaute #tendance`;
+      setCaption(fallbackCaption);
+      toast.info('Caption générée (mode simplifié)');
     } finally {
       setGeneratingCaption(false);
     }
   };
 
   const handlePost = async () => {
-    if (!selectedProduct || !caption || channels.length === 0) {
-      toast.error('Sélectionnez un produit, écrivez une caption et choisissez au moins un canal');
+    const hasSelectedPages = selectedFacebookPages.length > 0 || selectedInstagramAccounts.length > 0;
+    
+    if (!selectedProduct || !caption || !hasSelectedPages) {
+      toast.error('Sélectionnez un produit, écrivez une caption et choisissez au moins une page');
       return;
     }
 
@@ -96,24 +127,45 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
         return;
       }
 
-      for (const channel of channels) {
-        const functionName = channel === 'facebook' ? 'share-article-facebook' : 'share-article-instagram';
-        
-        const { data, error } = await supabase.functions.invoke(functionName, {
+      // Post to selected Facebook pages
+      for (const pageId of selectedFacebookPages) {
+        const { data, error } = await supabase.functions.invoke('share-article-facebook', {
           body: {
             userId,
             imageUrl,
             caption,
             productId: selectedProduct.id,
             productTitle: selectedProduct.title,
+            pageId, // Specific page to post to
           }
         });
 
         if (error) {
-          console.error(`Error posting to ${channel}:`, error);
-          toast.error(`Erreur ${channel}: ${error.message}`);
+          console.error(`Error posting to Facebook page ${pageId}:`, error);
+          toast.error(`Erreur Facebook: ${error.message}`);
         } else {
-          toast.success(`Publié sur ${channel === 'facebook' ? 'Facebook' : 'Instagram'} !`);
+          toast.success('Publié sur Facebook !');
+        }
+      }
+
+      // Post to selected Instagram accounts
+      for (const accountId of selectedInstagramAccounts) {
+        const { data, error } = await supabase.functions.invoke('share-article-instagram', {
+          body: {
+            userId,
+            imageUrl,
+            caption,
+            productId: selectedProduct.id,
+            productTitle: selectedProduct.title,
+            accountId, // Specific account to post to
+          }
+        });
+
+        if (error) {
+          console.error(`Error posting to Instagram account ${accountId}:`, error);
+          toast.error(`Erreur Instagram: ${error.message}`);
+        } else {
+          toast.success('Publié sur Instagram !');
         }
       }
 
@@ -132,12 +184,16 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
     setShowPreview(false);
   };
 
-  const canShowPreview = selectedProduct && caption && channels.length > 0;
+  const hasSelectedPages = selectedFacebookPages.length > 0 || selectedInstagramAccounts.length > 0;
+  const canShowPreview = selectedProduct && caption && hasSelectedPages;
+  
+  // Build channels array for preview
+  const previewChannels: string[] = [];
+  if (selectedFacebookPages.length > 0) previewChannels.push('facebook');
+  if (selectedInstagramAccounts.length > 0) previewChannels.push('instagram');
 
   // Preview Mode
   if (showPreview && selectedProduct) {
-    const imageUrl = selectedProduct.product_images?.[0]?.src;
-    
     return (
       <Dialog open onOpenChange={onClose}>
         <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto p-0">
@@ -149,39 +205,15 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
           </DialogHeader>
 
           <div className="space-y-4 p-4">
-            {/* Preview Card */}
-            <div className="border rounded-xl overflow-hidden bg-card shadow-sm">
-              {/* Header */}
-              <div className="flex items-center gap-3 p-3 border-b">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-bold text-sm">
-                  {selectedStore?.store_name?.[0]?.toUpperCase() || 'S'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{selectedStore?.store_name || 'Ma boutique'}</p>
-                  <p className="text-xs text-muted-foreground">À l'instant</p>
-                </div>
-              </div>
-
-              {/* Image */}
-              {imageUrl && (
-                <div className="aspect-square bg-muted">
-                  <img 
-                    src={imageUrl} 
-                    alt={selectedProduct.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-
-              {/* Caption */}
-              <div className="p-3 space-y-2">
-                <div className="flex gap-2">
-                  {channels.includes('facebook') && <Facebook className="h-4 w-4 text-blue-600 flex-shrink-0" />}
-                  {channels.includes('instagram') && <Instagram className="h-4 w-4 text-pink-600 flex-shrink-0" />}
-                </div>
-                <p className="text-sm whitespace-pre-wrap break-words">{caption}</p>
-              </div>
-            </div>
+            <SocialPostPreview
+              template={defaultTemplate}
+              productImage={selectedProduct.product_images?.[0]?.src}
+              productTitle={selectedProduct.title}
+              productPrice={selectedProduct.product_variants?.[0]?.price ? `${selectedProduct.product_variants[0].price}€` : undefined}
+              caption={caption}
+              storeName={selectedStore?.store_name || 'Ma boutique'}
+              channels={previewChannels}
+            />
 
             {/* Actions */}
             <div className="flex gap-2">
@@ -323,38 +355,18 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
                 />
               </div>
 
-              {/* Channels */}
+              {/* Page/Account Selection */}
               <div className="space-y-2">
                 <Label>Publier sur</Label>
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={channels.includes('facebook')}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setChannels([...channels, 'facebook']);
-                        } else {
-                          setChannels(channels.filter(c => c !== 'facebook'));
-                        }
-                      }}
-                    />
-                    <Facebook className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm">Facebook</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={channels.includes('instagram')}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setChannels([...channels, 'instagram']);
-                        } else {
-                          setChannels(channels.filter(c => c !== 'instagram'));
-                        }
-                      }}
-                    />
-                    <Instagram className="h-4 w-4 text-pink-600" />
-                    <span className="text-sm">Instagram</span>
-                  </label>
+                <div className="border rounded-lg p-3">
+                  <SocialPageSelector
+                    userId={userId}
+                    selectedFacebookPages={selectedFacebookPages}
+                    selectedInstagramAccounts={selectedInstagramAccounts}
+                    onFacebookChange={setSelectedFacebookPages}
+                    onInstagramChange={setSelectedInstagramAccounts}
+                    compact
+                  />
                 </div>
               </div>
 
@@ -371,7 +383,7 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
                 </Button>
                 <Button 
                   onClick={handlePost} 
-                  disabled={posting || !caption || channels.length === 0}
+                  disabled={posting || !caption || !hasSelectedPages}
                   className="flex-1"
                 >
                   {posting ? (

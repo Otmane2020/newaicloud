@@ -11,13 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Facebook, Instagram, Plus, Calendar, Send, Settings, Loader2, Trash2, Zap } from "lucide-react";
 import SocialCampaignWizard from "@/components/social/SocialCampaignWizard";
 import SocialPostsList from "@/components/social/SocialPostsList";
 import SocialConnections from "@/components/social/SocialConnections";
 import QuickPostDialog from "@/components/social/QuickPostDialog";
+import { SettingsPreview } from "@/components/social/SettingsPreview";
 
 interface SocialSettings {
   id?: string;
@@ -193,94 +193,88 @@ const SocialMedia = () => {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Paramètres Social Media</CardTitle>
-              <CardDescription>
-                Configurez vos préférences de publication
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Publication automatique des articles</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Publie automatiquement les nouveaux articles sur les réseaux sociaux
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.auto_post_articles}
-                  onCheckedChange={(checked) => 
-                    setSettings(prev => ({ ...prev, auto_post_articles: checked }))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Style de template par défaut</Label>
-                <Select
-                  value={settings.default_template_style}
-                  onValueChange={(value) => 
-                    setSettings(prev => ({ ...prev, default_template_style: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="simple">Photo simple</SelectItem>
-                    <SelectItem value="overlay">Template avec overlay</SelectItem>
-                    <SelectItem value="carousel">Carrousel multi-images</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Couleur de marque</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="color"
-                    value={settings.brand_color}
-                    onChange={(e) => 
-                      setSettings(prev => ({ ...prev, brand_color: e.target.value }))
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Settings Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Paramètres Social Media</CardTitle>
+                <CardDescription>
+                  Configurez vos préférences de publication
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Publication automatique des articles</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Publie automatiquement les nouveaux articles sur les réseaux sociaux
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.auto_post_articles}
+                    onCheckedChange={(checked) => 
+                      setSettings(prev => ({ ...prev, auto_post_articles: checked }))
                     }
-                    className="w-16 h-10 p-1 cursor-pointer"
-                  />
-                  <Input
-                    value={settings.brand_color}
-                    onChange={(e) => 
-                      setSettings(prev => ({ ...prev, brand_color: e.target.value }))
-                    }
-                    className="flex-1"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label>URL du logo</Label>
-                <Input
-                  value={settings.logo_url || ''}
-                  onChange={(e) => 
-                    setSettings(prev => ({ ...prev, logo_url: e.target.value || null }))
-                  }
-                  placeholder="https://example.com/logo.png"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label>Couleur de marque</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={settings.brand_color}
+                      onChange={(e) => 
+                        setSettings(prev => ({ ...prev, brand_color: e.target.value }))
+                      }
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      value={settings.brand_color}
+                      onChange={(e) => 
+                        setSettings(prev => ({ ...prev, brand_color: e.target.value }))
+                      }
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
 
-              <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-medium mb-2">💰 Coût des publications</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Publication Facebook : 3 crédits</li>
-                  <li>• Publication Instagram : 3 crédits</li>
-                </ul>
-              </div>
+                <div className="space-y-2">
+                  <Label>URL du logo</Label>
+                  <Input
+                    value={settings.logo_url || ''}
+                    onChange={(e) => 
+                      setSettings(prev => ({ ...prev, logo_url: e.target.value || null }))
+                    }
+                    placeholder="https://example.com/logo.png"
+                  />
+                </div>
 
-              <Button onClick={saveSettings} disabled={savingSettings}>
-                {savingSettings && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Sauvegarder
-              </Button>
-            </CardContent>
-          </Card>
+                <div className="p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-2">💰 Coût des publications</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Publication Facebook : 3 crédits</li>
+                    <li>• Publication Instagram : 3 crédits</li>
+                  </ul>
+                </div>
+
+                <Button onClick={saveSettings} disabled={savingSettings}>
+                  {savingSettings && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Sauvegarder
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Preview Card */}
+            <SettingsPreview
+              selectedTemplateId={settings.default_template_style}
+              onTemplateChange={(templateId) => 
+                setSettings(prev => ({ ...prev, default_template_style: templateId }))
+              }
+              brandColor={settings.brand_color}
+              logoUrl={settings.logo_url}
+            />
+          </div>
         </TabsContent>
       </Tabs>
 
