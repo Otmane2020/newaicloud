@@ -37,6 +37,9 @@ verify_jwt = true
 [functions.diagnose-subscription]
 verify_jwt = true
 
+[functions.test-smart-ai-apis]
+verify_jwt = true
+
 [functions.generate-page-seo]
 verify_jwt = true
 

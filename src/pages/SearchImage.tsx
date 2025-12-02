@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, ExternalLink, TrendingUp, ShoppingBag } from "lucide-react";
+import { Loader2, Search, ExternalLink, TrendingUp, ShoppingBag, Activity, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -52,6 +52,15 @@ interface ScanResult {
   processingTime: number;
 }
 
+interface ApiTestResult {
+  name: string;
+  status: "ok" | "ko";
+  details: string;
+  responseTime?: number;
+  data?: any;
+  error?: string;
+}
+
 export default function SearchImage() {
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -61,6 +70,8 @@ export default function SearchImage() {
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [testingApis, setTestingApis] = useState(false);
+  const [apiTestResults, setApiTestResults] = useState<ApiTestResult[] | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -195,6 +206,37 @@ export default function SearchImage() {
     }
   };
 
+  const testApis = async () => {
+    setTestingApis(true);
+    setApiTestResults(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("test-smart-ai-apis", {
+        body: {},
+      });
+
+      if (error) throw error;
+      if (!data) throw new Error("Aucune donnée retournée");
+
+      console.log("API test results:", data);
+      setApiTestResults(data.results);
+
+      toast({
+        title: data.allOk ? "✅ Tous les tests OK" : "⚠️ Certains tests ont échoué",
+        description: `${data.results.filter((r: ApiTestResult) => r.status === "ok").length}/${data.results.length} APIs fonctionnent`,
+      });
+    } catch (err: unknown) {
+      console.error("Error testing APIs:", err);
+      toast({
+        title: "Erreur",
+        description: err instanceof Error ? err.message : "Erreur lors des tests",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingApis(false);
+    }
+  };
+
   const formatPrice = (price: number | null | undefined) => {
     if (price === null || price === undefined) return "N/A";
     return `${price.toFixed(2)} €`;
@@ -203,10 +245,108 @@ export default function SearchImage() {
   return (
     <div className="container mx-auto p-6 max-w-5xl">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Smart Price Scanner</h1>
-        <p className="text-muted-foreground">
-          Analysez les prix et informations produits à partir d&apos;images avec recherche SERP
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Smart Price Scanner</h1>
+            <p className="text-muted-foreground">
+              Analysez les prix et informations produits à partir d&apos;images avec recherche SERP
+            </p>
+          </div>
+          <Button 
+            onClick={testApis} 
+            disabled={testingApis}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            {testingApis ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Test en cours...
+              </>
+            ) : (
+              <>
+                <Activity className="h-4 w-4" />
+                Tester les APIs
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* API Test Results */}
+        {apiTestResults && (
+          <Card className="mb-6 border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Diagnostic des APIs
+              </CardTitle>
+              <CardDescription>
+                Résultats des tests de connectivité et de fonctionnalité
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {apiTestResults.map((result, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-lg border-2 ${
+                      result.status === "ok"
+                        ? "bg-green-500/10 border-green-500/30"
+                        : "bg-red-500/10 border-red-500/30"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        {result.status === "ok" ? (
+                          <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0" />
+                        ) : (
+                          <XCircle className="h-6 w-6 text-red-500 flex-shrink-0" />
+                        )}
+                        <div>
+                          <h3 className="font-semibold text-lg">{result.name}</h3>
+                          <p className={`text-sm ${result.status === "ok" ? "text-green-600" : "text-red-600"}`}>
+                            {result.details}
+                          </p>
+                          {result.responseTime && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Temps de réponse : {result.responseTime}ms
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant={result.status === "ok" ? "default" : "destructive"}>
+                        {result.status.toUpperCase()}
+                      </Badge>
+                    </div>
+
+                    {/* Debug details */}
+                    {result.data && (
+                      <details className="mt-3">
+                        <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                          Voir les données de debug
+                        </summary>
+                        <pre className="mt-2 p-3 bg-muted/50 rounded text-xs overflow-x-auto">
+                          {JSON.stringify(result.data, null, 2)}
+                        </pre>
+                      </details>
+                    )}
+
+                    {result.error && (
+                      <details className="mt-3">
+                        <summary className="text-xs text-red-600 cursor-pointer hover:text-red-500">
+                          Voir l&apos;erreur
+                        </summary>
+                        <pre className="mt-2 p-3 bg-red-500/10 rounded text-xs overflow-x-auto text-red-600">
+                          {result.error}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
