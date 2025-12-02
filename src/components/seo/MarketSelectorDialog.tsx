@@ -110,7 +110,7 @@ export function MarketSelectorDialog({
   selectedMarkets,
   onMarketsChange,
 }: MarketSelectorDialogProps) {
-  const { language } = useTranslation();
+  const { t, tf, language } = useTranslation();
 
   const toggleMarket = (code: string) => {
     onMarketsChange(
@@ -145,12 +145,10 @@ export function MarketSelectorDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Globe className="w-5 h-5 text-primary" />
-            {language === 'fr' ? 'Sélection des marchés' : 'Market Selection'}
+            {t.dialogs.marketSelector.title}
           </DialogTitle>
           <DialogDescription>
-            {language === 'fr'
-              ? 'Choisissez les pays où rechercher les prix concurrents via Google Lens'
-              : 'Choose countries where to search competitor prices via Google Lens'}
+            {t.dialogs.marketSelector.description}
           </DialogDescription>
         </DialogHeader>
 
@@ -207,13 +205,11 @@ export function MarketSelectorDialog({
           <div className="flex items-center gap-2">
             <Check className="w-4 h-4 text-primary" />
             <span className="text-sm text-muted-foreground">
-              {language === 'fr' 
-                ? `${selectedMarkets.length} marché(s) sélectionné(s)`
-                : `${selectedMarkets.length} market(s) selected`}
+              {tf('dialogs.marketSelector.selected', { count: selectedMarkets.length })}
             </span>
           </div>
           <Button onClick={() => onOpenChange(false)}>
-            {language === 'fr' ? 'Valider' : 'Confirm'}
+            {t.common.confirm}
           </Button>
         </div>
       </DialogContent>

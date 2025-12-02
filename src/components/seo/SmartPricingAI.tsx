@@ -491,7 +491,7 @@ export function SmartPricingAI() {
 
   const analyzeSmartPrice = async (productId: string, productTitle: string, imageUrl: string | null, currentPrice: number | null) => {
     if (!imageUrl) {
-      toast.error("Image requise pour l'analyse Smart AI");
+      toast.error(t.toasts.smartAI.imageRequired);
       return;
     }
 
@@ -529,10 +529,10 @@ export function SmartPricingAI() {
         result: data,
       }));
 
-      toast.success(`Analyse Smart AI terminée : ${Math.round(data.confidence * 100)}% de confiance`);
+      toast.success(tf('toasts.smartAI.analysisComplete', { confidence: Math.round(data.confidence * 100) }));
     } catch (error) {
       console.error("Smart AI error:", error);
-      toast.error("Erreur lors de l'analyse Smart AI");
+      toast.error(t.toasts.smartAI.analysisError);
       setSmartPriceDialog((prev) => ({ ...prev, loading: false }));
     }
   };
@@ -566,7 +566,7 @@ export function SmartPricingAI() {
       await fetchData();
     } catch (error) {
       console.error("Error applying price:", error);
-      toast.error("Erreur lors de l'application du prix");
+      toast.error(t.toasts.smartAI.priceApplyError);
     }
   };
 
@@ -1100,7 +1100,7 @@ export function SmartPricingAI() {
         }));
       } else {
         console.error('🧪 [TEST] No results in response');
-        toast.error("Test échoué: aucun résultat", { id: toastId });
+        toast.error(t.toasts.smartAI.testFailed, { id: toastId });
       }
     } catch (error) {
       console.error('🧪 [TEST] Exception:', error);
@@ -1114,7 +1114,7 @@ export function SmartPricingAI() {
       : products.filter((p) => p.smart_price);
 
     if (productsToUpdate.length === 0) {
-      toast.error("Aucun prix intelligent à appliquer");
+      toast.error(t.toasts.smartAI.noSmartPriceToApply);
       return;
     }
 
@@ -1177,7 +1177,7 @@ export function SmartPricingAI() {
       const productsToSync = selectedOnly ? products.filter((p) => p.selected) : products;
 
       if (productsToSync.length === 0) {
-        toast.error("Aucun produit sélectionné");
+        toast.error(t.toasts.smartAI.noProductSelected);
         return;
       }
 
@@ -1268,7 +1268,7 @@ export function SmartPricingAI() {
     const selected = products.filter((p) => p.selected);
 
     if (selected.length === 0) {
-      toast.error("Veuillez sélectionner au moins un produit");
+      toast.error(t.toasts.smartAI.selectAtLeastOne);
       return;
     }
 
@@ -1323,10 +1323,10 @@ export function SmartPricingAI() {
         }
       }
 
-      toast.success(`Fond blanc généré pour ${selected.length} produit(s)`);
+      toast.success(tf('toasts.smartAI.whiteBackgroundGenerated', { count: selected.length }));
     } catch (error: any) {
       console.error("White background error:", error);
-      toast.error("Erreur lors de la génération des fonds blancs");
+      toast.error(t.toasts.smartAI.whiteBackgroundError);
     } finally {
       setIsGeneratingWhiteBg(false);
     }
@@ -1339,7 +1339,7 @@ export function SmartPricingAI() {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Non authentifié");
+        toast.error(t.toasts.smartAI.notAuthenticated);
         return;
       }
       
@@ -1379,7 +1379,7 @@ export function SmartPricingAI() {
         .single();
 
       if (!productData?.shopify_id) {
-        toast.warning("Image uploadée localement uniquement (ID Shopify manquant)");
+        toast.warning(t.toasts.smartAI.localImageOnly);
         return;
       }
 
@@ -1427,10 +1427,10 @@ export function SmartPricingAI() {
         return p;
       }));
 
-      toast.success("Image uploadée et synchronisée avec Shopify");
+      toast.success(t.toasts.smartAI.imageSyncedSuccess);
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast.error("Erreur lors de l'upload de l'image");
+      toast.error(t.toasts.smartAI.imageUploadError);
     } finally {
       setUploadingImage(null);
     }
@@ -1456,7 +1456,7 @@ export function SmartPricingAI() {
     );
 
     if (successfulPreviews.length === 0) {
-      toast.error("Aucune image à appliquer");
+      toast.error(t.toasts.smartAI.noImageToApply);
       return;
     }
 
@@ -1471,10 +1471,10 @@ export function SmartPricingAI() {
       setShowWhiteBgPreview(false);
       setWhiteBgPreviews([]);
 
-      toast.success(`✅ ${successfulPreviews.length} image(s) mise(s) à jour`, { id: toastId });
+      toast.success(tf('toasts.smartAI.imagesUpdated', { count: successfulPreviews.length }), { id: toastId });
     } catch (error: any) {
       console.error("Apply white background error:", error);
-      toast.error("Erreur lors de l'application des images", { id: toastId });
+      toast.error(t.toasts.smartAI.applyImageError, { id: toastId });
     }
   };
 

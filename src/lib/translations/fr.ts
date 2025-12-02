@@ -30,6 +30,27 @@ export const translations = {
       productDraft: "Produit en brouillon",
       statusUpdateError: "Erreur lors de la mise à jour du statut",
     },
+    smartAI: {
+      imageRequired: "Image requise pour l'analyse Smart AI",
+      analysisComplete: "Analyse Smart AI terminée : {{confidence}}% de confiance",
+      analysisError: "Erreur lors de l'analyse Smart AI",
+      priceApplyError: "Erreur lors de l'application du prix",
+      testFailed: "Test échoué: aucun résultat",
+      noSmartPriceToApply: "Aucun prix intelligent à appliquer",
+      noProductSelected: "Aucun produit sélectionné",
+      selectAtLeastOne: "Veuillez sélectionner au moins un produit",
+      whiteBackgroundGenerated: "Fond blanc généré pour {{count}} produit(s)",
+      whiteBackgroundError: "Erreur lors de la génération des fonds blancs",
+      notAuthenticated: "Non authentifié",
+      localImageOnly: "Image uploadée localement uniquement (ID Shopify manquant)",
+      imageSyncedSuccess: "Image uploadée et synchronisée avec Shopify",
+      imageUploadError: "Erreur lors de l'upload de l'image",
+      noImageToApply: "Aucune image à appliquer",
+      imagesUpdated: "✅ {{count}} image(s) mise(s) à jour",
+      applyImageError: "Erreur lors de l'application des images",
+      regenerateSuccess: "Image régénérée avec succès",
+      regenerateError: "Erreur lors de la régénération",
+    },
     collections: {
       noStore: "Aucune boutique sélectionnée",
       syncProgress: "Synchronisation de {{count}} produits (environ {{time}}s)...",
@@ -7767,6 +7788,11 @@ export const translations = {
 
   // ============= Dialogs =============
   dialogs: {
+    marketSelector: {
+      title: "Sélection des marchés",
+      description: "Choisissez les pays où rechercher les prix concurrents via Google Lens",
+      selected: "{{count}} marché(s) sélectionné(s)",
+    },
     shopifyConnection: {
       title: "Connecter une boutique Shopify",
       description: "Choisissez votre méthode de connexion",

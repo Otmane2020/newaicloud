@@ -30,6 +30,27 @@ export const translations = {
       productDraft: "Product set to draft",
       statusUpdateError: "Error updating product status",
     },
+    smartAI: {
+      imageRequired: "Image required for Smart AI analysis",
+      analysisComplete: "Smart AI analysis complete: {{confidence}}% confidence",
+      analysisError: "Error during Smart AI analysis",
+      priceApplyError: "Error applying price",
+      testFailed: "Test failed: no results",
+      noSmartPriceToApply: "No smart price to apply",
+      noProductSelected: "No product selected",
+      selectAtLeastOne: "Please select at least one product",
+      whiteBackgroundGenerated: "White background generated for {{count}} product(s)",
+      whiteBackgroundError: "Error generating white backgrounds",
+      notAuthenticated: "Not authenticated",
+      localImageOnly: "Image uploaded locally only (missing Shopify ID)",
+      imageSyncedSuccess: "Image uploaded and synced with Shopify",
+      imageUploadError: "Error uploading image",
+      noImageToApply: "No image to apply",
+      imagesUpdated: "✅ {{count}} image(s) updated",
+      applyImageError: "Error applying images",
+      regenerateSuccess: "Image regenerated successfully",
+      regenerateError: "Error regenerating image",
+    },
     collections: {
       noStore: "No store selected",
       syncProgress: "Syncing {{count}} products (about {{time}}s)...",
@@ -7722,6 +7743,11 @@ export const translations = {
 
   // ============= Dialogs =============
   dialogs: {
+    marketSelector: {
+      title: "Market Selection",
+      description: "Choose countries where to search competitor prices via Google Lens",
+      selected: "{{count}} market(s) selected",
+    },
     shopifyConnection: {
       title: "Connect a Shopify Store",
       description: "Choose your connection method",
