@@ -100,6 +100,7 @@ import ShopifyWebhooksAdmin from "./pages/ShopifyWebhooksAdmin";
 import Demo from "./pages/Demo";
 import SitemapXml from "./pages/SitemapXml";
 import SocialMedia from "./pages/SocialMedia";
+import SocialCallback from "./pages/SocialCallback";
 
 const queryClient = new QueryClient();
 
@@ -159,6 +160,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/sitemap.xml" element={<SitemapXml />} />
             <Route path="/demo" element={<Demo />} />
+            <Route path="/social-callback" element={<SocialCallback />} />
             <Route path="/translation" element={<TranslationAudit />} />
             <Route path="/blog-newai" element={<BlogNewAI />} />
             <Route path="/blog-newai/:slug" element={<BlogNewAI />} />

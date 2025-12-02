@@ -26,17 +26,9 @@ Deno.serve(async (req) => {
 
       if (error) {
         console.error('Facebook OAuth error:', error, errorDescription);
-        return new Response(
-          `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script>
-            if (window.opener) {
-              window.opener.postMessage({ error: '${error}: ${errorDescription}' }, '*');
-            }
-            setTimeout(() => {
-              try { window.open('', '_self'); window.close(); } catch(e) {}
-            }, 300);
-          </script></body></html>`,
-          { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
-        );
+        const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
+        const redirectUrl = `${frontendUrl}/social-callback?error=${encodeURIComponent(`${error}: ${errorDescription}`)}`;
+        return Response.redirect(redirectUrl, 302);
       }
 
       if (!code || !state) {
@@ -77,20 +69,12 @@ Deno.serve(async (req) => {
       console.log('Pages response:', { pageCount: pagesData.data?.length });
 
       if (!pagesData.data || pagesData.data.length === 0) {
-        return new Response(
-          `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script>
-            if (window.opener) {
-              window.opener.postMessage({ error: 'No Facebook pages found. Please create a Facebook Page first.' }, '*');
-            }
-            setTimeout(() => {
-              try { window.open('', '_self'); window.close(); } catch(e) {}
-            }, 300);
-          </script></body></html>`,
-          { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
-        );
+        const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
+        const redirectUrl = `${frontendUrl}/social-callback?error=${encodeURIComponent('Aucune page Facebook trouvée. Veuillez créer une page Facebook.')}`;
+        return Response.redirect(redirectUrl, 302);
       }
 
-      // If multiple pages, send data to React parent and close popup
+      // If multiple pages, redirect to React callback page with encoded data
       if (pagesData.data.length > 1) {
         const pages = pagesData.data.map((p: any) => ({
           id: p.id,
@@ -98,31 +82,15 @@ Deno.serve(async (req) => {
           token: p.access_token
         }));
 
-        return new Response(
-          `<!DOCTYPE html>
-<html><head><meta charset="utf-8"></head>
-<body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f9fafb;">
-  <div style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 300px;">
-    <div style="font-size: 32px; margin-bottom: 12px;">&#128203;</div>
-    <h2 style="margin: 0 0 8px; font-size: 16px; color: #111827;">Plusieurs pages detectees</h2>
-    <p style="color: #6b7280; font-size: 14px; margin: 0;">Selectionnez une page dans l'application...</p>
-  </div>
-  <script>
-    const data = {
-      needsPageSelection: true,
-      pages: ${JSON.stringify(pages)},
-      userId: '${state}'
-    };
-    if (window.opener) {
-      window.opener.postMessage(data, '*');
-    }
-    setTimeout(() => {
-      try { window.open('', '_self'); window.close(); } catch(e) {}
-    }, 500);
-  </script>
-</body></html>`,
-          { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
-        );
+        // Get the frontend URL - production or preview
+        const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
+        const pagesEncoded = encodeURIComponent(JSON.stringify(pages));
+        const redirectUrl = `${frontendUrl}/social-callback?pages=${pagesEncoded}&userId=${state}`;
+
+        console.log('Multiple pages detected, redirecting to:', redirectUrl);
+
+        // Redirect directly to React callback page
+        return Response.redirect(redirectUrl, 302);
       }
 
       // Single page - proceed with connection directly
@@ -195,39 +163,17 @@ Deno.serve(async (req) => {
         // Don't fail the whole flow if Instagram fetch fails
       }
 
-      // Close the popup and notify parent window
+      // Redirect to React callback page with success message
       const successMessage = instagramAccountName 
-        ? `Facebook (${page.name}) et Instagram (${instagramAccountName}) connectes avec succes!`
-        : `Facebook (${page.name}) connecte avec succes!`;
+        ? `Facebook (${page.name}) et Instagram (${instagramAccountName}) connectés avec succès!`
+        : `Facebook (${page.name}) connecté avec succès!`;
 
-      return new Response(
-        `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f9fafb;">
-  <div style="text-align: center; padding: 24px; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <div style="font-size: 48px; margin-bottom: 16px;">&#9989;</div>
-    <h2 style="margin: 0 0 8px; color: #111827;">Connexion reussie !</h2>
-    <p style="color: #6b7280; margin: 0 0 16px;">${page.name} connecte</p>
-    <p style="font-size: 14px; color: #9ca3af;">Cette fenetre va se fermer...</p>
-    <button onclick="try { window.open('', '_self'); window.close(); } catch(e) {}" style="margin-top: 16px; padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">
-      Fermer manuellement
-    </button>
-  </div>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ 
-        success: true, 
-        pageName: '${page.name}',
-        instagramName: ${instagramAccountName ? `'${instagramAccountName}'` : 'null'},
-        message: '${successMessage}'
-      }, '*');
-    }
-    setTimeout(() => {
-      try { window.open('', '_self'); window.close(); } catch(e) {}
-    }, 1500);
-  </script>
-</body></html>`,
-        { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
-      );
+      const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
+      const redirectUrl = `${frontendUrl}/social-callback?success=true&message=${encodeURIComponent(successMessage)}`;
+
+      console.log('Single page connected, redirecting to:', redirectUrl);
+
+      return Response.redirect(redirectUrl, 302);
     }
 
     // Handle initial OAuth request from frontend (POST)
