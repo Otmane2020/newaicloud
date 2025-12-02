@@ -35,6 +35,9 @@ interface PriceData {
   median: number | null;
   currency: string;
   recommendedPrice: number | null;
+  weightedAvg?: number | null;
+  topMatchPrice?: number | null;
+  topMatchSimilarity?: number | null;
 }
 
 interface Merchant {
@@ -57,6 +60,8 @@ interface SmartAnalysisResult {
     image?: string;
     thumbnail?: string;
     market?: string;
+    similarityScore?: number;
+    weight?: number;
   }[];
   seoSuggestions: {
     title: string;
@@ -114,7 +119,65 @@ function parsePrice(str?: string | number | null): number | null {
 }
 
 // ---------------------------------------------------------------------------
-// UTIL — Compute price stats
+// UTIL — Calculate image similarity using Lovable AI Vision
+// ---------------------------------------------------------------------------
+async function calculateImageSimilarity(
+  sourceImage: string,
+  targetImage: string,
+  LOVABLE_API_KEY: string
+): Promise<number> {
+  try {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [{
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `Compare these two product images and rate their visual similarity from 0 to 100.
+- 95-100: Exact same product/photo
+- 80-95: Same product, different angle
+- 60-80: Very similar product (same style/design)
+- 40-60: Similar category
+- <40: Different products
+
+Return ONLY a number between 0 and 100.`
+            },
+            { type: "image_url", image_url: { url: sourceImage } },
+            { type: "image_url", image_url: { url: targetImage } },
+          ],
+        }],
+      }),
+    });
+
+    const data = await response.json();
+    const score = parseInt(data.choices?.[0]?.message?.content?.match(/\d+/)?.[0] || "50");
+    return Math.min(100, Math.max(0, score));
+  } catch (error) {
+    console.error("[SMART-AI] Similarity calculation error:", error);
+    return 50; // Default to medium similarity
+  }
+}
+
+// ---------------------------------------------------------------------------
+// UTIL — Get similarity weight multiplier
+// ---------------------------------------------------------------------------
+function getSimilarityWeight(score: number): number {
+  if (score >= 95) return 5;      // Produit identique
+  if (score >= 80) return 3;      // Très similaire
+  if (score >= 60) return 1.5;    // Similaire
+  if (score >= 40) return 1;      // Comparable
+  return 0.5;                     // Peu pertinent
+}
+
+// ---------------------------------------------------------------------------
+// UTIL — Compute price stats with weighted average
 // ---------------------------------------------------------------------------
 function priceStats(arr: number[]): PriceData {
   if (arr.length === 0) {
@@ -131,6 +194,42 @@ function priceStats(arr: number[]): PriceData {
   const recommendedPrice = Math.round(median * 1.075);
 
   return { min, max, avg, median, currency: "EUR", recommendedPrice };
+}
+
+// ---------------------------------------------------------------------------
+// UTIL — Compute weighted price stats (based on similarity)
+// ---------------------------------------------------------------------------
+function weightedPriceStats(
+  competitors: { price: number; weight: number }[]
+): PriceData {
+  if (competitors.length === 0) {
+    return { min: null, max: null, avg: null, median: null, currency: "EUR", recommendedPrice: null };
+  }
+
+  const prices = competitors.map(c => c.price);
+  const weights = competitors.map(c => c.weight);
+
+  // Moyenne pondérée
+  const weightedSum = competitors.reduce((sum, c) => sum + c.price * c.weight, 0);
+  const totalWeight = competitors.reduce((sum, c) => sum + c.weight, 0);
+  const weightedAvg = Math.round((weightedSum / totalWeight) * 100) / 100;
+
+  // Stats classiques
+  const sorted = prices.slice().sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  const min = sorted[0];
+  const max = sorted[sorted.length - 1];
+  const avg = Math.round((sorted.reduce((a, b) => a + b, 0) / sorted.length) * 100) / 100;
+
+  // Prix recommandé = moyenne pondérée (les produits similaires comptent plus)
+  const recommendedPrice = Math.round(weightedAvg);
+
+  return {
+    min, max, avg, median,
+    currency: "EUR",
+    recommendedPrice,
+    weightedAvg
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -415,6 +514,8 @@ Return ONLY valid JSON, no markdown.`;
     image?: string;
     thumbnail?: string;
     market?: string;
+    similarityScore?: number;
+    weight?: number;
   }[] = [];
 
     let shoppingCount = 0;
@@ -557,6 +658,32 @@ Return ONLY valid JSON, no markdown.`;
         }
       } else {
         console.log(`[SMART-AI] ⚠️ SerpAPI Google Lens skipped (${market}) - key or imageUrl missing`);
+      }
+    }
+
+    // ============================================================================
+    // 🎯 CALCUL DE SIMILARITÉ VISUELLE pour les top résultats avec prix
+    // ============================================================================
+    console.log("[SMART-AI] 🎯 Calculating visual similarity scores for competitors with prices...");
+    const competitorsWithPrices = competitors.filter(c => c.price && c.thumbnail).slice(0, 15);
+    
+    for (const competitor of competitorsWithPrices) {
+      if (LOVABLE_API_KEY && imageUrl) {
+        try {
+          competitor.similarityScore = await calculateImageSimilarity(
+            imageUrl,
+            competitor.thumbnail!,
+            LOVABLE_API_KEY
+          );
+          
+          competitor.weight = getSimilarityWeight(competitor.similarityScore);
+          
+          console.log(`[SMART-AI] 🎯 Similarity: ${competitor.name} = ${competitor.similarityScore}% (weight: ${competitor.weight}x)`);
+        } catch (error) {
+          console.error(`[SMART-AI] ❌ Similarity calculation failed for ${competitor.name}:`, error);
+          competitor.similarityScore = 50;
+          competitor.weight = 1;
+        }
       }
     }
 
@@ -808,9 +935,36 @@ Return ONLY valid JSON.`;
     }
 
     // ============================================================================
-    // Stats + Confidence
+    // Stats + Confidence + Weighted Pricing
     // ============================================================================
     const pricing = priceStats(allPrices);
+
+    // Calculer le pricing pondéré basé sur les scores de similarité
+    const competitorsForWeighting = competitors
+      .filter(c => c.price && c.weight)
+      .map(c => ({ price: c.price!, weight: c.weight! }));
+
+    if (competitorsForWeighting.length > 0) {
+      const weightedPricing = weightedPriceStats(competitorsForWeighting);
+      // Enrichir pricing avec les données pondérées
+      pricing.weightedAvg = weightedPricing.weightedAvg;
+      pricing.recommendedPrice = weightedPricing.recommendedPrice;
+      
+      // Trouver le concurrent avec le meilleur score de similarité
+      const topSimilarCompetitor = competitors
+        .filter(c => c.price && c.similarityScore)
+        .sort((a, b) => (b.similarityScore || 0) - (a.similarityScore || 0))[0];
+      
+      if (topSimilarCompetitor) {
+        pricing.topMatchPrice = topSimilarCompetitor.price;
+        pricing.topMatchSimilarity = topSimilarCompetitor.similarityScore;
+      }
+      
+      console.log(`[SMART-AI] 💰 Weighted pricing: avg=${pricing.avg}€, weighted=${pricing.weightedAvg}€, recommended=${pricing.recommendedPrice}€`);
+      if (topSimilarCompetitor) {
+        console.log(`[SMART-AI] 🎯 Top match: ${topSimilarCompetitor.name} at ${topSimilarCompetitor.price}€ (${topSimilarCompetitor.similarityScore}% similarity)`);
+      }
+    }
 
     let confidence = 0.2;
     if (vision?.title) confidence += 0.15;
@@ -818,6 +972,10 @@ Return ONLY valid JSON.`;
     if (organicCount > 1) confidence += 0.1;
     if (visualCount > 1) confidence += 0.15;
     if (vision?.attributes && Object.keys(vision.attributes).length > 0) confidence += 0.1;
+    
+    // Bonus confidence si on a des scores de similarité élevés
+    const highSimilarityCount = competitors.filter(c => (c.similarityScore || 0) >= 80).length;
+    if (highSimilarityCount > 0) confidence += 0.1;
 
     confidence = Math.min(confidence, 0.98);
 
