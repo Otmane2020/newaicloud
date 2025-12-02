@@ -97,6 +97,7 @@ import UsageTable from "./pages/UsageTable";
 import TestGdprWebhook from "./pages/TestGdprWebhook";
 import ShopifyWebhooksAdmin from "./pages/ShopifyWebhooksAdmin";
 import Demo from "./pages/Demo";
+import SitemapXml from "./pages/SitemapXml";
 
 const queryClient = new QueryClient();
 
@@ -153,6 +154,7 @@ const App = () => (
                 <div className="overflow-x-hidden max-w-full">
               <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/sitemap.xml" element={<SitemapXml />} />
             <Route path="/demo" element={<Demo />} />
             <Route path="/translation" element={<TranslationAudit />} />
             <Route path="/blog-newai" element={<BlogNewAI />} />
