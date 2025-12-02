@@ -28,17 +28,41 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { articleId } = await req.json();
+    const body = await req.json();
+    const { articleId, productId, imageUrl, caption, productTitle } = body;
 
-    // Get article details
-    const { data: article, error: articleError } = await supabase
-      .from('blog_articles')
-      .select('*')
-      .eq('id', articleId)
-      .single();
+    let postMessage = '';
+    let postLink = '';
+    let postImageUrl = '';
 
-    if (articleError || !article) {
-      throw new Error('Article not found');
+    // Handle product post (Quick Post)
+    if (productId) {
+      if (!imageUrl || !caption) {
+        throw new Error('Image URL and caption are required for product posts');
+      }
+      postMessage = caption;
+      postImageUrl = imageUrl;
+      postLink = ''; // No link for product posts unless we add store URL
+      console.log('[Facebook] Posting product:', productTitle);
+    } 
+    // Handle article post
+    else if (articleId) {
+      const { data: article, error: articleError } = await supabase
+        .from('blog_articles')
+        .select('*')
+        .eq('id', articleId)
+        .single();
+
+      if (articleError || !article) {
+        throw new Error('Article not found');
+      }
+
+      postMessage = `${article.title}\n\n${article.meta_description || ''}`;
+      postLink = `https://newai.sale/article/${article.id}`;
+      postImageUrl = article.featured_image || '';
+      console.log('[Facebook] Posting article:', article.title);
+    } else {
+      throw new Error('Either articleId or productId is required');
     }
 
     // Get Facebook page connection
@@ -47,46 +71,54 @@ Deno.serve(async (req) => {
       .select('*')
       .eq('user_id', user.id)
       .eq('auto_share_enabled', true)
-      .single();
+      .limit(1)
+      .maybeSingle();
 
     if (fbError || !fbConnection) {
-      throw new Error('No active Facebook connection');
+      throw new Error('No active Facebook connection found. Please connect a Facebook page first.');
     }
 
-    // Construct article URL (adjust based on your actual URL structure)
-    const articleUrl = `https://newai.sale/article/${article.id}`;
-
-    // Post to Facebook Page
-    const postData = {
-      message: `${article.title}\n\n${article.meta_description || ''}`,
-      link: articleUrl,
+    // Build post data
+    const postData: any = {
+      message: postMessage,
       access_token: fbConnection.page_access_token
     };
 
-    const fbResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${fbConnection.page_id}/feed`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(postData)
-      }
-    );
+    // Add link if available
+    if (postLink) {
+      postData.link = postLink;
+    }
+
+    // For posts with images but no link, use photo endpoint
+    let endpoint = `https://graph.facebook.com/v18.0/${fbConnection.page_id}/feed`;
+    
+    if (postImageUrl && !postLink) {
+      endpoint = `https://graph.facebook.com/v18.0/${fbConnection.page_id}/photos`;
+      postData.url = postImageUrl;
+    }
+
+    const fbResponse = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(postData)
+    });
 
     const fbResult = await fbResponse.json();
 
     if (fbResult.error) {
+      console.error('[Facebook] API error:', fbResult.error);
       throw new Error(fbResult.error.message);
     }
 
-    console.log('[Facebook] Article shared successfully:', fbResult.id);
+    console.log('[Facebook] Post successful:', fbResult.id || fbResult.post_id);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        postId: fbResult.id,
-        message: 'Article shared to Facebook'
+        postId: fbResult.id || fbResult.post_id,
+        message: 'Published to Facebook successfully'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

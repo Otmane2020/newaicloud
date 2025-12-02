@@ -17,63 +17,78 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const { articleId, userId } = await req.json();
-
-    if (!articleId || !userId) {
-      throw new Error('Article ID and User ID are required');
+    // Get user from auth header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
     }
 
-    console.log('[SHARE-INSTAGRAM] Sharing article to Instagram:', articleId, 'for user:', userId);
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
 
-    // Get article details
-    const { data: article, error: articleError } = await supabaseClient
-      .from('blog_articles')
-      .select('*')
-      .eq('id', articleId)
-      .eq('user_id', userId)
-      .single();
-
-    if (articleError || !article) {
-      throw new Error('Article not found');
+    if (userError || !user) {
+      throw new Error('Unauthorized');
     }
 
-    // Get Instagram connection (now using page_access_token from Facebook OAuth)
+    const body = await req.json();
+    const { articleId, productId, imageUrl, caption, productTitle, userId } = body;
+
+    // Use userId from body if provided, otherwise use authenticated user
+    const targetUserId = userId || user.id;
+
+    let postCaption = '';
+    let postImageUrl = '';
+
+    // Handle product post (Quick Post)
+    if (productId) {
+      if (!imageUrl || !caption) {
+        throw new Error('Image URL and caption are required for product posts');
+      }
+      postCaption = caption;
+      postImageUrl = imageUrl;
+      console.log('[SHARE-INSTAGRAM] Posting product:', productTitle);
+    }
+    // Handle article post
+    else if (articleId) {
+      const { data: article, error: articleError } = await supabaseClient
+        .from('blog_articles')
+        .select('*')
+        .eq('id', articleId)
+        .single();
+
+      if (articleError || !article) {
+        throw new Error('Article not found');
+      }
+
+      postCaption = `${article.title}\n\n${article.meta_description || ''}`;
+      postImageUrl = article.featured_image || '';
+      console.log('[SHARE-INSTAGRAM] Posting article:', article.title);
+    } else {
+      throw new Error('Either articleId or productId is required');
+    }
+
+    // Validate image URL
+    if (!postImageUrl || postImageUrl.includes('placehold')) {
+      throw new Error('A valid image URL is required for Instagram posts');
+    }
+
+    // Get Instagram connection
     const { data: instagramConnection, error: connectionError } = await supabaseClient
       .from('instagram_account_connections')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', targetUserId)
       .eq('auto_share_enabled', true)
       .maybeSingle();
 
     if (connectionError || !instagramConnection) {
       console.log('[SHARE-INSTAGRAM] No Instagram connection found or auto-share disabled');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'No Instagram connection found or auto-share disabled' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error('No active Instagram connection found. Please connect an Instagram Business account first.');
     }
 
     console.log('[SHARE-INSTAGRAM] Posting to Instagram account:', instagramConnection.account_name);
 
-    // Validate image URL - Instagram requires a publicly accessible image
-    const imageUrl = article.featured_image;
-    if (!imageUrl || imageUrl.includes('placehold')) {
-      console.log('[SHARE-INSTAGRAM] No valid featured image for Instagram post');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'A valid featured image is required for Instagram posts' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const caption = `${article.title}\n\n${article.meta_description || ''}`;
-
-    // Use Instagram Business API with the page access token
+    // Create media container
     console.log('[SHARE-INSTAGRAM] Creating media container...');
     const containerResponse = await fetch(
       `https://graph.facebook.com/v18.0/${instagramConnection.account_id}/media`,
@@ -81,9 +96,9 @@ serve(async (req) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          image_url: imageUrl,
-          caption: caption,
-          access_token: instagramConnection.access_token, // This is now the page_access_token
+          image_url: postImageUrl,
+          caption: postCaption,
+          access_token: instagramConnection.access_token,
         }),
       }
     );
@@ -120,20 +135,20 @@ serve(async (req) => {
       }
 
       if (publishData.id) {
-        console.log('[SHARE-INSTAGRAM] ✅ Article shared successfully to Instagram');
+        console.log('[SHARE-INSTAGRAM] ✅ Post successful');
         
         return new Response(
           JSON.stringify({ 
             success: true, 
             postId: publishData.id,
-            message: 'Article shared successfully to Instagram'
+            message: 'Published to Instagram successfully'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
 
-    throw new Error('Failed to share article on Instagram');
+    throw new Error('Failed to publish to Instagram');
   } catch (error: any) {
     console.error('[SHARE-INSTAGRAM] Error:', error);
     return new Response(
