@@ -12,10 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Facebook, Instagram, Plus, Calendar, Send, Settings, Loader2, Trash2 } from "lucide-react";
+import { Facebook, Instagram, Plus, Calendar, Send, Settings, Loader2, Trash2, Zap } from "lucide-react";
 import SocialCampaignWizard from "@/components/social/SocialCampaignWizard";
 import SocialPostsList from "@/components/social/SocialPostsList";
 import SocialConnections from "@/components/social/SocialConnections";
+import QuickPostDialog from "@/components/social/QuickPostDialog";
 
 interface SocialSettings {
   id?: string;
@@ -33,6 +34,7 @@ const SocialMedia = () => {
   
   const [activeTab, setActiveTab] = useState("posts");
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
+  const [showQuickPost, setShowQuickPost] = useState(false);
   const [settings, setSettings] = useState<SocialSettings>({
     logo_url: null,
     default_template_style: 'overlay',
@@ -123,10 +125,16 @@ const SocialMedia = () => {
             Gérez vos publications Facebook et Instagram automatiquement
           </p>
         </div>
-        <Button onClick={() => setShowCampaignWizard(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouvelle campagne
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowQuickPost(true)}>
+            <Zap className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Quick Post</span>
+          </Button>
+          <Button onClick={() => setShowCampaignWizard(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Nouvelle campagne</span>
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -261,6 +269,17 @@ const SocialMedia = () => {
           onCreated={() => {
             setShowCampaignWizard(false);
             setActiveTab('campaigns');
+          }}
+        />
+      )}
+
+      {showQuickPost && (
+        <QuickPostDialog
+          userId={user?.id}
+          onClose={() => setShowQuickPost(false)}
+          onPosted={() => {
+            setShowQuickPost(false);
+            setActiveTab('posts');
           }}
         />
       )}

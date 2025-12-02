@@ -265,14 +265,22 @@ Deno.serve(async (req) => {
       if (action === 'save_page') {
         const { userId, pageId, pageToken, pageName } = body;
         
+        console.log('[FACEBOOK-OAUTH] save_page action received:', { userId, pageId, pageName, hasToken: !!pageToken });
+        
         if (!userId || !pageId || !pageToken || !pageName) {
-          throw new Error('Missing required parameters for page selection');
+          console.error('[FACEBOOK-OAUTH] Missing required parameters:', { userId: !!userId, pageId: !!pageId, pageToken: !!pageToken, pageName: !!pageName });
+          return new Response(
+            JSON.stringify({ success: false, error: 'Paramètres manquants pour la sélection de page' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+        console.log('[FACEBOOK-OAUTH] Storing page connection to database...');
+        
         // Store the selected page connection
-        const { error: insertError } = await supabase
+        const { data: insertData, error: insertError } = await supabase
           .from('facebook_page_connections')
           .upsert({
             user_id: userId,
@@ -282,12 +290,18 @@ Deno.serve(async (req) => {
             auto_share_enabled: true,
           }, {
             onConflict: 'user_id,page_id'
-          });
+          })
+          .select();
 
         if (insertError) {
-          console.error('Error storing Facebook page connection:', insertError);
-          throw insertError;
+          console.error('[FACEBOOK-OAUTH] Error storing Facebook page connection:', insertError);
+          return new Response(
+            JSON.stringify({ success: false, error: `Erreur base de données: ${insertError.message}` }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
+        
+        console.log('[FACEBOOK-OAUTH] Page connection stored successfully:', insertData);
 
         // Fetch Instagram Business account linked to this page
         let instagramAccountName = null;
