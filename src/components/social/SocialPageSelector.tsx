@@ -28,7 +28,7 @@ interface InstagramAccount {
 }
 
 export function SocialPageSelector({
-  userId,
+  userId: propUserId,
   selectedFacebookPages,
   selectedInstagramAccounts,
   onFacebookChange,
@@ -38,23 +38,50 @@ export function SocialPageSelector({
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [instagramAccounts, setInstagramAccounts] = useState<InstagramAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(propUserId || null);
 
+  // Get current user if no userId prop provided
   useEffect(() => {
-    if (userId) loadConnections();
-  }, [userId]);
+    const getCurrentUser = async () => {
+      if (propUserId) {
+        setCurrentUserId(propUserId);
+        return;
+      }
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    
+    getCurrentUser();
+  }, [propUserId]);
+
+  // Load connections when userId is available
+  useEffect(() => {
+    if (currentUserId) {
+      loadConnections();
+    }
+  }, [currentUserId]);
 
   const loadConnections = async () => {
+    if (!currentUserId) return;
+    
+    setLoading(true);
     try {
       const [fbResult, igResult] = await Promise.all([
         supabase
           .from('facebook_page_connections')
           .select('id, page_id, page_name, auto_share_enabled')
-          .eq('user_id', userId),
+          .eq('user_id', currentUserId),
         supabase
           .from('instagram_account_connections')
           .select('id, account_id, account_name, auto_share_enabled')
-          .eq('user_id', userId)
+          .eq('user_id', currentUserId)
       ]);
+
+      console.log('Facebook pages loaded:', fbResult.data);
+      console.log('Instagram accounts loaded:', igResult.data);
 
       setFacebookPages(fbResult.data || []);
       setInstagramAccounts(igResult.data || []);
@@ -106,7 +133,7 @@ export function SocialPageSelector({
         <div className="space-y-2">
           <Label className="flex items-center gap-2 text-sm font-medium">
             <Facebook className="h-4 w-4 text-blue-600" />
-            Pages Facebook
+            Pages Facebook ({facebookPages.length})
           </Label>
           <div className={compact ? "space-y-1.5" : "space-y-2"}>
             {facebookPages.map((page) => (
@@ -137,7 +164,7 @@ export function SocialPageSelector({
         <div className="space-y-2">
           <Label className="flex items-center gap-2 text-sm font-medium">
             <Instagram className="h-4 w-4 text-pink-600" />
-            Comptes Instagram
+            Comptes Instagram ({instagramAccounts.length})
           </Label>
           <div className={compact ? "space-y-1.5" : "space-y-2"}>
             {instagramAccounts.map((account) => (
