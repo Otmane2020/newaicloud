@@ -1,5 +1,5 @@
-# Sitemap accessibility
-/sitemap.xml /sitemap.xml 200
+# Sitemap accessibility - proxy to dynamic edge function
+/sitemap.xml https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/generate-sitemap 200!
 
 # Shopping feed proxy
 /shoppingfeed/* https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/:splat 200!
