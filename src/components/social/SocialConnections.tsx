@@ -251,26 +251,32 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
               <div>
                 <CardTitle className="text-lg">Instagram Business</CardTitle>
                 <CardDescription>
-                  Les comptes Instagram Business sont automatiquement liés via Facebook
+                  Connecté automatiquement via vos pages Facebook
                 </CardDescription>
               </div>
             </div>
             {instagramAccounts.length > 0 && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
                 <Lock className="h-3.5 w-3.5" />
-                Connecté
+                {instagramAccounts.length} compte{instagramAccounts.length > 1 ? 's' : ''}
               </div>
             )}
           </div>
         </CardHeader>
         <CardContent>
           {instagramAccounts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8">
               <Instagram className="h-12 w-12 mx-auto mb-3 opacity-20" />
-              <p>Aucun compte Instagram connecté</p>
-              <p className="text-sm mt-2">
-                Connectez votre page Facebook liée à un compte Instagram Business
-              </p>
+              <p className="text-muted-foreground">Aucun compte Instagram Business détecté</p>
+              <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg text-sm text-amber-700 dark:text-amber-400">
+                <p className="font-medium mb-2">💡 Comment connecter Instagram ?</p>
+                <ol className="list-decimal list-inside space-y-1 text-left">
+                  <li>Connectez d'abord votre page Facebook ci-dessus</li>
+                  <li>Assurez-vous que votre compte Instagram est de type "Business"</li>
+                  <li>Liez votre Instagram Business à votre page Facebook dans les paramètres Facebook</li>
+                  <li>Le compte Instagram apparaîtra automatiquement ici</li>
+                </ol>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
