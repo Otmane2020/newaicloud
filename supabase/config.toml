@@ -16,6 +16,10 @@ function = "process-scheduled-articles"
 schedule = "0 4 * * *"
 function = "generate-sitemap"
 
+[cron.process-blog-campaigns-hourly]
+schedule = "0 * * * *"
+function = "process-blog-campaigns"
+
 [functions.trigger-hourly-sync]
 verify_jwt = false
 
@@ -480,5 +484,8 @@ verify_jwt = true
 memory_limit_mb = 512
 
 [functions.generate-sitemap]
+verify_jwt = false
+
+[functions.process-blog-campaigns]
 verify_jwt = false
 
