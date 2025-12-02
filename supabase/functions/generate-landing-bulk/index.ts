@@ -194,15 +194,21 @@ Génère UNIQUEMENT le HTML complet, rien d'autre.`;
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
       );
 
-      await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from("shopify_products")
         .update({
           landing_page_html: html,
-          has_landing_page: true,
+          landing_page: true,
           last_landing_generation_at: new Date().toISOString(),
         })
         .eq("id", product_id)
         .eq("seller_id", userId);
+      
+      if (updateError) {
+        console.error("❌ Database update error:", updateError.message);
+      } else {
+        console.log(`💾 Saved landing page for product ${product_id}`);
+      }
 
       // Track usage (5 credits for bulk vs 10 for full)
       await supabaseAdmin.rpc("increment_usage", {
