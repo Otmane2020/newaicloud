@@ -117,6 +117,7 @@ export function AppSidebar() {
   const blogSubItems = [
     { title: t.blog.submenu.aiArticles, url: "/blog?subtab=create-article", icon: Sparkles, key: "aiArticles" },
     { title: t.blog.submenu.campaigns, url: "/blog?subtab=campaigns", icon: CalendarClock, key: "campaigns" },
+    { title: "Social Media", url: "/social-media", icon: Share2, key: "socialMedia" },
     { title: t.blog.submenu.opportunities, url: "/blog?subtab=opportunities", icon: Lightbulb, key: "opportunities" },
     { title: t.blog.submenu.netlinking, url: "/blog?subtab=netlinking", icon: Link, key: "netlinking" },
     { title: t.blog.submenu.settings, url: "/blog?subtab=settings", icon: Settings, key: "settings" },
@@ -140,7 +141,6 @@ export function AppSidebar() {
   const bottomMenuItems = [
     ...(isTestAccount ? [{ title: t.navigation.aiSearch, url: "/search", icon: Search, key: "aiSearch" }] : []),
     { title: t.navigation.googleShopping, url: "/shopping", icon: ShoppingCart, key: "googleShopping" },
-    { title: "Social Media", url: "/social-media", icon: Share2, key: "socialMedia" },
   ];
 
   const chatSubItems = [
