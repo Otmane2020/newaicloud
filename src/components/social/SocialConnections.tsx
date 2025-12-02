@@ -60,8 +60,8 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
       }
     };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    window.addEventListener('message', handleMessage, false);
+    return () => window.removeEventListener('message', handleMessage, false);
   }, []);
 
   const loadConnections = async () => {
@@ -106,8 +106,9 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
       const data = await response.json();
 
       if (data.authUrl) {
-        // noopener=no prevents Chrome from blocking window.opener reference
-        window.open(data.authUrl, 'facebook-oauth', 'width=600,height=700,noopener=no');
+        // Force opener relationship for cross-domain postMessage
+        window.focus();
+        window.open(data.authUrl, 'facebook-oauth', 'popup=yes,width=600,height=700,noopener=false,noreferrer=false');
       } else {
         throw new Error(data.error || 'Erreur de connexion');
       }
