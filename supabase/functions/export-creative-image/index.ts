@@ -19,7 +19,7 @@ serve(async (req) => {
       });
     }
 
-    const { product, template, whiteBgImage } = body;
+    const { product, template, whiteBgImage, mode = "showcase" } = body;
     
     if (!product) {
       throw new Error("Product is required");
@@ -33,6 +33,8 @@ serve(async (req) => {
     console.log("🎨 Generating creative for:", product.title);
     console.log("📐 Template:", template?.id);
     console.log("🎯 AI Style:", template?.aiPromptStyle?.substring(0, 100));
+    console.log("🎭 Mode:", mode);
+    console.log("📊 Enrichment:", JSON.stringify(product.vision_attributes || {}).substring(0, 100));
 
     // Calculate discount
     const originalPrice = parseFloat(product.compare_at_price) || 0;
@@ -49,19 +51,49 @@ serve(async (req) => {
       aspectHint = "horizontal 16:9 banner (1024x576)";
     }
 
-    // Use the template's aiPromptStyle for realistic generation
+    // Use the template's aiPromptStyle for realistic generation - THIS IS CRITICAL
     const visualStyle = template?.aiPromptStyle || "premium furniture ad, professional lighting, clean background";
+
+    // Build enrichment details from vision_attributes
+    const enrichmentDetails = product.vision_attributes ? `
+PRODUCT CHARACTERISTICS (from AI vision analysis):
+${product.vision_attributes.color ? `- Color: ${product.vision_attributes.color}` : ''}
+${product.vision_attributes.material ? `- Material: ${product.vision_attributes.material}` : ''}
+${product.vision_attributes.style ? `- Style: ${product.vision_attributes.style}` : ''}
+${product.vision_attributes.shape ? `- Shape: ${product.vision_attributes.shape}` : ''}
+${product.vision_attributes.features?.length ? `- Features: ${product.vision_attributes.features.join(', ')}` : ''}
+` : '';
+
+    // Build mode-specific prompt
+    const modePrompt = mode === "strengths" ? `
+CONTENT FOCUS: STRENGTHS & USP (Point fort mode)
+- Highlight product key benefits and unique selling points
+- Add subtle icon-style graphics for quality indicators
+- Show premium quality cues (material textures, craftsmanship details)
+- Include strength badges or quality seals
+- Display trust indicators (warranty, quality certifications)
+` : `
+CONTENT FOCUS: SHOWCASE (Mise en valeur mode)
+- Hero product presentation with dramatic lighting
+- Luxury showroom atmosphere
+- Spotlight effect on the product
+- Premium lifestyle context
+- Elegant, aspirational feeling
+`;
 
     // Build rich prompt for stunning ad creative
     const imagePrompt = `Create a STUNNING ${aspectHint} professional advertising creative for social media.
 
-VISUAL STYLE (FOLLOW THIS EXACTLY):
+VISUAL STYLE (FOLLOW THIS EXACTLY - THIS IS THE SELECTED TEMPLATE STYLE):
 ${visualStyle}
+
+${modePrompt}
 
 PRODUCT TO FEATURE (CENTER HERO):
 - Name: ${product.title}
 ${product.vendor ? `- Brand: ${product.vendor}` : ''}
 ${product.product_type ? `- Category: ${product.product_type}` : ''}
+${enrichmentDetails}
 
 PRICING (display prominently with accent color ${template?.accentColor || "#FFD700"}):
 ${discount > 0 ? `- DISCOUNT: -${discount}% (make this VERY visible with a glowing badge/burst)` : ''}
@@ -71,13 +103,12 @@ ${discount > 0 && originalPrice > 0 ? `- Original: ${originalPrice}€ (crossed 
 CRITICAL COMPOSITION RULES:
 1. PRODUCT is the HERO - large, centered, with dramatic spotlight and floor reflection
 2. Add realistic effects: glossy floor reflection, volumetric light beams, floating sparkle particles
-3. Background must match the visual style: ${template?.category === 'showcase' ? 'luxury showroom with gold/white rays, dramatic spotlights' : 
-   template?.category === 'promo' ? 'energetic with explosion rays, gold bursts, urgent feel' :
-   template?.category === 'strength' ? 'clean structured layout with icons space' :
-   template?.category === 'neon' ? 'dark cyberpunk with neon glows, pink/cyan accents' :
-   template?.category === 'minimal' ? 'pure clean, soft shadows, lots of breathing room' :
-   'premium commercial style with dynamic elements'}
-4. Add decorative elements: geometric gold shapes, light rays from corners, lens flares
+3. Background must match the visual style "${visualStyle}" EXACTLY - this is what makes each template unique
+4. Add decorative elements matching the template: ${template?.category === 'luxury' ? 'gold rays, premium sparkles' : 
+   template?.category === 'promo' ? 'explosion rays, urgency elements' : 
+   template?.category === 'neon' ? 'neon glows, cyberpunk elements' :
+   template?.category === 'minimal' ? 'clean space, soft shadows' :
+   'dynamic commercial elements'}
 5. Include a premium "SHOP NOW" CTA button (gold gradient, rounded, at bottom)
 6. ${discount > 0 ? 'DISCOUNT BADGE must GLOW and be extremely visible - top corner, bright accent color' : 'Price displayed prominently in accent color'}
 
@@ -85,11 +116,12 @@ IMPORTANT - DO NOT:
 - DO NOT put product name/title text on the image (caption will have it)
 - DO NOT use generic stock backgrounds
 - DO NOT make it look amateur
+- DO NOT ignore the template style "${template?.id || 'default'}" - each template MUST look different
 
 IMPORTANT - DO:
 - Make it look like a REAL paid ad from a luxury furniture brand
 - Product must have realistic shadows and reflections
-- Background must have depth: rays, particles, geometric shapes
+- Background must have depth matching "${visualStyle}"
 - Professional 8K quality render`;
 
     let generatedImageBase64: string | null = null;

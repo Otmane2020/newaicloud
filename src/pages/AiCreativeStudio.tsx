@@ -9,11 +9,13 @@ import { toast } from "sonner";
 import { 
   Loader2, Wand2, Download, Search, Sparkles, 
   ImageIcon, Check, Grid3X3, LayoutGrid, X,
-  Facebook, Instagram, Share2, Eraser
+  Facebook, Instagram, Share2, Eraser, Eye, Star, Edit2
 } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
 import { CreativeTemplateGrid, CREATIVE_TEMPLATES, TemplateCategory, TemplateSize } from "@/components/social/creative/CreativeTemplateGrid";
 import { cn } from "@/lib/utils";
+
+type GenerationMode = "showcase" | "strengths";
 
 interface ShopifyProduct {
   id: string;
@@ -21,6 +23,16 @@ interface ShopifyProduct {
   image: string | null;
   price: string | null;
   compare_at_price: string | null;
+  vendor?: string | null;
+  product_type?: string | null;
+  // Enrichment data
+  vision_attributes?: {
+    color?: string;
+    material?: string;
+    style?: string;
+    shape?: string;
+    features?: string[];
+  } | null;
 }
 
 export default function AiCreativeStudio() {
@@ -30,7 +42,7 @@ export default function AiCreativeStudio() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState("promo-red");
+  const [selectedTemplate, setSelectedTemplate] = useState("promo-fire");
   const [category, setCategory] = useState<TemplateCategory>("all");
   const [sizeFilter, setSizeFilter] = useState<TemplateSize | "all">("square");
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,6 +50,9 @@ export default function AiCreativeStudio() {
   const [showProductPanel, setShowProductPanel] = useState(true);
   const [applyingWhiteBg, setApplyingWhiteBg] = useState(false);
   const [whiteBgImage, setWhiteBgImage] = useState<string | null>(null);
+  const [generationMode, setGenerationMode] = useState<GenerationMode>("showcase");
+  const [generatedCaption, setGeneratedCaption] = useState("");
+  const [isEditingCaption, setIsEditingCaption] = useState(false);
 
   useEffect(() => {
     loadShopifyProducts();
@@ -54,9 +69,9 @@ export default function AiCreativeStudio() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get products
+      // Get products with enrichment data
       const { data: productsData, error: productsError } = await (supabase.from("shopify_products") as any)
-        .select("id, title")
+        .select("id, title, vendor, product_type, vision_attributes")
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id)
         .order("title", { ascending: true });
@@ -112,6 +127,9 @@ export default function AiCreativeStudio() {
             image: imageMap.get(p.id) || null,
             price: variant?.price?.toString() || null,
             compare_at_price: variant?.compare_at_price?.toString() || null,
+            vendor: p.vendor,
+            product_type: p.product_type,
+            vision_attributes: p.vision_attributes,
           };
         })
       );
@@ -127,6 +145,8 @@ export default function AiCreativeStudio() {
     setSelectedProduct(product);
     setGeneratedImage(null);
     setWhiteBgImage(null);
+    setGeneratedCaption("");
+    setIsEditingCaption(false);
   };
 
   const applyWhiteBackground = async () => {
@@ -168,6 +188,9 @@ export default function AiCreativeStudio() {
 
     setGenerating(true);
     try {
+      // Get the full template object
+      const templateData = CREATIVE_TEMPLATES.find(t => t.id === selectedTemplate);
+      
       // Use white background image if available
       const productForGeneration = {
         ...selectedProduct,
@@ -177,9 +200,10 @@ export default function AiCreativeStudio() {
       const { data, error } = await supabase.functions.invoke('export-creative-image', {
         body: { 
           product: productForGeneration,
-          template: selectedTemplate,
+          template: templateData, // Send full template object with aiPromptStyle
           caption,
-          format: 'png'
+          format: 'png',
+          mode: generationMode // "showcase" or "strengths"
         }
       });
 
@@ -187,6 +211,11 @@ export default function AiCreativeStudio() {
 
       if (data.base64) {
         setGeneratedImage(`data:image/png;base64,${data.base64}`);
+        // Generate auto caption based on mode and product
+        const autoCaption = generationMode === "showcase" 
+          ? `✨ ${selectedProduct.title}${selectedProduct.price ? ` - ${selectedProduct.price}€` : ''}`
+          : `💪 Points forts: ${selectedProduct.vision_attributes?.material || 'Qualité premium'} • ${selectedProduct.vision_attributes?.style || 'Design moderne'}`;
+        setGeneratedCaption(caption || autoCaption);
         toast.success("Créatif généré avec succès !");
       } else if (data.html) {
         toast.info("Génération en mode fallback - HTML disponible");
@@ -346,6 +375,63 @@ export default function AiCreativeStudio() {
                       )}
                     </div>
                   </ScrollArea>
+                )}
+              </div>
+
+              {/* Generation Mode Toggle */}
+              <div className="bg-card rounded-xl border p-4 space-y-3">
+                <h3 className="font-semibold text-sm">Mode de génération</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setGenerationMode("showcase")}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all",
+                      generationMode === "showcase" 
+                        ? "border-primary bg-primary/10" 
+                        : "border-muted hover:border-primary/50"
+                    )}
+                  >
+                    <Eye className="h-5 w-5" />
+                    <span className="text-xs font-medium">Showcase</span>
+                    <span className="text-[10px] text-muted-foreground">Mise en valeur</span>
+                  </button>
+                  <button
+                    onClick={() => setGenerationMode("strengths")}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all",
+                      generationMode === "strengths" 
+                        ? "border-primary bg-primary/10" 
+                        : "border-muted hover:border-primary/50"
+                    )}
+                  >
+                    <Star className="h-5 w-5" />
+                    <span className="text-xs font-medium">Points forts</span>
+                    <span className="text-[10px] text-muted-foreground">USP & Bénéfices</span>
+                  </button>
+                </div>
+                
+                {/* Show enrichment data if available */}
+                {selectedProduct?.vision_attributes && (
+                  <div className="mt-3 p-2 bg-muted/50 rounded-lg">
+                    <p className="text-[10px] font-medium text-muted-foreground mb-1">Données enrichies :</p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedProduct.vision_attributes.color && (
+                        <Badge variant="secondary" className="text-[9px]">
+                          {selectedProduct.vision_attributes.color}
+                        </Badge>
+                      )}
+                      {selectedProduct.vision_attributes.material && (
+                        <Badge variant="secondary" className="text-[9px]">
+                          {selectedProduct.vision_attributes.material}
+                        </Badge>
+                      )}
+                      {selectedProduct.vision_attributes.style && (
+                        <Badge variant="secondary" className="text-[9px]">
+                          {selectedProduct.vision_attributes.style}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -524,6 +610,35 @@ export default function AiCreativeStudio() {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Editable Caption */}
+                    {generatedImage && (
+                      <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-medium text-muted-foreground">Caption</p>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setIsEditingCaption(!isEditingCaption)}
+                            className="h-6 px-2"
+                          >
+                            <Edit2 className="h-3 w-3 mr-1" />
+                            <span className="text-xs">{isEditingCaption ? "Fermer" : "Éditer"}</span>
+                          </Button>
+                        </div>
+                        {isEditingCaption ? (
+                          <Textarea
+                            value={generatedCaption}
+                            onChange={(e) => setGeneratedCaption(e.target.value)}
+                            rows={3}
+                            className="resize-none text-sm"
+                            placeholder="Ajoutez votre caption..."
+                          />
+                        ) : (
+                          <p className="text-sm">{generatedCaption || "Aucune caption"}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
