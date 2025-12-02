@@ -57,6 +57,7 @@ import { useStore } from "@/contexts/StoreContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ImagePriceDebugDialog } from "@/components/seo/ImagePriceDebugDialog";
 import { SmartPriceDialog } from "@/components/seo/SmartPriceDialog";
+import { MarketSelectorDialog } from "@/components/seo/MarketSelectorDialog";
 
 interface CompetitorPrice {
   url: string;
@@ -137,7 +138,7 @@ const marketOptions = [
 ];
 
 export function SmartPricingAI() {
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const { selectedStore } = useStore();
   const [products, setProducts] = useState<ProductPricing[]>([]);
   const [collections, setCollections] = useState<{ id: string; title: string }[]>([]);
@@ -151,6 +152,7 @@ export function SmartPricingAI() {
   const [selectedCollection, setSelectedCollection] = useState<string>("all");
   const [selectedVendor, setSelectedVendor] = useState<string>("all");
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>(["fr"]);
+  const [showMarketSelector, setShowMarketSelector] = useState(false);
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 10000 });
   const [sortBy, setSortBy] = useState<"title" | "price" | "margin">("title");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -822,8 +824,8 @@ export function SmartPricingAI() {
               user_id: currentUser.id,
               product_id: productId,
               variant_id: variantId,
-              market_price: result.marketPrice,
-              smart_price: result.smartPrice,
+              market_price: result.marketPrice || result.pricing?.median || null,
+              smart_price: result.smartPrice || result.pricing?.recommendedPrice || null,
               ai_reasoning: result.reasoning,
               competitors: result.competitors || [],
               currency: "EUR",
@@ -846,8 +848,8 @@ export function SmartPricingAI() {
                 if (v.id === variantId) {
                   return {
                     ...v,
-                    market_price: result.marketPrice,
-                    smart_price: result.smartPrice,
+                    market_price: result.marketPrice || result.pricing?.median || null,
+                    smart_price: result.smartPrice || result.pricing?.recommendedPrice || null,
                     ai_reasoning: result.reasoning,
                     competitors: result.competitors || []
                   };
@@ -982,8 +984,8 @@ export function SmartPricingAI() {
           await supabase
             .from("shopify_products")
             .update({
-              market_price: result.marketPrice,
-              smart_price: result.smartPrice,
+              market_price: result.marketPrice || result.pricing?.median || null,
+              smart_price: result.smartPrice || result.pricing?.recommendedPrice || null,
               ai_reasoning: result.reasoning,
               competitors: result.competitors || [],
               last_pricing_analysis: new Date().toISOString(),
@@ -1000,8 +1002,8 @@ export function SmartPricingAI() {
           if (result && !result.error) {
             return {
               ...p,
-              market_price: result.marketPrice,
-              smart_price: result.smartPrice,
+              market_price: result.marketPrice || result.pricing?.median || null,
+              smart_price: result.smartPrice || result.pricing?.recommendedPrice || null,
               net_margin: result.netMargin,
               ai_reasoning: result.reasoning,
               competitors: result.competitors || [],
@@ -1088,8 +1090,8 @@ export function SmartPricingAI() {
           if (p.id === productId && result) {
             return {
               ...p,
-              market_price: result.marketPrice,
-              smart_price: result.smartPrice,
+              market_price: result.marketPrice || result.pricing?.median || null,
+              smart_price: result.smartPrice || result.pricing?.recommendedPrice || null,
               ai_reasoning: result.reasoning,
               competitors: result.competitors || []
             };
@@ -1670,56 +1672,57 @@ export function SmartPricingAI() {
         </div>
       </Card>
 
-      {/* Market Configuration */}
+      {/* Market Configuration - Compact */}
       <Card className="p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-blue-950 dark:via-indigo-950 dark:to-violet-950 border-2 border-blue-200">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-blue-500 rounded-xl">
-            <Globe className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-2">🌍 Marchés de recherche Smart AI</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Sélectionnez les pays où rechercher les prix concurrents (recherche Google locale par marché)
-            </p>
-            <div className="flex flex-wrap gap-4">
-              {marketOptions.map((market) => (
-                <div key={market.code} className="flex items-center space-x-2">
-                  <Checkbox 
-                    id={`market-${market.code}`}
-                    checked={selectedMarkets.includes(market.code)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedMarkets(prev => [...prev, market.code]);
-                      } else {
-                        setSelectedMarkets(prev => prev.filter(c => c !== market.code));
-                      }
-                    }}
-                  />
-                  <label 
-                    htmlFor={`market-${market.code}`} 
-                    className="text-sm cursor-pointer flex items-center gap-1"
-                  >
-                    {market.flag} {market.name}
-                  </label>
-                </div>
-              ))}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-500 rounded-xl">
+              <Globe className="w-6 h-6 text-white" />
             </div>
-            {selectedMarkets.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1">
-                <span className="text-xs text-muted-foreground">Marchés actifs :</span>
-                {selectedMarkets.map(code => {
-                  const market = marketOptions.find(m => m.code === code);
-                  return market ? (
-                    <Badge key={code} variant="outline" className="text-xs">
-                      {market.flag} {market.name}
-                    </Badge>
-                  ) : null;
-                })}
-              </div>
+            <div>
+              <h3 className="text-lg font-semibold">🌍 Marchés de recherche Smart AI</h3>
+              <p className="text-sm text-muted-foreground">
+                {language === 'fr' 
+                  ? `${selectedMarkets.length} marché(s) actif(s)`
+                  : `${selectedMarkets.length} active market(s)`}
+              </p>
+            </div>
+          </div>
+          <Button 
+            onClick={() => setShowMarketSelector(true)}
+            variant="outline"
+            size="lg"
+          >
+            <Globe className="w-4 h-4 mr-2" />
+            {language === 'fr' ? 'Configurer' : 'Configure'}
+          </Button>
+        </div>
+        
+        {selectedMarkets.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {selectedMarkets.slice(0, 8).map(code => {
+              const market = marketOptions.find(m => m.code === code);
+              return market ? (
+                <Badge key={code} variant="secondary" className="text-xs">
+                  {market.flag} {market.name}
+                </Badge>
+              ) : null;
+            })}
+            {selectedMarkets.length > 8 && (
+              <Badge variant="outline" className="text-xs">
+                +{selectedMarkets.length - 8} {language === 'fr' ? 'autres' : 'more'}
+              </Badge>
             )}
           </div>
-        </div>
+        )}
       </Card>
+
+      <MarketSelectorDialog
+        open={showMarketSelector}
+        onOpenChange={setShowMarketSelector}
+        selectedMarkets={selectedMarkets}
+        onMarketsChange={setSelectedMarkets}
+      />
 
       {/* Bulk Operations */}
       <Card className="p-6">
