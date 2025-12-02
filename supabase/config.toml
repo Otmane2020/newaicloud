@@ -511,3 +511,12 @@ verify_jwt = false
 schedule = "0 * * * *"
 function = "process-social-campaigns"
 
+[functions.generate-social-caption]
+verify_jwt = true
+
+[functions.share-article-facebook]
+verify_jwt = true
+
+[functions.share-article-instagram]
+verify_jwt = true
+
