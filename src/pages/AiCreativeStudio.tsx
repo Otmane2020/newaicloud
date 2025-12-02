@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { 
   Loader2, Wand2, Download, Search, Sparkles, 
   ImageIcon, Check, Facebook, Instagram, Eye, Star,
-  Send, Link, Image as ImageIconLucide, FileText, History, Trash2
+  Send, Link, Image as ImageIconLucide, FileText, History, Trash2, RefreshCw
 } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
 import { CreativeStyleGrid } from "@/components/social/creative/CreativeStyleGrid";
@@ -54,6 +54,7 @@ interface CreativeHistoryItem {
   template_name: string | null;
   image_url: string;
   created_at: string;
+  caption?: string | null;
 }
 
 // Detect language from product title
@@ -87,6 +88,10 @@ export default function AiCreativeStudio() {
   const [postLength, setPostLength] = useState<PostLength>("short");
   const [postType, setPostType] = useState<PostType>("withLink");
   const [publishing, setPublishing] = useState(false);
+  
+  // Social caption state
+  const [socialCaption, setSocialCaption] = useState("");
+  const [generatingCaption, setGeneratingCaption] = useState(false);
 
   // History state
   const [history, setHistory] = useState<CreativeHistoryItem[]>([]);
@@ -111,7 +116,7 @@ export default function AiCreativeStudio() {
 
       const { data, error } = await supabase
         .from("creative_history")
-        .select("id, product_title, template_name, image_url, created_at")
+        .select("id, product_title, template_name, image_url, created_at, caption")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -254,6 +259,45 @@ export default function AiCreativeStudio() {
     setSelectedProduct(product);
     setGeneratedImage(null);
     setWhiteBgImage(null);
+    setSocialCaption("");
+  };
+
+  const generateSocialCaption = async () => {
+    if (!selectedProduct) {
+      toast.error("Sélectionnez d'abord un produit");
+      return;
+    }
+
+    setGeneratingCaption(true);
+    try {
+      const productLanguage = detectLanguage(selectedProduct.title);
+      
+      const { data, error } = await supabase.functions.invoke('generate-social-caption', {
+        body: {
+          productTitle: selectedProduct.title,
+          productDescription: selectedProduct.product_type,
+          productPrice: selectedProduct.price ? `${selectedProduct.price}€` : null,
+          comparePrice: selectedProduct.compare_at_price ? `${selectedProduct.compare_at_price}€` : null,
+          productType: selectedProduct.product_type,
+          storeName: selectedStore?.store_name,
+          language: productLanguage,
+          tone: 'engaging',
+          platform: selectedPlatforms.includes('instagram') ? 'instagram' : 'facebook'
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.caption) {
+        setSocialCaption(data.caption);
+        toast.success("Description générée");
+      }
+    } catch (error: any) {
+      console.error("Error generating caption:", error);
+      toast.error("Erreur lors de la génération");
+    } finally {
+      setGeneratingCaption(false);
+    }
   };
 
   const generateCreative = async () => {
@@ -341,10 +385,19 @@ export default function AiCreativeStudio() {
       return;
     }
 
+    if (!socialCaption.trim()) {
+      toast.error("Ajoutez une description pour votre post");
+      return;
+    }
+
     setPublishing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      const productLink = postType === "withLink" && selectedProduct?.handle 
+        ? `https://${selectedStore?.public_domain || selectedStore?.store_url?.replace('https://', '') || ''}/products/${selectedProduct.handle}` 
+        : null;
 
       const { data: post, error: postError } = await supabase
         .from("social_posts")
@@ -353,14 +406,11 @@ export default function AiCreativeStudio() {
           store_id: selectedStore?.id,
           status: "pending",
           channels: selectedPlatforms,
-          content: caption,
+          caption: socialCaption,
           image_url: generatedImage,
           product_id: selectedProduct?.id,
-          product_link: postType === "withLink" && selectedProduct?.handle 
-            ? `https://${selectedStore?.public_domain || selectedStore?.store_url?.replace('https://', '') || ''}/products/${selectedProduct.handle}` 
-            : null,
+          link_url: productLink,
           template_style: selectedStyle?.id || null,
-          credits_consumed: 10,
         })
         .select()
         .single();
@@ -397,7 +447,7 @@ export default function AiCreativeStudio() {
   const isStyleSelected = !!selectedStyle;
   const isProductSelected = !!selectedProduct;
   const canGenerate = isProductSelected && isStyleSelected;
-  const canPublish = !!generatedImage && selectedPlatforms.length > 0;
+  const canPublish = !!generatedImage && selectedPlatforms.length > 0 && !!socialCaption.trim();
 
   const SelectionCheck = ({ selected }: { selected: boolean }) => (
     <div className={cn(
@@ -589,7 +639,7 @@ export default function AiCreativeStudio() {
 
                   {/* Caption */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Texte d'accroche (optionnel)</label>
+                    <label className="text-sm font-medium">Texte sur l'image (optionnel)</label>
                     <Textarea
                       placeholder="Ex: Découvrez notre nouvelle collection..."
                       value={caption}
@@ -641,43 +691,6 @@ export default function AiCreativeStudio() {
                     </div>
                   </div>
 
-                  {/* Post Length */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Longueur du post</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => setPostLength("short")}
-                        className={cn(
-                          "flex flex-col items-start gap-1 p-3 rounded-lg border transition-all",
-                          postLength === "short"
-                            ? "border-green-500 bg-green-500/10" 
-                            : "border-border hover:border-primary/50"
-                        )}
-                      >
-                        <div className="flex items-center gap-2 w-full">
-                          <span className="text-sm font-medium">Court</span>
-                          {postLength === "short" && <Check className="h-4 w-4 text-green-500 ml-auto" />}
-                        </div>
-                        <span className="text-[10px] text-muted-foreground">4 lignes + hashtags</span>
-                      </button>
-                      <button
-                        onClick={() => setPostLength("long")}
-                        className={cn(
-                          "flex flex-col items-start gap-1 p-3 rounded-lg border transition-all",
-                          postLength === "long"
-                            ? "border-green-500 bg-green-500/10" 
-                            : "border-border hover:border-primary/50"
-                        )}
-                      >
-                        <div className="flex items-center gap-2 w-full">
-                          <span className="text-sm font-medium">Long</span>
-                          {postLength === "long" && <Check className="h-4 w-4 text-green-500 ml-auto" />}
-                        </div>
-                        <span className="text-[10px] text-muted-foreground">10 lignes détaillées</span>
-                      </button>
-                    </div>
-                  </div>
-
                   {/* Post Type */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Type de post</label>
@@ -709,6 +722,37 @@ export default function AiCreativeStudio() {
                         {postType === "withLink" && <Check className="h-4 w-4 text-green-500 ml-auto" />}
                       </button>
                     </div>
+                  </div>
+
+                  {/* Social Caption - AI Generated */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">Description du post</label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={generateSocialCaption}
+                        disabled={!selectedProduct || generatingCaption}
+                        className="h-7 text-xs gap-1"
+                      >
+                        {generatingCaption ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3 w-3" />
+                        )}
+                        Générer IA
+                      </Button>
+                    </div>
+                    <Textarea
+                      placeholder="Cliquez sur 'Générer IA' ou écrivez votre description..."
+                      value={socialCaption}
+                      onChange={(e) => setSocialCaption(e.target.value)}
+                      rows={4}
+                      className="resize-none text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Description qui accompagnera votre publication Facebook/Instagram
+                    </p>
                   </div>
                 </div>
               </section>
@@ -801,7 +845,7 @@ export default function AiCreativeStudio() {
               <div className="bg-muted/30 px-4 py-3 border-b flex items-center justify-between">
                 <h2 className="font-semibold">Historique des créatifs</h2>
                 <Button variant="ghost" size="sm" onClick={loadHistory} className="gap-2">
-                  <Loader2 className="h-4 w-4" />
+                  <RefreshCw className="h-4 w-4" />
                   Actualiser
                 </Button>
               </div>
@@ -849,12 +893,12 @@ export default function AiCreativeStudio() {
                                 }}
                               >
                                 <Download className="h-3 w-3 mr-1" />
-                                Télécharger
+                                DL
                               </Button>
                               <Button 
                                 size="sm" 
                                 variant="destructive"
-                                className="h-7 w-7 p-0"
+                                className="h-7 text-xs"
                                 onClick={() => deleteHistoryItem(item.id)}
                               >
                                 <Trash2 className="h-3 w-3" />
