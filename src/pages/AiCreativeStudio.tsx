@@ -12,7 +12,7 @@ import {
   Facebook, Instagram, Share2
 } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
-import { CreativeTemplateGrid, CREATIVE_TEMPLATES, TemplateCategory } from "@/components/social/creative/CreativeTemplateGrid";
+import { CreativeTemplateGrid, CREATIVE_TEMPLATES, TemplateCategory, TemplateSize } from "@/components/social/creative/CreativeTemplateGrid";
 import { cn } from "@/lib/utils";
 
 interface ShopifyProduct {
@@ -32,6 +32,7 @@ export default function AiCreativeStudio() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState("promo-red");
   const [category, setCategory] = useState<TemplateCategory>("all");
+  const [sizeFilter, setSizeFilter] = useState<TemplateSize | "all">("square");
   const [searchQuery, setSearchQuery] = useState("");
   const [caption, setCaption] = useState("");
   const [showProductPanel, setShowProductPanel] = useState(true);
@@ -325,6 +326,9 @@ export default function AiCreativeStudio() {
                 onSelect={setSelectedTemplate}
                 category={category}
                 onCategoryChange={setCategory}
+                sizeFilter={sizeFilter}
+                onSizeChange={setSizeFilter}
+                product={selectedProduct}
               />
             </div>
 
