@@ -284,11 +284,18 @@ Return ONLY valid JSON, no markdown.`;
       enhancedQuery += " design haut de gamme";
     }
 
+    console.log("[SMART-AI] 🔍 Starting price analysis...");
+    console.log("[SMART-AI] Search query:", enhancedQuery);
+    console.log("[SMART-AI] Min price for segment:", minPriceForSegment);
+    console.log("[SMART-AI] DataForSEO credentials available:", !!DATAFORSEO_LOGIN && !!DATAFORSEO_PASSWORD);
+    console.log("[SMART-AI] SerpAPI key available:", !!SERPAPI_KEY);
+
     // DataForSEO Shopping
     if (DATAFORSEO_LOGIN && DATAFORSEO_PASSWORD) {
       const auth = btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`);
 
       try {
+        console.log("[SMART-AI] 🛒 Calling DataForSEO Shopping API...");
         const r = await fetch("https://api.dataforseo.com/v3/serp/google/shopping/live/advanced", {
           method: "POST",
           headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
@@ -302,12 +309,18 @@ Return ONLY valid JSON, no markdown.`;
           ]),
         });
 
+        console.log("[SMART-AI] DataForSEO Shopping response status:", r.status);
+
         if (r.ok) {
           const j = await r.json();
+          console.log("[SMART-AI] DataForSEO Shopping response:", JSON.stringify(j, null, 2));
+          
           const items = j.tasks?.[0]?.result?.[0]?.items || [];
+          console.log("[SMART-AI] DataForSEO Shopping items found:", items.length);
 
           for (const it of items) {
             const price = parsePrice(it.price?.current) || parsePrice(it.price?.regular);
+            console.log("[SMART-AI] Item:", it.title, "Price:", price, "Min required:", minPriceForSegment);
 
             if (price && price >= minPriceForSegment && price < 10000) {
               shoppingCount++;
@@ -330,13 +343,19 @@ Return ONLY valid JSON, no markdown.`;
               }
             }
           }
+
+          console.log("[SMART-AI] ✅ Shopping results: merchants =", shoppingCount, "prices =", allPrices.length);
+        } else {
+          const errorText = await r.text();
+          console.error("[SMART-AI] ❌ DataForSEO Shopping API error:", r.status, errorText);
         }
       } catch (error) {
-        console.error("DataForSEO Shopping error:", error);
+        console.error("[SMART-AI] ❌ DataForSEO Shopping exception:", error);
       }
 
       // DataForSEO Organic
       try {
+        console.log("[SMART-AI] 🌐 Calling DataForSEO Organic API...");
         const r = await fetch("https://api.dataforseo.com/v3/serp/google/organic/live/advanced", {
           method: "POST",
           headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
@@ -350,14 +369,21 @@ Return ONLY valid JSON, no markdown.`;
           ]),
         });
 
+        console.log("[SMART-AI] DataForSEO Organic response status:", r.status);
+
         if (r.ok) {
           const j = await r.json();
+          console.log("[SMART-AI] DataForSEO Organic response:", JSON.stringify(j, null, 2));
+          
           const items = j.tasks?.[0]?.result?.[0]?.items || [];
+          console.log("[SMART-AI] DataForSEO Organic items found:", items.length);
 
           for (const it of items) {
             const match = (it.title || it.description)?.match(/(\d+[,.]?\d*)\s*€/);
             if (match) {
               const p = parsePrice(match[1]);
+              console.log("[SMART-AI] Organic item:", it.title, "Price extracted:", p);
+              
               if (p && p >= minPriceForSegment && p < 10000) {
                 organicCount++;
                 allPrices.push(p);
@@ -370,10 +396,17 @@ Return ONLY valid JSON, no markdown.`;
               }
             }
           }
+
+          console.log("[SMART-AI] ✅ Organic results: merchants =", organicCount);
+        } else {
+          const errorText = await r.text();
+          console.error("[SMART-AI] ❌ DataForSEO Organic API error:", r.status, errorText);
         }
       } catch (error) {
-        console.error("DataForSEO Organic error:", error);
+        console.error("[SMART-AI] ❌ DataForSEO Organic exception:", error);
       }
+    } else {
+      console.log("[SMART-AI] ⚠️ DataForSEO credentials not available - skipping DataForSEO");
     }
 
     // ============================================================================
@@ -381,6 +414,7 @@ Return ONLY valid JSON, no markdown.`;
     // ============================================================================
     if (SERPAPI_KEY) {
       try {
+        console.log("[SMART-AI] 📸 Calling SerpAPI Google Images...");
         const url = new URL("https://serpapi.com/search.json");
         url.searchParams.set("engine", "google_images");
         url.searchParams.set("api_key", SERPAPI_KEY);
@@ -388,12 +422,21 @@ Return ONLY valid JSON, no markdown.`;
         url.searchParams.set("gl", country);
         url.searchParams.set("hl", country);
 
+        console.log("[SMART-AI] SerpAPI URL:", url.toString());
+
         const r = await fetch(url.toString());
+        console.log("[SMART-AI] SerpAPI response status:", r.status);
+        
         const j = await r.json();
+        console.log("[SMART-AI] SerpAPI response:", JSON.stringify(j, null, 2));
 
         const shop = j.shopping_results || [];
+        console.log("[SMART-AI] SerpAPI shopping_results found:", shop.length);
+
         for (const it of shop) {
           const price = it.extracted_price || parsePrice(it.price);
+          console.log("[SMART-AI] SerpAPI item:", it.title, "Price:", price);
+          
           if (price && price >= minPriceForSegment && price < 10000) {
             visualCount++;
             allPrices.push(price);
@@ -405,9 +448,13 @@ Return ONLY valid JSON, no markdown.`;
             });
           }
         }
+
+        console.log("[SMART-AI] ✅ SerpAPI results: merchants =", visualCount);
       } catch (error) {
-        console.error("SerpAPI error:", error);
+        console.error("[SMART-AI] ❌ SerpAPI exception:", error);
       }
+    } else {
+      console.log("[SMART-AI] ⚠️ SerpAPI key not available - skipping SerpAPI");
     }
 
     // ============================================================================
@@ -457,7 +504,11 @@ Return ONLY valid JSON.`;
     // ============================================================================
     // 5️⃣ Fallback if no data
     // ============================================================================
+    console.log("[SMART-AI] 📊 Final stats - Prices found:", allPrices.length, "Merchants:", allMerchants.length, "Competitors:", competitors.length);
+    console.log("[SMART-AI] Sources: Shopping =", shoppingCount, "Organic =", organicCount, "Visual =", visualCount);
+
     if (allPrices.length === 0) {
+      console.log("[SMART-AI] ⚠️ No prices found - using fallback");
       const fallbackPrice = vision?.segment === "luxury" ? 999 : vision?.segment === "premium" ? 299 : 99;
       allPrices.push(fallbackPrice);
       allMerchants.push({
