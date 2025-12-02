@@ -504,3 +504,10 @@ verify_jwt = true
 [functions.publish-social-post]
 verify_jwt = true
 
+[functions.process-social-campaigns]
+verify_jwt = false
+
+[cron.process-social-campaigns-hourly]
+schedule = "0 * * * *"
+function = "process-social-campaigns"
+

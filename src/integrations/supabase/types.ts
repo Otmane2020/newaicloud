@@ -4915,16 +4915,21 @@ export type Database = {
           id: string
           include_link: boolean | null
           include_logo: boolean | null
+          last_product_index: number | null
           last_run_at: string | null
+          music_track: string | null
           name: string
           next_run_at: string | null
+          post_format: string | null
           posts_generated: number | null
+          posts_per_run: number | null
           product_ids: string[] | null
           status: string
           store_id: string | null
           template_style: string
           updated_at: string
           user_id: string
+          voice_enabled: boolean | null
         }
         Insert: {
           channels?: string[] | null
@@ -4937,16 +4942,21 @@ export type Database = {
           id?: string
           include_link?: boolean | null
           include_logo?: boolean | null
+          last_product_index?: number | null
           last_run_at?: string | null
+          music_track?: string | null
           name: string
           next_run_at?: string | null
+          post_format?: string | null
           posts_generated?: number | null
+          posts_per_run?: number | null
           product_ids?: string[] | null
           status?: string
           store_id?: string | null
           template_style?: string
           updated_at?: string
           user_id: string
+          voice_enabled?: boolean | null
         }
         Update: {
           channels?: string[] | null
@@ -4959,16 +4969,21 @@ export type Database = {
           id?: string
           include_link?: boolean | null
           include_logo?: boolean | null
+          last_product_index?: number | null
           last_run_at?: string | null
+          music_track?: string | null
           name?: string
           next_run_at?: string | null
+          post_format?: string | null
           posts_generated?: number | null
+          posts_per_run?: number | null
           product_ids?: string[] | null
           status?: string
           store_id?: string | null
           template_style?: string
           updated_at?: string
           user_id?: string
+          voice_enabled?: boolean | null
         }
         Relationships: [
           {

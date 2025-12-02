@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { contentType, contentId, templateStyle, channels, includeLink, language = 'fr' } = body;
+    const { contentType, contentId, templateStyle, channels, includeLink, language = 'fr', postFormat } = body;
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -30,19 +30,43 @@ Deno.serve(async (req) => {
 
     // Get content details based on type
     let contentData: any = null;
-    let imageUrl: string | null = null;
+    let images: string[] = [];
+    let mainImage: string | null = null;
     let productLink: string | null = null;
+    let variants: any[] = [];
+    let priceRange: { min: number; max: number } | null = null;
 
     if (contentType === 'product') {
       const { data: product } = await supabase
         .from('shopify_products')
-        .select('*, product_images(*)')
+        .select(`
+          id, title, body_html, handle, vendor, tags, status, store_id,
+          product_images(id, src, alt_text, position),
+          product_variants(id, title, price, compare_at_price, sku, option1, option2, option3)
+        `)
         .eq('id', contentId)
         .single();
       
       if (product) {
         contentData = product;
-        imageUrl = product.product_images?.[0]?.src || null;
+        
+        // Get all images sorted by position
+        const sortedImages = (product.product_images || [])
+          .sort((a: any, b: any) => (a.position || 0) - (b.position || 0));
+        images = sortedImages.map((img: any) => img.src).filter(Boolean);
+        mainImage = images[0] || null;
+        
+        // Get variants with prices
+        variants = product.product_variants || [];
+        if (variants.length > 0) {
+          const prices = variants.map((v: any) => parseFloat(v.price) || 0).filter(p => p > 0);
+          if (prices.length > 0) {
+            priceRange = {
+              min: Math.min(...prices),
+              max: Math.max(...prices),
+            };
+          }
+        }
         
         // Get store domain for product link
         if (product.store_id) {
@@ -66,7 +90,8 @@ Deno.serve(async (req) => {
       
       if (collection) {
         contentData = collection;
-        imageUrl = collection.image_src || null;
+        mainImage = collection.image_src || null;
+        if (mainImage) images = [mainImage];
       }
     } else if (contentType === 'article') {
       const { data: article } = await supabase
@@ -77,7 +102,8 @@ Deno.serve(async (req) => {
       
       if (article) {
         contentData = article;
-        imageUrl = article.featured_image || null;
+        mainImage = article.featured_image || null;
+        if (mainImage) images = [mainImage];
       }
     }
 
@@ -85,20 +111,59 @@ Deno.serve(async (req) => {
       throw new Error('Content not found');
     }
 
+    // Build rich prompt with all product details
+    const title = contentData.title || '';
+    const description = contentData.body_html || contentData.content || contentData.description || '';
+    const cleanDescription = description.replace(/<[^>]*>/g, '').substring(0, 300);
+    
+    // Build variant info for prompt
+    let variantInfo = '';
+    if (variants.length > 0) {
+      const uniqueOptions = new Set<string>();
+      variants.forEach((v: any) => {
+        if (v.option1) uniqueOptions.add(v.option1);
+        if (v.option2) uniqueOptions.add(v.option2);
+      });
+      if (uniqueOptions.size > 0) {
+        variantInfo = `\nVariations disponibles: ${Array.from(uniqueOptions).slice(0, 5).join(', ')}`;
+      }
+    }
+
+    // Build price info
+    let priceInfo = '';
+    if (priceRange) {
+      if (priceRange.min === priceRange.max) {
+        priceInfo = `\nPrix: ${priceRange.min.toFixed(2)}€`;
+      } else {
+        priceInfo = `\nPrix: ${priceRange.min.toFixed(2)}€ - ${priceRange.max.toFixed(2)}€`;
+      }
+    }
+
     // Generate caption with AI
+    const platformName = channels?.includes('instagram') ? 'Instagram' : 'Facebook';
+    const isReel = postFormat === 'reel' || postFormat === 'video';
+    
     const systemPrompt = language === 'fr' 
-      ? `Tu es un expert en marketing social media. Génère une légende engageante pour un post ${channels?.includes('instagram') ? 'Instagram' : 'Facebook'}. 
+      ? `Tu es un expert en marketing social media. Génère une légende engageante pour un post ${platformName}${isReel ? ' Reel/vidéo' : ''}.
          La légende doit être concise (max 150 caractères), accrocheuse et inclure des emojis pertinents.
+         ${isReel ? 'Adapte le ton pour une vidéo courte et dynamique.' : ''}
          Ne pas inclure de hashtags.`
-      : `You are a social media marketing expert. Generate an engaging caption for a ${channels?.includes('instagram') ? 'Instagram' : 'Facebook'} post.
+      : `You are a social media marketing expert. Generate an engaging caption for a ${platformName}${isReel ? ' Reel/video' : ''} post.
          The caption should be concise (max 150 characters), catchy and include relevant emojis.
+         ${isReel ? 'Adapt the tone for a short, dynamic video.' : ''}
          Do not include hashtags.`;
 
     const userPrompt = language === 'fr'
-      ? `Génère une légende pour ce contenu:\nTitre: ${contentData.title}\nDescription: ${contentData.body_html || contentData.content || contentData.description || ''}`
-      : `Generate a caption for this content:\nTitle: ${contentData.title}\nDescription: ${contentData.body_html || contentData.content || contentData.description || ''}`;
+      ? `Génère une légende pour ce contenu:
+Titre: ${title}
+Description: ${cleanDescription}${variantInfo}${priceInfo}
+${images.length > 1 ? `Photos disponibles: ${images.length} images du produit` : ''}`
+      : `Generate a caption for this content:
+Title: ${title}
+Description: ${cleanDescription}${variantInfo}${priceInfo}
+${images.length > 1 ? `Available photos: ${images.length} product images` : ''}`;
 
-    let caption = contentData.title || '';
+    let caption = title;
 
     if (lovableApiKey) {
       try {
@@ -131,26 +196,27 @@ Deno.serve(async (req) => {
       caption += `\n\n🔗 ${productLink}`;
     }
 
-    // For styled templates, we would generate an image with overlay
-    // For now, return the base image URL
-    let finalImageUrl = imageUrl;
-
-    // If overlay template requested and we have Gemini image generation
-    if (templateStyle === 'overlay' && imageUrl && lovableApiKey) {
-      // For overlay, we could use Gemini to generate styled image
-      // This is a placeholder - actual implementation would use image generation
-      console.log('Overlay template requested - using base image for now');
-    }
-
     return new Response(JSON.stringify({
       success: true,
       caption,
-      imageUrl: finalImageUrl,
+      imageUrl: mainImage,
+      images: images, // All product images for carousel
       productLink,
+      variants: variants.map(v => ({
+        title: v.title,
+        price: v.price,
+        compareAtPrice: v.compare_at_price,
+        options: [v.option1, v.option2, v.option3].filter(Boolean),
+      })),
+      priceRange,
       contentData: {
         title: contentData.title,
+        description: cleanDescription,
         type: contentType,
-      }
+        vendor: contentData.vendor,
+        tags: contentData.tags,
+      },
+      postFormat,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
