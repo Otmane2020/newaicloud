@@ -11,10 +11,11 @@ import { toast } from "sonner";
 import { 
   Loader2, Wand2, Download, Search, Sparkles, 
   ImageIcon, Check, Facebook, Instagram, Eye, Star,
-  Send, Link, Image as ImageIconLucide, FileText, History, Trash2, RotateCcw
+  Send, Link, Image as ImageIconLucide, FileText, History, Trash2
 } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
-import { CreativeTemplateGrid, CREATIVE_TEMPLATES, TemplateCategory, TemplateSize } from "@/components/social/creative/CreativeTemplateGrid";
+import { CreativeStyleGrid } from "@/components/social/creative/CreativeStyleGrid";
+import { type CreativeStyle } from "@/components/social/templates/creativeStyles";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -73,9 +74,7 @@ export default function AiCreativeStudio() {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [category, setCategory] = useState<TemplateCategory>("all");
-  const [sizeFilter, setSizeFilter] = useState<TemplateSize | "all">("all");
+  const [selectedStyle, setSelectedStyle] = useState<CreativeStyle | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [caption, setCaption] = useState("");
   const [whiteBgImage, setWhiteBgImage] = useState<string | null>(null);
@@ -258,14 +257,13 @@ export default function AiCreativeStudio() {
   };
 
   const generateCreative = async () => {
-    if (!selectedProduct || !selectedTemplate) {
-      toast.error("Sélectionnez un template et un produit");
+    if (!selectedProduct || !selectedStyle) {
+      toast.error("Sélectionnez un style et un produit");
       return;
     }
 
     setGenerating(true);
     try {
-      const templateData = CREATIVE_TEMPLATES.find(t => t.id === selectedTemplate);
       const productLanguage = detectLanguage(selectedProduct.title);
       
       const productForGeneration = {
@@ -279,7 +277,14 @@ export default function AiCreativeStudio() {
       const { data, error } = await supabase.functions.invoke('export-creative-image', {
         body: { 
           product: productForGeneration,
-          template: templateData,
+          template: {
+            id: selectedStyle.id,
+            name: selectedStyle.name,
+            size: selectedStyle.size,
+            category: selectedStyle.category,
+            aiPromptStyle: selectedStyle.aiPromptStyle,
+            accentColor: selectedStyle.accentColor,
+          },
           caption,
           format: 'png',
           mode: generationMode,
@@ -302,8 +307,8 @@ export default function AiCreativeStudio() {
             store_id: selectedStore?.id,
             product_id: selectedProduct.id,
             product_title: selectedProduct.title,
-            template_id: selectedTemplate,
-            template_name: templateData?.name,
+            template_id: selectedStyle.id,
+            template_name: selectedStyle.name,
             image_url: imageUrl,
             generation_mode: generationMode,
             caption
@@ -354,7 +359,7 @@ export default function AiCreativeStudio() {
           product_link: postType === "withLink" && selectedProduct?.handle 
             ? `https://${selectedStore?.public_domain || selectedStore?.store_url?.replace('https://', '') || ''}/products/${selectedProduct.handle}` 
             : null,
-          template_style: selectedTemplate,
+          template_style: selectedStyle?.id || null,
           credits_consumed: 10,
         })
         .select()
@@ -389,10 +394,9 @@ export default function AiCreativeStudio() {
     p.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const selectedTemplateData = CREATIVE_TEMPLATES.find(t => t.id === selectedTemplate);
-  const isTemplateSelected = !!selectedTemplate;
+  const isStyleSelected = !!selectedStyle;
   const isProductSelected = !!selectedProduct;
-  const canGenerate = isProductSelected && isTemplateSelected;
+  const canGenerate = isProductSelected && isStyleSelected;
   const canPublish = !!generatedImage && selectedPlatforms.length > 0;
 
   const SelectionCheck = ({ selected }: { selected: boolean }) => (
@@ -439,31 +443,25 @@ export default function AiCreativeStudio() {
           </TabsList>
 
           <TabsContent value="studio" className="space-y-6">
-            {/* Template Selection - FIRST */}
+            {/* Style Selection - FIRST */}
             <section className="bg-card rounded-xl border overflow-hidden">
               <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
-                <SelectionCheck selected={isTemplateSelected} />
+                <SelectionCheck selected={isStyleSelected} />
                 <div className="flex-1">
-                  <h2 className="font-semibold">Choisissez un template</h2>
-                  <p className="text-xs text-muted-foreground">Sélectionnez le style de votre créatif</p>
+                  <h2 className="font-semibold">Choisissez un style créatif</h2>
+                  <p className="text-xs text-muted-foreground">L'IA générera une image stylisée unique</p>
                 </div>
-                {selectedTemplateData && (
+                {selectedStyle && (
                   <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30">
-                    {selectedTemplateData.name}
+                    {selectedStyle.name}
                   </Badge>
                 )}
               </div>
               
               <div className="p-4">
-                <CreativeTemplateGrid
-                  selected={selectedTemplate}
-                  onSelect={setSelectedTemplate}
-                  category={category}
-                  onCategoryChange={setCategory}
-                  sizeFilter={sizeFilter}
-                  onSizeChange={setSizeFilter}
-                  product={selectedProduct}
-                  whiteBgImage={whiteBgImage}
+                <CreativeStyleGrid
+                  selectedStyle={selectedStyle}
+                  onSelectStyle={setSelectedStyle}
                 />
               </div>
             </section>
@@ -803,7 +801,7 @@ export default function AiCreativeStudio() {
               <div className="bg-muted/30 px-4 py-3 border-b flex items-center justify-between">
                 <h2 className="font-semibold">Historique des créatifs</h2>
                 <Button variant="ghost" size="sm" onClick={loadHistory} className="gap-2">
-                  <RotateCcw className="h-4 w-4" />
+                  <Loader2 className="h-4 w-4" />
                   Actualiser
                 </Button>
               </div>
