@@ -2,13 +2,19 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Facebook, Instagram, Loader2, Trash2, RefreshCw, Check, X } from "lucide-react";
+import { Facebook, Instagram, Loader2, Trash2, Check, Lock } from "lucide-react";
+import { FacebookPageSelector } from "./FacebookPageSelector";
 
 interface SocialConnectionsProps {
   userId?: string;
+}
+
+interface FacebookPage {
+  id: string;
+  name: string;
+  token: string;
 }
 
 const SocialConnections = ({ userId }: SocialConnectionsProps) => {
@@ -16,6 +22,11 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
   const [instagramAccounts, setInstagramAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<'facebook' | 'instagram' | null>(null);
+  
+  // React page selector state
+  const [showPageSelector, setShowPageSelector] = useState(false);
+  const [availablePages, setAvailablePages] = useState<FacebookPage[]>([]);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (userId) {
@@ -26,6 +37,19 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
   useEffect(() => {
     // Listen for OAuth popup messages
     const handleMessage = (event: MessageEvent) => {
+      console.log('[SocialConnections] Received message:', event.data);
+      
+      // Handle multiple pages - show React dialog
+      if (event.data?.needsPageSelection) {
+        console.log('[SocialConnections] Multiple pages detected, showing selector');
+        setAvailablePages(event.data.pages);
+        setPendingUserId(event.data.userId);
+        setShowPageSelector(true);
+        setConnecting(null);
+        return;
+      }
+      
+      // Handle direct success
       if (event.data?.success) {
         toast.success(event.data.message || "Connexion réussie !");
         loadConnections();
@@ -92,34 +116,8 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
     }
   };
 
-  const connectInstagram = async () => {
-    setConnecting('instagram');
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/instagram-oauth`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({ action: 'connect' }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.authUrl) {
-        window.open(data.authUrl, 'instagram-oauth', 'width=600,height=700');
-      } else {
-        throw new Error(data.error || 'Erreur de connexion');
-      }
-    } catch (error: any) {
-      toast.error(error.message);
-      setConnecting(null);
-    }
+  const handlePageSelectorSuccess = (pageName: string, instagramName?: string | null) => {
+    loadConnections();
   };
 
   const toggleAutoShare = async (type: 'facebook' | 'instagram', id: string, currentValue: boolean) => {
@@ -168,6 +166,15 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Facebook Page Selector Dialog */}
+      <FacebookPageSelector
+        open={showPageSelector}
+        onOpenChange={setShowPageSelector}
+        pages={availablePages}
+        userId={pendingUserId || ''}
+        onSuccess={handlePageSelectorSuccess}
+      />
+
       {/* Facebook Connections */}
       <Card>
         <CardHeader>
@@ -183,18 +190,38 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
                 </CardDescription>
               </div>
             </div>
-            <Button
-              onClick={connectFacebook}
-              disabled={connecting === 'facebook'}
-              variant={facebookPages.length > 0 ? 'outline' : 'default'}
-            >
-              {connecting === 'facebook' ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Facebook className="h-4 w-4 mr-2" />
-              )}
-              {facebookPages.length > 0 ? 'Ajouter une page' : 'Connecter Facebook'}
-            </Button>
+            {facebookPages.length > 0 ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                  <Lock className="h-3.5 w-3.5" />
+                  Connecté
+                </div>
+                <Button
+                  onClick={connectFacebook}
+                  disabled={connecting === 'facebook'}
+                  variant="outline"
+                  size="sm"
+                >
+                  {connecting === 'facebook' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Ajouter'
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={connectFacebook}
+                disabled={connecting === 'facebook'}
+              >
+                {connecting === 'facebook' ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Facebook className="h-4 w-4 mr-2" />
+                )}
+                Connecter Facebook
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -257,6 +284,12 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
                 </CardDescription>
               </div>
             </div>
+            {instagramAccounts.length > 0 && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                <Lock className="h-3.5 w-3.5" />
+                Connecté
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>

@@ -3,12 +3,19 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Settings, Save, Facebook, Instagram } from 'lucide-react';
+import { Settings, Save, Facebook, Instagram, Lock } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { FacebookPageSelector } from '@/components/social/FacebookPageSelector';
+
+interface FacebookPage {
+  id: string;
+  name: string;
+  token: string;
+}
 
 export function OpportunitiesSettings() {
   const { t } = useTranslation();
@@ -18,10 +25,44 @@ export function OpportunitiesSettings() {
   const [autoShareEnabled, setAutoShareEnabled] = useState(true);
   const [autoShareInstagram, setAutoShareInstagram] = useState(true);
   const [loading, setLoading] = useState(false);
+  
+  // React page selector state
+  const [showPageSelector, setShowPageSelector] = useState(false);
+  const [availablePages, setAvailablePages] = useState<FacebookPage[]>([]);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadFacebookConnection();
     loadInstagramConnection();
+    
+    // Listen for OAuth popup messages
+    const handleMessage = (event: MessageEvent) => {
+      console.log('[OpportunitiesSettings] Received message:', event.data);
+      
+      // Handle multiple pages - show React dialog
+      if (event.data?.needsPageSelection) {
+        console.log('[OpportunitiesSettings] Multiple pages detected, showing selector');
+        setAvailablePages(event.data.pages);
+        setPendingUserId(event.data.userId);
+        setShowPageSelector(true);
+        setLoading(false);
+        return;
+      }
+      
+      // Handle direct success
+      if (event.data?.success) {
+        toast.success(event.data.message || 'Connexion réussie !');
+        loadFacebookConnection();
+        loadInstagramConnection();
+        setLoading(false);
+      } else if (event.data?.error) {
+        toast.error(event.data.error);
+        setLoading(false);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, [user]);
 
   const loadFacebookConnection = async () => {
@@ -76,26 +117,9 @@ export function OpportunitiesSettings() {
           `width=${width},height=${height},left=${left},top=${top}`
         );
 
-        // Listen for OAuth callback
-        const handleMessage = (event: MessageEvent) => {
-          if (event.data.success) {
-            toast.success('Facebook page connected successfully');
-            loadFacebookConnection();
-            window.removeEventListener('message', handleMessage);
-            setLoading(false);
-          } else if (event.data.error) {
-            toast.error(event.data.error);
-            window.removeEventListener('message', handleMessage);
-            setLoading(false);
-          }
-        };
-
-        window.addEventListener('message', handleMessage);
-
         // Check if popup was blocked
         if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-          toast.error('Popup blocked. Please allow popups for this site.');
-          window.removeEventListener('message', handleMessage);
+          toast.error('Popup bloquée. Veuillez autoriser les popups pour ce site.');
           setLoading(false);
         }
       }
@@ -104,6 +128,11 @@ export function OpportunitiesSettings() {
       toast.error(t.toasts.error.generic);
       setLoading(false);
     }
+  };
+
+  const handlePageSelectorSuccess = (pageName: string, instagramName?: string | null) => {
+    loadFacebookConnection();
+    loadInstagramConnection();
   };
 
   const handleDisconnect = async () => {
@@ -119,7 +148,7 @@ export function OpportunitiesSettings() {
       if (error) throw error;
       
       setFacebookPage(null);
-      toast.success('Facebook page disconnected');
+      toast.success('Page Facebook déconnectée');
     } catch (error: any) {
       console.error('Disconnect error:', error);
       toast.error(t.toasts.error.generic);
@@ -142,7 +171,7 @@ export function OpportunitiesSettings() {
 
       if (error) throw error;
       
-      toast.success(newValue ? 'Auto-share enabled' : 'Auto-share disabled');
+      toast.success(newValue ? 'Auto-partage activé' : 'Auto-partage désactivé');
     } catch (error: any) {
       console.error('Toggle error:', error);
       toast.error(t.toasts.error.generic);
@@ -175,7 +204,7 @@ export function OpportunitiesSettings() {
         // Listen for OAuth callback
         const handleMessage = (event: MessageEvent) => {
           if (event.data.success) {
-            toast.success('Instagram account connected successfully');
+            toast.success('Compte Instagram connecté');
             loadInstagramConnection();
             window.removeEventListener('message', handleMessage);
             setLoading(false);
@@ -190,7 +219,7 @@ export function OpportunitiesSettings() {
 
         // Check if popup was blocked
         if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-          toast.error('Popup blocked. Please allow popups for this site.');
+          toast.error('Popup bloquée. Veuillez autoriser les popups pour ce site.');
           window.removeEventListener('message', handleMessage);
           setLoading(false);
         }
@@ -215,7 +244,7 @@ export function OpportunitiesSettings() {
       if (error) throw error;
       
       setInstagramAccount(null);
-      toast.success('Instagram account disconnected');
+      toast.success('Compte Instagram déconnecté');
     } catch (error: any) {
       console.error('Disconnect error:', error);
       toast.error(t.toasts.error.generic);
@@ -238,7 +267,7 @@ export function OpportunitiesSettings() {
 
       if (error) throw error;
       
-      toast.success(newValue ? 'Auto-share enabled' : 'Auto-share disabled');
+      toast.success(newValue ? 'Auto-partage activé' : 'Auto-partage désactivé');
     } catch (error: any) {
       console.error('Toggle error:', error);
       toast.error(t.toasts.error.generic);
@@ -248,6 +277,15 @@ export function OpportunitiesSettings() {
   
   return (
     <div className="space-y-6">
+      {/* Facebook Page Selector Dialog */}
+      <FacebookPageSelector
+        open={showPageSelector}
+        onOpenChange={setShowPageSelector}
+        pages={availablePages}
+        userId={pendingUserId || ''}
+        onSuccess={handlePageSelectorSuccess}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -292,9 +330,15 @@ export function OpportunitiesSettings() {
             <CardTitle className="flex items-center gap-2">
               <Facebook className="w-5 h-5 text-[#1877F2]" />
               <span>Facebook Integration</span>
+              {facebookPage && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium ml-auto">
+                  <Lock className="h-3 w-3" />
+                  Connecté
+                </div>
+              )}
             </CardTitle>
             <CardDescription>
-              Connect your Facebook page to automatically share articles after publication
+              Connectez votre page Facebook pour partager automatiquement les articles
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -307,7 +351,7 @@ export function OpportunitiesSettings() {
                     </div>
                     <div>
                       <p className="font-medium">{facebookPage.page_name}</p>
-                      <p className="text-sm text-muted-foreground">Connected</p>
+                      <p className="text-sm text-muted-foreground">Connecté</p>
                     </div>
                   </div>
                   <Button 
@@ -316,15 +360,15 @@ export function OpportunitiesSettings() {
                     disabled={loading}
                     size="sm"
                   >
-                    Disconnect
+                    Déconnecter
                   </Button>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
-                    <Label htmlFor="auto-share">Auto-share articles after publication</Label>
+                    <Label htmlFor="auto-share">Auto-partage après publication</Label>
                     <p className="text-sm text-muted-foreground">
-                      Automatically post new articles to your Facebook page
+                      Publie automatiquement les nouveaux articles sur votre page Facebook
                     </p>
                   </div>
                   <Switch 
@@ -342,7 +386,7 @@ export function OpportunitiesSettings() {
                 disabled={loading}
               >
                 <Facebook className="w-4 h-4 mr-2" />
-                Connect Facebook Page
+                Connecter Facebook
               </Button>
             )}
           </CardContent>
@@ -353,9 +397,15 @@ export function OpportunitiesSettings() {
             <CardTitle className="flex items-center gap-2">
               <Instagram className="w-5 h-5 text-[#E4405F]" />
               <span>Instagram Integration</span>
+              {instagramAccount && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium ml-auto">
+                  <Lock className="h-3 w-3" />
+                  Connecté
+                </div>
+              )}
             </CardTitle>
             <CardDescription>
-              Connect your Instagram account to automatically share articles after publication
+              Connectez votre compte Instagram pour partager automatiquement les articles
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -367,8 +417,8 @@ export function OpportunitiesSettings() {
                       <Instagram className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-medium">{instagramAccount.account_name}</p>
-                      <p className="text-sm text-muted-foreground">Connected</p>
+                      <p className="font-medium">@{instagramAccount.account_name}</p>
+                      <p className="text-sm text-muted-foreground">Connecté</p>
                     </div>
                   </div>
                   <Button 
@@ -377,15 +427,15 @@ export function OpportunitiesSettings() {
                     disabled={loading}
                     size="sm"
                   >
-                    Disconnect
+                    Déconnecter
                   </Button>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
-                    <Label htmlFor="auto-share-instagram">Auto-share articles after publication</Label>
+                    <Label htmlFor="auto-share-instagram">Auto-partage après publication</Label>
                     <p className="text-sm text-muted-foreground">
-                      Automatically post new articles to your Instagram account
+                      Publie automatiquement les nouveaux articles sur votre compte Instagram
                     </p>
                   </div>
                   <Switch 
@@ -403,7 +453,7 @@ export function OpportunitiesSettings() {
                 disabled={loading}
               >
                 <Instagram className="w-4 h-4 mr-2" />
-                Connect Instagram Account
+                Connecter Instagram
               </Button>
             )}
           </CardContent>
