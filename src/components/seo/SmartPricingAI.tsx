@@ -562,7 +562,7 @@ export function SmartPricingAI() {
           .eq("id", productId);
       }
 
-      toast.success(isPromo ? "Prix appliqué comme prix promo" : "Prix appliqué comme prix régulier");
+      toast.success(isPromo ? t.toasts.smartAI.priceAppliedPromo : t.toasts.smartAI.priceAppliedRegular);
       await fetchData();
     } catch (error) {
       console.error("Error applying price:", error);
@@ -1162,10 +1162,10 @@ export function SmartPricingAI() {
 
       if (syncError) throw syncError;
 
-      toast.success(`✅ ${product.title} synchronisé`, { id: toastId });
+      toast.success(tf('toasts.smartAI.productSynced', { title: product.title }), { id: toastId });
     } catch (error: any) {
       console.error("Sync error:", error);
-      toast.error(error.message || "Erreur lors de la synchronisation");
+      toast.error(error.message || t.toasts.smartAI.syncError);
     } finally {
       setSyncing(false);
     }
@@ -1214,7 +1214,12 @@ export function SmartPricingAI() {
         const batch = batches[i];
         
         toast.loading(
-          `Batch ${i + 1}/${batches.length} (${totalSynced}/${productsToSync.length} synchronisés)`,
+          tf('toasts.smartAI.batchProgress', { 
+            current: i + 1, 
+            total: batches.length, 
+            synced: totalSynced, 
+            totalProducts: productsToSync.length 
+          }),
           { id: toastId }
         );
 
@@ -1242,14 +1247,14 @@ export function SmartPricingAI() {
 
       if (totalErrors > 0) {
         toast.error(
-          `${totalSynced} produits synchronisés, ${totalErrors} erreurs`,
+          tf('toasts.smartAI.syncSuccessWithErrors', { synced: totalSynced, errors: totalErrors }),
           { id: toastId }
         );
         if (failedProducts.length > 0) {
           console.warn('Produits échoués:', failedProducts);
         }
       } else {
-        toast.success(`✅ ${totalSynced} produit(s) synchronisé(s)`, { id: toastId });
+        toast.success(tf('toasts.smartAI.syncSuccess', { count: totalSynced }), { id: toastId });
       }
 
       // Unselect all after sync
@@ -1258,7 +1263,7 @@ export function SmartPricingAI() {
       }
     } catch (error: any) {
       console.error("Sync error:", error);
-      toast.error(error.message || "Erreur lors de la synchronisation");
+      toast.error(error.message || t.toasts.smartAI.syncError);
     } finally {
       setSyncing(false);
     }
@@ -1311,7 +1316,7 @@ export function SmartPricingAI() {
               ),
             );
           } else {
-            throw new Error(data.error || "Échec de la génération");
+            throw new Error(data.error || t.toasts.smartAI.generationFailed);
           }
         } catch (error: any) {
           console.error(`Error for product ${product.id}:`, error);
@@ -1410,7 +1415,7 @@ export function SmartPricingAI() {
         if (!shopifyResponse.ok) {
           const errorText = await shopifyResponse.text();
           console.error('Shopify sync error:', errorText);
-          throw new Error('Erreur de synchronisation Shopify');
+          throw new Error(t.toasts.smartAI.shopifySyncError);
         }
       }
 
@@ -1503,16 +1508,16 @@ export function SmartPricingAI() {
             p.productId === productId ? { ...p, generatedUrl: data.imageUrl, status: "success" as const } : p,
           ),
         );
-        toast.success("Image régénérée avec succès");
+        toast.success(t.toasts.smartAI.imageRegeneratedSuccess);
       } else {
-        throw new Error(data.error || "Échec de la régénération");
+        throw new Error(data.error || t.toasts.smartAI.regenerationFailed);
       }
     } catch (error: any) {
       console.error("Regenerate error:", error);
       setWhiteBgPreviews((prev) =>
         prev.map((p) => (p.productId === productId ? { ...p, status: "error" as const, error: error.message } : p)),
       );
-      toast.error("Erreur lors de la régénération");
+      toast.error(t.toasts.smartAI.regenerationError);
     }
   };
 
