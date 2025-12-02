@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,12 +7,27 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sparkles, Calendar, Target, Users, Clock, ArrowRight, ArrowLeft, X } from 'lucide-react';
+import { Sparkles, Calendar, Target, Users, Clock, ArrowRight, ArrowLeft, X, Package, ShoppingBag } from 'lucide-react';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useTranslation } from '@/lib/language';
+import { useStore } from '@/contexts/StoreContext';
+
+interface Collection {
+  id: string;
+  title: string;
+  products_count: number;
+}
+
+interface Product {
+  id: string;
+  title: string;
+  handle: string;
+}
 
 interface CampaignWizardProps {
   open: boolean;
@@ -21,12 +36,17 @@ interface CampaignWizardProps {
 }
 
 export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizardProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const { selectedStore } = useStore();
   const [loading, setLoading] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const [step, setStep] = useState(1);
   const [keywordInput, setKeywordInput] = useState('');
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -38,6 +58,57 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
     auto_publish: false,
     execution_hour: 12,
   });
+
+  useEffect(() => {
+    if (open && selectedStore) {
+      loadCollections();
+    }
+  }, [open, selectedStore]);
+
+  const loadCollections = async () => {
+    if (!selectedStore) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('shopify_collections')
+        .select('id, title, products_count')
+        .eq('store_id', selectedStore.id)
+        .order('title', { ascending: true });
+
+      if (error) throw error;
+      setCollections(data || []);
+    } catch (error) {
+      console.error('Error loading collections:', error);
+    }
+  };
+
+  const loadProducts = async () => {
+    if (!selectedStore || selectedCollections.length === 0) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('shopify_products')
+        .select('id, title, handle')
+        .eq('store_id', selectedStore.id)
+        .filter('collection_ids', 'cs', `{${selectedCollections.join(',')}}`)
+        .order('title', { ascending: true })
+        .limit(100);
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedCollections.length > 0) {
+      loadProducts();
+    } else {
+      setProducts([]);
+      setSelectedProducts([]);
+    }
+  }, [selectedCollections]);
 
   const addKeyword = () => {
     if (keywordInput.trim() && !formData.keywords.includes(keywordInput.trim())) {
@@ -70,11 +141,33 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
 
   const prevStep = () => setStep(step - 1);
 
+  const toggleCollection = (collectionId: string) => {
+    setSelectedCollections(prev =>
+      prev.includes(collectionId)
+        ? prev.filter(id => id !== collectionId)
+        : [...prev, collectionId]
+    );
+  };
+
+  const toggleProduct = (productId: string) => {
+    setSelectedProducts(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
   const handleSubmit = async () => {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error(t.campaignWizard.toasts.notAuthenticated);
+
+      if (!selectedStore) {
+        toast.error(language === 'fr' ? 'Veuillez sélectionner un magasin' : 'Please select a store');
+        setLoading(false);
+        return;
+      }
 
       // Vérifier les limites de campagnes avant de créer
       if (!canDoAction('campaigns')) {
@@ -92,12 +185,15 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
         .from('blog_campaigns')
         .insert({
           user_id: user.id,
+          store_id: selectedStore.id,
           name: formData.name,
           frequency: formData.frequency,
           auto_post: formData.auto_publish,
           topic_niche: formData.topic_niche,
           keywords: formData.keywords,
           target_audience: formData.target_audience,
+          collection_ids: selectedCollections,
+          product_ids: selectedProducts,
           next_execution_at: new Date(formData.start_date).toISOString(),
           execution_hour: formData.execution_hour,
         });
@@ -116,6 +212,8 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
       onSuccess();
       onOpenChange(false);
       setStep(1);
+      setSelectedCollections([]);
+      setSelectedProducts([]);
       setFormData({
         name: '',
         description: '',
@@ -243,6 +341,98 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
           <div className="space-y-4">
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
+                <Package className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">
+                {language === 'fr' ? 'Collections et Produits' : 'Collections & Products'}
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {language === 'fr'
+                  ? 'Sélectionnez des collections ou produits spécifiques (optionnel)'
+                  : 'Select specific collections or products (optional)'}
+              </p>
+            </div>
+
+            {/* Collections Selection */}
+            {collections.length > 0 && (
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  {language === 'fr' ? 'Collections' : 'Collections'}
+                </Label>
+                <ScrollArea className="h-48 border rounded-lg p-4">
+                  {collections.map((collection) => (
+                    <div key={collection.id} className="flex items-center gap-3 py-2">
+                      <Checkbox
+                        checked={selectedCollections.includes(collection.id)}
+                        onCheckedChange={() => {
+                          setSelectedCollections(prev =>
+                            prev.includes(collection.id)
+                              ? prev.filter(id => id !== collection.id)
+                              : [...prev, collection.id]
+                          );
+                        }}
+                      />
+                      <span className="text-sm flex-1">{collection.title}</span>
+                      <Badge variant="outline">
+                        {collection.products_count} {language === 'fr' ? 'produits' : 'products'}
+                      </Badge>
+                    </div>
+                  ))}
+                </ScrollArea>
+                <p className="text-xs text-muted-foreground">
+                  {language === 'fr'
+                    ? 'Si vide, tous les produits seront utilisés pour la génération'
+                    : 'If empty, all products will be used for generation'}
+                </p>
+              </div>
+            )}
+
+            {/* Products Selection (only if collections selected) */}
+            {selectedCollections.length > 0 && products.length > 0 && (
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4" />
+                  {language === 'fr' ? 'Produits spécifiques' : 'Specific Products'}
+                </Label>
+                <ScrollArea className="h-48 border rounded-lg p-4">
+                  {products.map((product) => (
+                    <div key={product.id} className="flex items-center gap-3 py-2">
+                      <Checkbox
+                        checked={selectedProducts.includes(product.id)}
+                        onCheckedChange={() => {
+                          setSelectedProducts(prev =>
+                            prev.includes(product.id)
+                              ? prev.filter(id => id !== product.id)
+                              : [...prev, product.id]
+                          );
+                        }}
+                      />
+                      <span className="text-sm">{product.title}</span>
+                    </div>
+                  ))}
+                </ScrollArea>
+              </div>
+            )}
+
+            {selectedCollections.length === 0 && (
+              <div className="p-4 bg-muted/50 rounded-lg text-center">
+                <Package className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  {language === 'fr'
+                    ? 'Aucune collection sélectionnée - génération automatique activée'
+                    : 'No collection selected - automatic generation enabled'}
+                </p>
+              </div>
+            )}
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
                 <Users className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold">{t.campaignWizard.steps.targetAudience.title}</h3>
@@ -273,7 +463,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="space-y-4">
             <div className="text-center mb-6">
@@ -375,13 +565,13 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               <DialogTitle className="text-2xl">{t.dialogs.campaignWizard.newCampaign}</DialogTitle>
             </div>
             <DialogDescription>
-              {t.dialogs.campaignWizard.stepOf.replace('{{step}}', String(step)).replace('{{total}}', '4')}
+              {t.dialogs.campaignWizard.stepOf.replace('{{step}}', String(step)).replace('{{total}}', '5')}
             </DialogDescription>
           </DialogHeader>
 
         {/* Progress bar */}
         <div className="flex gap-2 mb-6">
-          {[1, 2, 3, 4].map((s) => (
+          {[1, 2, 3, 4, 5].map((s) => (
             <div
               key={s}
               className={`h-2 flex-1 rounded-full transition-colors ${
@@ -404,7 +594,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
             {t.dialogs.campaignWizard.back}
           </Button>
 
-          {step < 4 ? (
+          {step < 5 ? (
             <Button type="button" onClick={nextStep}>
               {t.dialogs.campaignWizard.next}
               <ArrowRight className="w-4 h-4 ml-2" />

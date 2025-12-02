@@ -577,6 +577,7 @@ export type Database = {
         Row: {
           articles_generated: number | null
           auto_post: boolean | null
+          collection_ids: string[] | null
           created_at: string
           execution_hour: number | null
           frequency: string | null
@@ -588,6 +589,7 @@ export type Database = {
           name: string
           next_execution_at: string | null
           next_run_at: string | null
+          product_ids: string[] | null
           store_id: string | null
           target_audience: string | null
           topic_niche: string | null
@@ -597,6 +599,7 @@ export type Database = {
         Insert: {
           articles_generated?: number | null
           auto_post?: boolean | null
+          collection_ids?: string[] | null
           created_at?: string
           execution_hour?: number | null
           frequency?: string | null
@@ -608,6 +611,7 @@ export type Database = {
           name: string
           next_execution_at?: string | null
           next_run_at?: string | null
+          product_ids?: string[] | null
           store_id?: string | null
           target_audience?: string | null
           topic_niche?: string | null
@@ -617,6 +621,7 @@ export type Database = {
         Update: {
           articles_generated?: number | null
           auto_post?: boolean | null
+          collection_ids?: string[] | null
           created_at?: string
           execution_hour?: number | null
           frequency?: string | null
@@ -628,6 +633,7 @@ export type Database = {
           name?: string
           next_execution_at?: string | null
           next_run_at?: string | null
+          product_ids?: string[] | null
           store_id?: string | null
           target_audience?: string | null
           topic_niche?: string | null

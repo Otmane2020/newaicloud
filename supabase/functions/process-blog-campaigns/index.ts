@@ -95,9 +95,11 @@ serve(async (req) => {
           {
             body: {
               user_id: campaign.user_id,
-              store_id: campaign.store_id, // ✅ CRITICAL: Pass store_id to avoid orphaned articles
+              store_id: campaign.store_id,
               campaign_id: campaign.id,
               keywords: campaign.keywords,
+              collection_ids: campaign.collection_ids,
+              product_ids: campaign.product_ids,
               mode: 'auto'
             }
           }
