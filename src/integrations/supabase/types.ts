@@ -4903,6 +4903,233 @@ export type Database = {
         }
         Relationships: []
       }
+      social_campaigns: {
+        Row: {
+          channels: string[] | null
+          collection_ids: string[] | null
+          content_type: string
+          created_at: string
+          custom_prompt: string | null
+          execution_hour: number | null
+          frequency: string
+          id: string
+          include_link: boolean | null
+          include_logo: boolean | null
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          posts_generated: number | null
+          product_ids: string[] | null
+          status: string
+          store_id: string | null
+          template_style: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channels?: string[] | null
+          collection_ids?: string[] | null
+          content_type?: string
+          created_at?: string
+          custom_prompt?: string | null
+          execution_hour?: number | null
+          frequency?: string
+          id?: string
+          include_link?: boolean | null
+          include_logo?: boolean | null
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          posts_generated?: number | null
+          product_ids?: string[] | null
+          status?: string
+          store_id?: string | null
+          template_style?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channels?: string[] | null
+          collection_ids?: string[] | null
+          content_type?: string
+          created_at?: string
+          custom_prompt?: string | null
+          execution_hour?: number | null
+          frequency?: string
+          id?: string
+          include_link?: boolean | null
+          include_logo?: boolean | null
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          posts_generated?: number | null
+          product_ids?: string[] | null
+          status?: string
+          store_id?: string | null
+          template_style?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_campaigns_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_posts: {
+        Row: {
+          article_id: string | null
+          campaign_id: string | null
+          caption: string | null
+          carousel_images: string[] | null
+          channels: string[] | null
+          collection_id: string | null
+          content_type: string
+          created_at: string
+          credits_consumed: number | null
+          error_message: string | null
+          facebook_post_id: string | null
+          id: string
+          image_url: string | null
+          instagram_post_id: string | null
+          link_url: string | null
+          product_id: string | null
+          published_at: string | null
+          scheduled_at: string | null
+          status: string
+          store_id: string | null
+          template_style: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          campaign_id?: string | null
+          caption?: string | null
+          carousel_images?: string[] | null
+          channels?: string[] | null
+          collection_id?: string | null
+          content_type?: string
+          created_at?: string
+          credits_consumed?: number | null
+          error_message?: string | null
+          facebook_post_id?: string | null
+          id?: string
+          image_url?: string | null
+          instagram_post_id?: string | null
+          link_url?: string | null
+          product_id?: string | null
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          store_id?: string | null
+          template_style?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string | null
+          campaign_id?: string | null
+          caption?: string | null
+          carousel_images?: string[] | null
+          channels?: string[] | null
+          collection_id?: string | null
+          content_type?: string
+          created_at?: string
+          credits_consumed?: number | null
+          error_message?: string | null
+          facebook_post_id?: string | null
+          id?: string
+          image_url?: string | null
+          instagram_post_id?: string | null
+          link_url?: string | null
+          product_id?: string | null
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          store_id?: string | null
+          template_style?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_posts_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_posts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "social_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_posts_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_posts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_posts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_settings: {
+        Row: {
+          auto_post_articles: boolean | null
+          brand_color: string | null
+          created_at: string
+          default_channels: string[] | null
+          default_template_style: string | null
+          id: string
+          logo_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_post_articles?: boolean | null
+          brand_color?: string | null
+          created_at?: string
+          default_channels?: string[] | null
+          default_template_style?: string | null
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_post_articles?: boolean | null
+          brand_color?: string | null
+          created_at?: string
+          default_channels?: string[] | null
+          default_template_style?: string | null
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           best_value: boolean | null

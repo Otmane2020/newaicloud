@@ -498,4 +498,9 @@ verify_jwt = false
 [functions.instagram-webhook]
 verify_jwt = false
 
+[functions.generate-social-post]
+verify_jwt = true
+
+[functions.publish-social-post]
+verify_jwt = true
 
