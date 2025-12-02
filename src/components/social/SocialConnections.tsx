@@ -34,36 +34,6 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
     }
   }, [userId]);
 
-  useEffect(() => {
-    // Listen for OAuth popup messages
-    const handleMessage = (event: MessageEvent) => {
-      console.log('[SocialConnections] Received message:', event.data);
-      
-      // Handle multiple pages - show React dialog
-      if (event.data?.needsPageSelection) {
-        console.log('[SocialConnections] Multiple pages detected, showing selector');
-        setAvailablePages(event.data.pages);
-        setPendingUserId(event.data.userId);
-        setShowPageSelector(true);
-        setConnecting(null);
-        return;
-      }
-      
-      // Handle direct success
-      if (event.data?.success) {
-        toast.success(event.data.message || "Connexion réussie !");
-        loadConnections();
-        setConnecting(null);
-      } else if (event.data?.error) {
-        toast.error(event.data.error);
-        setConnecting(null);
-      }
-    };
-
-    window.addEventListener('message', handleMessage, false);
-    return () => window.removeEventListener('message', handleMessage, false);
-  }, []);
-
   const loadConnections = async () => {
     try {
       const [fbResult, igResult] = await Promise.all([
@@ -106,9 +76,8 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
       const data = await response.json();
 
       if (data.authUrl) {
-        // Force opener relationship for cross-domain postMessage
-        window.focus();
-        window.open(data.authUrl, 'facebook-oauth', 'popup=yes,width=600,height=700,noopener=false,noreferrer=false');
+        // Redirect directly - no popup needed since we use URL redirects now
+        window.location.href = data.authUrl;
       } else {
         throw new Error(data.error || 'Erreur de connexion');
       }
