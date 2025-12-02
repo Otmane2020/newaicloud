@@ -99,7 +99,70 @@ serve(async (req) => {
     }
 
     // ============================================================================
-    // 2️⃣ Test SerpAPI Google Shopping
+    // 2️⃣ Test SerpAPI Google Lens (Reverse Image Search)
+    // ============================================================================
+    console.log("[TEST] Testing SerpAPI Google Lens...");
+    const serpApiLensStart = Date.now();
+
+    if (!SERPAPI_KEY) {
+      results.push({
+        name: "SerpAPI Google Lens",
+        status: "ko",
+        details: "API key not configured",
+        error: "SERPAPI_KEY missing",
+      });
+    } else {
+      try {
+        const testImageUrl = "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/product-images/decora-home-officlal.myshopify.com/products/01jfjcbcvhwf1t0w65s9vwfy7t/images/01jfjcbbxd5ybhxgqzmptevxj3.jpg";
+        
+        const url = new URL("https://serpapi.com/search.json");
+        url.searchParams.set("engine", "google_lens");
+        url.searchParams.set("api_key", SERPAPI_KEY);
+        url.searchParams.set("url", testImageUrl);
+        url.searchParams.set("gl", "fr");
+        url.searchParams.set("hl", "fr");
+
+        console.log("[TEST] SerpAPI Lens URL:", url.toString());
+
+        const response = await fetch(url.toString());
+        const responseTime = Date.now() - serpApiLensStart;
+        const data = await response.json();
+
+        console.log("[TEST] SerpAPI Lens response:", JSON.stringify(data, null, 2));
+
+        if (data.visual_matches && data.visual_matches.length > 0) {
+          results.push({
+            name: "SerpAPI Google Lens",
+            status: "ok",
+            details: `${data.visual_matches.length} visual matches found`,
+            responseTime,
+            data: {
+              items_count: data.visual_matches.length,
+              sample_match: data.visual_matches[0],
+            },
+          });
+        } else {
+          results.push({
+            name: "SerpAPI Google Lens",
+            status: "ko",
+            details: data.error || "No visual matches found",
+            responseTime,
+            error: JSON.stringify(data),
+          });
+        }
+      } catch (error) {
+        results.push({
+          name: "SerpAPI Google Lens",
+          status: "ko",
+          details: "Request failed",
+          responseTime: Date.now() - serpApiLensStart,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    // ============================================================================
+    // 3️⃣ Test SerpAPI Google Shopping
     // ============================================================================
     console.log("[TEST] Testing SerpAPI Google Shopping...");
     const serpApiStart = Date.now();
@@ -161,7 +224,7 @@ serve(async (req) => {
     }
 
     // ============================================================================
-    // 3️⃣ Test Smart AI (Vision + Shopping Combined)
+    // 4️⃣ Test Smart AI (Vision + Google Lens + Shopping Combined)
     // ============================================================================
     console.log("[TEST] Testing Smart AI function...");
     const smartAiStart = Date.now();
