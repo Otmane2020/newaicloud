@@ -1195,6 +1195,66 @@ export type Database = {
         }
         Relationships: []
       }
+      creative_history: {
+        Row: {
+          caption: string | null
+          created_at: string
+          generation_mode: string | null
+          id: string
+          image_format: string | null
+          image_url: string
+          product_id: string | null
+          product_title: string | null
+          store_id: string | null
+          template_id: string
+          template_name: string | null
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          generation_mode?: string | null
+          id?: string
+          image_format?: string | null
+          image_url: string
+          product_id?: string | null
+          product_title?: string | null
+          store_id?: string | null
+          template_id: string
+          template_name?: string | null
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          generation_mode?: string | null
+          id?: string
+          image_format?: string | null
+          image_url?: string
+          product_id?: string | null
+          product_title?: string | null
+          store_id?: string | null
+          template_id?: string
+          template_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creative_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creative_history_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decora_home_backup_metadata: {
         Row: {
           completed_at: string | null
