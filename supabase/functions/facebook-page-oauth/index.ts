@@ -82,8 +82,94 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Store the first page connection
-      const page = pagesData.data[0];
+      // Check if a specific page was selected
+      const selectedPageId = url.searchParams.get('page_id');
+      
+      // If multiple pages and no selection, show selection UI
+      if (pagesData.data.length > 1 && !selectedPageId) {
+        const pagesListHtml = pagesData.data.map((p: any) => `
+          <div style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;"
+               onmouseover="this.style.backgroundColor='#f3f4f6'; this.style.borderColor='#6366f1';"
+               onmouseout="this.style.backgroundColor='white'; this.style.borderColor='#e5e7eb';"
+               onclick="selectPage('${p.id}', '${p.access_token}')">
+            <div style="font-weight: 600; color: #111827;">${p.name}</div>
+            <div style="font-size: 12px; color: #6b7280;">ID: ${p.id}</div>
+          </div>
+        `).join('');
+
+        return new Response(
+          `<!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Sélectionner une page Facebook</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f9fafb; }
+              .container { max-width: 400px; margin: 0 auto; background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+              h2 { margin: 0 0 8px 0; color: #111827; font-size: 18px; }
+              p { margin: 0 0 16px 0; color: #6b7280; font-size: 14px; }
+              .pages-list { max-height: 400px; overflow-y: auto; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h2>🔗 Sélectionnez une page Facebook</h2>
+              <p>${pagesData.data.length} pages trouvées. Choisissez celle à connecter:</p>
+              <div class="pages-list">
+                ${pagesListHtml}
+              </div>
+            </div>
+            <script>
+              const pages = ${JSON.stringify(pagesData.data.map((p: any) => ({ id: p.id, token: p.access_token, name: p.name })))};
+              const userId = '${state}';
+              
+              async function selectPage(pageId, pageToken) {
+                const page = pages.find(p => p.id === pageId);
+                
+                // Send selection to backend
+                try {
+                  const response = await fetch('${supabaseUrl}/functions/v1/facebook-page-oauth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      action: 'save_page',
+                      userId: userId,
+                      pageId: pageId,
+                      pageToken: pageToken,
+                      pageName: page.name
+                    })
+                  });
+                  
+                  const result = await response.json();
+                  
+                  if (result.success) {
+                    window.opener.postMessage({ 
+                      success: true, 
+                      pageName: result.pageName,
+                      instagramName: result.instagramName || null,
+                      message: result.message
+                    }, '*');
+                    window.close();
+                  } else {
+                    alert('Erreur: ' + (result.error || 'Échec de la connexion'));
+                  }
+                } catch (err) {
+                  alert('Erreur de connexion: ' + err.message);
+                }
+              }
+            </script>
+          </body>
+          </html>`,
+          { headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+        );
+      }
+
+      // Single page or page already selected - proceed with connection
+      const page = selectedPageId 
+        ? pagesData.data.find((p: any) => p.id === selectedPageId) || pagesData.data[0]
+        : pagesData.data[0];
+        
       console.log('Storing page connection:', { pageName: page.name, userId: state });
 
       const { error: insertError } = await supabase
@@ -172,6 +258,84 @@ Deno.serve(async (req) => {
 
     // Handle initial OAuth request from frontend (POST)
     if (req.method === 'POST') {
+      const body = await req.json();
+      const { action } = body;
+
+      // Handle page selection from OAuth callback (no auth required - comes from popup)
+      if (action === 'save_page') {
+        const { userId, pageId, pageToken, pageName } = body;
+        
+        if (!userId || !pageId || !pageToken || !pageName) {
+          throw new Error('Missing required parameters for page selection');
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+        // Store the selected page connection
+        const { error: insertError } = await supabase
+          .from('facebook_page_connections')
+          .upsert({
+            user_id: userId,
+            page_id: pageId,
+            page_name: pageName,
+            page_access_token: pageToken,
+            auto_share_enabled: true,
+          }, {
+            onConflict: 'user_id,page_id'
+          });
+
+        if (insertError) {
+          console.error('Error storing Facebook page connection:', insertError);
+          throw insertError;
+        }
+
+        // Fetch Instagram Business account linked to this page
+        let instagramAccountName = null;
+        try {
+          const igResponse = await fetch(
+            `https://graph.facebook.com/v18.0/${pageId}?fields=instagram_business_account&access_token=${pageToken}`
+          );
+          const igData = await igResponse.json();
+
+          if (igData.instagram_business_account) {
+            const igDetailsResponse = await fetch(
+              `https://graph.facebook.com/v18.0/${igData.instagram_business_account.id}?fields=username,name&access_token=${pageToken}`
+            );
+            const igDetails = await igDetailsResponse.json();
+            instagramAccountName = igDetails.username || igDetails.name || 'Instagram Business';
+
+            await supabase
+              .from('instagram_account_connections')
+              .upsert({
+                user_id: userId,
+                account_id: igData.instagram_business_account.id,
+                account_name: instagramAccountName,
+                access_token: pageToken,
+                auto_share_enabled: true,
+              }, {
+                onConflict: 'user_id'
+              });
+          }
+        } catch (igError) {
+          console.error('Error fetching Instagram Business account:', igError);
+        }
+
+        const successMessage = instagramAccountName 
+          ? `Facebook (${pageName}) et Instagram (${instagramAccountName}) connectés avec succès!`
+          : `Facebook (${pageName}) connecté avec succès!`;
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            pageName,
+            instagramName: instagramAccountName,
+            message: successMessage
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Handle initial OAuth request (requires authentication)
       const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
       const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         global: {
@@ -184,8 +348,6 @@ Deno.serve(async (req) => {
       if (userError || !user) {
         throw new Error('Unauthorized');
       }
-
-      const { action } = await req.json();
 
       if (action === 'connect') {
         const appId = Deno.env.get('FACEBOOK_APP_ID')!;
