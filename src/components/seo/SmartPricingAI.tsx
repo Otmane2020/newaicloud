@@ -26,6 +26,7 @@ import {
   LayoutGrid,
   List,
   Zap,
+  Globe,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -124,6 +125,17 @@ interface PreviewImage {
   error?: string;
 }
 
+const marketOptions = [
+  { code: "fr", name: "France", flag: "🇫🇷" },
+  { code: "be", name: "Belgique", flag: "🇧🇪" },
+  { code: "de", name: "Allemagne", flag: "🇩🇪" },
+  { code: "es", name: "Espagne", flag: "🇪🇸" },
+  { code: "it", name: "Italie", flag: "🇮🇹" },
+  { code: "uk", name: "Royaume-Uni", flag: "🇬🇧" },
+  { code: "nl", name: "Pays-Bas", flag: "🇳🇱" },
+  { code: "ch", name: "Suisse", flag: "🇨🇭" },
+];
+
 export function SmartPricingAI() {
   const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
@@ -138,7 +150,7 @@ export function SmartPricingAI() {
   const [syncingVariant, setSyncingVariant] = useState<string | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string>("all");
   const [selectedVendor, setSelectedVendor] = useState<string>("all");
-  const [marketCountry, setMarketCountry] = useState<string>("fr");
+  const [selectedMarkets, setSelectedMarkets] = useState<string[]>(["fr"]);
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 10000 });
   const [sortBy, setSortBy] = useState<"title" | "price" | "margin">("title");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -503,7 +515,7 @@ export function SmartPricingAI() {
           productDescription,
           productId,
           storeId: selectedStore?.id,
-          country: marketCountry,
+          markets: selectedMarkets,
         },
       });
 
@@ -1658,6 +1670,57 @@ export function SmartPricingAI() {
         </div>
       </Card>
 
+      {/* Market Configuration */}
+      <Card className="p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-blue-950 dark:via-indigo-950 dark:to-violet-950 border-2 border-blue-200">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-blue-500 rounded-xl">
+            <Globe className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold mb-2">🌍 Marchés de recherche Smart AI</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Sélectionnez les pays où rechercher les prix concurrents (recherche Google locale par marché)
+            </p>
+            <div className="flex flex-wrap gap-4">
+              {marketOptions.map((market) => (
+                <div key={market.code} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`market-${market.code}`}
+                    checked={selectedMarkets.includes(market.code)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedMarkets(prev => [...prev, market.code]);
+                      } else {
+                        setSelectedMarkets(prev => prev.filter(c => c !== market.code));
+                      }
+                    }}
+                  />
+                  <label 
+                    htmlFor={`market-${market.code}`} 
+                    className="text-sm cursor-pointer flex items-center gap-1"
+                  >
+                    {market.flag} {market.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+            {selectedMarkets.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1">
+                <span className="text-xs text-muted-foreground">Marchés actifs :</span>
+                {selectedMarkets.map(code => {
+                  const market = marketOptions.find(m => m.code === code);
+                  return market ? (
+                    <Badge key={code} variant="outline" className="text-xs">
+                      {market.flag} {market.name}
+                    </Badge>
+                  ) : null;
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
       {/* Bulk Operations */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -1679,19 +1742,6 @@ export function SmartPricingAI() {
                   {col.title}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-          <Select value={marketCountry} onValueChange={setMarketCountry}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fr">🇫🇷 France</SelectItem>
-              <SelectItem value="de">🇩🇪 Allemagne</SelectItem>
-              <SelectItem value="es">🇪🇸 Espagne</SelectItem>
-              <SelectItem value="it">🇮🇹 Italie</SelectItem>
-              <SelectItem value="uk">🇬🇧 UK</SelectItem>
-              <SelectItem value="us">🇺🇸 USA</SelectItem>
             </SelectContent>
           </Select>
 

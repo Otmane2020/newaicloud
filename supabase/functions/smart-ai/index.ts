@@ -56,6 +56,7 @@ interface SmartAnalysisResult {
     price: number | null;
     image?: string;
     thumbnail?: string;
+    market?: string;
   }[];
   seoSuggestions: {
     title: string;
@@ -163,7 +164,7 @@ serve(async (req) => {
       images = [],
       productTitle,
       productDescription,
-      country = "fr",
+      markets = ["fr"],
       productId,
       storeId,
     } = body;
@@ -311,7 +312,15 @@ Return ONLY valid JSON, no markdown.`;
     // ============================================================================
     const allPrices: number[] = [];
     const allMerchants: Merchant[] = [];
-    const competitors: { name: string; title?: string; url: string; price: number | null; image?: string; thumbnail?: string }[] = [];
+  const competitors: {
+    name: string;
+    title?: string;
+    url: string;
+    price: number | null;
+    image?: string;
+    thumbnail?: string;
+    market?: string;
+  }[] = [];
 
     let shoppingCount = 0;
     let organicCount = 0;
@@ -340,167 +349,162 @@ Return ONLY valid JSON, no markdown.`;
 
     // ============================================================================
     // SERPAPI GOOGLE LENS — Recherche visuelle par image (PRIORITÉ 1)
+    // Boucle sur chaque marché sélectionné
     // ============================================================================
-    if (SERPAPI_KEY && imageUrl) {
-      try {
-        console.log("[SMART-AI] 🔍 Calling SerpAPI Google Lens (Reverse Image Search)...");
-        const lensUrl = new URL("https://serpapi.com/search.json");
-        lensUrl.searchParams.set("engine", "google_lens");
-        lensUrl.searchParams.set("api_key", SERPAPI_KEY);
-        lensUrl.searchParams.set("url", imageUrl);
-        lensUrl.searchParams.set("gl", country);
-        lensUrl.searchParams.set("hl", country === "us" || country === "uk" ? "en" : country);
+    for (const market of markets) {
+      console.log(`[SMART-AI] 🔍 Searching market: ${market}`);
+      
+      if (SERPAPI_KEY && imageUrl) {
+        try {
+          console.log(`[SMART-AI] 🔍 Calling SerpAPI Google Lens for market ${market}...`);
+          const lensUrl = new URL("https://serpapi.com/search.json");
+          lensUrl.searchParams.set("engine", "google_lens");
+          lensUrl.searchParams.set("api_key", SERPAPI_KEY);
+          lensUrl.searchParams.set("url", imageUrl);
+          lensUrl.searchParams.set("gl", market);
+          lensUrl.searchParams.set("hl", market === "us" || market === "uk" ? "en" : market);
 
-        console.log("[SMART-AI] Google Lens URL:", lensUrl.toString());
+          console.log(`[SMART-AI] Google Lens URL (${market}):`, lensUrl.toString());
 
-        const r = await fetch(lensUrl.toString());
-        console.log("[SMART-AI] Google Lens response status:", r.status);
+          const r = await fetch(lensUrl.toString());
+          console.log(`[SMART-AI] Google Lens response status (${market}):`, r.status);
 
-        if (r.ok) {
-          const j = await r.json();
-          console.log("[SMART-AI] Google Lens full response:", JSON.stringify(j, null, 2));
+          if (r.ok) {
+            const j = await r.json();
+            console.log(`[SMART-AI] Google Lens full response (${market}):`, JSON.stringify(j, null, 2));
 
-          const visualMatches = j.visual_matches || [];
-          console.log("[SMART-AI] Google Lens visual_matches found:", visualMatches.length);
+            const visualMatches = j.visual_matches || [];
+            console.log(`[SMART-AI] Google Lens visual_matches found (${market}):`, visualMatches.length);
 
-          for (const match of visualMatches) {
-            const price = match.price?.extracted_value || parsePrice(match.price?.value);
-            console.log("[SMART-AI] Lens match:", match.title, "Price:", price, "Source:", match.source);
+            for (const match of visualMatches) {
+              const price = match.price?.extracted_value || parsePrice(match.price?.value);
+              console.log(`[SMART-AI] Lens match (${market}):`, match.title, "Price:", price, "Source:", match.source);
 
-            if (match.link && match.source) {
-              // Filtrer les sites non-marchands
-              const nonCommercialDomains = ['edu', 'gov', 'org', 'wikipedia'];
-              const domain = new URL(match.link).hostname.toLowerCase();
-              const isNonCommercial = nonCommercialDomains.some(d => domain.includes(`.${d}`));
-              
-              if (isNonCommercial) {
-                console.log("[SMART-AI] ⊘ Skipping non-commercial site:", domain);
-                continue;
-              }
-              
-              visualCount++;
+              if (match.link && match.source) {
+                // Filtrer les sites non-marchands
+                const nonCommercialDomains = ['edu', 'gov', 'org', 'wikipedia'];
+                const domain = new URL(match.link).hostname.toLowerCase();
+                const isNonCommercial = nonCommercialDomains.some(d => domain.includes(`.${d}`));
+                
+                if (isNonCommercial) {
+                  console.log(`[SMART-AI] ⊘ Skipping non-commercial site (${market}):`, domain);
+                  continue;
+                }
+                
+                visualCount++;
 
-              // Ajouter aux concurrents avec image ET titre du produit
-              // Si pas de prix, tenter d'extraire par crawling
-              let finalPrice = price || null;
-              if (!finalPrice && match.link) {
-                console.log("[SMART-AI] 🕷️ Crawling", match.link, "for price...");
-                finalPrice = await extractPriceFromPage(match.link);
-              }
-              
-              competitors.push({
-                name: match.source,
-                title: match.title || "",
-                url: match.link,
-                price: finalPrice,
-                image: match.thumbnail,
-                thumbnail: match.thumbnail,
-              });
-
-              // Ajouter aux merchants si prix valide
-              if (finalPrice && finalPrice >= minPriceForSegment && finalPrice < 10000) {
-                allPrices.push(finalPrice);
-
-                allMerchants.push({
-                  title: match.title || "Product",
-                  source: match.source,
+                // Si pas de prix, tenter d'extraire par crawling
+                let finalPrice = price || null;
+                if (!finalPrice && match.link) {
+                  console.log(`[SMART-AI] 🕷️ Crawling (${market})`, match.link, "for price...");
+                  finalPrice = await extractPriceFromPage(match.link);
+                }
+                
+                competitors.push({
+                  name: match.source,
+                  title: match.title || "",
+                  url: match.link,
                   price: finalPrice,
-                  link: match.link,
                   image: match.thumbnail,
+                  thumbnail: match.thumbnail,
+                  market: market,
                 });
+
+                // Ajouter aux merchants si prix valide
+                if (finalPrice && finalPrice >= minPriceForSegment && finalPrice < 10000) {
+                  allPrices.push(finalPrice);
+
+                  allMerchants.push({
+                    title: match.title || "Product",
+                    source: match.source,
+                    price: finalPrice,
+                    link: match.link,
+                    image: match.thumbnail,
+                  });
+                }
               }
             }
-          }
 
-          console.log("[SMART-AI] ✅ Google Lens results: visual matches =", visualCount, "with prices =", allPrices.length);
-        } else {
-          const errorText = await r.text();
-          console.error("[SMART-AI] ❌ Google Lens HTTP error:", r.status, errorText);
+            console.log(`[SMART-AI] ✅ Google Lens results (${market}): visual matches =`, visualMatches.length, "with prices =", allPrices.length);
+          } else {
+            const errorText = await r.text();
+            console.error(`[SMART-AI] ❌ Google Lens HTTP error (${market}):`, r.status, errorText);
+          }
+        } catch (error) {
+          console.error(`[SMART-AI] ❌ Google Lens exception (${market}):`, error);
         }
-      } catch (error) {
-        console.error("[SMART-AI] ❌ Google Lens exception:", error);
+      } else {
+        console.log(`[SMART-AI] ⚠️ SerpAPI Google Lens skipped (${market}) - key or imageUrl missing`);
       }
-    } else {
-      console.log("[SMART-AI] ⚠️ SerpAPI Google Lens skipped - key or imageUrl missing");
     }
 
     // ============================================================================
     // DATAFORSEO — Google Shopping + Organic Search (FALLBACK)
+    // Boucle sur chaque marché sélectionné
     // ============================================================================
     // DataForSEO Shopping
     if (DATAFORSEO_LOGIN && DATAFORSEO_PASSWORD) {
       const auth = btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`);
 
-      try {
-        console.log("[SMART-AI] 🛒 Calling DataForSEO Shopping API...");
-        const r = await fetch("https://api.dataforseo.com/v3/serp/google/shopping/live/regular", {
-          method: "POST",
-          headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
-          body: JSON.stringify([
-            {
-              keyword: enhancedQuery,
-              location_code: loc(country),
-              language_code: country === "us" || country === "uk" ? "en" : country,
-              depth: 30,
-            },
-          ]),
-        });
+      for (const market of markets) {
+        try {
+          console.log(`[SMART-AI] 🛒 Calling DataForSEO Shopping API for market ${market}...`);
+          const r = await fetch("https://api.dataforseo.com/v3/serp/google/shopping/live/regular", {
+            method: "POST",
+            headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
+            body: JSON.stringify([
+              {
+                keyword: enhancedQuery,
+                location_code: loc(market),
+                language_code: market === "us" || market === "uk" ? "en" : market,
+                depth: 30,
+              },
+            ]),
+          });
 
-        console.log("[SMART-AI] DataForSEO Shopping response status:", r.status);
+          console.log(`[SMART-AI] DataForSEO Shopping response status (${market}):`, r.status);
 
-        if (r.ok) {
-          const j = await r.json();
-          console.log("[SMART-AI] DataForSEO Shopping full response:", JSON.stringify(j, null, 2));
-          
-          // Check for API errors
-          if (j.status_code && j.status_code !== 20000) {
-            console.error("[SMART-AI] ❌ DataForSEO API error:", j.status_code, j.status_message);
-          }
-          
-          const items = j.tasks?.[0]?.result?.[0]?.items || [];
-          console.log("[SMART-AI] DataForSEO Shopping items found:", items.length);
+          if (r.ok) {
+            const j = await r.json();
+            console.log(`[SMART-AI] DataForSEO Shopping full response (${market}):`, JSON.stringify(j, null, 2));
+            
+            // Check for API errors
+            if (j.status_code && j.status_code !== 20000) {
+              console.error(`[SMART-AI] ❌ DataForSEO API error (${market}):`, j.status_code, j.status_message);
+            }
+            
+            const items = j.tasks?.[0]?.result?.[0]?.items || [];
+            console.log(`[SMART-AI] DataForSEO Shopping items found (${market}):`, items.length);
 
-          for (const it of items) {
-            const price = parsePrice(it.price?.current) || parsePrice(it.price?.regular);
-            console.log("[SMART-AI] Item:", it.title, "Price:", price, "Min required:", minPriceForSegment);
+            for (const it of items) {
+              const price = parsePrice(it.price?.current) || parsePrice(it.price?.regular);
+              console.log(`[SMART-AI] Item (${market}):`, it.title, "Price:", price, "Min required:", minPriceForSegment);
 
-            if (price && price >= minPriceForSegment && price < 10000) {
-              shoppingCount++;
-              allPrices.push(price);
-              allMerchants.push({
-                title: it.title || "Product",
-                source: it.seller?.name || "Google Shopping",
-                price,
-                link: it.url || "",
-                image: it.image_url,
-              });
-
-              // Add to competitors
-              if (it.seller?.name && it.url) {
-                competitors.push({
-                  name: it.seller.name,
-                  url: it.url,
+              if (price && price >= minPriceForSegment && price < 10000) {
+                shoppingCount++;
+                allPrices.push(price);
+                allMerchants.push({
+                  title: it.title || "Product",
+                  source: it.seller?.name || "Google Shopping",
                   price,
+                  link: it.url || "",
+                  image: it.image_url,
                 });
               }
             }
           }
-
-          console.log("[SMART-AI] ✅ Shopping results: merchants =", shoppingCount, "prices =", allPrices.length);
-        } else {
-          const errorText = await r.text();
-          console.error("[SMART-AI] ❌ DataForSEO Shopping HTTP error:", r.status, errorText);
+        } catch (error) {
+          console.error(`[SMART-AI] ❌ DataForSEO Shopping error (${market}):`, error);
         }
-      } catch (error) {
-        console.error("[SMART-AI] ❌ DataForSEO Shopping exception:", error);
       }
 
-      // DataForSEO Organic
+      // DataForSEO Organic (pour le premier marché seulement)
+      const primaryMarket = markets[0];
       try {
-        console.log("[SMART-AI] 🌐 Calling DataForSEO Organic API...");
+        console.log(`[SMART-AI] 🌐 Calling DataForSEO Organic API for primary market ${primaryMarket}...`);
         
         // Adapt query based on language
-        const priceKeyword = country === "us" || country === "uk" ? "price buy" : "prix achat";
+        const priceKeyword = primaryMarket === "us" || primaryMarket === "uk" ? "price buy" : "prix achat";
         const organicQuery = searchQuery + " " + priceKeyword;
         
         const r = await fetch("https://api.dataforseo.com/v3/serp/google/organic/live/advanced", {
@@ -509,30 +513,30 @@ Return ONLY valid JSON, no markdown.`;
           body: JSON.stringify([
             {
               keyword: organicQuery,
-              location_code: loc(country),
-              language_code: country === "us" || country === "uk" ? "en" : country,
+              location_code: loc(primaryMarket),
+              language_code: primaryMarket === "us" || primaryMarket === "uk" ? "en" : primaryMarket,
               depth: 20,
             },
           ]),
         });
 
-        console.log("[SMART-AI] DataForSEO Organic response status:", r.status);
+        console.log(`[SMART-AI] DataForSEO Organic response status (${primaryMarket}):`, r.status);
 
         if (r.ok) {
           const j = await r.json();
-          console.log("[SMART-AI] DataForSEO Organic response:", JSON.stringify(j, null, 2));
+          console.log(`[SMART-AI] DataForSEO Organic response (${primaryMarket}):`, JSON.stringify(j, null, 2));
           
           const items = j.tasks?.[0]?.result?.[0]?.items || [];
-          console.log("[SMART-AI] DataForSEO Organic items found:", items.length);
+          console.log(`[SMART-AI] DataForSEO Organic items found (${primaryMarket}):`, items.length);
 
           // Multi-currency price extraction regex
-          const priceRegex = country === "us" ? /\$(\d+[,.]?\d*)/ : country === "uk" ? /£(\d+[,.]?\d*)/ : /(\d+[,.]?\d*)\s*€/;
+          const priceRegex = primaryMarket === "us" ? /\$(\d+[,.]?\d*)/ : primaryMarket === "uk" ? /£(\d+[,.]?\d*)/ : /(\d+[,.]?\d*)\s*€/;
 
           for (const it of items) {
             const match = (it.title || it.description)?.match(priceRegex);
             if (match) {
               const p = parsePrice(match[1]);
-              console.log("[SMART-AI] Organic item:", it.title, "Price extracted:", p);
+              console.log(`[SMART-AI] Organic item (${primaryMarket}):`, it.title, "Price extracted:", p);
               
               if (p && p >= minPriceForSegment && p < 10000) {
                 organicCount++;
@@ -547,13 +551,13 @@ Return ONLY valid JSON, no markdown.`;
             }
           }
 
-          console.log("[SMART-AI] ✅ Organic results: merchants =", organicCount);
+          console.log(`[SMART-AI] ✅ Organic results (${primaryMarket}): merchants =`, organicCount);
         } else {
           const errorText = await r.text();
-          console.error("[SMART-AI] ❌ DataForSEO Organic HTTP error:", r.status, errorText);
+          console.error(`[SMART-AI] ❌ DataForSEO Organic HTTP error (${primaryMarket}):`, r.status, errorText);
         }
       } catch (error) {
-        console.error("[SMART-AI] ❌ DataForSEO Organic exception:", error);
+        console.error(`[SMART-AI] ❌ DataForSEO Organic exception (${primaryMarket}):`, error);
       }
     } else {
       console.log("[SMART-AI] ⚠️ DataForSEO credentials not available - skipping DataForSEO");
@@ -561,15 +565,16 @@ Return ONLY valid JSON, no markdown.`;
 
     // SERPAPI — Google Shopping (FALLBACK TEXTE TRÈS RARE)
     // On NE l'utilise que si aucun autre signal n'a été trouvé (pas de Lens, pas de DataForSEO)
+    const primaryMarket = markets[0];
     if (SERPAPI_KEY && shoppingCount === 0 && allPrices.length < 3 && visualCount === 0) {
       try {
-        console.log("[SMART-AI] 🛒 Calling SerpAPI Google Shopping (last-resort text fallback)...");
+        console.log(`[SMART-AI] 🛒 Calling SerpAPI Google Shopping (last-resort text fallback) for ${primaryMarket}...`);
         const url = new URL("https://serpapi.com/search.json");
         url.searchParams.set("engine", "google_shopping");
         url.searchParams.set("api_key", SERPAPI_KEY);
         url.searchParams.set("q", searchQuery);
-        url.searchParams.set("gl", country);
-        url.searchParams.set("hl", country === "us" || country === "uk" ? "en" : country);
+        url.searchParams.set("gl", primaryMarket);
+        url.searchParams.set("hl", primaryMarket === "us" || primaryMarket === "uk" ? "en" : primaryMarket);
         url.searchParams.set("num", "30");
 
         console.log("[SMART-AI] SerpAPI URL:", url.toString());
