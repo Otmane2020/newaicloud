@@ -19,6 +19,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string, referralCode?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
+  signInWithFacebook: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -193,6 +194,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
+  const signInWithFacebook = async () => {
+    const redirectUrl = `${window.location.origin}/onboarding`;
+    
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: {
+        redirectTo: redirectUrl,
+        scopes: 'public_profile,email'
+      }
+    });
+
+    if (error) {
+      toast.error(error.message);
+    }
+
+    return { error };
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     
@@ -214,7 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signInWithFacebook, signOut }}>
       {children}
     </AuthContext.Provider>
   );

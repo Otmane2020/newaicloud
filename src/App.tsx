@@ -9,6 +9,7 @@ import { StoreProvider } from "./contexts/StoreContext";
 import { AutoSyncProvider, useAutoSyncProgress } from "./contexts/AutoSyncContext";
 import { OptimizationProvider } from "./contexts/OptimizationContext";
 import { LanguageProvider } from "@/lib/language";
+import { FacebookSDKProvider } from "@/components/FacebookSDK";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AIAssistant } from "@/components/AIAssistant";
 import { AutoSyncProgressDialog } from "@/components/AutoSyncProgressDialog";
@@ -145,6 +146,7 @@ const App = () => (
         <TooltipProvider>
         <BrowserRouter>
           <AuthProvider>
+            <FacebookSDKProvider>
             <AutoSyncProvider>
               <StoreProvider>
                 <OptimizationProvider>
@@ -571,6 +573,7 @@ const App = () => (
                 </OptimizationProvider>
               </StoreProvider>
             </AutoSyncProvider>
+            </FacebookSDKProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
