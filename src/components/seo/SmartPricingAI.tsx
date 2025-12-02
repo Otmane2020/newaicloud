@@ -476,9 +476,13 @@ export function SmartPricingAI() {
 
   const analyzeSmartPrice = async (productId: string, productTitle: string, imageUrl: string | null, currentPrice: number | null) => {
     if (!imageUrl) {
-      toast.error("Image requise pour l'analyse Smart PRICE");
+      toast.error("Image requise pour l'analyse Smart AI");
       return;
     }
+
+    // Get product details including description and all images
+    const product = products.find(p => p.id === productId);
+    const productDescription = product?.title || "";
 
     setSmartPriceDialog({
       open: true,
@@ -491,10 +495,11 @@ export function SmartPricingAI() {
     });
 
     try {
-      const { data, error } = await supabase.functions.invoke("smart-price-scanner", {
+      const { data, error } = await supabase.functions.invoke("smart-ai", {
         body: { 
           imageUrl,
           productTitle,
+          productDescription,
           productId,
           storeId: selectedStore?.id,
         },
@@ -508,10 +513,10 @@ export function SmartPricingAI() {
         result: data,
       }));
 
-      toast.success(`Analyse terminée : ${Math.round(data.confidence * 100)}% de confiance`);
+      toast.success(`Analyse Smart AI terminée : ${Math.round(data.confidence * 100)}% de confiance`);
     } catch (error) {
-      console.error("Smart Price error:", error);
-      toast.error("Erreur lors de l'analyse Smart PRICE");
+      console.error("Smart AI error:", error);
+      toast.error("Erreur lors de l'analyse Smart AI");
       setSmartPriceDialog((prev) => ({ ...prev, loading: false }));
     }
   };
@@ -2730,7 +2735,7 @@ export function SmartPricingAI() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p className="text-xs">Smart PRICE - Analyse SERP du marché</p>
+                              <p className="text-xs">Smart AI - Analyse complète Vision + SERP + SEO</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
