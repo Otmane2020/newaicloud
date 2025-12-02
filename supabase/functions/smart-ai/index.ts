@@ -75,6 +75,8 @@ interface SmartAnalysisResult {
     visual: number;
   };
   processingTime: number;
+  marketPrice: number | null; // ⬆️ AJOUTÉ
+  smartPrice: number | null;  // ⬆️ AJOUTÉ
 }
 
 // ---------------------------------------------------------------------------
@@ -980,16 +982,18 @@ Return ONLY valid JSON.`;
     confidence = Math.min(confidence, 0.98);
 
     // ============================================================================
-    // Final Merchants & Competitors
+    // Final Merchants & Competitors — TRIER PAR SIMILARITÉ
     // ============================================================================
     const merchants = allMerchants
       .filter((m) => m.price)
       .sort((a, b) => a.price! - b.price!)
       .slice(0, 15);
 
+    // TRIER les concurrents par similarité AVANT de dédupliquer
     const uniqueCompetitors = competitors
       .filter((c, i, arr) => arr.findIndex((x) => x.name === c.name) === i)
-      .slice(0, 10);
+      .sort((a, b) => (b.similarityScore || 0) - (a.similarityScore || 0)) // ⬆️ Tri par similarité DESC
+      .slice(0, 15); // Augmenté à 15 pour afficher plus de concurrents similaires
 
     // ============================================================================
     // Save to DB
@@ -1030,6 +1034,14 @@ Return ONLY valid JSON.`;
       }
     }
 
+    // ============================================================================
+    // 🎯 CALCULER market_price ET smart_price
+    // ============================================================================
+    const marketPrice = pricing.median || pricing.avg || null; // Prix médian du marché
+    const smartPrice = pricing.recommendedPrice || pricing.weightedAvg || marketPrice; // Prix intelligent pondéré
+
+    console.log(`[SMART-AI] 💰 Final Prices: market_price=${marketPrice}€, smart_price=${smartPrice}€`);
+
     const result: SmartAnalysisResult = {
       vision,
       pricing,
@@ -1043,6 +1055,8 @@ Return ONLY valid JSON.`;
         visual: visualCount,
       },
       processingTime: Date.now() - start,
+      marketPrice, // ⬆️ AJOUTÉ
+      smartPrice,  // ⬆️ AJOUTÉ
     };
 
     return new Response(JSON.stringify(result), {

@@ -41,6 +41,9 @@ interface SmartAIResult {
     price: number | null;
     image?: string;
     thumbnail?: string;
+    market?: string;
+    similarityScore?: number;
+    weight?: number;
   }[];
   seoSuggestions: {
     title: string;
@@ -53,6 +56,8 @@ interface SmartAIResult {
     organic: number;
     visual: number;
   };
+  marketPrice?: number | null;
+  smartPrice?: number | null;
 }
 
 interface SmartPriceDialogProps {
@@ -76,7 +81,7 @@ export function SmartPriceDialog({
   result,
   onApplyPrice,
 }: SmartPriceDialogProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const formatPrice = (price: number | null | undefined) => {
     if (price === null || price === undefined) return "N/A";
@@ -335,7 +340,12 @@ export function SmartPriceDialog({
             <TabsContent value="competitors" className="space-y-4 mt-4">
               {result.competitors && result.competitors.length > 0 ? (
                 <div>
-                  <h4 className="font-semibold mb-3 text-sm sm:text-base">Concurrents détectés ({Math.min(result.competitors.length, 15)})</h4>
+                  <h4 className="font-semibold mb-3 text-sm sm:text-base">
+                    Concurrents détectés ({Math.min(result.competitors.length, 15)})
+                    <span className="text-xs font-normal text-muted-foreground ml-2">
+                      (Triés par similarité visuelle)
+                    </span>
+                  </h4>
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {result.competitors.slice(0, 15).map((competitor, idx) => (
                       <a
@@ -347,17 +357,34 @@ export function SmartPriceDialog({
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           {(competitor.image || competitor.thumbnail) && (
-                            <img 
-                              src={competitor.image || competitor.thumbnail} 
-                              alt="" 
-                              className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded flex-shrink-0" 
-                            />
+                            <div className="relative">
+                              <img 
+                                src={competitor.image || competitor.thumbnail} 
+                                alt="" 
+                                className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded flex-shrink-0" 
+                              />
+                              {competitor.similarityScore && competitor.similarityScore >= 80 && (
+                                <Badge 
+                                  variant="secondary" 
+                                  className="absolute -top-1 -right-1 text-[10px] px-1 py-0 h-4 bg-green-500 text-white"
+                                >
+                                  {competitor.similarityScore}%
+                                </Badge>
+                              )}
+                            </div>
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-xs sm:text-sm font-medium group-hover:text-primary transition-colors line-clamp-1">
                               {competitor.title || competitor.name}
                             </p>
-                            <p className="text-xs text-muted-foreground truncate">{competitor.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-muted-foreground truncate">{competitor.name}</p>
+                              {competitor.market && (
+                                <Badge variant="outline" className="text-[10px] px-1 h-4">
+                                  {competitor.market.toUpperCase()}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
