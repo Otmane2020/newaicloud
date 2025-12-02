@@ -494,12 +494,11 @@ Return ONLY valid JSON, no markdown.`;
       console.log("[SMART-AI] ⚠️ DataForSEO credentials not available - skipping DataForSEO");
     }
 
-    // ============================================================================
-    // SERPAPI — Google Shopping (FALLBACK TEXTE)
-    // ============================================================================
-    if (SERPAPI_KEY) {
+    // SERPAPI — Google Shopping (FALLBACK TEXTE TRÈS RARE)
+    // On NE l'utilise que si aucun autre signal n'a été trouvé (pas de Lens, pas de DataForSEO)
+    if (SERPAPI_KEY && shoppingCount === 0 && allPrices.length < 3 && visualCount === 0) {
       try {
-        console.log("[SMART-AI] 🛒 Calling SerpAPI Google Shopping (text search fallback)...");
+        console.log("[SMART-AI] 🛒 Calling SerpAPI Google Shopping (last-resort text fallback)...");
         const url = new URL("https://serpapi.com/search.json");
         url.searchParams.set("engine", "google_shopping");
         url.searchParams.set("api_key", SERPAPI_KEY);
@@ -551,7 +550,7 @@ Return ONLY valid JSON, no markdown.`;
         console.error("[SMART-AI] ❌ SerpAPI exception:", error);
       }
     } else {
-      console.log("[SMART-AI] ⚠️ SerpAPI key not available - skipping SerpAPI");
+      console.log("[SMART-AI] ⚠️ SerpAPI Google Shopping skipped (key missing or other sources already provided data)");
     }
 
     // ============================================================================
