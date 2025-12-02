@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useStore } from "@/contexts/StoreContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, Facebook, Instagram, Calendar, Sparkles, Video, Image, Music } from "lucide-react";
+import { Loader2, Facebook, Instagram, Calendar, Sparkles, Video, Image, Music, Store } from "lucide-react";
 
 interface SocialCampaignWizardProps {
   userId?: string;
@@ -27,7 +28,8 @@ const FREE_MUSIC_TRACKS = [
   { id: 'happy_acoustic', name: '🎻 Happy Acoustic', duration: '30s' },
 ];
 
-const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCampaignWizardProps) => {
+const SocialCampaignWizard = ({ userId, onClose, onCreated }: SocialCampaignWizardProps) => {
+  const { selectedStore } = useStore();
   const [step, setStep] = useState(1);
   
   // Campaign settings
@@ -59,41 +61,34 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
 
   useEffect(() => {
     loadContent();
-  }, [userId, storeId]);
+  }, [selectedStore?.id]);
 
   const loadContent = async () => {
-    if (!userId) return;
+    // Strict filter: only load content if a store is selected
+    if (!selectedStore?.id) {
+      setLoading(false);
+      setProducts([]);
+      setCollections([]);
+      return;
+    }
     
     try {
-      // Filter by store_id if available, otherwise by seller_id/user_id
-      const productQuery = supabase
-        .from('shopify_products')
-        .select('id, title, product_images(src)')
-        .limit(100);
-      
-      if (storeId) {
-        productQuery.eq('store_id', storeId);
-      } else {
-        productQuery.eq('seller_id', userId);
-      }
-
-      const collectionQuery = supabase
-        .from('shopify_collections')
-        .select('id, title, image_src')
-        .limit(50);
-      
-      if (storeId) {
-        collectionQuery.eq('store_id', storeId);
-      } else {
-        collectionQuery.eq('user_id', userId);
-      }
-
       const [productsRes, collectionsRes] = await Promise.all([
-        productQuery,
-        collectionQuery,
+        supabase
+          .from('shopify_products')
+          .select('id, title, product_images(src)')
+          .eq('store_id', selectedStore.id)
+          .order('title', { ascending: true })
+          .limit(100),
+        supabase
+          .from('shopify_collections')
+          .select('id, title, image_src, products_count')
+          .eq('store_id', selectedStore.id)
+          .order('title', { ascending: true })
+          .limit(50),
       ]);
 
-      console.log('[SocialCampaignWizard] Products loaded:', productsRes.data?.length, 'Collections:', collectionsRes.data?.length);
+      console.log('[SocialCampaignWizard] Store:', selectedStore.store_name, 'Products:', productsRes.data?.length, 'Collections:', collectionsRes.data?.length);
       
       setProducts(productsRes.data || []);
       setCollections(collectionsRes.data || []);
@@ -135,7 +130,7 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
         .from('social_campaigns')
         .insert({
           user_id: userId,
-          store_id: storeId || null,
+          store_id: selectedStore?.id || null,
           name,
           content_type: contentType,
           frequency,
@@ -166,8 +161,6 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
   };
 
   const isVideoFormat = postFormat === 'video' || postFormat === 'reel';
-  const creditsPerPost = channels.length * (isVideoFormat ? 5 : 3);
-  const totalCreditsPerRun = creditsPerPost * postsPerRun;
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -459,37 +452,53 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
 
           {step === 3 && (
             <>
+              {/* No store selected message */}
+              {!selectedStore && (
+                <div className="p-6 bg-muted rounded-lg text-center space-y-2">
+                  <Store className="h-8 w-8 mx-auto text-muted-foreground" />
+                  <p className="text-muted-foreground">
+                    Sélectionnez une boutique pour voir vos produits et collections
+                  </p>
+                </div>
+              )}
+
               {/* Content Selection */}
-              {contentType === 'products' && products.length > 0 && (
+              {selectedStore && contentType === 'products' && (
                 <div className="space-y-2">
                   <Label>Produits à promouvoir (optionnel)</Label>
                   <p className="text-sm text-muted-foreground mb-2">
                     Laissez vide pour rotation automatique de tous vos produits
                   </p>
-                  <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-1">
-                    {products.map((product) => (
-                      <label key={product.id} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-muted rounded">
-                        <Checkbox
-                          checked={selectedProducts.includes(product.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedProducts([...selectedProducts, product.id]);
-                            } else {
-                              setSelectedProducts(selectedProducts.filter(p => p !== product.id));
-                            }
-                          }}
-                        />
-                        {product.product_images?.[0]?.src && (
-                          <img 
-                            src={product.product_images[0].src} 
-                            alt="" 
-                            className="h-10 w-10 object-cover rounded"
+                  {products.length > 0 ? (
+                    <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-1">
+                      {products.map((product) => (
+                        <label key={product.id} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-muted rounded">
+                          <Checkbox
+                            checked={selectedProducts.includes(product.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedProducts([...selectedProducts, product.id]);
+                              } else {
+                                setSelectedProducts(selectedProducts.filter(p => p !== product.id));
+                              }
+                            }}
                           />
-                        )}
-                        <span className="text-sm truncate flex-1">{product.title}</span>
-                      </label>
-                    ))}
-                  </div>
+                          {product.product_images?.[0]?.src && (
+                            <img 
+                              src={product.product_images[0].src} 
+                              alt="" 
+                              className="h-10 w-10 object-cover rounded"
+                            />
+                          )}
+                          <span className="text-sm truncate flex-1">{product.title}</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground p-4 bg-muted rounded-lg text-center">
+                      Aucun produit dans cette boutique
+                    </p>
+                  )}
                   {selectedProducts.length > 0 && (
                     <p className="text-sm text-primary">
                       {selectedProducts.length} produit(s) sélectionné(s)
@@ -498,33 +507,44 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
                 </div>
               )}
 
-              {contentType === 'collections' && collections.length > 0 && (
+              {selectedStore && contentType === 'collections' && (
                 <div className="space-y-2">
                   <Label>Collections à promouvoir (optionnel)</Label>
-                  <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-1">
-                    {collections.map((collection) => (
-                      <label key={collection.id} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-muted rounded">
-                        <Checkbox
-                          checked={selectedCollections.includes(collection.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedCollections([...selectedCollections, collection.id]);
-                            } else {
-                              setSelectedCollections(selectedCollections.filter(c => c !== collection.id));
-                            }
-                          }}
-                        />
-                        {collection.image_src && (
-                          <img 
-                            src={collection.image_src} 
-                            alt="" 
-                            className="h-10 w-10 object-cover rounded"
+                  {collections.length > 0 ? (
+                    <div className="max-h-60 overflow-y-auto border rounded-lg p-2 space-y-1">
+                      {collections.map((collection: any) => (
+                        <label key={collection.id} className="flex items-center gap-3 cursor-pointer p-2 hover:bg-muted rounded">
+                          <Checkbox
+                            checked={selectedCollections.includes(collection.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedCollections([...selectedCollections, collection.id]);
+                              } else {
+                                setSelectedCollections(selectedCollections.filter(c => c !== collection.id));
+                              }
+                            }}
                           />
-                        )}
-                        <span className="text-sm truncate flex-1">{collection.title}</span>
-                      </label>
-                    ))}
-                  </div>
+                          {collection.image_src && (
+                            <img 
+                              src={collection.image_src} 
+                              alt="" 
+                              className="h-10 w-10 object-cover rounded"
+                            />
+                          )}
+                          <span className="text-sm truncate flex-1">{collection.title}</span>
+                          {collection.products_count > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              {collection.products_count} produits
+                            </span>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground p-4 bg-muted rounded-lg text-center">
+                      Aucune collection dans cette boutique
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -535,26 +555,6 @@ const SocialCampaignWizard = ({ userId, storeId, onClose, onCreated }: SocialCam
                   </p>
                 </div>
               )}
-
-              {/* Cost Info */}
-              <div className="p-4 bg-muted rounded-lg space-y-2">
-                <h4 className="font-medium">💰 Coût estimé</h4>
-                <div className="text-sm space-y-1">
-                  <p>
-                    <span className="text-muted-foreground">Par post:</span> {creditsPerPost} crédits
-                    {isVideoFormat && ' (vidéo)'}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">Par exécution:</span> {totalCreditsPerRun} crédits 
-                    ({postsPerRun} post{postsPerRun > 1 ? 's' : ''})
-                  </p>
-                  <p className="font-medium text-primary">
-                    {frequency === 'daily' && `~${totalCreditsPerRun * 30} crédits/mois`}
-                    {frequency === 'weekly' && `~${totalCreditsPerRun * 4} crédits/mois`}
-                    {frequency === 'monthly' && `~${totalCreditsPerRun} crédits/mois`}
-                  </p>
-                </div>
-              </div>
 
               {/* Actions */}
               <div className="flex gap-3">

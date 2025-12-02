@@ -257,7 +257,6 @@ const SocialMedia = () => {
       {showCampaignWizard && (
         <SocialCampaignWizard
           userId={user?.id}
-          storeId={selectedStore?.id}
           onClose={() => setShowCampaignWizard(false)}
           onCreated={() => {
             setShowCampaignWizard(false);
