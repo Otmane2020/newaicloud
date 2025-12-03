@@ -61,8 +61,6 @@ serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Referer": "https://newai.sale",
-        "X-Referer": "https://newai.sale",
       },
       body: JSON.stringify(requestBody),
     });
