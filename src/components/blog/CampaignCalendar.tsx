@@ -74,7 +74,7 @@ export function CampaignCalendar() {
       setCampaigns(campaignsData || []);
     } catch (error) {
       console.error('Error loading calendar data:', error);
-      toast.error(language === 'fr' ? 'Erreur de chargement du calendrier' : 'Error loading calendar');
+      toast.error(t.blogCampaigns.calendar.loadError);
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ export function CampaignCalendar() {
         <div className="flex items-center gap-2 mb-6">
           <CalendarDays className="w-5 h-5 text-primary" />
           <h2 className="text-xl font-semibold">
-            {language === 'fr' ? 'Calendrier des Publications' : 'Publication Calendar'}
+            {t.blogCampaigns.calendar.title}
           </h2>
         </div>
 
@@ -147,13 +147,13 @@ export function CampaignCalendar() {
               <div className="flex items-center gap-2 text-sm">
                 <div className="w-3 h-3 rounded-full bg-primary"></div>
                 <span className="text-muted-foreground">
-                  {language === 'fr' ? 'Articles publiés' : 'Published articles'}
+                  {t.blogCampaigns.calendar.publishedArticles}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <div className="w-3 h-3 rounded-full bg-purple-500"></div>
                 <span className="text-muted-foreground">
-                  {language === 'fr' ? 'Campagnes planifiées' : 'Scheduled campaigns'}
+                  {t.blogCampaigns.calendar.scheduledCampaigns}
                 </span>
               </div>
             </div>
@@ -162,7 +162,7 @@ export function CampaignCalendar() {
           <div className="lg:w-80 space-y-4">
             <div>
               <h3 className="font-semibold mb-3">
-                {language === 'fr' ? 'Événements à venir' : 'Upcoming Events'}
+                {t.blogCampaigns.calendar.upcomingEvents}
               </h3>
               <ScrollArea className="h-[300px]">
                 <div className="space-y-3">
@@ -202,9 +202,7 @@ export function CampaignCalendar() {
 
                   {campaigns.length === 0 && articles.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                      {language === 'fr' 
-                        ? 'Aucun événement à venir ce mois-ci' 
-                        : 'No upcoming events this month'}
+                      {t.blogCampaigns.calendar.noEventsThisMonth}
                     </p>
                   )}
                 </div>
@@ -227,7 +225,7 @@ export function CampaignCalendar() {
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-purple-500" />
-                  {language === 'fr' ? 'Campagnes planifiées' : 'Scheduled Campaigns'}
+                  {t.blogCampaigns.calendar.scheduledCampaigns}
                 </h3>
                 <div className="space-y-2">
                   {selectedDateCampaigns.map(campaign => (
@@ -247,7 +245,7 @@ export function CampaignCalendar() {
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-primary" />
-                  {language === 'fr' ? 'Articles' : 'Articles'}
+                  {t.blogCampaigns.calendar.articles}
                 </h3>
                 <div className="space-y-2">
                   {selectedDateArticles.map(article => (
@@ -275,9 +273,7 @@ export function CampaignCalendar() {
 
             {selectedDateArticles.length === 0 && selectedDateCampaigns.length === 0 && (
               <p className="text-center text-muted-foreground py-8">
-                {language === 'fr' 
-                  ? 'Aucun événement pour cette date' 
-                  : 'No events for this date'}
+                {t.blogCampaigns.calendar.noEventsForDate}
               </p>
             )}
           </div>

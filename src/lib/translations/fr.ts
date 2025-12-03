@@ -2191,6 +2191,49 @@ export const translations = {
     seoChallenges: "Défis SEO du Jour",
     noChallenges: "Aucun défi disponible",
     noChallengesDesc: "De nouveaux défis arrivent bientôt !",
+    recommendations: {
+      title: "Recommandations IA",
+      priority: {
+        high: "Urgent",
+        medium: "Important",
+        low: "Info",
+      },
+      optimizeNonSeo: {
+        title: "Optimiser les produits non-SEO",
+        description: "{{count}} produits nécessitent une optimisation SEO pour améliorer leur visibilité.",
+        action: "Optimiser maintenant",
+        impact: "+30% de trafic organique estimé",
+      },
+      addAltTexts: {
+        title: "Ajouter des textes alternatifs aux images",
+        description: "{{count}} images sans texte alternatif. Cela nuit à votre référencement et à l'accessibilité.",
+        action: "Générer les alt texts",
+        impact: "+15% de visibilité dans Google Images",
+      },
+      improveSeoScore: {
+        title: "Améliorer le score SEO global",
+        description: "Votre score SEO actuel est de {{score}}/100. Des améliorations sont possibles pour mieux performer.",
+        action: "Voir le rapport SEO",
+        impact: "Meilleur positionnement dans les résultats de recherche",
+      },
+      createBlogContent: {
+        title: "Créer du contenu blog régulier",
+        description: "Vous avez {{count}} article(s). Publier régulièrement améliore votre autorité et génère du trafic.",
+        action: "Générer des articles",
+        impact: "+50% de sessions organiques sur 3 mois",
+      },
+      excellentWork: {
+        title: "Excellent travail SEO !",
+        description: "{{percent}}% de vos produits sont optimisés. Continuez sur cette lancée en automatisant vos synchros.",
+        action: "Activer l'automatisation",
+        impact: "Gain de temps et cohérence maximale",
+      },
+      allGood: {
+        title: "Votre boutique est bien optimisée !",
+        description: "Continuez à publier du contenu régulièrement et à surveiller vos performances.",
+        impact: "Maintenir votre excellence SEO",
+      },
+    },
     // Section labels
     sections: {
       heroSectionWithWelcomeBanner: "Hero Section avec Welcome Banner",
@@ -8846,6 +8889,15 @@ export const translations = {
         title: "Planification",
         description: "Configurez le rythme de publication",
       },
+      collectionsProducts: {
+        title: "Collections et Produits",
+        description: "Sélectionnez des collections ou produits spécifiques (optionnel)",
+        collections: "Collections",
+        productsCount: "produits",
+        collectionsHelp: "Si vide, tous les produits seront utilisés pour la génération",
+        specificProducts: "Produits spécifiques",
+        noCollectionSelected: "Aucune collection sélectionnée - génération automatique activée",
+      },
     },
     labels: {
       campaignName: "Nom de la campagne",
@@ -8897,6 +8949,7 @@ export const translations = {
       campaignCreated: "Campagne créée avec succès !",
       creationError: "Erreur lors de la création de la campagne",
       notAuthenticated: "Non authentifié",
+      selectStore: "Veuillez sélectionner un magasin",
     },
   },
 
@@ -9387,6 +9440,16 @@ export const translations = {
       generationError: "Erreur de génération",
       diagnosing: "Diagnostic en cours...",
       diagnosisComplete: "Diagnostic terminé",
+    },
+    calendar: {
+      title: "Calendrier des Publications",
+      loadError: "Erreur de chargement du calendrier",
+      publishedArticles: "Articles publiés",
+      scheduledCampaigns: "Campagnes planifiées",
+      upcomingEvents: "Événements à venir",
+      noEventsThisMonth: "Aucun événement à venir ce mois-ci",
+      noEventsForDate: "Aucun événement pour cette date",
+      articles: "Articles",
     },
     edit: {
       title: "Modifier la campagne",

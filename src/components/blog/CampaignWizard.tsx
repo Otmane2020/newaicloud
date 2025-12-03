@@ -164,7 +164,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
       if (!user) throw new Error(t.campaignWizard.toasts.notAuthenticated);
 
       if (!selectedStore) {
-        toast.error(language === 'fr' ? 'Veuillez sélectionner un magasin' : 'Please select a store');
+        toast.error(t.campaignWizard.toasts.selectStore);
         setLoading(false);
         return;
       }
@@ -344,12 +344,10 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
                 <Package className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold">
-                {language === 'fr' ? 'Collections et Produits' : 'Collections & Products'}
+                {t.campaignWizard.steps.collectionsProducts.title}
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                {language === 'fr'
-                  ? 'Sélectionnez des collections ou produits spécifiques (optionnel)'
-                  : 'Select specific collections or products (optional)'}
+                {t.campaignWizard.steps.collectionsProducts.description}
               </p>
             </div>
 
@@ -358,7 +356,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <Package className="w-4 h-4" />
-                  {language === 'fr' ? 'Collections' : 'Collections'}
+                  {t.campaignWizard.steps.collectionsProducts.collections}
                 </Label>
                 <ScrollArea className="h-48 border rounded-lg p-4">
                   {collections.map((collection) => (
@@ -375,15 +373,13 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
                       />
                       <span className="text-sm flex-1">{collection.title}</span>
                       <Badge variant="outline">
-                        {collection.products_count} {language === 'fr' ? 'produits' : 'products'}
+                        {collection.products_count} {t.campaignWizard.steps.collectionsProducts.productsCount}
                       </Badge>
                     </div>
                   ))}
                 </ScrollArea>
                 <p className="text-xs text-muted-foreground">
-                  {language === 'fr'
-                    ? 'Si vide, tous les produits seront utilisés pour la génération'
-                    : 'If empty, all products will be used for generation'}
+                  {t.campaignWizard.steps.collectionsProducts.collectionsHelp}
                 </p>
               </div>
             )}
@@ -393,7 +389,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <ShoppingBag className="w-4 h-4" />
-                  {language === 'fr' ? 'Produits spécifiques' : 'Specific Products'}
+                  {t.campaignWizard.steps.collectionsProducts.specificProducts}
                 </Label>
                 <ScrollArea className="h-48 border rounded-lg p-4">
                   {products.map((product) => (
@@ -419,9 +415,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
               <div className="p-4 bg-muted/50 rounded-lg text-center">
                 <Package className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
-                  {language === 'fr'
-                    ? 'Aucune collection sélectionnée - génération automatique activée'
-                    : 'No collection selected - automatic generation enabled'}
+                  {t.campaignWizard.steps.collectionsProducts.noCollectionSelected}
                 </p>
               </div>
             )}

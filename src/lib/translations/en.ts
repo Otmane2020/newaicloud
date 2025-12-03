@@ -2179,6 +2179,49 @@ export const translations = {
     seoChallenges: "Daily SEO Challenges",
     noChallenges: "No challenges available",
     noChallengesDesc: "New challenges coming soon!",
+    recommendations: {
+      title: "AI Recommendations",
+      priority: {
+        high: "Urgent",
+        medium: "Important",
+        low: "Info",
+      },
+      optimizeNonSeo: {
+        title: "Optimize non-SEO products",
+        description: "{{count}} products need SEO optimization to improve visibility.",
+        action: "Optimize now",
+        impact: "+30% estimated organic traffic",
+      },
+      addAltTexts: {
+        title: "Add alt texts to images",
+        description: "{{count}} images without alt text. This hurts your SEO and accessibility.",
+        action: "Generate alt texts",
+        impact: "+15% visibility in Google Images",
+      },
+      improveSeoScore: {
+        title: "Improve global SEO score",
+        description: "Your current SEO score is {{score}}/100. Improvements are possible to perform better.",
+        action: "View SEO report",
+        impact: "Better ranking in search results",
+      },
+      createBlogContent: {
+        title: "Create regular blog content",
+        description: "You have {{count}} article(s). Publishing regularly improves your authority and generates traffic.",
+        action: "Generate articles",
+        impact: "+50% organic sessions over 3 months",
+      },
+      excellentWork: {
+        title: "Excellent SEO work!",
+        description: "{{percent}}% of your products are optimized. Keep it up by automating your syncs.",
+        action: "Enable automation",
+        impact: "Time savings and maximum consistency",
+      },
+      allGood: {
+        title: "Your store is well optimized!",
+        description: "Keep publishing content regularly and monitoring your performance.",
+        impact: "Maintain your SEO excellence",
+      },
+    },
     // Section labels
     sections: {
       heroSectionWithWelcomeBanner: "Hero Section with Welcome Banner",
@@ -8799,6 +8842,15 @@ export const translations = {
         title: "Scheduling",
         description: "Configure the publication frequency",
       },
+      collectionsProducts: {
+        title: "Collections & Products",
+        description: "Select specific collections or products (optional)",
+        collections: "Collections",
+        productsCount: "products",
+        collectionsHelp: "If empty, all products will be used for generation",
+        specificProducts: "Specific Products",
+        noCollectionSelected: "No collection selected - automatic generation enabled",
+      },
     },
     labels: {
       campaignName: "Campaign name",
@@ -8850,6 +8902,7 @@ export const translations = {
       campaignCreated: "Campaign created successfully!",
       creationError: "Error creating campaign",
       notAuthenticated: "Not authenticated",
+      selectStore: "Please select a store",
     },
   },
 
@@ -9338,6 +9391,16 @@ export const translations = {
       generationError: "Generation error",
       diagnosing: "Diagnosing...",
       diagnosisComplete: "Diagnosis complete",
+    },
+    calendar: {
+      title: "Publication Calendar",
+      loadError: "Error loading calendar",
+      publishedArticles: "Published articles",
+      scheduledCampaigns: "Scheduled campaigns",
+      upcomingEvents: "Upcoming Events",
+      noEventsThisMonth: "No upcoming events this month",
+      noEventsForDate: "No events for this date",
+      articles: "Articles",
     },
     edit: {
       title: "Edit Campaign",
