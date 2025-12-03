@@ -20,7 +20,20 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl, productTitle, product_id, style = "contextual", imageType = "primary" } = body;
+    const { 
+      imageUrl, 
+      productTitle, 
+      product_id, 
+      style = "contextual", 
+      imageType = "primary",
+      format = "square",
+      // SERP/Vision enrichment data
+      serpData,
+      visionAiData,
+      productDescription,
+      seoTitle,
+      seoDescription
+    } = body;
 
     if (!imageUrl || !productTitle) {
       return new Response(JSON.stringify({ error: "imageUrl and productTitle are required" }), {
@@ -29,7 +42,7 @@ serve(async (req) => {
       });
     }
 
-    console.log("🎨 Generating beautiful contextual background for:", productTitle, "imageType:", imageType);
+    console.log("🎨 Generating beautiful contextual background for:", productTitle, "imageType:", imageType, "format:", format);
 
     // Initialize Supabase client for usage tracking
     const authHeader = req.headers.get("Authorization");
@@ -51,13 +64,101 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
+    // 🆕 Build enriched context from SERP and Vision data
+    let enrichedContext = productTitle;
+    
+    if (seoTitle && seoTitle !== productTitle) {
+      enrichedContext += `. ${seoTitle}`;
+    }
+    
+    if (productDescription) {
+      enrichedContext += `. ${productDescription.slice(0, 150)}`;
+    } else if (seoDescription) {
+      enrichedContext += `. ${seoDescription.slice(0, 150)}`;
+    }
+    
+    // Add SERP data if available
+    if (serpData) {
+      if (serpData.dimensions) {
+        enrichedContext += `. Dimensions: ${serpData.dimensions}`;
+      }
+      if (serpData.materials?.length > 0) {
+        enrichedContext += `. Materials: ${serpData.materials.slice(0, 3).join(", ")}`;
+      }
+      if (serpData.dominantStyles?.length > 0) {
+        enrichedContext += `. Styles: ${serpData.dominantStyles.slice(0, 2).join(", ")}`;
+      }
+      console.log(`[product-bg] 🔍 SERP data enrichment applied`);
+    }
+    
+    // Add Vision AI data if available
+    if (visionAiData?.description) {
+      enrichedContext += `. Visual: ${visionAiData.description.slice(0, 100)}`;
+      console.log(`[product-bg] 👁️ Vision AI data enrichment applied`);
+    }
+
+    console.log(`[product-bg] 📝 Enriched context: ${enrichedContext.slice(0, 200)}...`);
+
+    // 🆕 Format dimensions mapping
+    const formatDimensions: Record<string, { width: number; height: number; ratio: string }> = {
+      "square": { width: 1024, height: 1024, ratio: "1:1" },
+      "portrait": { width: 768, height: 1024, ratio: "3:4" },
+      "landscape": { width: 1024, height: 768, ratio: "4:3" },
+    };
+    const targetDims = formatDimensions[format] || formatDimensions["square"];
+    console.log(`[product-bg] 🎯 Target format: ${format} -> ${targetDims.width}x${targetDims.height}`);
+
+    // 🆕 Visual Enhancement Instructions for Professional E-Commerce Quality
+    const visualEnhancementInstructions = `
+🎨 VISUAL QUALITY ENHANCEMENT - PROFESSIONAL E-COMMERCE PHOTOGRAPHY
+
+FABRIC & TEXTURE OPTIMIZATION:
+- Enhance fabric textures to appear rich, luxurious, and tactile
+- Show natural fabric drape, folds, and depth
+- Highlight weave patterns, stitching quality, and material authenticity
+- Make velvet appear velvety, leather appear supple, linen appear crisp
+- Capture the "hand feel" of materials visually
+
+LIGHTING FOR SALES APPEAL:
+- Use professional studio lighting with main key light + fill light
+- Add subtle rim lighting to separate product from background
+- Create soft, flattering shadows that add depth without harsh contrast
+- Ensure colors appear vibrant, accurate, and true to material
+
+EYE-CATCHING COMMERCIAL QUALITY:
+- Create "hero shot" quality - the image should make viewers WANT to buy
+- Professional color grading that enhances product appeal
+- Sharp focus on product details, slightly soft background if lifestyle
+- Clean, premium look suitable for high-end e-commerce
+- Think: IKEA catalog, West Elm, Roche Bobois photography quality
+
+TEXTURE DETAIL ENHANCEMENT:
+- Zoom-worthy detail on material textures
+- Visible grain on wood, weave on fabric, sheen on leather
+- Natural material variations that prove authenticity
+- No plasticky or artificial-looking surfaces
+`;
+
     // Create contextual prompt based on product title and image type
     const isMainImage = imageType === "primary";
     const contextualPrompt = `
+🚨🚨🚨 CRITICAL FORMAT REQUIREMENT 🚨🚨🚨
+
+📐 OUTPUT MUST BE EXACTLY ${targetDims.width}x${targetDims.height} pixels (${targetDims.ratio} ratio)
+📐 CREATE a ${targetDims.width}x${targetDims.height} canvas FIRST, then place content
+${format === "square" ? "🟦 PERFECT SQUARE: Width = Height = 1024 pixels" : ""}
+${format === "portrait" ? "📱 VERTICAL: Height (1024) > Width (768)" : ""}
+${format === "landscape" ? "🖼️ HORIZONTAL: Width (1024) > Height (768)" : ""}
+
+⚠️ PRODUCT MUST FILL 85-95% OF CANVAS - NO WHITE PADDING ⚠️
+Scale the product UP to TOUCH or NEARLY TOUCH the edges of the frame.
+
 You are a professional e-commerce product photographer with expertise in creating stunning product images.
 
-PRODUCT: ${productTitle}
+PRODUCT: ${enrichedContext}
 IMAGE TYPE: ${isMainImage ? "MAIN PRODUCT IMAGE" : "SECONDARY/LIFESTYLE IMAGE"}
+
+${visualEnhancementInstructions}
 
 YOUR MISSION:
 Create a beautiful, high-quality product photo with a contextual background that complements and enhances the product.
@@ -68,12 +169,13 @@ ${
     ? `
 1. MAIN IMAGE REQUIREMENTS (CRITICAL):
    - Product MUST be perfectly centered and sharp
-   - Product occupies 70-80% of the frame
+   - Product occupies 85-95% of the frame (FILL THE CANVAS)
    - Product should face the camera directly
    - All product details must be clearly visible
    - Preserve all product details, textures, and colors
    - Natural product shadows for depth
    - Clean, professional look suitable for main product listing
+   - NO white padding around the product
 `
     : `
 1. LIFESTYLE/AMBIANCE IMAGE:
@@ -82,6 +184,7 @@ ${
    - More creative freedom with framing and angles
    - Contextual, lifestyle setting
    - Preserve product details but focus on atmosphere
+   - Product still fills 80-90% of the canvas
 `
 }
 
@@ -92,39 +195,28 @@ ${
    - Professional photography lighting setup
    - Bright and cheerful ambiance that attracts buyers
    - NO dark, gloomy, or evening lighting
-   - Think: morning sunlight streaming through windows, bright showroom lighting
-   
+
 3. BACKGROUND STYLE - ELEGANT & TRENDY (NEVER WHITE):
-   - Create a beautiful, elegant, and trendy background that relates to "${productTitle}"
+   - Create a beautiful, elegant, and trendy background that relates to "${enrichedContext}"
    - Use sophisticated color palettes (jewel tones, earth tones, warm pastels)
    - Add depth with subtle bokeh, gradient effects, or premium textures
    - Background should enhance product luxury and appeal
    - Think high-end editorial photography style for luxury e-commerce
-   - NEVER use plain white background (there's a separate function for that)
-   - CREATE CONTEXTUAL LIFESTYLE SCENES with decorative elements:
-     * Furniture → Beautifully styled room with natural daylight, complementary pieces (sofa, cushions, plants, art), bright and airy
-     * Kitchen products → Modern kitchen with morning sunlight, fresh ingredients, elegant dishware
-     * Tech gadgets → Stylish workspace with natural window light, books, coffee, plants
-     * Fashion → Bright boutique with natural lighting, mirrors, elegant textures
-     * Food items → Bright attractive table setting with natural daylight, plates, utensils
-     * Home accessories → Sunny, cozy living space with harmonious decor
-   - Examples: marble textures in bright light, velvet surfaces with golden hour glow, wooden aesthetics with natural sunbeams, soft gradients with luminous quality
+   - NEVER use plain white background
 
 4. TECHNICAL SPECS:
-   - Square format (1024×1024)
+   - OUTPUT: EXACTLY ${targetDims.width}x${targetDims.height} pixels (${targetDims.ratio})
    - Professional color grading
    - Balanced exposure and contrast
    - No watermarks, text, or logos
    - Ready for ${isMainImage ? "main product listing (Shopify/Amazon)" : "lifestyle/gallery display"}
 
-4. CREATIVE DIRECTION:
-   - If product is food: warm, appetizing environment with elegant plating
-   - If product is tech: modern, sleek setting with premium materials
-   - If product is fashion: elegant, stylish backdrop with luxury feel
-   - If product is home decor: cozy, sophisticated lifestyle scene
-   - Match the mood to the product category with upscale aesthetic
+FINAL CHECK:
+- Is output EXACTLY ${targetDims.width}x${targetDims.height}? ✓
+- Does product fill 85-95% of frame? ✓
+- Is there NO white padding around product? ✓
 
-RESULT: A stunning, professional ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} that looks like it was shot by a top e-commerce photographer for a luxury brand.
+RESULT: A stunning, professional ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} that looks like it was shot by a top e-commerce photographer.
     `.trim();
 
     // Call Lovable AI
