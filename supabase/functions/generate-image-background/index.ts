@@ -229,10 +229,10 @@ ${
 RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} with custom background at EXACTLY ${aspectRatio} resolution in ${format} format.
     `.trim();
 
-    // Helper function to try Lovable AI
+    // Helper function to try Lovable AI with format-aware generation
     async function tryLovableAI(): Promise<{ imageUrl: string; model: string } | null> {
       try {
-        console.log("📝 Trying Lovable AI...");
+        console.log(`📝 Trying Lovable AI with format: ${format} (${aspectRatio})`);
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -251,6 +251,7 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
               },
             ],
             modalities: ["image", "text"],
+            // Note: Gemini ignores generationConfig.aspectRatio, format enforced via prompt
           }),
         });
 

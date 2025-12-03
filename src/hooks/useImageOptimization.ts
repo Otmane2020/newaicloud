@@ -94,8 +94,9 @@ export const useImageOptimization = () => {
       visionAiData,
       productDescription,
       product_id,
-      backgroundStyle
-    }: { 
+      backgroundStyle,
+      customPrompt // 🆕 Custom user prompt
+    }: {
       imageUrl: string; 
       productTitle: string;
       resolution?: string;
@@ -106,12 +107,13 @@ export const useImageOptimization = () => {
       productDescription?: string;
       product_id?: string;
       backgroundStyle?: 'shopping' | 'lifestyle' | 'moderne' | 'living_room' | 'studio' | 'nature' | 'luxury_showroom';
+      customPrompt?: string; // 🆕 Optional custom user prompt
     }): Promise<OptimizationResult> => {
       setIsOptimizing(true);
       
       try {
         const { data, error } = await supabase.functions.invoke('generate-white-background', {
-          body: { imageUrl, productTitle, resolution, format, mode, serpData, visionAiData, productDescription, product_id, backgroundStyle }
+          body: { imageUrl, productTitle, resolution, format, mode, serpData, visionAiData, productDescription, product_id, backgroundStyle, customPrompt }
         });
 
         if (error) throw error;

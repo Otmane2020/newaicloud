@@ -114,6 +114,8 @@ export const SmartBackgroundDialog = ({
   const [showStyleManager, setShowStyleManager] = useState(false);
   // 🆕 Apply position: 'main' (replace main image) or 'secondary' (add as secondary)
   const [applyPosition, setApplyPosition] = useState<'main' | 'secondary'>('main');
+  // 🆕 Custom prompt for additional user instructions
+  const [customPrompt, setCustomPrompt] = useState('');
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
 
@@ -387,6 +389,7 @@ export const SmartBackgroundDialog = ({
             visionAiData,
             productDescription,
             backgroundStyle: bgMode === 'smart_serp' ? bgStyle : 'shopping',
+            customPrompt: customPrompt.trim() || undefined, // 🆕 Pass custom prompt
           });
 
           return { productId: product.id, imageUrl: result.imageUrl, title: product.title };
@@ -757,6 +760,27 @@ export const SmartBackgroundDialog = ({
               </div>
             )}
 
+            {/* 🆕 Custom Prompt Field */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Wand2 className="h-4 w-4" />
+                {language === 'fr' ? 'Prompt personnalisé (optionnel)' : 'Custom prompt (optional)'}
+              </Label>
+              <textarea
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                placeholder={language === 'fr' 
+                  ? 'Ex: Ajouter des plantes vertes, lumière chaude, style scandinave...' 
+                  : 'E.g: Add green plants, warm lighting, scandinavian style...'}
+                className="w-full h-20 px-3 py-2 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                {language === 'fr' 
+                  ? 'Ajoutez des instructions spécifiques pour personnaliser l\'arrière-plan généré.' 
+                  : 'Add specific instructions to customize the generated background.'}
+              </p>
+            </div>
+
             {/* Products Grid */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -1006,23 +1030,29 @@ export const SmartBackgroundDialog = ({
         </DialogContent>
       </Dialog>
 
-      {/* Preview Dialog */}
+      {/* Preview Dialog - Dynamic aspect ratio based on bgFormat */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>{previewProduct?.title}</DialogTitle>
-            <DialogDescription>{language === 'fr' ? 'Comparaison avant/après' : 'Before/after comparison'}</DialogDescription>
+            <DialogDescription>{language === 'fr' ? 'Comparaison avant/après' : 'Before/after comparison'} - Format: {bgFormat}</DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-muted-foreground">Original</Label>
-              <div className="aspect-square rounded-lg overflow-hidden bg-muted border">
+              <div className={`rounded-lg overflow-hidden bg-muted border flex items-center justify-center ${
+                bgFormat === '1:1' ? 'aspect-square' : 
+                bgFormat === '3:4' ? 'aspect-[3/4]' : 
+                bgFormat === '4:3' ? 'aspect-[4/3]' : 
+                bgFormat === '16:9' ? 'aspect-video' : 
+                bgFormat === '9:16' ? 'aspect-[9/16] max-h-[500px]' : 'aspect-square'
+              }`}>
                 {previewProduct?.image_url && (
                   <img
                     src={previewProduct.image_url}
                     alt="Original"
-                    className="w-full h-full object-contain"
+                    className="max-w-full max-h-full object-contain"
                   />
                 )}
               </div>
@@ -1033,12 +1063,18 @@ export const SmartBackgroundDialog = ({
                 <Sparkles className="h-4 w-4 text-primary" />
                 {sb.title}
               </Label>
-              <div className="aspect-square rounded-lg overflow-hidden bg-white border-2 border-primary/20">
+              <div className={`rounded-lg overflow-hidden bg-white border-2 border-primary/20 flex items-center justify-center ${
+                bgFormat === '1:1' ? 'aspect-square' : 
+                bgFormat === '3:4' ? 'aspect-[3/4]' : 
+                bgFormat === '4:3' ? 'aspect-[4/3]' : 
+                bgFormat === '16:9' ? 'aspect-video' : 
+                bgFormat === '9:16' ? 'aspect-[9/16] max-h-[500px]' : 'aspect-square'
+              }`}>
                 {previewProduct && generatedPreviews.has(previewProduct.id) && (
                   <img
                     src={generatedPreviews.get(previewProduct.id)}
                     alt="Generated"
-                    className="w-full h-full object-contain"
+                    className="max-w-full max-h-full object-contain"
                   />
                 )}
               </div>
