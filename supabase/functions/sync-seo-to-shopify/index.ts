@@ -268,14 +268,14 @@ Deno.serve(async (req: Request) => {
 
       // Update variant fields (SKU, price, cost) if variant_id is provided
       if (variant_id && (sku !== undefined || price !== undefined || cost !== undefined)) {
-        console.log(`[SYNC-SEO] Updating variant ${variant_id} fields...`);
+        console.log(`[SYNC-SEO] Updating variant ${variant_id} fields - sku: ${sku}, price: ${price}, cost: ${cost}`);
         
-        // Update SKU and price via productVariantUpdate
+        // Update SKU and price via productVariantsBulkUpdate (2025-07 API)
         if (sku !== undefined || price !== undefined) {
-          const variantMutation = `
-            mutation productVariantUpdate($input: ProductVariantInput!) {
-              productVariantUpdate(input: $input) {
-                productVariant { id sku price }
+          const variantBulkMutation = `
+            mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+              productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+                productVariants { id sku price }
                 userErrors { field message }
               }
             }
@@ -285,8 +285,11 @@ Deno.serve(async (req: Request) => {
           if (price !== undefined) variantInput.price = price.toString();
           
           try {
-            await shopifyGraphQL(shopUrl, shopifyAccessToken, variantMutation, { input: variantInput });
-            console.log("[SYNC-SEO] ✅ Variant SKU/price updated successfully");
+            const result = await shopifyGraphQL(shopUrl, shopifyAccessToken, variantBulkMutation, { 
+              productId: `gid://shopify/Product/${product.shopify_id}`,
+              variants: [variantInput]
+            });
+            console.log("[SYNC-SEO] ✅ Variant SKU/price updated successfully via bulk API", result);
           } catch (variantError: any) {
             console.error("[SYNC-SEO] ❌ Variant update failed:", variantError.message);
           }
