@@ -2395,6 +2395,8 @@ export const translations = {
       translationAnalyzer: "Analyseur Traductions",
       autoTranslationScanner: "Scanner Auto",
       videoAds: "🎬 Video Ads",
+      googleSearchConsole: "Google Search Console",
+      socialMedia: "Social Media",
       logout: "Déconnexion",
     },
     videoAds: {
