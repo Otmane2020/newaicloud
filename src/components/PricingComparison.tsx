@@ -5,7 +5,7 @@ import { CheckCircle2, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import React, { useState } from "react";
 import { useTranslation } from "@/lib/language";
-import { getCurrencySymbol } from "@/lib/formatUtils";
+import { formatPrice, getCurrencySymbol } from "@/lib/formatUtils";
 
 const PricingComparison = () => {
   const isMobile = useIsMobile();
@@ -96,25 +96,16 @@ const PricingComparison = () => {
       pro: t.landing.pricing.plans.pro.name, 
       enterprise: t.landing.pricing.plans.enterprise.name 
     };
-    const currency = getCurrencySymbol(language);
     const planPrices = billingPeriod === 'monthly' 
       ? { 
-          starter: language === 'fr' ? `9,99 ${currency}${t.landing.pricing.perMonth}` : `${currency}9.99${t.landing.pricing.perMonth}`,
-          pro: language === 'fr' 
-            ? `49 ${currency} - 4 900 ${currency}${t.landing.pricing.perMonth}` 
-            : `${currency}49 - ${currency}4,900${t.landing.pricing.perMonth}`,
-          enterprise: language === 'fr' 
-            ? `199 ${currency} - 19 900 ${currency}${t.landing.pricing.perMonth}` 
-            : `${currency}199 - ${currency}19,900${t.landing.pricing.perMonth}`
+          starter: `${formatPrice(9.99, language)}${t.landing.pricing.perMonth}`,
+          pro: `${formatPrice(49, language)} - ${formatPrice(4900, language)}${t.landing.pricing.perMonth}`,
+          enterprise: `${formatPrice(199, language)} - ${formatPrice(19900, language)}${t.landing.pricing.perMonth}`
         }
       : {
-          starter: language === 'fr' ? `7,99 ${currency}${t.landing.pricing.perMonthShort}` : `${currency}7.99${t.landing.pricing.perMonthShort}`,
-          pro: language === 'fr' 
-            ? `39 ${currency} - 3 920 ${currency}${t.landing.pricing.perMonthShort}` 
-            : `${currency}39 - ${currency}3,920${t.landing.pricing.perMonthShort}`,
-          enterprise: language === 'fr' 
-            ? `159 ${currency} - 15 920 ${currency}${t.landing.pricing.perMonthShort}` 
-            : `${currency}159 - ${currency}15,920${t.landing.pricing.perMonthShort}`
+          starter: `${formatPrice(7.99, language)}${t.landing.pricing.perMonthShort}`,
+          pro: `${formatPrice(39, language)} - ${formatPrice(3920, language)}${t.landing.pricing.perMonthShort}`,
+          enterprise: `${formatPrice(159, language)} - ${formatPrice(15920, language)}${t.landing.pricing.perMonthShort}`
         };
 
     return (
@@ -149,7 +140,7 @@ const PricingComparison = () => {
                 <Badge className="bg-success text-success-foreground">{t.trial.free}</Badge>
               </div>
               <Badge variant="outline" className="border-success text-success w-fit">{t.trial.noCreditCard}</Badge>
-              <div className="text-3xl font-bold mt-4">{language === 'fr' ? `0 ${currency}` : `${currency}0`}</div>
+              <div className="text-3xl font-bold mt-4">{formatPrice(0, language)}</div>
               <p className="text-sm text-muted-foreground">{t.trial.duration}</p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -216,46 +207,36 @@ const PricingComparison = () => {
   }
 
   // Desktop: Table
-  const currency = getCurrencySymbol(language);
-  
   const getPriceDisplay = () => {
     if (billingPeriod === 'monthly') {
       return {
         starter: { 
-          price: language === 'fr' ? `9,99 ${currency}` : `${currency}9.99`, 
+          price: formatPrice(9.99, language), 
           suffix: t.landing.pricing.perMonth 
         },
         pro: { 
-          price: language === 'fr' 
-            ? `49 ${currency} - 4 900 ${currency}` 
-            : `${currency}49 - ${currency}4,900`, 
+          price: `${formatPrice(49, language)} - ${formatPrice(4900, language)}`, 
           suffix: t.landing.pricing.perMonth 
         },
         enterprise: { 
-          price: language === 'fr' 
-            ? `199 ${currency} - 19 900 ${currency}` 
-            : `${currency}199 - ${currency}19,900`, 
+          price: `${formatPrice(199, language)} - ${formatPrice(19900, language)}`, 
           suffix: t.landing.pricing.perMonth 
         }
       };
     } else {
       return {
         starter: { 
-          price: language === 'fr' ? `7,99 ${currency}` : `${currency}7.99`, 
+          price: formatPrice(7.99, language), 
           suffix: t.landing.pricing.perMonthShort, 
-          annual: language === 'fr' ? `95,90 ${currency}${t.landing.pricing.perYear}` : `${currency}95.90${t.landing.pricing.perYear}` 
+          annual: `${formatPrice(95.90, language)}${t.landing.pricing.perYear}` 
         },
         pro: { 
-          price: language === 'fr' 
-            ? `39 ${currency} - 3 920 ${currency}` 
-            : `${currency}39 - ${currency}3,920`, 
+          price: `${formatPrice(39, language)} - ${formatPrice(3920, language)}`, 
           suffix: t.landing.pricing.perMonthShort, 
           annual: t.landing.pricing.comparison.billedAnnually 
         },
         enterprise: { 
-          price: language === 'fr' 
-            ? `159 ${currency} - 15 920 ${currency}` 
-            : `${currency}159 - ${currency}15,920`, 
+          price: `${formatPrice(159, language)} - ${formatPrice(15920, language)}`, 
           suffix: t.landing.pricing.perMonthShort, 
           annual: t.landing.pricing.comparison.billedAnnually 
         }
@@ -294,10 +275,10 @@ const PricingComparison = () => {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="p-4 text-left font-semibold">{t.landing.pricing.comparison.featuresLabel}</th>
-                <th className="p-4 text-center">
+              <th className="p-4 text-center">
               <div className="flex flex-col items-center gap-2">
                 <Badge className="bg-success">{t.trial.title}</Badge>
-                <span className="text-2xl font-bold">{language === 'fr' ? `0 ${currency}` : `${currency}0`}</span>
+                <span className="text-2xl font-bold">{formatPrice(0, language)}</span>
                 <span className="text-xs text-muted-foreground">{t.trial.duration}</span>
               </div>
                 </th>

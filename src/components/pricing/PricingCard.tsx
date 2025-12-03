@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, Loader2, CheckCircle2 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import { formatPrice } from "@/lib/formatUtils";
 
 interface PricingCardProps {
   icon: LucideIcon;
@@ -99,11 +100,11 @@ export function PricingCard({
         <div className="text-center mb-6">
           {originalPrice && originalPrice > price && (
             <div className="text-2xl text-muted-foreground line-through mb-1">
-              {language === 'fr' ? `${originalPrice} ${currency}` : `${currency}${originalPrice}`}
+              {formatPrice(originalPrice, language)}
             </div>
           )}
           <div className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            {language === 'fr' ? `${price} ${currency}` : `${currency}${price}`}
+            {formatPrice(price, language)}
           </div>
           <p className="text-muted-foreground text-sm mt-1">
             {priceSuffix || period}
