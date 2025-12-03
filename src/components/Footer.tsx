@@ -79,7 +79,7 @@ export function Footer() {
               className="gap-2"
             >
               <Globe className="h-4 w-4" />
-              {language === 'fr' ? 'English' : 'Français'}
+              {t.common.switchLanguage}
             </Button>
           </div>
         </div>

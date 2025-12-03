@@ -4,7 +4,7 @@ import { TemplatePreview } from './TemplatePreview';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Shuffle, Sparkles, Grid3X3 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useTranslation } from '@/lib/language';
 
 interface TemplateSelectorProps {
   selectedTemplate: SocialTemplate | null;
@@ -29,6 +29,7 @@ export function TemplateSelector({
   contentType = 'product',
   language = 'fr'
 }: TemplateSelectorProps) {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<'manual' | 'random' | 'smart'>('manual');
 
   const handleRandomTemplate = () => {
@@ -48,27 +49,6 @@ export function TemplateSelector({
     setMode('manual');
   };
 
-  const t = {
-    fr: {
-      selectTemplate: 'Choisir un template',
-      randomMode: 'Aléatoire',
-      smartMode: 'Smart AI',
-      manualMode: 'Manuel',
-      posts: 'Posts',
-      carousels: 'Carrousels',
-      selected: 'Sélectionné'
-    },
-    en: {
-      selectTemplate: 'Select a template',
-      randomMode: 'Random',
-      smartMode: 'Smart AI',
-      manualMode: 'Manual',
-      posts: 'Posts',
-      carousels: 'Carousels',
-      selected: 'Selected'
-    }
-  }[language];
-
   const postTemplates = SOCIAL_TEMPLATES.filter(t => t.category === 'post');
   const carouselTemplates = SOCIAL_TEMPLATES.filter(t => t.category === 'carousel');
 
@@ -83,7 +63,7 @@ export function TemplateSelector({
           className="gap-1"
         >
           <Grid3X3 className="h-3 w-3" />
-          {t.manualMode}
+          {t.dialogs.templateSelector.manualMode}
         </Button>
         <Button
           variant={mode === 'random' ? 'default' : 'outline'}
@@ -92,7 +72,7 @@ export function TemplateSelector({
           className="gap-1"
         >
           <Shuffle className="h-3 w-3" />
-          {t.randomMode}
+          {t.dialogs.templateSelector.randomMode}
         </Button>
         <Button
           variant={mode === 'smart' ? 'default' : 'outline'}
@@ -101,7 +81,7 @@ export function TemplateSelector({
           className="gap-1"
         >
           <Sparkles className="h-3 w-3" />
-          {t.smartMode}
+          {t.dialogs.templateSelector.smartMode}
         </Button>
       </div>
 
@@ -110,7 +90,7 @@ export function TemplateSelector({
         {/* Posts */}
         <div>
           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-            {t.posts}
+            {t.dialogs.templateSelector.posts}
             <Badge variant="secondary" className="text-xs">
               {postTemplates.length}
             </Badge>
@@ -140,7 +120,7 @@ export function TemplateSelector({
         {/* Carousels */}
         <div>
           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-            {t.carousels}
+            {t.dialogs.templateSelector.carousels}
             <Badge variant="secondary" className="text-xs">
               {carouselTemplates.length}
             </Badge>
@@ -170,7 +150,7 @@ export function TemplateSelector({
         <div className="p-3 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="default" className="text-xs">
-              {t.selected}
+              {t.dialogs.templateSelector.selected}
             </Badge>
             <span className="font-medium text-sm">
               {language === 'fr' ? selectedTemplate.name : selectedTemplate.nameEn}
