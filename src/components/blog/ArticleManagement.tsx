@@ -419,12 +419,12 @@ const handleOptimizeArticle = async (articleId: string) => {
     try {
       const article = articles.find(a => a.id === articleId);
       if (!article) {
-        toast.error('Article introuvable');
+        toast.error(t.articleManagementExtended.articleNotFound);
         return;
       }
 
       if (!selectedStore) {
-        toast.error('Boutique introuvable');
+        toast.error(t.articleManagementExtended.storeNotFound);
         return;
       }
 
@@ -433,7 +433,7 @@ const handleOptimizeArticle = async (articleId: string) => {
         : selectedStore.store_url?.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
       if (!domain) {
-        toast.error('Domaine de boutique introuvable');
+        toast.error(t.articleManagementExtended.domainNotFound);
         return;
       }
 
@@ -446,17 +446,17 @@ const handleOptimizeArticle = async (articleId: string) => {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success('Demande d\'indexation envoyée avec succès');
+        toast.success(t.articleManagementExtended.indexingRequestSent);
       } else if (data?.error === 'NO_GOOGLE_AUTH') {
-        toast.error('Veuillez connecter Google Search Console d\'abord');
+        toast.error(t.articleManagementExtended.connectGSCFirst);
       } else if (data?.error === 'quota_exceeded') {
-        toast.warning('Quota d\'indexation dépassé, réessayez demain');
+        toast.warning(t.articleManagementExtended.quotaExceeded);
       } else {
-        toast.error('Erreur lors de la demande d\'indexation');
+        toast.error(t.articleManagementExtended.indexingError);
       }
     } catch (error) {
       console.error('Error requesting indexing:', error);
-      toast.error('Erreur lors de la demande d\'indexation');
+      toast.error(t.articleManagementExtended.indexingError);
     } finally {
       setIndexingArticle(null);
     }
@@ -465,10 +465,10 @@ const handleOptimizeArticle = async (articleId: string) => {
   const handleImportArticles = async () => {
     // Vérifier les limites avant d'importer
     if (!canDoAction('articles')) {
-      toast.error('Limite d\'articles atteinte', {
+      toast.error(t.articleManagementExtended.articlesLimitReached, {
         description: limits?.isTrialing 
-          ? 'Passez à un plan payant pour importer plus d\'articles.'
-          : 'Limite mensuelle atteinte. Contactez le support ou attendez le mois prochain.'
+          ? t.articleManagementExtended.importToAddMore
+          : t.articleManagementExtended.monthlyLimitDesc
       });
       setShowUpgradeDialog(true);
       return;
@@ -788,12 +788,12 @@ const handleOptimizeArticle = async (articleId: string) => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">To Optimize</p>
+              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">{t.blog.management.stats.toOptimize}</p>
               <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{notOptimizedCount}</p>
               <div className="flex gap-2 mt-1 text-xs text-orange-600 dark:text-orange-400">
-                <span>Empty: {stats.totalEmpty}</span>
+                <span>{t.blog.management.stats.empty}: {stats.totalEmpty}</span>
                 <span>•</span>
-                <span>Existing: {stats.existingData}</span>
+                <span>{t.blog.management.stats.existing}: {stats.existingData}</span>
               </div>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
@@ -806,10 +806,10 @@ const handleOptimizeArticle = async (articleId: string) => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-Optimized</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">{t.blog.management.stats.aiOptimized}</p>
               <p className="text-2xl font-bold text-green-900 dark:text-green-100">{optimizedCount}</p>
               <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                AI-generated
+                {t.blog.management.stats.aiGenerated}
               </p>
             </div>
             <Sparkles className="w-8 h-8 text-green-600" />
@@ -822,10 +822,10 @@ const handleOptimizeArticle = async (articleId: string) => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">{t.blog.management.stats.toSynchronize}</p>
               <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{stats.pendingSync}</p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                AI-optimized only
+                {t.blog.management.stats.aiOptimizedOnly}
               </p>
             </div>
             <Clock className="w-8 h-8 text-purple-600" />
@@ -838,10 +838,10 @@ const handleOptimizeArticle = async (articleId: string) => {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{t.blog.management.stats.synchronized}</p>
               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.synchronized}</p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                Synced to Shopify
+                {t.blog.management.stats.syncedToShopify}
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-blue-600" />
