@@ -790,6 +790,26 @@ Deno.serve(async (req) => {
         } else {
           reorderedCount = moves.length;
           console.log(`✅ Reordered ${reorderedCount} images successfully`);
+          
+          // Update main product image_url if first image changed
+          if (imagesToReorder.length > 0) {
+            const firstImage = imagesToReorder[0];
+            // Find the src of the first image
+            const firstImageSrc = requestImages?.find((img: any) => 
+              (img.shopify_image_id || img.id) === firstImage.shopify_image_id
+            )?.src;
+            
+            if (firstImageSrc) {
+              console.log(`🔄 Updating main product image_url to: ${firstImageSrc.substring(0, 50)}...`);
+              await supabaseClient
+                .from('shopify_products')
+                .update({ 
+                  image_url: firstImageSrc,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', productId);
+            }
+          }
         }
       } catch (reorderError) {
         console.error(`⚠️ Failed to reorder images:`, reorderError);
