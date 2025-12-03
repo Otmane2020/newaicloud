@@ -99,6 +99,12 @@ serve(async (req) => {
       imageType = "secondary",
       format = "square",
       similarity = "medium",
+      // SERP/Vision enrichment data
+      serpData,
+      visionAiData,
+      productDescription,
+      seoTitle,
+      seoDescription
     } = body;
 
     if (!imageUrl || !prompt) {
@@ -108,7 +114,41 @@ serve(async (req) => {
       });
     }
 
+    // 🆕 Build enriched context from SERP and Vision data
+    let enrichedContext = productTitle || "Product";
+    
+    if (seoTitle && seoTitle !== productTitle) {
+      enrichedContext += `. ${seoTitle}`;
+    }
+    
+    if (productDescription) {
+      enrichedContext += `. ${productDescription.slice(0, 150)}`;
+    } else if (seoDescription) {
+      enrichedContext += `. ${seoDescription.slice(0, 150)}`;
+    }
+    
+    // Add SERP data if available
+    if (serpData) {
+      if (serpData.dimensions) {
+        enrichedContext += `. Dimensions: ${serpData.dimensions}`;
+      }
+      if (serpData.materials?.length > 0) {
+        enrichedContext += `. Materials: ${serpData.materials.slice(0, 3).join(", ")}`;
+      }
+      if (serpData.dominantStyles?.length > 0) {
+        enrichedContext += `. Styles: ${serpData.dominantStyles.slice(0, 2).join(", ")}`;
+      }
+      console.log(`[image-bg] 🔍 SERP data enrichment applied`);
+    }
+    
+    // Add Vision AI data if available
+    if (visionAiData?.description) {
+      enrichedContext += `. Visual: ${visionAiData.description.slice(0, 100)}`;
+      console.log(`[image-bg] 👁️ Vision AI data enrichment applied`);
+    }
+
     console.log("🎨 Generating AI background:", { prompt, imageType, format, similarity });
+    console.log(`[image-bg] 📝 Enriched context: ${enrichedContext.slice(0, 200)}...`);
 
     // Initialize Supabase client for usage tracking (reuse authHeader from above)
     const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
@@ -129,13 +169,14 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    // Calculate aspect ratio based on format
-    let aspectRatio = "1024x1024"; // square
-    if (format === "portrait") {
-      aspectRatio = "768x1024"; // 3:4
-    } else if (format === "landscape") {
-      aspectRatio = "1024x768"; // 4:3
-    }
+    // 🆕 Format dimensions mapping with DALL-E size
+    const formatDimensions: Record<string, { width: number; height: number; ratio: string; dalleSize: string }> = {
+      "square": { width: 1024, height: 1024, ratio: "1:1", dalleSize: "1024x1024" },
+      "portrait": { width: 768, height: 1024, ratio: "3:4", dalleSize: "1024x1792" },
+      "landscape": { width: 1024, height: 768, ratio: "4:3", dalleSize: "1792x1024" },
+    };
+    const targetDims = formatDimensions[format] || formatDimensions["square"];
+    console.log(`[image-bg] 🎯 Target format: ${format} -> ${targetDims.width}x${targetDims.height} (DALL-E: ${targetDims.dalleSize})`);
 
     // Calculate similarity strength
     const similarityMap: Record<string, { strength: string; description: string }> = {
@@ -157,20 +198,65 @@ serve(async (req) => {
 
     const similarityInfo = similarityMap[similarity] || similarityMap["medium"];
 
+    // 🆕 Visual Enhancement Instructions for Professional E-Commerce Quality
+    const visualEnhancementInstructions = `
+🎨 VISUAL QUALITY ENHANCEMENT - PROFESSIONAL E-COMMERCE PHOTOGRAPHY
+
+FABRIC & TEXTURE OPTIMIZATION:
+- Enhance fabric textures to appear rich, luxurious, and tactile
+- Show natural fabric drape, folds, and depth
+- Highlight weave patterns, stitching quality, and material authenticity
+- Make velvet appear velvety, leather appear supple, linen appear crisp
+- Capture the "hand feel" of materials visually
+
+LIGHTING FOR SALES APPEAL:
+- Use professional studio lighting with main key light + fill light
+- Add subtle rim lighting to separate product from background
+- Create soft, flattering shadows that add depth without harsh contrast
+- Ensure colors appear vibrant, accurate, and true to material
+
+EYE-CATCHING COMMERCIAL QUALITY:
+- Create "hero shot" quality - the image should make viewers WANT to buy
+- Professional color grading that enhances product appeal
+- Sharp focus on product details, slightly soft background if lifestyle
+- Clean, premium look suitable for high-end e-commerce
+- Think: IKEA catalog, West Elm, Roche Bobois photography quality
+
+TEXTURE DETAIL ENHANCEMENT:
+- Zoom-worthy detail on material textures
+- Visible grain on wood, weave on fabric, sheen on leather
+- Natural material variations that prove authenticity
+- No plasticky or artificial-looking surfaces
+`;
+
     // Create prompt based on image type with STRICT format enforcement
     const isMainImage = imageType === "primary";
     const photographyPrompt = `
+🚨🚨🚨 CRITICAL FORMAT REQUIREMENT - READ FIRST 🚨🚨🚨
+
+📐 OUTPUT MUST BE EXACTLY ${targetDims.width}x${targetDims.height} pixels
+📐 ASPECT RATIO: ${targetDims.ratio}
+📐 CREATE a ${targetDims.width}x${targetDims.height} canvas FIRST, then place content
+${format === "square" ? "🟦 PERFECT SQUARE: Width = Height = 1024 pixels" : ""}
+${format === "portrait" ? "📱 VERTICAL PORTRAIT: Height (1024) > Width (768)" : ""}
+${format === "landscape" ? "🖼️ HORIZONTAL LANDSCAPE: Width (1024) > Height (768)" : ""}
+
+⚠️ PRODUCT MUST FILL 85-95% OF CANVAS - NO WHITE PADDING ⚠️
+Scale the product UP to TOUCH or NEARLY TOUCH the edges of the frame.
+
 You are a professional e-commerce product photographer with STRICT format requirements.
 
-PRODUCT: ${productTitle || "Product"}
+PRODUCT: ${enrichedContext}
 USER REQUEST: ${prompt}
 
+${visualEnhancementInstructions}
+
 ⚠️ CRITICAL OUTPUT REQUIREMENTS (MUST FOLLOW):
-- OUTPUT DIMENSIONS: EXACTLY ${aspectRatio} pixels (${format} format)
-- IMAGE RATIO: ${format === "square" ? "1:1 (equal width and height)" : format === "portrait" ? "3:4 (vertical orientation)" : "4:3 (horizontal orientation)"}
+- OUTPUT DIMENSIONS: EXACTLY ${targetDims.width}x${targetDims.height} pixels (${format} format)
+- IMAGE RATIO: ${targetDims.ratio}
 - NO OTHER DIMENSIONS ARE ACCEPTABLE
 - SIMILARITY TO ORIGINAL: ${similarityInfo.strength} - ${similarityInfo.description}
-- 🎨 COLOR: MUST be a FULL COLOR image with vibrant, natural colors. NO black and white, NO grayscale, NO monochrome. Rich color palette required.
+- 🎨 COLOR: MUST be a FULL COLOR image with vibrant, natural colors. NO black and white, NO grayscale.
 
 YOUR MISSION:
 Create a ${isMainImage ? "main product" : "lifestyle/ambiance"} photo with custom background.
@@ -181,13 +267,12 @@ ${
     ? `
 1. MAIN IMAGE REQUIREMENTS (CRITICAL):
    - Product MUST be perfectly centered in the frame
-   - Product must be clear, sharp, and prominent (70-80% of frame)
+   - Product must fill 85-95% of frame (TOUCH THE EDGES)
    - Product should face the camera directly
    - All product details must be clearly visible
    - Clean, professional look suitable for e-commerce
-   - Output dimensions: EXACTLY ${aspectRatio}
-   - Image ratio: ${format === "square" ? "1:1" : format === "portrait" ? "3:4" : "4:3"}
-   - Similarity level: ${similarityInfo.description}
+   - NO white padding around the product
+   - Output dimensions: EXACTLY ${targetDims.width}x${targetDims.height}
    
 2. BACKGROUND:
    - Apply the requested style: "${prompt}"
@@ -199,10 +284,8 @@ ${
    - Creative composition (centering not required)
    - Product can be positioned artistically
    - Lifestyle/contextual setting
-   - More creative freedom with composition
-   - Output dimensions: EXACTLY ${aspectRatio}
-   - Image ratio: ${format === "square" ? "1:1" : format === "portrait" ? "3:4" : "4:3"}
-   - Similarity level: ${similarityInfo.description}
+   - Product still fills 80-90% of canvas
+   - Output dimensions: EXACTLY ${targetDims.width}x${targetDims.height}
    
 2. BACKGROUND:
    - Apply the requested style: "${prompt}"
@@ -212,27 +295,25 @@ ${
 }
 
 3. TECHNICAL SPECS (CRITICAL):
-   - High resolution: EXACTLY ${aspectRatio}
-   - ${format === "square" ? "Perfect square (1:1 ratio)" : format === "portrait" ? "Portrait orientation (3:4 ratio - taller than wide)" : "Landscape orientation (4:3 ratio - wider than tall)"}
+   - High resolution: EXACTLY ${targetDims.width}x${targetDims.height}
+   - ${format === "square" ? "Perfect square (1:1 ratio)" : format === "portrait" ? "Portrait orientation (3:4 ratio)" : "Landscape orientation (4:3 ratio)"}
    - 🎨 FULL COLOR image: vibrant, natural, realistic colors
    - Professional color grading with rich color palette
-   - NO black and white, NO grayscale, NO monochrome
-   - Balanced exposure and contrast
+   - NO black and white, NO grayscale
    - No watermarks, text, or logos
-   - Ready for e-commerce use
 
 ⚠️ FINAL CHECK BEFORE GENERATING:
-- Is the output EXACTLY ${aspectRatio}? 
-- Is the aspect ratio correct (${format === "square" ? "1:1" : format === "portrait" ? "3:4 vertical" : "4:3 horizontal"})?
-- If not, adjust the composition to fit these exact dimensions.
+- Is the output EXACTLY ${targetDims.width}x${targetDims.height}? ✓
+- Does product fill 85-95% of the canvas? ✓
+- Is there NO white padding around product? ✓
 
-RESULT: A stunning ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} with custom background at EXACTLY ${aspectRatio} resolution in ${format} format.
+RESULT: A stunning ${isMainImage ? "main product photo" : "lifestyle photo"} at EXACTLY ${targetDims.width}x${targetDims.height} resolution.
     `.trim();
 
     // Helper function to try Lovable AI with format-aware generation
     async function tryLovableAI(): Promise<{ imageUrl: string; model: string } | null> {
       try {
-        console.log(`📝 Trying Lovable AI with format: ${format} (${aspectRatio})`);
+        console.log(`📝 Trying Lovable AI with format: ${format} (${targetDims.width}x${targetDims.height})`);
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -396,18 +477,15 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
     let finalImageUrl = generatedImageUrl;
 
     try {
-      console.log(`📐 Resizing image to exact format: ${aspectRatio}`);
+      console.log(`📐 Resizing image to exact format: ${targetDims.width}x${targetDims.height}`);
 
       // Extract base64 data
       const base64Data = generatedImageUrl.replace(/^data:image\/\w+;base64,/, "");
       const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
 
-      // Determine target dimensions
-      const [targetWidth, targetHeight] = aspectRatio.split("x").map(Number);
-
       // Create a canvas-like processing using Deno's image processing
       // For simplicity, we'll use the original image but log the intended dimensions
-      console.log(`✅ Target dimensions: ${targetWidth}x${targetHeight}`);
+      console.log(`✅ Target dimensions: ${targetDims.width}x${targetDims.height}`);
 
       // Note: For actual resizing, we would need an image processing library
       // For now, we ensure the prompt clearly specifies the dimensions
@@ -430,7 +508,7 @@ RESULT: A stunning ${isMainImage ? "main product photo with centered, clear prod
           productTitle,
           format,
           similarity,
-          requestedDimensions: aspectRatio,
+          requestedDimensions: `${targetDims.width}x${targetDims.height}`,
           model: usedModel,
           generatedAt: new Date().toISOString(),
         },

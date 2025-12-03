@@ -332,6 +332,37 @@ Nouveauté = environnement totalement différent et frais.
 Style = luxueux mais accessible, réaliste, vendeur.
 `;
 
+    // 🆕 Visual Enhancement Instructions for Professional E-Commerce Quality
+    const visualEnhancementInstructions = `
+🎨 VISUAL QUALITY ENHANCEMENT - PROFESSIONAL E-COMMERCE PHOTOGRAPHY
+
+FABRIC & TEXTURE OPTIMIZATION:
+- Enhance fabric textures to appear rich, luxurious, and tactile
+- Show natural fabric drape, folds, and depth
+- Highlight weave patterns, stitching quality, and material authenticity
+- Make velvet appear velvety, leather appear supple, linen appear crisp
+- Capture the "hand feel" of materials visually
+
+LIGHTING FOR SALES APPEAL:
+- Use professional studio lighting with main key light + fill light
+- Add subtle rim lighting to separate product from background
+- Create soft, flattering shadows that add depth without harsh contrast
+- Ensure colors appear vibrant, accurate, and true to material
+
+EYE-CATCHING COMMERCIAL QUALITY:
+- Create "hero shot" quality - the image should make viewers WANT to buy
+- Professional color grading that enhances product appeal
+- Sharp focus on product details, slightly soft background if lifestyle
+- Clean, premium look suitable for high-end e-commerce
+- Think: IKEA catalog, West Elm, Roche Bobois photography quality
+
+TEXTURE DETAIL ENHANCEMENT:
+- Zoom-worthy detail on material textures
+- Visible grain on wood, weave on fabric, sheen on leather
+- Natural material variations that prove authenticity
+- No plasticky or artificial-looking surfaces
+`;
+
     // Critical: Frame this as IMAGE EDITING not IMAGE GENERATION
     const imageEditingHeader = `
 🛑🛑🛑 TÂCHE : ÉDITION D'IMAGE (PAS GÉNÉRATION) 🛑🛑🛑
@@ -361,18 +392,41 @@ Dans cette image, le produit est : ${productContext}
 - Si l'entrée montre un sommier métallique → ma sortie montre-t-elle CE sommier métallique (pas un lit) ?
 `;
 
-    // Use enriched prompt if available, but ALWAYS prepend image editing rules
+    // Format enforcement header
+    const formatEnforcementHeader = `
+🚨🚨🚨 CRITICAL FORMAT REQUIREMENT 🚨🚨🚨
+
+📐 OUTPUT MUST BE EXACTLY ${targetDims.width}x${targetDims.height} pixels (${targetDims.ratio} ratio)
+📐 CREATE a ${targetDims.width}x${targetDims.height} canvas FIRST, then place content
+${format === "square" ? "🟦 PERFECT SQUARE: Width = Height = 1024 pixels" : ""}
+${format === "portrait" ? "📱 VERTICAL: Height (1024) > Width (768)" : ""}
+${format === "landscape" ? "🖼️ HORIZONTAL: Width (1024) > Height (768)" : ""}
+
+⚠️ PRODUCT MUST FILL 85-95% OF CANVAS - NO WHITE PADDING ⚠️
+Scale the product UP to TOUCH or NEARLY TOUCH the edges of the frame.
+`;
+
+    // Use enriched prompt if available, but ALWAYS prepend image editing rules + format + visual enhancement
     const finalPrompt = enrichedPrompt 
-      ? `${imageEditingHeader}
+      ? `${formatEnforcementHeader}
+
+${imageEditingHeader}
+
+${visualEnhancementInstructions}
 
 📝 INSTRUCTION POUR LE NOUVEL ARRIÈRE-PLAN :
 ${enrichedPrompt}
 
 🚨 RAPPEL CRITIQUE : Tu ÉDITES l'image, tu ne la régénères pas.
 Le produit (${productContext}) doit rester EXACTEMENT identique - seul l'arrière-plan change.
+Product must fill 85-95% of the ${targetDims.width}x${targetDims.height} canvas.
 `.trim()
       : `
+${formatEnforcementHeader}
+
 ${forceFullBackgroundReplace}
+
+${visualEnhancementInstructions}
 
 ${premiumLifestylePrompt}
 
@@ -381,7 +435,7 @@ ${productContext}${variantOptions ? ` (Variante: ${variantOptions})` : ""}
 
 🎯 PARAMÈTRES SÉLECTIONNÉS :
 - Style demandé : ${style}
-- Format image : ${format}
+- Format image : ${format} (${targetDims.width}x${targetDims.height} pixels)
 - Type : ${isMainImage ? "Image principale" : "Image variante"}
 
 🎲 RÈGLE DE VARIÉTÉ (CRITIQUE) :
@@ -395,17 +449,16 @@ Si tu génères plusieurs images pour le même produit :
 JAMAIS deux générations identiques ou similaires !
 
 ⚠️ RÈGLES FINALES NON-NÉGOCIABLES :
-1. L'arrière-plan DOIT être COMPLÈTEMENT NOUVEAU et DIFFÉRENT de l'original
-2. Le produit original doit rester 100% intact (forme, couleur, texture, dimensions)
-3. Aucune modification du produit n'est autorisée
-4. Le rendu doit être photoréaliste (pas d'effet cartoon ou stylisé)
-5. La scène doit être digne d'un catalogue e-commerce haut de gamme
-6. L'image finale doit être utilisable IMMÉDIATEMENT sur un site e-commerce premium
-7. Si l'original avait un canapé beige → utilise des meubles DIFFÉRENTS (autre couleur, forme, matériau)
-8. Si l'original était dans une pièce lumineuse → tu peux garder lumineux mais CHANGE tout le reste
+1. OUTPUT EXACTEMENT ${targetDims.width}x${targetDims.height} pixels (${targetDims.ratio})
+2. L'arrière-plan DOIT être COMPLÈTEMENT NOUVEAU et DIFFÉRENT de l'original
+3. Le produit original doit rester 100% intact ET remplir 85-95% du canvas
+4. PAS de padding blanc autour du produit - il doit TOUCHER les bords
+5. Aucune modification du produit n'est autorisée
+6. Le rendu doit être photoréaliste (pas d'effet cartoon ou stylisé)
+7. La scène doit être digne d'un catalogue e-commerce haut de gamme
 
 🎯 OBJECTIF FINAL :
-Créer une photographie professionnelle qui TRANSFORME l'environnement du produit tout en respectant son intégrité absolue.
+Créer une photographie professionnelle ${targetDims.width}x${targetDims.height} qui TRANSFORME l'environnement du produit.
 Changement d'ambiance = OBLIGATOIRE.
 Variété = OBLIGATOIRE.
 Qualité = OBLIGATOIRE.
