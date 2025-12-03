@@ -7,16 +7,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Facebook, Instagram, Send, Loader2, Plus, Image, Globe, CheckCircle, AlertCircle, Trash2 } from "lucide-react";
+import { Facebook, Instagram, Send, Loader2, Plus, Image, Globe, CheckCircle, AlertCircle, Trash2, Sparkles, Settings2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { FacebookPageSelector } from "@/components/social/FacebookPageSelector";
 
 interface FacebookPage {
   id: string;
   page_id: string;
   page_name: string;
   auto_share_enabled: boolean;
+}
+
+interface OAuthPage {
+  id: string;
+  name: string;
+  token: string;
 }
 
 interface AdminPost {
@@ -36,6 +44,12 @@ export function AdminSocialMedia() {
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [generatingCaption, setGeneratingCaption] = useState(false);
+  const [showPageSelector, setShowPageSelector] = useState(false);
+  const [oauthPages, setOauthPages] = useState<OAuthPage[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   
   // New post form
   const [newPost, setNewPost] = useState({
@@ -43,11 +57,18 @@ export function AdminSocialMedia() {
     imageUrl: "",
     indexOnGsc: true,
     publishToFacebook: true,
+    captionStyle: "promotional" as "promotional" | "informative" | "engaging",
   });
 
   useEffect(() => {
     loadData();
+    loadUserId();
   }, []);
+
+  const loadUserId = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) setCurrentUserId(user.id);
+  };
 
   const loadData = async () => {
     try {
@@ -64,7 +85,10 @@ export function AdminSocialMedia() {
         .order("created_at", { ascending: false })
         .limit(50);
 
-      setFacebookPages(pages || []);
+      const loadedPages = pages || [];
+      setFacebookPages(loadedPages);
+      setSelectedPageIds(loadedPages.filter(p => p.auto_share_enabled).map(p => p.page_id));
+      
       setPosts((articles || []).map((a: any) => ({
         id: a.id,
         content: a.excerpt || a.title,
@@ -84,31 +108,118 @@ export function AdminSocialMedia() {
     }
   };
 
+  const connectFacebook = async () => {
+    setConnecting(true);
+    try {
+      const response = await supabase.functions.invoke("facebook-page-oauth", {
+        body: { action: "get_auth_url" },
+      });
+
+      if (response.error) throw response.error;
+      if (response.data?.authUrl) {
+        // Open popup for OAuth
+        const popup = window.open(
+          response.data.authUrl,
+          "facebook_oauth",
+          "width=600,height=700,scrollbars=yes"
+        );
+
+        // Listen for OAuth completion
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data?.type === "facebook_oauth_complete") {
+            window.removeEventListener("message", handleMessage);
+            if (event.data.needsPageSelection && event.data.pages) {
+              // Map pages to expected format
+              const mappedPages = event.data.pages.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                token: p.access_token || p.token,
+              }));
+              setOauthPages(mappedPages);
+              setShowPageSelector(true);
+            } else {
+              loadData();
+              toast.success("Facebook connecté!");
+            }
+          }
+        };
+        window.addEventListener("message", handleMessage);
+      }
+    } catch (error: any) {
+      console.error("Error connecting Facebook:", error);
+      toast.error(error.message || "Erreur de connexion Facebook");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const generateAICaption = async () => {
+    setGeneratingCaption(true);
+    try {
+      const response = await supabase.functions.invoke("generate-social-caption", {
+        body: {
+          topic: newPost.content || "NewAI - Optimisation SEO e-commerce",
+          style: newPost.captionStyle,
+          platform: "facebook",
+          includeEmojis: true,
+          includeHashtags: true,
+        },
+      });
+
+      if (response.error) throw response.error;
+      
+      if (response.data?.caption) {
+        setNewPost(p => ({ ...p, content: response.data.caption }));
+        toast.success("Caption générée par IA!");
+      }
+    } catch (error: any) {
+      console.error("Error generating caption:", error);
+      toast.error(error.message || "Erreur lors de la génération");
+    } finally {
+      setGeneratingCaption(false);
+    }
+  };
+
+  const togglePageSelection = (pageId: string) => {
+    setSelectedPageIds(prev => 
+      prev.includes(pageId) 
+        ? prev.filter(id => id !== pageId)
+        : [...prev, pageId]
+    );
+  };
+
   const publishNewPost = async () => {
     if (!newPost.content.trim()) {
       toast.error("Le contenu est requis");
       return;
     }
 
+    if (newPost.publishToFacebook && selectedPageIds.length === 0) {
+      toast.error("Sélectionnez au moins une page Facebook");
+      return;
+    }
+
     setPublishing(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // Call edge function to publish
       const response = await supabase.functions.invoke("admin-publish-social", {
         body: {
           content: newPost.content,
           imageUrl: newPost.imageUrl || null,
           indexOnGsc: newPost.indexOnGsc,
           publishToFacebook: newPost.publishToFacebook,
-          pageIds: facebookPages.filter(p => p.auto_share_enabled).map(p => p.page_id),
+          pageIds: selectedPageIds,
         },
       });
 
       if (response.error) throw response.error;
 
-      toast.success("Post publié avec succès!");
-      setNewPost({ content: "", imageUrl: "", indexOnGsc: true, publishToFacebook: true });
+      const result = response.data;
+      let message = "Post publié!";
+      if (result?.gscIndexed) message += " ✅ GSC";
+      if (result?.facebookPosted) message += " ✅ Facebook";
+      
+      toast.success(message);
+      setNewPost({ content: "", imageUrl: "", indexOnGsc: true, publishToFacebook: true, captionStyle: "promotional" });
       loadData();
     } catch (error: any) {
       console.error("Error publishing:", error);
@@ -154,31 +265,67 @@ export function AdminSocialMedia() {
       {/* Connected Pages */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Facebook className="h-5 w-5 text-blue-600" />
-            Pages Facebook Connectées
-          </CardTitle>
-          <CardDescription>
-            Les posts seront publiés sur les pages avec auto-post activé
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Facebook className="h-5 w-5 text-blue-600" />
+                Pages Facebook
+              </CardTitle>
+              <CardDescription>
+                Connectez vos pages pour publier automatiquement
+              </CardDescription>
+            </div>
+            <Button onClick={connectFacebook} disabled={connecting} variant="outline">
+              {connecting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Settings2 className="h-4 w-4 mr-2" />
+              )}
+              {facebookPages.length > 0 ? "Ajouter une page" : "Connecter Facebook"}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {facebookPages.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">
-              Aucune page Facebook connectée. Connectez-vous via Social Media &gt; Paramètres.
-            </p>
+            <div className="text-center py-6 border-2 border-dashed rounded-lg">
+              <Facebook className="h-12 w-12 text-blue-600 mx-auto mb-3 opacity-50" />
+              <p className="text-muted-foreground mb-4">
+                Aucune page Facebook connectée
+              </p>
+              <Button onClick={connectFacebook} disabled={connecting}>
+                {connecting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Facebook className="h-4 w-4 mr-2" />
+                )}
+                Connecter Facebook
+              </Button>
+            </div>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-2">
               {facebookPages.map((page) => (
-                <Badge 
-                  key={page.id} 
-                  variant={page.auto_share_enabled ? "default" : "secondary"}
-                  className="flex items-center gap-1"
+                <div
+                  key={page.id}
+                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
+                    selectedPageIds.includes(page.page_id) 
+                      ? "bg-blue-50 border border-blue-200 dark:bg-blue-950/30 dark:border-blue-800" 
+                      : "bg-muted/50 hover:bg-muted"
+                  }`}
+                  onClick={() => togglePageSelection(page.page_id)}
                 >
-                  <Facebook className="h-3 w-3" />
-                  {page.page_name}
-                  {page.auto_share_enabled && <CheckCircle className="h-3 w-3 text-green-500" />}
-                </Badge>
+                  <div className="flex items-center gap-2">
+                    <Facebook className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium">{page.page_name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {selectedPageIds.includes(page.page_id) && (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    )}
+                    <Badge variant={page.auto_share_enabled ? "default" : "secondary"}>
+                      {page.auto_share_enabled ? "Auto-post activé" : "Manuel"}
+                    </Badge>
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -193,17 +340,49 @@ export function AdminSocialMedia() {
             Nouveau Post
           </CardTitle>
           <CardDescription>
-            Créez un post qui sera automatiquement indexé sur Google et publié sur Facebook
+            Créez un post avec caption IA, indexation Google et publication Facebook automatique
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* AI Caption Generator */}
+          <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-2">
+              <Label>Style de caption IA</Label>
+              <Select 
+                value={newPost.captionStyle} 
+                onValueChange={(v: any) => setNewPost(p => ({ ...p, captionStyle: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="promotional">🚀 Promotionnel</SelectItem>
+                  <SelectItem value="informative">📚 Informatif</SelectItem>
+                  <SelectItem value="engaging">💬 Engageant</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={generateAICaption}
+              disabled={generatingCaption}
+            >
+              {generatingCaption ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-2 text-yellow-500" />
+              )}
+              Générer Caption IA
+            </Button>
+          </div>
+
           <div className="space-y-2">
             <Label>Contenu du post</Label>
             <Textarea
-              placeholder="Écrivez votre contenu ici..."
+              placeholder="Écrivez votre contenu ou générez-le avec l'IA..."
               value={newPost.content}
               onChange={(e) => setNewPost(p => ({ ...p, content: e.target.value }))}
-              rows={4}
+              rows={5}
             />
           </div>
 
@@ -219,7 +398,7 @@ export function AdminSocialMedia() {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 p-4 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2">
               <Switch
                 checked={newPost.indexOnGsc}
@@ -227,7 +406,7 @@ export function AdminSocialMedia() {
               />
               <Label className="flex items-center gap-1 cursor-pointer">
                 <Globe className="h-4 w-4 text-green-600" />
-                Indexer sur Google Search Console
+                Indexer sur Google (GSC)
               </Label>
             </div>
 
@@ -238,7 +417,7 @@ export function AdminSocialMedia() {
               />
               <Label className="flex items-center gap-1 cursor-pointer">
                 <Facebook className="h-4 w-4 text-blue-600" />
-                Publier sur Facebook
+                Publier sur Facebook ({selectedPageIds.length} page{selectedPageIds.length > 1 ? "s" : ""})
               </Label>
             </div>
           </div>
@@ -247,6 +426,7 @@ export function AdminSocialMedia() {
             onClick={publishNewPost} 
             disabled={publishing || !newPost.content.trim()}
             className="w-full"
+            size="lg"
           >
             {publishing ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -314,6 +494,28 @@ export function AdminSocialMedia() {
           )}
         </CardContent>
       </Card>
+
+      {/* Page Selector Dialog */}
+      {showPageSelector && oauthPages.length > 0 && currentUserId && (
+        <FacebookPageSelector
+          open={showPageSelector}
+          onOpenChange={(open) => {
+            setShowPageSelector(open);
+            if (!open) {
+              setOauthPages([]);
+              loadData();
+            }
+          }}
+          pages={oauthPages}
+          userId={currentUserId}
+          onSuccess={(pageName, instagramName) => {
+            setShowPageSelector(false);
+            setOauthPages([]);
+            loadData();
+            toast.success(`Page "${pageName}" connectée!${instagramName ? ` Instagram: ${instagramName}` : ""}`);
+          }}
+        />
+      )}
     </div>
   );
 }
