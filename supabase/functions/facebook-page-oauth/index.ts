@@ -59,42 +59,75 @@ Deno.serve(async (req) => {
         throw new Error('Failed to get access token: ' + JSON.stringify(tokenData));
       }
 
-      // Get user's Facebook pages
+      // Get ALL user's Facebook pages with pagination
       console.log('Fetching user pages...');
-      const pagesResponse = await fetch(
-        `https://graph.facebook.com/v18.0/me/accounts?access_token=${tokenData.access_token}`
-      );
+      let allPages: any[] = [];
+      let nextUrl = `https://graph.facebook.com/v18.0/me/accounts?access_token=${tokenData.access_token}&limit=100`;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const pagesResponse: Response = await fetch(nextUrl);
+        const pagesData: { data?: any[], paging?: { next?: string } } = await pagesResponse.json();
+        console.log('Pages batch response:', { pageCount: pagesData.data?.length, hasNext: !!pagesData.paging?.next });
+        
+        if (pagesData.data && pagesData.data.length > 0) {
+          allPages = [...allPages, ...pagesData.data];
+        }
+        
+        if (pagesData.paging?.next) {
+          nextUrl = pagesData.paging.next;
+        } else {
+          hasMore = false;
+        }
+      }
 
-      const pagesData = await pagesResponse.json();
-      console.log('Pages response:', { pageCount: pagesData.data?.length });
+      console.log('Total pages fetched:', allPages.length);
 
-      if (!pagesData.data || pagesData.data.length === 0) {
+      if (allPages.length === 0) {
         const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
         const redirectUrl = `${frontendUrl}/social-media?error=${encodeURIComponent('Aucune page Facebook trouvée. Veuillez créer une page Facebook.')}`;
         return Response.redirect(redirectUrl, 302);
       }
 
-      // If multiple pages, redirect to React callback page with encoded data
-      if (pagesData.data.length > 1) {
-        const pages = pagesData.data.map((p: any) => ({
+      // If multiple pages, store in database and redirect with session_id
+      if (allPages.length > 1) {
+        const pages = allPages.map((p: any) => ({
           id: p.id,
           name: p.name,
           token: p.access_token
         }));
 
-        // Get the frontend URL - production or preview
+        // Generate a unique session ID
+        const sessionId = crypto.randomUUID();
+
+        // Store pages in the temporary table
+        const { error: insertError } = await supabase
+          .from('oauth_pending_pages')
+          .insert({
+            session_id: sessionId,
+            user_id: state,
+            pages_data: pages,
+            expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString()
+          });
+
+        if (insertError) {
+          console.error('Error storing pending pages:', insertError);
+          throw new Error('Failed to store pages data');
+        }
+
+        console.log('Stored', pages.length, 'pages with session_id:', sessionId);
+
+        // Redirect with just the session ID (short URL)
         const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
-        const pagesEncoded = encodeURIComponent(JSON.stringify(pages));
-        const redirectUrl = `${frontendUrl}/social-callback?pages=${pagesEncoded}&userId=${state}`;
+        const redirectUrl = `${frontendUrl}/social-callback?session=${sessionId}`;
 
         console.log('Multiple pages detected, redirecting to:', redirectUrl);
 
-        // Redirect directly to React callback page
         return Response.redirect(redirectUrl, 302);
       }
 
       // Single page - proceed with connection directly
-      const page = pagesData.data[0];
+      const page = allPages[0];
         
       console.log('Storing page connection:', { pageName: page.name, userId: state });
 
@@ -181,6 +214,55 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { action } = body;
 
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      // Handle getting pending pages from session (no auth required - comes from callback page)
+      if (action === 'get_pending_pages') {
+        const { sessionId } = body;
+        
+        console.log('[FACEBOOK-OAUTH] get_pending_pages action received:', { sessionId });
+        
+        if (!sessionId) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Missing sessionId' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const { data, error: fetchError } = await supabase
+          .from('oauth_pending_pages')
+          .select('*')
+          .eq('session_id', sessionId)
+          .single();
+
+        if (fetchError || !data) {
+          console.error('[FACEBOOK-OAUTH] Error fetching pending pages:', fetchError);
+          return new Response(
+            JSON.stringify({ success: false, error: 'Session expirée ou invalide' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Check if session has expired
+        if (new Date(data.expires_at) < new Date()) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Session expirée' }),
+            { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log('[FACEBOOK-OAUTH] Found', data.pages_data.length, 'pending pages for user:', data.user_id);
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            pages: data.pages_data,
+            userId: data.user_id
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       // Handle page selection from OAuth callback (no auth required - comes from popup)
       if (action === 'save_page') {
         const { userId, pageId, pageToken, pageName } = body;
@@ -194,8 +276,6 @@ Deno.serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
         console.log('[FACEBOOK-OAUTH] Storing page connection to database...');
         
@@ -226,19 +306,23 @@ Deno.serve(async (req) => {
         // Fetch Instagram Business account linked to this page
         let instagramAccountName = null;
         try {
+          console.log('[FACEBOOK-OAUTH] Fetching Instagram Business account for page:', pageId);
           const igResponse = await fetch(
             `https://graph.facebook.com/v18.0/${pageId}?fields=instagram_business_account&access_token=${pageToken}`
           );
           const igData = await igResponse.json();
+          console.log('[FACEBOOK-OAUTH] Instagram Business response:', igData);
 
           if (igData.instagram_business_account) {
             const igDetailsResponse = await fetch(
               `https://graph.facebook.com/v18.0/${igData.instagram_business_account.id}?fields=username,name&access_token=${pageToken}`
             );
             const igDetails = await igDetailsResponse.json();
+            console.log('[FACEBOOK-OAUTH] Instagram details:', igDetails);
+            
             instagramAccountName = igDetails.username || igDetails.name || 'Instagram Business';
 
-            await supabase
+            const { error: igError } = await supabase
               .from('instagram_account_connections')
               .upsert({
                 user_id: userId,
@@ -249,9 +333,17 @@ Deno.serve(async (req) => {
               }, {
                 onConflict: 'user_id,account_id'
               });
+            
+            if (igError) {
+              console.error('[FACEBOOK-OAUTH] Error storing Instagram:', igError);
+            } else {
+              console.log('[FACEBOOK-OAUTH] Instagram connected:', instagramAccountName);
+            }
+          } else {
+            console.log('[FACEBOOK-OAUTH] No Instagram Business account linked to page:', pageName);
           }
         } catch (igError) {
-          console.error('Error fetching Instagram Business account:', igError);
+          console.error('[FACEBOOK-OAUTH] Error fetching Instagram Business account:', igError);
         }
 
         const successMessage = instagramAccountName 
@@ -269,15 +361,33 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Handle cleanup of session after successful save
+      if (action === 'cleanup_session') {
+        const { sessionId } = body;
+        
+        if (sessionId) {
+          await supabase
+            .from('oauth_pending_pages')
+            .delete()
+            .eq('session_id', sessionId);
+          console.log('[FACEBOOK-OAUTH] Cleaned up session:', sessionId);
+        }
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       // Handle initial OAuth request (requires authentication)
       const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
         },
       });
 
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
 
       if (userError || !user) {
         throw new Error('Unauthorized');

@@ -3007,6 +3007,33 @@ export type Database = {
         }
         Relationships: []
       }
+      oauth_pending_pages: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          pages_data: Json
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          pages_data: Json
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          pages_data?: Json
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       oauth_states: {
         Row: {
           created_at: string | null
@@ -6169,6 +6196,7 @@ export type Database = {
         Returns: Json
       }
       cleanup_expired_gsc_cache: { Args: never; Returns: undefined }
+      cleanup_expired_oauth_pages: { Args: never; Returns: undefined }
       cleanup_expired_shopify_tokens: {
         Args: never
         Returns: {
