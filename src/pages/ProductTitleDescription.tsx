@@ -584,7 +584,7 @@ export default function ProductTitleDescription() {
           await supabase.functions.invoke("sync-seo-to-shopify", {
             body: {
               productId: productId,
-              shopify_product_id: product.shopify_id,
+              force: true, // Bypass throttle for inline edits
               ...syncData
             }
           });
