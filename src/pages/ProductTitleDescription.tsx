@@ -2304,14 +2304,14 @@ export default function ProductTitleDescription() {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            <p className="font-medium">{product.seo_title || product.title}</p>
+                            <p className="font-medium" data-no-translate>{product.seo_title || product.title}</p>
                             {product.vendor && (
-                              <Badge variant="outline" className="font-normal text-xs">
+                              <Badge variant="outline" className="font-normal text-xs" data-no-translate>
                                 {product.vendor}
                               </Badge>
                             )}
                             {product.seo_title && product.title !== product.seo_title && (
-                              <p className="text-xs text-muted-foreground line-clamp-1">
+                              <p className="text-xs text-muted-foreground line-clamp-1" data-no-translate>
                                 {t.contentOptimization.table.original}: {product.title}
                               </p>
                             )}
@@ -2320,7 +2320,7 @@ export default function ProductTitleDescription() {
                         <TableCell className="hidden lg:table-cell">
                           <div className="space-y-2">
                             {product.seo_description ? (
-                              <p className="text-sm text-muted-foreground line-clamp-2">{product.seo_description}</p>
+                              <p className="text-sm text-muted-foreground line-clamp-2" data-no-translate>{product.seo_description}</p>
                             ) : (
                               <p className="text-sm text-muted-foreground italic">
                                 {t.contentOptimization.table.noOptimizedDesc}
@@ -2896,11 +2896,11 @@ export default function ProductTitleDescription() {
                                </Button>
                              </div>
                            ) : (
-                             <div 
+                            <div 
                                className="group flex items-start gap-2 cursor-pointer hover:bg-accent/50 rounded p-1 -m-1"
                                onClick={() => startEditing(product.id, "title", product.seo_title || product.title)}
                              >
-                               <h3 className="font-semibold text-sm line-clamp-2 flex-1">
+                               <h3 className="font-semibold text-sm line-clamp-2 flex-1" data-no-translate>
                                  {product.seo_title || product.title}
                                </h3>
                                <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" />

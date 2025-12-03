@@ -93,8 +93,10 @@ export function ProductGalleryDialog({
       if (error) throw error;
       
       // Deduplicate images by src to avoid visual duplicates
+      // Then re-sort by position to preserve Shopify order
       const uniqueImages = data ? 
-        Array.from(new Map(data.map(img => [img.src, img])).values()) : [];
+        Array.from(new Map(data.map(img => [img.src, img])).values())
+          .sort((a, b) => (a.position || 999) - (b.position || 999)) : [];
       
       setImages(uniqueImages);
     } catch (error) {
@@ -264,7 +266,7 @@ export function ProductGalleryDialog({
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5" />
-            {t.productGallery?.title || "Gallery"} - {product?.title}
+            {t.productGallery?.title || "Gallery"} - <span data-no-translate>{product?.title}</span>
           </DialogTitle>
         </DialogHeader>
 

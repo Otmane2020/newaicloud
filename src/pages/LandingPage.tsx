@@ -68,6 +68,7 @@ export default function LandingPage() {
         <div 
           dangerouslySetInnerHTML={{ __html: campaign.landing_page_html }}
           className="landing-page-container"
+          data-no-translate
         />
       </>
     );
