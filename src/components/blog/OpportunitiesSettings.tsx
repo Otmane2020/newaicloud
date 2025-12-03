@@ -119,7 +119,7 @@ export function OpportunitiesSettings() {
 
         // Check if popup was blocked
         if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-          toast.error('Popup bloquée. Veuillez autoriser les popups pour ce site.');
+          toast.error(t.social.popupBlocked);
           setLoading(false);
         }
       }
@@ -148,7 +148,7 @@ export function OpportunitiesSettings() {
       if (error) throw error;
       
       setFacebookPage(null);
-      toast.success('Page Facebook déconnectée');
+      toast.success(t.social.facebookDisconnected);
     } catch (error: any) {
       console.error('Disconnect error:', error);
       toast.error(t.toasts.error.generic);
@@ -171,7 +171,7 @@ export function OpportunitiesSettings() {
 
       if (error) throw error;
       
-      toast.success(newValue ? 'Auto-partage activé' : 'Auto-partage désactivé');
+      toast.success(newValue ? t.social.autoShareEnabled : t.social.autoShareDisabled);
     } catch (error: any) {
       console.error('Toggle error:', error);
       toast.error(t.toasts.error.generic);
@@ -204,7 +204,7 @@ export function OpportunitiesSettings() {
         // Listen for OAuth callback
         const handleMessage = (event: MessageEvent) => {
           if (event.data.success) {
-            toast.success('Compte Instagram connecté');
+            toast.success(t.social.instagramConnected);
             loadInstagramConnection();
             window.removeEventListener('message', handleMessage);
             setLoading(false);
@@ -219,7 +219,7 @@ export function OpportunitiesSettings() {
 
         // Check if popup was blocked
         if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-          toast.error('Popup bloquée. Veuillez autoriser les popups pour ce site.');
+          toast.error(t.social.popupBlocked);
           window.removeEventListener('message', handleMessage);
           setLoading(false);
         }
@@ -244,7 +244,7 @@ export function OpportunitiesSettings() {
       if (error) throw error;
       
       setInstagramAccount(null);
-      toast.success('Compte Instagram déconnecté');
+      toast.success(t.social.instagramDisconnected);
     } catch (error: any) {
       console.error('Disconnect error:', error);
       toast.error(t.toasts.error.generic);
@@ -267,7 +267,7 @@ export function OpportunitiesSettings() {
 
       if (error) throw error;
       
-      toast.success(newValue ? 'Auto-partage activé' : 'Auto-partage désactivé');
+      toast.success(newValue ? t.social.autoShareEnabled : t.social.autoShareDisabled);
     } catch (error: any) {
       console.error('Toggle error:', error);
       toast.error(t.toasts.error.generic);
@@ -329,16 +329,16 @@ export function OpportunitiesSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Facebook className="w-5 h-5 text-[#1877F2]" />
-              <span>Facebook Integration</span>
+              <span>{t.social.facebookIntegration}</span>
               {facebookPage && (
                 <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium ml-auto">
                   <Lock className="h-3 w-3" />
-                  Connecté
+                  {t.social.connected}
                 </div>
               )}
             </CardTitle>
             <CardDescription>
-              Connectez votre page Facebook pour partager automatiquement les articles
+              {t.social.facebookDescription}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -351,7 +351,7 @@ export function OpportunitiesSettings() {
                     </div>
                     <div>
                       <p className="font-medium">{facebookPage.page_name}</p>
-                      <p className="text-sm text-muted-foreground">Connecté</p>
+                      <p className="text-sm text-muted-foreground">{t.social.connected}</p>
                     </div>
                   </div>
                   <Button 
@@ -360,15 +360,15 @@ export function OpportunitiesSettings() {
                     disabled={loading}
                     size="sm"
                   >
-                    Déconnecter
+                    {t.social.disconnect}
                   </Button>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
-                    <Label htmlFor="auto-share">Auto-partage après publication</Label>
+                    <Label htmlFor="auto-share">{t.social.autoShareLabel}</Label>
                     <p className="text-sm text-muted-foreground">
-                      Publie automatiquement les nouveaux articles sur votre page Facebook
+                      {t.social.autoShareFacebookDesc}
                     </p>
                   </div>
                   <Switch 
@@ -386,7 +386,7 @@ export function OpportunitiesSettings() {
                 disabled={loading}
               >
                 <Facebook className="w-4 h-4 mr-2" />
-                Connecter Facebook
+                {t.social.connectFacebook}
               </Button>
             )}
           </CardContent>
@@ -396,16 +396,16 @@ export function OpportunitiesSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Instagram className="w-5 h-5 text-[#E4405F]" />
-              <span>Instagram Integration</span>
+              <span>{t.social.instagramIntegration}</span>
               {instagramAccount && (
                 <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium ml-auto">
                   <Lock className="h-3 w-3" />
-                  Connecté
+                  {t.social.connected}
                 </div>
               )}
             </CardTitle>
             <CardDescription>
-              Connectez votre compte Instagram pour partager automatiquement les articles
+              {t.social.instagramDescription}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -418,7 +418,7 @@ export function OpportunitiesSettings() {
                     </div>
                     <div>
                       <p className="font-medium">@{instagramAccount.account_name}</p>
-                      <p className="text-sm text-muted-foreground">Connecté</p>
+                      <p className="text-sm text-muted-foreground">{t.social.connected}</p>
                     </div>
                   </div>
                   <Button 
@@ -427,15 +427,15 @@ export function OpportunitiesSettings() {
                     disabled={loading}
                     size="sm"
                   >
-                    Déconnecter
+                    {t.social.disconnect}
                   </Button>
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
-                    <Label htmlFor="auto-share-instagram">Auto-partage après publication</Label>
+                    <Label htmlFor="auto-share-instagram">{t.social.autoShareLabel}</Label>
                     <p className="text-sm text-muted-foreground">
-                      Publie automatiquement les nouveaux articles sur votre compte Instagram
+                      {t.social.autoShareInstagramDesc}
                     </p>
                   </div>
                   <Switch 
@@ -453,7 +453,7 @@ export function OpportunitiesSettings() {
                 disabled={loading}
               >
                 <Instagram className="w-4 h-4 mr-2" />
-                Connecter Instagram
+                {t.social.connectInstagram}
               </Button>
             )}
           </CardContent>
