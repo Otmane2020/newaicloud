@@ -182,19 +182,36 @@ serve(async (req) => {
 
     // Force COMPLETE background replacement - ULTRA EXPLICIT
     const forceFullBackgroundReplace = `
-🚨 MISSION CRITIQUE : REMPLACEMENT TOTAL DE L'ARRIÈRE-PLAN
+🛑🛑🛑 RÈGLE ABSOLUE #1 : PRÉSERVATION PIXEL-PAR-PIXEL DU PRODUIT 🛑🛑🛑
 
-⚠️ ÉTAPE 1 - SUPPRESSION COMPLÈTE (NON-NÉGOCIABLE) :
-Tu DOIS d'abord DÉTRUIRE et SUPPRIMER ENTIÈREMENT l'arrière-plan existant :
-   ❌ SUPPRIME : Tous les murs visibles dans l'image originale
-   ❌ SUPPRIME : Tous les sols/planchers de l'image originale  
-   ❌ SUPPRIME : Tous les meubles qui NE SONT PAS le produit principal
-   ❌ SUPPRIME : Tous les canapés, fauteuils, chaises de l'arrière-plan
-   ❌ SUPPRIME : Toutes les décorations, tableaux, lampes, vases de l'arrière-plan
-   ❌ SUPPRIME : Toutes les plantes de l'image originale
-   ❌ SUPPRIME : Tous les rideaux, fenêtres de l'arrière-plan
-   ❌ SUPPRIME : L'éclairage, les ombres, les couleurs de la scène originale
-   ✅ GARDE UNIQUEMENT : Le produit principal lui-même (table, chaise, meuble, etc.)
+⚠️⚠️⚠️ TU NE DOIS JAMAIS GÉNÉRER UN NOUVEAU PRODUIT ⚠️⚠️⚠️
+
+L'image d'entrée contient un produit spécifique. Tu DOIS :
+1. EXTRAIRE ce produit EXACT de l'image (tous ses pixels, sa forme, sa couleur, ses détails)
+2. PLACER ce même produit EXTRAIT dans un nouvel environnement
+3. NE JAMAIS créer, dessiner, imaginer ou générer un produit similaire ou différent
+
+📸 EXEMPLE CONCRET :
+- Si l'image montre un SOMMIER métallique avec lattes → garde CE SOMMIER EXACT (pas un lit complet avec matelas!)
+- Si l'image montre une CHAISE en bois → garde CETTE CHAISE EXACTE (même forme, couleur, texture)
+- Si l'image montre une TABLE → garde CETTE TABLE EXACTE
+
+🚫 ÉCHEC TOTAL (exemples) :
+- Remplacer un sommier par un lit complet avec matelas = ÉCHEC
+- Remplacer une chaise simple par un fauteuil = ÉCHEC  
+- Modifier la forme, couleur ou texture du produit = ÉCHEC
+- Générer un produit "similaire" ou "dans la même catégorie" = ÉCHEC
+
+✅ SUCCÈS = le produit est IDENTIQUE pixel-par-pixel, seul l'arrière-plan change
+
+🚨 MISSION : REMPLACEMENT TOTAL DE L'ARRIÈRE-PLAN UNIQUEMENT
+
+⚠️ ÉTAPE 1 - EXTRACTION DU PRODUIT (CRITIQUE) :
+Tu DOIS d'abord EXTRAIRE le produit EXACT de l'image d'entrée :
+   ✅ EXTRAIS : Le produit principal EXACTEMENT comme il apparaît dans l'image
+   ✅ CONSERVE : Chaque pixel, chaque détail, chaque couleur du produit
+   ❌ SUPPRIME : Tous les murs, sols, meubles, décorations de l'arrière-plan
+   ❌ NE MODIFIE PAS : Le produit lui-même en aucune façon
 
 ⚡ ÉTAPE 2 - CRÉATION D'UN NOUVEL ENVIRONNEMENT (OBLIGATOIRE) :
 Tu DOIS créer un environnement COMPLÈTEMENT DIFFÉRENT et NOUVEAU :
@@ -299,10 +316,35 @@ Nouveauté = environnement totalement différent et frais.
 Style = luxueux mais accessible, réaliste, vendeur.
 `;
 
-    // Use enriched prompt if available (includes SERP insights), otherwise use premium lifestyle prompt
-    const finalPrompt =
-      enrichedPrompt ||
-      `
+    // Critical product preservation header - ALWAYS included
+    const productPreservationHeader = `
+🛑🛑🛑 RÈGLE ABSOLUE AVANT TOUT : PRÉSERVATION DU PRODUIT EXACT 🛑🛑🛑
+
+L'image d'entrée contient un produit spécifique. Tu DOIS :
+1. EXTRAIRE ce produit EXACT de l'image (tous ses pixels, sa forme, sa couleur)
+2. PLACER ce même produit EXTRAIT dans le nouvel environnement
+3. NE JAMAIS générer un produit différent ou similaire
+
+⚠️ ÉCHEC TOTAL si tu génères un produit différent !
+- Un sommier doit rester un sommier (pas devenir un lit complet)
+- Une chaise doit rester cette chaise exacte
+- Le produit doit être IDENTIQUE pixel-par-pixel
+
+`;
+
+    // Use enriched prompt if available, but ALWAYS prepend product preservation rules
+    const finalPrompt = enrichedPrompt 
+      ? `${productPreservationHeader}
+
+📝 INSTRUCTION UTILISATEUR (RESPECTER ABSOLUMENT) :
+${enrichedPrompt}
+
+📦 PRODUIT À PRÉSERVER :
+${productContext}
+
+⚠️ RAPPEL : Garde le produit EXACT de l'image, change UNIQUEMENT l'environnement selon l'instruction ci-dessus.
+`.trim()
+      : `
 ${forceFullBackgroundReplace}
 
 ${premiumLifestylePrompt}
