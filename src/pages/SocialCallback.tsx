@@ -96,6 +96,7 @@ const SocialCallback = () => {
         pages={pages}
         userId={userId}
         onSuccess={handleSuccess}
+        multiSelect={true}
       />
     </div>
   );
