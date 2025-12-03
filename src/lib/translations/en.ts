@@ -9298,6 +9298,78 @@ export const translations = {
     },
   },
 
+  // ============= Blog Campaigns =============
+  blogCampaigns: {
+    title: "AI Campaigns",
+    subtitle: "Manage your automated generation campaigns",
+    tabs: {
+      campaigns: "Campaigns",
+      recentArticles: "Recent Articles",
+    },
+    table: {
+      campaign: "Campaign",
+      frequency: "Frequency",
+      content: "Content",
+      next: "Next",
+      status: "Status",
+      actions: "Actions",
+      title: "Title",
+      createdAt: "Created at",
+    },
+    status: {
+      inactive: "Inactive",
+      neverRan: "Never ran",
+      overdue: "Overdue",
+      scheduled: "Scheduled",
+    },
+    contentSummary: {
+      collections: "collection(s)",
+      products: "product(s)",
+      autoGeneration: "Auto generation",
+    },
+    empty: {
+      campaigns: "No campaigns found. Create your first automated campaign!",
+      articles: "No articles found",
+    },
+    toasts: {
+      loadError: "Error loading data",
+      generating: "Generating article for \"{{name}}\"...",
+      generated: "Article generated successfully for \"{{name}}\"",
+      generationError: "Generation error",
+      diagnosing: "Diagnosing...",
+      diagnosisComplete: "Diagnosis complete",
+    },
+    edit: {
+      title: "Edit Campaign",
+      name: "Campaign Name",
+      topic: "Main Topic",
+      keywords: "Keywords",
+      addKeyword: "Add keyword",
+      add: "Add",
+      collections: "Collections (optional)",
+      products: "Specific Products (optional)",
+      productsCount: "products",
+      collectionsHelp: "Leave empty for automatic generation based on all products",
+      frequency: "Frequency",
+      frequencies: {
+        daily: "Daily",
+        weekly: "Weekly",
+        biweekly: "Biweekly",
+        monthly: "Monthly",
+      },
+      activeCampaign: "Active Campaign",
+      deactivateTooltip: "Disable to pause",
+      autoPublish: "Auto-publish",
+      autoPublishTooltip: "Publish to Shopify automatically",
+      delete: "Delete",
+      save: "Save",
+      confirmDelete: "Delete this campaign?",
+      updated: "Campaign updated",
+      updateError: "Update error",
+      deleted: "Campaign deleted",
+    },
+  },
+
   // ============= Creative Studio =============
   creativeStudio: {
     title: "AI Creative Studio",

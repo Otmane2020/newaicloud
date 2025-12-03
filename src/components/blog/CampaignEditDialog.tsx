@@ -49,7 +49,7 @@ interface CampaignEditDialogProps {
 }
 
 export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: CampaignEditDialogProps) {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [keywordInput, setKeywordInput] = useState('');
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -152,19 +152,19 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
 
       if (error) throw error;
 
-      toast.success(language === 'fr' ? 'Campagne mise à jour' : 'Campaign updated');
+      toast.success(t.blogCampaigns.edit.updated);
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error updating campaign:', error);
-      toast.error(error.message || (language === 'fr' ? 'Erreur de mise à jour' : 'Update error'));
+      toast.error(error.message || t.blogCampaigns.edit.updateError);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(language === 'fr' ? 'Supprimer cette campagne ?' : 'Delete this campaign?')) return;
+    if (!confirm(t.blogCampaigns.edit.confirmDelete)) return;
 
     try {
       setLoading(true);
@@ -175,7 +175,7 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
 
       if (error) throw error;
 
-      toast.success(language === 'fr' ? 'Campagne supprimée' : 'Campaign deleted');
+      toast.success(t.blogCampaigns.edit.deleted);
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -192,7 +192,7 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="text-2xl">{language === 'fr' ? 'Modifier la campagne' : 'Edit Campaign'}</DialogTitle>
+          <DialogTitle className="text-2xl">{t.blogCampaigns.edit.title}</DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="max-h-[70vh] pr-4">
@@ -200,7 +200,7 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
             {/* Basic Info */}
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">{language === 'fr' ? 'Nom de la campagne' : 'Campaign Name'}</Label>
+                <Label htmlFor="name">{t.blogCampaigns.edit.name}</Label>
                 <Input
                   id="name"
                   value={formData.name || ''}
@@ -209,7 +209,7 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
               </div>
 
               <div>
-                <Label htmlFor="topic_niche">{language === 'fr' ? 'Sujet principal' : 'Main Topic'}</Label>
+                <Label htmlFor="topic_niche">{t.blogCampaigns.edit.topic}</Label>
                 <Input
                   id="topic_niche"
                   value={formData.topic_niche || ''}
@@ -218,16 +218,16 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
               </div>
 
               <div>
-                <Label>{language === 'fr' ? 'Mots-clés' : 'Keywords'}</Label>
+                <Label>{t.blogCampaigns.edit.keywords}</Label>
                 <div className="flex gap-2 mt-1.5">
                   <Input
                     value={keywordInput}
                     onChange={(e) => setKeywordInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
-                    placeholder={language === 'fr' ? 'Ajouter un mot-clé' : 'Add keyword'}
+                    placeholder={t.blogCampaigns.edit.addKeyword}
                   />
                   <Button type="button" onClick={addKeyword} variant="secondary">
-                    {language === 'fr' ? 'Ajouter' : 'Add'}
+                    {t.blogCampaigns.edit.add}
                   </Button>
                 </div>
                 {formData.keywords && formData.keywords.length > 0 && (
@@ -248,7 +248,7 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <Package className="w-4 h-4" />
-                  {language === 'fr' ? 'Collections (optionnel)' : 'Collections (optional)'}
+                  {t.blogCampaigns.edit.collections}
                 </Label>
                 <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
                   {collections.map((collection) => (
@@ -259,16 +259,12 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
                       />
                       <span className="text-sm">{collection.title}</span>
                       <Badge variant="outline" className="ml-auto">
-                        {collection.products_count} {language === 'fr' ? 'produits' : 'products'}
+                        {collection.products_count} {t.blogCampaigns.edit.productsCount}
                       </Badge>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {language === 'fr' 
-                    ? 'Laissez vide pour génération automatique basée sur tous les produits'
-                    : 'Leave empty for automatic generation based on all products'}
-                </p>
+                <p className="text-xs text-muted-foreground">{t.blogCampaigns.edit.collectionsHelp}</p>
               </div>
             )}
 
@@ -277,7 +273,7 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
                   <ShoppingBag className="w-4 h-4" />
-                  {language === 'fr' ? 'Produits spécifiques (optionnel)' : 'Specific Products (optional)'}
+                  {t.blogCampaigns.edit.products}
                 </Label>
                 <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
                   {products.map((product) => (
@@ -296,7 +292,7 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
             {/* Scheduling */}
             <div className="space-y-4">
               <div>
-                <Label>{language === 'fr' ? 'Fréquence' : 'Frequency'}</Label>
+                <Label>{t.blogCampaigns.edit.frequency}</Label>
                 <Select
                   value={formData.frequency}
                   onValueChange={(value) => setFormData({ ...formData, frequency: value })}
@@ -305,20 +301,18 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="daily">{language === 'fr' ? 'Quotidien' : 'Daily'}</SelectItem>
-                    <SelectItem value="weekly">{language === 'fr' ? 'Hebdomadaire' : 'Weekly'}</SelectItem>
-                    <SelectItem value="biweekly">{language === 'fr' ? 'Bihebdomadaire' : 'Biweekly'}</SelectItem>
-                    <SelectItem value="monthly">{language === 'fr' ? 'Mensuel' : 'Monthly'}</SelectItem>
+                    <SelectItem value="daily">{t.blogCampaigns.edit.frequencies.daily}</SelectItem>
+                    <SelectItem value="weekly">{t.blogCampaigns.edit.frequencies.weekly}</SelectItem>
+                    <SelectItem value="biweekly">{t.blogCampaigns.edit.frequencies.biweekly}</SelectItem>
+                    <SelectItem value="monthly">{t.blogCampaigns.edit.frequencies.monthly}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                 <div>
-                  <Label>{language === 'fr' ? 'Campagne active' : 'Active Campaign'}</Label>
-                  <p className="text-xs text-muted-foreground">
-                    {language === 'fr' ? 'Désactivez pour mettre en pause' : 'Disable to pause'}
-                  </p>
+                  <Label>{t.blogCampaigns.edit.activeCampaign}</Label>
+                  <p className="text-xs text-muted-foreground">{t.blogCampaigns.edit.deactivateTooltip}</p>
                 </div>
                 <Switch
                   checked={formData.is_active}
@@ -328,10 +322,8 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
 
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                 <div>
-                  <Label>{language === 'fr' ? 'Publication automatique' : 'Auto-publish'}</Label>
-                  <p className="text-xs text-muted-foreground">
-                    {language === 'fr' ? 'Publier sur Shopify automatiquement' : 'Publish to Shopify automatically'}
-                  </p>
+                  <Label>{t.blogCampaigns.edit.autoPublish}</Label>
+                  <p className="text-xs text-muted-foreground">{t.blogCampaigns.edit.autoPublishTooltip}</p>
                 </div>
                 <Switch
                   checked={formData.auto_post}
@@ -350,12 +342,12 @@ export function CampaignEditDialog({ campaign, open, onOpenChange, onSuccess }: 
             disabled={loading}
           >
             <Trash2 className="w-4 h-4 mr-2" />
-            {language === 'fr' ? 'Supprimer' : 'Delete'}
+            {t.blogCampaigns.edit.delete}
           </Button>
 
           <Button onClick={handleSave} disabled={loading}>
             <Save className="w-4 h-4 mr-2" />
-            {language === 'fr' ? 'Enregistrer' : 'Save'}
+            {t.blogCampaigns.edit.save}
           </Button>
         </div>
       </DialogContent>

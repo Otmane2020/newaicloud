@@ -15,12 +15,7 @@ import {
   Play, 
   RefreshCw, 
   FileText,
-  Search,
-  Database,
-  Zap,
-  Edit,
-  Package,
-  ShoppingBag
+  Edit
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr, enUS } from 'date-fns/locale';
@@ -59,7 +54,6 @@ export default function BlogCampaignMonitoring() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingCampaignId, setGeneratingCampaignId] = useState<string | null>(null);
-  const [diagnosticResults, setDiagnosticResults] = useState<any>(null);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
@@ -72,7 +66,6 @@ export default function BlogCampaignMonitoring() {
     try {
       setLoading(true);
 
-      // Load campaigns
       const { data: campaignsData, error: campaignsError } = await supabase
         .from('blog_campaigns')
         .select('*')
@@ -82,7 +75,6 @@ export default function BlogCampaignMonitoring() {
       if (campaignsError) throw campaignsError;
       setCampaigns(campaignsData || []);
 
-      // Load recent articles
       const { data: articlesData, error: articlesError } = await supabase
         .from('blog_articles')
         .select('id, title, created_at, status')
@@ -94,7 +86,7 @@ export default function BlogCampaignMonitoring() {
       setArticles(articlesData || []);
     } catch (error) {
       console.error('Error loading data:', error);
-      toast.error(language === 'fr' ? 'Erreur de chargement des données' : 'Error loading data');
+      toast.error(t.blogCampaigns.toasts.loadError);
     } finally {
       setLoading(false);
     }
@@ -103,10 +95,7 @@ export default function BlogCampaignMonitoring() {
   const handleForceGeneration = async (campaign: Campaign) => {
     try {
       setGeneratingCampaignId(campaign.id);
-      toast.info(language === 'fr' 
-        ? `Génération d'article en cours pour "${campaign.name}"...` 
-        : `Generating article for "${campaign.name}"...`
-      );
+      toast.info(t.blogCampaigns.toasts.generating.replace('{{name}}', campaign.name));
 
       const { data, error } = await supabase.functions.invoke('generate-blog-article', {
         body: {
@@ -123,93 +112,48 @@ export default function BlogCampaignMonitoring() {
       if (error) throw error;
 
       if (data?.success) {
-        toast.success(language === 'fr' 
-          ? `Article généré avec succès pour "${campaign.name}"` 
-          : `Article generated successfully for "${campaign.name}"`
-        );
+        toast.success(t.blogCampaigns.toasts.generated.replace('{{name}}', campaign.name));
         loadData();
       } else {
         throw new Error(data?.error || 'Generation failed');
       }
     } catch (error: any) {
       console.error('Error forcing generation:', error);
-      toast.error(error.message || (language === 'fr' ? 'Erreur de génération' : 'Generation error'));
+      toast.error(error.message || t.blogCampaigns.toasts.generationError);
     } finally {
       setGeneratingCampaignId(null);
     }
   };
 
-  const handleDiagnoseCampaign = async (campaign: Campaign) => {
-    try {
-      toast.info(language === 'fr' ? 'Diagnostic en cours...' : 'Diagnosing...');
-
-      // Check matching products
-      const { data: products, error: productsError } = await supabase
-        .from('shopify_products')
-        .select('id, title, category, product_type')
-        .eq('seller_id', user?.id);
-
-      if (productsError) throw productsError;
-
-      const matchingProducts = products?.filter(p => {
-        const searchText = `${p.title} ${p.category} ${p.product_type}`.toLowerCase();
-        return campaign.keywords.some(keyword => 
-          searchText.includes(keyword.toLowerCase())
-        );
-      });
-
-      // Check last articles generated
-      const { data: relatedArticles, error: articlesError } = await supabase
-        .from('blog_articles')
-        .select('id, title, created_at')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (articlesError) throw articlesError;
-
-      setDiagnosticResults({
-        campaign,
-        matchingProducts: matchingProducts || [],
-        recentArticles: relatedArticles || [],
-      });
-
-      toast.success(language === 'fr' ? 'Diagnostic terminé' : 'Diagnosis complete');
-    } catch (error: any) {
-      console.error('Error diagnosing campaign:', error);
-      toast.error(error.message);
-    }
-  };
-
   const getCampaignStatus = (campaign: Campaign) => {
     if (!campaign.is_active) {
-      return { label: language === 'fr' ? 'Inactive' : 'Inactive', variant: 'secondary' as const, icon: AlertCircle };
+      return { label: t.blogCampaigns.status.inactive, variant: 'secondary' as const, icon: AlertCircle };
     }
 
     if (!campaign.last_generation_date) {
-      return { label: language === 'fr' ? 'Jamais exécuté' : 'Never ran', variant: 'destructive' as const, icon: AlertCircle };
+      return { label: t.blogCampaigns.status.neverRan, variant: 'destructive' as const, icon: AlertCircle };
     }
 
     const nextExecution = new Date(campaign.next_execution_at);
     const isPastDue = nextExecution < new Date();
 
     if (isPastDue) {
-      return { label: language === 'fr' ? 'En retard' : 'Overdue', variant: 'destructive' as const, icon: AlertCircle };
+      return { label: t.blogCampaigns.status.overdue, variant: 'destructive' as const, icon: AlertCircle };
     }
 
-    return { label: language === 'fr' ? 'Planifié' : 'Scheduled', variant: 'default' as const, icon: CheckCircle2 };
+    return { label: t.blogCampaigns.status.scheduled, variant: 'default' as const, icon: CheckCircle2 };
   };
 
   const getContentSummary = (campaign: Campaign) => {
     const parts = [];
     if (campaign.collection_ids && campaign.collection_ids.length > 0) {
-      parts.push(`${campaign.collection_ids.length} collection(s)`);
+      parts.push(`${campaign.collection_ids.length} ${t.blogCampaigns.contentSummary.collections}`);
     }
     if (campaign.product_ids && campaign.product_ids.length > 0) {
-      parts.push(`${campaign.product_ids.length} produit(s)`);
+      parts.push(`${campaign.product_ids.length} ${t.blogCampaigns.contentSummary.products}`);
     }
     if (parts.length === 0) {
-      return language === 'fr' ? 'Génération automatique' : 'Auto generation';
+      return t.blogCampaigns.contentSummary.autoGeneration;
     }
     return parts.join(', ');
   };
@@ -218,10 +162,8 @@ export default function BlogCampaignMonitoring() {
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{language === 'fr' ? 'Campagnes IA' : 'AI Campaigns'}</h1>
-          <p className="text-muted-foreground mt-1">
-            {language === 'fr' ? 'Gérez vos campagnes de génération automatique' : 'Manage your automated generation campaigns'}
-          </p>
+          <h1 className="text-3xl font-bold">{t.blogCampaigns.title}</h1>
+          <p className="text-muted-foreground mt-1">{t.blogCampaigns.subtitle}</p>
         </div>
       </div>
 
@@ -229,36 +171,31 @@ export default function BlogCampaignMonitoring() {
         <TabsList>
           <TabsTrigger value="campaigns">
             <CalendarClock className="w-4 h-4 mr-2" />
-            {language === 'fr' ? 'Campagnes' : 'Campaigns'} ({campaigns.length})
+            {t.blogCampaigns.tabs.campaigns} ({campaigns.length})
           </TabsTrigger>
           <TabsTrigger value="articles">
             <FileText className="w-4 h-4 mr-2" />
-            {language === 'fr' ? 'Articles récents' : 'Recent Articles'} ({articles.length})
+            {t.blogCampaigns.tabs.recentArticles} ({articles.length})
           </TabsTrigger>
         </TabsList>
 
-        {/* Campaigns Tab */}
         <TabsContent value="campaigns" className="space-y-4">
           {campaigns.length === 0 ? (
             <Card className="p-12 text-center">
               <CalendarClock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                {language === 'fr' 
-                  ? 'Aucune campagne trouvée. Créez votre première campagne automatique !' 
-                  : 'No campaigns found. Create your first automated campaign!'}
-              </p>
+              <p className="text-muted-foreground">{t.blogCampaigns.empty.campaigns}</p>
             </Card>
           ) : (
             <Card>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{language === 'fr' ? 'Campagne' : 'Campaign'}</TableHead>
-                    <TableHead>{language === 'fr' ? 'Fréquence' : 'Frequency'}</TableHead>
-                    <TableHead>{language === 'fr' ? 'Contenu' : 'Content'}</TableHead>
-                    <TableHead>{language === 'fr' ? 'Prochaine' : 'Next'}</TableHead>
-                    <TableHead>{language === 'fr' ? 'Statut' : 'Status'}</TableHead>
-                    <TableHead>{language === 'fr' ? 'Actions' : 'Actions'}</TableHead>
+                    <TableHead>{t.blogCampaigns.table.campaign}</TableHead>
+                    <TableHead>{t.blogCampaigns.table.frequency}</TableHead>
+                    <TableHead>{t.blogCampaigns.table.content}</TableHead>
+                    <TableHead>{t.blogCampaigns.table.next}</TableHead>
+                    <TableHead>{t.blogCampaigns.table.status}</TableHead>
+                    <TableHead>{t.blogCampaigns.table.actions}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -327,23 +264,20 @@ export default function BlogCampaignMonitoring() {
           )}
         </TabsContent>
 
-        {/* Articles Tab */}
         <TabsContent value="articles" className="space-y-4">
           {articles.length === 0 ? (
             <Card className="p-12 text-center">
               <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                {language === 'fr' ? 'Aucun article trouvé' : 'No articles found'}
-              </p>
+              <p className="text-muted-foreground">{t.blogCampaigns.empty.articles}</p>
             </Card>
           ) : (
             <Card>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{language === 'fr' ? 'Titre' : 'Title'}</TableHead>
-                    <TableHead>{language === 'fr' ? 'Date de création' : 'Created at'}</TableHead>
-                    <TableHead>{language === 'fr' ? 'Statut' : 'Status'}</TableHead>
+                    <TableHead>{t.blogCampaigns.table.title}</TableHead>
+                    <TableHead>{t.blogCampaigns.table.createdAt}</TableHead>
+                    <TableHead>{t.blogCampaigns.table.status}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

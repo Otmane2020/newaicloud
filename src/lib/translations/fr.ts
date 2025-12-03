@@ -9347,6 +9347,78 @@ export const translations = {
     },
   },
 
+  // ============= Blog Campaigns =============
+  blogCampaigns: {
+    title: "Campagnes IA",
+    subtitle: "Gérez vos campagnes de génération automatique",
+    tabs: {
+      campaigns: "Campagnes",
+      recentArticles: "Articles récents",
+    },
+    table: {
+      campaign: "Campagne",
+      frequency: "Fréquence",
+      content: "Contenu",
+      next: "Prochaine",
+      status: "Statut",
+      actions: "Actions",
+      title: "Titre",
+      createdAt: "Date de création",
+    },
+    status: {
+      inactive: "Inactive",
+      neverRan: "Jamais exécuté",
+      overdue: "En retard",
+      scheduled: "Planifié",
+    },
+    contentSummary: {
+      collections: "collection(s)",
+      products: "produit(s)",
+      autoGeneration: "Génération automatique",
+    },
+    empty: {
+      campaigns: "Aucune campagne trouvée. Créez votre première campagne automatique !",
+      articles: "Aucun article trouvé",
+    },
+    toasts: {
+      loadError: "Erreur de chargement des données",
+      generating: "Génération d'article en cours pour \"{{name}}\"...",
+      generated: "Article généré avec succès pour \"{{name}}\"",
+      generationError: "Erreur de génération",
+      diagnosing: "Diagnostic en cours...",
+      diagnosisComplete: "Diagnostic terminé",
+    },
+    edit: {
+      title: "Modifier la campagne",
+      name: "Nom de la campagne",
+      topic: "Sujet principal",
+      keywords: "Mots-clés",
+      addKeyword: "Ajouter un mot-clé",
+      add: "Ajouter",
+      collections: "Collections (optionnel)",
+      products: "Produits spécifiques (optionnel)",
+      productsCount: "produits",
+      collectionsHelp: "Laissez vide pour génération automatique basée sur tous les produits",
+      frequency: "Fréquence",
+      frequencies: {
+        daily: "Quotidien",
+        weekly: "Hebdomadaire",
+        biweekly: "Bihebdomadaire",
+        monthly: "Mensuel",
+      },
+      activeCampaign: "Campagne active",
+      deactivateTooltip: "Désactivez pour mettre en pause",
+      autoPublish: "Publication automatique",
+      autoPublishTooltip: "Publier sur Shopify automatiquement",
+      delete: "Supprimer",
+      save: "Enregistrer",
+      confirmDelete: "Supprimer cette campagne ?",
+      updated: "Campagne mise à jour",
+      updateError: "Erreur de mise à jour",
+      deleted: "Campagne supprimée",
+    },
+  },
+
   // ============= Creative Studio =============
   creativeStudio: {
     title: "Studio Créatif IA",

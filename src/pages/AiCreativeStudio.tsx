@@ -11,17 +11,17 @@ import { toast } from "sonner";
 import { 
   Loader2, Wand2, Download, Search, Sparkles, 
   ImageIcon, Check, Facebook, Instagram, Eye, Star,
-  Send, Link, Image as ImageIconLucide, FileText, History, Trash2, RefreshCw
+  Send, Link, Image as ImageIconLucide, History, Trash2, RefreshCw
 } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
+import { useTranslation } from "@/lib/language";
 import { CreativeStyleGrid } from "@/components/social/creative/CreativeStyleGrid";
 import { type CreativeStyle } from "@/components/social/templates/creativeStyles";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { fr, enUS } from "date-fns/locale";
 
 type GenerationMode = "showcase" | "strengths";
-type PostLength = "short" | "long";
 type PostType = "image" | "withLink";
 
 interface ShopifyProduct {
@@ -57,7 +57,6 @@ interface CreativeHistoryItem {
   caption?: string | null;
 }
 
-// Detect language from product title
 const detectLanguage = (text: string): "fr" | "en" => {
   const frenchWords = ["canapé", "table", "chaise", "fauteuil", "bureau", "lit", "meuble", "armoire", "étagère", "commode", "lampe", "tapis", "miroir", "avec", "pour", "dans", "sans", "noir", "blanc", "bois", "moderne", "design"];
   const lowerText = text.toLowerCase();
@@ -67,9 +66,9 @@ const detectLanguage = (text: string): "fr" | "en" => {
 
 export default function AiCreativeStudio() {
   const { selectedStore } = useStore();
+  const { t, language } = useTranslation();
   const [activeTab, setActiveTab] = useState("studio");
   
-  // Studio state
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<ShopifyProduct | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -82,18 +81,14 @@ export default function AiCreativeStudio() {
   const [generationMode, setGenerationMode] = useState<GenerationMode>("showcase");
   const [showPrice, setShowPrice] = useState(true);
   
-  // Social posting state
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [connectedPages, setConnectedPages] = useState<ConnectedPage[]>([]);
-  const [postLength, setPostLength] = useState<PostLength>("short");
   const [postType, setPostType] = useState<PostType>("withLink");
   const [publishing, setPublishing] = useState(false);
   
-  // Social caption state
   const [socialCaption, setSocialCaption] = useState("");
   const [generatingCaption, setGeneratingCaption] = useState(false);
 
-  // History state
   const [history, setHistory] = useState<CreativeHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -139,10 +134,10 @@ export default function AiCreativeStudio() {
 
       if (error) throw error;
       setHistory(prev => prev.filter(h => h.id !== id));
-      toast.success("Image supprimée");
+      toast.success(t.toasts.success.deleted);
     } catch (error) {
       console.error("Error deleting:", error);
-      toast.error("Erreur lors de la suppression");
+      toast.error(t.toasts.error.deleting);
     }
   };
 
@@ -249,7 +244,7 @@ export default function AiCreativeStudio() {
       );
     } catch (error) {
       console.error("Error loading products:", error);
-      toast.error("Erreur lors du chargement des produits");
+      toast.error(t.toasts.error.loading);
     } finally {
       setLoadingProducts(false);
     }
@@ -264,7 +259,7 @@ export default function AiCreativeStudio() {
 
   const generateSocialCaption = async () => {
     if (!selectedProduct) {
-      toast.error("Sélectionnez d'abord un produit");
+      toast.error(t.creativeStudio.toast.selectProduct);
       return;
     }
 
@@ -290,11 +285,11 @@ export default function AiCreativeStudio() {
       
       if (data?.caption) {
         setSocialCaption(data.caption);
-        toast.success("Description générée");
+        toast.success(t.toasts.success.created);
       }
     } catch (error: any) {
       console.error("Error generating caption:", error);
-      toast.error("Erreur lors de la génération");
+      toast.error(t.creativeStudio.toast.generationError);
     } finally {
       setGeneratingCaption(false);
     }
@@ -302,7 +297,7 @@ export default function AiCreativeStudio() {
 
   const generateCreative = async () => {
     if (!selectedProduct || !selectedStyle) {
-      toast.error("Sélectionnez un style et un produit");
+      toast.error(t.creativeStudio.toast.selectProduct);
       return;
     }
 
@@ -343,7 +338,6 @@ export default function AiCreativeStudio() {
         const imageUrl = `data:image/png;base64,${data.base64}`;
         setGeneratedImage(imageUrl);
         
-        // Save to history
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await supabase.from("creative_history").insert({
@@ -359,11 +353,11 @@ export default function AiCreativeStudio() {
           });
         }
         
-        toast.success("Créatif généré avec succès");
+        toast.success(t.creativeStudio.toast.generated);
       }
     } catch (error: any) {
       console.error("Error generating creative:", error);
-      toast.error(error.message || "Erreur lors de la génération");
+      toast.error(error.message || t.creativeStudio.toast.generationError);
     } finally {
       setGenerating(false);
     }
@@ -376,17 +370,17 @@ export default function AiCreativeStudio() {
     link.href = generatedImage;
     link.download = `${selectedProduct?.title?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'creative'}.png`;
     link.click();
-    toast.success("Image téléchargée");
+    toast.success(t.creativeStudio.toast.downloaded);
   };
 
   const publishToSocial = async () => {
     if (!generatedImage || selectedPlatforms.length === 0) {
-      toast.error("Sélectionnez au moins une plateforme");
+      toast.error(t.creativeStudio.toast.selectPlatform);
       return;
     }
 
     if (!socialCaption.trim()) {
-      toast.error("Ajoutez une description pour votre post");
+      toast.error(t.creativeStudio.steps.social.noPages);
       return;
     }
 
@@ -423,10 +417,10 @@ export default function AiCreativeStudio() {
 
       if (publishError) throw publishError;
 
-      toast.success("Publication réussie");
+      toast.success(t.creativeStudio.toast.published);
     } catch (error: any) {
       console.error("Error publishing:", error);
-      toast.error(error.message || "Erreur lors de la publication");
+      toast.error(error.message || t.creativeStudio.toast.publishError);
     } finally {
       setPublishing(false);
     }
@@ -469,10 +463,8 @@ export default function AiCreativeStudio() {
                 <Sparkles className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">Studio Créatif IA</h1>
-                <p className="text-sm text-muted-foreground hidden sm:block">
-                  Créez des visuels professionnels pour vos réseaux sociaux
-                </p>
+                <h1 className="text-xl font-bold">{t.creativeStudio.title}</h1>
+                <p className="text-sm text-muted-foreground hidden sm:block">{t.creativeStudio.subtitle}</p>
               </div>
             </div>
           </div>
@@ -488,18 +480,18 @@ export default function AiCreativeStudio() {
             </TabsTrigger>
             <TabsTrigger value="history" className="gap-2">
               <History className="h-4 w-4" />
-              Historique
+              {t.creativeStudio.result.title === "Résultat" ? "Historique" : "History"}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="studio" className="space-y-6">
-            {/* Style Selection - FIRST */}
+            {/* Style Selection */}
             <section className="bg-card rounded-xl border overflow-hidden">
               <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
                 <SelectionCheck selected={isStyleSelected} />
                 <div className="flex-1">
-                  <h2 className="font-semibold">Choisissez un style créatif</h2>
-                  <p className="text-xs text-muted-foreground">L'IA générera une image stylisée unique</p>
+                  <h2 className="font-semibold">{t.creativeStudio.steps.template.title}</h2>
+                  <p className="text-xs text-muted-foreground">{t.creativeStudio.steps.template.subtitle}</p>
                 </div>
                 {selectedStyle && (
                   <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30">
@@ -509,20 +501,17 @@ export default function AiCreativeStudio() {
               </div>
               
               <div className="p-4">
-                <CreativeStyleGrid
-                  selectedStyle={selectedStyle}
-                  onSelectStyle={setSelectedStyle}
-                />
+                <CreativeStyleGrid selectedStyle={selectedStyle} onSelectStyle={setSelectedStyle} />
               </div>
             </section>
 
-            {/* Product Selection - SECOND */}
+            {/* Product Selection */}
             <section className="bg-card rounded-xl border overflow-hidden">
               <div className="bg-muted/30 px-4 py-3 border-b flex items-center gap-3">
                 <SelectionCheck selected={isProductSelected} />
                 <div className="flex-1">
-                  <h2 className="font-semibold">Sélectionnez un produit</h2>
-                  <p className="text-xs text-muted-foreground">Choisissez le produit à mettre en avant</p>
+                  <h2 className="font-semibold">{t.creativeStudio.steps.product.title}</h2>
+                  <p className="text-xs text-muted-foreground">{t.creativeStudio.steps.product.subtitle}</p>
                 </div>
                 {selectedProduct && (
                   <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30">
@@ -535,7 +524,7 @@ export default function AiCreativeStudio() {
                 <div className="relative max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Rechercher un produit..."
+                    placeholder={t.creativeStudio.steps.product.search}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9"
@@ -567,20 +556,14 @@ export default function AiCreativeStudio() {
                             </div>
                           )}
                           {product.image ? (
-                            <img 
-                              src={product.image}
-                              alt={product.title}
-                              className="w-14 h-14 object-cover rounded-lg"
-                            />
+                            <img src={product.image} alt={product.title} className="w-14 h-14 object-cover rounded-lg" />
                           ) : (
                             <div className="w-14 h-14 bg-muted rounded-lg flex items-center justify-center">
                               <ImageIcon className="h-5 w-5 text-muted-foreground" />
                             </div>
                           )}
                           <p className="text-xs font-medium truncate w-full">{product.title}</p>
-                          {product.price && (
-                            <span className="text-xs text-primary font-semibold">{product.price}€</span>
-                          )}
+                          {product.price && <span className="text-xs text-primary font-semibold">{product.price}€</span>}
                         </button>
                       ))}
                     </div>
@@ -589,59 +572,52 @@ export default function AiCreativeStudio() {
               </div>
             </section>
 
-            {/* Options & Social - Combined */}
+            {/* Options & Social */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Generation Options */}
               <section className="bg-card rounded-xl border overflow-hidden">
                 <div className="bg-muted/30 px-4 py-3 border-b">
-                  <h2 className="font-semibold">Options de génération</h2>
+                  <h2 className="font-semibold">{t.creativeStudio.steps.options.title}</h2>
                 </div>
                 
                 <div className="p-4 space-y-4">
-                  {/* Mode */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Mode</label>
+                    <label className="text-sm font-medium">{t.creativeStudio.steps.options.mode}</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setGenerationMode("showcase")}
                         className={cn(
                           "flex items-center gap-2 p-3 rounded-lg border transition-all",
-                          generationMode === "showcase" 
-                            ? "border-green-500 bg-green-500/10" 
-                            : "border-border hover:border-primary/50"
+                          generationMode === "showcase" ? "border-green-500 bg-green-500/10" : "border-border hover:border-primary/50"
                         )}
                       >
                         <Eye className="h-4 w-4" />
-                        <span className="text-sm">Vitrine</span>
+                        <span className="text-sm">{t.creativeStudio.steps.options.showcase}</span>
                         {generationMode === "showcase" && <Check className="h-4 w-4 text-green-500 ml-auto" />}
                       </button>
                       <button
                         onClick={() => setGenerationMode("strengths")}
                         className={cn(
                           "flex items-center gap-2 p-3 rounded-lg border transition-all",
-                          generationMode === "strengths" 
-                            ? "border-green-500 bg-green-500/10" 
-                            : "border-border hover:border-primary/50"
+                          generationMode === "strengths" ? "border-green-500 bg-green-500/10" : "border-border hover:border-primary/50"
                         )}
                       >
                         <Star className="h-4 w-4" />
-                        <span className="text-sm">Points forts</span>
+                        <span className="text-sm">{t.creativeStudio.steps.options.strengths}</span>
                         {generationMode === "strengths" && <Check className="h-4 w-4 text-green-500 ml-auto" />}
                       </button>
                     </div>
                   </div>
 
-                  {/* Price Toggle */}
                   <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                    <span className="text-sm">Afficher le prix</span>
+                    <span className="text-sm">{t.creativeStudio.steps.options.showPrice}</span>
                     <Switch checked={showPrice} onCheckedChange={setShowPrice} />
                   </div>
 
-                  {/* Caption */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Texte sur l'image (optionnel)</label>
+                    <label className="text-sm font-medium">{t.creativeStudio.steps.caption.title}</label>
                     <Textarea
-                      placeholder="Ex: Découvrez notre nouvelle collection..."
+                      placeholder={t.creativeStudio.steps.caption.placeholder}
                       value={caption}
                       onChange={(e) => setCaption(e.target.value)}
                       rows={2}
@@ -654,21 +630,18 @@ export default function AiCreativeStudio() {
               {/* Social Posting */}
               <section className="bg-card rounded-xl border overflow-hidden">
                 <div className="bg-muted/30 px-4 py-3 border-b">
-                  <h2 className="font-semibold">Publication sociale</h2>
+                  <h2 className="font-semibold">{t.creativeStudio.steps.social.title}</h2>
                 </div>
                 
                 <div className="p-4 space-y-4">
-                  {/* Platforms */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Plateformes</label>
+                    <label className="text-sm font-medium">{t.creativeStudio.steps.social.platform}</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => togglePlatform("facebook")}
                         className={cn(
                           "flex items-center gap-2 p-3 rounded-lg border transition-all",
-                          selectedPlatforms.includes("facebook")
-                            ? "border-blue-500 bg-blue-500/10" 
-                            : "border-border hover:border-blue-500/50"
+                          selectedPlatforms.includes("facebook") ? "border-blue-500 bg-blue-500/10" : "border-border hover:border-blue-500/50"
                         )}
                       >
                         <Facebook className="h-4 w-4 text-blue-600" />
@@ -679,9 +652,7 @@ export default function AiCreativeStudio() {
                         onClick={() => togglePlatform("instagram")}
                         className={cn(
                           "flex items-center gap-2 p-3 rounded-lg border transition-all",
-                          selectedPlatforms.includes("instagram")
-                            ? "border-pink-500 bg-pink-500/10" 
-                            : "border-border hover:border-pink-500/50"
+                          selectedPlatforms.includes("instagram") ? "border-pink-500 bg-pink-500/10" : "border-border hover:border-pink-500/50"
                         )}
                       >
                         <Instagram className="h-4 w-4 text-pink-600" />
@@ -691,43 +662,37 @@ export default function AiCreativeStudio() {
                     </div>
                   </div>
 
-                  {/* Post Type */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Type de post</label>
+                    <label className="text-sm font-medium">{t.creativeStudio.steps.social.postType}</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setPostType("image")}
                         className={cn(
                           "flex items-center gap-2 p-3 rounded-lg border transition-all",
-                          postType === "image"
-                            ? "border-green-500 bg-green-500/10" 
-                            : "border-border hover:border-primary/50"
+                          postType === "image" ? "border-green-500 bg-green-500/10" : "border-border hover:border-primary/50"
                         )}
                       >
                         <ImageIconLucide className="h-4 w-4" />
-                        <span className="text-sm">Image seule</span>
+                        <span className="text-sm">{t.creativeStudio.steps.social.imageOnly}</span>
                         {postType === "image" && <Check className="h-4 w-4 text-green-500 ml-auto" />}
                       </button>
                       <button
                         onClick={() => setPostType("withLink")}
                         className={cn(
                           "flex items-center gap-2 p-3 rounded-lg border transition-all",
-                          postType === "withLink"
-                            ? "border-green-500 bg-green-500/10" 
-                            : "border-border hover:border-primary/50"
+                          postType === "withLink" ? "border-green-500 bg-green-500/10" : "border-border hover:border-primary/50"
                         )}
                       >
                         <Link className="h-4 w-4" />
-                        <span className="text-sm">Avec lien</span>
+                        <span className="text-sm">{t.creativeStudio.steps.social.withLink}</span>
                         {postType === "withLink" && <Check className="h-4 w-4 text-green-500 ml-auto" />}
                       </button>
                     </div>
                   </div>
 
-                  {/* Social Caption - AI Generated */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">Description du post</label>
+                      <label className="text-sm font-medium">{t.creativeStudio.result.editableCaption}</label>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -735,24 +700,17 @@ export default function AiCreativeStudio() {
                         disabled={!selectedProduct || generatingCaption}
                         className="h-7 text-xs gap-1"
                       >
-                        {generatingCaption ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <RefreshCw className="h-3 w-3" />
-                        )}
-                        Générer IA
+                        {generatingCaption ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                        {t.toasts.info.generating.replace('...', '')} IA
                       </Button>
                     </div>
                     <Textarea
-                      placeholder="Cliquez sur 'Générer IA' ou écrivez votre description..."
+                      placeholder={t.creativeStudio.steps.caption.placeholder}
                       value={socialCaption}
                       onChange={(e) => setSocialCaption(e.target.value)}
                       rows={4}
                       className="resize-none text-sm"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Description qui accompagnera votre publication Facebook/Instagram
-                    </p>
                   </div>
                 </div>
               </section>
@@ -766,9 +724,9 @@ export default function AiCreativeStudio() {
                     <Wand2 className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="font-semibold">Prêt à générer ?</h2>
+                    <h2 className="font-semibold">{t.creativeStudio.generate.ready}</h2>
                     <p className="text-sm text-muted-foreground">
-                      {canGenerate ? "Template et produit sélectionnés" : "Sélectionnez un template et un produit"}
+                      {canGenerate ? t.creativeStudio.generate.configured : t.creativeStudio.generate.incomplete}
                     </p>
                   </div>
                 </div>
@@ -779,12 +737,8 @@ export default function AiCreativeStudio() {
                   disabled={!canGenerate || generating}
                   className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 px-8"
                 >
-                  {generating ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-5 w-5" />
-                  )}
-                  Générer le créatif
+                  {generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+                  {t.creativeStudio.generate.button}
                 </Button>
               </div>
             </section>
@@ -797,7 +751,7 @@ export default function AiCreativeStudio() {
                     <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center">
                       <Check className="h-3.5 w-3.5" />
                     </div>
-                    <h2 className="font-semibold">Résultat</h2>
+                    <h2 className="font-semibold">{t.creativeStudio.result.title}</h2>
                   </div>
                   
                   {generatedImage && (
@@ -810,11 +764,11 @@ export default function AiCreativeStudio() {
                         className="gap-2"
                       >
                         {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        Publier
+                        {t.creativeStudio.result.publish}
                       </Button>
                       <Button size="sm" onClick={downloadImage} className="gap-2">
                         <Download className="h-4 w-4" />
-                        Télécharger
+                        {t.creativeStudio.result.download}
                       </Button>
                     </div>
                   )}
@@ -824,15 +778,11 @@ export default function AiCreativeStudio() {
                   {generating ? (
                     <div className="flex flex-col items-center justify-center py-12 gap-4">
                       <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                      <p className="text-muted-foreground">Génération en cours...</p>
+                      <p className="text-muted-foreground">{t.creativeStudio.generate.generating}</p>
                     </div>
                   ) : generatedImage && (
                     <div className="flex justify-center">
-                      <img 
-                        src={generatedImage} 
-                        alt="Generated creative"
-                        className="max-w-full max-h-[500px] rounded-xl shadow-2xl"
-                      />
+                      <img src={generatedImage} alt="Generated creative" className="max-w-full max-h-[500px] rounded-xl shadow-2xl" />
                     </div>
                   )}
                 </div>
@@ -843,10 +793,10 @@ export default function AiCreativeStudio() {
           <TabsContent value="history">
             <section className="bg-card rounded-xl border overflow-hidden">
               <div className="bg-muted/30 px-4 py-3 border-b flex items-center justify-between">
-                <h2 className="font-semibold">Historique des créatifs</h2>
+                <h2 className="font-semibold">{language === 'fr' ? 'Historique des créatifs' : 'Creative History'}</h2>
                 <Button variant="ghost" size="sm" onClick={loadHistory} className="gap-2">
                   <RefreshCw className="h-4 w-4" />
-                  Actualiser
+                  {language === 'fr' ? 'Actualiser' : 'Refresh'}
                 </Button>
               </div>
               
@@ -858,52 +808,29 @@ export default function AiCreativeStudio() {
                 ) : history.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Aucun créatif généré pour l'instant</p>
+                    <p>{language === 'fr' ? 'Aucun créatif généré pour l\'instant' : 'No creatives generated yet'}</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {history.map((item) => (
-                      <div 
-                        key={item.id}
-                        className="relative group rounded-xl overflow-hidden border bg-muted/30"
-                      >
-                        <img 
-                          src={item.image_url} 
-                          alt={item.product_title || "Creative"}
-                          className="w-full aspect-square object-cover"
+                      <div key={item.id} className="group relative">
+                        <img
+                          src={item.image_url}
+                          alt={item.product_title || 'Creative'}
+                          className="w-full aspect-square object-cover rounded-lg"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="absolute bottom-0 left-0 right-0 p-3">
-                            <p className="text-white text-xs font-medium truncate">
-                              {item.product_title || "Sans titre"}
-                            </p>
-                            <p className="text-white/70 text-[10px]">
-                              {format(new Date(item.created_at), "d MMM yyyy", { locale: fr })}
-                            </p>
-                            <div className="flex gap-2 mt-2">
-                              <Button 
-                                size="sm" 
-                                variant="secondary"
-                                className="h-7 text-xs flex-1"
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = item.image_url;
-                                  link.download = `creative-${item.id}.png`;
-                                  link.click();
-                                }}
-                              >
-                                <Download className="h-3 w-3 mr-1" />
-                                DL
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="destructive"
-                                className="h-7 text-xs"
-                                onClick={() => deleteHistoryItem(item.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col justify-between p-2">
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="h-6 w-6 self-end"
+                            onClick={() => deleteHistoryItem(item.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                          <div className="text-white text-xs">
+                            <p className="font-medium truncate">{item.product_title}</p>
+                            <p className="opacity-70">{format(new Date(item.created_at), 'dd/MM/yyyy', { locale: language === 'fr' ? fr : enUS })}</p>
                           </div>
                         </div>
                       </div>
