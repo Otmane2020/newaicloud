@@ -27,7 +27,7 @@ serve(async (req) => {
 
     const {
       product_id,
-      productTitle,
+      productTitle: rawProductTitle,
       productDescription,
       productImages = [],
       vendor,
@@ -35,7 +35,52 @@ serve(async (req) => {
       colorScheme,
       theme = "light",
       language = "fr",
+      customHighlights = "",
     } = body;
+
+    // Clean title: remove existing vendor/brand names to avoid duplication
+    const cleanTitle = (title: string, vendorName?: string): string => {
+      if (!title || !vendorName) return title || "";
+      
+      // Common brand patterns to remove from title
+      const brandPatterns = [
+        new RegExp(`\\b${vendorName}\\b`, 'gi'),
+        new RegExp(`\\s+${vendorName}\\s+`, 'gi'),
+        // Remove brand at start or end
+        new RegExp(`^${vendorName}\\s+`, 'gi'),
+        new RegExp(`\\s+${vendorName}$`, 'gi'),
+      ];
+      
+      let cleanedTitle = title;
+      brandPatterns.forEach(pattern => {
+        cleanedTitle = cleanedTitle.replace(pattern, ' ');
+      });
+      
+      // Clean up extra spaces
+      return cleanedTitle.replace(/\s+/g, ' ').trim();
+    };
+
+    // If we have a vendor in the title, try to detect and remove it
+    const detectAndCleanBrandFromTitle = (title: string): string => {
+      if (!title) return "";
+      
+      // Common uppercase brand patterns (e.g., "PIANO", "IKEA", "ZARA")
+      const uppercaseBrandMatch = title.match(/\b([A-Z]{2,})\b/);
+      if (uppercaseBrandMatch) {
+        const detectedBrand = uppercaseBrandMatch[1];
+        // Only remove if it looks like a brand (not common words like "LED", "USB", "XXL")
+        const commonWords = ['LED', 'USB', 'XXL', 'XXS', 'XL', 'CM', 'MM', 'EUR', 'USD'];
+        if (!commonWords.includes(detectedBrand)) {
+          return cleanTitle(title, detectedBrand);
+        }
+      }
+      return title;
+    };
+
+    // Clean the product title
+    const productTitle = vendor 
+      ? cleanTitle(detectAndCleanBrandFromTitle(rawProductTitle), vendor)
+      : detectAndCleanBrandFromTitle(rawProductTitle);
 
     if (!LOVABLE_API_KEY) {
       console.error("❌ LOVABLE_API_KEY not configured");
@@ -85,12 +130,18 @@ serve(async (req) => {
       .map((img: string, i: number) => `- Image ${i + 2}: ${img}`)
       .join("\n");
 
+    // Build custom highlights section if provided
+    const highlightsSection = customHighlights && customHighlights.trim() 
+      ? `\n\n⭐ POINTS FORTS À METTRE EN AVANT (OBLIGATOIRE - intégrer dans la description et les avantages):\n${customHighlights.trim()}\n`
+      : "";
+
     // Professional prompt for high-quality generation
     const prompt = `Génère une landing page HTML PROFESSIONNELLE et PREMIUM pour ce produit e-commerce:
 
 PRODUIT: ${productTitle}
 DESCRIPTION: ${productDescription || "Produit de qualité premium"}
 MARQUE: ${vendor || ""}
+${highlightsSection}
 
 IMAGES PRODUIT (URLs EXACTES à utiliser - JAMAIS de placeholder):
 - Image principale HERO: ${mainImage}
