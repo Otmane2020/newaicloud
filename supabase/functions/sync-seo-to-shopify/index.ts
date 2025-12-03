@@ -14,6 +14,12 @@ interface SyncRequest {
   syncAltText?: boolean;
   syncGoogleShopping?: boolean;
   force?: boolean; // Bypass throttling check (for post-optimization sync)
+  // Direct field updates (for inline editing)
+  vendor?: string;
+  sku?: string;
+  price?: number;
+  cost?: number;
+  variant_id?: number; // Shopify variant ID for SKU/price/cost updates
 }
 
 // Helper function to make GraphQL requests to Shopify
@@ -111,7 +117,7 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, force }: SyncRequest = bodyCheck;
+    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, force, vendor, sku, price, cost, variant_id }: SyncRequest = bodyCheck;
 
     // Sync product SEO data
     if (productId) {
@@ -234,6 +240,89 @@ Deno.serve(async (req: Request) => {
       } catch (error: any) {
         console.error("[SYNC-SEO] ❌ GraphQL SEO update failed:", error);
         throw new Error(`Failed to update SEO in Shopify: ${error.message}`);
+      }
+
+      // PHASE 1.5: Direct field updates (vendor, sku, price, cost) - for inline editing
+      if (vendor !== undefined) {
+        console.log(`[SYNC-SEO] Updating vendor to "${vendor}"...`);
+        const vendorMutation = `
+          mutation productUpdate($input: ProductInput!) {
+            productUpdate(input: $input) {
+              product { id vendor }
+              userErrors { field message }
+            }
+          }
+        `;
+        try {
+          await shopifyGraphQL(shopUrl, shopifyAccessToken, vendorMutation, {
+            input: { id: `gid://shopify/Product/${product.shopify_id}`, vendor }
+          });
+          console.log("[SYNC-SEO] ✅ Vendor updated successfully");
+        } catch (vendorError: any) {
+          console.error("[SYNC-SEO] ❌ Vendor update failed:", vendorError.message);
+        }
+      }
+
+      // Update variant fields (SKU, price, cost) if variant_id is provided
+      if (variant_id && (sku !== undefined || price !== undefined || cost !== undefined)) {
+        console.log(`[SYNC-SEO] Updating variant ${variant_id} fields...`);
+        
+        // Update SKU and price via productVariantUpdate
+        if (sku !== undefined || price !== undefined) {
+          const variantMutation = `
+            mutation productVariantUpdate($input: ProductVariantInput!) {
+              productVariantUpdate(input: $input) {
+                productVariant { id sku price }
+                userErrors { field message }
+              }
+            }
+          `;
+          const variantInput: any = { id: `gid://shopify/ProductVariant/${variant_id}` };
+          if (sku !== undefined) variantInput.sku = sku;
+          if (price !== undefined) variantInput.price = price.toString();
+          
+          try {
+            await shopifyGraphQL(shopUrl, shopifyAccessToken, variantMutation, { input: variantInput });
+            console.log("[SYNC-SEO] ✅ Variant SKU/price updated successfully");
+          } catch (variantError: any) {
+            console.error("[SYNC-SEO] ❌ Variant update failed:", variantError.message);
+          }
+        }
+
+        // Update cost via inventoryItemUpdate (need to fetch inventory item ID first)
+        if (cost !== undefined) {
+          const fetchInventoryQuery = `
+            query getVariantInventory($id: ID!) {
+              productVariant(id: $id) {
+                inventoryItem { id }
+              }
+            }
+          `;
+          try {
+            const inventoryResult = await shopifyGraphQL(shopUrl, shopifyAccessToken, fetchInventoryQuery, {
+              id: `gid://shopify/ProductVariant/${variant_id}`
+            });
+            const inventoryItemId = inventoryResult.data?.productVariant?.inventoryItem?.id;
+            
+            if (inventoryItemId) {
+              const costMutation = `
+                mutation inventoryItemUpdate($id: ID!, $input: InventoryItemInput!) {
+                  inventoryItemUpdate(id: $id, input: $input) {
+                    inventoryItem { id unitCost { amount } }
+                    userErrors { field message }
+                  }
+                }
+              `;
+              await shopifyGraphQL(shopUrl, shopifyAccessToken, costMutation, {
+                id: inventoryItemId,
+                input: { cost: cost }
+              });
+              console.log("[SYNC-SEO] ✅ Cost updated successfully");
+            }
+          } catch (costError: any) {
+            console.error("[SYNC-SEO] ❌ Cost update failed:", costError.message);
+          }
+        }
       }
       
       // PHASE 2: Update tags, product_type, and Google Shopping metafields using REST API
