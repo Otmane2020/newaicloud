@@ -49,12 +49,14 @@ export function Navigation() {
   const [userPlan, setUserPlan] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Menu principal - Social Media est un onglet séparé après SEO Blog
   const menuItems = [
     { path: '/', label: t.navigation.dashboard, icon: LayoutDashboard },
     { path: '/products', label: t.navigation.catalog, icon: ShoppingBag },
     { path: '/merchant', label: t.navigation.googleMerchant, icon: BarChart3 },
     { path: '/shopping', label: t.navigation.googleShopping, icon: ShoppingBag },
     { path: '/search-products', label: t.navigation.aiSearch, icon: MessageSquare },
+    // SEO Optimisation
     { 
       path: '/seo', 
       label: t.navigation.seo, 
@@ -71,6 +73,7 @@ export function Navigation() {
         { path: '/seo?tab=audit', label: t.navigation.seoSubmenu.audit, icon: BarChart3 },
       ]
     },
+    // SEO Blog (sans Social Media)
     { 
       path: '/blog', 
       label: t.navigation.seoBlog, 
@@ -83,11 +86,13 @@ export function Navigation() {
         { path: '/blog?tab=settings', label: t.navigation.blogSubmenu.settings, icon: Settings }
       ]
     },
+    // Social Media - Onglet principal séparé avec sous-menus
     { 
       path: '/social-media', 
       label: t.navigation.socialMedia, 
       icon: Share2,
       subItems: [
+        // 1. Creative avec sous-sous-menus (Studio, Historique)
         { 
           path: '/social-media?tab=creative', 
           label: t.navigation.socialMediaSubmenu.creative, 
@@ -97,11 +102,15 @@ export function Navigation() {
             { path: '/social-media?tab=creative-history', label: t.navigation.socialMediaSubmenu.creativeHistory, icon: History },
           ]
         },
+        // 2. Campaigns
         { path: '/social-media?tab=campaigns', label: t.navigation.socialMediaSubmenu.campaigns, icon: CalendarClock },
+        // 3. Posts (historique)
         { path: '/social-media?tab=posts', label: t.navigation.socialMediaSubmenu.posts, icon: FileText },
+        // 4. Paramètres & Connexions
         { path: '/social-media?tab=settings', label: t.navigation.socialMediaSubmenu.settings, icon: Plug },
       ]
     },
+    // Chat Intelligent
     { 
       path: '/chat', 
       label: t.navigation.smartChat, 
