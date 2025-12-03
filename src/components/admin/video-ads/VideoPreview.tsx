@@ -1,7 +1,8 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, Maximize2 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Play, Pause, RotateCcw, Maximize2, Volume2, VolumeX } from "lucide-react";
 
 interface VideoClip {
   id: string;
@@ -36,6 +37,8 @@ interface VideoPreviewProps {
   effects: EffectsConfig;
   texts: Record<number, string>;
   format: "9:16" | "1:1" | "16:9";
+  clips?: VideoClip[];
+  onClipEnd?: () => void;
 }
 
 export function VideoPreview({
@@ -44,10 +47,16 @@ export function VideoPreview({
   effects,
   texts,
   format,
+  clips = [],
+  onClipEnd,
 }: VideoPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const [currentTime, setCurrentTime] = React.useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentClipIndex, setCurrentClipIndex] = useState(0);
 
   const getAspectRatio = () => {
     switch (format) {
@@ -87,6 +96,33 @@ export function VideoPreview({
     if (!videoRef.current) return;
     videoRef.current.currentTime = 0;
     setCurrentTime(0);
+    setCurrentClipIndex(0);
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    if (!videoRef.current) return;
+    const newVolume = value[0];
+    videoRef.current.volume = newVolume;
+    setVolume(newVolume);
+    setIsMuted(newVolume === 0);
+  };
+
+  const handleSeek = (value: number[]) => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = value[0];
+    setCurrentTime(value[0]);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   useEffect(() => {
@@ -97,9 +133,29 @@ export function VideoPreview({
       setCurrentTime(video.currentTime);
     };
 
+    const handleLoadedMetadata = () => {
+      setDuration(video.duration);
+    };
+
+    const handleEnded = () => {
+      if (clips.length > 1 && currentClipIndex < clips.length - 1) {
+        setCurrentClipIndex(prev => prev + 1);
+        onClipEnd?.();
+      } else {
+        setIsPlaying(false);
+      }
+    };
+
     video.addEventListener("timeupdate", handleTimeUpdate);
-    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  }, []);
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+    video.addEventListener("ended", handleEnded);
+    
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      video.removeEventListener("ended", handleEnded);
+    };
+  }, [clips.length, currentClipIndex, onClipEnd]);
 
   const getGlowClass = () => {
     if (!effects.glow) return "";
@@ -110,6 +166,8 @@ export function VideoPreview({
     if (!effects.text3D) return "";
     return "animate-pulse";
   };
+
+  const currentVideoClip = clips.length > 0 ? clips[currentClipIndex] : selectedClip;
 
   return (
     <Card className="bg-card/50 backdrop-blur border-border/50">
@@ -127,25 +185,31 @@ export function VideoPreview({
                 <Play className="w-4 h-4" />
               )}
             </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleMute}>
+              {isMuted ? (
+                <VolumeX className="w-4 h-4" />
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )}
+            </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7">
               <Maximize2 className="w-4 h-4" />
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         <div className="flex justify-center">
           <div
             className={`relative bg-gradient-to-br from-gray-900 to-black rounded-xl overflow-hidden max-w-md w-full ${getAspectRatio()}`}
           >
             {/* Video Layer */}
-            {selectedClip ? (
+            {currentVideoClip ? (
               <video
                 ref={videoRef}
-                src={selectedClip.file_url}
+                src={currentVideoClip.file_url}
                 className="w-full h-full object-cover"
-                loop
-                muted
+                loop={clips.length <= 1}
                 playsInline
               />
             ) : (
@@ -155,7 +219,7 @@ export function VideoPreview({
                     <Play className="w-8 h-8 text-muted-foreground" />
                   </div>
                   <p className="text-muted-foreground text-sm">
-                    Select a clip from the library
+                    Sélectionnez un clip
                   </p>
                 </div>
               </div>
@@ -203,6 +267,13 @@ export function VideoPreview({
               </div>
             )}
 
+            {/* Clip indicator for multi-clip */}
+            {clips.length > 1 && (
+              <div className="absolute top-2 right-2 bg-black/70 px-2 py-1 rounded text-xs text-white">
+                {currentClipIndex + 1} / {clips.length}
+              </div>
+            )}
+
             {/* Timeline Indicator */}
             {storyboard.length > 0 && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50">
@@ -227,6 +298,42 @@ export function VideoPreview({
             )}
           </div>
         </div>
+
+        {/* Video Controls */}
+        {currentVideoClip && (
+          <div className="space-y-2">
+            {/* Progress bar */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground w-10">{formatTime(currentTime)}</span>
+              <Slider
+                value={[currentTime]}
+                max={duration || 100}
+                step={0.1}
+                onValueChange={handleSeek}
+                className="flex-1"
+              />
+              <span className="text-xs text-muted-foreground w-10">{formatTime(duration)}</span>
+            </div>
+
+            {/* Volume control */}
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={toggleMute}>
+                {isMuted || volume === 0 ? (
+                  <VolumeX className="w-3 h-3" />
+                ) : (
+                  <Volume2 className="w-3 h-3" />
+                )}
+              </Button>
+              <Slider
+                value={[isMuted ? 0 : volume]}
+                max={1}
+                step={0.01}
+                onValueChange={handleVolumeChange}
+                className="w-24"
+              />
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

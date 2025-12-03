@@ -321,6 +321,7 @@ export default function VideoAdsStudio() {
                 isExporting={isExporting}
                 progress={exportProgress}
                 disabled={timelineClips.length === 0}
+                clips={timelineClips}
               />
 
               {/* Format */}
