@@ -35,7 +35,9 @@ const SocialMedia = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
-  const [activeTab, setActiveTab] = useState("connections");
+  // Get tab from URL or default to creative-studio
+  const tabFromUrl = searchParams.get('tab') || 'creative-studio';
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
   const [showCampaignWizard, setShowCampaignWizard] = useState(false);
   const [showQuickPost, setShowQuickPost] = useState(false);
   const [settings, setSettings] = useState<SocialSettings>({
@@ -48,6 +50,14 @@ const SocialMedia = () => {
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
 
+  // Sync tab from URL
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
   // Handle OAuth redirect with success/error messages
   useEffect(() => {
     const success = searchParams.get('success');
@@ -56,14 +66,12 @@ const SocialMedia = () => {
 
     if (success === 'true' && message) {
       toast.success(decodeURIComponent(message));
-      // Switch to connections tab to show the new connection
-      setActiveTab('connections');
-      // Clean up URL
-      navigate('/social-media', { replace: true });
+      setActiveTab('settings');
+      navigate('/social-media?tab=settings', { replace: true });
     } else if (error) {
       toast.error(decodeURIComponent(error));
-      setActiveTab('connections');
-      navigate('/social-media', { replace: true });
+      setActiveTab('settings');
+      navigate('/social-media?tab=settings', { replace: true });
     }
   }, [searchParams, navigate]);
 
@@ -161,50 +169,62 @@ const SocialMedia = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => {
-        if (value === 'creative') {
-          navigate('/ai-creative-studio');
-        } else {
-          setActiveTab(value);
-        }
+        setActiveTab(value);
+        navigate(`/social-media?tab=${value}`, { replace: true });
       }}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="posts" className="flex items-center gap-2">
-            <Send className="h-4 w-4" />
-            {t.socialMedia.tabs.posts}
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="creative-studio" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            {t.socialMedia.tabs.studio}
           </TabsTrigger>
           <TabsTrigger value="campaigns" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             {t.socialMedia.tabs.campaigns}
           </TabsTrigger>
-          <TabsTrigger value="creative" className="flex items-center gap-2">
-            <Palette className="h-4 w-4" />
-            {t.socialMedia.tabs.creative}
-          </TabsTrigger>
-          <TabsTrigger value="connections" className="flex items-center gap-2">
-            <Facebook className="h-4 w-4" />
-            {t.socialMedia.tabs.connections}
+          <TabsTrigger value="posts" className="flex items-center gap-2">
+            <Send className="h-4 w-4" />
+            {t.socialMedia.tabs.posts}
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            {t.socialMedia.tabs.settings}
+            {t.socialMedia.tabs.settingsConnections}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="posts" className="space-y-4">
-          <SocialPostsList userId={user?.id} storeId={selectedStore?.id} />
+        <TabsContent value="creative-studio" className="space-y-4">
+          {/* Redirect to AI Creative Studio page */}
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Palette className="h-12 w-12 mx-auto text-primary mb-4" />
+              <h3 className="text-lg font-semibold mb-2">{t.socialMedia.creative.studioTitle}</h3>
+              <p className="text-muted-foreground mb-4">{t.socialMedia.creative.studioDesc}</p>
+              <Button onClick={() => navigate('/ai-creative-studio')}>
+                {t.socialMedia.creative.openStudio}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="campaigns" className="space-y-4">
           <SocialCampaignsList userId={user?.id} storeId={selectedStore?.id} />
         </TabsContent>
 
-        <TabsContent value="connections" className="space-y-4">
-          <SocialConnections userId={user?.id} />
+        <TabsContent value="posts" className="space-y-4">
+          <SocialPostsList userId={user?.id} storeId={selectedStore?.id} />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
+          {/* Connections Section */}
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Facebook className="h-5 w-5 text-blue-600" />
+              {t.socialMedia.tabs.connections}
+            </h2>
+            <SocialConnections userId={user?.id} />
+          </div>
+
+          {/* Settings Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Settings Card */}
             <Card>
               <CardHeader>
                 <CardTitle>{t.socialMedia.settings.title}</CardTitle>
@@ -267,7 +287,6 @@ const SocialMedia = () => {
               </CardContent>
             </Card>
 
-            {/* Preview Card */}
             <SettingsPreview
               selectedTemplateId={settings.default_template_style}
               onTemplateChange={(templateId) => 

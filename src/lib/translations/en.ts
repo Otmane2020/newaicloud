@@ -1646,6 +1646,17 @@ export const translations = {
       smartPricing: "Smart Pricing AI",
     },
 
+    // Social Media Submenu
+    socialMedia: "Social Media",
+    socialMediaSubmenu: {
+      creative: "Creative",
+      studio: "Studio",
+      creativeHistory: "History",
+      campaigns: "Campaigns",
+      posts: "Posts",
+      settings: "Settings & Connections",
+    },
+
     // Account Submenu
     accountSubmenu: {
       profile: "My Profile",
@@ -9505,8 +9516,17 @@ export const translations = {
       posts: "Posts",
       campaigns: "Campaigns",
       creative: "Creative",
+      studio: "Studio",
       connections: "Connections",
       settings: "Settings",
+      settingsConnections: "Settings & Connections",
+    },
+    creative: {
+      studioTitle: "AI Creative Studio",
+      studioDesc: "Create professional visuals for your social networks",
+      openStudio: "Open Studio",
+      historyTitle: "Creation history",
+      historyDesc: "View and reuse your previous creations",
     },
     settings: {
       title: "Social Media Settings",

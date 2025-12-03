@@ -22,7 +22,11 @@ import {
   Lightbulb,
   Link as LinkIcon,
   Menu,
-  Bell
+  Bell,
+  Share2,
+  Palette,
+  History,
+  Plug
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,7 +44,7 @@ export function Navigation() {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog', '/blog?tab=opportunities']);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog', '/social-media']);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userPlan, setUserPlan] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -87,6 +91,25 @@ export function Navigation() {
         { path: '/chat', label: t.navigation.chatSubmenu.assistant, icon: MessageSquare },
         { path: '/chat-history', label: t.navigation.chatSubmenu.history, icon: CalendarClock },
         { path: '/product-source', label: t.navigation.chatSubmenu.productSource, icon: ShoppingBag },
+      ]
+    },
+    { 
+      path: '/social-media', 
+      label: t.navigation.socialMedia, 
+      icon: Share2,
+      subItems: [
+        { 
+          path: '/social-media?tab=creative', 
+          label: t.navigation.socialMediaSubmenu.creative, 
+          icon: Palette,
+          subItems: [
+            { path: '/social-media?tab=creative-studio', label: t.navigation.socialMediaSubmenu.studio, icon: Sparkles },
+            { path: '/social-media?tab=creative-history', label: t.navigation.socialMediaSubmenu.creativeHistory, icon: History },
+          ]
+        },
+        { path: '/social-media?tab=campaigns', label: t.navigation.socialMediaSubmenu.campaigns, icon: CalendarClock },
+        { path: '/social-media?tab=posts', label: t.navigation.socialMediaSubmenu.posts, icon: FileText },
+        { path: '/social-media?tab=settings', label: t.navigation.socialMediaSubmenu.settings, icon: Plug },
       ]
     },
   ];
