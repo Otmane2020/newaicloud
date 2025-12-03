@@ -129,13 +129,22 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error("Error generating video:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to generate video";
+    
+    // Check for billing/credits error
+    const isBillingError = errorMessage.includes("402") || 
+                           errorMessage.includes("Payment Required") || 
+                           errorMessage.includes("Insufficient credit");
+    
     return new Response(
       JSON.stringify({
         success: false,
-        error: errorMessage,
+        error: isBillingError 
+          ? "Crédits Replicate insuffisants. Ajoutez des crédits sur https://replicate.com/account/billing"
+          : errorMessage,
+        code: isBillingError ? "BILLING_ERROR" : "GENERATION_ERROR",
       }),
       {
-        status: 500,
+        status: isBillingError ? 402 : 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
