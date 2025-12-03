@@ -316,33 +316,44 @@ Nouveauté = environnement totalement différent et frais.
 Style = luxueux mais accessible, réaliste, vendeur.
 `;
 
-    // Critical product preservation header - ALWAYS included
-    const productPreservationHeader = `
-🛑🛑🛑 RÈGLE ABSOLUE AVANT TOUT : PRÉSERVATION DU PRODUIT EXACT 🛑🛑🛑
+    // Critical: Frame this as IMAGE EDITING not IMAGE GENERATION
+    const imageEditingHeader = `
+🛑🛑🛑 TÂCHE : ÉDITION D'IMAGE (PAS GÉNÉRATION) 🛑🛑🛑
 
-L'image d'entrée contient un produit spécifique. Tu DOIS :
-1. EXTRAIRE ce produit EXACT de l'image (tous ses pixels, sa forme, sa couleur)
-2. PLACER ce même produit EXTRAIT dans le nouvel environnement
-3. NE JAMAIS générer un produit différent ou similaire
+Tu effectues une ÉDITION de l'image fournie, PAS une génération nouvelle.
 
-⚠️ ÉCHEC TOTAL si tu génères un produit différent !
-- Un sommier doit rester un sommier (pas devenir un lit complet)
-- Une chaise doit rester cette chaise exacte
-- Le produit doit être IDENTIQUE pixel-par-pixel
+📷 L'IMAGE D'ENTRÉE CONTIENT :
+Un produit spécifique que tu dois CONSERVER TEL QUEL.
+Dans cette image, le produit est : ${productContext}
 
+🎯 TA MISSION EXACTE :
+1. GARDE le produit EXACTEMENT comme il apparaît dans l'image d'entrée
+2. REMPLACE UNIQUEMENT l'arrière-plan/fond de l'image
+3. NE MODIFIE PAS, NE REDESSINE PAS, NE RÉINTERPRÈTE PAS le produit
+
+⚠️⚠️⚠️ EXEMPLES D'ERREURS FATALES ⚠️⚠️⚠️
+- Image d'entrée = SOMMIER (cadre métallique avec lattes) → Tu génères un LIT COMPLET avec matelas = ❌ ÉCHEC TOTAL
+- Image d'entrée = CHAISE simple → Tu génères un FAUTEUIL = ❌ ÉCHEC TOTAL  
+- Image d'entrée = TABLE basse → Tu génères une TABLE différente = ❌ ÉCHEC TOTAL
+- Tu changes la forme, couleur, ou type du produit = ❌ ÉCHEC TOTAL
+
+✅ SUCCÈS = L'objet dans l'image de sortie est VISUELLEMENT IDENTIQUE à l'objet dans l'image d'entrée
+✅ SUCCÈS = Seul le FOND/ARRIÈRE-PLAN a changé, le produit est COPIÉ à l'identique
+
+🔍 VÉRIFIE AVANT DE FINALISER :
+- Le produit dans ma sortie est-il le MÊME objet que dans l'entrée ? (même forme, même type, même couleur)
+- Si l'entrée montre un sommier métallique → ma sortie montre-t-elle CE sommier métallique (pas un lit) ?
 `;
 
-    // Use enriched prompt if available, but ALWAYS prepend product preservation rules
+    // Use enriched prompt if available, but ALWAYS prepend image editing rules
     const finalPrompt = enrichedPrompt 
-      ? `${productPreservationHeader}
+      ? `${imageEditingHeader}
 
-📝 INSTRUCTION UTILISATEUR (RESPECTER ABSOLUMENT) :
+📝 INSTRUCTION POUR LE NOUVEL ARRIÈRE-PLAN :
 ${enrichedPrompt}
 
-📦 PRODUIT À PRÉSERVER :
-${productContext}
-
-⚠️ RAPPEL : Garde le produit EXACT de l'image, change UNIQUEMENT l'environnement selon l'instruction ci-dessus.
+🚨 RAPPEL CRITIQUE : Tu ÉDITES l'image, tu ne la régénères pas.
+Le produit (${productContext}) doit rester EXACTEMENT identique - seul l'arrière-plan change.
 `.trim()
       : `
 ${forceFullBackgroundReplace}
