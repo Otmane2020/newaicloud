@@ -257,8 +257,9 @@ export const useImageOptimization = () => {
       aiModel,
       aiPrompt,
       resolution,
-      qualityScore
-    }: SaveHistoryParams & { imageId: string }) => {
+      qualityScore,
+      applyAsMain = true // 🆕 New parameter - default to main image
+    }: SaveHistoryParams & { imageId: string; applyAsMain?: boolean }) => {
       setIsOptimizing(true);
       
       try {
@@ -335,13 +336,40 @@ export const useImageOptimization = () => {
           .eq('id', imageId)
           .single();
         
-        const imagePosition = imageData?.position || 1;
+        let imagePosition = imageData?.position || 1;
 
-        // Update product image locally with public URL (not base64!)
+        // 🆕 FIX: If applyAsMain is true, move this image to position 1
+        if (applyAsMain && imagePosition !== 1) {
+          console.log('🔄 [ImageOptimization] Moving image to position 1 (main image)');
+          
+          // First, shift all other images down by 1
+          const { data: allImages } = await supabase
+            .from('product_images')
+            .select('id, position')
+            .eq('product_id', productId)
+            .lt('position', imagePosition)
+            .order('position', { ascending: false });
+          
+          // Increment positions of images that were before this one
+          if (allImages && allImages.length > 0) {
+            for (const img of allImages) {
+              await supabase
+                .from('product_images')
+                .update({ position: (img.position || 0) + 1 })
+                .eq('id', img.id);
+            }
+          }
+          
+          // Set this image to position 1
+          imagePosition = 1;
+        }
+
+        // Update product image locally with public URL and new position
         const { error: updateError } = await supabase
           .from('product_images')
           .update({ 
             src: finalUrl,
+            position: imagePosition,
             updated_at: new Date().toISOString()
           })
           .eq('id', imageId);
@@ -356,8 +384,8 @@ export const useImageOptimization = () => {
           }
         }
 
-        // 🆕 FIX 3: Update shopify_products.image_url if this is the main image (position 1)
-        if (imagePosition === 1) {
+        // 🆕 FIX: Update shopify_products.image_url if this is the main image (position 1 or applyAsMain)
+        if (imagePosition === 1 || applyAsMain) {
           console.log('🔄 [ImageOptimization] Updating shopify_products.image_url for main image');
           const { error: productUpdateError } = await supabase
             .from('shopify_products')
