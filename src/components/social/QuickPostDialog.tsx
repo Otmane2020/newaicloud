@@ -18,6 +18,15 @@ interface QuickPostDialogProps {
   onPosted?: () => void;
 }
 
+interface TemplateText {
+  tagline: string;
+  subtitle: string;
+  benefits: string[];
+  smartCta: string;
+  urgencyText?: string;
+  hashtags: string[];
+}
+
 const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) => {
   const { selectedStore } = useStore();
   const [search, setSearch] = useState('');
@@ -30,9 +39,11 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
   const [posting, setPosting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const [templateText, setTemplateText] = useState<TemplateText | null>(null);
+  const [generatingTemplateText, setGeneratingTemplateText] = useState(false);
   
-  // Get default template
-  const defaultTemplate = SOCIAL_TEMPLATES.find(t => t.id === 'product_spotlight') || SOCIAL_TEMPLATES[0];
+  // Get classic template as default for better visuals
+  const defaultTemplate = SOCIAL_TEMPLATES.find(t => t.id === 'classic_product') || SOCIAL_TEMPLATES[0];
 
   useEffect(() => {
     loadProducts();
@@ -64,6 +75,46 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
     p.title.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Generate intelligent template text using AI
+  const generateTemplateText = async (product: any) => {
+    setGeneratingTemplateText(true);
+    try {
+      const price = product.product_variants?.[0]?.price;
+      const comparePrice = product.product_variants?.[0]?.compare_at_price;
+      const description = product.body_html?.replace(/<[^>]*>/g, '').substring(0, 300) || '';
+
+      const { data, error } = await supabase.functions.invoke('generate-template-text', {
+        body: {
+          productTitle: product.title,
+          productDescription: description,
+          productPrice: price ? `${price}€` : undefined,
+          comparePrice: comparePrice ? `${comparePrice}€` : undefined,
+          templateType: defaultTemplate.layout,
+          language: 'fr',
+          storeName: selectedStore?.store_name
+        }
+      });
+
+      if (error) throw error;
+
+      if (data) {
+        setTemplateText(data);
+      }
+    } catch (error) {
+      console.error('Error generating template text:', error);
+      // Use fallback text
+      setTemplateText({
+        tagline: 'Découvrez notre sélection',
+        subtitle: 'Qualité premium • Livraison rapide',
+        benefits: ['Design élégant', 'Matériaux nobles'],
+        smartCta: 'Découvrir →',
+        hashtags: ['#decoration', '#maison', '#tendance']
+      });
+    } finally {
+      setGeneratingTemplateText(false);
+    }
+  };
+
   const generateCaption = async () => {
     if (!selectedProduct) return;
     
@@ -91,17 +142,21 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
       if (error) throw error;
       
       if (data?.caption) {
-        setCaption(data.caption);
+        // Append hashtags from template text if available
+        let finalCaption = data.caption;
+        if (templateText?.hashtags?.length) {
+          finalCaption += '\n\n' + templateText.hashtags.join(' ');
+        }
+        setCaption(finalCaption);
         toast.success('Caption générée avec AI !');
       } else {
         throw new Error('No caption returned');
       }
     } catch (error: any) {
       console.error('Error generating caption:', error);
-      // Fallback to simple caption
-      const emojis = ['✨', '🛍️', '💫', '🎁', '⭐', '🔥', '💎', '🌟'];
-      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-      const fallbackCaption = `${randomEmoji} ${selectedProduct.title}\n\n🛒 Découvrez ce produit exclusif sur notre boutique !\n\n#shopping #nouveaute #tendance`;
+      // Fallback caption with hashtags
+      const hashtags = templateText?.hashtags?.join(' ') || '#shopping #nouveaute #tendance';
+      const fallbackCaption = `✨ ${selectedProduct.title}\n\n${templateText?.tagline || 'Découvrez ce produit exclusif'}\n\n🛒 ${templateText?.smartCta || 'Voir sur notre boutique'}\n\n${hashtags}`;
       setCaption(fallbackCaption);
       toast.info('Caption générée (mode simplifié)');
     } finally {
@@ -136,7 +191,7 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
             caption,
             productId: selectedProduct.id,
             productTitle: selectedProduct.title,
-            pageId, // Specific page to post to
+            pageId,
           }
         });
 
@@ -157,7 +212,7 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
             caption,
             productId: selectedProduct.id,
             productTitle: selectedProduct.title,
-            accountId, // Specific account to post to
+            accountId,
           }
         });
 
@@ -178,10 +233,14 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
     }
   };
 
-  const selectProduct = (product: any) => {
+  const selectProduct = async (product: any) => {
     setSelectedProduct(product);
     setCaption('');
     setShowPreview(false);
+    setTemplateText(null);
+    
+    // Auto-generate template text when product is selected
+    await generateTemplateText(product);
   };
 
   const hasSelectedPages = selectedFacebookPages.length > 0 || selectedInstagramAccounts.length > 0;
@@ -191,6 +250,14 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
   const previewChannels: string[] = [];
   if (selectedFacebookPages.length > 0) previewChannels.push('facebook');
   if (selectedInstagramAccounts.length > 0) previewChannels.push('instagram');
+
+  // Get price info
+  const productPrice = selectedProduct?.product_variants?.[0]?.price 
+    ? `${selectedProduct.product_variants[0].price}€` 
+    : undefined;
+  const comparePrice = selectedProduct?.product_variants?.[0]?.compare_at_price 
+    ? `${selectedProduct.product_variants[0].compare_at_price}€` 
+    : undefined;
 
   // Preview Mode
   if (showPreview && selectedProduct) {
@@ -209,10 +276,16 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
               template={defaultTemplate}
               productImage={selectedProduct.product_images?.[0]?.src}
               productTitle={selectedProduct.title}
-              productPrice={selectedProduct.product_variants?.[0]?.price ? `${selectedProduct.product_variants[0].price}€` : undefined}
+              productPrice={productPrice}
+              comparePrice={comparePrice}
               caption={caption}
               storeName={selectedStore?.store_name || 'Ma boutique'}
               channels={previewChannels}
+              tagline={templateText?.tagline}
+              subtitle={templateText?.subtitle}
+              benefits={templateText?.benefits}
+              ctaText={templateText?.smartCta}
+              urgencyBadge={templateText?.urgencyText}
             />
 
             {/* Actions */}
@@ -306,8 +379,8 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
             </div>
           ) : (
             <>
-              {/* Selected Product Preview */}
-              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+              {/* Selected Product Preview with Template Text */}
+              <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
                 {selectedProduct.product_images?.[0]?.src && (
                   <img 
                     src={selectedProduct.product_images[0].src} 
@@ -317,9 +390,23 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium line-clamp-2 break-words text-sm">{selectedProduct.title}</p>
+                  
+                  {/* Show generated template text info */}
+                  {generatingTemplateText ? (
+                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Génération du texte...
+                    </div>
+                  ) : templateText?.tagline && (
+                    <p className="text-xs text-primary mt-1 italic">"{templateText.tagline}"</p>
+                  )}
+                  
                   <button 
                     type="button"
-                    onClick={() => setSelectedProduct(null)}
+                    onClick={() => {
+                      setSelectedProduct(null);
+                      setTemplateText(null);
+                    }}
                     className="text-xs text-primary hover:underline mt-1"
                   >
                     Changer de produit
@@ -336,7 +423,7 @@ const QuickPostDialog = ({ userId, onClose, onPosted }: QuickPostDialogProps) =>
                     variant="ghost"
                     size="sm"
                     onClick={generateCaption}
-                    disabled={generatingCaption}
+                    disabled={generatingCaption || generatingTemplateText}
                   >
                     {generatingCaption ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-1" />

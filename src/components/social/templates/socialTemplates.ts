@@ -1,5 +1,13 @@
 // Social Media Post Templates Configuration
 
+export interface TemplateTextContent {
+  taglineType: 'benefit' | 'question' | 'statement' | 'urgency' | 'lifestyle';
+  ctaVariants: string[];
+  showBenefits: boolean;
+  maxBenefits: number;
+  showUrgency: boolean;
+}
+
 export interface SocialTemplate {
   id: string;
   name: string;
@@ -7,8 +15,8 @@ export interface SocialTemplate {
   description: string;
   descriptionEn: string;
   category: 'post' | 'reel' | 'carousel';
-  style: 'minimal' | 'premium' | 'tech' | 'gradient' | 'apple' | 'canva';
-  layout: 'spotlight' | 'before_after' | 'feature' | 'testimonial' | 'promo' | 'carousel';
+  style: 'minimal' | 'premium' | 'tech' | 'gradient' | 'apple' | 'canva' | 'classic';
+  layout: 'spotlight' | 'before_after' | 'feature' | 'testimonial' | 'promo' | 'carousel' | 'classic';
   colors: {
     background: string;
     text: string;
@@ -26,11 +34,51 @@ export interface SocialTemplate {
     showPrice: boolean;
     showCta: boolean;
     showColorSwatches: boolean;
-    overlay: 'none' | 'gradient' | 'solid' | 'blur';
+    overlay: 'none' | 'gradient' | 'solid' | 'blur' | 'elegant';
+    colorExtraction?: boolean; // Extract dominant colors from product image
   };
+  textContent: TemplateTextContent;
 }
 
 export const SOCIAL_TEMPLATES: SocialTemplate[] = [
+  // Template 0 - Classic Product (NEW - Photo originale avec overlay élégant)
+  {
+    id: 'classic_product',
+    name: 'Classic Produit',
+    nameEn: 'Classic Product',
+    description: 'Photo produit originale avec overlay élégant et couleurs harmonisées automatiquement',
+    descriptionEn: 'Original product photo with elegant overlay and auto-harmonized colors',
+    category: 'post',
+    style: 'classic',
+    layout: 'classic',
+    colors: {
+      background: 'transparent', // Uses product image colors
+      text: 'hsl(0, 0%, 100%)',
+      accent: 'dynamic', // Extracted from image
+      overlay: 'elegant'
+    },
+    typography: {
+      titleSize: '1.75rem',
+      subtitleSize: '1rem',
+      bodySize: '0.875rem',
+      fontFamily: 'sans-serif'
+    },
+    elements: {
+      showLogo: true,
+      showPrice: true,
+      showCta: true,
+      showColorSwatches: false,
+      overlay: 'elegant',
+      colorExtraction: true
+    },
+    textContent: {
+      taglineType: 'lifestyle',
+      ctaVariants: ['Découvrir', 'Voir le produit', 'En savoir plus', 'Shop now'],
+      showBenefits: true,
+      maxBenefits: 2,
+      showUrgency: false
+    }
+  },
   // Template 1 - Product Spotlight (Premium style like Loungitude)
   {
     id: 'product_spotlight',
@@ -59,6 +107,13 @@ export const SOCIAL_TEMPLATES: SocialTemplate[] = [
       showCta: true,
       showColorSwatches: true,
       overlay: 'none'
+    },
+    textContent: {
+      taglineType: 'benefit',
+      ctaVariants: ['Découvrir →', 'Voir le produit', 'Acheter maintenant'],
+      showBenefits: true,
+      maxBenefits: 3,
+      showUrgency: false
     }
   },
   // Template 2 - Before/After SEO
@@ -89,6 +144,13 @@ export const SOCIAL_TEMPLATES: SocialTemplate[] = [
       showCta: true,
       showColorSwatches: false,
       overlay: 'gradient'
+    },
+    textContent: {
+      taglineType: 'statement',
+      ctaVariants: ['Optimiser maintenant', 'Booster mon SEO', 'Voir les résultats'],
+      showBenefits: true,
+      maxBenefits: 2,
+      showUrgency: false
     }
   },
   // Template 3 - Feature Highlight
@@ -119,6 +181,13 @@ export const SOCIAL_TEMPLATES: SocialTemplate[] = [
       showCta: true,
       showColorSwatches: false,
       overlay: 'gradient'
+    },
+    textContent: {
+      taglineType: 'question',
+      ctaVariants: ['En savoir plus', 'Découvrir', 'Essayer gratuitement'],
+      showBenefits: true,
+      maxBenefits: 3,
+      showUrgency: false
     }
   },
   // Template 4 - Testimonial
@@ -149,6 +218,13 @@ export const SOCIAL_TEMPLATES: SocialTemplate[] = [
       showCta: true,
       showColorSwatches: false,
       overlay: 'none'
+    },
+    textContent: {
+      taglineType: 'statement',
+      ctaVariants: ['Voir les avis', 'Lire plus', 'Rejoignez-nous'],
+      showBenefits: false,
+      maxBenefits: 0,
+      showUrgency: false
     }
   },
   // Template 5 - Promo / Black Friday
@@ -179,6 +255,13 @@ export const SOCIAL_TEMPLATES: SocialTemplate[] = [
       showCta: true,
       showColorSwatches: false,
       overlay: 'solid'
+    },
+    textContent: {
+      taglineType: 'urgency',
+      ctaVariants: ['Profitez-en !', 'Acheter maintenant', 'Ne ratez pas !', 'J\'en profite'],
+      showBenefits: false,
+      maxBenefits: 0,
+      showUrgency: true
     }
   },
   // Template 6 - Carousel Éducatif
@@ -209,6 +292,13 @@ export const SOCIAL_TEMPLATES: SocialTemplate[] = [
       showCta: true,
       showColorSwatches: false,
       overlay: 'none'
+    },
+    textContent: {
+      taglineType: 'benefit',
+      ctaVariants: ['Swipe pour découvrir →', 'Voir plus', 'En savoir plus'],
+      showBenefits: true,
+      maxBenefits: 3,
+      showUrgency: false
     }
   }
 ];
@@ -245,9 +335,11 @@ export function getSmartTemplate(context: {
     return SOCIAL_TEMPLATES.find(t => t.id === 'promo')!;
   }
   
-  // Product → Product Spotlight
+  // Product → Classic Product (new default) or Product Spotlight
   if (contentType === 'product') {
-    return SOCIAL_TEMPLATES.find(t => t.id === 'product_spotlight')!;
+    return Math.random() > 0.5 
+      ? SOCIAL_TEMPLATES.find(t => t.id === 'classic_product')!
+      : SOCIAL_TEMPLATES.find(t => t.id === 'product_spotlight')!;
   }
   
   // Article → Feature Highlight or Carousel
