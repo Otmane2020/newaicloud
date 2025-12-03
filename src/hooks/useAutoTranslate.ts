@@ -57,6 +57,8 @@ export function useAutoTranslate(language: string, enabled: boolean = true) {
         body: {
           text: uncachedTexts,
           targetLang,
+          // Let Google detect source language and only translate if different
+          detectOnly: false,
         },
       });
 
@@ -69,13 +71,24 @@ export function useAutoTranslate(language: string, enabled: boolean = true) {
         return results;
       }
 
-      // Update cache and results
+      // Update cache and results - only use translation if source language differs
       data.translations.forEach((translation: any, i: number) => {
-        const translatedText = translation.translatedText || uncachedTexts[i];
-        const originalIndex = uncachedIndices[i];
-        const cacheKey = getCacheKey(uncachedTexts[i], targetLang);
-        translationCache[cacheKey] = translatedText;
-        results[originalIndex] = translatedText;
+        const detectedLang = translation.detectedSourceLanguage?.toLowerCase();
+        const targetLangNorm = targetLang.toLowerCase().split('-')[0];
+        
+        // If source language matches target, keep original text
+        if (detectedLang === targetLangNorm) {
+          results[uncachedIndices[i]] = uncachedTexts[i];
+          // Still cache it to avoid re-checking
+          const cacheKey = getCacheKey(uncachedTexts[i], targetLang);
+          translationCache[cacheKey] = uncachedTexts[i];
+        } else {
+          const translatedText = translation.translatedText || uncachedTexts[i];
+          const originalIndex = uncachedIndices[i];
+          const cacheKey = getCacheKey(uncachedTexts[i], targetLang);
+          translationCache[cacheKey] = translatedText;
+          results[originalIndex] = translatedText;
+        }
       });
 
       return results;

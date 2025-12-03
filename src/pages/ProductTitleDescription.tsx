@@ -3836,6 +3836,16 @@ export default function ProductTitleDescription() {
         onOpenChange={setShowGalleryDialog}
         product={galleryProduct}
         storeId={selectedStore?.id || null}
+        onMainImageChange={(productId, newMainImageUrl) => {
+          // Update product image in local state
+          setProducts(prev => prev.map(p => 
+            p.id === productId ? { ...p, image_url: newMainImageUrl } : p
+          ));
+          // Also update galleryProduct if it's the same
+          if (galleryProduct?.id === productId) {
+            setGalleryProduct(prev => prev ? { ...prev, image_url: newMainImageUrl } : null);
+          }
+        }}
       />
 
       {/* Smart Background Dialog */}
