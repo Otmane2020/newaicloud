@@ -113,7 +113,7 @@ const SocialMedia = () => {
         });
 
       if (error) throw error;
-      toast.success("Paramètres sauvegardés");
+      toast.success(t.socialMedia.settings.saved);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -141,20 +141,20 @@ const SocialMedia = () => {
               <Facebook className="h-6 w-6 text-blue-600" />
               <Instagram className="h-6 w-6 text-pink-600" />
             </div>
-            Social Media
+            {t.socialMedia.title}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gérez vos publications Facebook et Instagram automatiquement
+            {t.socialMedia.subtitle}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowQuickPost(true)}>
             <Zap className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Quick Post</span>
+            <span className="hidden sm:inline">{t.socialMedia.quickPost}</span>
           </Button>
           <Button onClick={() => setShowCampaignWizard(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Nouvelle campagne</span>
+            <span className="hidden sm:inline">{t.socialMedia.newCampaign}</span>
           </Button>
         </div>
       </div>
@@ -170,23 +170,23 @@ const SocialMedia = () => {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="posts" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
-            Posts
+            {t.socialMedia.tabs.posts}
           </TabsTrigger>
           <TabsTrigger value="campaigns" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Campagnes
+            {t.socialMedia.tabs.campaigns}
           </TabsTrigger>
           <TabsTrigger value="creative" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
-            Créa
+            {t.socialMedia.tabs.creative}
           </TabsTrigger>
           <TabsTrigger value="connections" className="flex items-center gap-2">
             <Facebook className="h-4 w-4" />
-            Connexions
+            {t.socialMedia.tabs.connections}
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Paramètres
+            {t.socialMedia.tabs.settings}
           </TabsTrigger>
         </TabsList>
 
@@ -207,17 +207,17 @@ const SocialMedia = () => {
             {/* Settings Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Paramètres Social Media</CardTitle>
+                <CardTitle>{t.socialMedia.settings.title}</CardTitle>
                 <CardDescription>
-                  Configurez vos préférences de publication
+                  {t.socialMedia.settings.description}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Publication automatique des articles</Label>
+                    <Label>{t.socialMedia.settings.autoPostArticles}</Label>
                     <p className="text-sm text-muted-foreground">
-                      Publie automatiquement les nouveaux articles sur les réseaux sociaux
+                      {t.socialMedia.settings.autoPostArticlesDesc}
                     </p>
                   </div>
                   <Switch
@@ -229,7 +229,7 @@ const SocialMedia = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Couleur de marque</Label>
+                  <Label>{t.socialMedia.settings.brandColor}</Label>
                   <div className="flex gap-2">
                     <Input
                       type="color"
@@ -250,7 +250,7 @@ const SocialMedia = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>URL du logo</Label>
+                  <Label>{t.socialMedia.settings.logoUrl}</Label>
                   <Input
                     value={settings.logo_url || ''}
                     onChange={(e) => 
@@ -260,17 +260,9 @@ const SocialMedia = () => {
                   />
                 </div>
 
-                <div className="p-4 bg-muted rounded-lg">
-                  <h4 className="font-medium mb-2">💰 Coût des publications</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Publication Facebook : 3 crédits</li>
-                    <li>• Publication Instagram : 3 crédits</li>
-                  </ul>
-                </div>
-
                 <Button onClick={saveSettings} disabled={savingSettings}>
                   {savingSettings && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Sauvegarder
+                  {t.socialMedia.settings.save}
                 </Button>
               </CardContent>
             </Card>
@@ -314,6 +306,7 @@ const SocialMedia = () => {
 };
 
 const SocialCampaignsList = ({ userId, storeId }: { userId?: string; storeId?: string }) => {
+  const { t } = useTranslation();
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -332,9 +325,9 @@ const SocialCampaignsList = ({ userId, storeId }: { userId?: string; storeId?: s
   };
 
   const deleteCampaign = async (id: string) => {
-    if (!confirm('Supprimer ?')) return;
+    if (!confirm(t.common.actions.confirmDelete)) return;
     await supabase.from('social_campaigns').delete().eq('id', id);
-    toast.success('Supprimé');
+    toast.success(t.toasts.success.deleted);
     loadCampaigns();
   };
 
@@ -350,7 +343,7 @@ const SocialCampaignsList = ({ userId, storeId }: { userId?: string; storeId?: s
       <Card>
         <CardContent className="py-12 text-center">
           <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p>Aucune campagne</p>
+          <p>{t.socialMedia.campaign.empty}</p>
         </CardContent>
       </Card>
     );
