@@ -142,6 +142,21 @@ export default function VideoAdsStudio() {
   // Remove clip from timeline
   const handleRemoveFromTimeline = (id: string) => {
     setTimelineClips(timelineClips.filter((c) => c.id !== id));
+    toast({ title: "Clip supprimé de la timeline" });
+  };
+
+  // Duplicate clip in timeline
+  const handleDuplicateClip = (clip: { id: string; title: string; duration: number; thumbnailUrl?: string; videoUrl: string }) => {
+    const sourceClip = timelineClips.find(c => c.id === clip.id);
+    if (sourceClip) {
+      const newClip: TimelineClip = {
+        ...sourceClip,
+        id: `${sourceClip.id}-copy-${Date.now()}`,
+        order: timelineClips.length,
+      };
+      setTimelineClips([...timelineClips, newClip]);
+      toast({ title: "Clip dupliqué" });
+    }
   };
 
   // Change transition
@@ -330,6 +345,7 @@ export default function VideoAdsStudio() {
                   thumbnailUrl: c.thumbnail_url,
                   videoUrl: c.file_url
                 }))}
+                format={format}
                 onReorder={(fromIdx, toIdx) => {
                   const newClips = [...timelineClips];
                   const [removed] = newClips.splice(fromIdx, 1);
@@ -337,6 +353,7 @@ export default function VideoAdsStudio() {
                   handleTimelineReorder(newClips.map((c, i) => ({ ...c, order: i })));
                 }}
                 onRemove={handleRemoveFromTimeline}
+                onDuplicate={handleDuplicateClip}
               />
             </div>
 

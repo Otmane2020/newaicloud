@@ -1,4 +1,4 @@
-import { Film, GripVertical, Scissors } from "lucide-react";
+import { Film, GripVertical, Scissors, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface VideoClip {
@@ -16,6 +16,8 @@ interface VideoTrackProps {
   selectedClipId: string | null;
   onSelectClip: (id: string) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
+  onRemove?: (id: string) => void;
+  onDuplicate?: (clip: VideoClip) => void;
 }
 
 export const VideoTrack = ({
@@ -24,6 +26,8 @@ export const VideoTrack = ({
   currentTime,
   selectedClipId,
   onSelectClip,
+  onRemove,
+  onDuplicate,
 }: VideoTrackProps) => {
   let accumulatedTime = 0;
 
@@ -68,6 +72,36 @@ export const VideoTrack = ({
                 {/* Grip handle */}
                 <div className="absolute left-0 top-0 bottom-0 w-4 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
                   <GripVertical className="h-3 w-3 text-white" />
+                </div>
+
+                {/* Actions: Duplicate & Delete */}
+                <div className="absolute top-1 left-5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  {onDuplicate && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5 bg-black/50 hover:bg-black/70"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDuplicate(clip);
+                      }}
+                    >
+                      <Copy className="h-2.5 w-2.5 text-white" />
+                    </Button>
+                  )}
+                  {onRemove && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5 bg-black/50 hover:bg-red-600/80"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(clip.id);
+                      }}
+                    >
+                      <Trash2 className="h-2.5 w-2.5 text-white" />
+                    </Button>
+                  )}
                 </div>
 
                 {/* Clip info */}
