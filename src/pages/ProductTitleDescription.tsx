@@ -583,7 +583,7 @@ export default function ProductTitleDescription() {
         if (Object.keys(syncData).length > 0) {
           await supabase.functions.invoke("sync-seo-to-shopify", {
             body: {
-              product_id: productId,
+              productId: productId,
               shopify_product_id: product.shopify_id,
               ...syncData
             }
