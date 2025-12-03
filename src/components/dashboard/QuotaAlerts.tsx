@@ -17,7 +17,7 @@ interface QuotaAlert {
 
 export function QuotaAlerts() {
   const { user } = useAuth();
-  const { language } = useTranslation();
+  const { t, tf } = useTranslation();
   const navigate = useNavigate();
   const [alerts, setAlerts] = useState<QuotaAlert[]>([]);
 
@@ -57,21 +57,21 @@ export function QuotaAlerts() {
 
         const quotas = [
           {
-            name: language === 'fr' ? 'optimisations SEO' : 'SEO optimizations',
+            name: t.quotaAlerts.seoOptimizations,
             current: usage.optimizations_count || 0,
             limit: profile.subscription_status === 'trialing' 
               ? (plan.trial_max_optimizations || plan.max_optimizations_monthly)
               : plan.max_optimizations_monthly
           },
           {
-            name: language === 'fr' ? 'articles' : 'articles',
+            name: t.quotaAlerts.articles,
             current: usage.articles_count || 0,
             limit: profile.subscription_status === 'trialing'
               ? (plan.trial_max_articles || plan.max_articles_monthly)
               : plan.max_articles_monthly
           },
           {
-            name: language === 'fr' ? 'réponses chat' : 'chat responses',
+            name: t.quotaAlerts.chatResponses,
             current: usage.chat_responses_count || 0,
             limit: plan.max_chat_responses_monthly || 100
           }
@@ -83,20 +83,25 @@ export function QuotaAlerts() {
           if (percentage >= 100) {
             newAlerts.push({
               type: 'critical',
-              title: language === 'fr' ? '🚨 Quota atteint!' : '🚨 Quota reached!',
-              message: language === 'fr'
-                ? `Vous avez atteint votre limite de ${quota.name} (${quota.current}/${quota.limit}). Passez à un plan supérieur pour continuer.`
-                : `You have reached your ${quota.name} limit (${quota.current}/${quota.limit}). Upgrade to continue.`,
+              title: t.quotaAlerts.quotaReached,
+              message: tf('quotaAlerts.reachedMessage', {
+                name: quota.name,
+                current: quota.current,
+                limit: quota.limit
+              }),
               percentage,
               quotaType: quota.name
             });
           } else if (percentage >= 90) {
             newAlerts.push({
               type: 'warning',
-              title: language === 'fr' ? '⚠️ Quota bientôt atteint' : '⚠️ Quota almost reached',
-              message: language === 'fr'
-                ? `Vous avez utilisé ${Math.round(percentage)}% de votre quota de ${quota.name} (${quota.current}/${quota.limit}).`
-                : `You have used ${Math.round(percentage)}% of your ${quota.name} quota (${quota.current}/${quota.limit}).`,
+              title: t.quotaAlerts.quotaAlmostReached,
+              message: tf('quotaAlerts.almostReachedMessage', {
+                percentage: Math.round(percentage),
+                name: quota.name,
+                current: quota.current,
+                limit: quota.limit
+              }),
               percentage,
               quotaType: quota.name
             });
@@ -112,7 +117,7 @@ export function QuotaAlerts() {
     checkQuotas();
     const interval = setInterval(checkQuotas, 2 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [user, language]);
+  }, [user, t, tf]);
 
   if (alerts.length === 0) return null;
 
@@ -135,7 +140,7 @@ export function QuotaAlerts() {
               variant={alert.type === 'critical' ? 'default' : 'outline'}
               onClick={() => navigate('/subscription')}
             >
-              {language === 'fr' ? 'Voir plans' : 'View plans'}
+              {t.quotaAlerts.viewPlans}
             </Button>
           </AlertDescription>
         </Alert>

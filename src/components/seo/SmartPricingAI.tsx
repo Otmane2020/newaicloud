@@ -1699,7 +1699,7 @@ export function SmartPricingAI() {
             size="lg"
           >
             <Globe className="w-4 h-4 mr-2" />
-            {language === 'fr' ? 'Configurer' : 'Configure'}
+            {t.common.configure}
           </Button>
         </div>
         
@@ -1715,7 +1715,7 @@ export function SmartPricingAI() {
             })}
             {selectedMarkets.length > 8 && (
               <Badge variant="outline" className="text-xs">
-                +{selectedMarkets.length - 8} {language === 'fr' ? 'autres' : 'more'}
+                +{selectedMarkets.length - 8} {t.common.more}
               </Badge>
             )}
           </div>

@@ -267,6 +267,10 @@ export const translations = {
       upgradeError: "Erreur lors de la mise à niveau",
       portalError: "Erreur lors de l'ouverture du portail",
     },
+    languageBlocked: {
+      title: "Optimisation en cours",
+      description: "Veuillez attendre la fin du traitement avant de changer de langue.",
+    },
     // Common toasts
     common: {
       limitReached: "Limite atteinte",
@@ -1453,6 +1457,8 @@ export const translations = {
     close: "Fermer",
     yes: "Oui",
     no: "Non",
+    configure: "Configurer",
+    more: "autres",
     actions: {
       confirmDelete: "Êtes-vous sûr de vouloir supprimer ?",
     },
@@ -6808,6 +6814,11 @@ export const translations = {
       articlesPerMonth: "articles/mois",
       chatResponsesPerMonth: "réponses chat/mois",
     },
+    promo: {
+      get20Discount: "Obtenez 20% de réduction avec",
+      get30Discount: "Obtenez 30% de réduction avec",
+      limitedPromo: "PROMO LIMITÉE",
+    },
   },
 
   collection: {
@@ -9567,6 +9578,56 @@ export const translations = {
       publishError: "Erreur lors de la publication",
       selectPlatform: "Sélectionnez au moins une plateforme",
     },
+    history: {
+      title: "Historique des créatifs",
+      refresh: "Actualiser",
+      noCreatives: "Aucun créatif généré pour l'instant",
+    },
+  },
+
+  // ============= Quota Alerts =============
+  quotaAlerts: {
+    seoOptimizations: "optimisations SEO",
+    articles: "articles",
+    chatResponses: "réponses chat",
+    quotaReached: "🚨 Quota atteint!",
+    quotaAlmostReached: "⚠️ Quota bientôt atteint",
+    reachedMessage: "Vous avez atteint votre limite de {{name}} ({{current}}/{{limit}}). Passez à un plan supérieur pour continuer.",
+    almostReachedMessage: "Vous avez utilisé {{percentage}}% de votre quota de {{name}} ({{current}}/{{limit}}).",
+    viewPlans: "Voir plans",
+  },
+
+  // ============= Landing Showcase =============
+  landingShowcase: {
+    badge: "Vision AI Landing Pages",
+    title: "Transformez vos descriptions produits",
+    subtitle: "Notre IA analyse visuellement vos produits et génère des descriptions HTML optimisées pour la conversion",
+    before: "Avant",
+    after: "Après Vision AI",
+    cta: "Essayer gratuitement",
+    rawDesc: "Canapé 3 places en velours gris. Dimensions: 220x90x85cm. Pieds en bois. Confortable.",
+    productTitle: "Canapé Velours Premium",
+    productSubtitle: "Design scandinave moderne",
+    feature1: "Livraison gratuite",
+    feature2: "Garantie 5 ans",
+    feature3: "Retour 30 jours",
+    descHtml: "Sublimez votre intérieur avec ce canapé d'exception en velours premium. Son design épuré aux lignes scandinaves apporte une touche d'élégance à votre salon.",
+    buyNow: "Acheter maintenant",
+    whiteBackground: "Fond blanc / studio",
+    generatedBackground: "Fond généré IA",
+    features: [
+      "Analyse visuelle IA",
+      "HTML optimisé SEO",
+      "Conversion +40%",
+      "Sync Shopify"
+    ],
+  },
+
+  // ============= Chat Page =============
+  chatPage: {
+    defaultGreeting: "Bonjour ! Je suis votre assistant shopping IA. Comment puis-je vous aider aujourd'hui ?",
+    defaultAssistantName: "Nicolas",
+    defaultWelcome: "Bienvenue ! Comment puis-je vous aider ?",
   },
 
 };

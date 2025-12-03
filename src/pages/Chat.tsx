@@ -49,7 +49,7 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: language === 'fr' ? t.seo.chat.greeting : 'Hello! I\'m your AI shopping assistant. How can I help you today?'
+      content: t.chatPage?.defaultGreeting || t.seo.chat.greeting
     }
   ]);
   const [input, setInput] = useState('');
@@ -60,13 +60,13 @@ export default function Chat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [storeName, setStoreName] = useState<string>();
-  const [assistantName, setAssistantName] = useState<string>(language === 'fr' ? 'Nicolas' : 'Assistant');
+  const [assistantName, setAssistantName] = useState<string>(t.chatPage?.defaultAssistantName || 'Assistant');
   const [enrichmentPercentage, setEnrichmentPercentage] = useState<number>(100);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Chat embed configuration
   const [chatPosition, setChatPosition] = useState<'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'>('bottom-right');
-  const [welcomeMessage, setWelcomeMessage] = useState(language === 'fr' ? t.seo.chat.welcome : 'Welcome! How can I assist you?');
+  const [welcomeMessage, setWelcomeMessage] = useState(t.chatPage?.defaultWelcome || t.seo.chat.welcome);
 
   useEffect(() => {
     if (user && selectedStore) {

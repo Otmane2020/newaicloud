@@ -793,10 +793,10 @@ export default function AiCreativeStudio() {
           <TabsContent value="history">
             <section className="bg-card rounded-xl border overflow-hidden">
               <div className="bg-muted/30 px-4 py-3 border-b flex items-center justify-between">
-                <h2 className="font-semibold">{language === 'fr' ? 'Historique des créatifs' : 'Creative History'}</h2>
+                <h2 className="font-semibold">{t.creativeStudio.history.title}</h2>
                 <Button variant="ghost" size="sm" onClick={loadHistory} className="gap-2">
                   <RefreshCw className="h-4 w-4" />
-                  {language === 'fr' ? 'Actualiser' : 'Refresh'}
+                  {t.creativeStudio.history.refresh}
                 </Button>
               </div>
               
@@ -808,7 +808,7 @@ export default function AiCreativeStudio() {
                 ) : history.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>{language === 'fr' ? 'Aucun créatif généré pour l\'instant' : 'No creatives generated yet'}</p>
+                    <p>{t.creativeStudio.history.noCreatives}</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

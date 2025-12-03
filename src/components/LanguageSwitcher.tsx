@@ -19,11 +19,8 @@ export function LanguageSwitcher() {
     if (optimizationState.isRunning) {
       console.warn('🌐 Language change blocked during optimization');
       toast({
-        title: language === 'fr' ? 'Optimisation en cours' : 'Optimization in progress',
-        description:
-          language === 'fr'
-            ? 'Veuillez attendre la fin du traitement avant de changer de langue.'
-            : 'Please wait for the optimization to finish before changing language.',
+        title: t.toasts.languageBlocked?.title || 'Optimization in progress',
+        description: t.toasts.languageBlocked?.description || 'Please wait for the optimization to finish before changing language.',
         variant: 'destructive',
       });
       return;
