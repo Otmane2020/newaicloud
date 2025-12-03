@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Loader2, CheckCircle2, Package, Image, FileText, Newspaper } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 
 interface SyncData {
   id: string;
@@ -24,6 +25,7 @@ const syncTypeConfig: Record<string, { icon: React.ElementType; label: string; p
 
 export function AutoSyncProgressDialog() {
   const location = useLocation();
+  const { t } = useTranslation();
   const [syncData, setSyncData] = React.useState<SyncData | null>(null);
   const [progress, setProgress] = React.useState(0);
   const [visible, setVisible] = React.useState(false);
@@ -154,8 +156,8 @@ export function AutoSyncProgressDialog() {
             setVisible(false);
             
             if (data.status === 'success') {
-              toast.success('Synchronisation réussie', {
-                description: `${data.items_synced || 0} éléments importés`,
+              toast.success(t.toasts.success.synchronized, {
+                description: `${data.items_synced || 0} ${t.dialogs.autoOptimization.elements}`,
                 duration: 4000,
               });
             }

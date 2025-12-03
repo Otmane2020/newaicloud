@@ -198,7 +198,7 @@ export default function ShopifyConnectionsList() {
       
       console.log('[DeleteStore] Edge function response:', result);
       
-      toast.success('Boutique et données supprimées avec succès');
+      toast.success(t.toasts.shopify.disconnected);
       loadConnections();
       setShowDeleteDialog(false);
       setStoreToDelete(null);
@@ -218,7 +218,7 @@ export default function ShopifyConnectionsList() {
 
   const handleManualSync = async (storeToSync: ShopifyConnection) => {
     if (!storeToSync) {
-      toast.error("Aucun magasin sélectionné");
+      toast.error(t.toasts.dashboard.noStoreSelected);
       return;
     }
 
@@ -618,14 +618,14 @@ export default function ShopifyConnectionsList() {
 
       if (error) throw error;
 
-      toast.success('Nom commercial mis à jour');
+      toast.success(t.toasts.dashboard.businessNameUpdated);
       loadConnections();
       setShowEditNameDialog(false);
       setStoreToEdit(null);
       setEditedStoreName('');
     } catch (error) {
       console.error('Error updating store name:', error);
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t.toasts.dashboard.businessNameError);
     }
   };
 
