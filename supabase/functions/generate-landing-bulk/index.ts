@@ -100,89 +100,86 @@ STYLE: ${designStyle} - DESIGN PROFESSIONNEL ÉPURÉ
 THÈME: ${theme}
 LANGUE: ${language === "en" ? "Anglais" : "Français"}
 
-TOKENS CSS HSL:
+TOKENS CSS HSL OBLIGATOIRES (UTILISER EXACTEMENT):
 --primary: ${primaryColor}
 --secondary: ${secondaryColor}
 --text: ${textColor}
 --background: ${bgColor}
 --surface: ${surfaceColor}
 
+⚠️ IMPORTANT: Utilise ces couleurs HSL EXACTES dans tout le CSS:
+- Fond principal: background-color: hsl(${bgColor})
+- Texte principal: color: hsl(${textColor})
+- Boutons/Accents: background-color: hsl(${primaryColor})
+- Sections alternées: background-color: hsl(${surfaceColor})
+
 ═══════════════════════════════════════════════════════
-RÈGLES DE DESIGN STRICTES (CRITIQUE):
+RÈGLES DE DESIGN STRICTES:
 ═══════════════════════════════════════════════════════
 
-1. ICÔNES PROFESSIONNELLES UNIQUEMENT:
-   - Utilise des SVG inline avec style professionnel (traits fins, style Lucide/Feather)
-   - stroke-width: 1.5 ou 2, viewBox="0 0 24 24", fill="none", stroke="currentColor"
-   - JAMAIS d'emoji, JAMAIS d'icônes clip-art ou enfantines
-   - Exemples de SVG autorisés:
-     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+1. ICÔNES SVG PROFESSIONNELLES:
+   - stroke-width: 1.5, viewBox="0 0 24 24", fill="none", stroke="currentColor"
+   - JAMAIS d'emoji
 
-2. IMAGES PRODUIT BIEN POSITIONNÉES:
-   - Image HERO: min-height: 400px, object-fit: cover, width 100% ou 60% sur desktop
-   - Galerie: display: grid, grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)), gap: 1rem
-   - Toutes images avec border-radius: 12px et box-shadow subtile
-   - aspect-ratio: 1/1 ou 4/3 pour cohérence
+2. IMAGES PRODUIT:
+   - Image HERO: min-height: 400px, object-fit: cover
+   - border-radius: 12px et box-shadow subtile
 
-3. TYPOGRAPHIE PREMIUM:
-   - Titres: font-weight: 700, letter-spacing: -0.02em
+3. TYPOGRAPHIE:
+   - Titres: font-weight: 700
    - Corps: font-weight: 400, line-height: 1.6
-   - Hierarchy claire avec tailles distinctes (2.5rem titre, 1.25rem sous-titres, 1rem texte)
-
-4. COULEURS ET EFFETS:
-   - Gradients subtils pour backgrounds (linear-gradient avec opacité faible)
-   - Box-shadows douces: 0 4px 20px rgba(0,0,0,0.08)
-   - Contraste élevé texte/fond
-   - Pas de couleurs criardes ou néon
 
 ═══════════════════════════════════════════════════════
 STRUCTURE HTML REQUISE:
 ═══════════════════════════════════════════════════════
 
-<!DOCTYPE html><html><head>...</head><body>
-1. HERO SECTION:
-   - Layout flex: image (60%) + texte (40%) sur desktop, stack sur mobile
-   - Image principale grande, bien cadrée
-   - Titre produit + marque + description courte
+1. HERO: image + titre + description
 
-2. TABLEAU CARACTÉRISTIQUES (OBLIGATOIRE):
-   - Tableau ou liste de définition élégant
-   - INCLURE: Dimensions (L x l x H), Matériaux/Fabrics, Poids, Couleur
-   - Style: alternance de fond subtile entre lignes
-   - Exemple: <dl><dt>Dimensions</dt><dd>120 x 80 x 45 cm</dd></dl>
+2. CARACTÉRISTIQUES: tableau élégant (Dimensions, Matériaux, Poids)
 
-3. SECTION AVANTAGES (3-4 cartes):
-   - Grid responsive 3 colonnes desktop, 1 mobile
-   - Chaque carte: SVG professionnel (24x24) + titre + description courte
-   - Background surface avec border subtile
+3. AVANTAGES: 3-4 cartes avec SVG
 
-4. GALERIE IMAGES (si images additionnelles):
-   - Grid 2-3 colonnes avec gap
-   - Hover effect subtil (scale 1.02, shadow)
-   - Images bien cadrées
+4. GALERIE IMAGES (si disponibles)
 
-5. FAQ SECTION CLIQUABLE (3 questions min - OBLIGATOIRE):
-   - ACCORDÉON FONCTIONNEL avec JavaScript inline
-   - Chaque question doit s'ouvrir/fermer au clic
-   - Utilise ce pattern EXACT:
-   <style>.faq-item .faq-answer { display: none; padding: 1rem; } .faq-item.open .faq-answer { display: block; } .faq-question { cursor: pointer; padding: 1rem; background: hsl(var(--surface)); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; } .faq-question:hover { background: hsl(var(--primary) / 0.1); } .faq-icon { transition: transform 0.3s; } .faq-item.open .faq-icon { transform: rotate(180deg); }</style>
-   <div class="faq-item" onclick="this.classList.toggle('open')">
-     <div class="faq-question"><span>Question ici?</span><svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
-     <div class="faq-answer">Réponse détaillée ici...</div>
-   </div>
-   - Questions pertinentes au produit (entretien, livraison, garantie)
-</body></html>
+5. ⚠️ FAQ SECTION - ABSOLUMENT OBLIGATOIRE (3 questions minimum):
+   CODE EXACT À UTILISER:
+   <section style="padding: 3rem 1rem; background: hsl(${surfaceColor});">
+     <h2 style="text-align: center; font-size: 1.75rem; margin-bottom: 2rem; color: hsl(${textColor});">Questions Fréquentes</h2>
+     <div style="max-width: 800px; margin: 0 auto;">
+       <div class="faq-item" onclick="this.classList.toggle('open')" style="margin-bottom: 1rem; border-radius: 8px; overflow: hidden; border: 1px solid hsl(${primaryColor} / 0.2);">
+         <div style="padding: 1rem; background: hsl(${bgColor}); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+           <span style="font-weight: 600; color: hsl(${textColor});">Comment entretenir ce produit ?</span>
+           <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+         </div>
+         <div class="faq-answer" style="padding: 1rem; background: hsl(${bgColor}); border-top: 1px solid hsl(${primaryColor} / 0.1); color: hsl(${textColor});">
+           Réponse détaillée avec conseils d'entretien spécifiques au produit...
+         </div>
+       </div>
+       <div class="faq-item" onclick="this.classList.toggle('open')" style="margin-bottom: 1rem; border-radius: 8px; overflow: hidden; border: 1px solid hsl(${primaryColor} / 0.2);">
+         <div style="padding: 1rem; background: hsl(${bgColor}); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+           <span style="font-weight: 600; color: hsl(${textColor});">Quels sont les délais de livraison ?</span>
+           <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+         </div>
+         <div class="faq-answer" style="padding: 1rem; background: hsl(${bgColor}); border-top: 1px solid hsl(${primaryColor} / 0.1); color: hsl(${textColor});">
+           Informations sur la livraison...
+         </div>
+       </div>
+       <div class="faq-item" onclick="this.classList.toggle('open')" style="margin-bottom: 1rem; border-radius: 8px; overflow: hidden; border: 1px solid hsl(${primaryColor} / 0.2);">
+         <div style="padding: 1rem; background: hsl(${bgColor}); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+           <span style="font-weight: 600; color: hsl(${textColor});">Quelle garantie est incluse ?</span>
+           <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+         </div>
+         <div class="faq-answer" style="padding: 1rem; background: hsl(${bgColor}); border-top: 1px solid hsl(${primaryColor} / 0.1); color: hsl(${textColor});">
+           Détails sur la garantie...
+         </div>
+       </div>
+     </div>
+   </section>
+   <style>.faq-item .faq-answer { display: none; } .faq-item.open .faq-answer { display: block; } .faq-icon { transition: transform 0.3s; } .faq-item.open .faq-icon { transform: rotate(180deg); }</style>
 
-═══════════════════════════════════════════════════════
-INTERDIT ABSOLUMENT:
-═══════════════════════════════════════════════════════
-- Emoji ou icônes enfantines ❌
-- Images placeholder (via.placeholder.com, etc.) ❌
-- Boutons d'achat ou CTA ❌
-- Menu navigation ou footer ❌
-- Couleurs trop vives ou néon ❌
+INTERDIT: Emoji, placeholders, boutons d'achat, menu/footer
 
-Génère UNIQUEMENT le HTML complet (<!DOCTYPE html> jusqu'à </html>), rien d'autre.`;
+Génère le HTML complet avec FAQ COMPLÈTE et couleurs HSL exactes.`;
 
     // Call AI with shorter timeout for bulk
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -202,8 +199,8 @@ Génère UNIQUEMENT le HTML complet (<!DOCTYPE html> jusqu'à </html>), rien d'a
           },
           { role: "user", content: prompt },
         ],
-        max_tokens: 4000, // Reduced for speed
-        temperature: 0.5,
+        max_tokens: 8000, // Increased to ensure FAQ is included
+        temperature: 0.3, // Lower for consistency
       }),
     });
 
