@@ -15,6 +15,7 @@ interface SyncRequest {
   syncGoogleShopping?: boolean;
   force?: boolean; // Bypass throttling check (for post-optimization sync)
   // Direct field updates (for inline editing)
+  title?: string; // Product title update
   vendor?: string;
   sku?: string;
   price?: number;
@@ -117,7 +118,7 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, force, vendor, sku, price, cost, variant_id }: SyncRequest = bodyCheck;
+    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, force, title, vendor, sku, price, cost, variant_id }: SyncRequest = bodyCheck;
 
     // Sync product SEO data
     if (productId) {
@@ -242,24 +243,26 @@ Deno.serve(async (req: Request) => {
         throw new Error(`Failed to update SEO in Shopify: ${error.message}`);
       }
 
-      // PHASE 1.5: Direct field updates (vendor, sku, price, cost) - for inline editing
-      if (vendor !== undefined) {
-        console.log(`[SYNC-SEO] Updating vendor to "${vendor}"...`);
-        const vendorMutation = `
+      // PHASE 1.5: Direct field updates (title, vendor, sku, price, cost) - for inline editing
+      if (title !== undefined || vendor !== undefined) {
+        console.log(`[SYNC-SEO] Updating product fields - title: "${title}", vendor: "${vendor}"...`);
+        const productFieldsMutation = `
           mutation productUpdate($input: ProductInput!) {
             productUpdate(input: $input) {
-              product { id vendor }
+              product { id title vendor }
               userErrors { field message }
             }
           }
         `;
+        const productInput: any = { id: `gid://shopify/Product/${product.shopify_id}` };
+        if (title !== undefined) productInput.title = title;
+        if (vendor !== undefined) productInput.vendor = vendor;
+        
         try {
-          await shopifyGraphQL(shopUrl, shopifyAccessToken, vendorMutation, {
-            input: { id: `gid://shopify/Product/${product.shopify_id}`, vendor }
-          });
-          console.log("[SYNC-SEO] ✅ Vendor updated successfully");
-        } catch (vendorError: any) {
-          console.error("[SYNC-SEO] ❌ Vendor update failed:", vendorError.message);
+          await shopifyGraphQL(shopUrl, shopifyAccessToken, productFieldsMutation, { input: productInput });
+          console.log("[SYNC-SEO] ✅ Product title/vendor updated successfully");
+        } catch (fieldError: any) {
+          console.error("[SYNC-SEO] ❌ Product fields update failed:", fieldError.message);
         }
       }
 

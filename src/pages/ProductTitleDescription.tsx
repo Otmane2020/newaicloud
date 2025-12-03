@@ -374,7 +374,7 @@ export default function ProductTitleDescription() {
           const batch = productIds.slice(i, i + batchSize);
           const { data: variantsData, error: variantsError } = await supabase
             .from("product_variants")
-            .select("id, product_id, title, option1, option2, option3, image_url, sku, price, compare_at_price, cost_price")
+            .select("id, product_id, title, option1, option2, option3, image_url, sku, price, compare_at_price, cost_price, shopify_variant_id")
             .in("product_id", batch);
 
           if (variantsError) {
@@ -518,8 +518,10 @@ export default function ProductTitleDescription() {
     setEditingValue("");
   };
 
-  const saveField = async (product: Product) => {
+  const saveField = async (product: Product, valueOverride?: string) => {
     if (!editingField) return;
+    
+    const valueToSave = valueOverride !== undefined ? valueOverride : editingValue;
     
     setSavingField(true);
     try {
@@ -530,15 +532,17 @@ export default function ProductTitleDescription() {
       let variantUpdate: any = null;
       
       if (field === "title") {
-        updateData.title = editingValue;
+        updateData.title = valueToSave;
+        // Also update seo_title to match
+        updateData.seo_title = valueToSave;
       } else if (field === "vendor") {
-        updateData.vendor = editingValue;
+        updateData.vendor = valueToSave;
       } else if (field === "sku" && product.variants?.[0]) {
-        variantUpdate = { sku: editingValue };
+        variantUpdate = { sku: valueToSave };
       } else if (field === "price" && product.variants?.[0]) {
-        variantUpdate = { price: parseFloat(editingValue) };
+        variantUpdate = { price: parseFloat(valueToSave) || 0 };
       } else if (field === "cost" && product.variants?.[0]) {
-        variantUpdate = { cost_price: parseFloat(editingValue) };
+        variantUpdate = { cost_price: parseFloat(valueToSave) || 0 };
       }
       
       // Sauvegarder en base de données
@@ -563,24 +567,26 @@ export default function ProductTitleDescription() {
       // Synchroniser avec Shopify si le produit a un shopify_id
       if (product.shopify_id) {
         const syncData: any = {};
+        const variant = product.variants?.[0];
         
-        if (field === "title") syncData.title = editingValue;
-        if (field === "vendor") syncData.vendor = editingValue;
-        if (field === "sku" && product.variants?.[0]) {
-          syncData.variant_id = product.variants[0].shopify_variant_id;
-          syncData.sku = editingValue;
+        if (field === "title") syncData.title = valueToSave;
+        if (field === "vendor") syncData.vendor = valueToSave;
+        if (field === "sku" && variant?.shopify_variant_id) {
+          syncData.variant_id = variant.shopify_variant_id;
+          syncData.sku = valueToSave;
         }
-        if (field === "price" && product.variants?.[0]) {
-          syncData.variant_id = product.variants[0].shopify_variant_id;
-          syncData.price = parseFloat(editingValue);
+        if (field === "price" && variant?.shopify_variant_id) {
+          syncData.variant_id = variant.shopify_variant_id;
+          syncData.price = parseFloat(valueToSave) || 0;
         }
-        if (field === "cost" && product.variants?.[0]) {
-          syncData.variant_id = product.variants[0].shopify_variant_id;
-          syncData.cost = parseFloat(editingValue);
+        if (field === "cost" && variant?.shopify_variant_id) {
+          syncData.variant_id = variant.shopify_variant_id;
+          syncData.cost = parseFloat(valueToSave) || 0;
         }
         
         // Appeler l'edge function de synchronisation
         if (Object.keys(syncData).length > 0) {
+          console.log("[INLINE_EDIT] Syncing to Shopify:", syncData);
           await supabase.functions.invoke("sync-seo-to-shopify", {
             body: {
               productId: productId,
@@ -591,10 +597,25 @@ export default function ProductTitleDescription() {
         }
       }
       
-      toast.success(t.toasts.success.saved);
+      // Update local state immediately without refetch
+      setProducts((prev) => prev.map((p) => {
+        if (p.id !== productId) return p;
+        const updated = { ...p };
+        if (field === "title") {
+          updated.title = valueToSave;
+          updated.seo_title = valueToSave;
+        }
+        if (field === "vendor") updated.vendor = valueToSave;
+        if ((field === "sku" || field === "price" || field === "cost") && updated.variants?.[0]) {
+          updated.variants = [...updated.variants];
+          updated.variants[0] = { ...updated.variants[0] };
+          if (field === "sku") updated.variants[0].sku = valueToSave;
+          if (field === "price") updated.variants[0].price = parseFloat(valueToSave) || 0;
+          if (field === "cost") updated.variants[0].cost_price = parseFloat(valueToSave) || 0;
+        }
+        return updated;
+      }));
       
-      // Rafraîchir les produits
-      await fetchProducts();
       cancelEditing();
       
     } catch (error) {
@@ -2867,35 +2888,27 @@ export default function ProductTitleDescription() {
                          {/* Title section - editable */}
                          <div className="min-h-[3rem]">
                            {editingField?.productId === product.id && editingField?.field === "title" ? (
-                             <div className="flex items-start gap-1">
-                               <Input
-                                 value={editingValue}
-                                 onChange={(e) => setEditingValue(e.target.value)}
-                                 className="h-8 text-sm"
-                                 autoFocus
-                                 onKeyDown={(e) => {
-                                   if (e.key === "Enter") saveField(product);
-                                   if (e.key === "Escape") cancelEditing();
-                                 }}
-                               />
-                               <Button
-                                 size="icon"
-                                 variant="ghost"
-                                 className="h-8 w-8 flex-shrink-0"
-                                 onClick={() => saveField(product)}
-                                 disabled={savingField}
-                               >
-                                 {savingField ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                               </Button>
-                               <Button
-                                 size="icon"
-                                 variant="ghost"
-                                 className="h-8 w-8 flex-shrink-0"
-                                 onClick={cancelEditing}
-                               >
-                                 <X className="h-3 w-3" />
-                               </Button>
-                             </div>
+                             <Input
+                               value={editingValue}
+                               onChange={(e) => setEditingValue(e.target.value)}
+                               className="h-8 text-sm"
+                               autoFocus
+                               onKeyDown={(e) => {
+                                 if (e.key === "Enter") {
+                                   e.preventDefault();
+                                   saveField(product);
+                                 }
+                                 if (e.key === "Escape") cancelEditing();
+                               }}
+                               onBlur={() => {
+                                 if (editingValue !== (product.seo_title || product.title)) {
+                                   saveField(product);
+                                 } else {
+                                   cancelEditing();
+                                 }
+                               }}
+                               disabled={savingField}
+                             />
                            ) : (
                             <div 
                                className="group flex items-start gap-2 cursor-pointer hover:bg-accent/50 rounded p-1 -m-1"
@@ -2911,36 +2924,28 @@ export default function ProductTitleDescription() {
 
                          {/* Vendor badge - editable */}
                          {editingField?.productId === product.id && editingField?.field === "vendor" ? (
-                           <div className="flex items-center gap-1">
-                             <Input
-                               value={editingValue}
-                               onChange={(e) => setEditingValue(e.target.value)}
-                               className="h-7 text-xs"
-                               autoFocus
-                               placeholder="Marque"
-                               onKeyDown={(e) => {
-                                 if (e.key === "Enter") saveField(product);
-                                 if (e.key === "Escape") cancelEditing();
-                               }}
-                             />
-                             <Button
-                               size="icon"
-                               variant="ghost"
-                               className="h-7 w-7 flex-shrink-0"
-                               onClick={() => saveField(product)}
-                               disabled={savingField}
-                             >
-                               {savingField ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                             </Button>
-                             <Button
-                               size="icon"
-                               variant="ghost"
-                               className="h-7 w-7 flex-shrink-0"
-                               onClick={cancelEditing}
-                             >
-                               <X className="h-3 w-3" />
-                             </Button>
-                           </div>
+                           <Input
+                             value={editingValue}
+                             onChange={(e) => setEditingValue(e.target.value)}
+                             className="h-7 text-xs w-40"
+                             autoFocus
+                             placeholder="Marque"
+                             onKeyDown={(e) => {
+                               if (e.key === "Enter") {
+                                 e.preventDefault();
+                                 saveField(product);
+                               }
+                               if (e.key === "Escape") cancelEditing();
+                             }}
+                             onBlur={() => {
+                               if (editingValue !== (product.vendor || "")) {
+                                 saveField(product);
+                               } else {
+                                 cancelEditing();
+                               }
+                             }}
+                             disabled={savingField}
+                           />
                          ) : product.vendor ? (
                            <div 
                              className="group flex items-center gap-2 w-fit cursor-pointer hover:bg-accent/50 rounded p-1 -m-1"
@@ -2973,27 +2978,22 @@ export default function ProductTitleDescription() {
                                className="h-7 text-xs font-mono w-32"
                                autoFocus
                                onKeyDown={(e) => {
-                                 if (e.key === "Enter") saveField(product);
+                                 if (e.key === "Enter") {
+                                   e.preventDefault();
+                                   saveField(product);
+                                 }
                                  if (e.key === "Escape") cancelEditing();
                                }}
-                             />
-                             <Button
-                               size="icon"
-                               variant="ghost"
-                               className="h-7 w-7 flex-shrink-0"
-                               onClick={() => saveField(product)}
+                               onBlur={() => {
+                                 const originalSku = (product as any).sku || (product as any).variants?.[0]?.sku || "";
+                                 if (editingValue !== originalSku) {
+                                   saveField(product);
+                                 } else {
+                                   cancelEditing();
+                                 }
+                               }}
                                disabled={savingField}
-                             >
-                               {savingField ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                             </Button>
-                             <Button
-                               size="icon"
-                               variant="ghost"
-                               className="h-7 w-7 flex-shrink-0"
-                               onClick={cancelEditing}
-                             >
-                               <X className="h-3 w-3" />
-                             </Button>
+                             />
                            </div>
                          ) : (
                            <div 
@@ -3022,27 +3022,22 @@ export default function ProductTitleDescription() {
                                    className="h-6 text-xs w-20"
                                    autoFocus
                                    onKeyDown={(e) => {
-                                     if (e.key === "Enter") saveField(product);
+                                     if (e.key === "Enter") {
+                                       e.preventDefault();
+                                       saveField(product);
+                                     }
                                      if (e.key === "Escape") cancelEditing();
                                    }}
-                                 />
-                                 <Button
-                                   size="icon"
-                                   variant="ghost"
-                                   className="h-6 w-6"
-                                   onClick={() => saveField(product)}
+                                   onBlur={() => {
+                                     const originalPrice = (product as any).variants?.[0]?.price?.toString() || "";
+                                     if (editingValue !== originalPrice) {
+                                       saveField(product);
+                                     } else {
+                                       cancelEditing();
+                                     }
+                                   }}
                                    disabled={savingField}
-                                 >
-                                   {savingField ? <Loader2 className="h-2 w-2 animate-spin" /> : <Check className="h-2 w-2" />}
-                                 </Button>
-                                 <Button
-                                   size="icon"
-                                   variant="ghost"
-                                   className="h-6 w-6"
-                                   onClick={cancelEditing}
-                                 >
-                                   <X className="h-2 w-2" />
-                                 </Button>
+                                 />
                                </div>
                              ) : (
                                <div 
@@ -3073,27 +3068,22 @@ export default function ProductTitleDescription() {
                                    className="h-6 text-xs w-20"
                                    autoFocus
                                    onKeyDown={(e) => {
-                                     if (e.key === "Enter") saveField(product);
+                                     if (e.key === "Enter") {
+                                       e.preventDefault();
+                                       saveField(product);
+                                     }
                                      if (e.key === "Escape") cancelEditing();
                                    }}
-                                 />
-                                 <Button
-                                   size="icon"
-                                   variant="ghost"
-                                   className="h-6 w-6"
-                                   onClick={() => saveField(product)}
+                                   onBlur={() => {
+                                     const originalCost = (product as any).variants?.[0]?.cost_price?.toString() || "";
+                                     if (editingValue !== originalCost) {
+                                       saveField(product);
+                                     } else {
+                                       cancelEditing();
+                                     }
+                                   }}
                                    disabled={savingField}
-                                 >
-                                   {savingField ? <Loader2 className="h-2 w-2 animate-spin" /> : <Check className="h-2 w-2" />}
-                                 </Button>
-                                 <Button
-                                   size="icon"
-                                   variant="ghost"
-                                   className="h-6 w-6"
-                                   onClick={cancelEditing}
-                                 >
-                                   <X className="h-2 w-2" />
-                                 </Button>
+                                 />
                                </div>
                              ) : (
                                <div 
