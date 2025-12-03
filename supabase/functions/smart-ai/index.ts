@@ -192,8 +192,14 @@ function priceStats(arr: number[]): PriceData {
   const max = sorted[sorted.length - 1];
   const avg = Math.round((sorted.reduce((a, b) => a + b, 0) / sorted.length) * 100) / 100;
 
-  // Prix recommandé = médiane avec marge de 5-10%
-  const recommendedPrice = Math.round(median * 1.075);
+  // Filtrer les outliers (prix > 2x médiane) pour le prix recommandé
+  const filteredPrices = sorted.filter(p => p <= median * 2);
+  const filteredAvg = filteredPrices.length > 0 
+    ? Math.round((filteredPrices.reduce((a, b) => a + b, 0) / filteredPrices.length) * 100) / 100
+    : median;
+
+  // Prix recommandé = MIN(moyenne filtrée avec marge 5%, médiane * 1.1)
+  const recommendedPrice = Math.round(Math.min(filteredAvg * 1.05, median * 1.1));
 
   return { min, max, avg, median, currency: "EUR", recommendedPrice };
 }
@@ -208,23 +214,29 @@ function weightedPriceStats(
     return { min: null, max: null, avg: null, median: null, currency: "EUR", recommendedPrice: null };
   }
 
+  // Stats classiques d'abord
   const prices = competitors.map(c => c.price);
-  const weights = competitors.map(c => c.weight);
-
-  // Moyenne pondérée
-  const weightedSum = competitors.reduce((sum, c) => sum + c.price * c.weight, 0);
-  const totalWeight = competitors.reduce((sum, c) => sum + c.weight, 0);
-  const weightedAvg = Math.round((weightedSum / totalWeight) * 100) / 100;
-
-  // Stats classiques
   const sorted = prices.slice().sort((a, b) => a - b);
   const median = sorted[Math.floor(sorted.length / 2)];
   const min = sorted[0];
   const max = sorted[sorted.length - 1];
   const avg = Math.round((sorted.reduce((a, b) => a + b, 0) / sorted.length) * 100) / 100;
 
-  // Prix recommandé = moyenne pondérée (les produits similaires comptent plus)
-  const recommendedPrice = Math.round(weightedAvg);
+  // Filtrer les outliers (prix > 2x médiane) pour le calcul pondéré
+  const filteredCompetitors = competitors.filter(c => c.price <= median * 2);
+  
+  let weightedAvg: number;
+  if (filteredCompetitors.length > 0) {
+    const weightedSum = filteredCompetitors.reduce((sum, c) => sum + c.price * c.weight, 0);
+    const totalWeight = filteredCompetitors.reduce((sum, c) => sum + c.weight, 0);
+    weightedAvg = Math.round((weightedSum / totalWeight) * 100) / 100;
+  } else {
+    weightedAvg = median;
+  }
+
+  // Prix recommandé = MIN(moyenne pondérée filtrée, médiane * 1.15)
+  // Cela évite les prix aberrants tout en ajoutant une petite marge
+  const recommendedPrice = Math.round(Math.min(weightedAvg, median * 1.15));
 
   return {
     min, max, avg, median,
