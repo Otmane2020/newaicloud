@@ -43,49 +43,8 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
     setIsOptimizing
   } = useOptimizationActions();
 
-  // Translation map for this component
-  const labels = {
-    title: language === 'fr' ? 'Optimisation Automatique' : 'Auto Optimization',
-    selectActions: language === 'fr' ? 'Sélectionnez les optimisations à effectuer' : 'Select optimizations to perform',
-    processing: language === 'fr' ? 'Optimisation en cours...' : 'Optimization in progress...',
-    complete: language === 'fr' ? 'Optimisation terminée !' : 'Optimization complete!',
-    alertDesc: language === 'fr' 
-      ? 'Sélectionnez les actions que vous souhaitez effectuer. Le système optimisera automatiquement tous les éléments concernés.'
-      : 'Select the actions you want to perform. The system will automatically optimize all related items.',
-    products: { label: language === 'fr' ? 'Optimiser les produits' : 'Optimize products', desc: language === 'fr' ? 'Génération de titres et descriptions SEO' : 'Generate SEO titles and descriptions' },
-    collections: { label: language === 'fr' ? 'Optimiser les collections' : 'Optimize collections', desc: language === 'fr' ? 'Enrichissement SEO des collections' : 'SEO enrichment for collections' },
-    alt_texts: { label: language === 'fr' ? 'Générer les ALT texts' : 'Generate ALT texts', desc: language === 'fr' ? 'Textes alternatifs pour les images' : 'Alternative texts for images' },
-    articles: { label: language === 'fr' ? 'Optimiser les articles' : 'Optimize articles', desc: language === 'fr' ? 'SEO pour le blog' : 'SEO for blog' },
-    pages: { label: language === 'fr' ? 'Optimiser les pages' : 'Optimize pages', desc: language === 'fr' ? 'SEO pour les pages statiques' : 'SEO for static pages' },
-    priorityHigh: language === 'fr' ? 'Priorité Haute' : 'High Priority',
-    priorityMedium: language === 'fr' ? 'Priorité Moyenne' : 'Medium Priority',
-    priorityLow: language === 'fr' ? 'Priorité Basse' : 'Low Priority',
-    element: language === 'fr' ? 'élément' : 'item',
-    elements: language === 'fr' ? 'éléments' : 'items',
-    actionSelected: language === 'fr' ? 'action sélectionnée' : 'action selected',
-    actionsSelected: language === 'fr' ? 'actions sélectionnées' : 'actions selected',
-    willBeProcessed: language === 'fr' ? 'sera traité' : 'will be processed',
-    willBeProcessedPlural: language === 'fr' ? 'seront traités' : 'will be processed',
-    inProgress: language === 'fr' ? 'Optimisation en cours' : 'Optimization in progress',
-    optimizingProducts: language === 'fr' ? 'Optimisation des produits...' : 'Optimizing products...',
-    optimizingCollections: language === 'fr' ? 'Optimisation des collections...' : 'Optimizing collections...',
-    generatingAltTexts: language === 'fr' ? 'Génération des ALT texts...' : 'Generating ALT texts...',
-    optimizingArticles: language === 'fr' ? 'Optimisation des articles...' : 'Optimizing articles...',
-    optimizingPages: language === 'fr' ? 'Optimisation des pages...' : 'Optimizing pages...',
-    progressLabel: language === 'fr' ? 'Progression' : 'Progress',
-    optimized: language === 'fr' ? 'optimisé' : 'optimized',
-    optimizedPlural: language === 'fr' ? 'optimisés' : 'optimized',
-    hasBeenOptimized: language === 'fr' ? 'a été optimisé' : 'has been optimized',
-    haveBeenOptimized: language === 'fr' ? 'ont été optimisés' : 'have been optimized',
-    optimizationError: language === 'fr' ? "Erreur lors de l'optimisation" : 'Error during optimization',
-    syncReminder: language === 'fr'
-      ? "N'oubliez pas de synchroniser vos optimisations avec Shopify pour les rendre visibles sur votre boutique !"
-      : "Don't forget to sync your optimizations with Shopify to make them visible on your store!",
-    cancel: t.common.cancel,
-    close: t.common.close,
-    startOptimization: language === 'fr' ? "Lancer l'optimisation" : 'Start optimization',
-    selectAtLeastOne: language === 'fr' ? 'Veuillez sélectionner au moins une action' : 'Please select at least one action',
-  };
+  // Use translation keys from t.dialogs.autoOptimization
+  const ao = t.dialogs.autoOptimization;
 
   const [actions, setActions] = useState<ActionItem[]>([
     { id: 'products', count: stats?.productsCount || 0, priority: 'high', enabled: (stats?.productsCount || 0) > 0 },
@@ -105,7 +64,7 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
   const handleStartOptimization = async () => {
     const enabledActions = actions.filter(a => a.enabled && a.count > 0);
     if (enabledActions.length === 0) {
-      toast.error(labels.selectAtLeastOne);
+      toast.error(ao.selectAtLeastOne);
       return;
     }
 
@@ -155,24 +114,43 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
 
   const getPriorityLabel = (priority: string) => {
     switch (priority) {
-      case 'high': return labels.priorityHigh;
-      case 'medium': return labels.priorityMedium;
-      case 'low': return labels.priorityLow;
+      case 'high': return ao.priorityHigh;
+      case 'medium': return ao.priorityMedium;
+      case 'low': return ao.priorityLow;
       default: return priority;
     }
   };
 
-  const getActionLabel = (id: string) => (labels as any)[id]?.label || id;
-  const getActionDesc = (id: string) => (labels as any)[id]?.desc || '';
+  const getActionLabel = (id: string) => {
+    const labelMap: Record<string, string> = {
+      products: ao.optimizeProducts,
+      collections: ao.optimizeCollections,
+      alt_texts: ao.generateAltTexts,
+      articles: ao.optimizeArticles,
+      pages: ao.optimizePages,
+    };
+    return labelMap[id] || id;
+  };
+
+  const getActionDesc = (id: string) => {
+    const descMap: Record<string, string> = {
+      products: ao.optimizeProductsDesc,
+      collections: ao.optimizeCollectionsDesc,
+      alt_texts: ao.generateAltTextsDesc,
+      articles: ao.optimizeArticlesDesc,
+      pages: ao.optimizePagesDesc,
+    };
+    return descMap[id] || '';
+  };
 
   const getProgressMessage = () => {
     if (!progress.action) return '';
     switch (progress.action) {
-      case 'products': return labels.optimizingProducts;
-      case 'collections': return labels.optimizingCollections;
-      case 'alt_texts': return labels.generatingAltTexts;
-      case 'articles': return labels.optimizingArticles;
-      case 'pages': return labels.optimizingPages;
+      case 'products': return ao.optimizingProducts;
+      case 'collections': return ao.optimizingCollections;
+      case 'alt_texts': return ao.generatingAltTexts;
+      case 'articles': return ao.optimizingArticles;
+      case 'pages': return ao.optimizingPages;
       default: return '';
     }
   };
@@ -186,11 +164,11 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
               <Sparkles className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <DialogTitle className="text-2xl">{labels.title}</DialogTitle>
+              <DialogTitle className="text-2xl">{ao.title}</DialogTitle>
               <DialogDescription>
-                {currentStep === 'select' && labels.selectActions}
-                {currentStep === 'processing' && labels.processing}
-                {currentStep === 'complete' && labels.complete}
+                {currentStep === 'select' && ao.selectActions}
+                {currentStep === 'processing' && ao.processing}
+                {currentStep === 'complete' && ao.complete}
               </DialogDescription>
             </div>
           </div>
@@ -200,7 +178,7 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
           <div className="space-y-6 py-4">
             <Alert className="border-primary/20 bg-primary/5">
               <Zap className="h-4 w-4 text-primary" />
-              <AlertDescription>{labels.alertDesc}</AlertDescription>
+              <AlertDescription>{ao.alertDesc}</AlertDescription>
             </Alert>
 
             <div className="space-y-3">
@@ -216,7 +194,7 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
                       <div className="flex items-center justify-between">
                         <h4 className="font-semibold">{getActionLabel(action.id)}</h4>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="font-mono">{action.count} {action.count > 1 ? labels.elements : labels.element}</Badge>
+                          <Badge variant="outline" className="font-mono">{action.count} {action.count > 1 ? ao.elements : ao.element}</Badge>
                           <Badge className={getPriorityColor(action.priority)}>{getPriorityLabel(action.priority)}</Badge>
                         </div>
                       </div>
@@ -231,8 +209,8 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
               <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-lg">{totalSelected} {totalSelected > 1 ? labels.actionsSelected : labels.actionSelected}</p>
-                    <p className="text-sm text-muted-foreground">{totalItems} {totalItems > 1 ? labels.elements : labels.element} {totalItems > 1 ? labels.willBeProcessedPlural : labels.willBeProcessed}</p>
+                    <p className="font-semibold text-lg">{totalSelected} {totalSelected > 1 ? ao.actionsSelected : ao.actionSelected}</p>
+                    <p className="text-sm text-muted-foreground">{totalItems} {totalItems > 1 ? ao.elements : ao.element} {totalItems > 1 ? ao.willBeProcessedPlural : ao.willBeProcessed}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-primary" />
                 </div>
@@ -245,11 +223,11 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
           <div className="space-y-6 py-8">
             <div className="text-center space-y-4">
               <div className="flex justify-center"><div className="relative"><Loader2 className="h-16 w-16 text-primary animate-spin" /><Sparkles className="h-8 w-8 text-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" /></div></div>
-              <div><h3 className="text-xl font-semibold">{labels.inProgress}</h3>{progress.action && <p className="text-muted-foreground mt-2">{getProgressMessage()}</p>}</div>
+              <div><h3 className="text-xl font-semibold">{ao.inProgress}</h3>{progress.action && <p className="text-muted-foreground mt-2">{getProgressMessage()}</p>}</div>
             </div>
             {progress.total > 0 && (
               <div className="space-y-2">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{labels.progressLabel}</span><span className="font-medium">{progress.current} / {progress.total}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{ao.progressLabel}</span><span className="font-medium">{progress.current} / {progress.total}</span></div>
                 <Progress value={(progress.current / progress.total) * 100} className="h-2" />
               </div>
             )}
@@ -260,7 +238,7 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
           <div className="space-y-6 py-4">
             <div className="text-center space-y-4 py-6">
               <div className="flex justify-center"><div className="p-4 rounded-full bg-emerald-100"><CheckCircle className="h-12 w-12 text-emerald-500" /></div></div>
-              <div><h3 className="text-2xl font-bold">{labels.complete}</h3><p className="text-muted-foreground mt-2">{totalProcessed} {totalProcessed > 1 ? labels.haveBeenOptimized : labels.hasBeenOptimized}</p></div>
+              <div><h3 className="text-2xl font-bold">{ao.complete}</h3><p className="text-muted-foreground mt-2">{totalProcessed} {totalProcessed > 1 ? ao.haveBeenOptimized : ao.hasBeenOptimized}</p></div>
             </div>
             <div className="space-y-3">
               {results.map((result) => {
@@ -272,21 +250,21 @@ export function AutoOptimizationDialog({ open, onOpenChange, onComplete, stats }
                       {result.success ? <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0" /> : <AlertCircle className="h-5 w-5 text-rose-500 flex-shrink-0" />}
                       <div className="flex-1">
                         <p className="font-semibold">{getActionLabel(action.id)}</p>
-                        <p className="text-sm text-muted-foreground">{result.success ? `${result.processedCount} ${result.processedCount > 1 ? labels.elements : labels.element} ${result.processedCount > 1 ? labels.optimizedPlural : labels.optimized}` : result.errorMessage || labels.optimizationError}</p>
+                        <p className="text-sm text-muted-foreground">{result.success ? `${result.processedCount} ${result.processedCount > 1 ? ao.elements : ao.element} ${result.processedCount > 1 ? ao.optimizedPlural : ao.optimized}` : result.errorMessage || ao.optimizationError}</p>
                       </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-            <Alert className="border-primary/20 bg-primary/5"><Sparkles className="h-4 w-4 text-primary" /><AlertDescription>{labels.syncReminder}</AlertDescription></Alert>
+            <Alert className="border-primary/20 bg-primary/5"><Sparkles className="h-4 w-4 text-primary" /><AlertDescription>{ao.syncReminder}</AlertDescription></Alert>
           </div>
         )}
 
         <DialogFooter>
-          {currentStep === 'select' && (<><Button variant="outline" onClick={handleClose}>{labels.cancel}</Button><Button onClick={handleStartOptimization} disabled={totalSelected === 0} className="gap-2"><Sparkles className="h-4 w-4" />{labels.startOptimization}</Button></>)}
-          {currentStep === 'processing' && <Button disabled className="gap-2"><Loader2 className="h-4 w-4 animate-spin" />{labels.processing}</Button>}
-          {currentStep === 'complete' && <Button onClick={handleClose} className="w-full">{labels.close}</Button>}
+          {currentStep === 'select' && (<><Button variant="outline" onClick={handleClose}>{t.common.cancel}</Button><Button onClick={handleStartOptimization} disabled={totalSelected === 0} className="gap-2"><Sparkles className="h-4 w-4" />{ao.startOptimization}</Button></>)}
+          {currentStep === 'processing' && <Button disabled className="gap-2"><Loader2 className="h-4 w-4 animate-spin" />{ao.processing}</Button>}
+          {currentStep === 'complete' && <Button onClick={handleClose} className="w-full">{t.common.close}</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
+import { useTranslation } from "@/lib/language";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ interface Collection {
 export function GoogleMerchantSettings() {
   const { user } = useAuth();
   const { selectedStore } = useStore();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -104,7 +106,7 @@ export function GoogleMerchantSettings() {
       }
     } catch (error) {
       console.error("Error loading settings:", error);
-      toast.error("Erreur lors du chargement des paramètres");
+      toast.error(t.toasts.error.loading);
     }
   };
 
@@ -163,7 +165,7 @@ export function GoogleMerchantSettings() {
 
       if (error) throw error;
 
-      toast.success("Paramètres sauvegardés avec succès ! 🎉");
+      toast.success(t.toasts.success.saved);
 
       // Test the feed automatically after saving
       if (settings.store_name) {
@@ -171,7 +173,7 @@ export function GoogleMerchantSettings() {
       }
     } catch (error) {
       console.error("Error saving settings:", error);
-      toast.error("Erreur lors de la sauvegarde des paramètres");
+      toast.error(t.toasts.error.saving);
     } finally {
       setLoading(false);
     }
@@ -179,7 +181,7 @@ export function GoogleMerchantSettings() {
 
   const testFeed = async () => {
     if (!user?.id) {
-      toast.error("Utilisateur non connecté");
+      toast.error(t.toasts.common.notAuthenticated);
       return;
     }
 
@@ -202,11 +204,11 @@ export function GoogleMerchantSettings() {
       }
 
       setFeedStatus("success");
-      toast.success("Flux XML testé avec succès ! ✅");
+      toast.success(t.toasts.seo.syncSuccess);
     } catch (error) {
       console.error("Error testing feed:", error);
       setFeedStatus("error");
-      toast.error("Erreur lors du test du flux");
+      toast.error(t.toasts.error.sync);
     } finally {
       setTesting(false);
     }
@@ -225,7 +227,7 @@ export function GoogleMerchantSettings() {
   const handleCopy = () => {
     navigator.clipboard.writeText(directFeedUrl);
     setCopied(true);
-    toast.success("URL copiée dans le presse-papier");
+    toast.success(t.toasts.success.copied);
     setTimeout(() => setCopied(false), 2000);
   };
 
