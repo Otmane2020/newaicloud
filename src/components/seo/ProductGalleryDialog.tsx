@@ -67,7 +67,6 @@ export function ProductGalleryDialog({
   const [saving, setSaving] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [hasChanges, setHasChanges] = useState(false);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,10 +95,9 @@ export function ProductGalleryDialog({
         Array.from(new Map(data.map(img => [img.src, img])).values()) : [];
       
       setImages(uniqueImages);
-      setHasChanges(false);
     } catch (error) {
       console.error("Error loading images:", error);
-      toast.error("Erreur lors du chargement des images");
+      toast.error(t.toasts.error.loading || "Error loading images");
     } finally {
       setLoading(false);
     }
@@ -116,7 +114,7 @@ export function ProductGalleryDialog({
     }
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
       const newImages = [...images];
       const [draggedItem] = newImages.splice(draggedIndex, 1);
@@ -129,10 +127,67 @@ export function ProductGalleryDialog({
       }));
       
       setImages(reorderedImages);
-      setHasChanges(true);
+      
+      // Auto-save immediately
+      await saveOrderToShopify(reorderedImages);
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
+  };
+
+  const saveOrderToShopify = async (imagesToSave: ProductImage[]) => {
+    if (!product || !storeId) return;
+    setSaving(true);
+    try {
+      // Update local database positions
+      const updates = imagesToSave.map(img => 
+        supabase
+          .from("product_images")
+          .update({ position: img.position })
+          .eq("id", img.id)
+      );
+      
+      await Promise.all(updates);
+
+      // Sync to Shopify if connected
+      if (product.shopify_id) {
+        const shopifyImages = imagesToSave
+          .filter(img => img.shopify_image_id)
+          .map((img, idx) => ({
+            id: img.shopify_image_id,
+            shopify_image_id: img.shopify_image_id,
+            position: idx + 1,
+            src: img.src,
+            alt: img.alt_text,
+          }));
+        
+        console.log('[Gallery] Auto-saving order with', shopifyImages.length, 'images');
+        
+        const { error, data } = await supabase.functions.invoke("sync-product-images-to-shopify", {
+          body: {
+            productId: product.id,
+            shopifyProductId: product.shopify_id,
+            storeId,
+            images: shopifyImages,
+            isReorderOnly: true,
+          },
+        });
+        
+        if (error) {
+          console.error("Shopify sync error:", error);
+          toast.warning(t.toasts.success.saved);
+        } else {
+          toast.success(t.toasts.success.synchronized);
+        }
+      } else {
+        toast.success(t.toasts.success.saved);
+      }
+    } catch (error) {
+      console.error("Error saving order:", error);
+      toast.error(t.toasts.error.saving);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDeleteImage = async (imageId: string, imagePosition: number) => {
@@ -183,78 +238,16 @@ export function ProductGalleryDialog({
       }
       
       setImages(reorderedImages);
-      toast.success("Image supprimée avec succès");
+      toast.success(t.toasts.success.deleted);
     } catch (error) {
       console.error("Error deleting image:", error);
-      toast.error("Erreur lors de la suppression");
+      toast.error(t.toasts.error.deleting);
     } finally {
       setDeletingImageId(null);
     }
   };
 
-  const handleSaveOrder = async () => {
-    if (!product || !storeId) return;
-    setSaving(true);
-    try {
-      // Update local database positions with proper batch update
-      const updates = images.map(img => 
-        supabase
-          .from("product_images")
-          .update({ position: img.position })
-          .eq("id", img.id)
-      );
-      
-      await Promise.all(updates);
-
-      // Sync to Shopify if connected
-      if (product.shopify_id) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          // Include all images with proper ordering
-          const shopifyImages = images
-            .filter(img => img.shopify_image_id)
-            .map((img, idx) => ({
-              id: img.shopify_image_id,
-              shopify_image_id: img.shopify_image_id,
-              position: idx + 1,
-              src: img.src,
-              alt: img.alt_text,
-            }));
-          
-          console.log('[Gallery] Sending reorder request with', shopifyImages.length, 'images');
-          
-          const { error, data } = await supabase.functions.invoke("sync-product-images-to-shopify", {
-            body: {
-              productId: product.id,
-              shopifyProductId: product.shopify_id,
-              storeId,
-              images: shopifyImages,
-              isReorderOnly: true,
-            },
-          });
-          
-          console.log('[Gallery] Sync response:', data);
-          
-          if (error) {
-            console.error("Shopify sync error:", error);
-            toast.warning("Ordre sauvegardé localement, erreur de sync Shopify");
-          } else {
-            toast.success("Ordre des images mis à jour et synchronisé");
-          }
-        }
-      } else {
-        toast.success("Ordre des images mis à jour localement");
-      }
-      
-      setHasChanges(false);
-      await loadImages(); // Reload to confirm changes
-    } catch (error) {
-      console.error("Error saving order:", error);
-      toast.error("Erreur lors de la sauvegarde");
-    } finally {
-      setSaving(false);
-    }
-  };
+  // Remove hasChanges state since we auto-save now
 
   const hasVariants = product?.variants && product.variants.length > 1;
 
@@ -264,7 +257,7 @@ export function ProductGalleryDialog({
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5" />
-            Galerie - {product?.title}
+            {t.productGallery?.title || "Gallery"} - {product?.title}
           </DialogTitle>
         </DialogHeader>
 
@@ -276,16 +269,16 @@ export function ProductGalleryDialog({
               </div>
             ) : images.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                Aucune image pour ce produit
+                {t.productGallery?.noImages || "No images for this product"}
               </div>
             ) : (
               <div className="space-y-4">
                 {/* Main product images */}
                 <div>
                   <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                    Images principales
+                    {t.productGallery?.mainImages || "Main images"}
                     <Badge variant="outline" className="text-xs">
-                      Glisser pour réorganiser
+                      {t.productGallery?.dragToReorder || "Drag to reorder"}
                     </Badge>
                   </h3>
                   <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
@@ -331,7 +324,7 @@ export function ProductGalleryDialog({
                           }}
                           disabled={deletingImageId === image.id}
                           className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/90 disabled:opacity-50"
-                          title="Supprimer l'image"
+                          title={t.productGallery?.deleteImage || "Delete image"}
                         >
                           {deletingImageId === image.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />
@@ -350,7 +343,7 @@ export function ProductGalleryDialog({
                 {/* Variant images section */}
                 {hasVariants && (
                   <div className="mt-6 pt-6 border-t">
-                    <h3 className="text-sm font-medium mb-3">Images des variantes</h3>
+                    <h3 className="text-sm font-medium mb-3">{t.productGallery?.variantImages || "Variant images"}</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                       {product?.variants?.filter(v => v.image_url).map((variant) => (
                         <div
@@ -379,28 +372,10 @@ export function ProductGalleryDialog({
           </div>
         </ScrollArea>
 
-        {hasChanges && (
-          <div className="flex justify-end gap-2 pt-4 border-t shrink-0">
-            <Button
-              variant="outline"
-              onClick={() => loadImages()}
-              disabled={saving}
-            >
-              Annuler
-            </Button>
-            <Button onClick={handleSaveOrder} disabled={saving}>
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sauvegarde...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Sauvegarder l'ordre
-                </>
-              )}
-            </Button>
+        {saving && (
+          <div className="flex items-center justify-center gap-2 pt-4 border-t shrink-0 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">{t.productGallery?.syncing || "Syncing..."}</span>
           </div>
         )}
       </DialogContent>

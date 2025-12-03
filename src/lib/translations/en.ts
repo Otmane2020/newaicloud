@@ -9855,6 +9855,17 @@ export const translations = {
     defaultWelcome: "Welcome! How can I assist you?",
   },
 
+  // ============= Product Gallery Dialog =============
+  productGallery: {
+    title: "Gallery",
+    mainImages: "Main images",
+    variantImages: "Variant images",
+    dragToReorder: "Drag to reorder",
+    noImages: "No images for this product",
+    deleteImage: "Delete image",
+    syncing: "Syncing...",
+  },
+
 };
 
 export type Translations = typeof translations;
