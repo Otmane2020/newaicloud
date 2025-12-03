@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Download, Monitor, Smartphone, Film, Loader2, Check } from "lucide-react";
+import { Download, Monitor, Smartphone, Film, Loader2, Check, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ExportConfig {
   resolution: "720p" | "1080p" | "4k";
@@ -18,27 +19,35 @@ interface ExportPanelProps {
   isExporting?: boolean;
   progress?: number;
   disabled?: boolean;
+  clips?: any[];
 }
 
 const RESOLUTIONS = [
-  { id: "720p", label: "HD 720p", dimensions: "1280×720", icon: Smartphone },
-  { id: "1080p", label: "Full HD 1080p", dimensions: "1920×1080", icon: Monitor },
-  { id: "4k", label: "4K Ultra HD", dimensions: "3840×2160", icon: Film },
+  { id: "720p", label: "HD", dimensions: "1280×720", icon: Smartphone, size: "~50 MB" },
+  { id: "1080p", label: "Full HD", dimensions: "1920×1080", icon: Monitor, size: "~150 MB" },
+  { id: "4k", label: "4K UHD", dimensions: "3840×2160", icon: Film, size: "~500 MB" },
 ];
 
 const FORMATS = [
-  { id: "mp4", label: "MP4", description: "Meilleure compatibilité" },
-  { id: "webm", label: "WebM", description: "Web optimisé" },
-  { id: "mov", label: "MOV", description: "Qualité Pro" },
+  { id: "mp4", label: "MP4", description: "Meilleure compatibilité", codec: "H.264" },
+  { id: "webm", label: "WebM", description: "Web optimisé", codec: "VP9" },
+  { id: "mov", label: "MOV", description: "Qualité Pro (Apple)", codec: "ProRes" },
 ];
 
 const QUALITIES = [
-  { id: "standard", label: "Standard", bitrate: "8 Mbps" },
-  { id: "high", label: "Haute", bitrate: "16 Mbps" },
-  { id: "ultra", label: "Ultra", bitrate: "32 Mbps" },
+  { id: "standard", label: "Standard", bitrate: "8 Mbps", desc: "Bon pour le web" },
+  { id: "high", label: "Haute", bitrate: "16 Mbps", desc: "Qualité HD" },
+  { id: "ultra", label: "Ultra", bitrate: "32 Mbps", desc: "Broadcast" },
 ];
 
-export function ExportPanel({ onExport, isExporting, progress = 0, disabled }: ExportPanelProps) {
+export function ExportPanel({ 
+  onExport, 
+  isExporting, 
+  progress = 0, 
+  disabled,
+  clips = []
+}: ExportPanelProps) {
+  const { toast } = useToast();
   const [config, setConfig] = useState<ExportConfig>({
     resolution: "1080p",
     format: "mp4",
@@ -46,8 +55,23 @@ export function ExportPanel({ onExport, isExporting, progress = 0, disabled }: E
   });
 
   const handleExport = () => {
+    if (clips.length === 0) {
+      toast({
+        title: "Aucun clip",
+        description: "Ajoutez des clips à la timeline avant d'exporter",
+        variant: "destructive"
+      });
+      return;
+    }
     onExport(config);
   };
+
+  const estimatedSize = () => {
+    const res = RESOLUTIONS.find(r => r.id === config.resolution);
+    return res?.size || "~100 MB";
+  };
+
+  const totalDuration = clips.reduce((acc, clip) => acc + (clip.duration_seconds || 5), 0);
 
   return (
     <Card className="bg-card/50 backdrop-blur border-border/50">
@@ -58,6 +82,20 @@ export function ExportPanel({ onExport, isExporting, progress = 0, disabled }: E
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Clips info */}
+        {clips.length > 0 && (
+          <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Clips à exporter</span>
+              <span className="font-medium">{clips.length}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm mt-1">
+              <span className="text-muted-foreground">Durée totale</span>
+              <span className="font-medium">{Math.floor(totalDuration / 60)}:{(totalDuration % 60).toString().padStart(2, '0')}</span>
+            </div>
+          </div>
+        )}
+
         {/* Resolution */}
         <div className="space-y-2">
           <Label className="text-sm font-medium">Résolution</Label>
@@ -105,7 +143,10 @@ export function ExportPanel({ onExport, isExporting, progress = 0, disabled }: E
               >
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value={fmt.id} id={`fmt-${fmt.id}`} />
-                  <span className="text-sm font-medium">{fmt.label}</span>
+                  <div>
+                    <span className="text-sm font-medium">{fmt.label}</span>
+                    <span className="text-xs text-muted-foreground ml-2">({fmt.codec})</span>
+                  </div>
                 </div>
                 <span className="text-xs text-muted-foreground">{fmt.description}</span>
               </Label>
@@ -123,25 +164,45 @@ export function ExportPanel({ onExport, isExporting, progress = 0, disabled }: E
                 variant={config.quality === q.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setConfig({ ...config, quality: q.id as any })}
-                className="flex-1"
+                className="flex-1 flex-col h-auto py-2"
               >
-                <span className="text-xs">{q.label}</span>
+                <span className="text-xs font-medium">{q.label}</span>
+                <span className="text-[10px] opacity-70">{q.bitrate}</span>
               </Button>
             ))}
           </div>
           <p className="text-xs text-muted-foreground text-center">
-            Bitrate: {QUALITIES.find((q) => q.id === config.quality)?.bitrate}
+            {QUALITIES.find((q) => q.id === config.quality)?.desc}
           </p>
         </div>
 
         {/* Export Progress */}
         {isExporting && (
-          <div className="space-y-2">
+          <div className="space-y-2 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
             <div className="flex items-center justify-between text-sm">
-              <span>Export en cours...</span>
-              <span>{progress}%</span>
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Export en cours...
+              </span>
+              <span className="font-medium">{progress}%</span>
             </div>
             <Progress value={progress} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              {progress < 30 && "Préparation des clips..."}
+              {progress >= 30 && progress < 60 && "Encodage vidéo..."}
+              {progress >= 60 && progress < 90 && "Application des transitions..."}
+              {progress >= 90 && "Finalisation..."}
+            </p>
+          </div>
+        )}
+
+        {/* Warning for 4K */}
+        {config.resolution === "4k" && !isExporting && (
+          <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+            <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              L'export 4K peut prendre plusieurs minutes selon la durée de la vidéo.
+            </p>
           </div>
         )}
 
@@ -149,7 +210,7 @@ export function ExportPanel({ onExport, isExporting, progress = 0, disabled }: E
         <Button
           className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
           onClick={handleExport}
-          disabled={disabled || isExporting}
+          disabled={disabled || isExporting || clips.length === 0}
         >
           {isExporting ? (
             <>
@@ -165,10 +226,11 @@ export function ExportPanel({ onExport, isExporting, progress = 0, disabled }: E
         </Button>
 
         {/* Export Info */}
-        <div className="text-center">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <Badge variant="outline" className="text-[10px]">
             {config.resolution} • {config.format.toUpperCase()} • {config.quality}
           </Badge>
+          <span>~{estimatedSize()}</span>
         </div>
       </CardContent>
     </Card>
