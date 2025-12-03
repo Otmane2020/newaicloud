@@ -1,5 +1,43 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
+
+/**
+ * POST-PROCESSING: Force exact format dimensions
+ */
+async function enforceImageFormat(base64Image: string, targetWidth: number, targetHeight: number): Promise<string> {
+  try {
+    console.log(`[POST-PROCESS] 📐 Enforcing: ${targetWidth}x${targetHeight}`);
+    const base64Match = base64Image.match(/data:image\/[^;]+;base64,(.+)/);
+    const base64Data = base64Match ? base64Match[1] : base64Image;
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+    
+    const image = await Image.decode(bytes);
+    const srcAspect = image.width / image.height;
+    const targetAspect = targetWidth / targetHeight;
+    let cropX = 0, cropY = 0, cropWidth = image.width, cropHeight = image.height;
+    
+    if (Math.abs(srcAspect - targetAspect) > 0.01) {
+      if (srcAspect > targetAspect) {
+        cropWidth = Math.round(image.height * targetAspect);
+        cropX = Math.round((image.width - cropWidth) / 2);
+      } else {
+        cropHeight = Math.round(image.width / targetAspect);
+        cropY = Math.round((image.height - cropHeight) / 2);
+      }
+    }
+    
+    const cropped = image.crop(cropX, cropY, cropWidth, cropHeight);
+    const resized = cropped.resize(targetWidth, targetHeight);
+    const outputBytes = await resized.encode();
+    let binary = '';
+    for (let i = 0; i < outputBytes.byteLength; i++) binary += String.fromCharCode(outputBytes[i]);
+    console.log(`[POST-PROCESS] ✅ Done: ${targetWidth}x${targetHeight}`);
+    return `data:image/png;base64,${btoa(binary)}`;
+  } catch (e) { console.error(`[POST-PROCESS] ❌`, e); return base64Image; }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -598,6 +636,13 @@ Qualité = OBLIGATOIRE.
     const { imageUrl: generatedImageUrl, model: usedModel } = result;
     console.log(`✅ Successfully generated AI background using ${usedModel}`);
 
+    // 🆕 POST-PROCESSING: Force exact format dimensions
+    let processedImageUrl = generatedImageUrl;
+    if (generatedImageUrl.startsWith('data:')) {
+      console.log(`[ai-bg-gen] 📐 Applying post-processing: ${format} (${targetDims.width}x${targetDims.height})`);
+      processedImageUrl = await enforceImageFormat(generatedImageUrl, targetDims.width, targetDims.height);
+    }
+
     // Save to product_image_history if user is authenticated
     if (authHeader) {
       const supabaseAdmin = createClient(
@@ -651,7 +696,7 @@ Qualité = OBLIGATOIRE.
     return new Response(
       JSON.stringify({
         success: true,
-        imageUrl: generatedImageUrl,
+        imageUrl: processedImageUrl,
         metadata: {
           productTitle,
           style,

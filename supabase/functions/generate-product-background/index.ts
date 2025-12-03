@@ -1,5 +1,65 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
+
+/**
+ * POST-PROCESSING: Force exact format dimensions by center-cropping the generated image
+ */
+async function enforceImageFormat(
+  base64Image: string,
+  targetWidth: number,
+  targetHeight: number
+): Promise<string> {
+  try {
+    console.log(`[POST-PROCESS] 📐 Enforcing format: ${targetWidth}x${targetHeight}`);
+    
+    const base64Match = base64Image.match(/data:image\/[^;]+;base64,(.+)/);
+    const base64Data = base64Match ? base64Match[1] : base64Image;
+    
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    const image = await Image.decode(bytes);
+    const srcWidth = image.width;
+    const srcHeight = image.height;
+    
+    console.log(`[POST-PROCESS] 📐 Source: ${srcWidth}x${srcHeight} -> Target: ${targetWidth}x${targetHeight}`);
+    
+    const srcAspect = srcWidth / srcHeight;
+    const targetAspect = targetWidth / targetHeight;
+    
+    let cropX = 0, cropY = 0, cropWidth = srcWidth, cropHeight = srcHeight;
+    
+    if (Math.abs(srcAspect - targetAspect) > 0.01) {
+      if (srcAspect > targetAspect) {
+        cropWidth = Math.round(srcHeight * targetAspect);
+        cropX = Math.round((srcWidth - cropWidth) / 2);
+      } else {
+        cropHeight = Math.round(srcWidth / targetAspect);
+        cropY = Math.round((srcHeight - cropHeight) / 2);
+      }
+      console.log(`[POST-PROCESS] ✂️ Cropping: x=${cropX}, y=${cropY}, w=${cropWidth}, h=${cropHeight}`);
+    }
+    
+    const cropped = image.crop(cropX, cropY, cropWidth, cropHeight);
+    const resized = cropped.resize(targetWidth, targetHeight);
+    const outputBytes = await resized.encode();
+    
+    let binary = '';
+    for (let i = 0; i < outputBytes.byteLength; i++) {
+      binary += String.fromCharCode(outputBytes[i]);
+    }
+    
+    console.log(`[POST-PROCESS] ✅ Format enforced: ${targetWidth}x${targetHeight}`);
+    return `data:image/png;base64,${btoa(binary)}`;
+  } catch (error) {
+    console.error(`[POST-PROCESS] ❌ Failed:`, error);
+    return base64Image;
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -275,6 +335,13 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
 
     console.log("🎨 Beautiful background generated successfully");
 
+    // 🆕 POST-PROCESSING: Force exact format dimensions
+    let processedImageUrl = generatedImageUrl;
+    if (generatedImageUrl.startsWith('data:')) {
+      console.log(`[product-bg] 📐 Applying post-processing to enforce format: ${format} (${targetDims.width}x${targetDims.height})`);
+      processedImageUrl = await enforceImageFormat(generatedImageUrl, targetDims.width, targetDims.height);
+    }
+
     // Track usage: fond blanc = 3 optimizations, arrière-plan IA = 5 optimizations
     if (user) {
       try {
@@ -291,7 +358,7 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
     }
 
     // ✅ Convert base64 to public URL (same as collections)
-    let finalImageUrl = generatedImageUrl;
+    let finalImageUrl = processedImageUrl;
     
     if (product_id && generatedImageUrl.startsWith('data:')) {
       console.log('🔄 Converting base64 to public URL...');
