@@ -106,7 +106,7 @@ export function TestProductCard({ product }: TestProductCardProps) {
     setLoading('sync');
     try {
       const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-        body: { productIds: [product.id] }
+        body: { productId: product.id }
       });
       if (error) throw error;
       toast.success('Synchronisé avec Shopify');

@@ -432,7 +432,7 @@ export const ProductContentOptimization = () => {
       
       const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
         body: { 
-          productIds: [selectedProduct.id],
+          productId: selectedProduct.id,
           syncType: 'description'
         }
       });
