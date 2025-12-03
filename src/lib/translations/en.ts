@@ -2383,6 +2383,8 @@ export const translations = {
       translationAnalyzer: "Translation Analyzer",
       autoTranslationScanner: "Auto Scanner",
       videoAds: "🎬 Video Ads",
+      googleSearchConsole: "Google Search Console",
+      socialMedia: "Social Media",
       logout: "Logout",
     },
     videoAds: {

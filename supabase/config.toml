@@ -525,3 +525,6 @@ verify_jwt = true
 
 [functions.export-creative-image]
 verify_jwt = true
+
+[functions.admin-publish-social]
+verify_jwt = true
