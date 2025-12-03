@@ -602,10 +602,10 @@ const Subscription = () => {
                     <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800">
                       <p className="text-xs sm:text-sm font-medium">
                         <span className="text-pink-600 dark:text-pink-400">
-                          {language === 'fr' ? 'Obtenez 20% de réduction avec' : 'Get 20% discount with'}
+                          {t.subscription.promo.get20Discount}
                         </span>
                         <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
-                          {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
+                          {t.subscription.promo.limitedPromo}
                         </span>
                       </p>
                     </div>
@@ -771,10 +771,10 @@ const Subscription = () => {
                     <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800">
                       <p className="text-xs sm:text-sm font-medium">
                         <span className="text-pink-600 dark:text-pink-400">
-                          {language === 'fr' ? 'Obtenez 30% de réduction avec' : 'Get 30% discount with'}
+                          {t.subscription.promo.get30Discount}
                         </span>
                         <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
-                          {language === 'fr' ? 'PROMO LIMITÉE' : 'LIMITED PROMO'}
+                          {t.subscription.promo.limitedPromo}
                         </span>
                       </p>
                     </div>

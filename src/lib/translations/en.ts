@@ -266,6 +266,10 @@ export const translations = {
       upgradeError: "Error during upgrade",
       portalError: "Error opening portal",
     },
+    languageBlocked: {
+      title: "Optimization in progress",
+      description: "Please wait for the optimization to finish before changing language.",
+    },
     // Common toasts
     common: {
       limitReached: "Limit reached",
@@ -1441,6 +1445,8 @@ export const translations = {
     close: "Close",
     yes: "Yes",
     no: "No",
+    configure: "Configure",
+    more: "more",
     actions: {
       confirmDelete: "Are you sure you want to delete?",
     },
@@ -6476,6 +6482,11 @@ export const translations = {
       articlesPerMonth: "articles/month",
       chatResponsesPerMonth: "chat responses/month",
     },
+    promo: {
+      get20Discount: "Get 20% discount with",
+      get30Discount: "Get 30% discount with",
+      limitedPromo: "LIMITED PROMO",
+    },
   },
 
   collection: {
@@ -9518,6 +9529,56 @@ export const translations = {
       publishError: "Error during publishing",
       selectPlatform: "Select at least one platform",
     },
+    history: {
+      title: "Creative History",
+      refresh: "Refresh",
+      noCreatives: "No creatives generated yet",
+    },
+  },
+
+  // ============= Quota Alerts =============
+  quotaAlerts: {
+    seoOptimizations: "SEO optimizations",
+    articles: "articles",
+    chatResponses: "chat responses",
+    quotaReached: "🚨 Quota reached!",
+    quotaAlmostReached: "⚠️ Quota almost reached",
+    reachedMessage: "You have reached your {{name}} limit ({{current}}/{{limit}}). Upgrade to continue.",
+    almostReachedMessage: "You have used {{percentage}}% of your {{name}} quota ({{current}}/{{limit}}).",
+    viewPlans: "View plans",
+  },
+
+  // ============= Landing Showcase =============
+  landingShowcase: {
+    badge: "Vision AI Landing Pages",
+    title: "Transform your product descriptions",
+    subtitle: "Our AI visually analyzes your products and generates conversion-optimized HTML descriptions",
+    before: "Before",
+    after: "After Vision AI",
+    cta: "Try for free",
+    rawDesc: "Gray velvet 3-seater sofa. Dimensions: 220x90x85cm. Wooden legs. Comfortable.",
+    productTitle: "Premium Velvet Sofa",
+    productSubtitle: "Modern Scandinavian design",
+    feature1: "Free shipping",
+    feature2: "5-year warranty",
+    feature3: "30-day returns",
+    descHtml: "Elevate your interior with this exceptional premium velvet sofa. Its clean Scandinavian-inspired design brings a touch of elegance to your living room.",
+    buyNow: "Buy now",
+    whiteBackground: "White / Studio background",
+    generatedBackground: "AI Generated background",
+    features: [
+      "AI Visual Analysis",
+      "SEO-optimized HTML",
+      "+40% Conversion",
+      "Shopify Sync"
+    ],
+  },
+
+  // ============= Chat Page =============
+  chatPage: {
+    defaultGreeting: "Hello! I'm your AI shopping assistant. How can I help you today?",
+    defaultAssistantName: "Assistant",
+    defaultWelcome: "Welcome! How can I assist you?",
   },
 
 };
