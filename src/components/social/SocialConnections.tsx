@@ -267,16 +267,31 @@ const SocialConnections = ({ userId }: SocialConnectionsProps) => {
           {instagramAccounts.length === 0 ? (
             <div className="text-center py-8">
               <Instagram className="h-12 w-12 mx-auto mb-3 opacity-20" />
-              <p className="text-muted-foreground">Aucun compte Instagram Business détecté</p>
-              <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg text-sm text-amber-700 dark:text-amber-400">
-                <p className="font-medium mb-2">💡 Comment connecter Instagram ?</p>
-                <ol className="list-decimal list-inside space-y-1 text-left">
-                  <li>Connectez d'abord votre page Facebook ci-dessus</li>
-                  <li>Assurez-vous que votre compte Instagram est de type "Business"</li>
-                  <li>Liez votre Instagram Business à votre page Facebook dans les paramètres Facebook</li>
-                  <li>Le compte Instagram apparaîtra automatiquement ici</li>
-                </ol>
-              </div>
+              <p className="text-muted-foreground mb-4">
+                {facebookPages.length === 0 
+                  ? "Connectez d'abord une page Facebook pour détecter votre Instagram Business"
+                  : "Aucun compte Instagram Business détecté sur vos pages Facebook"
+                }
+              </p>
+              {facebookPages.length === 0 ? (
+                <Button onClick={connectFacebook} disabled={connecting === 'facebook'}>
+                  {connecting === 'facebook' ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Facebook className="h-4 w-4 mr-2" />
+                  )}
+                  Connecter Facebook
+                </Button>
+              ) : (
+                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg text-sm text-amber-700 dark:text-amber-400">
+                  <p className="font-medium mb-2">💡 Instagram non détecté ?</p>
+                  <ol className="list-decimal list-inside space-y-1 text-left">
+                    <li>Vérifiez que votre compte Instagram est de type "Business" ou "Créateur"</li>
+                    <li>Liez votre Instagram à votre page Facebook dans les paramètres Facebook/Meta Business Suite</li>
+                    <li>Reconnectez votre page Facebook ci-dessus</li>
+                  </ol>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-3">

@@ -124,8 +124,8 @@ export function AppSidebar() {
 
   // Social Media - Onglet principal séparé
   const socialMediaSubItems = [
-    { title: t.navigation.socialMediaSubmenu?.studio || "Studio", url: "/social-media?tab=creative-studio", icon: Sparkles, key: "studio" },
-    { title: t.navigation.socialMediaSubmenu?.creativeHistory || "Historique", url: "/social-media?tab=creative-history", icon: History, key: "creativeHistory" },
+    { title: t.navigation.socialMediaSubmenu?.studio || "Studio", url: "/ai-creative-studio", icon: Sparkles, key: "studio" },
+    { title: t.navigation.socialMediaSubmenu?.creativeHistory || "Historique", url: "/ai-creative-studio?tab=history", icon: History, key: "creativeHistory" },
   ];
 
   const socialMediaMainItems = [
