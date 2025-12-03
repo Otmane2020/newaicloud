@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Video, Upload, Sparkles, Download, Play, Settings } from "lucide-react";
+import { Video, Sparkles, Settings, Plus, Film } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 import { ClipLibrary } from "./video-ads/ClipLibrary";
 import { StoryboardEditor } from "./video-ads/StoryboardEditor";
@@ -10,6 +10,9 @@ import { EffectsPanel } from "./video-ads/EffectsPanel";
 import { VideoPreview } from "./video-ads/VideoPreview";
 import { TemplateGallery } from "./video-ads/TemplateGallery";
 import { ScriptGenerator } from "./video-ads/ScriptGenerator";
+import { VideoTimeline } from "./video-ads/VideoTimeline";
+import { ExportPanel } from "./video-ads/ExportPanel";
+import { useToast } from "@/hooks/use-toast";
 
 interface VideoClip {
   id: string;
@@ -18,6 +21,17 @@ interface VideoClip {
   thumbnail_url?: string;
   duration_seconds?: number;
   category: string;
+}
+
+interface TimelineClip {
+  id: string;
+  title: string;
+  file_url: string;
+  thumbnail_url?: string;
+  duration_seconds?: number;
+  category: string;
+  order: number;
+  transition?: string;
 }
 
 interface StoryboardSection {
@@ -40,7 +54,9 @@ interface EffectsConfig {
 
 export default function VideoAdsStudio() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [selectedClip, setSelectedClip] = useState<VideoClip | null>(null);
+  const [timelineClips, setTimelineClips] = useState<TimelineClip[]>([]);
   const [storyboard, setStoryboard] = useState<StoryboardSection[]>([]);
   const [effects, setEffects] = useState<EffectsConfig>({
     glow: false,
@@ -53,6 +69,8 @@ export default function VideoAdsStudio() {
   const [texts, setTexts] = useState<Record<number, string>>({});
   const [format, setFormat] = useState<"9:16" | "1:1" | "16:9">("9:16");
   const [activeTab, setActiveTab] = useState("studio");
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
 
   const handleApplyTemplate = (sections: StoryboardSection[]) => {
     setStoryboard(sections);
@@ -89,6 +107,59 @@ export default function VideoAdsStudio() {
     setTexts(newTexts);
   };
 
+  // Add clip to timeline
+  const handleAddToTimeline = (clip: VideoClip) => {
+    const newClip: TimelineClip = {
+      ...clip,
+      order: timelineClips.length,
+      transition: "fade",
+      duration_seconds: clip.duration_seconds || 5,
+    };
+    setTimelineClips([...timelineClips, newClip]);
+    toast({ title: "Clip ajouté à la timeline" });
+  };
+
+  // Handle timeline reorder
+  const handleTimelineReorder = (clips: TimelineClip[]) => {
+    setTimelineClips(clips);
+  };
+
+  // Remove clip from timeline
+  const handleRemoveFromTimeline = (id: string) => {
+    setTimelineClips(timelineClips.filter((c) => c.id !== id));
+  };
+
+  // Change transition
+  const handleTransitionChange = (id: string, transition: string) => {
+    setTimelineClips(
+      timelineClips.map((c) => (c.id === id ? { ...c, transition } : c))
+    );
+  };
+
+  // Export video
+  const handleExport = async (config: { resolution: string; format: string; quality: string }) => {
+    if (timelineClips.length === 0) {
+      toast({ title: "Ajoutez des clips à la timeline", variant: "destructive" });
+      return;
+    }
+
+    setIsExporting(true);
+    setExportProgress(0);
+
+    // Simulate export progress
+    const interval = setInterval(() => {
+      setExportProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsExporting(false);
+          toast({ title: `Vidéo exportée en ${config.resolution} ${config.format.toUpperCase()}` });
+          return 100;
+        }
+        return prev + 5;
+      });
+    }, 200);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--background))] to-[hsl(240,10%,5%)] p-6">
       {/* Header */}
@@ -102,14 +173,14 @@ export default function VideoAdsStudio() {
               Video Ads Studio
             </h1>
             <p className="text-muted-foreground">
-              {t.superAdmin?.videoAds?.description || "Create professional video ads for NEWAI"}
+              {t.superAdmin?.videoAds?.description || "Créez des vidéos publicitaires professionnelles"}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-2">
             <Settings className="w-4 h-4" />
-            Settings
+            Paramètres
           </Button>
         </div>
       </div>
@@ -119,6 +190,10 @@ export default function VideoAdsStudio() {
           <TabsTrigger value="studio" className="gap-2">
             <Video className="w-4 h-4" />
             Studio
+          </TabsTrigger>
+          <TabsTrigger value="montage" className="gap-2">
+            <Film className="w-4 h-4" />
+            Montage
           </TabsTrigger>
           <TabsTrigger value="templates" className="gap-2">
             <Sparkles className="w-4 h-4" />
@@ -130,6 +205,7 @@ export default function VideoAdsStudio() {
           </TabsTrigger>
         </TabsList>
 
+        {/* Studio Tab */}
         <TabsContent value="studio" className="space-y-6">
           <div className="grid grid-cols-12 gap-6">
             {/* Left Panel */}
@@ -152,7 +228,7 @@ export default function VideoAdsStudio() {
               <Card className="mt-4 bg-card/50 backdrop-blur border-border/50">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Export Format</span>
+                    <span className="text-sm font-medium">Format d'export</span>
                     <div className="flex gap-2">
                       <Button
                         variant={format === "9:16" ? "default" : "outline"}
@@ -189,11 +265,98 @@ export default function VideoAdsStudio() {
                 texts={texts}
                 onTextsChange={setTexts}
               />
-              
-              <Button className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600">
-                <Download className="w-4 h-4" />
-                Export Video
-              </Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Montage Tab - NEW */}
+        <TabsContent value="montage" className="space-y-6">
+          <div className="grid grid-cols-12 gap-6">
+            {/* Left - Clip Library with Add button */}
+            <div className="col-span-12 lg:col-span-3 space-y-4">
+              <Card className="bg-card/50 backdrop-blur border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Film className="w-4 h-4 text-cyan-400" />
+                    Bibliothèque
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ClipLibrary 
+                    onSelect={(clip) => {
+                      setSelectedClip(clip);
+                      if (clip) handleAddToTimeline(clip);
+                    }} 
+                    selectedClip={selectedClip} 
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Center - Timeline */}
+            <div className="col-span-12 lg:col-span-6 space-y-4">
+              <VideoTimeline
+                clips={timelineClips}
+                onReorder={handleTimelineReorder}
+                onRemove={handleRemoveFromTimeline}
+                onTransitionChange={handleTransitionChange}
+              />
+
+              {/* Preview of first clip */}
+              {timelineClips.length > 0 && (
+                <VideoPreview
+                  selectedClip={timelineClips[0]}
+                  storyboard={[]}
+                  effects={effects}
+                  texts={{}}
+                  format={format}
+                />
+              )}
+            </div>
+
+            {/* Right - Export Panel */}
+            <div className="col-span-12 lg:col-span-3 space-y-4">
+              <ExportPanel
+                onExport={handleExport}
+                isExporting={isExporting}
+                progress={exportProgress}
+                disabled={timelineClips.length === 0}
+              />
+
+              {/* Format */}
+              <Card className="bg-card/50 backdrop-blur border-border/50">
+                <CardContent className="p-4 space-y-3">
+                  <span className="text-sm font-medium">Format</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant={format === "9:16" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFormat("9:16")}
+                      className="text-xs"
+                    >
+                      9:16
+                    </Button>
+                    <Button
+                      variant={format === "1:1" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFormat("1:1")}
+                      className="text-xs"
+                    >
+                      1:1
+                    </Button>
+                    <Button
+                      variant={format === "16:9" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFormat("16:9")}
+                      className="text-xs"
+                    >
+                      16:9
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <EffectsPanel effects={effects} onChange={setEffects} />
             </div>
           </div>
         </TabsContent>
