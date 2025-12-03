@@ -1658,6 +1658,17 @@ export const translations = {
       smartPricing: "Prix Intelligent IA",
     },
 
+    // Social Media Submenu
+    socialMedia: "Social Media",
+    socialMediaSubmenu: {
+      creative: "Créatif",
+      studio: "Studio",
+      creativeHistory: "Historique",
+      campaigns: "Campagnes",
+      posts: "Posts",
+      settings: "Paramètres & Connexions",
+    },
+
     // Account Submenu
     accountSubmenu: {
       profile: "Mon Profil",
@@ -9553,9 +9564,18 @@ export const translations = {
     tabs: {
       posts: "Posts",
       campaigns: "Campagnes",
-      creative: "Créa",
+      creative: "Créatif",
+      studio: "Studio",
       connections: "Connexions",
       settings: "Paramètres",
+      settingsConnections: "Paramètres & Connexions",
+    },
+    creative: {
+      studioTitle: "Studio Créatif IA",
+      studioDesc: "Créez des visuels professionnels pour vos réseaux sociaux",
+      openStudio: "Ouvrir le Studio",
+      historyTitle: "Historique des créations",
+      historyDesc: "Consultez et réutilisez vos créations précédentes",
     },
     settings: {
       title: "Paramètres Social Media",
