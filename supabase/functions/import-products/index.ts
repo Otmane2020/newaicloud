@@ -1073,7 +1073,9 @@ Deno.serve(async (req: Request) => {
     
     // 🆕 CRITICAL FIX: Also fetch images for existing products with 0 images
     // This handles products that were imported before but had their images deleted during cleanup
-    console.log(`🔍 Checking for existing products with 0 images...`);
+    // 🔴 IMPORTANT: Exclude products being imported in THIS batch to prevent duplicates
+    const productIdsBeingImported = new Set(Array.from(productIdMap.values()));
+    console.log(`🔍 Checking for existing products with 0 images (excluding ${productIdsBeingImported.size} products being imported)...`);
     
     const { data: productsWithNoImages, error: noImgError } = await supabaseServiceClient
       .from('shopify_products')
@@ -1084,123 +1086,136 @@ Deno.serve(async (req: Request) => {
     if (noImgError) {
       console.error(`⚠️ Error fetching products:`, noImgError);
     } else if (productsWithNoImages && productsWithNoImages.length > 0) {
-      // Get image counts for these products - BATCHED to avoid "Bad Request" on large arrays
-      const productIds = productsWithNoImages.map(p => p.id);
-      const QUERY_BATCH_SIZE = 100; // Reduced from 500 to 100 for reliability
-      let allImageCounts: { product_id: string }[] = [];
+      // 🔴 CRITICAL: Filter out products that are being imported in this batch
+      // This prevents the duplicate image bug where we re-fetch images for products
+      // that we're already importing (and have already collected images for)
+      const existingProductsNotBeingImported = productsWithNoImages.filter(
+        p => !productIdsBeingImported.has(p.id)
+      );
       
-      console.log(`📊 Checking image counts for ${productIds.length} products in batches of ${QUERY_BATCH_SIZE}`);
+      console.log(`📊 ${productsWithNoImages.length} total products, ${existingProductsNotBeingImported.length} not in current import batch`);
       
-      for (let i = 0; i < productIds.length; i += QUERY_BATCH_SIZE) {
-        const batchIds = productIds.slice(i, i + QUERY_BATCH_SIZE);
-        const { data: imageCounts, error: imgCountError } = await supabaseServiceClient
-          .from('product_images')
-          .select('product_id')
-          .in('product_id', batchIds);
+      if (existingProductsNotBeingImported.length === 0) {
+        console.log(`✅ All products are being imported - skipping "products with 0 images" section`);
+      } else {
+        // Get image counts for these products - BATCHED to avoid "Bad Request" on large arrays
+        const productIds = existingProductsNotBeingImported.map(p => p.id);
+        const QUERY_BATCH_SIZE = 100; // Reduced from 500 to 100 for reliability
+        let allImageCounts: { product_id: string }[] = [];
         
-        if (imgCountError) {
-          console.error(`⚠️ Error fetching image counts batch ${Math.floor(i/QUERY_BATCH_SIZE)+1}:`, imgCountError);
-        } else if (imageCounts) {
-          allImageCounts.push(...imageCounts);
+        console.log(`📊 Checking image counts for ${productIds.length} products in batches of ${QUERY_BATCH_SIZE}`);
+        
+        for (let i = 0; i < productIds.length; i += QUERY_BATCH_SIZE) {
+          const batchIds = productIds.slice(i, i + QUERY_BATCH_SIZE);
+          const { data: imageCounts, error: imgCountError } = await supabaseServiceClient
+            .from('product_images')
+            .select('product_id')
+            .in('product_id', batchIds);
+          
+          if (imgCountError) {
+            console.error(`⚠️ Error fetching image counts batch ${Math.floor(i/QUERY_BATCH_SIZE)+1}:`, imgCountError);
+          } else if (imageCounts) {
+            allImageCounts.push(...imageCounts);
+          }
         }
-      }
-      
-      const productsWithImageSet = new Set(allImageCounts.map(i => i.product_id));
-      const productsNeedingImages = productsWithNoImages.filter(p => !productsWithImageSet.has(p.id));
-      
-      if (productsNeedingImages.length > 0) {
-        console.log(`🖼️ Found ${productsNeedingImages.length} products with 0 images - fetching ALL from Shopify...`);
         
-        // Fetch images in batches - reduced to 20 for better reliability
-        const FETCH_BATCH_SIZE = 20;
-        let imagesFetched = 0;
-        const totalBatchCount = Math.ceil(productsNeedingImages.length / FETCH_BATCH_SIZE);
+        const productsWithImageSet = new Set(allImageCounts.map(i => i.product_id));
+        const productsNeedingImages = existingProductsNotBeingImported.filter(p => !productsWithImageSet.has(p.id));
         
-        for (let i = 0; i < productsNeedingImages.length; i += FETCH_BATCH_SIZE) {
-          const batchNum = Math.floor(i / FETCH_BATCH_SIZE) + 1;
-          const batch = productsNeedingImages.slice(i, i + FETCH_BATCH_SIZE);
-          const shopifyIds = batch.map(p => `gid://shopify/Product/${p.shopify_id}`);
+        if (productsNeedingImages.length > 0) {
+          console.log(`🖼️ Found ${productsNeedingImages.length} products with 0 images - fetching ALL from Shopify...`);
           
-          console.log(`📸 Fetching images batch ${batchNum}/${totalBatchCount} (${batch.length} products)...`);
+          // Fetch images in batches - reduced to 20 for better reliability
+          const FETCH_BATCH_SIZE = 20;
+          let imagesFetched = 0;
+          const totalBatchCount = Math.ceil(productsNeedingImages.length / FETCH_BATCH_SIZE);
           
-          const imageQuery = `
-            query getProductImages($ids: [ID!]!) {
-              nodes(ids: $ids) {
-                ... on Product {
-                  id
-                  legacyResourceId
-                  images(first: 50) {
-                    edges {
-                      node {
-                        id
-                        url
-                        altText
-                        width
-                        height
+          for (let i = 0; i < productsNeedingImages.length; i += FETCH_BATCH_SIZE) {
+            const batchNum = Math.floor(i / FETCH_BATCH_SIZE) + 1;
+            const batch = productsNeedingImages.slice(i, i + FETCH_BATCH_SIZE);
+            const shopifyIds = batch.map(p => `gid://shopify/Product/${p.shopify_id}`);
+            
+            console.log(`📸 Fetching images batch ${batchNum}/${totalBatchCount} (${batch.length} products)...`);
+            
+            const imageQuery = `
+              query getProductImages($ids: [ID!]!) {
+                nodes(ids: $ids) {
+                  ... on Product {
+                    id
+                    legacyResourceId
+                    images(first: 50) {
+                      edges {
+                        node {
+                          id
+                          url
+                          altText
+                          width
+                          height
+                        }
                       }
                     }
                   }
                 }
               }
-            }
-          `;
-          
-          try {
-            const imgResponse = await fetch(`https://${cleanShopName}.myshopify.com/admin/api/2025-01/graphql.json`, {
-              method: 'POST',
-              headers: {
-                "X-Shopify-Access-Token": authToken,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                query: imageQuery,
-                variables: { ids: shopifyIds }
-              })
-            });
+            `;
             
-            if (imgResponse.ok) {
-              const imgData: any = await imgResponse.json();
+            try {
+              const imgResponse = await fetch(`https://${cleanShopName}.myshopify.com/admin/api/2025-01/graphql.json`, {
+                method: 'POST',
+                headers: {
+                  "X-Shopify-Access-Token": authToken,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  query: imageQuery,
+                  variables: { ids: shopifyIds }
+                })
+              });
               
-              if (imgData.data?.nodes) {
-                for (const node of imgData.data.nodes) {
-                  if (!node || !node.images?.edges?.length) continue;
-                  
-                  const shopifyId = parseInt(node.legacyResourceId);
-                  const productRecord = batch.find(p => p.shopify_id === shopifyId);
-                  if (!productRecord) continue;
-                  
-                  const productImages = node.images.edges.map((edge: any, index: number) => {
-                    // FIX: Use extractNumericId for proper GID parsing
-                    const numericId = extractNumericId(edge.node.id) || 0;
-                    return {
-                      product_id: productRecord.id,
-                      shopify_image_id: numericId,
-                      src: edge.node.url,
-                      position: index + 1,
-                      alt_text: edge.node.altText || "",
-                      width: edge.node.width || null,
-                      height: edge.node.height || null,
-                    };
-                  });
-                  
-                  allImages.push(...productImages);
-                  imagesFetched += productImages.length;
+              if (imgResponse.ok) {
+                const imgData: any = await imgResponse.json();
+                
+                if (imgData.data?.nodes) {
+                  for (const node of imgData.data.nodes) {
+                    if (!node || !node.images?.edges?.length) continue;
+                    
+                    const shopifyId = parseInt(node.legacyResourceId);
+                    const productRecord = batch.find(p => p.shopify_id === shopifyId);
+                    if (!productRecord) continue;
+                    
+                    const productImages = node.images.edges.map((edge: any, index: number) => {
+                      // FIX: Use extractNumericId for proper GID parsing
+                      const numericId = extractNumericId(edge.node.id) || 0;
+                      return {
+                        product_id: productRecord.id,
+                        shopify_image_id: numericId,
+                        src: edge.node.url,
+                        position: index + 1,
+                        alt_text: edge.node.altText || "",
+                        width: edge.node.width || null,
+                        height: edge.node.height || null,
+                      };
+                    });
+                    
+                    allImages.push(...productImages);
+                    imagesFetched += productImages.length;
+                  }
                 }
+              } else {
+                console.error(`⚠️ GraphQL error for batch ${batchNum}:`, await imgResponse.text());
               }
-            } else {
-              console.error(`⚠️ GraphQL error for batch ${batchNum}:`, await imgResponse.text());
+            } catch (fetchError) {
+              console.error(`⚠️ Error fetching images for batch ${batchNum}:`, fetchError);
             }
-          } catch (fetchError) {
-            console.error(`⚠️ Error fetching images for batch ${batchNum}:`, fetchError);
+            
+            // Increased delay between batches to avoid rate limits
+            if (i + FETCH_BATCH_SIZE < productsNeedingImages.length) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
           }
           
-          // Increased delay between batches to avoid rate limits
-          if (i + FETCH_BATCH_SIZE < productsNeedingImages.length) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
+          console.log(`✅ Fetched ${imagesFetched} images for ${productsNeedingImages.length} existing products with 0 images`);
         }
-        
-        console.log(`✅ Fetched ${imagesFetched} images for ${productsNeedingImages.length} existing products with 0 images`);
       }
     }
 
@@ -1350,20 +1365,46 @@ Deno.serve(async (req: Request) => {
         console.log(`⏭️ Skipped ${skippedImages} images (already exist as generated/optimized)`);
       }
       
-      // CRITICAL FIX: Deduplicate by (product_id, shopify_image_id) to prevent batch failures
+      // CRITICAL FIX: Deduplicate using composite key (product_id + shopify_image_id OR normalized URL)
+      // This prevents duplicates from both same shopify_image_id AND same URL with different query params
       // Error: "ON CONFLICT DO UPDATE command cannot affect row a second time"
       const dedupeMap = new Map<string, typeof imagesToInsertRaw[0]>();
+      const urlDedupeMap = new Map<string, boolean>(); // Track URLs we've already seen
+      
       for (const img of imagesToInsertRaw) {
-        const key = `${img.product_id}-${img.shopify_image_id}`;
-        if (!dedupeMap.has(key)) {
-          dedupeMap.set(key, img);
+        // Primary key: product_id + shopify_image_id (if available)
+        const primaryKey = img.shopify_image_id 
+          ? `${img.product_id}-id-${img.shopify_image_id}`
+          : null;
+        
+        // Secondary key: product_id + normalized URL (fallback for images without shopify_image_id)
+        const normalizedUrl = cleanUrl(img.src);
+        const urlKey = `${img.product_id}-url-${normalizedUrl}`;
+        
+        // Skip if we've seen this exact shopify_image_id for this product
+        if (primaryKey && dedupeMap.has(primaryKey)) {
+          continue;
         }
+        
+        // Skip if we've seen this exact URL for this product (prevents URL duplicates)
+        if (urlDedupeMap.has(urlKey)) {
+          continue;
+        }
+        
+        // Add to maps
+        if (primaryKey) {
+          dedupeMap.set(primaryKey, img);
+        } else {
+          dedupeMap.set(urlKey, img);
+        }
+        urlDedupeMap.set(urlKey, true);
       }
+      
       const imagesToInsert = Array.from(dedupeMap.values());
       
       const duplicatesRemoved = imagesToInsertRaw.length - imagesToInsert.length;
       if (duplicatesRemoved > 0) {
-        console.log(`🔄 Removed ${duplicatesRemoved} duplicate images (same product_id + shopify_image_id)`);
+        console.log(`🔄 Removed ${duplicatesRemoved} duplicate images (same product_id + shopify_image_id or URL)`);
       }
       
       // STEP 4: Insert fresh images from Shopify
