@@ -112,6 +112,8 @@ export const SmartBackgroundDialog = ({
   const [showHistory, setShowHistory] = useState<string | null>(null);
   // Style manager dialog
   const [showStyleManager, setShowStyleManager] = useState(false);
+  // 🆕 Apply position: 'main' (replace main image) or 'secondary' (add as secondary)
+  const [applyPosition, setApplyPosition] = useState<'main' | 'secondary'>('main');
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
 
@@ -464,7 +466,7 @@ export const SmartBackgroundDialog = ({
         }
 
         if (targetImageId) {
-          console.log(`[SmartBg] Applying to image ${targetImageId} for ${product.title}`);
+          console.log(`[SmartBg] Applying to image ${targetImageId} for ${product.title}, applyAsMain: ${applyPosition === 'main'}`);
           
           await applyOptimizedImage.mutateAsync({
             imageId: targetImageId,
@@ -475,6 +477,7 @@ export const SmartBackgroundDialog = ({
             aiModel: 'gemini-2.5-flash-image-preview',
             resolution: '2000x2000',
             qualityScore: 95,
+            applyAsMain: applyPosition === 'main', // 🆕 Pass position choice
           });
           newApplied.add(productId);
         } else {
@@ -551,6 +554,7 @@ export const SmartBackgroundDialog = ({
           aiModel: 'gemini-2.5-flash-image-preview',
           resolution: '2000x2000',
           qualityScore: 95,
+          applyAsMain: applyPosition === 'main', // 🆕 Use position choice
         });
         toast.success(sb.historyApplied);
         setShowHistory(null);
@@ -668,6 +672,39 @@ export const SmartBackgroundDialog = ({
                   {bgMode === '3d_generate' && sb.threeDGenerateDesc}
                 </p>
               </div>
+            </div>
+
+            {/* 🆕 Apply Position Selector */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                {language === 'fr' ? 'Position de l\'image' : 'Image position'}
+              </Label>
+              <Select value={applyPosition} onValueChange={(v) => setApplyPosition(v as 'main' | 'secondary')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="main">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
+                      {language === 'fr' ? 'Principale (remplace l\'image actuelle)' : 'Main (replaces current image)'}
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="secondary">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded bg-muted text-muted-foreground flex items-center justify-center text-xs font-bold">2</span>
+                      {language === 'fr' ? 'Secondaire (garde l\'ordre actuel)' : 'Secondary (keeps current order)'}
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {applyPosition === 'main' 
+                  ? (language === 'fr' ? 'L\'image générée deviendra l\'image principale du produit sur Shopify.' : 'Generated image will become the main product image on Shopify.')
+                  : (language === 'fr' ? 'L\'image générée gardera sa position actuelle dans la galerie.' : 'Generated image will keep its current position in the gallery.')
+                }
+              </p>
             </div>
 
             {/* Style Buttons - Only for smart_serp or 3d_generate mode */}

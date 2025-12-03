@@ -19,6 +19,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ProductImage {
   id: string;
@@ -64,6 +65,7 @@ export function ProductGalleryDialog({
   onMainImageChange,
 }: ProductGalleryDialogProps) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [images, setImages] = useState<ProductImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -153,9 +155,23 @@ export function ProductGalleryDialog({
       
       await Promise.all(updates);
 
-      // Notify parent about main image change (first image in new order)
-      if (imagesToSave.length > 0 && onMainImageChange) {
-        onMainImageChange(product.id, imagesToSave[0].src);
+      // 🆕 FIX: Update shopify_products.image_url with new main image
+      if (imagesToSave.length > 0) {
+        const newMainImage = imagesToSave[0].src;
+        console.log('[Gallery] Updating main image to:', newMainImage);
+        
+        await supabase
+          .from('shopify_products')
+          .update({ 
+            image_url: newMainImage,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', product.id);
+        
+        // Notify parent about main image change
+        if (onMainImageChange) {
+          onMainImageChange(product.id, newMainImage);
+        }
       }
 
       // Sync to Shopify if connected
@@ -191,6 +207,13 @@ export function ProductGalleryDialog({
       } else {
         toast.success(t.toasts.success.saved);
       }
+      
+      // 🆕 FIX: Invalidate all product-related queries to refresh ALL tabs
+      await queryClient.invalidateQueries({ queryKey: ['product-images'] });
+      await queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
+      await queryClient.invalidateQueries({ queryKey: ['shopify-products'] });
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      
     } catch (error) {
       console.error("Error saving order:", error);
       toast.error(t.toasts.error.saving);
