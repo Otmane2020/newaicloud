@@ -111,8 +111,8 @@ export const SmartBackgroundDialog = ({
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
 
-  // Translation helpers
-  const getText = (fr: string, en: string) => language === 'fr' ? fr : en;
+  // Access translations
+  const sb = t.dialogs.smartBackground;
 
   // Memoize product IDs to prevent unnecessary re-renders
   const productIds = useMemo(() => selectedProducts.map(p => p.id).filter(Boolean), [selectedProducts]);
@@ -299,7 +299,7 @@ export const SmartBackgroundDialog = ({
 
   const handleGenerateAll = async () => {
     if (selectedProducts.length === 0) {
-      toast.error(getText('Aucun produit sélectionné', 'No product selected'));
+      toast.error(sb.noProductSelected);
       return;
     }
 
@@ -410,16 +410,16 @@ export const SmartBackgroundDialog = ({
 
     const finalSuccess = newPreviews.size;
     if (finalSuccess > 0) {
-      toast.success(`${finalSuccess} ${getText('background(s) généré(s)', 'background(s) generated')}`);
+      toast.success(sb.backgroundsGenerated.replace('{{count}}', String(finalSuccess)));
     }
     if (cancelledRef.current) {
-      toast.info(getText('Génération annulée', 'Generation cancelled'));
+      toast.info(sb.generationCancelled);
     }
   };
 
   const handleCancelGeneration = () => {
     cancelledRef.current = true;
-    toast.info(getText('Annulation en cours...', 'Cancelling...'));
+    toast.info(sb.cancelGeneration);
   };
 
   const handleApplyAll = async () => {
@@ -486,8 +486,8 @@ export const SmartBackgroundDialog = ({
     
     // Show success and close dialog
     if (newApplied.size > 0) {
-      toast.success(`${newApplied.size} background(s) appliqué(s)`, {
-        description: 'Les images ont été mises à jour et synchronisées avec Shopify.',
+      toast.success(sb.backgroundsApplied.replace('{{count}}', String(newApplied.size)), {
+        description: sb.appliedDescription,
         duration: 5000,
       });
       
@@ -497,8 +497,8 @@ export const SmartBackgroundDialog = ({
         onComplete?.();
       }, 800);
     } else {
-      toast.warning('Aucune image n\'a pu être appliquée', {
-        description: 'Vérifiez que les images ont bien été générées.'
+      toast.warning(sb.noImageApplied, {
+        description: sb.checkGeneration
       });
     }
   };
@@ -548,13 +548,13 @@ export const SmartBackgroundDialog = ({
           resolution: '2000x2000',
           qualityScore: 95,
         });
-        toast.success('Image historique appliquée');
+        toast.success(sb.historyApplied);
         setShowHistory(null);
         onComplete?.();
       }
     } catch (error) {
       console.error('Error applying history image:', error);
-      toast.error('Erreur lors de l\'application');
+      toast.error(sb.applyError);
     } finally {
       setIsGenerating(false);
     }
@@ -567,10 +567,10 @@ export const SmartBackgroundDialog = ({
           <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
             <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Wand2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              Smart Background
+              {sb.title}
             </DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">
-              {getText('Générez des backgrounds professionnels avec SERP Google', 'Generate professional backgrounds with Google SERP')}
+              {sb.description}
             </DialogDescription>
           </DialogHeader>
 
@@ -580,11 +580,11 @@ export const SmartBackgroundDialog = ({
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Square className="h-4 w-4" />
-                  Format de sortie
+                  {sb.outputFormat}
                 </Label>
                 <Select value={bgFormat} onValueChange={(v) => setBgFormat(v as BackgroundFormat)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choisir le format" />
+                    <SelectValue placeholder={sb.chooseFormat} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1:1">
@@ -624,11 +624,11 @@ export const SmartBackgroundDialog = ({
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4" />
-                  Mode de génération
+                  {sb.generationMode}
                 </Label>
                 <Select value={bgMode} onValueChange={(v) => setBgMode(v as BackgroundMode)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choisir le mode" />
+                    <SelectValue placeholder={sb.chooseMode} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="white_shopping">
@@ -658,10 +658,10 @@ export const SmartBackgroundDialog = ({
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {bgMode === 'white_shopping' && getText('Fond blanc pur avec SERP + Vision AI, éclairage studio, effet 3D, conforme Google Merchant Center', 'Pure white background with SERP + Vision AI, studio lighting, 3D effect, Google Merchant Center compliant')}
-                  {bgMode === '3d_shopping' && getText('Produit 3D réaliste sur fond blanc 1:1, éclairage studio professionnel, conforme Google Shopping', 'Realistic 3D product on white 1:1 background, professional studio lighting, Google Shopping compliant')}
-                  {bgMode === 'smart_serp' && getText('Enrichissement SERP (dimensions, matériaux), Vision AI, effet 3D professionnel', 'SERP enrichment (dimensions, materials), Vision AI, professional 3D effect')}
-                  {bgMode === '3d_generate' && getText('Recréation complète du produit en 3D avec modélisation réaliste et nouveau background', 'Complete 3D recreation of product with realistic modeling and new background')}
+                  {bgMode === 'white_shopping' && sb.whiteDesc}
+                  {bgMode === '3d_shopping' && sb.threeDShoppingDesc}
+                  {bgMode === 'smart_serp' && sb.smartSerpDesc}
+                  {bgMode === '3d_generate' && sb.threeDGenerateDesc}
                 </p>
               </div>
             </div>
@@ -669,7 +669,7 @@ export const SmartBackgroundDialog = ({
             {/* Style Buttons - Only for smart_serp or 3d_generate mode */}
             {(bgMode === 'smart_serp' || bgMode === '3d_generate') && (
               <div className="space-y-2">
-                <Label className="text-sm">Style de background</Label>
+                <Label className="text-sm">{sb.backgroundStyle}</Label>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { value: 'shopping' as BackgroundStyle, label: 'Shopping', icon: ShoppingBag, desc: 'E-commerce professionnel' },
@@ -693,12 +693,12 @@ export const SmartBackgroundDialog = ({
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {bgStyle === 'shopping' && 'Fond neutre optimisé e-commerce, mise en valeur produit'}
-                  {bgStyle === 'lifestyle' && 'Contexte de vie réaliste, ambiance chaleureuse'}
-                  {bgStyle === 'moderne' && 'Lignes épurées, design contemporain minimaliste'}
-                  {bgStyle === 'living_room' && 'Décor intérieur salon/maison, contexte habitat'}
-                  {bgStyle === 'studio' && 'Éclairage professionnel studio photo'}
-                  {bgStyle === 'nature' && 'Environnement naturel, plantes et lumière douce'}
+                  {bgStyle === 'shopping' && sb.styleDescriptions.shopping}
+                  {bgStyle === 'lifestyle' && sb.styleDescriptions.lifestyle}
+                  {bgStyle === 'moderne' && sb.styleDescriptions.moderne}
+                  {bgStyle === 'living_room' && sb.styleDescriptions.livingRoom}
+                  {bgStyle === 'studio' && sb.styleDescriptions.studio}
+                  {bgStyle === 'nature' && sb.styleDescriptions.nature}
                 </p>
               </div>
             )}
@@ -706,11 +706,11 @@ export const SmartBackgroundDialog = ({
             {/* Products Grid */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>{selectedProducts.length} produit(s) sélectionné(s)</Label>
+                <Label>{selectedProducts.length} {language === 'fr' ? 'produit(s) sélectionné(s)' : 'product(s) selected'}</Label>
                 {loadingGallery && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    {getText('Chargement des images...', 'Loading images...')}
+                    {language === 'fr' ? 'Chargement des images...' : 'Loading images...'}
                   </div>
                 )}
               </div>
@@ -755,7 +755,7 @@ export const SmartBackgroundDialog = ({
                             {hasMultipleImages && !hasGenerated && (
                               <div className="mb-3">
                                 <p className="text-xs text-muted-foreground mb-2">
-                                  {getText(`Sélectionner une image source (${productImages.length} disponibles):`, `Select source image (${productImages.length} available):`)}
+                                  {sb.selectSourceImage} ({productImages.length} {language === 'fr' ? 'disponibles' : 'available'}):
                                 </p>
                                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5 sm:gap-2">
                                   {productImages.map((img, idx) => {
@@ -790,7 +790,7 @@ export const SmartBackgroundDialog = ({
                             {showHistory === product.id && productHistory.length > 0 && (
                               <div className="mt-2 p-2 bg-muted/50 rounded-lg">
                                 <p className="text-xs font-medium mb-2">
-                                  {getText('Historique des générations:', 'Generation history:')}
+                                  {sb.history}:
                                 </p>
                                 <div className="flex flex-wrap gap-2">
                                   {productHistory.slice(0, 6).map((item) => (
@@ -800,7 +800,7 @@ export const SmartBackgroundDialog = ({
                                       disabled={isGenerating}
                                       className="relative w-20 h-20 rounded-lg overflow-hidden border border-border hover:border-primary transition-all hover:scale-105 group"
                                     >
-                                      <img src={item.optimized_url} alt="Historique" className="w-full h-full object-cover" />
+                                      <img src={item.optimized_url} alt={sb.history} className="w-full h-full object-cover" />
                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <CheckCircle2 className="h-5 w-5 text-white" />
                                       </div>
@@ -808,7 +808,7 @@ export const SmartBackgroundDialog = ({
                                   ))}
                                 </div>
                                 <p className="text-[10px] text-muted-foreground mt-1">
-                                  {getText('Cliquez pour appliquer', 'Click to apply')}
+                                  {language === 'fr' ? 'Cliquez pour appliquer' : 'Click to apply'}
                                 </p>
                               </div>
                             )}
@@ -869,16 +869,16 @@ export const SmartBackgroundDialog = ({
               <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">
-                    {getText('Génération en cours:', 'Generating:')} {successCount + errorCount}/{selectedProducts.length}
+                    {sb.generating.replace('{{current}}', String(successCount + errorCount)).replace('{{total}}', String(selectedProducts.length))}
                   </p>
                   <Button variant="ghost" size="sm" onClick={handleCancelGeneration} className="h-7 px-2 gap-1 text-destructive hover:text-destructive">
                     <X className="h-3.5 w-3.5" />
-                    {getText('Annuler', 'Cancel')}
+                    {sb.cancel}
                   </Button>
                 </div>
                 <Progress value={((successCount + errorCount) / selectedProducts.length) * 100} className="h-2" />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{successCount} {getText('réussis', 'success')} {errorCount > 0 && `| ${errorCount} ${getText('erreurs', 'errors')}`}</span>
+                  <span>{successCount} {sb.generated} {errorCount > 0 && `| ${errorCount} ${sb.failed}`}</span>
                   <span>{Math.round(((successCount + errorCount) / selectedProducts.length) * 100)}%</span>
                 </div>
               </div>
@@ -890,7 +890,7 @@ export const SmartBackgroundDialog = ({
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle2 className="h-5 w-5 text-green-500" />
                   <p className="text-sm font-medium text-green-600">
-                    {appliedProducts.size} {getText('image(s) appliquée(s) avec succès', 'image(s) applied successfully')}
+                    {sb.backgroundsApplied.replace('{{count}}', String(appliedProducts.size))}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -916,7 +916,7 @@ export const SmartBackgroundDialog = ({
 
           <DialogFooter className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t bg-background gap-2 flex-col sm:flex-row">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isGenerating} className="w-full sm:w-auto">
-              {appliedProducts.size > 0 ? getText('Fermer', 'Close') : getText('Annuler', 'Cancel')}
+              {appliedProducts.size > 0 ? sb.close : sb.cancel}
             </Button>
 
             {appliedProducts.size === 0 && (
@@ -925,7 +925,7 @@ export const SmartBackgroundDialog = ({
                   <>
                     <Button variant="outline" onClick={handleRegenerate} disabled={isGenerating} className="gap-2 w-full sm:w-auto">
                       <RefreshCw className="h-4 w-4" />
-                      {getText('Régénérer', 'Regenerate')}
+                      {language === 'fr' ? 'Régénérer' : 'Regenerate'}
                     </Button>
                     <Button onClick={handleApplyAll} disabled={isGenerating} className="gap-2 w-full sm:w-auto">
                       {isGenerating ? (
@@ -933,7 +933,7 @@ export const SmartBackgroundDialog = ({
                       ) : (
                         <CheckCircle2 className="h-4 w-4" />
                       )}
-                      {getText(`Appliquer (${generatedPreviews.size})`, `Apply (${generatedPreviews.size})`)}
+                      {sb.applyAll} ({generatedPreviews.size})
                     </Button>
                   </>
                 ) : (
@@ -943,7 +943,7 @@ export const SmartBackgroundDialog = ({
                     ) : (
                       <Wand2 className="h-4 w-4" />
                     )}
-                    {getText('Générer', 'Generate')}
+                    {sb.generateAll.replace('{{count}}', String(selectedProducts.length))}
                   </Button>
                 )}
               </div>
@@ -957,7 +957,7 @@ export const SmartBackgroundDialog = ({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{previewProduct?.title}</DialogTitle>
-            <DialogDescription>{getText('Comparaison avant/après', 'Before/after comparison')}</DialogDescription>
+            <DialogDescription>{language === 'fr' ? 'Comparaison avant/après' : 'Before/after comparison'}</DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4">
@@ -977,7 +977,7 @@ export const SmartBackgroundDialog = ({
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                Smart Background
+                {sb.title}
               </Label>
               <div className="aspect-square rounded-lg overflow-hidden bg-white border-2 border-primary/20">
                 {previewProduct && generatedPreviews.has(previewProduct.id) && (
@@ -993,7 +993,7 @@ export const SmartBackgroundDialog = ({
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPreview(false)}>
-              {getText('Fermer', 'Close')}
+              {sb.close}
             </Button>
           </DialogFooter>
         </DialogContent>
