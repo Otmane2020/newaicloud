@@ -11,6 +11,7 @@ import { VideoPreview } from "./video-ads/VideoPreview";
 import { TemplateGallery } from "./video-ads/TemplateGallery";
 import { ScriptGenerator } from "./video-ads/ScriptGenerator";
 import { VideoTimeline } from "./video-ads/VideoTimeline";
+import { InShotTimeline } from "./video-ads/InShotTimeline";
 import { ExportPanel } from "./video-ads/ExportPanel";
 import { useToast } from "@/hooks/use-toast";
 
@@ -269,10 +270,10 @@ export default function VideoAdsStudio() {
           </div>
         </TabsContent>
 
-        {/* Montage Tab - NEW */}
+        {/* Montage Tab - InShot Style */}
         <TabsContent value="montage" className="space-y-6">
           <div className="grid grid-cols-12 gap-6">
-            {/* Left - Clip Library with Add button */}
+            {/* Left - Clip Library */}
             <div className="col-span-12 lg:col-span-3 space-y-4">
               <Card className="bg-card/50 backdrop-blur border-border/50">
                 <CardHeader className="pb-3">
@@ -280,8 +281,9 @@ export default function VideoAdsStudio() {
                     <Film className="w-4 h-4 text-cyan-400" />
                     Bibliothèque
                   </CardTitle>
+                  <p className="text-xs text-muted-foreground">Cliquez pour ajouter à la timeline</p>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="max-h-[500px] overflow-y-auto">
                   <ClipLibrary 
                     onSelect={(clip) => {
                       setSelectedClip(clip);
@@ -293,28 +295,18 @@ export default function VideoAdsStudio() {
               </Card>
             </div>
 
-            {/* Center - Timeline */}
-            <div className="col-span-12 lg:col-span-6 space-y-4">
-              <VideoTimeline
+            {/* Center - InShot Timeline with Preview */}
+            <div className="col-span-12 lg:col-span-6">
+              <InShotTimeline
                 clips={timelineClips}
                 onReorder={handleTimelineReorder}
                 onRemove={handleRemoveFromTimeline}
                 onTransitionChange={handleTransitionChange}
+                format={format}
               />
-
-              {/* Preview of first clip */}
-              {timelineClips.length > 0 && (
-                <VideoPreview
-                  selectedClip={timelineClips[0]}
-                  storyboard={[]}
-                  effects={effects}
-                  texts={{}}
-                  format={format}
-                />
-              )}
             </div>
 
-            {/* Right - Export Panel */}
+            {/* Right - Export Panel & Format */}
             <div className="col-span-12 lg:col-span-3 space-y-4">
               <ExportPanel
                 onExport={handleExport}
@@ -327,31 +319,34 @@ export default function VideoAdsStudio() {
               {/* Format */}
               <Card className="bg-card/50 backdrop-blur border-border/50">
                 <CardContent className="p-4 space-y-3">
-                  <span className="text-sm font-medium">Format</span>
+                  <span className="text-sm font-medium">Format vidéo</span>
                   <div className="grid grid-cols-3 gap-2">
                     <Button
                       variant={format === "9:16" ? "default" : "outline"}
                       size="sm"
                       onClick={() => setFormat("9:16")}
-                      className="text-xs"
+                      className="text-xs flex flex-col gap-1 h-auto py-2"
                     >
-                      9:16
+                      <span>📱</span>
+                      <span>9:16</span>
                     </Button>
                     <Button
                       variant={format === "1:1" ? "default" : "outline"}
                       size="sm"
                       onClick={() => setFormat("1:1")}
-                      className="text-xs"
+                      className="text-xs flex flex-col gap-1 h-auto py-2"
                     >
-                      1:1
+                      <span>⬜</span>
+                      <span>1:1</span>
                     </Button>
                     <Button
                       variant={format === "16:9" ? "default" : "outline"}
                       size="sm"
                       onClick={() => setFormat("16:9")}
-                      className="text-xs"
+                      className="text-xs flex flex-col gap-1 h-auto py-2"
                     >
-                      16:9
+                      <span>🖥️</span>
+                      <span>16:9</span>
                     </Button>
                   </div>
                 </CardContent>
