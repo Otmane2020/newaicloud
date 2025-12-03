@@ -92,6 +92,19 @@ serve(async (req) => {
 
     console.log("🎨 Enriched product context:", enrichedContext);
 
+    // 🆕 Visual Enhancement Instructions for Professional E-Commerce Quality
+    const visualEnhancementInstructions = `
+VISUAL QUALITY ENHANCEMENT - PROFESSIONAL E-COMMERCE PHOTOGRAPHY:
+- Enhance fabric textures to appear rich, luxurious, and tactile
+- Show natural fabric drape, folds, and depth with visible weave patterns
+- Use professional studio lighting with main key light + fill light + subtle rim lighting
+- Create soft, flattering shadows that add depth without harsh contrast
+- Vibrant, accurate colors true to material. Sharp focus on product details.
+- Create "hero shot" quality - the image should make viewers WANT to buy
+- Product should occupy 85-95% of canvas area, NO excessive padding or margins
+- Think: IKEA catalog, West Elm, Roche Bobois photography quality
+`;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       console.error("LOVABLE_API_KEY not configured");
@@ -104,32 +117,37 @@ serve(async (req) => {
     console.log("🎨 Creating 5 background variants from text prompt for:", productTitle, "Format:", format);
 
     // ---------- Variants avec contexte enrichi et décoratif ----------
-    // 🆕 Include format/dimensions in all prompts
+    // 🆕 Include format/dimensions in all prompts with visual enhancement
     const variants = [
       {
         style: "cozy_lifestyle" as const,
         description: "Cozy Lifestyle – Salon moderne",
-        prompt: `IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} in a cozy lifestyle setting with warm lighting and a comfortable modern living room interior. ${basePrompt}. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce. OUTPUT FORMAT: ${aspectRatio} aspect ratio, ${dimensions} resolution.`,
+        prompt: `🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
+IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} in a cozy lifestyle setting with warm lighting and a comfortable modern living room interior. ${basePrompt}. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce.`,
       },
       {
         style: "professional_studio" as const,
         description: "Studio professionnel",
-        prompt: `IMPORTANT: Remove and replace the existing background completely. Professional studio photography of ${enrichedContext} with a clean white background and perfect soft lighting. ${basePrompt}. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic. OUTPUT FORMAT: ${aspectRatio} aspect ratio, ${dimensions} resolution.`,
+        prompt: `🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
+IMPORTANT: Remove and replace the existing background completely. Professional studio photography of ${enrichedContext} with a clean white background and perfect soft lighting. ${basePrompt}. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic.`,
       },
       {
         style: "luxurious_nature" as const,
         description: "Nature luxueuse",
-        prompt: `IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} in a luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. ${basePrompt}. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment. OUTPUT FORMAT: ${aspectRatio} aspect ratio, ${dimensions} resolution.`,
+        prompt: `🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
+IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} in a luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. ${basePrompt}. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment.`,
       },
       {
         style: "modern_minimalist" as const,
         description: "Minimaliste moderne",
-        prompt: `IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} in a modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. ${basePrompt}. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce. OUTPUT FORMAT: ${aspectRatio} aspect ratio, ${dimensions} resolution.`,
+        prompt: `🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
+IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} in a modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. ${basePrompt}. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce.`,
       },
       {
         style: "urban_contemporary" as const,
         description: "Urbain contemporain",
-        prompt: `IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} with contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. ${basePrompt}. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot. OUTPUT FORMAT: ${aspectRatio} aspect ratio, ${dimensions} resolution.`,
+        prompt: `🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
+IMPORTANT: Remove and replace the existing background completely. Product photography of ${enrichedContext} with contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. ${basePrompt}. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot.`,
       },
     ];
 
