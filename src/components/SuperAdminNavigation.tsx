@@ -29,7 +29,7 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
-  const [openCategories, setOpenCategories] = useState<string[]>(["general", "marketing", "system"]);
+  const [openCategories, setOpenCategories] = useState<string[]>([]);
 
   const handleLogout = async () => {
     try {

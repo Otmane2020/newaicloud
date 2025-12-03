@@ -10,8 +10,8 @@ import { EffectsPanel } from "./video-ads/EffectsPanel";
 import { VideoPreview } from "./video-ads/VideoPreview";
 import { TemplateGallery } from "./video-ads/TemplateGallery";
 import { ScriptGenerator } from "./video-ads/ScriptGenerator";
-import { VideoTimeline } from "./video-ads/VideoTimeline";
-import { InShotTimeline } from "./video-ads/InShotTimeline";
+import { ProVideoTimeline } from "./video-ads/ProVideoTimeline";
+import { AnimationsPanel } from "./video-ads/AnimationsPanel";
 import { ExportPanel } from "./video-ads/ExportPanel";
 import { useToast } from "@/hooks/use-toast";
 
@@ -270,10 +270,10 @@ export default function VideoAdsStudio() {
           </div>
         </TabsContent>
 
-        {/* Montage Tab - InShot Style */}
+        {/* Montage Tab - Pro Style (CapCut-like) */}
         <TabsContent value="montage" className="space-y-6">
           <div className="grid grid-cols-12 gap-6">
-            {/* Left - Clip Library */}
+            {/* Left - Clip Library & Animations */}
             <div className="col-span-12 lg:col-span-3 space-y-4">
               <Card className="bg-card/50 backdrop-blur border-border/50">
                 <CardHeader className="pb-3">
@@ -283,7 +283,7 @@ export default function VideoAdsStudio() {
                   </CardTitle>
                   <p className="text-xs text-muted-foreground">Cliquez pour ajouter à la timeline</p>
                 </CardHeader>
-                <CardContent className="max-h-[500px] overflow-y-auto">
+                <CardContent className="max-h-[300px] overflow-y-auto">
                   <ClipLibrary 
                     onSelect={(clip) => {
                       setSelectedClip(clip);
@@ -293,16 +293,35 @@ export default function VideoAdsStudio() {
                   />
                 </CardContent>
               </Card>
+
+              {/* Animations Panel */}
+              <Card className="bg-card/50 backdrop-blur border-border/50 h-[300px]">
+                <AnimationsPanel 
+                  onSelectAnimation={(anim) => {
+                    toast({ title: `Effet "${anim.name}" sélectionné` });
+                  }}
+                  selectedAnimationId={null}
+                />
+              </Card>
             </div>
 
-            {/* Center - InShot Timeline with Preview */}
+            {/* Center - Pro Video Timeline with multi-track */}
             <div className="col-span-12 lg:col-span-6">
-              <InShotTimeline
-                clips={timelineClips}
-                onReorder={handleTimelineReorder}
+              <ProVideoTimeline
+                clips={timelineClips.map(c => ({
+                  id: c.id,
+                  title: c.title,
+                  duration: c.duration_seconds || 5,
+                  thumbnailUrl: c.thumbnail_url,
+                  videoUrl: c.file_url
+                }))}
+                onReorder={(fromIdx, toIdx) => {
+                  const newClips = [...timelineClips];
+                  const [removed] = newClips.splice(fromIdx, 1);
+                  newClips.splice(toIdx, 0, removed);
+                  handleTimelineReorder(newClips.map((c, i) => ({ ...c, order: i })));
+                }}
                 onRemove={handleRemoveFromTimeline}
-                onTransitionChange={handleTransitionChange}
-                format={format}
               />
             </div>
 
