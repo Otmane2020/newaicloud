@@ -13,6 +13,7 @@ import { FacebookSDKProvider } from "@/components/FacebookSDK";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AIAssistant } from "@/components/AIAssistant";
 import { AutoSyncProgressDialog } from "@/components/AutoSyncProgressDialog";
+import { AutoTranslator } from "@/components/AutoTranslator";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { BulkOptimizationIndicator } from "@/components/BulkOptimizationIndicator";
 import { useQuotaMonitoring } from "@/hooks/useQuotaMonitoring";
@@ -156,6 +157,7 @@ const App = () => (
                 <OptimizationProvider>
                   <AppQuotaMonitor />
                   <AutoSyncMonitor />
+                  <AutoTranslator />
                   <BulkOptimizationIndicator />
                 <div className="overflow-x-hidden max-w-full">
               <Routes>
