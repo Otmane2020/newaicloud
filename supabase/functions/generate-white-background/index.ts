@@ -257,8 +257,20 @@ ${formatKey === "landscape" ? `
 - ${targetDims.width} × ${targetDims.height} pixels
 ` : ""}
 
-STEP 2: PLACE PRODUCT ON THIS CANVAS
+STEP 2: PLACE PRODUCT ON THIS CANVAS (FILL IT COMPLETELY)
 Only AFTER creating your ${targetDims.width}×${targetDims.height} canvas, place the product on it.
+
+🚨🚨🚨 CRITICAL: NO WHITE PADDING / NO EMPTY SPACE 🚨🚨🚨
+THE PRODUCT MUST FILL THE ENTIRE ${targetDims.width}×${targetDims.height} CANVAS:
+- Product should occupy 85-95% of the canvas area (NOT 70-80%)
+- NO empty white space or padding around the product
+- The product should TOUCH or NEARLY TOUCH the edges of the canvas
+- Scale the product UP to fill the entire frame edge-to-edge
+- Imagine ZOOMING IN on the product until it fills the ${targetDims.width}×${targetDims.height} frame
+
+⚠️ FAILURE: If there is visible white padding around the product = REJECT
+⚠️ FAILURE: If the product looks small/centered with empty space = REJECT
+✅ SUCCESS: Product fills the frame edge-to-edge with minimal empty space
 
 ⚠️ IF YOU OUTPUT ANY OTHER SIZE, THIS WILL BE A COMPLETE FAILURE ⚠️
 ⚠️ The output MUST be ${targetDims.width}×${targetDims.height} pixels ⚠️
@@ -304,10 +316,11 @@ ${productDescription ? `📝 Description: ${productDescription.slice(0, 200)}` :
 STEP BY STEP EXECUTION:
 1. CREATE a ${targetDims.width}×${targetDims.height} pixels canvas (${targetDims.ratio} ratio)
 2. EXTRACT the exact product from the input image (background removal only)
-3. PLACE the extracted product centered on your ${targetDims.width}×${targetDims.height} canvas (fill 70-80%)
-4. ADD subtle drop shadow for 3D depth
-5. VERIFY output is ${targetDims.width}×${targetDims.height} pixels before returning
-6. DO NOT recreate or reinterpret the product - it must be identical to input
+3. SCALE UP the product to fill 85-95% of canvas (TOUCH THE EDGES, NO PADDING)
+4. PLACE the enlarged product centered on your ${targetDims.width}×${targetDims.height} canvas
+5. ADD subtle drop shadow for 3D depth
+6. VERIFY output is ${targetDims.width}×${targetDims.height} pixels with product filling the frame
+7. DO NOT recreate or reinterpret the product - it must be identical to input
 
 BACKGROUND STYLE DETAILS:
 ${backgroundStyle === 'shopping' ? '- Pure white (#FFFFFF) e-commerce background, clean and professional' : ''}
@@ -341,9 +354,10 @@ YOUR TASK:
 EXECUTION STEPS:
 1. Create ${targetDims.width}×${targetDims.height} white canvas (#FFFFFF)
 2. EXTRACT the exact product from input (do not recreate it)
-3. Center extracted product on your ${targetDims.width}×${targetDims.height} canvas (70-80% of frame)
-4. Add subtle drop shadow for 3D depth
-5. VERIFY your output is ${targetDims.width}×${targetDims.height} pixels
+3. SCALE UP product to fill 85-95% of canvas (EDGE-TO-EDGE, NO WHITE PADDING)
+4. Center enlarged product on your ${targetDims.width}×${targetDims.height} canvas
+5. Add subtle drop shadow for 3D depth
+6. VERIFY product fills the frame with NO empty white space around it
 
 ⚠️ CRITICAL REQUIREMENTS: 
 - Output MUST be EXACTLY ${targetDims.width}×${targetDims.height} pixels

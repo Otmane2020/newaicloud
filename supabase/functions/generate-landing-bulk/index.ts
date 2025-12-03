@@ -245,8 +245,7 @@ Génère UNIQUEMENT le HTML complet (<!DOCTYPE html> jusqu'à </html>), rien d'a
       const { error: updateError } = await supabaseAdmin
         .from("shopify_products")
         .update({
-          landing_page_html: html,
-          landing_page: true,
+          landing_page: html,  // Sauvegarde HTML directement (comme generate-landing-ai)
           last_landing_generation_at: new Date().toISOString(),
         })
         .eq("id", product_id)

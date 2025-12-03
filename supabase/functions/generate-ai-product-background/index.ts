@@ -266,7 +266,9 @@ Tu dois imaginer que tu TRANSPORTES le produit dans un NOUVEAU LIEU différent d
 - Le produit reste IDENTIQUE : mêmes couleurs, textures, proportions, détails
 - Placement naturel dans la nouvelle scène (pas d'effet flottant)
 - Ombres et reflets réalistes adaptés au NOUVEAU contexte
-- Le produit est la STAR (80% du focus visuel)
+- Le produit est la STAR et doit REMPLIR 85-95% du canvas
+- 🚨 PAS de padding blanc autour du produit - il doit TOUCHER les bords
+- Zoom sur le produit pour qu'il occupe tout l'espace disponible
 
 🎯 MATÉRIAUX & AMBIANCE PREMIUM :
 - Matériaux nobles visibles : bois naturel, marbre, velours, lin, céramique, métal brossé
