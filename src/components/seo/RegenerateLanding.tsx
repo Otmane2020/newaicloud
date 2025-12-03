@@ -324,6 +324,16 @@ export default function RegenerateLanding({
       const resolvedVendor = await resolveVendor();
       console.log("[Landing] Resolved vendor:", resolvedVendor);
 
+      // ✅ ÉTAPE 1.1 : Mettre à jour le vendor dans la DB si généré par IA
+      if (config.vendorSource === "generate" && resolvedVendor !== "Marque générée") {
+        await supabase
+          .from("shopify_products")
+          .update({ vendor: resolvedVendor })
+          .eq("id", product.id);
+        console.log("[Landing] Vendor updated in database:", resolvedVendor);
+        toast.success(`Marque "${resolvedVendor}" créée et sauvegardée`);
+      }
+
       setProgress(20);
       setProgressMessage(t.landingGeneration.progressMessages.optimizingTitle);
 
