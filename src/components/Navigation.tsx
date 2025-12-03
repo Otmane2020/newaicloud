@@ -44,7 +44,7 @@ export function Navigation() {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog', '/social-media']);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['/seo', '/blog', '/social-media', '/social-media?tab=creative']);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userPlan, setUserPlan] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
