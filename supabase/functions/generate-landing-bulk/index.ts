@@ -145,19 +145,32 @@ STRUCTURE HTML REQUISE:
    - Image principale grande, bien cadrée
    - Titre produit + marque + description courte
 
-2. SECTION AVANTAGES (3-4 cartes):
+2. TABLEAU CARACTÉRISTIQUES (OBLIGATOIRE):
+   - Tableau ou liste de définition élégant
+   - INCLURE: Dimensions (L x l x H), Matériaux/Fabrics, Poids, Couleur
+   - Style: alternance de fond subtile entre lignes
+   - Exemple: <dl><dt>Dimensions</dt><dd>120 x 80 x 45 cm</dd></dl>
+
+3. SECTION AVANTAGES (3-4 cartes):
    - Grid responsive 3 colonnes desktop, 1 mobile
    - Chaque carte: SVG professionnel (24x24) + titre + description courte
    - Background surface avec border subtile
 
-3. GALERIE IMAGES (si images additionnelles):
+4. GALERIE IMAGES (si images additionnelles):
    - Grid 2-3 colonnes avec gap
    - Hover effect subtil (scale 1.02, shadow)
    - Images bien cadrées
 
-4. FAQ SECTION (3 questions max):
-   - Accordéon simple ou liste Q/R
-   - Questions pertinentes au produit
+5. FAQ SECTION CLIQUABLE (3 questions min - OBLIGATOIRE):
+   - ACCORDÉON FONCTIONNEL avec JavaScript inline
+   - Chaque question doit s'ouvrir/fermer au clic
+   - Utilise ce pattern EXACT:
+   <style>.faq-item .faq-answer { display: none; padding: 1rem; } .faq-item.open .faq-answer { display: block; } .faq-question { cursor: pointer; padding: 1rem; background: hsl(var(--surface)); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; } .faq-question:hover { background: hsl(var(--primary) / 0.1); } .faq-icon { transition: transform 0.3s; } .faq-item.open .faq-icon { transform: rotate(180deg); }</style>
+   <div class="faq-item" onclick="this.classList.toggle('open')">
+     <div class="faq-question"><span>Question ici?</span><svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+     <div class="faq-answer">Réponse détaillée ici...</div>
+   </div>
+   - Questions pertinentes au produit (entretien, livraison, garantie)
 </body></html>
 
 ═══════════════════════════════════════════════════════
@@ -167,7 +180,6 @@ INTERDIT ABSOLUMENT:
 - Images placeholder (via.placeholder.com, etc.) ❌
 - Boutons d'achat ou CTA ❌
 - Menu navigation ou footer ❌
-- JavaScript ou animations complexes ❌
 - Couleurs trop vives ou néon ❌
 
 Génère UNIQUEMENT le HTML complet (<!DOCTYPE html> jusqu'à </html>), rien d'autre.`;

@@ -284,23 +284,24 @@ export function BulkLandingProgressDialog({
         let productTitle = productData.seo_title || productData.title;
         if (config.regenerateTitle) {
           try {
-            console.log(`[Bulk Landing] Regenerating title for "${productData.title}"`);
-            const { data: seoData } = await supabase.functions.invoke("generate-seo", {
+            console.log(`[Bulk Landing] Regenerating title with smart-title for "${productData.title}"`);
+            const { data: smartData, error: smartError } = await supabase.functions.invoke("smart-title", {
               body: {
                 productId: product.id,
-                generateTitle: true,
-                generateDescription: false,
+                language: 'fr',
               },
             });
             
-            if (seoData?.title) {
-              productTitle = seoData.title;
+            if (smartError) {
+              console.error(`[Bulk Landing] smart-title error:`, smartError);
+            } else if (smartData?.optimizedTitle) {
+              productTitle = smartData.optimizedTitle;
               // Update in database
               await supabase
                 .from("shopify_products")
-                .update({ seo_title: seoData.title })
+                .update({ seo_title: smartData.optimizedTitle })
                 .eq("id", product.id);
-              console.log(`[Bulk Landing] New title "${seoData.title}" saved for product ${product.id}`);
+              console.log(`[Bulk Landing] New SERP-optimized title "${smartData.optimizedTitle}" saved for product ${product.id}`);
             }
           } catch (err) {
             console.error(`[Bulk Landing] Title regeneration failed for ${product.id}:`, err);
