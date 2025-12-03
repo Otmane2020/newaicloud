@@ -3720,13 +3720,18 @@ export type Database = {
           content: string
           created_at: string
           excerpt: string | null
+          facebook_post_id: string | null
           featured_image: string | null
+          gsc_indexed: boolean | null
           id: string
           meta_description: string | null
           published: boolean | null
           published_at: string | null
           read_time: number | null
           slug: string
+          social_channels: string[] | null
+          social_published_at: string | null
+          social_status: string | null
           title: string
           updated_at: string
           views: number | null
@@ -3736,13 +3741,18 @@ export type Database = {
           content: string
           created_at?: string
           excerpt?: string | null
+          facebook_post_id?: string | null
           featured_image?: string | null
+          gsc_indexed?: boolean | null
           id?: string
           meta_description?: string | null
           published?: boolean | null
           published_at?: string | null
           read_time?: number | null
           slug: string
+          social_channels?: string[] | null
+          social_published_at?: string | null
+          social_status?: string | null
           title: string
           updated_at?: string
           views?: number | null
@@ -3752,13 +3762,18 @@ export type Database = {
           content?: string
           created_at?: string
           excerpt?: string | null
+          facebook_post_id?: string | null
           featured_image?: string | null
+          gsc_indexed?: boolean | null
           id?: string
           meta_description?: string | null
           published?: boolean | null
           published_at?: string | null
           read_time?: number | null
           slug?: string
+          social_channels?: string[] | null
+          social_published_at?: string | null
+          social_status?: string | null
           title?: string
           updated_at?: string
           views?: number | null
