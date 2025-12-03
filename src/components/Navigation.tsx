@@ -84,16 +84,6 @@ export function Navigation() {
       ]
     },
     { 
-      path: '/chat', 
-      label: t.navigation.smartChat, 
-      icon: MessageSquare,
-      subItems: [
-        { path: '/chat', label: t.navigation.chatSubmenu.assistant, icon: MessageSquare },
-        { path: '/chat-history', label: t.navigation.chatSubmenu.history, icon: CalendarClock },
-        { path: '/product-source', label: t.navigation.chatSubmenu.productSource, icon: ShoppingBag },
-      ]
-    },
-    { 
       path: '/social-media', 
       label: t.navigation.socialMedia, 
       icon: Share2,
@@ -110,6 +100,16 @@ export function Navigation() {
         { path: '/social-media?tab=campaigns', label: t.navigation.socialMediaSubmenu.campaigns, icon: CalendarClock },
         { path: '/social-media?tab=posts', label: t.navigation.socialMediaSubmenu.posts, icon: FileText },
         { path: '/social-media?tab=settings', label: t.navigation.socialMediaSubmenu.settings, icon: Plug },
+      ]
+    },
+    { 
+      path: '/chat', 
+      label: t.navigation.smartChat, 
+      icon: MessageSquare,
+      subItems: [
+        { path: '/chat', label: t.navigation.chatSubmenu.assistant, icon: MessageSquare },
+        { path: '/chat-history', label: t.navigation.chatSubmenu.history, icon: CalendarClock },
+        { path: '/product-source', label: t.navigation.chatSubmenu.productSource, icon: ShoppingBag },
       ]
     },
   ];
