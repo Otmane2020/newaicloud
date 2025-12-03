@@ -28,13 +28,20 @@ serve(async (req) => {
       comparePrice,
       productType,
       storeName,
+      topic, // For admin simple caption generation
+      style, // promotional, informative, engaging
+      includeEmojis = true,
+      includeHashtags = true,
       language = 'fr',
       tone = 'engaging', // engaging, professional, playful, luxury
-      platform = 'instagram' // instagram, facebook
+      platform = 'facebook' // instagram, facebook
     } = body;
 
-    if (!productTitle) {
-      return new Response(JSON.stringify({ error: 'Product title is required' }), {
+    // Support both admin simple mode (topic/style) and product mode (productTitle)
+    const isAdminMode = !!topic && !productTitle;
+    
+    if (!productTitle && !topic) {
+      return new Response(JSON.stringify({ error: 'Product title or topic is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -119,6 +126,71 @@ Rules:
 - Use relevant emojis (not too many)
 - Do NOT put quotes around the response`;
 
+    // Admin mode: simple topic-based generation
+    if (isAdminMode) {
+      const styleInstructions: Record<string, string> = {
+        promotional: "Create an exciting, action-oriented caption that highlights benefits and includes a call-to-action. Use persuasive language.",
+        informative: "Create an educational caption that shares valuable information. Use clear, professional language.",
+        engaging: "Create a conversational caption that encourages interaction. Ask questions or invite comments.",
+      };
+
+      const adminPrompt = `Generate a ${platform} post caption in French about: "${topic}"
+
+Style: ${styleInstructions[style] || styleInstructions.promotional}
+
+Requirements:
+- Language: French
+- Length: 150-300 characters for Facebook
+${includeEmojis ? "- Include 3-5 relevant emojis throughout the text" : "- No emojis"}
+${includeHashtags ? "- Add 3-5 relevant hashtags at the end" : "- No hashtags"}
+- Make it compelling and shareable
+- Focus on value proposition
+
+Return ONLY the caption text, nothing else.`;
+
+      console.log('Generating admin caption for topic:', topic);
+
+      const adminResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: 'You are a social media expert who creates engaging French captions for business posts. Always respond with just the caption text, no explanations.' },
+            { role: 'user', content: adminPrompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        }),
+      });
+
+      if (!adminResponse.ok) {
+        const errorText = await adminResponse.text();
+        console.error('AI Gateway error:', adminResponse.status, errorText);
+        throw new Error(`AI Gateway error: ${adminResponse.status}`);
+      }
+
+      const adminData = await adminResponse.json();
+      const adminCaption = adminData.choices?.[0]?.message?.content?.trim();
+
+      if (!adminCaption) {
+        throw new Error('No caption generated');
+      }
+
+      return new Response(JSON.stringify({ 
+        caption: adminCaption.replace(/^["']|["']$/g, '').trim(),
+        platform,
+        language: 'fr',
+        style
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Product mode: detailed product-based generation
     console.log('Generating caption for:', productTitle);
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Globe, Search, Loader2, RefreshCw, CheckCircle, XCircle, Link, TrendingUp, MousePointer, Eye } from "lucide-react";
+import { Globe, Search, Loader2, RefreshCw, CheckCircle, XCircle, Link, TrendingUp, MousePointer, Eye, Plus, Settings2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -38,11 +39,33 @@ export function AdminGoogleSearchConsole() {
   const [indexingRequests, setIndexingRequests] = useState<IndexingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [indexing, setIndexing] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [newUrl, setNewUrl] = useState("");
+  const [newDomain, setNewDomain] = useState("");
+  const [autoIndexing, setAutoIndexing] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     loadData();
+    checkGoogleConnection();
   }, []);
+
+  const checkGoogleConnection = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if user has Google domains configured (indicates connection)
+      const { data: domains, error } = await supabase
+        .from("google_search_console_domains")
+        .select("id")
+        .limit(1);
+
+      setIsConnected(!error && domains && domains.length > 0);
+    } catch (error) {
+      console.error("Error checking Google connection:", error);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -77,13 +100,65 @@ export function AdminGoogleSearchConsole() {
     }
   };
 
+  const connectGoogle = async () => {
+    setConnecting(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/webmasters https://www.googleapis.com/auth/indexing',
+          redirectTo: `${window.location.origin}/super-admin?tab=gsc`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error("Error connecting Google:", error);
+      toast.error(error.message || "Erreur de connexion Google");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const addDomain = async () => {
+    if (!newDomain.trim()) {
+      toast.error("Domaine requis");
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      const { error } = await supabase
+        .from("google_search_console_domains")
+        .insert({
+          user_id: user.id,
+          domain: newDomain.trim(),
+          verified: false,
+        });
+
+      if (error) throw error;
+
+      toast.success("Domaine ajouté! Vérifiez-le dans Google Search Console.");
+      setNewDomain("");
+      loadData();
+    } catch (error: any) {
+      console.error("Error adding domain:", error);
+      toast.error(error.message || "Erreur lors de l'ajout du domaine");
+    }
+  };
+
   const requestIndexing = async () => {
     if (!newUrl.trim()) {
       toast.error("URL requise");
       return;
     }
 
-    // Validate URL
     try {
       new URL(newUrl);
     } catch {
@@ -126,7 +201,6 @@ export function AdminGoogleSearchConsole() {
     }
   };
 
-  // Calculate totals
   const totals = gscData.reduce(
     (acc, d) => ({
       clicks: acc.clicks + (d.clicks || 0),
@@ -161,10 +235,27 @@ export function AdminGoogleSearchConsole() {
             Gérez l'indexation et surveillez les performances SEO
           </p>
         </div>
-        <Button variant="outline" onClick={syncGscData}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Synchroniser
-        </Button>
+        <div className="flex gap-2">
+          {!isConnected ? (
+            <Button onClick={connectGoogle} disabled={connecting}>
+              {connecting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Settings2 className="h-4 w-4 mr-2" />
+              )}
+              Connecter Google
+            </Button>
+          ) : (
+            <Badge variant="default" className="flex items-center gap-1 px-3 py-1">
+              <CheckCircle className="h-4 w-4" />
+              Google Connecté
+            </Badge>
+          )}
+          <Button variant="outline" onClick={syncGscData}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Synchroniser
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -222,18 +313,54 @@ export function AdminGoogleSearchConsole() {
         </Card>
       </div>
 
+      {/* Add Domain */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Plus className="h-5 w-5" />
+            Ajouter un Domaine
+          </CardTitle>
+          <CardDescription>
+            Ajoutez un domaine pour le suivi et l'indexation automatique
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="newai.sale ou https://newai.sale"
+              value={newDomain}
+              onChange={(e) => setNewDomain(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={addDomain} disabled={!newDomain.trim()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={autoIndexing}
+              onCheckedChange={setAutoIndexing}
+            />
+            <Label className="cursor-pointer">
+              Indexation automatique des nouvelles pages
+            </Label>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Domains */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Domaines Vérifiés</CardTitle>
+          <CardTitle className="text-lg">Domaines Configurés</CardTitle>
           <CardDescription>
-            Domaines connectés à Google Search Console
+            Domaines suivis pour l'indexation Google
           </CardDescription>
         </CardHeader>
         <CardContent>
           {domains.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">
-              Aucun domaine vérifié. Connectez votre domaine via les paramètres Google.
+              Aucun domaine configuré. Ajoutez votre domaine ci-dessus.
             </p>
           ) : (
             <div className="space-y-2">
@@ -250,7 +377,7 @@ export function AdminGoogleSearchConsole() {
                     {domain.verified ? (
                       <><CheckCircle className="h-3 w-3 mr-1" /> Vérifié</>
                     ) : (
-                      <><XCircle className="h-3 w-3 mr-1" /> Non vérifié</>
+                      <><XCircle className="h-3 w-3 mr-1" /> En attente</>
                     )}
                   </Badge>
                 </div>
