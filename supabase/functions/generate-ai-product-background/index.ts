@@ -13,6 +13,7 @@ interface GenerationRequest {
   seoTitle?: string;
   seoDescription?: string;
   visionAiData?: any;
+  serpData?: any; // SERP/competitor inspiration data
   productId: string;
   imageId: string;
   prompt: string;
@@ -109,6 +110,7 @@ serve(async (req) => {
       seoTitle,
       seoDescription,
       visionAiData,
+      serpData,
       productId,
       imageId,
       prompt,
@@ -141,6 +143,20 @@ serve(async (req) => {
 
     if (visionAiData?.description) {
       productContext += `. Visual analysis: ${visionAiData.description.slice(0, 150)}`;
+    }
+
+    // Enrich with SERP/competitor data for better context
+    if (serpData) {
+      if (serpData.dimensions) {
+        productContext += `. Dimensions: ${serpData.dimensions}`;
+      }
+      if (serpData.materials?.length > 0) {
+        productContext += `. Materials: ${serpData.materials.slice(0, 3).join(", ")}`;
+      }
+      if (serpData.dominantStyles?.length > 0) {
+        productContext += `. Styles inspirants: ${serpData.dominantStyles.slice(0, 2).join(", ")}`;
+      }
+      console.log(`[ai-bg-gen] 🔍 SERP data enrichment applied`);
     }
 
     console.log(`🎨 Generating AI background for: ${productTitle} (${targetType})`);

@@ -1085,6 +1085,7 @@ export default function ProductTitleDescription() {
               seoTitle: product.seo_title,
               seoDescription: product.seo_description,
               visionAiData: product.vision_ai_data,
+              serpData: (product as any).serp_data,
               productId: product.id,
               imageId: imageId || product.id,
               prompt: config.prompt,
