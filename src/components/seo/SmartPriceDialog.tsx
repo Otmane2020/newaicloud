@@ -162,28 +162,39 @@ export function SmartPriceDialog({
               </div>
 
               {/* Price Statistics */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                 <div className="p-2 sm:p-4 bg-muted rounded-lg text-center">
                   <p className="text-xs text-muted-foreground mb-1">Prix Min</p>
                   <p className="text-sm sm:text-lg font-bold">{formatPrice(result.pricing.min)}</p>
                 </div>
+                <div className="p-2 sm:p-4 bg-blue-500/10 rounded-lg text-center border border-blue-500/30">
+                  <p className="text-xs text-muted-foreground mb-1">Market Price</p>
+                  <p className="text-sm sm:text-lg font-bold text-blue-600">{formatPrice(result.marketPrice || result.pricing.median)}</p>
+                  <p className="text-xs text-muted-foreground">(Médiane marché)</p>
+                </div>
                 <div className="p-2 sm:p-4 bg-muted rounded-lg text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Médiane</p>
-                  <p className="text-sm sm:text-lg font-bold">{formatPrice(result.pricing.median)}</p>
-                </div>
-                <div className="p-2 sm:p-4 bg-primary/10 rounded-lg text-center border-2 border-primary col-span-2 sm:col-span-1">
-                  <p className="text-xs text-muted-foreground mb-1">Prix Recommandé</p>
-                  <p className="text-lg sm:text-xl font-bold text-primary">{formatPrice(result.pricing.recommendedPrice)}</p>
-                  {currentPrice && result.pricing.recommendedPrice && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {currentPrice > result.pricing.recommendedPrice ? "+" : ""}
-                      {((currentPrice - result.pricing.recommendedPrice) / result.pricing.recommendedPrice * 100).toFixed(0)}% vs actuel
-                    </p>
-                  )}
-                </div>
-                <div className="p-2 sm:p-4 bg-muted rounded-lg text-center col-span-2 sm:col-span-1">
                   <p className="text-xs text-muted-foreground mb-1">Prix Max</p>
                   <p className="text-sm sm:text-lg font-bold">{formatPrice(result.pricing.max)}</p>
+                </div>
+              </div>
+
+              {/* Smart Price - Highlighted */}
+              <div className="p-4 bg-primary/10 rounded-lg border-2 border-primary">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Smart Price (Recommandé)</p>
+                    <p className="text-2xl font-bold text-primary">{formatPrice(result.smartPrice || result.pricing.recommendedPrice)}</p>
+                    {currentPrice && (result.smartPrice || result.pricing.recommendedPrice) && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {currentPrice > (result.smartPrice || result.pricing.recommendedPrice!) ? "+" : ""}
+                        {((currentPrice - (result.smartPrice || result.pricing.recommendedPrice!)) / (result.smartPrice || result.pricing.recommendedPrice!) * 100).toFixed(0)}% vs actuel ({formatPrice(currentPrice)})
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <Badge variant="secondary" className="mb-1">Pondéré</Badge>
+                    <p className="text-xs text-muted-foreground">basé sur similarité</p>
+                  </div>
                 </div>
               </div>
 
