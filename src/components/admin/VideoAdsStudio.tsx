@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Video, Sparkles, Settings, Plus, Film } from "lucide-react";
+import { Video, Sparkles, Settings, Plus, Film, Wand2 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 import { ClipLibrary } from "./video-ads/ClipLibrary";
 import { StoryboardEditor } from "./video-ads/StoryboardEditor";
@@ -13,6 +13,7 @@ import { ScriptGenerator } from "./video-ads/ScriptGenerator";
 import { ProVideoTimeline } from "./video-ads/ProVideoTimeline";
 import { AnimationsPanel } from "./video-ads/AnimationsPanel";
 import { ExportPanel } from "./video-ads/ExportPanel";
+import { AIVideoGenerator } from "./video-ads/AIVideoGenerator";
 import { useToast } from "@/hooks/use-toast";
 
 interface VideoClip {
@@ -120,6 +121,19 @@ export default function VideoAdsStudio() {
     toast({ title: "Clip ajouté à la timeline" });
   };
 
+  // Handle AI generated video
+  const handleAIVideoGenerated = (videoUrl: string, title: string) => {
+    const newClip: VideoClip = {
+      id: `ai-${Date.now()}`,
+      title: title || "AI Generated",
+      file_url: videoUrl,
+      duration_seconds: 4,
+      category: "ai-generated",
+    };
+    setSelectedClip(newClip);
+    handleAddToTimeline(newClip);
+  };
+
   // Handle timeline reorder
   const handleTimelineReorder = (clips: TimelineClip[]) => {
     setTimelineClips(clips);
@@ -179,6 +193,7 @@ export default function VideoAdsStudio() {
           </div>
         </div>
         <div className="flex gap-2">
+          <AIVideoGenerator onVideoGenerated={handleAIVideoGenerated} />
           <Button variant="outline" size="sm" className="gap-2">
             <Settings className="w-4 h-4" />
             Paramètres

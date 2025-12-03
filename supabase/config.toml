@@ -473,6 +473,9 @@ verify_jwt = true
 [functions.generate-video-script]
 verify_jwt = true
 
+[functions.generate-video-clip]
+verify_jwt = true
+
 [functions.fetch-file-content]
 verify_jwt = true
 
