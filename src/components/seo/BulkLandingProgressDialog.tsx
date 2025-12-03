@@ -268,28 +268,28 @@ export function BulkLandingProgressDialog({
     
     // Use local counter instead of stale previews state
     if (localSuccessCount > 0) {
-      toast.success(`${localSuccessCount} landing page(s) générée(s) avec succès`);
+      toast.success(t.dialogs.bulkLanding.success.replace('{{count}}', String(localSuccessCount)));
     }
   };
 
   const handleCancel = () => {
     cancelledRef.current = true;
-    toast.info('Génération annulée');
+    toast.info(t.dialogs.bulkLanding.cancelled);
   };
 
   const handleSyncToShopify = async () => {
     const successfulIds = previews.filter(p => p.status === 'success').map(p => p.productId);
     if (successfulIds.length === 0) {
-      toast.error('Aucune landing page à synchroniser');
+      toast.error(t.dialogs.bulkLanding.noneToSync);
       return;
     }
 
     setSyncingToShopify(true);
-    const toastId = toast.loading(`Synchronisation de ${successfulIds.length} produit(s) vers Shopify...`);
+    const toastId = toast.loading(t.dialogs.bulkLanding.syncing.replace('{{count}}', String(successfulIds.length)));
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Session non trouvée');
+      if (!session) throw new Error(t.dialogs.bulkLanding.sessionNotFound);
 
       const { data, error } = await supabase.functions.invoke('sync-seo-to-shopify', {
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -302,12 +302,12 @@ export function BulkLandingProgressDialog({
 
       if (error) throw error;
 
-      toast.success(`${data.successCount || successfulIds.length} produit(s) synchronisé(s) avec Shopify`, { id: toastId });
+      toast.success(t.dialogs.bulkLanding.synced.replace('{{count}}', String(data.successCount || successfulIds.length)), { id: toastId });
       onComplete();
       onOpenChange(false);
     } catch (error) {
       console.error('Sync error:', error);
-      toast.error('Erreur lors de la synchronisation', { id: toastId });
+      toast.error(t.dialogs.bulkLanding.syncError, { id: toastId });
     } finally {
       setSyncingToShopify(false);
     }
@@ -332,11 +332,11 @@ export function BulkLandingProgressDialog({
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <DialogTitle>Génération Bulk de Landing Pages</DialogTitle>
+                <DialogTitle>{t.dialogs.bulkLanding.title}</DialogTitle>
                 <DialogDescription>
                   {isProcessing 
-                    ? `Génération en cours... ${completedCount}/${products.length}`
-                    : `${successCount} landing page(s) générée(s) sur ${products.length}`
+                    ? t.dialogs.bulkLanding.generating.replace('{{current}}', String(completedCount)).replace('{{total}}', String(products.length))
+                    : t.dialogs.bulkLanding.generated.replace('{{success}}', String(successCount)).replace('{{total}}', String(products.length))
                   }
                 </DialogDescription>
               </div>
@@ -347,7 +347,7 @@ export function BulkLandingProgressDialog({
           <div className="space-y-2">
             <Progress value={progressPercent} className="h-2" />
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>{completedCount} / {products.length} traités</span>
+              <span>{completedCount} / {products.length} {t.dialogs.bulkLanding.processed}</span>
               <span className="font-medium text-primary">{Math.round(progressPercent)}%</span>
             </div>
           </div>
@@ -389,12 +389,12 @@ export function BulkLandingProgressDialog({
                   {/* Status */}
                   <div className="flex items-center gap-2">
                     {preview.status === 'pending' && (
-                      <Badge variant="outline" className="text-xs">En attente</Badge>
+                      <Badge variant="outline" className="text-xs">{t.dialogs.bulkLanding.pending}</Badge>
                     )}
                     {preview.status === 'generating' && (
                       <Badge variant="outline" className="text-xs gap-1">
                         <Loader2 className="w-3 h-3 animate-spin" />
-                        Génération...
+                        {t.dialogs.bulkLanding.generatingStatus}
                       </Badge>
                     )}
                     {preview.status === 'success' && (
@@ -409,14 +409,14 @@ export function BulkLandingProgressDialog({
                         </Button>
                         <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs gap-1">
                           <Check className="w-3 h-3" />
-                          Généré
+                          {t.dialogs.bulkLanding.generatedStatus}
                         </Badge>
                       </>
                     )}
                     {preview.status === 'error' && (
                       <Badge variant="outline" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs gap-1">
                         <X className="w-3 h-3" />
-                        Erreur
+                        {t.dialogs.bulkLanding.errorStatus}
                       </Badge>
                     )}
                   </div>
@@ -430,11 +430,11 @@ export function BulkLandingProgressDialog({
               {isProcessing ? (
                 <Button variant="outline" onClick={handleCancel}>
                   <X className="w-4 h-4 mr-2" />
-                  Annuler
+                  {t.dialogs.bulkLanding.cancel}
                 </Button>
               ) : (
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Fermer
+                  {t.dialogs.bulkLanding.close}
                 </Button>
               )}
             </div>
@@ -450,7 +450,7 @@ export function BulkLandingProgressDialog({
                 ) : (
                   <Upload className="w-4 h-4 mr-2" />
                 )}
-                Sync Shopify ({successCount})
+                {t.dialogs.bulkLanding.syncShopify} ({successCount})
               </Button>
             )}
           </DialogFooter>
@@ -461,7 +461,7 @@ export function BulkLandingProgressDialog({
       <Dialog open={!!previewHtml} onOpenChange={() => setPreviewHtml(null)}>
         <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Aperçu: {previewProductTitle}</DialogTitle>
+            <DialogTitle>{t.dialogs.bulkLanding.previewTitle.replace('{{title}}', previewProductTitle)}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto border rounded-lg bg-white">
             <iframe

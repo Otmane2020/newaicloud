@@ -12,6 +12,7 @@ import { TemplateSelector } from "./templates/TemplateSelector";
 import { TemplatePreview } from "./templates/TemplatePreview";
 import { SOCIAL_TEMPLATES, SocialTemplate } from "./templates/socialTemplates";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useTranslation } from "@/lib/language";
 
 interface CreatePostDialogProps {
   userId?: string;
@@ -21,6 +22,7 @@ interface CreatePostDialogProps {
 }
 
 const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDialogProps) => {
+  const { t, language } = useTranslation();
   const [contentType, setContentType] = useState<'product' | 'collection' | 'article'>('product');
   const [contentId, setContentId] = useState('');
   const [caption, setCaption] = useState('');
@@ -76,7 +78,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
 
   const generateCaption = async () => {
     if (!contentId) {
-      toast.error('Sélectionnez un contenu');
+      toast.error(t.dialogs.createPost.selectContentFirst);
       return;
     }
 
@@ -98,7 +100,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
             templateStyle: selectedTemplate?.id || 'product_spotlight',
             channels,
             includeLink,
-            language: 'fr',
+            language: language,
           }),
         }
       );
@@ -110,9 +112,9 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
         if (data.imageUrl) {
           setImageUrl(data.imageUrl);
         }
-        toast.success('Légende générée !');
+        toast.success(t.dialogs.createPost.captionGenerated);
       } else {
-        throw new Error(data.error || 'Erreur de génération');
+        throw new Error(data.error || t.dialogs.createPost.generationError);
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -139,12 +141,12 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
 
   const savePost = async () => {
     if (!contentId || !caption) {
-      toast.error('Sélectionnez un contenu et ajoutez une légende');
+      toast.error(t.dialogs.createPost.addCaptionAndContent);
       return;
     }
 
     if (channels.length === 0) {
-      toast.error('Sélectionnez au moins un canal');
+      toast.error(t.dialogs.createPost.selectAtLeastOneChannel);
       return;
     }
 
@@ -176,7 +178,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
         .insert(postData);
 
       if (error) throw error;
-      toast.success('Post créé !');
+      toast.success(t.dialogs.createPost.postCreated);
       onCreated();
     } catch (error: any) {
       toast.error(error.message);
@@ -202,31 +204,31 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Créer un post social</DialogTitle>
+          <DialogTitle>{t.dialogs.createPost.title}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Content Type */}
           <div className="space-y-2">
-            <Label>Type de contenu</Label>
+            <Label>{t.dialogs.createPost.contentType}</Label>
             <Select value={contentType} onValueChange={(v: any) => { setContentType(v); setContentId(''); }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="product">🏷️ Produit</SelectItem>
-                <SelectItem value="collection">📁 Collection</SelectItem>
-                <SelectItem value="article">📝 Article</SelectItem>
+                <SelectItem value="product">🏷️ {t.dialogs.createPost.product}</SelectItem>
+                <SelectItem value="collection">📁 {t.dialogs.createPost.collection}</SelectItem>
+                <SelectItem value="article">📝 {t.dialogs.createPost.article}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Content Selection */}
           <div className="space-y-2">
-            <Label>Sélectionner le contenu</Label>
+            <Label>{t.dialogs.createPost.selectContent}</Label>
             <Select value={contentId} onValueChange={handleContentSelect}>
               <SelectTrigger>
-                <SelectValue placeholder="Choisir..." />
+                <SelectValue placeholder={t.dialogs.createPost.choose} />
               </SelectTrigger>
               <SelectContent>
                 {getContentOptions().map((item) => (
@@ -241,7 +243,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
           {/* Image Preview */}
           {imageUrl && (
             <div className="space-y-2">
-              <Label>Image</Label>
+              <Label>{t.dialogs.createPost.image}</Label>
               <div className="aspect-video bg-muted rounded-lg overflow-hidden">
                 <img
                   src={imageUrl}
@@ -255,7 +257,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
           {/* Caption */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Légende</Label>
+              <Label>{t.dialogs.createPost.caption}</Label>
               <Button
                 variant="outline"
                 size="sm"
@@ -267,13 +269,13 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
                 ) : (
                   <Wand2 className="h-4 w-4 mr-2" />
                 )}
-                Générer avec IA
+                {t.dialogs.createPost.generateWithAI}
               </Button>
             </div>
             <Textarea
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              placeholder="Écrivez votre légende..."
+              placeholder={t.dialogs.createPost.writeCaptionPlaceholder}
               rows={4}
             />
           </div>
@@ -284,7 +286,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
               <CollapsibleTrigger asChild>
                 <Button variant="outline" className="w-full justify-between">
                   <span className="flex items-center gap-2">
-                    🎨 Template: {selectedTemplate?.name || 'Sélectionner'}
+                    🎨 {t.dialogs.createPost.template}: {selectedTemplate ? (language === 'fr' ? selectedTemplate.name : selectedTemplate.nameEn) : t.dialogs.createPost.selectTemplate}
                   </span>
                   {showTemplates ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
@@ -300,8 +302,8 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
                     size="small"
                   />
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{selectedTemplate.name}</p>
-                    <p className="text-xs text-muted-foreground">{selectedTemplate.description}</p>
+                    <p className="text-sm font-medium">{language === 'fr' ? selectedTemplate.name : selectedTemplate.nameEn}</p>
+                    <p className="text-xs text-muted-foreground">{language === 'fr' ? selectedTemplate.description : selectedTemplate.descriptionEn}</p>
                   </div>
                 </div>
               )}
@@ -317,7 +319,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
                     productImage={imageUrl}
                     productTitle={getContentOptions().find(c => c.id === contentId)?.title}
                     contentType={contentType}
-                    language="fr"
+                    language={language}
                   />
                 </div>
               </CollapsibleContent>
@@ -326,7 +328,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
 
           {/* Channels */}
           <div className="space-y-2">
-            <Label>Canaux de publication</Label>
+            <Label>{t.dialogs.createPost.channels}</Label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
@@ -340,7 +342,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
                   }}
                 />
                 <Facebook className="h-4 w-4 text-blue-600" />
-                Facebook (3 crédits)
+                {t.dialogs.createPost.facebookCredits}
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
@@ -354,7 +356,7 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
                   }}
                 />
                 <Instagram className="h-4 w-4 text-pink-600" />
-                Instagram (3 crédits)
+                {t.dialogs.createPost.instagramCredits}
               </label>
             </div>
           </div>
@@ -365,19 +367,19 @@ const CreatePostDialog = ({ userId, storeId, onClose, onCreated }: CreatePostDia
               checked={includeLink}
               onCheckedChange={(checked) => setIncludeLink(!!checked)}
             />
-            Inclure le lien vers le produit/article
+            {t.dialogs.createPost.includeProductLink}
           </label>
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
             <Button variant="outline" onClick={onClose} className="flex-1">
-              Annuler
+              {t.dialogs.createPost.cancel}
             </Button>
             <Button onClick={savePost} disabled={saving || !contentId || !caption} className="flex-1">
               {saving ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : null}
-              Créer le post
+              {t.dialogs.createPost.createPost}
             </Button>
           </div>
         </div>
