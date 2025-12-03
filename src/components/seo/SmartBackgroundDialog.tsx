@@ -116,6 +116,13 @@ export const SmartBackgroundDialog = ({
   const [applyPosition, setApplyPosition] = useState<'main' | 'secondary'>('main');
   // 🆕 Custom prompt for additional user instructions
   const [customPrompt, setCustomPrompt] = useState('');
+  // 🆕 Apply/Sync progress tracking
+  const [isApplying, setIsApplying] = useState(false);
+  const [applyProgress, setApplyProgress] = useState<{ 
+    current: number; 
+    total: number; 
+    items: Map<string, { title: string; status: 'pending' | 'syncing' | 'success' | 'error'; error?: string }>;
+  }>({ current: 0, total: 0, items: new Map() });
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
 
@@ -434,12 +441,33 @@ export const SmartBackgroundDialog = ({
   const handleApplyAll = async () => {
     if (generatedPreviews.size === 0) return;
 
+    // Initialize progress tracking
+    const itemsToProcess = Array.from(generatedPreviews.entries());
+    const initialItems = new Map<string, { title: string; status: 'pending' | 'syncing' | 'success' | 'error'; error?: string }>();
+    
+    for (const [productId] of itemsToProcess) {
+      const product = selectedProducts.find((p) => p.id === productId);
+      if (product) {
+        initialItems.set(productId, { title: product.title, status: 'pending' });
+      }
+    }
+    
+    setApplyProgress({ current: 0, total: itemsToProcess.length, items: initialItems });
+    setIsApplying(true);
     setIsGenerating(true);
     const newApplied = new Set<string>();
+    let completedCount = 0;
 
-    for (const [productId, generatedImageUrl] of generatedPreviews) {
+    for (const [productId, generatedImageUrl] of itemsToProcess) {
       const product = selectedProducts.find((p) => p.id === productId);
       if (!product) continue;
+
+      // Update status to syncing
+      setApplyProgress(prev => {
+        const newItems = new Map(prev.items);
+        newItems.set(productId, { title: product.title, status: 'syncing' });
+        return { ...prev, items: newItems };
+      });
 
       try {
         // Get the selected source image for this product
@@ -480,37 +508,68 @@ export const SmartBackgroundDialog = ({
             aiModel: 'gemini-2.5-flash-image-preview',
             resolution: '2000x2000',
             qualityScore: 95,
-            applyAsMain: applyPosition === 'main', // 🆕 Pass position choice
+            applyAsMain: applyPosition === 'main',
           });
+          
           newApplied.add(productId);
+          completedCount++;
+          
+          // Update status to success
+          setApplyProgress(prev => {
+            const newItems = new Map(prev.items);
+            newItems.set(productId, { title: product.title, status: 'success' });
+            return { current: completedCount, total: prev.total, items: newItems };
+          });
         } else {
           console.warn(`[SmartBg] No image found for product ${product.title}`);
+          completedCount++;
+          setApplyProgress(prev => {
+            const newItems = new Map(prev.items);
+            newItems.set(productId, { title: product.title, status: 'error', error: 'No image found' });
+            return { current: completedCount, total: prev.total, items: newItems };
+          });
         }
       } catch (error) {
         console.error('Error applying background for', product.title, error);
+        completedCount++;
+        setApplyProgress(prev => {
+          const newItems = new Map(prev.items);
+          newItems.set(productId, { 
+            title: product.title, 
+            status: 'error', 
+            error: error instanceof Error ? error.message : 'Sync failed' 
+          });
+          return { current: completedCount, total: prev.total, items: newItems };
+        });
       }
+      
+      // Small delay between items
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
     setAppliedProducts(newApplied);
     setIsGenerating(false);
     
-    // Show success and close dialog
-    if (newApplied.size > 0) {
-      toast.success(sb.backgroundsApplied.replace('{{count}}', String(newApplied.size)), {
-        description: sb.appliedDescription,
-        duration: 5000,
-      });
+    // Keep progress dialog open for 2 seconds after completion, then close
+    setTimeout(() => {
+      setIsApplying(false);
       
-      // Small delay to allow user to see the toast before closing
-      setTimeout(() => {
-        onOpenChange(false);
-        onComplete?.();
-      }, 800);
-    } else {
-      toast.warning(sb.noImageApplied, {
-        description: sb.checkGeneration
-      });
-    }
+      if (newApplied.size > 0) {
+        toast.success(sb.backgroundsApplied.replace('{{count}}', String(newApplied.size)), {
+          description: sb.appliedDescription,
+          duration: 5000,
+        });
+        
+        setTimeout(() => {
+          onOpenChange(false);
+          onComplete?.();
+        }, 500);
+      } else {
+        toast.warning(sb.noImageApplied, {
+          description: sb.checkGeneration
+        });
+      }
+    }, 2000);
   };
 
   const handleViewOnline = (product: Product) => {
@@ -1086,6 +1145,87 @@ export const SmartBackgroundDialog = ({
               {sb.close}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Apply/Sync Progress Dialog */}
+      <Dialog open={isApplying} onOpenChange={() => {}}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              {language === 'fr' ? 'Synchronisation en cours...' : 'Syncing in progress...'}
+            </DialogTitle>
+            <DialogDescription>
+              {language === 'fr' 
+                ? `Application et synchronisation des images (${applyProgress.current}/${applyProgress.total})`
+                : `Applying and syncing images (${applyProgress.current}/${applyProgress.total})`
+              }
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Progress Bar */}
+            <div className="space-y-2">
+              <Progress 
+                value={applyProgress.total > 0 ? (applyProgress.current / applyProgress.total) * 100 : 0} 
+                className="h-2" 
+              />
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>{applyProgress.current} / {applyProgress.total}</span>
+                <span className="font-medium text-primary">
+                  {applyProgress.total > 0 ? Math.round((applyProgress.current / applyProgress.total) * 100) : 0}%
+                </span>
+              </div>
+            </div>
+
+            {/* Product List */}
+            <ScrollArea className="max-h-[300px]">
+              <div className="space-y-2">
+                {Array.from(applyProgress.items.entries()).map(([productId, item]) => (
+                  <div 
+                    key={productId}
+                    className={`flex items-center gap-3 p-2 rounded-lg border transition-colors ${
+                      item.status === 'syncing' ? 'bg-primary/5 border-primary/30' :
+                      item.status === 'success' ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' :
+                      item.status === 'error' ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800' :
+                      'bg-muted/30 border-border'
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.title}</p>
+                      {item.error && (
+                        <p className="text-xs text-red-600 dark:text-red-400 truncate">{item.error}</p>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0">
+                      {item.status === 'pending' && (
+                        <Badge variant="outline" className="text-xs">{language === 'fr' ? 'En attente' : 'Pending'}</Badge>
+                      )}
+                      {item.status === 'syncing' && (
+                        <Badge variant="outline" className="text-xs gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          {language === 'fr' ? 'Sync...' : 'Syncing...'}
+                        </Badge>
+                      )}
+                      {item.status === 'success' && (
+                        <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs gap-1">
+                          <Check className="w-3 h-3" />
+                          {language === 'fr' ? 'OK' : 'Done'}
+                        </Badge>
+                      )}
+                      {item.status === 'error' && (
+                        <Badge variant="outline" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs gap-1">
+                          <X className="w-3 h-3" />
+                          {language === 'fr' ? 'Erreur' : 'Error'}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
     </>
