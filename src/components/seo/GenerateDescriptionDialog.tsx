@@ -5,6 +5,7 @@ import { Loader2, Sparkles, Eye, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslation } from '@/lib/language';
 
 interface GenerateDescriptionDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ export function GenerateDescriptionDialog({
   collectionHandle,
   onSuccess,
 }: GenerateDescriptionDialogProps) {
+  const { t } = useTranslation();
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generatedDescription, setGeneratedDescription] = useState<string>('');
@@ -42,20 +44,20 @@ export function GenerateDescriptionDialog({
 
       if (data.results?.[0]?.body_html) {
         setGeneratedDescription(data.results[0].body_html);
-        toast.success('Description générée avec succès');
+        toast.success(t.dialogs.generateDescription.success);
       } else {
-        throw new Error('Aucune description générée');
+        throw new Error(t.dialogs.generateDescription.noDescription);
       }
     } catch (error: any) {
       console.error('Error generating description:', error);
       
       // Handle specific error messages
       if (error.message?.includes('limit')) {
-        toast.error('Limite atteinte', {
-          description: 'Vous avez atteint votre limite d\'optimisations'
+        toast.error(t.dialogs.generateDescription.limitReached, {
+          description: t.dialogs.generateDescription.limitDesc
         });
       } else {
-        toast.error('Erreur lors de la génération', {
+        toast.error(t.dialogs.generateDescription.error, {
           description: error.message
         });
       }
@@ -75,12 +77,12 @@ export function GenerateDescriptionDialog({
 
       if (error) throw error;
 
-      toast.success('Description enregistrée');
+      toast.success(t.dialogs.generateDescription.saved);
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error saving description:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      toast.error(t.dialogs.generateDescription.saveError);
     } finally {
       setSaving(false);
     }
@@ -95,7 +97,7 @@ export function GenerateDescriptionDialog({
           </div>
           <div className="flex-1">
             <DialogTitle className="text-xl font-bold mb-1">
-              Générer une description
+              {t.dialogs.generateDescription.title}
             </DialogTitle>
             <DialogDescription className="text-sm">
               {collectionTitle}
@@ -110,7 +112,7 @@ export function GenerateDescriptionDialog({
                 <Sparkles className="w-8 h-8 text-muted-foreground" />
               </div>
               <p className="text-center text-muted-foreground max-w-md">
-                Cliquez sur le bouton ci-dessous pour générer automatiquement une description optimisée pour cette collection.
+                {t.dialogs.generateDescription.placeholder}
               </p>
               <Button
                 onClick={handleGenerate}
@@ -121,12 +123,12 @@ export function GenerateDescriptionDialog({
                 {generating ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Génération en cours...
+                    {t.dialogs.generateDescription.generating}
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Générer la description
+                    {t.dialogs.generateDescription.generate}
                   </>
                 )}
               </Button>
@@ -136,10 +138,10 @@ export function GenerateDescriptionDialog({
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="preview">
                   <Eye className="w-4 h-4 mr-2" />
-                  Aperçu
+                  {t.dialogs.generateDescription.preview}
                 </TabsTrigger>
                 <TabsTrigger value="html">
-                  Code HTML
+                  {t.dialogs.generateDescription.htmlCode}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="preview" className="flex-1 overflow-auto border rounded-lg p-4">
@@ -168,12 +170,12 @@ export function GenerateDescriptionDialog({
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Enregistrement...
+                  {t.dialogs.generateDescription.saving}
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Enregistrer la description
+                  {t.dialogs.generateDescription.save}
                 </>
               )}
             </Button>
@@ -183,7 +185,7 @@ export function GenerateDescriptionDialog({
             variant="outline"
             className="w-full"
           >
-            Fermer
+            {t.dialogs.generateDescription.close}
           </Button>
         </div>
       </DialogContent>

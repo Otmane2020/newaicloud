@@ -595,7 +595,7 @@ export function CollectionOptimization() {
             .in('id', collectionsToOptimize.map(c => c.id));
           
           setOptimizedCollections((freshCollections || []) as Collection[]);
-          toast.success(`✅ ${results.success} collection(s) optimisée(s)`);
+          toast.success(tf('collections.optimization.messages.collectionsOptimizedCount', { count: results.success }));
           
           setTimeout(() => {
             setShowResultsDialog(true);
@@ -643,7 +643,7 @@ export function CollectionOptimization() {
         await fetchCollections();
         setCollectionsToSync([]);
         if (results.success > 0) {
-          toast.success(`✅ ${results.success} collection(s) synchronisée(s) avec Shopify`);
+          toast.success(tf('collections.optimization.messages.syncedToShopify', { count: results.success }));
         }
       }
     );
@@ -653,7 +653,7 @@ export function CollectionOptimization() {
     const allOptimized = collections.filter(c => c.optimization_count && c.optimization_count > 0);
     
     if (allOptimized.length === 0) {
-      toast.error('Aucune collection optimisée à synchroniser');
+      toast.error(t.toasts.collections.import.noActiveConnection);
       return;
     }
 
@@ -689,7 +689,7 @@ export function CollectionOptimization() {
       async (results) => {
         await fetchCollections();
         if (results.success > 0) {
-          toast.success(`✅ ${results.success} collection(s) synchronisée(s) avec Shopify`);
+          toast.success(tf('collections.optimization.messages.syncedToShopify', { count: results.success }));
         }
       }
     );
@@ -698,17 +698,17 @@ export function CollectionOptimization() {
   const handleSyncProductCollections = async () => {
     try {
       setSyncing(true);
-      const toastId = toast.loading('Synchronisation des liens produits-collections...');
+      const toastId = toast.loading(t.toasts.collections.syncProgress.replace('{{count}}', '').replace('{{time}}', ''));
 
       const { data, error } = await supabase.functions.invoke('sync-product-collections');
 
       if (error) throw error;
 
-      toast.success(`${data.updated_count || 0} produits mis à jour`, { id: toastId });
+      toast.success(tf('toasts.collections.import.importSuccess', { count: data.updated_count || 0 }), { id: toastId });
       await fetchCollections();
     } catch (error: any) {
       console.error('Error syncing product collections:', error);
-      toast.error(error.message || 'Erreur lors de la synchronisation');
+      toast.error(error.message || t.toasts.collections.syncError);
     } finally {
       setSyncing(false);
     }
@@ -719,11 +719,11 @@ export function CollectionOptimization() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error("Non authentifié");
+        toast.error(t.toasts.common.notAuthenticated);
         return;
       }
 
-      const toastId = toast.loading("Import des collections depuis Shopify...");
+      const toastId = toast.loading(t.toasts.info.importing);
 
       const { data, error } = await supabase.functions.invoke("import-shopify-collections", {
         headers: {
@@ -733,7 +733,7 @@ export function CollectionOptimization() {
 
       if (error) throw error;
 
-      toast.success(`✅ ${data.imported} collections importées!`, {
+      toast.success(tf('toasts.collections.import.importSuccess', { count: data.imported }), {
         id: toastId,
         description: `Smart: ${data.smart_collections}, Custom: ${data.custom_collections}`,
       });
@@ -741,7 +741,7 @@ export function CollectionOptimization() {
       fetchCollections();
     } catch (error: any) {
       console.error("Error importing collections:", error);
-      toast.error("Erreur lors de l'import", {
+      toast.error(t.toasts.error.loading, {
         description: error.message,
       });
     } finally {
@@ -752,10 +752,10 @@ export function CollectionOptimization() {
   const handleImportCollections = async () => {
     try {
       setSyncing(true);
-      const toastId = toast.loading('Import des images de collections depuis Shopify...');
+      const toastId = toast.loading(t.toasts.info.importing);
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
+      if (!user) throw new Error(t.toasts.common.notAuthenticated);
 
       const { data: storeData } = await supabase
         .from('shopify_connections')
@@ -765,7 +765,7 @@ export function CollectionOptimization() {
         .single();
 
       if (!storeData) {
-        toast.error("Aucune connexion Shopify active", { id: toastId });
+        toast.error(t.toasts.collections.import.noActiveConnection, { id: toastId });
         return;
       }
 
@@ -776,11 +776,11 @@ export function CollectionOptimization() {
       if (error) throw error;
 
       const totalImported = data?.totalImported || 0;
-      toast.success(`✅ ${totalImported} images importées`, { id: toastId });
+      toast.success(tf('toasts.collections.import.importSuccess', { count: totalImported }), { id: toastId });
       await fetchCollections();
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || "Échec de l'import");
+      toast.error(error.message || t.toasts.error.loading);
     } finally {
       setSyncing(false);
     }
@@ -801,9 +801,9 @@ export function CollectionOptimization() {
     return (
       <Alert className="m-6">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Aucune boutique sélectionnée</AlertTitle>
+        <AlertTitle>{t.collections.noStoreSelected}</AlertTitle>
         <AlertDescription>
-          Veuillez sélectionner une boutique dans le menu en haut pour afficher les collections.
+          {t.collections.selectStoreDescription}
         </AlertDescription>
       </Alert>
     );
@@ -867,7 +867,7 @@ export function CollectionOptimization() {
               <ProgressBanner
                 current={optimizationState.current}
                 total={optimizationState.total}
-                label="Optimisation des collections"
+                label={t.collections.optimization.title}
               />
             ) : (
               <>
@@ -892,7 +892,7 @@ export function CollectionOptimization() {
                     className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                   >
                     <Sparkles className="w-5 h-5" />
-                    {notOptimizedCount > 0 ? t.collections.optimization.optimizeAll : "Ré-optimiser tout"}
+                    {notOptimizedCount > 0 ? t.collections.optimization.optimizeAll : t.collections.reoptimizeAll}
                   </Button>
                 </div>
               </>
