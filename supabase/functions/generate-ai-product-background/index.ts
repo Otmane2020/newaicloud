@@ -636,11 +636,19 @@ Qualité = OBLIGATOIRE.
     const { imageUrl: generatedImageUrl, model: usedModel } = result;
     console.log(`✅ Successfully generated AI background using ${usedModel}`);
 
-    // 🆕 POST-PROCESSING: Force exact format dimensions
+    // 🆕 POST-PROCESSING: ALWAYS Force exact format dimensions (Gemini ignores aspectRatio params)
     let processedImageUrl = generatedImageUrl;
     if (generatedImageUrl.startsWith('data:')) {
-      console.log(`[ai-bg-gen] 📐 Applying post-processing: ${format} (${targetDims.width}x${targetDims.height})`);
-      processedImageUrl = await enforceImageFormat(generatedImageUrl, targetDims.width, targetDims.height);
+      console.log(`[ai-bg-gen] 📐 CRITICAL: Forcing exact format: ${format} → ${targetDims.width}x${targetDims.height}`);
+      try {
+        processedImageUrl = await enforceImageFormat(generatedImageUrl, targetDims.width, targetDims.height);
+        console.log(`[ai-bg-gen] ✅ Format enforcement successful`);
+      } catch (postProcessError) {
+        console.error(`[ai-bg-gen] ⚠️ Post-processing failed, returning original:`, postProcessError);
+        // Continue with original image if post-processing fails
+      }
+    } else {
+      console.warn(`[ai-bg-gen] ⚠️ Cannot post-process non-base64 image - format may not be exact`);
     }
 
     // Save to product_image_history if user is authenticated
