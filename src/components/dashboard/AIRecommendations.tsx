@@ -31,7 +31,7 @@ interface AIRecommendationsProps {
 
 export function AIRecommendations({ stats }: AIRecommendationsProps) {
   const navigate = useNavigate();
-  const { language } = useTranslation();
+  const { t } = useTranslation();
 
   // Generate recommendations based on stats
   const recommendations: Recommendation[] = [];
@@ -44,17 +44,15 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (optimizationRate < 50 && stats.productsCount > 0) {
     recommendations.push({
       id: 'optimize-products',
-      title: language === 'fr' ? 'Optimiser les produits non-SEO' : 'Optimize non-SEO products',
-      description: language === 'fr' 
-        ? `${stats.productsCount - stats.optimizedCount} produits nécessitent une optimisation SEO pour améliorer leur visibilité.`
-        : `${stats.productsCount - stats.optimizedCount} products need SEO optimization to improve visibility.`,
+      title: t.dashboard.recommendations.optimizeNonSeo.title,
+      description: t.dashboard.recommendations.optimizeNonSeo.description.replace('{{count}}', String(stats.productsCount - stats.optimizedCount)),
       priority: 'high',
       category: 'seo',
       action: {
-        label: language === 'fr' ? 'Optimiser maintenant' : 'Optimize now',
+        label: t.dashboard.recommendations.optimizeNonSeo.action,
         route: '/seo?filter=poor',
       },
-      impact: language === 'fr' ? '+30% de trafic organique estimé' : '+30% estimated organic traffic',
+      impact: t.dashboard.recommendations.optimizeNonSeo.impact,
     });
   }
 
@@ -62,17 +60,15 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (stats.productsWithoutAlt > 0) {
     recommendations.push({
       id: 'add-alt-texts',
-      title: language === 'fr' ? 'Ajouter des textes alternatifs aux images' : 'Add alt texts to images',
-      description: language === 'fr'
-        ? `${stats.productsWithoutAlt} images sans texte alternatif. Cela nuit à votre référencement et à l'accessibilité.`
-        : `${stats.productsWithoutAlt} images without alt text. This hurts your SEO and accessibility.`,
+      title: t.dashboard.recommendations.addAltTexts.title,
+      description: t.dashboard.recommendations.addAltTexts.description.replace('{{count}}', String(stats.productsWithoutAlt)),
       priority: 'high',
       category: 'seo',
       action: {
-        label: language === 'fr' ? 'Générer les alt texts' : 'Generate alt texts',
+        label: t.dashboard.recommendations.addAltTexts.action,
         route: '/seo',
       },
-      impact: language === 'fr' ? '+15% de visibilité dans Google Images' : '+15% visibility in Google Images',
+      impact: t.dashboard.recommendations.addAltTexts.impact,
     });
   }
 
@@ -80,17 +76,15 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (stats.seoScore < 70) {
     recommendations.push({
       id: 'improve-seo-score',
-      title: language === 'fr' ? 'Améliorer le score SEO global' : 'Improve global SEO score',
-      description: language === 'fr'
-        ? `Votre score SEO actuel est de ${stats.seoScore}/100. Des améliorations sont possibles pour mieux performer.`
-        : `Your current SEO score is ${stats.seoScore}/100. Improvements are possible to perform better.`,
+      title: t.dashboard.recommendations.improveSeoScore.title,
+      description: t.dashboard.recommendations.improveSeoScore.description.replace('{{score}}', String(stats.seoScore)),
       priority: 'medium',
       category: 'seo',
       action: {
-        label: language === 'fr' ? 'Voir le rapport SEO' : 'View SEO report',
+        label: t.dashboard.recommendations.improveSeoScore.action,
         route: '/seo',
       },
-      impact: language === 'fr' ? 'Meilleur positionnement dans les résultats de recherche' : 'Better ranking in search results',
+      impact: t.dashboard.recommendations.improveSeoScore.impact,
     });
   }
 
@@ -98,17 +92,15 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (stats.articlesCount < 5) {
     recommendations.push({
       id: 'create-blog-content',
-      title: language === 'fr' ? 'Créer du contenu blog régulier' : 'Create regular blog content',
-      description: language === 'fr'
-        ? `Vous avez ${stats.articlesCount} article(s). Publier régulièrement améliore votre autorité et génère du trafic.`
-        : `You have ${stats.articlesCount} article(s). Publishing regularly improves your authority and generates traffic.`,
+      title: t.dashboard.recommendations.createBlogContent.title,
+      description: t.dashboard.recommendations.createBlogContent.description.replace('{{count}}', String(stats.articlesCount)),
       priority: 'medium',
       category: 'content',
       action: {
-        label: language === 'fr' ? 'Générer des articles' : 'Generate articles',
+        label: t.dashboard.recommendations.createBlogContent.action,
         route: '/blog',
       },
-      impact: language === 'fr' ? '+50% de sessions organiques sur 3 mois' : '+50% organic sessions over 3 months',
+      impact: t.dashboard.recommendations.createBlogContent.impact,
     });
   }
 
@@ -116,17 +108,15 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (stats.productsCount > 100 && optimizationRate > 80) {
     recommendations.push({
       id: 'optimize-performance',
-      title: language === 'fr' ? 'Excellent travail SEO !' : 'Excellent SEO work!',
-      description: language === 'fr'
-        ? `${optimizationRate.toFixed(0)}% de vos produits sont optimisés. Continuez sur cette lancée en automatisant vos synchros.`
-        : `${optimizationRate.toFixed(0)}% of your products are optimized. Keep it up by automating your syncs.`,
+      title: t.dashboard.recommendations.excellentWork.title,
+      description: t.dashboard.recommendations.excellentWork.description.replace('{{percent}}', optimizationRate.toFixed(0)),
       priority: 'low',
       category: 'performance',
       action: {
-        label: language === 'fr' ? 'Activer l\'automatisation' : 'Enable automation',
+        label: t.dashboard.recommendations.excellentWork.action,
         route: '/account',
       },
-      impact: language === 'fr' ? 'Gain de temps et cohérence maximale' : 'Time savings and maximum consistency',
+      impact: t.dashboard.recommendations.excellentWork.impact,
     });
   }
 
@@ -134,13 +124,11 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
   if (recommendations.length === 0) {
     recommendations.push({
       id: 'all-good',
-      title: language === 'fr' ? 'Votre boutique est bien optimisée !' : 'Your store is well optimized!',
-      description: language === 'fr'
-        ? 'Continuez à publier du contenu régulièrement et à surveiller vos performances.'
-        : 'Keep publishing content regularly and monitoring your performance.',
+      title: t.dashboard.recommendations.allGood.title,
+      description: t.dashboard.recommendations.allGood.description,
       priority: 'low',
       category: 'performance',
-      impact: language === 'fr' ? 'Maintenir votre excellence SEO' : 'Maintain your SEO excellence',
+      impact: t.dashboard.recommendations.allGood.impact,
     });
   }
 
@@ -160,7 +148,7 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
     <Card className="p-6">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold text-lg">{language === 'fr' ? 'Recommandations IA' : 'AI Recommendations'}</h3>
+        <h3 className="font-semibold text-lg">{t.dashboard.recommendations.title}</h3>
       </div>
 
       <div className="space-y-3">
@@ -178,7 +166,7 @@ export function AIRecommendations({ stats }: AIRecommendationsProps) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-medium">{rec.title}</h4>
                       <Badge variant={priorityColors[rec.priority] as any} className="text-xs">
-                        {rec.priority === 'high' ? 'Urgent' : rec.priority === 'medium' ? 'Important' : 'Info'}
+                        {t.dashboard.recommendations.priority[rec.priority]}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
