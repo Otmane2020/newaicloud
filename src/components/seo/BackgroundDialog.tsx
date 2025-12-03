@@ -15,6 +15,7 @@ import { Loader2, Check, X, RefreshCw, Sparkles, Upload } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/language';
 import {
   Select,
   SelectContent,
@@ -86,6 +87,7 @@ export function BackgroundDialog({
   customPrompt = '',
   onCustomPromptChange,
 }: BackgroundDialogProps) {
+  const { t } = useTranslation();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -143,7 +145,7 @@ export function BackgroundDialog({
     if (selectedIds.size === 0) return;
     
     setApplying(true);
-    const toastId = toast.loading('Application et synchronisation...');
+    const toastId = toast.loading(t.backgroundDialog.applyAndSync);
     
     try {
       await onApply(Array.from(selectedIds));
@@ -193,31 +195,31 @@ export function BackgroundDialog({
       }
       
       if (syncErrors > 0) {
-        toast.error('Images appliquées mais erreurs de synchronisation Shopify', {
+        toast.error(t.backgroundDialog.imagesAppliedSyncPartial, {
           id: toastId,
-          description: `${syncOk} produit(s) synchronisé(s), ${syncErrors} en erreur.`,
+          description: `${syncOk} ${t.backgroundDialog.syncPartial.replace('{successCount}', String(syncOk)).replace('{errorCount}', String(syncErrors))}`,
           duration: 8000,
         });
       } else if (syncSkipped > 0 && syncOk === 0) {
-        toast.warning('Images appliquées localement uniquement', {
+        toast.warning(t.backgroundDialog.imagesLocalOnly, {
           id: toastId,
-          description: 'Les produits ne sont pas encore synchronisés avec Shopify. Exportez-les d\'abord vers Shopify.',
+          description: t.backgroundDialog.imagesLocalOnlyDesc,
           duration: 8000,
         });
       } else if (syncSkipped > 0 && syncOk > 0) {
-        toast.warning('Images partiellement synchronisées', {
+        toast.warning(t.backgroundDialog.partialSync, {
           id: toastId,
-          description: `${syncOk} produit(s) synchronisé(s), ${syncSkipped} produit(s) non exporté(s) vers Shopify.`,
+          description: t.backgroundDialog.partialSyncDesc.replace('{{synced}}', String(syncOk)).replace('{{skipped}}', String(syncSkipped)),
           duration: 8000,
         });
       } else {
-        toast.success(`✅ ${syncOk} image(s) appliquée(s) et synchronisée(s) avec Shopify`, { id: toastId });
+        toast.success(`✅ ${syncOk} ${t.backgroundDialog.imagesApplied}`, { id: toastId });
       }
       
       onOpenChange(false);
     } catch (error: any) {
       console.error('Erreur application:', error);
-      toast.error('Erreur lors de l\'application', { id: toastId });
+      toast.error(t.backgroundDialog.syncError, { id: toastId });
     } finally {
       setApplying(false);
     }
@@ -227,7 +229,7 @@ export function BackgroundDialog({
     if (selectedIds.size === 0) return;
     
     setSyncing(true);
-    const toastId = toast.loading('Synchronisation avec Shopify en cours...');
+    const toastId = toast.loading(t.backgroundDialog.syncInProgress);
     
     try {
       let syncSkipped = 0;
@@ -262,26 +264,26 @@ export function BackgroundDialog({
       }
       
       if (syncErrors > 0) {
-        toast.error('Erreurs de synchronisation Shopify', {
+        toast.error(t.backgroundDialog.syncError, {
           id: toastId,
-          description: `${syncOk} image(s) synchronisée(s), ${syncErrors} en erreur.`,
+          description: `${syncOk} ${t.backgroundDialog.syncPartial.replace('{successCount}', String(syncOk)).replace('{errorCount}', String(syncErrors))}`,
         });
       } else if (syncSkipped > 0 && syncOk === 0) {
-        toast.warning('Aucune image synchronisée', {
+        toast.warning(t.backgroundDialog.noImagesSynced, {
           id: toastId,
-          description: 'Les produits ne sont pas encore connectés à Shopify.',
+          description: t.backgroundDialog.noShopifyConnection,
         });
       } else if (syncSkipped > 0 && syncOk > 0) {
-        toast.warning('Synchronisation partielle', {
+        toast.warning(t.backgroundDialog.partialSync, {
           id: toastId,
-          description: `${syncOk} image(s) synchronisée(s), ${syncSkipped} sans ID Shopify.`,
+          description: t.backgroundDialog.partialSyncDesc.replace('{{synced}}', String(syncOk)).replace('{{skipped}}', String(syncSkipped)),
         });
       } else {
-        toast.success(`✅ ${syncOk} image(s) synchronisée(s) avec Shopify`, { id: toastId });
+        toast.success(`✅ ${syncOk} ${t.backgroundDialog.syncSuccess.replace('{count}', String(syncOk))}`, { id: toastId });
       }
     } catch (error: any) {
       console.error('Erreur synchronisation:', error);
-      toast.error('Erreur lors de la synchronisation', { id: toastId });
+      toast.error(t.backgroundDialog.syncError, { id: toastId });
     } finally {
       setSyncing(false);
     }
@@ -293,21 +295,21 @@ export function BackgroundDialog({
         <DialogHeader className="space-y-2 flex-shrink-0 pb-3 sm:pb-4">
           <DialogTitle className="flex items-center gap-2 text-sm sm:text-base md:text-lg">
             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
-            <span className="line-clamp-1">Prévisualisation des arrière-plans IA</span>
+            <span className="line-clamp-1">{t.backgroundDialog.title}</span>
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Sélectionnez les images à appliquer à vos produits
+            {t.backgroundDialog.description}
           </DialogDescription>
         </DialogHeader>
 
         {/* Prompt Section (optional regenerate) */}
         {onCustomPromptChange && (
           <div className="space-y-2 border-b pb-3 sm:pb-4 flex-shrink-0">
-            <Label className="text-xs sm:text-sm font-medium">Prompt personnalisé</Label>
+            <Label className="text-xs sm:text-sm font-medium">{t.backgroundDialog.customPrompt}</Label>
             <div className="flex flex-col gap-2">
               <Select value={selectedPreset} onValueChange={handlePresetChange}>
                 <SelectTrigger className="w-full text-xs sm:text-sm h-9">
-                  <SelectValue placeholder="Style prédéfini..." />
+                  <SelectValue placeholder={t.backgroundDialog.presetStyle} />
                 </SelectTrigger>
                 <SelectContent>
                   {PRESET_PROMPTS.map((preset) => (
@@ -321,7 +323,7 @@ export function BackgroundDialog({
                 <Textarea
                   value={localPrompt}
                   onChange={(e) => handlePromptChange(e.target.value)}
-                  placeholder="Décrivez l'environnement souhaité..."
+                  placeholder={t.backgroundDialog.describeEnvironment}
                   className="min-h-[50px] sm:min-h-[60px] text-xs sm:text-sm resize-none flex-1"
                 />
                 <Button
@@ -333,7 +335,7 @@ export function BackgroundDialog({
                   }}
                   className="text-xs whitespace-nowrap h-9 px-3"
                 >
-                  Effacer
+                  {t.backgroundDialog.clear}
                 </Button>
               </div>
             </div>
@@ -362,20 +364,20 @@ export function BackgroundDialog({
                     {preview.status === 'generating' && (
                       <Badge variant="outline" className="gap-1 text-xs mt-1">
                         <Loader2 className="w-3 h-3 animate-spin" />
-                        <span className="hidden sm:inline">Génération en cours...</span>
-                        <span className="sm:hidden">En cours...</span>
+                        <span className="hidden sm:inline">{t.backgroundDialog.generating}</span>
+                        <span className="sm:hidden">{t.backgroundDialog.inProgress}</span>
                       </Badge>
                     )}
                     {preview.status === 'success' && (
                       <Badge variant="outline" className="gap-1 bg-green-50 text-green-700 text-xs mt-1">
                         <Check className="w-3 h-3" />
-                        Généré
+                        {t.backgroundDialog.generated}
                       </Badge>
                     )}
                     {preview.status === 'error' && (
                       <Badge variant="outline" className="gap-1 bg-red-50 text-red-700 text-xs mt-1">
                         <X className="w-3 h-3" />
-                        Erreur
+                        {t.backgroundDialog.error}
                       </Badge>
                     )}
                   </div>
@@ -389,14 +391,14 @@ export function BackgroundDialog({
                     className="gap-1 text-[10px] sm:text-xs whitespace-nowrap w-full sm:w-auto h-7 sm:h-8 px-2 sm:px-3"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    Régénérer
+                    {t.backgroundDialog.regenerate}
                   </Button>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <div className="space-y-1 sm:space-y-2">
-                  <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">Original</p>
+                  <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">{t.backgroundDialog.original}</p>
                   <div className="aspect-square bg-muted rounded-md overflow-hidden border">
                     <img
                       src={preview.originalUrl}
@@ -408,7 +410,7 @@ export function BackgroundDialog({
 
                 <div className="space-y-1 sm:space-y-2">
                   <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">
-                    IA
+                    {t.backgroundDialog.ai}
                   </p>
                   <div className="aspect-square bg-muted rounded-md overflow-hidden border">
                     {preview.status === 'generating' && (
@@ -419,7 +421,7 @@ export function BackgroundDialog({
                     {preview.status === 'success' && preview.generatedUrl && (
                       <img
                         src={preview.generatedUrl}
-                        alt="Arrière-plan IA"
+                        alt={t.backgroundDialog.title}
                         className="w-full h-full object-contain"
                       />
                     )}
@@ -449,7 +451,7 @@ export function BackgroundDialog({
                   disabled={isGenerating}
                   className="text-[10px] sm:text-xs w-full sm:w-auto whitespace-nowrap h-8"
                 >
-                  {selectedIds.size === successfulPreviews.length ? 'Désélectionner' : 'Sélectionner tout'}
+                  {selectedIds.size === successfulPreviews.length ? t.backgroundDialog.deselectAll : t.backgroundDialog.selectAll}
                 </Button>
               )}
               <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
@@ -466,7 +468,7 @@ export function BackgroundDialog({
               disabled={applying || isGenerating || syncing}
               className="w-full sm:w-auto text-xs h-8 sm:h-9"
             >
-              Annuler
+              {t.backgroundDialog.cancel}
             </Button>
             {successfulPreviews.length > 0 && (
               <Button
@@ -478,12 +480,12 @@ export function BackgroundDialog({
                 {syncing ? (
                   <>
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    <span>Sync...</span>
+                    <span>{t.backgroundDialog.syncing}</span>
                   </>
                 ) : (
                   <>
                     <Upload className="w-3 h-3" />
-                    <span>Sync{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}</span>
+                    <span>{t.backgroundDialog.sync}{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}</span>
                   </>
                 )}
               </Button>
@@ -496,10 +498,10 @@ export function BackgroundDialog({
               {applying ? (
                 <>
                   <Loader2 className="w-3 h-3 mr-1 sm:mr-2 animate-spin" />
-                  <span>{selectedIds.size > 0 ? `${selectedIds.size}` : '...'}</span>
+                  <span>{selectedIds.size > 0 ? `${selectedIds.size}` : t.backgroundDialog.applying}</span>
                 </>
               ) : (
-                `Appliquer${selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}`
+                `${t.backgroundDialog.apply}${selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}`
               )}
             </Button>
           </div>

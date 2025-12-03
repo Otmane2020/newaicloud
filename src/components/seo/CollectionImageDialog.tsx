@@ -66,7 +66,7 @@ export function CollectionImageDialog({
       if (error) throw error;
 
       if (!products || products.length === 0) {
-        toast.error('Aucun produit trouvé dans cette collection');
+        toast.error(t.collectionImage.noProductFound);
         return;
       }
 
@@ -80,14 +80,14 @@ export function CollectionImageDialog({
       }
       
       if (!imageUrl) {
-        toast.error('Le produit populaire n\'a pas d\'image');
+        toast.error(t.collectionImage.noProductImage);
         return;
       }
 
       await updateCollectionImage(imageUrl);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erreur lors de la récupération de l\'image');
+      toast.error(t.collectionImage.imageError);
     } finally {
       setLoading(false);
     }
@@ -193,11 +193,11 @@ export function CollectionImageDialog({
           onOpenChange(false);
         }
       } else {
-        toast.error('Erreur lors de la génération de l\'image');
+        toast.error(t.collectionImage.generationError);
       }
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Erreur lors de la génération de l\'image');
+      toast.error(error.message || t.collectionImage.generationError);
       // Close dialog only on error during regeneration
       if (isRegeneration) {
         setShowPreviewDialog(false);
@@ -233,10 +233,10 @@ export function CollectionImageDialog({
       
       await updateCollectionImage(previewImageUrl, true);
       setShowPreviewDialog(false);
-      toast.success('Image appliquée avec succès');
+      toast.success(t.collectionImage.imageApplied);
     } catch (error: any) {
       console.error('Error applying image:', error);
-      toast.error('Erreur lors de l\'application de l\'image');
+      toast.error(t.collectionImage.applyError);
     } finally {
       setIsApplying(false);
     }
@@ -251,14 +251,14 @@ export function CollectionImageDialog({
       setLoading(true);
 
       if (!customImageUrl || !customImageUrl.startsWith('http')) {
-        toast.error('URL d\'image invalide');
+        toast.error(t.collectionImage.invalidUrl);
         return;
       }
 
       await updateCollectionImage(customImageUrl);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erreur lors de la mise à jour de l\'image');
+      toast.error(t.collectionImage.updateError);
     } finally {
       setLoading(false);
     }
@@ -267,12 +267,12 @@ export function CollectionImageDialog({
   const updateCollectionImage = async (imageUrl: string, isAiGenerated: boolean = false) => {
     // ✅ CRITICAL: Validate URL format - reject base64 data URLs
     if (imageUrl.startsWith('data:')) {
-      toast.error('❌ Erreur: Format base64 détecté. L\'image doit être une URL publique HTTP.');
+      toast.error(t.collectionImage.base64Error);
       throw new Error('Base64 URLs are not supported. Image must be uploaded to storage first.');
     }
 
     if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-      toast.error('❌ URL invalide. L\'image doit commencer par http:// ou https://');
+      toast.error(t.collectionImage.invalidUrlFormat);
       throw new Error('Invalid URL format');
     }
 
@@ -318,7 +318,7 @@ export function CollectionImageDialog({
       setProcessingAlt(true);
       
       console.log('📞 [COLLECTION-IMAGE] Calling sync-collection-image-to-shopify with:', collection.id);
-      toast.loading('Synchronisation avec Shopify en cours...', { id: 'shopify-sync' });
+      toast.loading(t.backgroundDialog.syncInProgress, { id: 'shopify-sync' });
       
       const { data: syncResult, error: syncError } = await supabase.functions.invoke(
         'sync-collection-image-to-shopify',
@@ -333,16 +333,16 @@ export function CollectionImageDialog({
       }
       
       if (syncResult?.success) {
-        toast.success('✅ Image synchronisée avec Shopify', { id: 'shopify-sync' });
+        toast.success(t.collectionImage.syncSuccess, { id: 'shopify-sync' });
       } else {
-        toast.warning('⚠️ Image enregistrée (sync Shopify partielle)', { id: 'shopify-sync' });
+        toast.warning(t.collectionImage.syncPartial, { id: 'shopify-sync' });
       }
       
       setShowSuccessDialog(false);
       onImageUpdated();
     } catch (err: any) {
       console.error('❌ [COLLECTION-IMAGE] Error:', err);
-      toast.error(err.message || 'Erreur lors de la synchronisation', { id: 'shopify-sync' });
+      toast.error(err.message || t.collectionImage.syncError, { id: 'shopify-sync' });
     } finally {
       setProcessingAlt(false);
     }
@@ -366,13 +366,13 @@ export function CollectionImageDialog({
     <>
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ImageIcon className="w-5 h-5" />
-              Ajouter une image de collection
+              {t.collectionImage.title}
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              Collection: <span className="font-medium">{collection.title}</span>
+              {t.collectionImage.forCollection} <span className="font-medium">{collection.title}</span>
             </p>
           </DialogHeader>
 
@@ -382,13 +382,13 @@ export function CollectionImageDialog({
             <div className="flex items-start gap-3">
               <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shrink-0">
                 <Sparkles className="w-3 h-3 mr-1" />
-                Vision AI - Analyse d'images
+                {t.collectionImage.whyAI.badge}
               </Badge>
             </div>
             <div className="mt-3 text-sm space-y-1">
-              <p className="font-medium">🎨 <strong>Images cohérentes</strong> avec votre marque</p>
-              <p className="font-medium">⚡ <strong>Génération instantanée</strong> - pas besoin de designer</p>
-              <p className="font-medium">🔍 <strong>Optimisées pour le SEO</strong> automatiquement</p>
+              <p className="font-medium">{t.collectionImage.whyAI.coherent}</p>
+              <p className="font-medium">{t.collectionImage.whyAI.instant}</p>
+              <p className="font-medium">{t.collectionImage.whyAI.seo}</p>
             </div>
           </Card>
           {/* Option 1: Generate with AI - PRIORITY */}
@@ -404,12 +404,11 @@ export function CollectionImageDialog({
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold mb-1 flex items-center gap-2">
-                  Générer avec Vision AI
-                  <Badge variant="secondary" className="text-xs">Recommandé</Badge>
+                  {t.collectionImage.generateWithAI}
+                  <Badge variant="secondary" className="text-xs">{t.common.recommended}</Badge>
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Créez une image professionnelle personnalisée pour cette collection. 
-                  L'IA génère une bannière moderne, élégante et optimisée SEO.
+                  {t.collectionImage.aiPromptPlaceholder}
                 </p>
               </div>
             </div>
@@ -418,7 +417,7 @@ export function CollectionImageDialog({
               <div className="mt-4 space-y-4">
                 {/* Suggested prompts */}
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Suggestions de prompts:</Label>
+                  <Label className="text-xs text-muted-foreground">{t.collectionImage.suggestedPrompts}</Label>
                   <div className="flex flex-wrap gap-2">
                     {suggestedPrompts.map((prompt, i) => (
                       <Button
@@ -435,17 +434,17 @@ export function CollectionImageDialog({
                 </div>
 
                 <div>
-                  <Label htmlFor="ai-prompt">Prompt personnalisé (optionnel)</Label>
+                  <Label htmlFor="ai-prompt">{t.collectionImage.aiPromptLabel}</Label>
                   <Textarea
                     id="ai-prompt"
-                    placeholder="Ex: Image moderne avec fond clair, style minimaliste..."
+                    placeholder={t.collectionImage.aiPromptPlaceholder}
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
                     rows={3}
                     className="resize-none"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Laissez vide pour un prompt automatique basé sur le nom de la collection
+                    {t.collectionImage.leaveEmptyForAuto}
                   </p>
                 </div>
                 <div className="flex justify-end gap-2">
@@ -453,7 +452,7 @@ export function CollectionImageDialog({
                     variant="outline"
                     onClick={handleClose}
                   >
-                    Annuler
+                    {t.collectionImage.buttons.cancel}
                   </Button>
                   <Button 
                     onClick={() => handleGenerateWithAI()}
@@ -463,12 +462,12 @@ export function CollectionImageDialog({
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Génération...
+                        {t.collectionImage.buttons.generating}
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4 mr-2" />
-                        Générer l'image
+                        {t.collectionImage.buttons.generate}
                       </>
                     )}
                   </Button>
@@ -502,7 +501,7 @@ export function CollectionImageDialog({
                   variant="outline"
                   onClick={handleClose}
                 >
-                  {t.collection.cancel}
+                  {t.collectionImage.buttons.cancel}
                 </Button>
                 <Button 
                   onClick={handleUsePopularProduct}
@@ -511,12 +510,12 @@ export function CollectionImageDialog({
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Chargement...
+                      {t.social.loading}
                     </>
                   ) : (
                     <>
                       <TrendingUp className="w-4 h-4 mr-2" />
-                      Appliquer
+                      {t.collectionImage.buttons.apply}
                     </>
                   )}
                 </Button>
@@ -536,9 +535,9 @@ export function CollectionImageDialog({
                 <Upload className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold mb-1">Utiliser une image personnalisée</h3>
+                <h3 className="font-semibold mb-1">{t.collectionCustomImage.title}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Ajoutez une image depuis une URL externe
+                  {t.collectionCustomImage.description}
                 </p>
               </div>
             </div>
@@ -546,11 +545,11 @@ export function CollectionImageDialog({
             {selectedOption === 'upload' && (
               <div className="mt-4 space-y-3">
                 <div>
-                  <Label htmlFor="image-url">URL de l'image</Label>
+                  <Label htmlFor="image-url">{t.collectionCustomImage.urlLabel}</Label>
                   <Input
                     id="image-url"
                     type="url"
-                    placeholder="https://example.com/image.jpg"
+                    placeholder={t.collectionCustomImage.urlPlaceholder}
                     value={customImageUrl}
                     onChange={(e) => setCustomImageUrl(e.target.value)}
                   />
@@ -560,7 +559,7 @@ export function CollectionImageDialog({
                     variant="outline"
                     onClick={handleClose}
                   >
-                    Annuler
+                    {t.collectionImage.buttons.cancel}
                   </Button>
                   <Button 
                     onClick={handleUploadCustomImage}
@@ -569,12 +568,12 @@ export function CollectionImageDialog({
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Chargement...
+                        {t.social.loading}
                       </>
                     ) : (
                       <>
                         <Upload className="w-4 h-4 mr-2" />
-                        Appliquer
+                        {t.collectionImage.buttons.apply}
                       </>
                     )}
                   </Button>
@@ -619,10 +618,10 @@ export function CollectionImageDialog({
 
           <div>
             <DialogTitle className="text-xl font-bold text-green-600 dark:text-green-400 mb-2">
-              Image mise à jour avec succès !
+              {t.successDialog.imageUpdated}
             </DialogTitle>
             <DialogDescription className="text-sm">
-              L'image de la collection a été enregistrée. Vous pouvez maintenant l'exporter vers Shopify.
+              {t.successDialog.imageUpdatedDesc}
             </DialogDescription>
           </div>
 
@@ -647,12 +646,12 @@ export function CollectionImageDialog({
               {processingAlt ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Synchronisation...
+                  {t.successDialog.syncing}
                 </>
               ) : (
                 <>
                   <Upload className="w-4 h-4 mr-2" />
-                  Exporter vers Shopify
+                  {t.successDialog.exportToShopify}
                 </>
               )}
             </Button>
@@ -663,7 +662,7 @@ export function CollectionImageDialog({
               className="w-full"
               disabled={processingAlt}
             >
-              Fermer
+              {t.successDialog.close}
             </Button>
           </div>
         </div>

@@ -437,15 +437,62 @@ export const translations = {
     syncing: "Sync...",
     apply: "Appliquer",
     applying: "...",
+    applyAndSync: "Application et synchronisation...",
     syncSuccess: "✅ {count} image(s) synchronisée(s) avec Shopify",
     syncPartial: "{successCount} synchronisée(s), {errorCount} erreur(s)",
     syncError: "Erreur lors de la synchronisation",
     imagesApplied: "✅ Images appliquées et synchronisées avec Shopify",
     imagesAppliedPartial: "Images appliquées. {successCount} synchronisée(s), {errorCount} erreur(s)",
-    imagesAppliedSyncPartial: "Images appliquées mais sync Shopify partiel",
+    imagesAppliedSyncPartial: "Images appliquées mais erreurs de synchronisation Shopify",
+    imagesLocalOnly: "Images appliquées localement uniquement",
+    imagesLocalOnlyDesc: "Les produits ne sont pas encore synchronisés avec Shopify. Exportez-les d'abord vers Shopify.",
     syncInProgress: "Synchronisation avec Shopify en cours...",
-    autoSyncing: "🔄 Auto-syncing applied images to Shopify...",
+    autoSyncing: "🔄 Synchronisation automatique des images avec Shopify...",
     syncingToShopify: "Synchronisation avec Shopify...",
+    noImagesSynced: "Aucune image synchronisée",
+    noShopifyConnection: "Les produits ne sont pas encore connectés à Shopify.",
+    partialSync: "Synchronisation partielle",
+    partialSyncDesc: "{{synced}} image(s) synchronisée(s), {{skipped}} sans ID Shopify.",
+  },
+
+  // ============= Success Dialog =============
+  successDialog: {
+    imageUpdated: "Image mise à jour avec succès !",
+    imageUpdatedDesc: "L'image de la collection a été enregistrée. Vous pouvez maintenant l'exporter vers Shopify.",
+    exportToShopify: "Exporter vers Shopify",
+    close: "Fermer",
+    syncing: "Synchronisation...",
+  },
+
+  // ============= Social Integrations =============
+  social: {
+    facebookIntegration: "Intégration Facebook",
+    instagramIntegration: "Intégration Instagram",
+    connected: "Connecté",
+    disconnect: "Déconnecter",
+    connectFacebook: "Connecter Facebook",
+    connectInstagram: "Connecter Instagram",
+    autoShareLabel: "Auto-partage après publication",
+    autoShareFacebookDesc: "Publie automatiquement les nouveaux articles sur votre page Facebook",
+    autoShareInstagramDesc: "Publie automatiquement les nouveaux articles sur votre compte Instagram",
+    facebookDescription: "Connectez votre page Facebook pour partager automatiquement les articles",
+    instagramDescription: "Connectez votre compte Instagram pour partager automatiquement les articles",
+    popupBlocked: "Popup bloquée. Veuillez autoriser les popups pour ce site.",
+    facebookDisconnected: "Page Facebook déconnectée",
+    instagramConnected: "Compte Instagram connecté",
+    instagramDisconnected: "Compte Instagram déconnecté",
+    autoShareEnabled: "Auto-partage activé",
+    autoShareDisabled: "Auto-partage désactivé",
+    connectionSuccess: "Connexion réussie !",
+    loading: "Chargement...",
+  },
+
+  // ============= Collection Custom Image =============
+  collectionCustomImage: {
+    title: "Utiliser une image personnalisée",
+    description: "Ajoutez une image depuis une URL externe",
+    urlLabel: "URL de l'image",
+    urlPlaceholder: "https://example.com/image.jpg",
   },
 
   // ============= Optimization Completed Dialog =============
@@ -1502,6 +1549,7 @@ export const translations = {
     repairProfiles: "Réparer les Profils",
     integrations: "Intégrations",
     syncStripe: "Synchroniser Stripe",
+    recommended: "Recommandé",
   },
 
   planNames: {

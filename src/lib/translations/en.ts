@@ -430,15 +430,62 @@ export const translations = {
     syncing: "Syncing...",
     apply: "Apply",
     applying: "...",
+    applyAndSync: "Applying and syncing...",
     syncSuccess: "✅ {count} image(s) synchronized with Shopify",
     syncPartial: "{successCount} synchronized, {errorCount} error(s)",
     syncError: "Error during synchronization",
     imagesApplied: "✅ Images applied and synchronized with Shopify",
     imagesAppliedPartial: "Images applied. {successCount} synchronized, {errorCount} error(s)",
-    imagesAppliedSyncPartial: "Images applied but partial Shopify sync",
+    imagesAppliedSyncPartial: "Images applied but Shopify sync errors occurred",
+    imagesLocalOnly: "Images applied locally only",
+    imagesLocalOnlyDesc: "Products are not yet synced with Shopify. Export them to Shopify first.",
     syncInProgress: "Syncing with Shopify...",
     autoSyncing: "🔄 Auto-syncing applied images to Shopify...",
     syncingToShopify: "Syncing to Shopify...",
+    noImagesSynced: "No images synced",
+    noShopifyConnection: "Products are not yet connected to Shopify.",
+    partialSync: "Partial sync",
+    partialSyncDesc: "{{synced}} image(s) synced, {{skipped}} without Shopify ID.",
+  },
+
+  // ============= Success Dialog =============
+  successDialog: {
+    imageUpdated: "Image updated successfully!",
+    imageUpdatedDesc: "The collection image has been saved. You can now export it to Shopify.",
+    exportToShopify: "Export to Shopify",
+    close: "Close",
+    syncing: "Syncing...",
+  },
+
+  // ============= Social Integrations =============
+  social: {
+    facebookIntegration: "Facebook Integration",
+    instagramIntegration: "Instagram Integration",
+    connected: "Connected",
+    disconnect: "Disconnect",
+    connectFacebook: "Connect Facebook",
+    connectInstagram: "Connect Instagram",
+    autoShareLabel: "Auto-share after publication",
+    autoShareFacebookDesc: "Automatically publish new articles to your Facebook page",
+    autoShareInstagramDesc: "Automatically publish new articles to your Instagram account",
+    facebookDescription: "Connect your Facebook page to automatically share articles",
+    instagramDescription: "Connect your Instagram account to automatically share articles",
+    popupBlocked: "Popup blocked. Please allow popups for this site.",
+    facebookDisconnected: "Facebook page disconnected",
+    instagramConnected: "Instagram account connected",
+    instagramDisconnected: "Instagram account disconnected",
+    autoShareEnabled: "Auto-share enabled",
+    autoShareDisabled: "Auto-share disabled",
+    connectionSuccess: "Connection successful!",
+    loading: "Loading...",
+  },
+
+  // ============= Collection Custom Image =============
+  collectionCustomImage: {
+    title: "Use a custom image",
+    description: "Add an image from an external URL",
+    urlLabel: "Image URL",
+    urlPlaceholder: "https://example.com/image.jpg",
   },
 
   // ============= Optimization Completed Dialog =============
@@ -1490,6 +1537,7 @@ export const translations = {
     repairProfiles: "Repair Profiles",
     integrations: "Integrations",
     syncStripe: "Sync Stripe",
+    recommended: "Recommended",
   },
 
   planNames: {
