@@ -117,10 +117,22 @@ export function AppSidebar() {
   const blogSubItems = [
     { title: t.blog.submenu.aiArticles, url: "/blog?subtab=create-article", icon: Sparkles, key: "aiArticles" },
     { title: t.blog.submenu.campaigns, url: "/blog?subtab=campaigns", icon: CalendarClock, key: "campaigns" },
-    { title: "Social Media", url: "/social-media", icon: Share2, key: "socialMedia" },
     { title: t.blog.submenu.opportunities, url: "/blog?subtab=opportunities", icon: Lightbulb, key: "opportunities" },
     { title: t.blog.submenu.netlinking, url: "/blog?subtab=netlinking", icon: Link, key: "netlinking" },
     { title: t.blog.submenu.settings, url: "/blog?subtab=settings", icon: Settings, key: "settings" },
+  ];
+
+  // Social Media - Onglet principal séparé
+  const socialMediaSubItems = [
+    { title: t.navigation.socialMediaSubmenu?.studio || "Studio", url: "/social-media?tab=creative-studio", icon: Sparkles, key: "studio" },
+    { title: t.navigation.socialMediaSubmenu?.creativeHistory || "Historique", url: "/social-media?tab=creative-history", icon: History, key: "creativeHistory" },
+  ];
+
+  const socialMediaMainItems = [
+    { title: t.navigation.socialMediaSubmenu?.creative || "Créatif", url: "/social-media?tab=creative", icon: Edit3, key: "creative", hasSubItems: true },
+    { title: t.navigation.socialMediaSubmenu?.campaigns || "Campagnes", url: "/social-media?tab=campaigns", icon: CalendarClock, key: "campaigns" },
+    { title: t.navigation.socialMediaSubmenu?.posts || "Posts", url: "/social-media?tab=posts", icon: FileText, key: "posts" },
+    { title: t.navigation.socialMediaSubmenu?.settings || "Paramètres & Connexions", url: "/social-media?tab=settings", icon: Settings, key: "settings" },
   ];
 
   const merchantSubItems = [
@@ -248,6 +260,8 @@ export function AppSidebar() {
   const isAuditActive = auditSubItems.some((item) => isActive(item.url));
   const isGoogleConsoleActive = isActive('/seo?tab=google-console');
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
+  const isSocialMediaActive = currentPath === "/social-media" || socialMediaMainItems.some((item) => isActive(item.url)) || socialMediaSubItems.some((item) => isActive(item.url));
+  const isSocialMediaCreativeActive = socialMediaSubItems.some((item) => isActive(item.url)) || isActive("/social-media?tab=creative");
   const isMerchantActive = currentPath === "/merchant" || merchantSubItems.some((item) => isActive(item.url));
   const isGoogleAdsActive = currentPath === "/google-ads" || googleAdsSubItems.some((item) => isActive(item.url));
   const isPricingActive = currentPath === "/pricing";
@@ -390,6 +404,59 @@ export function AppSidebar() {
                     <SidebarMenuSub>
                       {blogSubItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url} onClick={handleNavClick}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* Social Media - Onglet principal séparé */}
+              <Collapsible defaultOpen={isSocialMediaActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isSocialMediaActive}>
+                      <Share2 className="h-4 w-4" />
+                      <span>{t.navigation.socialMedia || "Social Media"}</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {/* Creative avec sous-sous-menu */}
+                      <Collapsible defaultOpen={isSocialMediaCreativeActive} className="group/creative">
+                        <SidebarMenuSubItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuSubButton isActive={isSocialMediaCreativeActive}>
+                              <Edit3 className="h-4 w-4" />
+                              <span>{t.navigation.socialMediaSubmenu?.creative || "Créatif"}</span>
+                              <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/creative:rotate-90" />
+                            </SidebarMenuSubButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="ml-4 border-l-2 border-border pl-2 space-y-1">
+                              {socialMediaSubItems.map((subItem) => (
+                                <SidebarMenuSubButton key={subItem.key} asChild isActive={isActive(subItem.url)} className="pl-2">
+                                  <NavLink to={subItem.url} onClick={handleNavClick}>
+                                    <subItem.icon className="h-3 w-3" />
+                                    <span>{subItem.title}</span>
+                                  </NavLink>
+                                </SidebarMenuSubButton>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </SidebarMenuSubItem>
+                      </Collapsible>
+                      
+                      {/* Autres sous-menus Social Media */}
+                      {socialMediaMainItems.filter(item => !item.hasSubItems).map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.key}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url} onClick={handleNavClick}>
                               <subItem.icon className="h-4 w-4" />
