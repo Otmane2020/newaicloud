@@ -1,5 +1,87 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
+
+/**
+ * POST-PROCESSING: Force exact format dimensions by center-cropping the generated image
+ * Gemini ignores format instructions, so we MUST crop/resize after generation
+ */
+async function enforceImageFormat(
+  base64Image: string,
+  targetWidth: number,
+  targetHeight: number
+): Promise<string> {
+  try {
+    console.log(`[POST-PROCESS] 📐 Enforcing format: ${targetWidth}x${targetHeight}`);
+    
+    // Extract base64 data
+    const base64Match = base64Image.match(/data:image\/[^;]+;base64,(.+)/);
+    const base64Data = base64Match ? base64Match[1] : base64Image;
+    
+    // Decode base64 to Uint8Array
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    // Decode image
+    const image = await Image.decode(bytes);
+    const srcWidth = image.width;
+    const srcHeight = image.height;
+    
+    console.log(`[POST-PROCESS] 📐 Source: ${srcWidth}x${srcHeight} -> Target: ${targetWidth}x${targetHeight}`);
+    
+    // Calculate center crop to achieve target aspect ratio
+    const srcAspect = srcWidth / srcHeight;
+    const targetAspect = targetWidth / targetHeight;
+    
+    let cropX = 0;
+    let cropY = 0;
+    let cropWidth = srcWidth;
+    let cropHeight = srcHeight;
+    
+    if (Math.abs(srcAspect - targetAspect) > 0.01) {
+      // Aspect ratios differ - need to crop
+      if (srcAspect > targetAspect) {
+        // Source is wider - crop sides
+        cropWidth = Math.round(srcHeight * targetAspect);
+        cropX = Math.round((srcWidth - cropWidth) / 2);
+      } else {
+        // Source is taller - crop top/bottom
+        cropHeight = Math.round(srcWidth / targetAspect);
+        cropY = Math.round((srcHeight - cropHeight) / 2);
+      }
+      
+      console.log(`[POST-PROCESS] ✂️ Cropping: x=${cropX}, y=${cropY}, w=${cropWidth}, h=${cropHeight}`);
+    }
+    
+    // Crop the image
+    const cropped = image.crop(cropX, cropY, cropWidth, cropHeight);
+    
+    // Resize to exact target dimensions
+    const resized = cropped.resize(targetWidth, targetHeight);
+    
+    // Encode back to PNG
+    const outputBytes = await resized.encode();
+    
+    // Convert to base64
+    let binary = '';
+    const len = outputBytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(outputBytes[i]);
+    }
+    const outputBase64 = btoa(binary);
+    
+    console.log(`[POST-PROCESS] ✅ Format enforced: ${targetWidth}x${targetHeight}`);
+    
+    return `data:image/png;base64,${outputBase64}`;
+  } catch (error) {
+    console.error(`[POST-PROCESS] ❌ Failed to enforce format:`, error);
+    // Return original if post-processing fails
+    return base64Image;
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -677,7 +759,7 @@ Please incorporate these specific instructions into the final image generation w
       );
     }
 
-    const { imageUrl: generatedImageUrl, model: usedModel } = result;
+    let { imageUrl: generatedImageUrl, model: usedModel } = result;
     const processingTime = Date.now() - startTime;
     console.log(`✅ White background generated successfully using ${usedModel}`, {
       processingTime: `${processingTime}ms`,
@@ -685,6 +767,12 @@ Please incorporate these specific instructions into the final image generation w
       imageType,
       promptLength: photographyPrompt.length
     });
+
+    // 🆕 POST-PROCESSING: Force exact format dimensions (Gemini ignores format instructions)
+    if (generatedImageUrl.startsWith('data:')) {
+      console.log(`[white-bg] 📐 Applying post-processing to enforce format: ${formatKey} (${targetDims.width}x${targetDims.height})`);
+      generatedImageUrl = await enforceImageFormat(generatedImageUrl, targetDims.width, targetDims.height);
+    }
 
     // ✅ Convert base64 to public URL (same as collections)
     let finalImageUrl = generatedImageUrl;
