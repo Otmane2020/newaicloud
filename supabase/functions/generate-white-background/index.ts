@@ -100,8 +100,15 @@ serve(async (req) => {
       seoTitle,
       seoDescription,
       // 🆕 Background style for smart background
-      backgroundStyle = "shopping"
+      backgroundStyle = "shopping",
+      // 🆕 Custom user prompt for additional instructions
+      customPrompt
     } = body;
+    
+    // Log custom prompt if provided
+    if (customPrompt) {
+      console.log(`[white-bg] 🎨 Custom prompt received: ${customPrompt.slice(0, 100)}...`);
+    }
 
     // 📝 DETAILED LOGGING for debugging SERP/Vision data
     console.log(`[white-bg] 📦 Received serpData:`, serpData ? JSON.stringify(serpData).slice(0, 300) : 'null');
@@ -479,6 +486,18 @@ OUTPUT: ${targetDims.width}×${targetDims.height} pixel CINEMATIC 3D rendered pr
       photographyPrompt = googleShoppingPrompt;
     } else {
       photographyPrompt = standardPrompt;
+    }
+
+    // 🆕 Inject custom user prompt if provided
+    if (customPrompt && customPrompt.trim()) {
+      photographyPrompt += `
+
+🎨 ADDITIONAL USER INSTRUCTIONS (VERY IMPORTANT):
+${customPrompt.trim()}
+
+Please incorporate these specific instructions into the final image generation while respecting all format and product requirements above.
+`;
+      console.log(`[white-bg] 🎨 Custom prompt injected into photography prompt`);
     }
 
     console.log(`[white-bg] 📝 Prompt generated (${photographyPrompt.length} chars)`);

@@ -165,10 +165,19 @@ serve(async (req) => {
       creative: "Artistic composition, creative lighting, unique and engaging perspective",
     };
 
+    // 🆕 Format dimensions mapping with DALL-E size
+    const formatDimensions: Record<string, { width: number; height: number; ratio: string; dalleSize: string }> = {
+      square: { width: 1024, height: 1024, ratio: "1:1", dalleSize: "1024x1024" },
+      portrait: { width: 768, height: 1024, ratio: "3:4", dalleSize: "1024x1792" },
+      landscape: { width: 1024, height: 768, ratio: "4:3", dalleSize: "1792x1024" },
+    };
+    const targetDims = formatDimensions[format] || formatDimensions.square;
+    console.log(`[ai-bg-gen] 🎯 Target format: ${format} -> ${targetDims.width}x${targetDims.height} (DALL-E: ${targetDims.dalleSize})`);
+
     const formatSpecs = {
-      square: "1024x1024 square format",
-      portrait: "768x1024 portrait orientation (3:4)",
-      landscape: "1024x768 landscape orientation (4:3)",
+      square: `${targetDims.width}x${targetDims.height} square format (1:1 ratio)`,
+      portrait: `${targetDims.width}x${targetDims.height} portrait orientation (3:4 ratio)`,
+      landscape: `${targetDims.width}x${targetDims.height} landscape orientation (4:3 ratio)`,
     };
 
     // Force COMPLETE background replacement - ULTRA EXPLICIT
