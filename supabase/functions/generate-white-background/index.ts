@@ -205,13 +205,15 @@ serve(async (req) => {
     
     // 🆕 CRITICAL: Format dimensions mapping for image generation
     // Using explicit pixel dimensions to force Gemini to output correct format
-    const formatDimensions: Record<string, { width: number; height: number; ratio: string }> = {
-      "square": { width: 1024, height: 1024, ratio: "1:1" },
-      "portrait": { width: 768, height: 1024, ratio: "3:4" },
-      "landscape": { width: 1024, height: 768, ratio: "4:3" },
+    const formatDimensions: Record<string, { width: number; height: number; ratio: string; dalleSize: string }> = {
+      "square": { width: 1024, height: 1024, ratio: "1:1", dalleSize: "1024x1024" },
+      "portrait": { width: 768, height: 1024, ratio: "3:4", dalleSize: "1024x1792" },
+      "landscape": { width: 1024, height: 768, ratio: "4:3", dalleSize: "1792x1024" },
     };
     const formatKey = (format as string) || "square";
     const targetDims = formatDimensions[formatKey] || formatDimensions["square"];
+    console.log(`[white-bg] 🎯 Target format: ${formatKey} -> ${targetDims.width}x${targetDims.height} (DALL-E: ${targetDims.dalleSize})`);
+    
     
     // Ultra-strict format instruction with canvas metaphor and extreme repetition
     const formatInstruction = `
@@ -535,9 +537,10 @@ OUTPUT: ${targetDims.width}×${targetDims.height} pixel CINEMATIC 3D rendered pr
       }
     }
 
-    // Helper function to try OpenAI DALL-E
+    // Helper function to try OpenAI DALL-E with correct format dimensions
     async function tryOpenAI(): Promise<{ imageUrl: string; model: string } | null> {
       const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      console.log(`[OpenAI] 🎯 Using size: ${targetDims.dalleSize} for format: ${formatKey}`);
       if (!OPENAI_API_KEY) {
         console.log("⚠️ OpenAI API key not configured");
         return null;
@@ -582,7 +585,8 @@ OUTPUT: ${targetDims.width}×${targetDims.height} pixel CINEMATIC 3D rendered pr
         const visionData = await visionResponse.json();
         const enhancedPrompt = visionData.choices?.[0]?.message?.content || photographyPrompt;
 
-        // Use DALL-E to generate the image
+        // Use DALL-E to generate the image with correct format dimensions
+        console.log(`[DALL-E] 📐 Generating with size: ${targetDims.dalleSize}`);
         const dalleResponse = await fetch("https://api.openai.com/v1/images/generations", {
           method: "POST",
           headers: {
@@ -591,9 +595,9 @@ OUTPUT: ${targetDims.width}×${targetDims.height} pixel CINEMATIC 3D rendered pr
           },
           body: JSON.stringify({
             model: "gpt-image-1",
-            prompt: `${enhancedPrompt}. Pure white background (#FFFFFF). Professional product photography.`.substring(0, 4000),
+            prompt: `${enhancedPrompt}. Pure white background (#FFFFFF). Professional product photography. OUTPUT SIZE: ${targetDims.dalleSize} pixels (${targetDims.ratio} aspect ratio).`.substring(0, 4000),
             n: 1,
-            size: "1024x1024",
+            size: targetDims.dalleSize,
             quality: "high",
             response_format: "url"
           }),
