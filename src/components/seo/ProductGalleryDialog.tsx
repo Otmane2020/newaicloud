@@ -53,6 +53,7 @@ interface ProductGalleryDialogProps {
   onOpenChange: (open: boolean) => void;
   product: Product | null;
   storeId: string | null;
+  onMainImageChange?: (productId: string, newMainImageUrl: string) => void;
 }
 
 export function ProductGalleryDialog({
@@ -60,6 +61,7 @@ export function ProductGalleryDialog({
   onOpenChange,
   product,
   storeId,
+  onMainImageChange,
 }: ProductGalleryDialogProps) {
   const { t } = useTranslation();
   const [images, setImages] = useState<ProductImage[]>([]);
@@ -148,6 +150,11 @@ export function ProductGalleryDialog({
       );
       
       await Promise.all(updates);
+
+      // Notify parent about main image change (first image in new order)
+      if (imagesToSave.length > 0 && onMainImageChange) {
+        onMainImageChange(product.id, imagesToSave[0].src);
+      }
 
       // Sync to Shopify if connected
       if (product.shopify_id) {
