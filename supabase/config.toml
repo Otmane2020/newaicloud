@@ -534,3 +534,6 @@ verify_jwt = true
 
 [functions.admin-publish-social]
 verify_jwt = true
+
+[functions.google-translate]
+verify_jwt = false

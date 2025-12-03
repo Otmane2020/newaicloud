@@ -9904,4 +9904,15 @@ export const translations = {
     defaultWelcome: "Bienvenue ! Comment puis-je vous aider ?",
   },
 
+  // ============= Product Gallery Dialog =============
+  productGallery: {
+    title: "Galerie",
+    mainImages: "Images principales",
+    variantImages: "Images des variantes",
+    dragToReorder: "Glisser pour réorganiser",
+    noImages: "Aucune image pour ce produit",
+    deleteImage: "Supprimer l'image",
+    syncing: "Synchronisation...",
+  },
+
 };
