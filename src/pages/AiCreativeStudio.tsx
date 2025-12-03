@@ -7,11 +7,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { 
   Loader2, Wand2, Download, Search, Sparkles, 
   ImageIcon, Check, Facebook, Instagram, Eye, Star,
-  Send, Link, Image as ImageIconLucide, History, Trash2, RefreshCw
+  Send, Link, Image as ImageIconLucide, History, Trash2, RefreshCw, X, ZoomIn
 } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
 import { useTranslation } from "@/lib/language";
@@ -91,6 +92,7 @@ export default function AiCreativeStudio() {
 
   const [history, setHistory] = useState<CreativeHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [previewImage, setPreviewImage] = useState<CreativeHistoryItem | null>(null);
 
   useEffect(() => {
     loadShopifyProducts();
@@ -813,21 +815,31 @@ export default function AiCreativeStudio() {
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {history.map((item) => (
-                      <div key={item.id} className="group relative">
+                      <div key={item.id} className="group relative cursor-pointer" onClick={() => setPreviewImage(item)}>
                         <img
                           src={item.image_url}
                           alt={item.product_title || 'Creative'}
-                          className="w-full aspect-square object-cover rounded-lg"
+                          className="w-full aspect-square object-cover rounded-lg transition-transform group-hover:scale-[1.02]"
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col justify-between p-2">
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="h-6 w-6 self-end"
-                            onClick={() => deleteHistoryItem(item.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          <div className="flex justify-between items-start">
+                            <Button
+                              variant="secondary"
+                              size="icon"
+                              className="h-7 w-7 bg-white/20 hover:bg-white/40"
+                              onClick={(e) => { e.stopPropagation(); setPreviewImage(item); }}
+                            >
+                              <ZoomIn className="h-4 w-4 text-white" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={(e) => { e.stopPropagation(); deleteHistoryItem(item.id); }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                           <div className="text-white text-xs">
                             <p className="font-medium truncate">{item.product_title}</p>
                             <p className="opacity-70">{format(new Date(item.created_at), 'dd/MM/yyyy', { locale: language === 'fr' ? fr : enUS })}</p>
@@ -841,6 +853,57 @@ export default function AiCreativeStudio() {
             </section>
           </TabsContent>
         </Tabs>
+
+        {/* Preview Dialog */}
+        <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-none">
+            <DialogTitle className="sr-only">
+              {previewImage?.product_title || 'Creative Preview'}
+            </DialogTitle>
+            {previewImage && (
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 z-10 text-white hover:bg-white/20 rounded-full"
+                  onClick={() => setPreviewImage(null)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+                <img
+                  src={previewImage.image_url}
+                  alt={previewImage.product_title || 'Creative'}
+                  className="w-full max-h-[80vh] object-contain"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-white">
+                      <p className="font-semibold text-lg">{previewImage.product_title}</p>
+                      <p className="text-sm opacity-70">
+                        {previewImage.template_name} • {format(new Date(previewImage.created_at), 'dd MMMM yyyy', { locale: language === 'fr' ? fr : enUS })}
+                      </p>
+                    </div>
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      className="gap-2"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = previewImage.image_url;
+                        link.download = `creative-${previewImage.id}.png`;
+                        link.click();
+                        toast.success(t.creativeStudio.toast.downloaded);
+                      }}
+                    >
+                      <Download className="h-4 w-4" />
+                      {t.creativeStudio.result.download}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
