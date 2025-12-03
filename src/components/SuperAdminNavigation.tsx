@@ -1,4 +1,4 @@
-import { Shield, Users, Mail, LogOut, BarChart3, Home, FileText, TrendingUp, Activity, Brain, FileWarning, Wrench, Search, Target, Globe, Languages, ScanSearch, Video, Share2, ChevronDown, ChevronRight } from "lucide-react";
+import { Shield, Users, Mail, LogOut, BarChart3, Home, FileText, TrendingUp, Activity, Brain, FileWarning, Wrench, Search, Target, Globe, Languages, ScanSearch, Video, Share2, ShoppingBag, ChevronDown, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -86,6 +86,7 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
         { icon: Target, label: t.superAdmin.navigation.googleAds || "Google Ads", id: "google-ads" },
         { icon: Globe, label: t.superAdmin.navigation.blogSeo || "Blog SEO", id: "blog-seo" },
         { icon: Globe, label: t.superAdmin.navigation.googleSearchConsole || "Google Search Console", id: "google-search-console" },
+        { icon: ShoppingBag, label: "Google Merchant", id: "google-merchant" },
         { icon: Share2, label: t.superAdmin.navigation.socialMedia || "Social Media", id: "social-media" },
         { icon: Video, label: t.superAdmin.navigation.videoAds || "Video Ads", id: "video-ads" },
       ]

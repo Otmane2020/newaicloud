@@ -112,7 +112,7 @@ export function AdminSocialMedia() {
     setConnecting(true);
     try {
       const response = await supabase.functions.invoke("facebook-page-oauth", {
-        body: { action: "get_auth_url" },
+        body: { action: "connect" },
       });
 
       if (response.error) throw response.error;

@@ -35,11 +35,13 @@ interface EffectData {
 
 interface ProVideoTimelineProps {
   clips: VideoClip[];
+  format?: "9:16" | "1:1" | "16:9";
   onReorder: (fromIndex: number, toIndex: number) => void;
   onRemove: (id: string) => void;
+  onDuplicate?: (clip: VideoClip) => void;
 }
 
-export const ProVideoTimeline = ({ clips, onReorder, onRemove }: ProVideoTimelineProps) => {
+export const ProVideoTimeline = ({ clips, format = "16:9", onReorder, onRemove, onDuplicate }: ProVideoTimelineProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -200,7 +202,11 @@ export const ProVideoTimeline = ({ clips, onReorder, onRemove }: ProVideoTimelin
   return (
     <div className="flex flex-col bg-card rounded-lg border border-border overflow-hidden">
       {/* Video Preview */}
-      <div className="relative bg-black aspect-video max-h-[400px]">
+      <div className={`relative bg-black ${
+        format === "9:16" ? "aspect-[9/16] max-h-[500px]" : 
+        format === "1:1" ? "aspect-square max-h-[400px]" : 
+        "aspect-video max-h-[400px]"
+      } mx-auto`}>
         <video
           ref={videoRef}
           src={currentClip?.videoUrl}
@@ -311,6 +317,8 @@ export const ProVideoTimeline = ({ clips, onReorder, onRemove }: ProVideoTimelin
           selectedClipId={selectedClipId}
           onSelectClip={setSelectedClipId}
           onReorder={onReorder}
+          onRemove={onRemove}
+          onDuplicate={onDuplicate}
         />
 
         {/* Audio Track */}

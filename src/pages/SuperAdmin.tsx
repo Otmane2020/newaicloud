@@ -29,6 +29,7 @@ import AutoTranslationScanner from '@/components/admin/AutoTranslationScanner';
 import VideoAdsStudio from '@/components/admin/VideoAdsStudio';
 import AdminGoogleSearchConsole from '@/components/admin/AdminGoogleSearchConsole';
 import AdminSocialMedia from '@/components/admin/AdminSocialMedia';
+import AdminGoogleMerchant from '@/components/admin/AdminGoogleMerchant';
 import { useTranslation } from '@/lib/language';
 
 interface StripeSubscription {
@@ -864,6 +865,10 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'social-media' && (
         <AdminSocialMedia />
+      )}
+
+      {activeTab === 'google-merchant' && (
+        <AdminGoogleMerchant />
       )}
     </div>
   );
