@@ -161,6 +161,7 @@ serve(async (req) => {
     // 🆕 Background style instructions
     const backgroundStyleInstructions: Record<string, string> = {
       "shopping": "Pure white e-commerce background (#FFFFFF). Clean, professional, product-focused. Subtle drop shadow for 3D depth.",
+      "luxury_showroom": "LUXURY 3D SHOWROOM: Dark elegant showroom background (deep charcoal/black gradient). GLOSSY MARBLE FLOOR with PERFECT MIRROR REFLECTION of product. DRAMATIC SPOTLIGHT from above creating VOLUMETRIC LIGHT BEAMS. GOLDEN RAYS and FLOATING SPARKLE PARTICLES radiating from product. Professional RIM LIGHTING on product edges. 8K photorealistic CGI render quality. Think: Roche Bobois, EURODESIGN luxury furniture catalog.",
       "lifestyle": "Warm, inviting lifestyle context. Natural light, soft tones. Product in realistic home/daily use setting. Beige/cream ambient tones.",
       "moderne": "Modern minimalist design. Clean lines, contemporary aesthetic. Geometric elements, neutral gray or off-white backdrop. Sleek and sophisticated.",
       "living_room": "Cozy living room interior. Product placed in realistic home setting with furniture hints. Warm ambient lighting, wooden accents.",
@@ -343,7 +344,7 @@ EXECUTION STEPS:
 FINAL OUTPUT: ${targetDims.width}×${targetDims.height} pixels image with THE SAME product on white background.
     `.trim();
 
-    // 3D Google Shopping prompt - Product rendered in 3D on white 1:1 background
+    // 3D Google Shopping prompt - LUXURY SHOWROOM STYLE (inspired by Creative Studio)
     const threeD_ShoppingPrompt = `
 🚨🚨🚨 FORMAT INSTRUCTION - ABSOLUTE PRIORITY 🚨🚨🚨
 
@@ -353,20 +354,29 @@ FINAL OUTPUT: ${targetDims.width}×${targetDims.height} pixels image with THE SA
 📐 1:1 ratio means IDENTICAL width and height
 📐 Not 1024×768. Not 1024×1536. EXACTLY 1024×1024.
 
-⚠️⚠️⚠️ CRITICAL 3D GOOGLE SHOPPING MODE ⚠️⚠️⚠️
+⚠️⚠️⚠️ LUXURY 3D SHOWROOM VISUALIZATION MODE ⚠️⚠️⚠️
 
-You MUST recreate this product in HIGH-QUALITY 3D rendering style.
+RECREATE this product as a STUNNING 3D visualization in a LUXURY SHOWROOM environment.
 
 The product is: "${productTitle || 'Unknown product'}"
 ${serpData?.dimensions ? `📏 Dimensions: ${serpData.dimensions}` : ''}
 ${serpData?.materials?.length > 0 ? `🪵 Materials: ${serpData.materials.join(', ')}` : ''}
+${visionAiData?.description ? `👁️ Visual: ${visionAiData.description.slice(0, 150)}` : ''}
 ${productDescription ? `📝 Description: ${productDescription.slice(0, 200)}` : ''}
 
-🎯 YOUR TASK - 3D PRODUCT VISUALIZATION:
+🎯 YOUR TASK - LUXURY 3D SHOWROOM:
 1. CREATE your 1024×1024 SQUARE canvas FIRST
-2. ANALYZE the product in the input image carefully (shape, colors, materials, details)
-3. RECREATE the product as a PHOTOREALISTIC 3D render
-4. Place it on your 1024×1024 canvas with PURE WHITE (#FFFFFF) background
+2. ANALYZE the product in the input image carefully (shape, colors, materials, ALL details)
+3. RECREATE the product as a PHOTOREALISTIC 3D CGI render
+4. Place it in a DARK ELEGANT SHOWROOM with DRAMATIC LIGHTING
+
+🖼️ **MANDATORY LUXURY SHOWROOM ELEMENTS**:
+- 🌑 DARK ELEGANT SHOWROOM BACKGROUND (deep charcoal/black gradient)
+- 🪞 GLOSSY MARBLE FLOOR with PERFECT MIRROR REFLECTION of product
+- 💡 DRAMATIC SPOTLIGHT from above creating VOLUMETRIC LIGHT BEAMS
+- ✨ GOLDEN RAYS and FLOATING SPARKLE PARTICLES radiating from product
+- 🔆 PROFESSIONAL RIM LIGHTING on product edges (subtle gold/warm tones)
+- 🎭 FLOATING DUST/SPARKLE particles in the light beams
 
 📐 **FORMAT VERIFICATION CHECKLIST**:
 ✓ Canvas created: 1024×1024 pixels? (SQUARE)
@@ -374,69 +384,87 @@ ${productDescription ? `📝 Description: ${productDescription.slice(0, 200)}` :
 ✓ Height = 1024 pixels?
 ✓ Ratio = 1:1? (SQUARE)
 
-🎨 **3D RENDERING STYLE**:
-- Professional 3D modeling/rendering aesthetic
-- Studio lighting with soft shadows
-- Product appears tangible, with depth and volume
-- Slightly elevated angle to show 3D dimensionality
-- Subtle reflection on floor/surface
-- Google Shopping compliant: clean, no text, no watermarks
+🎨 **3D RENDERING QUALITY**:
+- 8K photorealistic CGI render quality
+- Professional 3D studio lighting (3-point with dramatic key light)
+- Product appears PREMIUM, LUXURIOUS, DESIRABLE
+- Think: Roche Bobois, EURODESIGN, luxury furniture catalog
+- Material textures emphasized (wood grain, fabric weave, metal sheen, glass reflections)
+
+✨ **LIGHTING SPECIFICATIONS**:
+- Main spotlight: Warm white from above-front
+- Fill light: Soft blue/cool tones from sides
+- Rim light: Golden accent on product edges
+- Volumetric rays: Visible light beams in atmosphere
+- Floor reflection: 40-60% opacity mirror effect
 
 ✅ QUALITY REQUIREMENTS:
-- Ultra-realistic 3D visualization
-- Product fills 70-80% of the frame
-- Pure white background for e-commerce
-- Professional catalog quality
-- Emphasize material textures (wood grain, fabric weave, metal sheen)
+- Product is the HERO - Large, centered, fills 70-80% of frame
+- Ultra-realistic 3D CGI visualization
+- Dark background makes product POP
+- Luxury showroom atmosphere
+- Ready for premium e-commerce/Google Shopping
 
-OUTPUT: 1024x1024 pixel 3D rendered product on white background.
+OUTPUT: 1024x1024 pixel LUXURY 3D rendered product in dark showroom with dramatic lighting.
     `.trim();
 
-    // 3D Generate prompt - Full 3D recreation with custom background
+    // 3D Generate prompt - CINEMATIC 3D with custom background (Creative Studio quality)
     const threeD_GeneratePrompt = `
 🚨🚨🚨 FORMAT REQUIREMENT - READ THIS FIRST 🚨🚨🚨
 
 ${formatInstruction}
 
-⚠️⚠️⚠️ CREATIVE 3D PRODUCT RECREATION MODE ⚠️⚠️⚠️
+⚠️⚠️⚠️ CINEMATIC 3D PRODUCT VISUALIZATION MODE ⚠️⚠️⚠️
 
-RECREATE this product as a stunning 3D visualization in a beautiful environment.
+RECREATE this product as a STUNNING CINEMATIC 3D visualization with DRAMATIC effects.
 
 The product is: "${productTitle || 'Unknown product'}"
 ${serpData?.dimensions ? `📏 Dimensions: ${serpData.dimensions}` : ''}
 ${serpData?.materials?.length > 0 ? `🪵 Materials: ${serpData.materials.join(', ')}` : ''}
+${visionAiData?.description ? `👁️ Visual: ${visionAiData.description.slice(0, 150)}` : ''}
 ${productDescription ? `📝 Description: ${productDescription.slice(0, 200)}` : ''}
 
-🎯 YOUR TASK - CREATIVE 3D VISUALIZATION:
+🎯 YOUR TASK - CINEMATIC 3D VISUALIZATION:
 1. CREATE your ${targetDims.width}×${targetDims.height} canvas FIRST (${targetDims.ratio} ratio)
 2. ANALYZE the product in the input image (shape, colors, materials, ALL details)
-3. RECREATE it as a PHOTOREALISTIC 3D model
-4. Place it in a beautiful ${backgroundStyle} environment on your canvas
+3. RECREATE it as a PHOTOREALISTIC 3D CGI model
+4. Place it in a DRAMATIC ${backgroundStyle} environment with CINEMATIC LIGHTING
 5. Ensure final output is EXACTLY ${targetDims.width}×${targetDims.height} pixels
 
 🎨 **BACKGROUND STYLE**: ${styleInstruction}
 
-🖼️ **3D RENDERING SPECIFICATIONS**:
-- Cinematic 3D rendering quality
-- Professional studio/environmental lighting
-- Product with realistic shadows and reflections
-- Beautiful depth of field
-- Premium catalog aesthetic
-- Material textures emphasized (wood, fabric, metal, glass)
+🖼️ **MANDATORY CINEMATIC ELEMENTS**:
+- 🌑 ${backgroundStyle === 'shopping' ? 'Dark elegant showroom with subtle gradient' : 'Beautiful ' + backgroundStyle + ' environment'}
+- 🪞 GLOSSY FLOOR with MIRROR REFLECTION of product (marble, polished concrete, or glass)
+- 💡 DRAMATIC KEY LIGHTING from above creating depth and drama
+- ✨ FLOATING PARTICLES (sparkles, dust motes, or bokeh in light beams)
+- 🔆 RIM LIGHTING on product edges (golden/warm accent)
+- 🎭 VOLUMETRIC LIGHT RAYS visible in atmosphere
+
+📸 **3D CGI QUALITY SPECIFICATIONS**:
+- 8K photorealistic render quality
+- Professional 3-point lighting setup:
+  * Key light: Dramatic from above-front
+  * Fill light: Soft from opposite side
+  * Rim light: Accent on product edges
+- Cinematic depth of field (slight background blur)
+- Material textures emphasized and realistic
+- Reflections and shadows add 3D depth
 
 ✨ **CREATIVE DIRECTION**:
-- Make the product look DESIRABLE and PREMIUM
-- Environment should complement the product
-- Lighting should highlight product features
-- Think high-end furniture/product catalog
-- 3D visualization that tells a story
+- Product is the HERO - large, centered, DOMINATING the frame
+- Make it look like a LUXURY BRAND advertisement
+- Think: Roche Bobois, EURODESIGN, Apple product photography level
+- Environment COMPLEMENTS the product perfectly
+- Lighting creates DESIRE and PREMIUM feel
+- NOT a simple photo edit - this is 3D CGI ART
 
-⚠️ IMPORTANT:
+⚠️ CRITICAL:
 - Recreate the SAME product from the input (same shape, proportions, features)
-- But render it as a beautiful 3D visualization
-- NOT a photo edit - this should look like 3D CGI
+- Render it as BEAUTIFUL 3D CGI visualization
+- Add DRAMA with lighting, particles, and reflections
 
-OUTPUT: Beautiful 3D rendered product in ${backgroundStyle} environment.
+OUTPUT: ${targetDims.width}×${targetDims.height} pixel CINEMATIC 3D rendered product with dramatic lighting.
     `.trim();
 
     // Select prompt based on mode

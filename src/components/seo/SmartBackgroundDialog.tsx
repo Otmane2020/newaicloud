@@ -52,7 +52,7 @@ interface ProductGalleryImage {
 
 type BackgroundFormat = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
 type BackgroundMode = 'white_shopping' | 'smart_serp' | '3d_shopping' | '3d_generate';
-type BackgroundStyle = 'shopping' | 'lifestyle' | 'moderne' | 'living_room' | 'studio' | 'nature';
+type BackgroundStyle = 'shopping' | 'lifestyle' | 'moderne' | 'living_room' | 'studio' | 'nature' | 'luxury_showroom';
 
 interface ProductVariant {
   id: string;
@@ -688,6 +688,7 @@ export const SmartBackgroundDialog = ({
                 <div className="flex flex-wrap gap-2">
                   {[
                     { value: 'shopping' as BackgroundStyle, label: 'Shopping', icon: ShoppingBag, desc: 'E-commerce professionnel' },
+                    { value: 'luxury_showroom' as BackgroundStyle, label: '✨ Luxury 3D', icon: Sparkles, desc: 'Showroom luxe avec reflets' },
                     { value: 'lifestyle' as BackgroundStyle, label: 'Lifestyle', icon: Sparkle, desc: 'Ambiance naturelle' },
                     { value: 'moderne' as BackgroundStyle, label: 'Moderne', icon: Camera, desc: 'Design épuré' },
                     { value: 'living_room' as BackgroundStyle, label: 'Living Room', icon: Sofa, desc: 'Intérieur cosy' },
@@ -709,6 +710,7 @@ export const SmartBackgroundDialog = ({
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {bgStyle === 'shopping' && sb.styleDescriptions.shopping}
+                  {bgStyle === 'luxury_showroom' && (language === 'fr' ? 'Showroom luxe avec sol brillant, reflets miroir, éclairage dramatique et particules scintillantes.' : 'Luxury showroom with glossy floor, mirror reflections, dramatic lighting and sparkle particles.')}
                   {bgStyle === 'lifestyle' && sb.styleDescriptions.lifestyle}
                   {bgStyle === 'moderne' && sb.styleDescriptions.moderne}
                   {bgStyle === 'living_room' && sb.styleDescriptions.livingRoom}

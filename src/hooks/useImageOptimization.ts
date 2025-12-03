@@ -105,7 +105,7 @@ export const useImageOptimization = () => {
       visionAiData?: any;
       productDescription?: string;
       product_id?: string;
-      backgroundStyle?: 'shopping' | 'lifestyle' | 'moderne' | 'living_room' | 'studio' | 'nature';
+      backgroundStyle?: 'shopping' | 'lifestyle' | 'moderne' | 'living_room' | 'studio' | 'nature' | 'luxury_showroom';
     }): Promise<OptimizationResult> => {
       setIsOptimizing(true);
       
