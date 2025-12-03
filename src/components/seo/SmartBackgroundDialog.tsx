@@ -35,8 +35,10 @@ import {
   History,
   Check,
   X,
+  Settings2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { BackgroundStyleManager } from './BackgroundStyleManager';
 import { useImageOptimization } from '@/hooks/useImageOptimization';
 import { useTranslation } from '@/lib/language';
 
@@ -108,6 +110,8 @@ export const SmartBackgroundDialog = ({
   // Image history per product
   const [imageHistory, setImageHistory] = useState<Map<string, ImageHistoryItem[]>>(new Map());
   const [showHistory, setShowHistory] = useState<string | null>(null);
+  // Style manager dialog
+  const [showStyleManager, setShowStyleManager] = useState(false);
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
 
@@ -669,14 +673,25 @@ export const SmartBackgroundDialog = ({
             {/* Style Buttons - Only for smart_serp or 3d_generate mode */}
             {(bgMode === 'smart_serp' || bgMode === '3d_generate') && (
               <div className="space-y-2">
-                <Label className="text-sm">{sb.backgroundStyle}</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">{sb.backgroundStyle}</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowStyleManager(true)}
+                  >
+                    <Settings2 className="h-3.5 w-3.5" />
+                    {language === 'fr' ? 'Gérer les styles' : 'Manage styles'}
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { value: 'shopping' as BackgroundStyle, label: 'Shopping', icon: ShoppingBag, desc: 'E-commerce professionnel' },
                     { value: 'lifestyle' as BackgroundStyle, label: 'Lifestyle', icon: Sparkle, desc: 'Ambiance naturelle' },
                     { value: 'moderne' as BackgroundStyle, label: 'Moderne', icon: Camera, desc: 'Design épuré' },
                     { value: 'living_room' as BackgroundStyle, label: 'Living Room', icon: Sofa, desc: 'Intérieur cosy' },
-                    { value: 'studio' as BackgroundStyle, label: 'Studio', icon: Home, desc: 'Éclairage studio' },
+                    { value: 'studio' as BackgroundStyle, label: 'Studio #Home furniture', icon: Home, desc: 'Photos style Ferucci' },
                     { value: 'nature' as BackgroundStyle, label: 'Nature', icon: TreePine, desc: 'Extérieur naturel' },
                   ].map(({ value, label, icon: Icon, desc }) => (
                     <Button
