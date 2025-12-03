@@ -85,44 +85,92 @@ serve(async (req) => {
       .map((img: string, i: number) => `- Image ${i + 2}: ${img}`)
       .join("\n");
 
-    // Simplified prompt for fast generation
-    const prompt = `Génère une landing page HTML complète et moderne pour ce produit:
+    // Professional prompt for high-quality generation
+    const prompt = `Génère une landing page HTML PROFESSIONNELLE et PREMIUM pour ce produit e-commerce:
 
 PRODUIT: ${productTitle}
 DESCRIPTION: ${productDescription || "Produit de qualité premium"}
 MARQUE: ${vendor || ""}
 
-IMAGES PRODUIT (utilise UNIQUEMENT ces URLs, jamais de placeholders):
-- Image principale: ${mainImage}
+IMAGES PRODUIT (URLs EXACTES à utiliser - JAMAIS de placeholder):
+- Image principale HERO: ${mainImage}
 ${additionalImagesStr}
 
-STYLE: ${designStyle}
+STYLE: ${designStyle} - DESIGN PROFESSIONNEL ÉPURÉ
 THÈME: ${theme}
 LANGUE: ${language === "en" ? "Anglais" : "Français"}
 
-TOKENS CSS (utilise ces valeurs HSL):
+TOKENS CSS HSL:
 --primary: ${primaryColor}
 --secondary: ${secondaryColor}
 --text: ${textColor}
 --background: ${bgColor}
 --surface: ${surfaceColor}
 
-RÈGLES STRICTES:
-1. HTML complet avec <!DOCTYPE html>, <html>, <head>, <body>
-2. CSS inline avec styles modernes (gradients, shadows, rounded)
-3. Responsive avec media queries
-4. AUCUN placeholder image - utilise UNIQUEMENT les URLs fournies
-5. AUCUN bouton d'achat ou CTA
-6. AUCUN menu navigation ou footer
-7. Sections: Hero, Points Forts (3-4 cards), Galerie, FAQ
+═══════════════════════════════════════════════════════
+RÈGLES DE DESIGN STRICTES (CRITIQUE):
+═══════════════════════════════════════════════════════
 
-STRUCTURE MINIMALE REQUISE:
-- Hero avec image principale grande
-- Section Points Forts avec 3-4 cartes iconiques
-- Galerie d'images si plusieurs images
-- FAQ courte (3 questions)
+1. ICÔNES PROFESSIONNELLES UNIQUEMENT:
+   - Utilise des SVG inline avec style professionnel (traits fins, style Lucide/Feather)
+   - stroke-width: 1.5 ou 2, viewBox="0 0 24 24", fill="none", stroke="currentColor"
+   - JAMAIS d'emoji, JAMAIS d'icônes clip-art ou enfantines
+   - Exemples de SVG autorisés:
+     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
 
-Génère UNIQUEMENT le HTML complet, rien d'autre.`;
+2. IMAGES PRODUIT BIEN POSITIONNÉES:
+   - Image HERO: min-height: 400px, object-fit: cover, width 100% ou 60% sur desktop
+   - Galerie: display: grid, grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)), gap: 1rem
+   - Toutes images avec border-radius: 12px et box-shadow subtile
+   - aspect-ratio: 1/1 ou 4/3 pour cohérence
+
+3. TYPOGRAPHIE PREMIUM:
+   - Titres: font-weight: 700, letter-spacing: -0.02em
+   - Corps: font-weight: 400, line-height: 1.6
+   - Hierarchy claire avec tailles distinctes (2.5rem titre, 1.25rem sous-titres, 1rem texte)
+
+4. COULEURS ET EFFETS:
+   - Gradients subtils pour backgrounds (linear-gradient avec opacité faible)
+   - Box-shadows douces: 0 4px 20px rgba(0,0,0,0.08)
+   - Contraste élevé texte/fond
+   - Pas de couleurs criardes ou néon
+
+═══════════════════════════════════════════════════════
+STRUCTURE HTML REQUISE:
+═══════════════════════════════════════════════════════
+
+<!DOCTYPE html><html><head>...</head><body>
+1. HERO SECTION:
+   - Layout flex: image (60%) + texte (40%) sur desktop, stack sur mobile
+   - Image principale grande, bien cadrée
+   - Titre produit + marque + description courte
+
+2. SECTION AVANTAGES (3-4 cartes):
+   - Grid responsive 3 colonnes desktop, 1 mobile
+   - Chaque carte: SVG professionnel (24x24) + titre + description courte
+   - Background surface avec border subtile
+
+3. GALERIE IMAGES (si images additionnelles):
+   - Grid 2-3 colonnes avec gap
+   - Hover effect subtil (scale 1.02, shadow)
+   - Images bien cadrées
+
+4. FAQ SECTION (3 questions max):
+   - Accordéon simple ou liste Q/R
+   - Questions pertinentes au produit
+</body></html>
+
+═══════════════════════════════════════════════════════
+INTERDIT ABSOLUMENT:
+═══════════════════════════════════════════════════════
+- Emoji ou icônes enfantines ❌
+- Images placeholder (via.placeholder.com, etc.) ❌
+- Boutons d'achat ou CTA ❌
+- Menu navigation ou footer ❌
+- JavaScript ou animations complexes ❌
+- Couleurs trop vives ou néon ❌
+
+Génère UNIQUEMENT le HTML complet (<!DOCTYPE html> jusqu'à </html>), rien d'autre.`;
 
     // Call AI with shorter timeout for bulk
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -210,11 +258,11 @@ Génère UNIQUEMENT le HTML complet, rien d'autre.`;
         console.log(`💾 Saved landing page for product ${product_id}`);
       }
 
-      // Track usage (5 credits for bulk vs 10 for full)
+      // Track usage (10 credits per bulk landing page)
       await supabaseAdmin.rpc("increment_usage", {
         p_seller_id: userId,
         p_field: "optimizations_count",
-        p_increment: 5,
+        p_increment: 10,
       });
     }
 
