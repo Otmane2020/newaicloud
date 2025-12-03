@@ -12,7 +12,7 @@ import { ContactForm } from "@/components/ContactForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/language";
-import { getCurrencySymbol } from "@/lib/formatUtils";
+import { formatPrice } from "@/lib/formatUtils";
 import { useEffect, useState } from "react";
 import { AIAssistant } from "@/components/AIAssistant";
 import { LandingPageVisionShowcase } from "@/components/landing/LandingPageVisionShowcase";
@@ -356,7 +356,7 @@ const Index = () => {
                       <div>
                         <div className="flex items-baseline gap-2">
                           <span className="text-lg sm:text-2xl font-semibold text-muted-foreground line-through">
-                            {language === 'fr' ? `${originalPrice.toFixed(2).replace('.', ',')} ${getCurrencySymbol(language)}` : `${getCurrencySymbol(language)}${originalPrice.toFixed(2)}`}
+                            {formatPrice(originalPrice, language, true)}
                           </span>
                           <Badge variant="destructive" className="ml-2 text-xs">
                             -{planConfig.discount}%
@@ -364,7 +364,7 @@ const Index = () => {
                         </div>
                       <div className="flex items-baseline gap-2 mt-1">
                         <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">
-                          {language === 'fr' ? `${price} ${getCurrencySymbol(language)}` : `${getCurrencySymbol(language)}${price}`}
+                          {formatPrice(price, language)}
                         </span>
                         <span className="text-sm sm:text-base text-muted-foreground">{t.landing.pricing.perMonth}</span>
                       </div>
@@ -374,14 +374,14 @@ const Index = () => {
                         {planConfig.isTrial ? (
                           <>
                             <span className="text-3xl sm:text-4xl lg:text-5xl font-bold">
-                              {language === 'fr' ? `0 ${getCurrencySymbol(language)}` : `${getCurrencySymbol(language)}0`}
+                              {formatPrice(0, language)}
                             </span>
                             <span className="text-sm sm:text-base text-muted-foreground">{t.landing.pricing.perMonth}</span>
                           </>
                         ) : (
                           <>
                             <span className="text-3xl sm:text-4xl lg:text-5xl font-bold">
-                              {language === 'fr' ? `${price} ${getCurrencySymbol(language)}` : `${getCurrencySymbol(language)}${price}`}
+                              {formatPrice(price, language)}
                             </span>
                             <span className="text-sm sm:text-base text-muted-foreground">{t.landing.pricing.perMonth}</span>
                           </>
@@ -392,11 +392,7 @@ const Index = () => {
                       <p className="text-sm text-success mt-1">
                         {t.landing.pricing.billedAnnually
                           .replace('{{currency}}', '')
-                          .replace('{{total}}', 
-                            language === 'fr' 
-                              ? `${planConfig.yearlyTotal} ${getCurrencySymbol(language)}` 
-                              : `${getCurrencySymbol(language)}${planConfig.yearlyTotal}`
-                          )}
+                          .replace('{{total}}', formatPrice(planConfig.yearlyTotal, language))}
                       </p>
                     )}
                     {planConfig.isTrial && (
