@@ -56,21 +56,23 @@ serve(async (req) => {
     if (confirmPayment && email) {
       console.log("[create-mobile-checkout] Confirming payment and creating account for:", email);
       
-      // For free coupon, skip payment verification
-      if (paymentIntentId !== "coupon_free") {
-        // Verify payment succeeded
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-        
-        if (paymentIntent.status !== "succeeded") {
-          return new Response(
-            JSON.stringify({ error: "Payment not confirmed yet", status: paymentIntent.status }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-        console.log("[create-mobile-checkout] Payment verified as succeeded");
-      } else {
-        console.log("[create-mobile-checkout] Free coupon - skipping payment verification");
+      // Verify payment succeeded - no free coupons allowed
+      if (!paymentIntentId || paymentIntentId === "coupon_free") {
+        return new Response(
+          JSON.stringify({ error: "Valid payment is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
+      
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      
+      if (paymentIntent.status !== "succeeded") {
+        return new Response(
+          JSON.stringify({ error: "Payment not confirmed yet", status: paymentIntent.status }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log("[create-mobile-checkout] Payment verified as succeeded");
 
       // Check if user already exists
       const { data: existingUsers } = await supabase.auth.admin.listUsers();
@@ -273,8 +275,17 @@ serve(async (req) => {
         }
       };
 
-      // Apply coupon if found
+      // Apply coupon if found - but BLOCK 100% coupons
       if (couponId) {
+        // Verify coupon doesn't give 100% discount
+        const couponDetails = await stripe.coupons.retrieve(couponId);
+        if (couponDetails.percent_off === 100 || (couponDetails.amount_off && couponDetails.amount_off >= 10000)) {
+          console.log("[create-mobile-checkout] BLOCKED: 100% coupon attempted:", couponId);
+          return new Response(
+            JSON.stringify({ error: "This coupon code is not valid. Maximum discount is 90%." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         subscriptionParams.coupon = couponId;
       }
 
@@ -283,25 +294,18 @@ serve(async (req) => {
       const invoice = subscription.latest_invoice as Stripe.Invoice;
       const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent | null;
 
-      // If 100% coupon applied, no payment needed - need to pay $0 invoice to activate subscription
-      if (!paymentIntent) {
-        console.log("[create-mobile-checkout] No payment required (100% coupon), paying $0 invoice to activate");
-        
-        // Pay the $0 invoice to move subscription from incomplete to active
-        // Use paid_out_of_band for $0 invoices as no payment method is needed
-        if (invoice.id && invoice.status === 'open') {
-          await stripe.invoices.pay(invoice.id, { paid_out_of_band: true });
-          console.log("[create-mobile-checkout] $0 invoice paid out of band, subscription now active:", subscription.id);
-        }
-        
+      // Check actual amount due - payment required if amount > 0
+      const amountDue = invoice.amount_due || 0;
+      console.log("[create-mobile-checkout] Invoice amount_due:", amountDue, "cents");
+
+      // ALWAYS require payment - reject if somehow amount is 0
+      if (amountDue === 0 || !paymentIntent) {
+        console.log("[create-mobile-checkout] BLOCKED: Zero amount or no paymentIntent - cancelling subscription");
+        // Cancel the subscription to prevent free access
+        await stripe.subscriptions.cancel(subscription.id);
         return new Response(
-          JSON.stringify({ 
-            noPaymentRequired: true,
-            subscriptionId: subscription.id,
-            userEmail: email,
-            customerId: customerId
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Payment is required. Please use a valid payment method." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
