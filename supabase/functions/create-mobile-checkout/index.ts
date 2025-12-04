@@ -199,8 +199,37 @@ serve(async (req) => {
     if (mode === "payment_intent") {
       console.log("[create-mobile-checkout] Creating subscription for:", email);
       
+      // Check if coupon should be applied
+      let couponId: string | undefined;
+      if (couponCode) {
+        try {
+          // Try to retrieve by ID first
+          try {
+            const coupon = await stripe.coupons.retrieve(couponCode.toUpperCase());
+            if (coupon && coupon.valid) {
+              couponId = coupon.id;
+            }
+          } catch (e) {
+            // Not found by ID, search list
+            const coupons = await stripe.coupons.list({ limit: 100 });
+            const foundCoupon = coupons.data.find((c: Stripe.Coupon) => 
+              c.valid && (
+                c.name?.toUpperCase() === couponCode.toUpperCase() || 
+                c.id.toUpperCase() === couponCode.toUpperCase()
+              )
+            );
+            if (foundCoupon) {
+              couponId = foundCoupon.id;
+            }
+          }
+          console.log("[create-mobile-checkout] Coupon found:", couponId);
+        } catch (e) {
+          console.log("[create-mobile-checkout] Coupon lookup error:", e);
+        }
+      }
+
       // Create subscription with payment intent (NO USER CREATED YET)
-      const subscription = await stripe.subscriptions.create({
+      const subscriptionParams: Stripe.SubscriptionCreateParams = {
         customer: customerId,
         items: [{ price: priceId }],
         payment_behavior: 'default_incomplete',
@@ -211,7 +240,14 @@ serve(async (req) => {
           user_fullname: fullName || "",
           pending_account: "true"
         }
-      });
+      };
+
+      // Apply coupon if found
+      if (couponId) {
+        subscriptionParams.coupon = couponId;
+      }
+
+      const subscription = await stripe.subscriptions.create(subscriptionParams);
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
       const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;

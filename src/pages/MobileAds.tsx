@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Check, Zap, ShoppingBag, TrendingUp, Clock, Shield, Star, X, Sparkles, BarChart3, Image, MessageSquare, Globe, ChevronRight, Play, Search, FileText, Tags, Home } from "lucide-react";
+import { Check, Zap, ShoppingBag, TrendingUp, Clock, Shield, Star, X, Sparkles, BarChart3, Image, MessageSquare, Globe, ChevronRight, Play, Search, FileText, Tags, Home, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { EmbeddedCheckout } from "@/components/mobileads/EmbeddedCheckout";
 import phoneHandMockup from "@/assets/phone-hand-mockup.png";
 import laptopDashboardMockup from "@/assets/laptop-dashboard-mockup.png";
@@ -251,7 +252,7 @@ export default function MobileAds() {
             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[200px] h-[80px] bg-violet-500/30 blur-3xl rounded-full" />
           </div>
           
-          <div className="text-center">
+          <div className="text-center space-y-4">
             <Button 
               onClick={() => setShowPricing(true)}
               size="lg"
@@ -261,7 +262,17 @@ export default function MobileAds() {
               Get 70% OFF – From $7.99/mo
             </Button>
             
-            <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500">
+            <Button 
+              onClick={() => window.open('https://cal.com/newai/30min?month=2025-01', '_blank')}
+              variant="outline"
+              size="lg"
+              className="w-full max-w-[300px] border-violet-500/50 text-violet-300 hover:bg-violet-500/10 font-bold py-6 rounded-2xl"
+            >
+              <Calendar className="w-5 h-5 mr-2" />
+              Book a Demo (30 min)
+            </Button>
+            
+            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-gray-500">
               <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> 14-day refund</span>
               <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Cancel anytime</span>
             </div>
@@ -550,6 +561,10 @@ export default function MobileAds() {
       {/* Pricing Dialog */}
       <Dialog open={showPricing && !showCheckout} onOpenChange={setShowPricing}>
         <DialogContent className="bg-white text-gray-900 max-w-md mx-auto rounded-t-3xl sm:rounded-2xl p-0 border-0 max-h-[95vh] overflow-y-auto gap-0">
+          <VisuallyHidden>
+            <DialogTitle>Choose Plan</DialogTitle>
+            <DialogDescription>Select a subscription plan for NewAI</DialogDescription>
+          </VisuallyHidden>
           {/* Header */}
           <div className="sticky top-0 bg-white z-10 px-5 pt-5 pb-4 border-b">
             <div className="flex justify-between items-center">
@@ -659,6 +674,10 @@ export default function MobileAds() {
       {/* Embedded Checkout Dialog */}
       <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
         <DialogContent className="bg-white text-gray-900 max-w-md mx-auto rounded-t-3xl sm:rounded-2xl p-0 border-0 max-h-[95vh] overflow-hidden gap-0">
+          <VisuallyHidden>
+            <DialogTitle>Checkout</DialogTitle>
+            <DialogDescription>Complete your NewAI subscription</DialogDescription>
+          </VisuallyHidden>
           <div className="sticky top-0 bg-white z-10 px-5 pt-5 pb-3 border-b">
             <div className="flex justify-between items-center">
               <div>
