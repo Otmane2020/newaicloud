@@ -73,6 +73,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
   const [emailError, setEmailError] = useState<string | null>(null);
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [paymentRequest, setPaymentRequest] = useState<any>(null);
+  const [isCardComplete, setIsCardComplete] = useState(false);
   const [canMakePayment, setCanMakePayment] = useState(false);
 
   const price = billingPeriod === "yearly" ? selectedPlan.yearly.price : selectedPlan.monthly.price;
@@ -323,6 +324,12 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
     }
     if (!stripe || !elements) {
       toast.error("Payment system not ready");
+      return;
+    }
+    
+    // Validate card is complete before proceeding
+    if (!isCardComplete) {
+      toast.error("Veuillez saisir vos coordonnées bancaires / Please enter your card details");
       return;
     }
 
@@ -691,7 +698,10 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
 
           <div className="space-y-3">
             <div className="p-3 border border-gray-200 rounded-lg bg-white">
-              <CardElement options={cardElementOptions} />
+              <CardElement 
+                options={cardElementOptions} 
+                onChange={(event) => setIsCardComplete(event.complete)}
+              />
             </div>
             
             <p className="text-xs text-gray-500">
