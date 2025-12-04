@@ -103,8 +103,8 @@ serve(async (req) => {
 
     // Mode: payment_intent - Create subscription with payment intent for Elements
     if (mode === "payment_intent") {
-      // Get the price to determine the amount
-      const price = await stripe.prices.retrieve(priceId);
+      // Generate a random password for the new user
+      const generatedPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
       
       // Create subscription with payment intent
       const subscription = await stripe.subscriptions.create({
@@ -116,7 +116,8 @@ serve(async (req) => {
         metadata: {
           user_email: email,
           user_fullname: fullName || "",
-          create_account: "true"
+          create_account: "true",
+          generated_password: generatedPassword
         }
       });
 
@@ -125,10 +126,39 @@ serve(async (req) => {
 
       console.log("Payment intent created for subscription:", subscription.id);
 
+      // Create Supabase user account immediately (will be activated after payment)
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email: email,
+        password: generatedPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName || "",
+          source: "mobile_ads_checkout"
+        }
+      });
+
+      if (createError) {
+        console.error("Error creating user:", createError);
+        // Don't fail - user can still pay, account will be created via webhook
+      } else if (newUser?.user) {
+        console.log("User created:", newUser.user.id);
+        
+        // Create profile
+        await supabase.from("profiles").upsert({
+          id: newUser.user.id,
+          email: email,
+          full_name: fullName || "",
+          subscription_status: "pending",
+          created_at: new Date().toISOString()
+        });
+      }
+
       return new Response(
         JSON.stringify({ 
           clientSecret: paymentIntent.client_secret,
-          subscriptionId: subscription.id
+          subscriptionId: subscription.id,
+          userEmail: email,
+          tempPassword: generatedPassword
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
