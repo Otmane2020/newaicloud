@@ -1,49 +1,18 @@
-import { useEffect, useRef } from "react";
 import { useTranslation } from "@/lib/language";
-import { Calendar, Clock, Video } from "lucide-react";
+import { Calendar, Clock, Video, ExternalLink } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface CalBookingEmbedProps {
   className?: string;
   minimal?: boolean;
 }
 
+const CAL_LINK = "https://cal.com/new-ai-isgo1m/30min?overlayCalendar=true";
+
 export function CalBookingEmbed({ className = "", minimal = false }: CalBookingEmbedProps) {
-  const { language, t } = useTranslation();
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Load Cal.com embed script
-    const script = document.createElement("script");
-    script.src = "https://app.cal.com/embed/embed.js";
-    script.async = true;
-    document.body.appendChild(script);
-
-    script.onload = () => {
-      // @ts-ignore - Cal is loaded from external script
-      if (window.Cal) {
-        // @ts-ignore
-        window.Cal("init", { origin: "https://cal.com" });
-        // @ts-ignore
-        window.Cal("inline", {
-          elementOrSelector: "#cal-booking-embed",
-          calLink: "new-ai-isgo1m/30min",
-          layout: "month_view",
-          config: {
-            theme: "light",
-          },
-        });
-      }
-    };
-
-    return () => {
-      // Cleanup script on unmount
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
-  }, []);
+  const { language } = useTranslation();
 
   const title = language === 'fr' ? "Réserver une démo" : "Book a Demo";
   const subtitle = language === 'fr' 
@@ -53,15 +22,34 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
   const availability = language === 'fr' 
     ? "Lun-Ven, 10h30-16h30 (Paris)"
     : "Mon-Fri, 10:30AM-4:30PM (Paris)";
+  const buttonText = language === 'fr' ? "Réserver maintenant" : "Book now";
+
+  const handleBooking = () => {
+    window.open(CAL_LINK, '_blank');
+  };
 
   if (minimal) {
     return (
-      <div className={`w-full ${className}`}>
-        <div 
-          id="cal-booking-embed" 
-          ref={containerRef}
-          className="w-full h-[350px] rounded-xl overflow-hidden"
-        />
+      <div className={`w-full flex flex-col items-center gap-4 ${className}`}>
+        <div className="flex flex-wrap justify-center gap-4 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Clock className="w-4 h-4 text-primary" />
+            <span>{duration}</span>
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Calendar className="w-4 h-4 text-primary" />
+            <span>{availability}</span>
+          </div>
+        </div>
+        <Button 
+          size="lg" 
+          onClick={handleBooking}
+          className="px-8"
+        >
+          <Video className="w-4 h-4 mr-2" />
+          {buttonText}
+          <ExternalLink className="w-4 h-4 ml-2" />
+        </Button>
       </div>
     );
   }
@@ -88,11 +76,17 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
         </div>
       </div>
 
-      <div 
-        id="cal-booking-embed" 
-        ref={containerRef}
-        className="w-full h-[400px] rounded-xl overflow-hidden border"
-      />
+      <div className="flex justify-center">
+        <Button 
+          size="lg" 
+          onClick={handleBooking}
+          className="px-8"
+        >
+          <Video className="w-4 h-4 mr-2" />
+          {buttonText}
+          <ExternalLink className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
     </Card>
   );
 }
