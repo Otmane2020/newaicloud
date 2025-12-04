@@ -30,6 +30,7 @@ serve(async (req) => {
       basePrompt = "",
       productTitle,
       productDescription,
+      productImageUrl, // 🆕 Image URL for image-to-image generation
       seoTitle,
       seoDescription,
       visionAiData,
@@ -44,6 +45,15 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    if (!productImageUrl) {
+      return new Response(JSON.stringify({ success: false, error: "Missing productImageUrl - required for image editing" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("📸 Product image URL received:", productImageUrl?.substring(0, 100) + "...");
 
     // 🆕 Map format to dimensions and aspect ratio
     const formatToDimensions: Record<string, string> = {
@@ -134,41 +144,91 @@ VISUAL QUALITY ENHANCEMENT - PROFESSIONAL E-COMMERCE PHOTOGRAPHY:
 
     // ---------- Variants avec contexte enrichi et décoratif ----------
     // 🆕 Include format/dimensions in all prompts with visual enhancement and orientation
+    // 🆕 IMAGE EDITING HEADER - Critical for product preservation while allowing orientation correction
+    const imageEditingHeader = `
+🚨🚨🚨 THIS IS IMAGE EDITING - NOT GENERATION 🚨🚨🚨
+You are EDITING the provided product image, NOT generating a new product.
+
+CRITICAL RULES:
+1. EXTRACT the exact product from the input image pixel-by-pixel
+2. PRESERVE the product's form, colors, details, textures EXACTLY
+3. IF THE PRODUCT IS POORLY ORIENTED (rotated, wrong angle, upside down):
+   → CORRECT the orientation to show professional FRONT VIEW or 3/4 ANGLE
+   → Like professional furniture catalogs (IKEA, West Elm, Roche Bobois)
+4. REPLACE ONLY the background - the product itself stays IDENTICAL
+5. Apply professional studio lighting to match the new environment
+
+⚠️ FATAL ERRORS (will be rejected):
+- Generating a NEW/DIFFERENT product = TOTAL FAILURE
+- Changing product shape, color, or details = FAILURE
+- Product appearing distorted or modified = FAILURE
+
+✅ ALLOWED:
+- Correcting product rotation/angle to professional standard
+- Adjusting lighting to match new background
+- Removing original background completely
+`;
+
     const variants = [
       {
         style: "cozy_lifestyle" as const,
         description: "Cozy Lifestyle – Salon moderne",
-        prompt: `🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
+        prompt: `${imageEditingHeader}
+🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
 ${orientationInstructions}
-IMPORTANT: Remove and replace the existing background completely. Keep product EXACT orientation - do NOT flip or mirror. Product photography of ${enrichedContext} in a cozy lifestyle setting with warm lighting and a comfortable modern living room interior. ${basePrompt}. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce.`,
+TASK: Edit this product image - extract the product, correct orientation if needed, place in cozy lifestyle setting.
+Product: ${enrichedContext}
+Environment: Warm modern living room with soft ambient lighting, natural textures, wooden elements, neutral tones.
+${basePrompt}
+The product must be the hero element, well-lit, premium e-commerce aesthetic.`,
       },
       {
         style: "professional_studio" as const,
         description: "Studio professionnel",
-        prompt: `🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
+        prompt: `${imageEditingHeader}
+🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
 ${orientationInstructions}
-IMPORTANT: Remove and replace the existing background completely. Keep product EXACT orientation - do NOT flip or mirror. Professional studio photography of ${enrichedContext} with a clean white background and perfect soft lighting. ${basePrompt}. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic.`,
+TASK: Edit this product image - extract the product, correct orientation if needed, place on clean studio background.
+Product: ${enrichedContext}
+Environment: Professional studio with pure white/light gray background, perfect soft lighting.
+${basePrompt}
+High-end commercial style, sharp focus, no distractions.`,
       },
       {
         style: "luxurious_nature" as const,
         description: "Nature luxueuse",
-        prompt: `🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
+        prompt: `${imageEditingHeader}
+🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
 ${orientationInstructions}
-IMPORTANT: Remove and replace the existing background completely. Keep product EXACT orientation - do NOT flip or mirror. Product photography of ${enrichedContext} in a luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. ${basePrompt}. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment.`,
+TASK: Edit this product image - extract the product, correct orientation if needed, place in luxurious natural setting.
+Product: ${enrichedContext}
+Environment: Elegant natural setting with green plants, wood textures, soft daylight, refined organic décor.
+${basePrompt}
+Warm, high-end natural ambiance, premium lifestyle environment.`,
       },
       {
         style: "modern_minimalist" as const,
         description: "Minimaliste moderne",
-        prompt: `🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
+        prompt: `${imageEditingHeader}
+🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
 ${orientationInstructions}
-IMPORTANT: Remove and replace the existing background completely. Keep product EXACT orientation - do NOT flip or mirror. Product photography of ${enrichedContext} in a modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. ${basePrompt}. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce.`,
+TASK: Edit this product image - extract the product, correct orientation if needed, place in minimalist interior.
+Product: ${enrichedContext}
+Environment: Modern minimalist space with clean lines, neutral colors, soft daylight, uncluttered aesthetic.
+${basePrompt}
+Sleek, contemporary composition ideal for e-commerce.`,
       },
       {
         style: "urban_contemporary" as const,
         description: "Urbain contemporain",
-        prompt: `🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
+        prompt: `${imageEditingHeader}
+🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
 ${orientationInstructions}
-IMPORTANT: Remove and replace the existing background completely. Keep product EXACT orientation - do NOT flip or mirror. Product photography of ${enrichedContext} with contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. ${basePrompt}. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot.`,
+TASK: Edit this product image - extract the product, correct orientation if needed, place in urban setting.
+Product: ${enrichedContext}
+Environment: Contemporary urban space with industrial elements, concrete textures, large windows, modern architecture.
+${basePrompt}
+Stylish city-inspired atmosphere, premium lifestyle shot.`,
       },
     ];
 
@@ -189,7 +249,10 @@ IMPORTANT: Remove and replace the existing background completely. Keep product E
               messages: [
                 {
                   role: "user",
-                  content: variant.prompt,
+                  content: [
+                    { type: "text", text: variant.prompt },
+                    { type: "image_url", image_url: { url: productImageUrl } }
+                  ],
                 },
               ],
               modalities: ["image", "text"],
