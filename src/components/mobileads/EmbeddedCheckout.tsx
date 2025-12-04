@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Check, Mail, CreditCard, ChevronRight, Lock, Tag, User, MapPin, Globe, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Check, Mail, ChevronRight, Lock, Tag, User, MapPin, Globe, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { loadStripe } from "@stripe/stripe-js";
+import { EmbeddedCheckoutProvider, EmbeddedCheckout as StripeEmbeddedCheckout } from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe("pk_live_51OkmX3Efti9t9nN9FQlJLAWNZT7N4LJYlG0NZoXw3Yz8F2RNpJJVzqE6Z5hK3xYQVf8WqTk7fKZ6tJLZ3hO3nUiW00e9rVUXPZ");
 
 interface Plan {
   name: string;
@@ -59,6 +63,9 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const price = billingPeriod === "yearly" ? selectedPlan.yearly.price : selectedPlan.monthly.price;
   const priceId = billingPeriod === "yearly" ? selectedPlan.yearly.priceId : selectedPlan.monthly.priceId;
@@ -66,6 +73,30 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
   
   const discountAmount = appliedCoupon ? price * 0.1 : 0;
   const finalPrice = price - discountAmount;
+
+  const checkEmailExists = async (emailToCheck: string): Promise<boolean> => {
+    try {
+      setCheckingEmail(true);
+      setEmailError(null);
+      
+      const { data, error } = await supabase.functions.invoke("create-mobile-checkout", {
+        body: { checkEmailOnly: true, email: emailToCheck }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.exists) {
+        setEmailError("This email is already registered. Please sign in instead.");
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Email check error:", err);
+      return false;
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -80,7 +111,7 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
     setCouponLoading(false);
   };
 
-  const validateStep1 = () => {
+  const validateStep1 = async () => {
     if (!email || !email.includes("@")) {
       toast.error("Please enter a valid email address");
       return false;
@@ -89,6 +120,14 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
       toast.error("Please enter your full name");
       return false;
     }
+    
+    // Check if email already exists
+    const exists = await checkEmailExists(email);
+    if (exists) {
+      toast.error("This email is already registered. Please sign in instead.");
+      return false;
+    }
+    
     return true;
   };
 
@@ -124,42 +163,78 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
     return true;
   };
 
-  const handleCheckout = async () => {
+  const fetchClientSecret = useCallback(async () => {
+    const { data, error } = await supabase.functions.invoke("create-mobile-checkout", {
+      body: { 
+        priceId,
+        email,
+        password,
+        fullName,
+        billingAddress: {
+          country,
+          line1: address,
+          city,
+          postal_code: postalCode
+        },
+        couponCode: appliedCoupon
+      }
+    });
+
+    if (error) throw error;
+    return data.clientSecret;
+  }, [priceId, email, password, fullName, country, address, city, postalCode, appliedCoupon]);
+
+  const handleProceedToPayment = async () => {
     if (!validateStep3()) return;
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-mobile-checkout", {
-        body: { 
-          priceId,
-          email,
-          password,
-          fullName,
-          billingAddress: {
-            country,
-            line1: address,
-            city,
-            postal_code: postalCode
-          },
-          successUrl: `${window.location.origin}/payment-success?email=${encodeURIComponent(email)}`,
-          cancelUrl: `${window.location.origin}/mobileads`,
-          couponCode: appliedCoupon
-        }
-      });
-
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-        toast.success("Redirecting to secure checkout...");
-        onClose();
+      const secret = await fetchClientSecret();
+      if (secret) {
+        setClientSecret(secret);
+        setStep(4);
       }
     } catch (err: any) {
       console.error("Checkout error:", err);
-      toast.error(err.message || "Checkout failed. Please try again.");
+      toast.error(err.message || "Failed to initialize checkout. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleStep1Continue = async () => {
+    setIsLoading(true);
+    const valid = await validateStep1();
+    setIsLoading(false);
+    if (valid) setStep(2);
+  };
+
+  // Show embedded checkout
+  if (step === 4 && clientSecret) {
+    return (
+      <div className="flex flex-col h-full max-h-[80vh]">
+        <div className="p-4 border-b bg-gray-50">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold">Complete Payment</h3>
+            <Button variant="ghost" size="sm" onClick={() => setStep(3)}>
+              Back
+            </Button>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            {selectedPlan.name} Plan • ${finalPrice.toFixed(2)}/mo
+          </p>
+        </div>
+        <div className="flex-1 overflow-hidden" id="checkout">
+          <EmbeddedCheckoutProvider
+            stripe={stripePromise}
+            options={{ clientSecret }}
+          >
+            <StripeEmbeddedCheckout />
+          </EmbeddedCheckoutProvider>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full max-h-[80vh]">
@@ -211,10 +286,22 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
                     type="email"
                     placeholder="your@email.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-11"
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setEmailError(null);
+                    }}
+                    className={`pl-10 h-11 ${emailError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   />
+                  {checkingEmail && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
+                  )}
                 </div>
+                {emailError && (
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {emailError}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -294,11 +381,18 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
             </div>
 
             <Button 
-              onClick={() => validateStep1() && setStep(2)}
+              onClick={handleStep1Continue}
+              disabled={isLoading || checkingEmail}
               className="w-full h-12 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold"
             >
-              Continue to Billing
-              <ChevronRight className="w-5 h-5 ml-1" />
+              {isLoading || checkingEmail ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Continue to Billing
+                  <ChevronRight className="w-5 h-5 ml-1" />
+                </>
+              )}
             </Button>
           </div>
         )}
@@ -405,8 +499,8 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
         {step === 3 && (
           <div className="p-6 space-y-5">
             <div>
-              <h3 className="font-bold text-lg mb-1">Create Password & Pay</h3>
-              <p className="text-sm text-gray-500">Set your account password to complete</p>
+              <h3 className="font-bold text-lg mb-1">Create Password</h3>
+              <p className="text-sm text-gray-500">Set your account password to continue</p>
             </div>
 
             <div className="space-y-4">
@@ -459,34 +553,18 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Billing</span>
-                  <span className="font-medium">{city}, {country}</span>
+                  <span className="font-medium">{billingPeriod === "yearly" ? "Yearly" : "Monthly"}</span>
                 </div>
-                <div className="flex justify-between pt-2 border-t border-violet-200">
-                  <span className="font-bold">Total</span>
-                  <span className="font-bold text-violet-600 text-lg">${finalPrice.toFixed(2)}/mo</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Info */}
-            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-              <CreditCard className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-gray-600">
-                <p className="font-medium text-gray-900 mb-1">Secure Stripe Checkout</p>
-                <p>You'll enter payment on Stripe's secure page. We never store your card info.</p>
-              </div>
-            </div>
-
-            {/* What's included */}
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-500">WHAT YOU'LL GET:</p>
-              <div className="grid grid-cols-2 gap-2">
-                {["AI SEO Optimization", "Smart Backgrounds", "Google Merchant", "Shopify Integration", "Welcome Email", "24/7 Support"].map((f, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-xs text-gray-600">
-                    <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
-                    <span>{f}</span>
+                {appliedCoupon && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Coupon</span>
+                    <span className="font-medium">{appliedCoupon}</span>
                   </div>
-                ))}
+                )}
+                <div className="flex justify-between font-bold text-lg pt-2 border-t border-violet-200">
+                  <span>Total</span>
+                  <span className="text-violet-600">${finalPrice.toFixed(2)}/mo</span>
+                </div>
               </div>
             </div>
 
@@ -495,43 +573,31 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
                 variant="outline"
                 onClick={() => setStep(2)}
                 className="flex-1 h-12"
-                disabled={isLoading}
               >
                 Back
               </Button>
               <Button 
-                onClick={handleCheckout}
-                disabled={isLoading || !acceptTerms}
+                onClick={handleProceedToPayment}
+                disabled={isLoading}
                 className="flex-1 h-12 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold"
               >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Processing...
-                  </div>
+                  <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
-                    <Lock className="w-4 h-4 mr-2" />
-                    Pay ${finalPrice.toFixed(2)}/mo
+                    Proceed to Payment
+                    <ChevronRight className="w-5 h-5 ml-1" />
                   </>
                 )}
               </Button>
             </div>
+
+            <p className="text-xs text-center text-gray-500 flex items-center justify-center gap-1">
+              <Lock className="w-3 h-3" />
+              Secured by Stripe • 256-bit SSL encryption
+            </p>
           </div>
         )}
-      </div>
-
-      {/* Trust badges */}
-      <div className="p-4 border-t bg-gray-50">
-        <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <Lock className="w-3 h-3" /> Secure
-          </span>
-          <span>•</span>
-          <span>14-day refund</span>
-          <span>•</span>
-          <span>Cancel anytime</span>
-        </div>
       </div>
     </div>
   );
