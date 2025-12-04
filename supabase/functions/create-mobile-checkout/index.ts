@@ -104,6 +104,27 @@ serve(async (req) => {
 
       if (createError) {
         console.error("[create-mobile-checkout] Error creating user:", createError);
+        
+        // Handle race condition: user might have been created by another concurrent request
+        if (createError.message?.includes("already been registered") || createError.message?.includes("already exists")) {
+          console.log("[create-mobile-checkout] User already exists (race condition), fetching existing user");
+          const { data: usersAfterError } = await supabase.auth.admin.listUsers();
+          const existingUserAfterError = usersAfterError?.users?.find(
+            (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
+          );
+          
+          if (existingUserAfterError) {
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                userId: existingUserAfterError.id,
+                message: "User already exists"
+              }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+        
         return new Response(
           JSON.stringify({ error: createError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
