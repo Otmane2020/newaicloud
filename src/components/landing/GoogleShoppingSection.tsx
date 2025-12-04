@@ -2,13 +2,17 @@ import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/language";
 import { FileCode, Tag, Barcode, CheckCircle2, ShoppingCart, Globe } from "lucide-react";
 
-// Google Shopping Logo
+// Google Shopping Bag Logo
 const GoogleShoppingLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-7 h-7">
-    <path fill="#4285F4" d="M12 2L2 7l10 5 10-5-10-5z"/>
-    <path fill="#34A853" d="M2 17l10 5 10-5v-5L12 17 2 12v5z"/>
-    <path fill="#FBBC05" d="M12 12L2 7v5l10 5 10-5V7l-10 5z"/>
-    <path fill="#EA4335" d="M12 22l10-5v-5l-10 5-10-5v5l10 5z" opacity="0.5"/>
+  <svg viewBox="0 0 24 24" className="w-8 h-8">
+    {/* Shopping bag body */}
+    <path fill="#4285F4" d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+    {/* Handle */}
+    <path d="M9 6V4.5C9 3.12 10.12 2 11.5 2h1C13.88 2 15 3.12 15 4.5V6" stroke="#FBBC05" strokeWidth="1.5" fill="none"/>
+    {/* Center circle */}
+    <circle cx="12" cy="13" r="3" fill="#EA4335"/>
+    {/* G letter */}
+    <path fill="white" d="M13 13h-1.5v1h2c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5c.41 0 .78.17 1.05.44l.7-.7C13.36 11.86 12.71 11.5 12 11.5c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5v-1h-1.5z"/>
   </svg>
 );
 
