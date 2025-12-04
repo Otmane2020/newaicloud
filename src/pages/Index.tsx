@@ -27,17 +27,18 @@ import {
   ArrowRight,
   CheckCircle2,
   Globe,
-  CreditCard,
   Star,
   ImageIcon,
   Tags,
   TrendingUp,
-  Play
+  Play,
+  Clock,
+  Shield
 } from "lucide-react";
 
 // Official Integration Logos
 const ShopifyLogo = () => (
-  <svg viewBox="0 0 109 124" className="w-8 h-8">
+  <svg viewBox="0 0 109 124" className="w-6 h-6">
     <path fill="#95BF47" d="M95.6 28.4c-.1-.6-.6-1-1.1-1-.5 0-10.7-.7-10.7-.7s-7.1-6.9-7.9-7.7c-.8-.8-2.3-.5-2.9-.4-.1 0-1.5.5-4 1.2-2.4-6.9-6.6-13.2-14-13.2h-.6c-2.1-2.8-4.7-4-7-4-17.3 0-25.6 21.6-28.2 32.6-6.8 2.1-11.6 3.6-12.2 3.8-3.8 1.2-3.9 1.3-4.4 4.9-.4 2.7-10.3 79.4-10.3 79.4l77.7 14.6 42-9.1S95.7 29 95.6 28.4zM67.3 21.8l-6.5 2c0-1.6 0-3.3-.2-5.2 4.1.6 6.3 3 6.7 3.2zm-11.2-7.4c.2 2.5.2 5.2.1 7.7l-16.8 5.2c3.2-12.6 9.3-18.8 16.7-12.9zm-5.3-7.8c1.1 0 2.1.4 3.1 1.1-8 3.8-16.5 13.3-20.1 32.4l-13.3 4.1C24.8 31.4 34.5 6.6 50.8 6.6z"/>
     <path fill="#5E8E3E" d="M94.5 27.4c-.5 0-10.7-.7-10.7-.7s-7.1-6.9-7.9-7.7c-.3-.3-.7-.4-1.1-.5l-5.9 120.1 42-9.1S95.7 29 95.6 28.4c-.1-.6-.6-1-1.1-1z"/>
     <path fill="#FFF" d="M58 45.8l-5 14.9s-4.4-2.3-9.8-2.3c-7.9.1-8.3 5-8.3 6.2 0 6.8 17.8 9.4 17.8 25.4 0 12.6-8 20.7-18.7 20.7-12.9 0-19.5-8-19.5-8l3.5-11.4s6.8 5.8 12.5 5.8c3.7 0 5.2-2.9 5.2-5.1 0-8.9-14.6-9.3-14.6-23.9 0-12.3 8.8-24.2 26.6-24.2 6.9.1 10.3 1.9 10.3 1.9z"/>
@@ -45,7 +46,7 @@ const ShopifyLogo = () => (
 );
 
 const GoogleLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-8 h-8">
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -54,13 +55,13 @@ const GoogleLogo = () => (
 );
 
 const FacebookLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-8 h-8">
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
     <path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
   </svg>
 );
 
 const InstagramLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-8 h-8">
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
     <defs>
       <linearGradient id="ig-gradient-index" x1="0%" y1="100%" x2="100%" y2="0%">
         <stop offset="0%" stopColor="#FFDC80"/>
@@ -74,12 +75,18 @@ const InstagramLogo = () => (
   </svg>
 );
 
+const INTEGRATIONS = [
+  { name: "Shopify", logo: <ShopifyLogo /> },
+  { name: "Google", logo: <GoogleLogo /> },
+  { name: "Facebook", logo: <FacebookLogo /> },
+  { name: "Instagram", logo: <InstagramLogo /> },
+];
+
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { language, t } = useTranslation();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-
 
   if (loading) {
     return (
@@ -90,30 +97,31 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-background">
       <AnnouncementBar />
       <PublicHeader />
       
-      {/* Hero Section */}
-      <section id="hero" className="relative overflow-hidden pt-16">
+      {/* Hero Section - Cleaner Design */}
+      <section id="hero" className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
         
-        <div className="container relative mx-auto px-4 py-24">
-          <div className="flex flex-col items-center text-center space-y-8 animate-fade-in">
-            <div className="flex flex-col items-center gap-3">
-              <Badge className="bg-primary/20 text-primary-foreground border-primary/30 px-6 py-2">
-                <Sparkles className="w-4 h-4 mr-2" />
+        <div className="container relative mx-auto px-4 py-16 sm:py-24">
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+            {/* Badges Row */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Badge className="bg-primary/20 text-primary-foreground border-primary/30 px-4 py-1.5">
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                 {t.landing.hero.badge}
               </Badge>
-              <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white border border-border/20">
-                <span className="text-sm text-foreground font-medium">Built for</span>
-                <img src="/shopify-logo.svg" alt="Shopify" className="h-6 opacity-90" />
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                <span className="text-xs text-white/80">Built for</span>
+                <img src="/shopify-logo.svg" alt="Shopify" className="h-5 opacity-90" />
               </div>
             </div>
             
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-white max-w-4xl leading-tight px-4">
+            {/* Main Title */}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
               {t.landing.hero.title}{" "}
               <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
                 {t.landing.hero.titleHighlight}
@@ -121,33 +129,44 @@ const Index = () => {
               {t.landing.hero.titleEnd}
             </h1>
             
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl text-gray-300 px-4">
+            {/* Subtitle */}
+            <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto">
               {t.landing.hero.subtitle}
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 w-full sm:w-auto px-4">
-              <Button size="lg" className="group bg-success hover:bg-success/90 shadow-glow text-success-foreground w-full sm:w-auto" onClick={() => navigate('/auth?mode=signup&plan=trial')}>
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+              <Button 
+                size="lg" 
+                className="group bg-success hover:bg-success/90 shadow-lg shadow-success/30 text-success-foreground w-full sm:w-auto"
+                onClick={() => navigate('/auth?mode=signup&plan=trial')}
+              >
                 {t.trial.ctaPrimary}
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 w-full sm:w-auto" onClick={() => navigate('/demo')}>
-                <Play className="mr-2 w-5 h-5" />
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-white border-white/30 hover:bg-white/10 w-full sm:w-auto"
+                onClick={() => navigate('/demo')}
+              >
+                <Play className="mr-2 w-4 h-4" />
                 {t.demo?.button?.label || "Demo"}
-                <Badge className="ml-2 bg-primary text-primary-foreground text-[10px]">{t.demo?.button?.badge || "Free"}</Badge>
               </Button>
             </div>
             
-            <div className="flex flex-col items-center gap-3 pt-4 px-4">
-              <Badge variant="outline" className="border-success text-success bg-success/10 px-3 sm:px-4 py-1.5 text-xs sm:text-sm">
+            {/* Trust Badges */}
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <Badge variant="outline" className="border-success/50 text-success bg-success/10 text-xs">
                 {t.trial.noCreditCard}
               </Badge>
-              <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-300">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+              <div className="flex items-center gap-4 text-xs text-gray-400">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                   <span>{t.landing.hero.setupTime}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                   <span>{t.trial.trustBanner.cancelAnytime}</span>
                 </div>
               </div>
@@ -155,9 +174,51 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Floating gradient orbs */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/30 rounded-full blur-3xl animate-pulse pointer-events-none" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse delay-1000 pointer-events-none" />
+        {/* Subtle gradient orbs */}
+        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/15 rounded-full blur-3xl pointer-events-none" />
+      </section>
+
+      {/* Stats Section - Clean Grid */}
+      <section className="py-12 bg-gradient-to-b from-slate-950 to-background">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto">
+            {[
+              { value: "3x", label: language === 'fr' ? "Plus rapide" : "Faster", icon: Zap },
+              { value: "50%", label: language === 'fr' ? "Plus de trafic" : "More Traffic", icon: TrendingUp },
+              { value: "10h+", label: language === 'fr' ? "Économisées/sem" : "Saved Weekly", icon: Clock },
+              { value: "Top 10", label: "Google", icon: BarChart3 },
+            ].map((stat, i) => (
+              <div key={i} className="text-center p-4 rounded-xl bg-card/50 border border-border/50 hover:border-primary/30 transition-colors">
+                <stat.icon className="w-5 h-5 mx-auto mb-2 text-primary" />
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+                  {stat.value}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Mini Stats Row */}
+          <div className="flex items-center justify-center gap-6 sm:gap-10 mt-8 flex-wrap">
+            <div className="text-center">
+              <div className="text-lg font-bold text-foreground">10K+</div>
+              <div className="text-[10px] text-muted-foreground">{language === 'fr' ? "Produits optimisés" : "Products Optimized"}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-foreground">500+</div>
+              <div className="text-[10px] text-muted-foreground">{language === 'fr' ? "Vendeurs actifs" : "Active Sellers"}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-foreground">95%</div>
+              <div className="text-[10px] text-muted-foreground">{language === 'fr' ? "Satisfaction" : "Satisfaction"}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-foreground">24/7</div>
+              <div className="text-[10px] text-muted-foreground">{language === 'fr' ? "Support IA" : "AI Support"}</div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Referral Section - Only for authenticated users */}
@@ -167,62 +228,85 @@ const Index = () => {
         </section>
       )}
 
-      {/* How It Works Section */}
-      <section className="container mx-auto px-4 py-16 sm:py-24">
-        <div className="text-center mb-12 sm:mb-16 space-y-4 px-4">
-          <Badge variant="outline" className="border-primary text-primary text-xs sm:text-sm">{t.landing.howItWorks.badge}</Badge>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">{t.landing.howItWorks.title}</h2>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-            {t.landing.howItWorks.subtitle}
-          </p>
-        </div>
+      {/* How It Works - Clean Steps */}
+      <section className="py-16 sm:py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12 space-y-3">
+            <Badge variant="outline" className="border-primary text-primary">{t.landing.howItWorks.badge}</Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.howItWorks.title}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              {t.landing.howItWorks.subtitle}
+            </p>
+          </div>
 
-        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 max-w-6xl mx-auto">
-          {t.landing.howItWorks.steps.map((step: any, index: number) => (
-            <div key={index} className="relative">
-              <div className="text-center space-y-4 px-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-primary mx-auto flex items-center justify-center shadow-glow">
-                  {index === 0 && <ShoppingBag className="w-7 h-7 sm:w-8 sm:h-8 text-white" />}
-                  {index === 1 && <Zap className="w-7 h-7 sm:w-8 sm:h-8 text-white" />}
-                  {index === 2 && <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-white" />}
-                  {index === 3 && <TrendingUp className="w-7 h-7 sm:w-8 sm:h-8 text-white" />}
-                </div>
-                <div className="relative">
-                  <div className="absolute -top-3 -right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs sm:text-sm">
-                    {index + 1}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            {t.landing.howItWorks.steps.map((step: any, index: number) => {
+              const icons = [ShoppingBag, Zap, Sparkles, TrendingUp];
+              const StepIcon = icons[index];
+              return (
+                <div key={index} className="relative group">
+                  <div className="text-center p-6 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all">
+                    <div className="relative inline-block mb-4">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg shadow-primary/20">
+                        <StepIcon className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">{step.title}</h3>
+                    <p className="text-sm text-muted-foreground">{step.description}</p>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold">{step.title}</h3>
+                  {index < 3 && (
+                    <div className="hidden lg:block absolute top-1/2 -right-3 w-6 h-0.5 bg-gradient-to-r from-primary/50 to-transparent" />
+                  )}
                 </div>
-                <p className="text-muted-foreground text-xs sm:text-sm">{step.description}</p>
-              </div>
-              {index < 3 && (
-                <div className="hidden md:block absolute top-8 -right-4 w-8 h-0.5 bg-gradient-to-r from-primary to-transparent" />
-              )}
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Integrations Bar */}
+      <section className="py-8 border-y border-border/50 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+            <span className="text-sm text-muted-foreground">{language === 'fr' ? "Intégrations" : "Integrations"}:</span>
+            <div className="flex items-center gap-6">
+              {INTEGRATIONS.map((int, i) => (
+                <div key={i} className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
+                  {int.logo}
+                  <span className="text-sm font-medium hidden sm:inline">{int.name}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </section>
 
       {/* Book a Demo Section */}
-      <section id="demo" className="container mx-auto px-4 py-16 sm:py-24">
-        <div className="text-center mb-12 space-y-4">
-          <Badge variant="outline" className="border-primary text-primary text-xs sm:text-sm">
-            {language === 'fr' ? "Découvrir NewAI" : "Discover NewAI"}
-          </Badge>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
-            {language === 'fr' ? "Réservez votre démo gratuite" : "Book your free demo"}
-          </h2>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-            {language === 'fr' 
-              ? "30 minutes pour découvrir comment NewAI peut transformer votre boutique Shopify"
-              : "30 minutes to discover how NewAI can transform your Shopify store"}
-          </p>
-          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-            <span>{language === 'fr' ? "Lun-Ven, 10h30-16h30 (Paris)" : "Mon-Fri, 10:30AM-4:30PM (Paris)"}</span>
+      <section id="demo" className="py-16 sm:py-20 bg-gradient-to-b from-background to-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10 space-y-3">
+            <Badge variant="outline" className="border-primary text-primary">
+              {language === 'fr' ? "Découvrir NewAI" : "Discover NewAI"}
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold">
+              {language === 'fr' ? "Réservez votre démo gratuite" : "Book your free demo"}
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              {language === 'fr' 
+                ? "30 minutes pour découvrir comment NewAI peut transformer votre boutique"
+                : "30 minutes to discover how NewAI can transform your store"}
+            </p>
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <Clock className="w-3.5 h-3.5" />
+              <span>{language === 'fr' ? "Lun-Ven, 10h30-16h30 (Paris)" : "Mon-Fri, 10:30AM-4:30PM (Paris)"}</span>
+            </div>
           </div>
-        </div>
-        <div className="max-w-4xl mx-auto">
-          <CalBookingEmbed minimal />
+          <div className="max-w-3xl mx-auto">
+            <CalBookingEmbed minimal />
+          </div>
         </div>
       </section>
 
@@ -232,327 +316,310 @@ const Index = () => {
       {/* Landing Page Vision AI Showcase */}
       <LandingPageVisionShowcase />
 
-      {/* Key Features Section */}
-      <section id="features" className="container mx-auto px-4 py-16 sm:py-24 bg-gradient-subtle">
-          <div className="text-center mb-12 sm:mb-16 space-y-4 px-4">
-            <Badge variant="outline" className="border-primary text-primary text-xs sm:text-sm">{t.landing.features.badge}</Badge>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">{t.landing.features.title}</h2>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
+      {/* Key Features - Clean Cards */}
+      <section id="features" className="py-16 sm:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12 space-y-3">
+            <Badge variant="outline" className="border-primary text-primary">{t.landing.features.badge}</Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.features.title}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
               {t.landing.features.subtitle}
             </p>
           </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {t.landing.features.items.map((feature: any, index: number) => {
-            const icons = [Zap, ImageIcon, FileText, Tags, BarChart3, Sparkles];
-            const FeatureIcon = icons[index];
-            return (
-              <Card 
-                key={index}
-                className="p-5 sm:p-6 hover:shadow-primary transition-all duration-300 hover:-translate-y-1 border-2 border-transparent hover:border-primary/20 bg-card"
-              >
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-3 sm:mb-4 shadow-glow">
-                  <FeatureIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto">
+            {t.landing.features.items.map((feature: any, index: number) => {
+              const icons = [Zap, ImageIcon, FileText, Tags, BarChart3, Sparkles];
+              const FeatureIcon = icons[index];
+              return (
+                <Card 
+                  key={index}
+                  className="p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-2 border-transparent hover:border-primary/20"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center mb-4 shadow-md shadow-primary/20">
+                    <FeatureIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{feature.description}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {feature.tags.map((tag: string, i: number) => (
+                      <Badge key={i} variant="secondary" className="text-[10px]">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials - Clean Design */}
+      <section className="py-16 sm:py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12 space-y-3">
+            <Badge variant="outline" className="border-success text-success">{t.landing.testimonials.badge}</Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.testimonials.title}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              {t.landing.testimonials.subtitle}
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
+            {t.landing.testimonials.items.map((testimonial: any, index: number) => (
+              <Card key={index} className="p-5 hover:shadow-lg transition-shadow">
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-primary text-primary" />
+                  ))}
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm sm:text-base mb-4">{feature.description}</p>
-                <div className="flex flex-wrap gap-2">
-                  {feature.tags.map((tag: string, i: number) => (
-                    <Badge key={i} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
+                <p className="text-sm text-muted-foreground italic mb-4">"{testimonial.quote}"</p>
+                <div className="flex items-center gap-3 pt-3 border-t border-border/50">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white font-bold text-sm">
+                    {testimonial.author[0]}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{testimonial.author}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section - Side by Side */}
+      <section id="benefits" className="py-16 sm:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-10 items-center max-w-6xl mx-auto">
+            <div className="space-y-5">
+              <Badge variant="outline" className="border-success text-success">{t.landing.benefits.badge}</Badge>
+              <h2 className="text-3xl sm:text-4xl font-bold">
+                {t.landing.benefits.title}
+              </h2>
+              <p className="text-muted-foreground">
+                {t.landing.benefits.subtitle}
+              </p>
+              
+              <div className="space-y-3 pt-2">
+                {t.landing.benefits.items.map((benefit: any, index: number) => (
+                  <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-background transition-colors">
+                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-sm">{benefit.title}</p>
+                      <p className="text-xs text-muted-foreground">{benefit.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button size="lg" className="mt-4" onClick={() => navigate('/auth?mode=signup')}>
+                {t.landing.benefits.cta}
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-3xl blur-2xl" />
+              <Card className="relative p-6 border-2 border-primary/20">
+                <div className="grid grid-cols-2 gap-6">
+                  {t.landing.benefits.stats.map((stat: any, index: number) => (
+                    <div key={index} className="text-center p-4 rounded-xl bg-muted/50">
+                      <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+                        {stat.value}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                    </div>
                   ))}
                 </div>
               </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="container mx-auto px-4 py-16 sm:py-24">
-        <div className="text-center mb-12 sm:mb-16 space-y-4 px-4">
-          <Badge variant="outline" className="border-success text-success text-xs sm:text-sm">{t.landing.testimonials.badge}</Badge>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">{t.landing.testimonials.title}</h2>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-            {t.landing.testimonials.subtitle}
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
-          {t.landing.testimonials.items.map((testimonial: any, index: number) => (
-            <Card key={index} className="p-5 sm:p-6 space-y-3 sm:space-y-4 border-2 hover:border-primary/30 transition-colors">
-              <div className="flex gap-0.5 sm:gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-primary text-primary" />
-                ))}
-              </div>
-              <p className="text-muted-foreground italic text-sm sm:text-base">"{testimonial.quote}"</p>
-              <div className="flex items-center gap-2 sm:gap-3 pt-3 sm:pt-4 border-t">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                  {testimonial.author[0]}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm sm:text-base truncate">{testimonial.author}</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground truncate">{testimonial.role}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section id="benefits" className="container mx-auto px-4 py-16 sm:py-24 bg-gradient-subtle">
-        <div className="grid md:grid-cols-2 gap-8 sm:gap-12 items-center">
-          <div className="space-y-4 sm:space-y-6 px-4">
-            <Badge variant="outline" className="border-success text-success text-xs sm:text-sm">{t.landing.benefits.badge}</Badge>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
-              {t.landing.benefits.title}
-            </h2>
-            <p className="text-muted-foreground text-base sm:text-lg">
-              {t.landing.benefits.subtitle}
-            </p>
-            
-            <div className="space-y-3 sm:space-y-4 pt-4">
-              {t.landing.benefits.items.map((benefit: any, index: number) => (
-                <div key={index} className="flex items-start gap-2 sm:gap-3">
-                  <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-success flex-shrink-0 mt-0.5 sm:mt-1" />
-                  <div>
-                    <p className="font-semibold text-sm sm:text-base">{benefit.title}</p>
-                    <p className="text-xs sm:text-sm text-muted-foreground">{benefit.description}</p>
-                  </div>
-                </div>
-              ))}
             </div>
-
-            <Button size="lg" className="mt-4 sm:mt-6 w-full sm:w-auto" onClick={() => navigate('/auth?mode=signup')}>
-              {t.landing.benefits.cta}
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </div>
-
-          <div className="relative px-4">
-            <div className="absolute inset-0 bg-gradient-primary rounded-3xl blur-3xl opacity-20" />
-            <Card className="relative p-6 sm:p-8 space-y-4 sm:space-y-6 border-2 border-primary/20">
-              <div className="grid grid-cols-2 gap-4 sm:gap-6">
-                {t.landing.benefits.stats.map((stat: any, index: number) => (
-                  <div key={index} className="space-y-1 sm:space-y-2">
-                    <p className="text-3xl sm:text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                      {stat.value}
-                    </p>
-                    <p className="text-xs sm:text-sm text-muted-foreground">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </Card>
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="container mx-auto px-4 py-16 sm:py-24">
-        <div className="text-center mb-12 sm:mb-16 space-y-4 px-4">
-          <Badge variant="outline" className="border-primary text-primary text-xs sm:text-sm">
-            <Globe className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-            {t.landing.pricing.badge}
-          </Badge>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">{t.landing.pricing.title}</h2>
-          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
-            {t.landing.pricing.subtitle}
-          </p>
-          
-          {/* Billing Cycle Toggle */}
-          <div className="flex items-center justify-center gap-2 sm:gap-4 pt-4">
-            <button
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors ${
-                billingCycle === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t.landing.pricing.monthly}
-            </button>
-            <button
-              onClick={() => setBillingCycle('yearly')}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors relative ${
-                billingCycle === 'yearly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t.landing.pricing.yearly}
-              <Badge className="absolute -top-2 -right-2 bg-success text-[10px] sm:text-xs px-1 sm:px-2">{t.landing.pricing.yearlyDiscount}</Badge>
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-7xl mx-auto mb-12 sm:mb-16">
-          {[
-            { key: 'trial', priceMonthly: 0, priceYearly: 0, yearlyTotal: 0, icon: "🎁", featured: false, isTrial: true, hasPromo: false },
-            { key: 'starter', priceMonthly: 9.99, priceYearly: 7.99, yearlyTotal: 95.88, icon: "🟢", featured: false, hasPromo: false },
-            { key: 'pro', priceMonthly: 39, priceYearly: 31.20, originalMonthly: 49, originalYearly: 39, yearlyTotal: 374.40, icon: "🟠", featured: true, hasPromo: true, discount: 20 },
-            { key: 'enterprise', priceMonthly: 139, priceYearly: 111.20, originalMonthly: 199, originalYearly: 159, yearlyTotal: 1334.40, icon: "🔵", featured: false, hasPromo: true, discount: 30 }
-          ].map((planConfig, index) => {
-            const plan = t.landing.pricing.plans[planConfig.key as 'trial' | 'starter' | 'pro' | 'enterprise'];
-            const price = billingCycle === 'monthly' ? planConfig.priceMonthly : planConfig.priceYearly;
-            const originalPrice = billingCycle === 'monthly' ? planConfig.originalMonthly : planConfig.originalYearly;
+      <section id="pricing" className="py-16 sm:py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12 space-y-3">
+            <Badge variant="outline" className="border-primary text-primary">
+              <Globe className="w-3.5 h-3.5 mr-1.5" />
+              {t.landing.pricing.badge}
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.pricing.title}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              {t.landing.pricing.subtitle}
+            </p>
             
-            return (
-              <Card 
-                key={index}
-                className={`p-4 sm:p-6 lg:p-8 relative ${planConfig.featured ? 'border-2 border-primary shadow-primary sm:scale-105' : 'border-2 border-transparent'}`}
+            {/* Billing Toggle */}
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <button
+                onClick={() => setBillingCycle('monthly')}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  billingCycle === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
-                {plan.badge && (
-                  <Badge className={`absolute -top-3 left-1/2 transform -translate-x-1/2 text-xs ${planConfig.featured ? 'bg-primary' : 'bg-gradient-primary'}`}>
-                    {plan.badge}
-                  </Badge>
-                )}
-                <div className="space-y-4 sm:space-y-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-xl sm:text-2xl font-bold">{planConfig.icon} {plan.name}</h3>
+                {t.landing.pricing.monthly}
+              </button>
+              <button
+                onClick={() => setBillingCycle('yearly')}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors relative ${
+                  billingCycle === 'yearly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t.landing.pricing.yearly}
+                <Badge className="absolute -top-2 -right-2 bg-success text-[10px] px-1.5">{t.landing.pricing.yearlyDiscount}</Badge>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto mb-12">
+            {[
+              { key: 'trial', priceMonthly: 0, priceYearly: 0, yearlyTotal: 0, icon: "🎁", featured: false, isTrial: true, hasPromo: false },
+              { key: 'starter', priceMonthly: 9.99, priceYearly: 7.99, yearlyTotal: 95.88, icon: "🟢", featured: false, hasPromo: false },
+              { key: 'pro', priceMonthly: 39, priceYearly: 31.20, originalMonthly: 49, originalYearly: 39, yearlyTotal: 374.40, icon: "🟠", featured: true, hasPromo: true, discount: 20 },
+              { key: 'enterprise', priceMonthly: 139, priceYearly: 111.20, originalMonthly: 199, originalYearly: 159, yearlyTotal: 1334.40, icon: "🔵", featured: false, hasPromo: true, discount: 30 }
+            ].map((planConfig, index) => {
+              const plan = t.landing.pricing.plans[planConfig.key as 'trial' | 'starter' | 'pro' | 'enterprise'];
+              const price = billingCycle === 'monthly' ? planConfig.priceMonthly : planConfig.priceYearly;
+              const originalPrice = billingCycle === 'monthly' ? planConfig.originalMonthly : planConfig.originalYearly;
+              
+              return (
+                <Card 
+                  key={index}
+                  className={`p-5 relative ${planConfig.featured ? 'border-2 border-primary shadow-lg shadow-primary/10 lg:scale-105' : 'border border-border'}`}
+                >
+                  {plan.badge && (
+                    <Badge className={`absolute -top-3 left-1/2 -translate-x-1/2 text-xs ${planConfig.featured ? 'bg-primary' : 'bg-gradient-to-r from-primary to-primary-dark'}`}>
+                      {plan.badge}
+                    </Badge>
+                  )}
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-bold">{planConfig.icon} {plan.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">{plan.description}</p>
                     </div>
-                    <p className="text-muted-foreground text-xs sm:text-sm">{plan.description}</p>
-                  </div>
-                  
-                  <div>
-                    {planConfig.hasPromo && originalPrice ? (
-                      <div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-lg sm:text-2xl font-semibold text-muted-foreground line-through">
-                            {formatPrice(originalPrice, language, true)}
-                          </span>
-                          <Badge variant="destructive" className="ml-2 text-xs">
-                            -{planConfig.discount}%
-                          </Badge>
-                        </div>
-                      <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary">
-                          {formatPrice(price, language)}
-                        </span>
-                        <span className="text-sm sm:text-base text-muted-foreground">{t.landing.pricing.perMonth}</span>
-                      </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-baseline gap-2">
-                        {planConfig.isTrial ? (
-                          <>
-                            <span className="text-3xl sm:text-4xl lg:text-5xl font-bold">
-                              {formatPrice(0, language)}
+                    
+                    <div>
+                      {planConfig.hasPromo && originalPrice ? (
+                        <div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-lg text-muted-foreground line-through">
+                              {formatPrice(originalPrice, language, true)}
                             </span>
-                            <span className="text-sm sm:text-base text-muted-foreground">{t.landing.pricing.perMonth}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-3xl sm:text-4xl lg:text-5xl font-bold">
+                            <Badge variant="destructive" className="text-[10px]">
+                              -{planConfig.discount}%
+                            </Badge>
+                          </div>
+                          <div className="flex items-baseline gap-1 mt-1">
+                            <span className="text-3xl font-bold text-primary">
                               {formatPrice(price, language)}
                             </span>
-                            <span className="text-sm sm:text-base text-muted-foreground">{t.landing.pricing.perMonth}</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    {!planConfig.isTrial && billingCycle === 'yearly' && (
-                      <p className="text-sm text-success mt-1">
-                        {t.landing.pricing.billedAnnually
-                          .replace('{{currency}}', '')
-                          .replace('{{total}}', formatPrice(planConfig.yearlyTotal, language))}
-                      </p>
-                    )}
-                    {planConfig.isTrial && (
-                      <p className="text-sm text-success mt-1 font-semibold">
-                        {t.trial.duration}
-                      </p>
-                    )}
-                    {plan.promo && (
-                      <div className="mt-2 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30 rounded-lg px-3 py-2 border border-pink-200 dark:border-pink-800">
-                        <p className="text-sm font-medium">
-                          <span className="text-pink-600 dark:text-pink-400">
-                            {plan.promo.split('avec')[0]}
+                            <span className="text-xs text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-bold">
+                            {formatPrice(price, language)}
                           </span>
-                          <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">
-                            {plan.promo.split('avec')[1]}
-                          </span>
+                          <span className="text-xs text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                        </div>
+                      )}
+                      {!planConfig.isTrial && billingCycle === 'yearly' && (
+                        <p className="text-xs text-success mt-1">
+                          {t.landing.pricing.billedAnnually
+                            .replace('{{currency}}', '')
+                            .replace('{{total}}', formatPrice(planConfig.yearlyTotal, language))}
                         </p>
-                      </div>
-                    )}
+                      )}
+                      {planConfig.isTrial && (
+                        <p className="text-xs text-success mt-1 font-semibold">
+                          {t.trial.duration}
+                        </p>
+                      )}
+                    </div>
+
+                    <Button 
+                      className="w-full" 
+                      variant={planConfig.featured ? "default" : "outline"}
+                      onClick={() => navigate(planConfig.isTrial ? '/auth?mode=signup&plan=trial' : '/auth?mode=signup')}
+                    >
+                      {plan.cta}
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+
+                    <div className="space-y-2 pt-4 border-t border-border/50">
+                      <p className="font-semibold text-xs">{language === 'fr' ? "Inclus" : "Included"}:</p>
+                      {plan.features.slice(0, 5).map((feature: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+                          <span className="text-xs">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-
-                  <Button 
-                    className="w-full" 
-                    variant={planConfig.featured ? "default" : "outline"}
-                    size="lg"
-                    onClick={() => navigate(planConfig.isTrial ? '/auth?mode=signup&plan=trial' : '/auth?mode=signup')}
-                  >
-                    {plan.cta}
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
-
-                  {plan.highlight && (
-                    <p className="text-sm text-muted-foreground italic">
-                      💡 {plan.highlight}
-                    </p>
-                  )}
-
-                  <div className="space-y-3 pt-6 border-t">
-                    <p className="font-semibold text-sm">Included in the plan:</p>
-                    {plan.features.map((feature: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Detailed Pricing Comparison */}
-        <div className="container mx-auto px-4 pb-16">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold mb-4">{t.landing.pricing.comparisonTitle || "Compare Plans in Detail"}</h3>
-            <p className="text-muted-foreground">{t.landing.pricing.comparisonSubtitle || "See all features side by side"}</p>
+                </Card>
+              );
+            })}
           </div>
-          <PricingComparison />
+
+          {/* Detailed Pricing Comparison */}
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-10">
+              <h3 className="text-2xl font-bold mb-2">{t.landing.pricing.comparisonTitle || "Compare Plans"}</h3>
+              <p className="text-sm text-muted-foreground">{t.landing.pricing.comparisonSubtitle || "See all features"}</p>
+            </div>
+            <PricingComparison />
+          </div>
         </div>
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="container mx-auto px-4 py-24">
-        <ContactForm />
+      <section id="contact" className="py-16 sm:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <ContactForm />
+        </div>
       </section>
 
-      {/* Referral Section - Before Footer */}
-      <section className="container mx-auto px-4 py-16">
-        <ReferralSystem />
+      {/* Referral Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <ReferralSystem />
+        </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Final CTA Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-dark" />
-        <div className="container relative mx-auto px-4 py-24">
-          <div className="max-w-3xl mx-auto text-center space-y-8">
-            <h2 className="text-4xl md:text-5xl font-bold text-white">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+        <div className="container relative mx-auto px-4 py-16 sm:py-20">
+          <div className="max-w-2xl mx-auto text-center space-y-6">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">
               {t.landing.cta.title}
             </h2>
-            <p className="text-xl text-gray-300">
+            <p className="text-gray-400">
               {t.landing.cta.subtitle}
             </p>
-            <Button size="lg" variant="outline" className="bg-white text-primary hover:bg-white/90" onClick={() => navigate('/auth?mode=signup')}>
+            <Button 
+              size="lg" 
+              className="bg-white text-primary hover:bg-white/90"
+              onClick={() => navigate('/auth?mode=signup')}
+            >
               {t.landing.cta.button}
-              <ArrowRight className="ml-2 w-5 h-5" />
+              <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </div>
         </div>
       </section>
+
       <Footer />
       
-      {/* AI Assistant - Floating button */}
+      {/* AI Assistant */}
       <AIAssistant />
     </div>
   );
 };
-
-// All content is now sourced from translations
 
 export default Index;
