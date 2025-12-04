@@ -90,13 +90,19 @@ serve(async (req) => {
       enrichedContext += `. Materials: ${serpData.materials.slice(0, 3).join(", ")}`;
     }
     
-    // 🆕 Build SERP-based orientation instructions  
+    // 🆕 Build SERP-based orientation instructions - ADJUST orientation to match competitors
     let orientationInstructions = "";
     if (serpData) {
       orientationInstructions = `
-🔄 ORIENTATION: ${serpData.dominantStyles?.length ? `Match popular styles: ${serpData.dominantStyles.slice(0, 2).join(", ")}` : ""}
+🔄🔄🔄 MANDATORY ORIENTATION & LIGHTING ADJUSTMENT 🔄🔄🔄
+${serpData.dominantStyles?.length ? `📊 MATCH competitor styles: ${serpData.dominantStyles.slice(0, 2).join(", ")}` : ""}
 ${serpData.dimensions ? `📏 Product dimensions: ${serpData.dimensions}` : ""}
-⚠️ DO NOT FLIP, MIRROR or ROTATE the product. Keep NATURAL orientation as competitors show it.
+
+⚠️ CRITICAL: If the product appears ROTATED, at WRONG ANGLE, or POORLY LIT:
+→ YOU MUST CORRECT IT to match professional e-commerce catalog standards!
+→ ROTATE the product to show FRONT VIEW or 3/4 ANGLE as competitors do
+→ Apply professional studio lighting matching competitor images
+→ The output must look like a professional furniture catalog photo
 `;
     }
 

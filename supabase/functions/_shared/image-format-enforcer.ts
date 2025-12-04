@@ -84,7 +84,7 @@ export function calculateCenterCrop(
 
 /**
  * Build SERP-based orientation instructions
- * Adjusts product orientation based on competitor data
+ * ADJUSTS product orientation and lighting based on competitor data
  */
 export function buildOrientationInstructions(serpData?: {
   dominantStyles?: string[];
@@ -95,52 +95,77 @@ export function buildOrientationInstructions(serpData?: {
   if (!serpData) return "";
   
   let instructions = `
-🔄 ORIENTATION & POSITIONING ACCORDING TO MARKET STANDARDS 🔄
+🔄🔄🔄 MANDATORY ORIENTATION & LIGHTING ADJUSTMENT 🔄🔄🔄
+
+YOU MUST ADJUST THE PRODUCT ORIENTATION AND LIGHTING TO MATCH MARKET STANDARDS!
+If the product in the input image is rotated, flipped, or poorly lit → FIX IT!
 
 `;
 
   // Add orientation based on dominant styles
   if (serpData.dominantStyles?.length) {
     const styles = serpData.dominantStyles.slice(0, 3).join(", ");
-    instructions += `📊 Competitor analysis shows these popular presentation styles: ${styles}
-Orient and position the product similarly to match market expectations.
+    instructions += `📊 COMPETITOR STYLES TO MATCH: ${styles}
+ROTATE and REORIENT the product to match these presentation styles exactly.
 
 `;
   }
 
   // Add dimension-based orientation hints
   if (serpData.dimensions) {
-    instructions += `📏 Product dimensions from market data: ${serpData.dimensions}
-Ensure the product is displayed with CORRECT proportions matching these dimensions.
-If the product is a sofa/bed/table → show it from the FRONT or 3/4 ANGLE as competitors do.
-If the product is a chair → show it at a SLIGHT ANGLE for depth.
+    instructions += `📏 Product dimensions: ${serpData.dimensions}
+CORRECT the product orientation to show proper proportions.
 
 `;
   }
 
-  // Product category specific orientation
-  if (serpData.productCategory) {
-    const category = serpData.productCategory.toLowerCase();
-    if (category.includes("sofa") || category.includes("canapé")) {
-      instructions += `🛋️ SOFA ORIENTATION: Face-on or slight 3/4 angle. Show full length. Armrests visible on both sides.
+  // Product category specific orientation - BE EXPLICIT ABOUT CORRECTIONS
+  const productTitle = serpData.productCategory?.toLowerCase() || "";
+  
+  if (productTitle.includes("sofa") || productTitle.includes("canapé") || productTitle.includes("canape")) {
+    instructions += `🛋️ SOFA/CANAPÉ CORRECTION REQUIRED:
+- ROTATE the sofa to show FRONT VIEW or SLIGHT 3/4 ANGLE
+- Both armrests MUST be visible
+- Seat cushions facing the viewer
+- If sofa is showing BACK or SIDE → ROTATE it to show FRONT
+- Professional front-facing presentation like IKEA or Maisons du Monde catalogs
+
 `;
-    } else if (category.includes("bed") || category.includes("lit")) {
-      instructions += `🛏️ BED ORIENTATION: Slight angle showing headboard and length. Natural bedroom perspective.
+  } else if (productTitle.includes("bed") || productTitle.includes("lit") || productTitle.includes("sommier")) {
+    instructions += `🛏️ BED/SOMMIER CORRECTION REQUIRED:
+- Show from FRONT CORNER angle (3/4 view)
+- Headboard visible if present
+- If bed is rotated wrong → FIX the orientation
+- Match professional bedroom furniture photography
+
 `;
-    } else if (category.includes("chair") || category.includes("chaise")) {
-      instructions += `🪑 CHAIR ORIENTATION: 3/4 angle showing seat, back, and one side. Slight rotation for depth.
+  } else if (productTitle.includes("chair") || productTitle.includes("chaise") || productTitle.includes("fauteuil")) {
+    instructions += `🪑 CHAIR/FAUTEUIL CORRECTION REQUIRED:
+- Show at SLIGHT 3/4 ANGLE
+- Seat, back, and armrests visible
+- If showing wrong side → ROTATE to proper viewing angle
+
 `;
-    } else if (category.includes("table")) {
-      instructions += `🪵 TABLE ORIENTATION: Slight top-down angle showing surface. 3/4 view for depth perception.
+  } else if (productTitle.includes("table")) {
+    instructions += `🪵 TABLE CORRECTION REQUIRED:
+- Show at SLIGHT TOP-DOWN 3/4 ANGLE
+- Surface and legs visible
+- If orientation is wrong → CORRECT it
+
 `;
-    }
   }
 
   instructions += `
-⚠️ CRITICAL: DO NOT ROTATE, FLIP, OR MIRROR THE PRODUCT INCORRECTLY
-The product must face the NATURAL viewing direction as shown in competitor images.
-If competitors show product facing LEFT → keep it facing LEFT
-If competitors show product facing FRONT → keep it facing FRONT
+💡 LIGHTING ADJUSTMENT:
+- Apply professional studio lighting matching competitor images
+- Main key light from top-front
+- Soft fill light to reduce shadows
+- Subtle rim light for product separation
+- Match the lighting style seen in SERP competitor images
+
+⚠️ CRITICAL: If the input product appears ROTATED, FLIPPED, or at an AWKWARD ANGLE:
+→ YOU MUST CORRECT IT to match professional e-commerce standards!
+→ The output should look like it belongs in a professional furniture catalog.
 
 `;
 
