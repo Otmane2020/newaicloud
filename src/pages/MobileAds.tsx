@@ -187,17 +187,17 @@ export default function MobileAds() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
       {/* Header with Logo */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div className="flex items-center justify-between px-4 py-3">
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2">
             <div className="relative">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center shadow-lg shadow-primary/30">
-                <Sparkles className="w-4 h-4 text-primary-foreground" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
             </div>
-            <span className="text-lg font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+            <span className="text-lg font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-500 bg-clip-text text-transparent">
               NewAI
             </span>
           </button>
@@ -206,7 +206,7 @@ export default function MobileAds() {
           </Badge>
         </div>
         {/* Promo Strip */}
-        <div className="bg-gradient-to-r from-primary via-accent to-primary py-2 px-4 text-center text-primary-foreground">
+        <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-500 py-2 px-4 text-center text-white">
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <span className="text-xs font-semibold">🔥 Black Friday</span>
             <span className="font-mono bg-black/20 px-2 py-0.5 rounded text-xs font-bold">
@@ -217,42 +217,42 @@ export default function MobileAds() {
       </header>
 
       {/* AI-Powered E-commerce Header Section */}
-      <section className="py-10 px-4 text-center bg-gradient-to-b from-muted/30 to-background">
-        <Badge className="bg-primary/10 border-primary/20 text-primary mb-4">
+      <section className="py-10 px-4 text-center bg-gradient-to-b from-violet-50 to-white">
+        <Badge className="bg-violet-100 border-violet-200 text-violet-700 mb-4">
           <Sparkles className="w-3 h-3 mr-1.5" />
           AI-Powered E-commerce
         </Badge>
         
-        <h1 className="text-4xl sm:text-5xl font-black leading-[1.1] mb-4 text-foreground">
+        <h1 className="text-4xl sm:text-5xl font-black leading-[1.1] mb-4 text-gray-900">
           Automate Your{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-500">
             Store Success
           </span>
         </h1>
         
-        <p className="text-muted-foreground text-base max-w-md mx-auto">
+        <p className="text-gray-600 text-base max-w-md mx-auto">
           AI SEO, smart backgrounds, landing pages & automated marketing. All in one powerful platform.
         </p>
       </section>
 
       {/* Stats Section - Traffic Machine */}
-      <section className="py-8 px-4 bg-gradient-to-b from-primary/5 to-transparent">
+      <section className="py-8 px-4 bg-gradient-to-b from-violet-50/50 to-transparent">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-6">
-            <h2 className="text-2xl sm:text-3xl font-black mb-2 text-foreground">
+            <h2 className="text-2xl sm:text-3xl font-black mb-2 text-gray-900">
               Traffic Machine{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">With AI</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500">With AI</span>
             </h2>
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {STATS.map((stat, i) => (
-              <div key={i} className="bg-card border border-border rounded-xl p-4 text-center hover:border-primary/30 transition-colors shadow-sm">
-                <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent mb-1">
+              <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:border-violet-300 transition-colors shadow-sm">
+                <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500 mb-1">
                   {stat.value}
                 </div>
-                <div className="text-sm font-bold text-foreground mb-0.5">{stat.label}</div>
-                <div className="text-[10px] text-muted-foreground leading-tight">{stat.sublabel}</div>
+                <div className="text-sm font-bold text-gray-900 mb-0.5">{stat.label}</div>
+                <div className="text-[10px] text-gray-500 leading-tight">{stat.sublabel}</div>
               </div>
             ))}
           </div>
@@ -260,7 +260,7 @@ export default function MobileAds() {
           <div className="text-center mt-6">
             <Button 
               onClick={() => setShowPricing(true)}
-              className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 font-bold text-primary-foreground"
+              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold text-white"
             >
               <Zap className="w-4 h-4 mr-2" />
               Start Now
@@ -270,27 +270,27 @@ export default function MobileAds() {
           {/* Mini Stats */}
           <div className="flex items-center justify-center gap-6 mt-6 flex-wrap">
             <div className="text-center">
-              <div className="text-lg font-bold text-foreground">10K+</div>
-              <div className="text-[10px] text-muted-foreground">Products Optimized</div>
+              <div className="text-lg font-bold text-gray-900">10K+</div>
+              <div className="text-[10px] text-gray-500">Products Optimized</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-foreground">500+</div>
-              <div className="text-[10px] text-muted-foreground">Active Sellers</div>
+              <div className="text-lg font-bold text-gray-900">500+</div>
+              <div className="text-[10px] text-gray-500">Active Sellers</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-foreground">95%</div>
-              <div className="text-[10px] text-muted-foreground">Satisfaction Rate</div>
+              <div className="text-lg font-bold text-gray-900">95%</div>
+              <div className="text-[10px] text-gray-500">Satisfaction Rate</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-foreground">24/7</div>
-              <div className="text-[10px] text-muted-foreground">AI Support</div>
+              <div className="text-lg font-bold text-gray-900">24/7</div>
+              <div className="text-[10px] text-gray-500">AI Support</div>
             </div>
           </div>
         </div>
       </section>
 
       <section className="relative px-4 pt-8 pb-12 overflow-hidden">
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-violet-200/50 rounded-full blur-[120px] pointer-events-none" />
         
         <div className="relative max-w-lg mx-auto">
           {/* Phone Mockup - Hand holding phone */}
@@ -300,14 +300,14 @@ export default function MobileAds() {
               alt="NewAI App Dashboard" 
               className="w-full drop-shadow-2xl"
             />
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[200px] h-[80px] bg-primary/20 blur-3xl rounded-full" />
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[200px] h-[80px] bg-violet-400/30 blur-3xl rounded-full" />
           </div>
           
           <div className="text-center space-y-4">
             <Button 
               onClick={() => setShowPricing(true)}
               size="lg"
-              className="w-full max-w-[300px] bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground font-bold py-7 rounded-2xl shadow-2xl shadow-primary/30 text-base"
+              className="w-full max-w-[300px] bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-7 rounded-2xl shadow-2xl shadow-violet-500/30 text-base"
             >
               <Zap className="w-5 h-5 mr-2" />
               Get 70% OFF – From $7.99/mo
@@ -317,13 +317,13 @@ export default function MobileAds() {
               onClick={() => window.open('https://cal.com/newai/30min?month=2025-01', '_blank')}
               variant="outline"
               size="lg"
-              className="w-full max-w-[300px] border-primary/50 text-primary hover:bg-primary/10 font-bold py-6 rounded-2xl"
+              className="w-full max-w-[300px] border-violet-400 text-violet-600 hover:bg-violet-50 font-bold py-6 rounded-2xl"
             >
               <Calendar className="w-5 h-5 mr-2" />
               Book a Demo (30 min)
             </Button>
             
-            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
+            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-gray-500">
               <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> 14-day refund</span>
               <span className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" /> Cancel anytime</span>
             </div>
@@ -332,13 +332,13 @@ export default function MobileAds() {
       </section>
 
       {/* Integrations - Phone Mockup Style */}
-      <section className="py-12 px-4 border-y border-border bg-gradient-to-b from-transparent via-primary/5 to-transparent">
-        <p className="text-center text-xs text-muted-foreground mb-6 uppercase tracking-wider">Works seamlessly with</p>
+      <section className="py-12 px-4 border-y border-gray-200 bg-gradient-to-b from-transparent via-violet-50/30 to-transparent">
+        <p className="text-center text-xs text-gray-500 mb-6 uppercase tracking-wider">Works seamlessly with</p>
         
         {/* Floating logos above phone */}
         <div className="flex justify-center items-center gap-6 flex-wrap mb-8">
           {INTEGRATIONS.map((int, i) => (
-            <div key={i} className="w-12 h-12 bg-card rounded-xl flex items-center justify-center shadow-lg border border-border hover:scale-110 transition-transform">
+            <div key={i} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg border border-gray-200 hover:scale-110 transition-transform">
               {int.logo}
             </div>
           ))}
@@ -347,31 +347,31 @@ export default function MobileAds() {
         {/* Phone Mockup with Integrations App */}
         <div className="relative mx-auto w-[260px]">
           {/* Phone Frame */}
-          <div className="relative bg-foreground rounded-[40px] p-2 shadow-2xl border border-border">
+          <div className="relative bg-gray-900 rounded-[40px] p-2 shadow-2xl border border-gray-700">
             {/* Phone Screen */}
-            <div className="bg-gradient-to-b from-primary/5 to-background rounded-[32px] overflow-hidden">
+            <div className="bg-gradient-to-b from-violet-50 to-white rounded-[32px] overflow-hidden">
               {/* Status Bar */}
-              <div className="flex items-center justify-between px-5 py-2 bg-background/80">
-                <span className="text-[10px] text-foreground font-semibold">9:41</span>
+              <div className="flex items-center justify-between px-5 py-2 bg-white/80">
+                <span className="text-[10px] text-gray-900 font-semibold">9:41</span>
                 <div className="flex items-center gap-1">
-                  <div className="w-4 h-2 bg-foreground rounded-sm" />
+                  <div className="w-4 h-2 bg-gray-900 rounded-sm" />
                 </div>
               </div>
               
               {/* Dynamic Island */}
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-foreground rounded-full" />
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-gray-900 rounded-full" />
               
               {/* App Content */}
               <div className="px-4 pb-6 pt-2">
                 {/* App Header */}
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-primary-foreground" />
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
                   </div>
-                  <span className="font-bold text-foreground text-sm">NewAI</span>
+                  <span className="font-bold text-gray-900 text-sm">NewAI</span>
                 </div>
                 
-                <h4 className="font-semibold text-foreground text-xs mb-3">Integrations</h4>
+                <h4 className="font-semibold text-gray-900 text-xs mb-3">Integrations</h4>
                 
                 {/* Integration Cards Grid */}
                 <div className="grid grid-cols-2 gap-2">
@@ -381,16 +381,16 @@ export default function MobileAds() {
                     { name: "Facebook", logo: <FacebookLogo />, status: "Added" },
                     { name: "Instagram", logo: <InstagramLogo />, status: "Add" },
                   ].map((item, idx) => (
-                    <div key={idx} className="bg-card rounded-xl p-3 border border-border shadow-sm">
+                    <div key={idx} className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
                       <div className="flex items-center gap-2 mb-1.5">
                         <div className="w-6 h-6">{item.logo}</div>
                         {item.status === "Added" && (
                           <span className="text-[8px] text-green-600 font-semibold bg-green-50 px-1.5 py-0.5 rounded">Added</span>
                         )}
                       </div>
-                      <p className="text-[10px] font-medium text-foreground">{item.name}</p>
+                      <p className="text-[10px] font-medium text-gray-900">{item.name}</p>
                       {item.status === "Add" && (
-                        <button className="mt-1 text-[8px] text-primary font-semibold bg-primary/10 px-2 py-0.5 rounded">
+                        <button className="mt-1 text-[8px] text-violet-600 font-semibold bg-violet-100 px-2 py-0.5 rounded">
                           Add
                         </button>
                       )}
@@ -402,40 +402,40 @@ export default function MobileAds() {
           </div>
           
           {/* Glow effect */}
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[180px] h-[80px] bg-primary/20 blur-3xl rounded-full" />
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[180px] h-[80px] bg-violet-400/30 blur-3xl rounded-full" />
         </div>
       </section>
 
       {/* Features Grid */}
       <section className="py-16 px-4">
         <div className="text-center mb-10">
-          <Badge className="bg-primary/10 text-primary border-primary/30 mb-3">Features</Badge>
-          <h2 className="text-3xl font-bold mb-2 text-foreground">Everything You Need</h2>
-          <p className="text-muted-foreground">to dominate e-commerce with AI</p>
+          <Badge className="bg-violet-100 text-violet-700 border-violet-200 mb-3">Features</Badge>
+          <h2 className="text-3xl font-bold mb-2 text-gray-900">Everything You Need</h2>
+          <p className="text-gray-500">to dominate e-commerce with AI</p>
         </div>
         
         <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
           {FEATURES.map((f, i) => (
-            <div key={i} className="bg-card border border-border rounded-2xl p-5 hover:border-primary/30 transition-colors shadow-sm">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-3">
-                <f.icon className="w-6 h-6 text-primary" />
+            <div key={i} className="bg-white border border-gray-200 rounded-2xl p-5 hover:border-violet-300 transition-colors shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-fuchsia-100 flex items-center justify-center mb-3">
+                <f.icon className="w-6 h-6 text-violet-600" />
               </div>
-              <h3 className="font-bold mb-1 text-foreground">{f.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+              <h3 className="font-bold mb-1 text-gray-900">{f.title}</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Before/After Landing Pages - Home Page Style */}
-      <section className="py-16 px-4 bg-gradient-to-b from-muted/30 to-background">
+      <section className="py-16 px-4 bg-gradient-to-b from-violet-50/50 to-white">
         <div className="text-center mb-10">
-          <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground border-0 mb-3">
+          <Badge className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white border-0 mb-3">
             <Eye className="w-3 h-3 mr-1" />
             AI Magic
           </Badge>
-          <h2 className="text-3xl font-bold mb-2 text-foreground">Transform Your Product Pages</h2>
-          <p className="text-muted-foreground">See the difference AI-powered landing pages make</p>
+          <h2 className="text-3xl font-bold mb-2 text-gray-900">Transform Your Product Pages</h2>
+          <p className="text-gray-500">See the difference AI-powered landing pages make</p>
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -444,11 +444,11 @@ export default function MobileAds() {
             {/* Before Card */}
             <div className="relative">
               <div className="absolute -top-3 left-4 z-10">
-                <Badge variant="secondary" className="bg-muted text-muted-foreground border shadow-sm text-xs">
+                <Badge variant="secondary" className="bg-gray-100 text-gray-600 border shadow-sm text-xs">
                   Before
                 </Badge>
               </div>
-              <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden h-full">
+              <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden h-full">
                 {/* Product Image - White/Studio Background */}
                 <div className="aspect-[16/10] bg-white overflow-hidden relative">
                   <img 
@@ -466,20 +466,20 @@ export default function MobileAds() {
                 {/* Content */}
                 <div className="p-4 sm:p-6 space-y-4">
                   <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-foreground">Premium Velvet Sofa</h3>
-                    <p className="text-muted-foreground text-sm">Modern Design Collection</p>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">Premium Velvet Sofa</h3>
+                    <p className="text-gray-500 text-sm">Modern Design Collection</p>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-foreground">$1,299</span>
-                    <Button size="sm" variant="secondary" className="shadow-sm">
+                    <span className="text-2xl font-bold text-gray-900">$1,299</span>
+                    <Button size="sm" variant="secondary" className="shadow-sm bg-gray-100 text-gray-700 hover:bg-gray-200">
                       Buy Now
                       <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
                   </div>
                   
-                  <div className="pt-2 border-t border-border">
-                    <p className="text-muted-foreground text-sm font-mono bg-muted/50 p-3 rounded-lg leading-relaxed">
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-gray-500 text-sm font-mono bg-gray-50 p-3 rounded-lg leading-relaxed">
                       Gray velvet sofa, 3 seats, wooden legs, 220x85x90cm
                     </p>
                   </div>
@@ -490,12 +490,12 @@ export default function MobileAds() {
             {/* After Card */}
             <div className="relative">
               <div className="absolute -top-3 left-4 z-10">
-                <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground border-0 shadow-lg text-xs">
+                <Badge className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white border-0 shadow-lg text-xs">
                   <Sparkles className="w-3 h-3 mr-1" />
                   After NewAI
                 </Badge>
               </div>
-              <div className="rounded-xl border-2 border-primary/30 bg-card shadow-xl overflow-hidden h-full ring-4 ring-primary/10">
+              <div className="rounded-xl border-2 border-violet-300 bg-white shadow-xl overflow-hidden h-full ring-4 ring-violet-100">
                 {/* Product Image - Generated Background */}
                 <div className="aspect-[16/10] overflow-hidden relative">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10"></div>
@@ -505,7 +505,7 @@ export default function MobileAds() {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-2 right-2 z-20">
-                    <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground text-[10px] backdrop-blur-sm shadow border-0">
+                    <Badge className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-[10px] backdrop-blur-sm shadow border-0">
                       <Sparkles className="w-3 h-3 mr-1" /> AI Generated
                     </Badge>
                   </div>
@@ -514,23 +514,23 @@ export default function MobileAds() {
                 {/* Content */}
                 <div className="p-4 sm:p-6 space-y-4">
                   <div>
-                    <Badge className="bg-primary/10 text-primary border-primary/20 text-xs mb-2">
+                    <Badge className="bg-violet-100 text-violet-700 border-violet-200 text-xs mb-2">
                       <Sparkles className="w-3 h-3 mr-1" /> Premium
                     </Badge>
-                    <h3 className="text-lg sm:text-xl font-bold text-foreground">Premium Velvet Sofa</h3>
-                    <p className="text-muted-foreground text-sm">Modern Design Collection</p>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">Premium Velvet Sofa</h3>
+                    <p className="text-gray-500 text-sm">Modern Design Collection</p>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-foreground">$1,299</span>
-                    <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-primary-foreground shadow">
+                    <span className="text-2xl font-bold text-gray-900">$1,299</span>
+                    <Button size="sm" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow">
                       Buy Now
                       <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-4 border border-primary/10">
-                    <p className="text-foreground text-sm leading-relaxed">
+                  <div className="bg-gradient-to-br from-violet-50 to-fuchsia-50 rounded-lg p-4 border border-violet-100">
+                    <p className="text-gray-700 text-sm leading-relaxed">
                       Discover exceptional comfort with our Premium Velvet Sofa. Elegant curves, premium velvet, and expert craftsmanship.
                     </p>
                     
@@ -553,27 +553,27 @@ export default function MobileAds() {
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mt-8">
-            <div className="text-center p-4 bg-card rounded-xl border border-border shadow-sm">
+            <div className="text-center p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="text-2xl font-black text-green-600">+180%</div>
-              <p className="text-xs text-muted-foreground mt-1">Conversion Rate</p>
+              <p className="text-xs text-gray-500 mt-1">Conversion Rate</p>
             </div>
-            <div className="text-center p-4 bg-card rounded-xl border border-border shadow-sm">
-              <div className="text-2xl font-black text-primary">+250%</div>
-              <p className="text-xs text-muted-foreground mt-1">Organic Traffic</p>
+            <div className="text-center p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="text-2xl font-black text-violet-600">+250%</div>
+              <p className="text-xs text-gray-500 mt-1">Organic Traffic</p>
             </div>
-            <div className="text-center p-4 bg-card rounded-xl border border-border shadow-sm">
-              <div className="text-2xl font-black text-accent">5 min</div>
-              <p className="text-xs text-muted-foreground mt-1">Setup Time</p>
+            <div className="text-center p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="text-2xl font-black text-fuchsia-600">5 min</div>
+              <p className="text-xs text-gray-500 mt-1">Setup Time</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* App Preview - Laptop */}
-      <section className="py-16 px-4 bg-gradient-to-b from-primary/5 to-transparent">
+      <section className="py-16 px-4 bg-gradient-to-b from-violet-50/50 to-transparent">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-2 text-foreground">Powerful Dashboard</h2>
-          <p className="text-muted-foreground">Manage everything from one place</p>
+          <h2 className="text-3xl font-bold mb-2 text-gray-900">Powerful Dashboard</h2>
+          <p className="text-gray-500">Manage everything from one place</p>
         </div>
         
         <div className="relative max-w-4xl mx-auto">
@@ -582,7 +582,7 @@ export default function MobileAds() {
             alt="NewAI Dashboard" 
             className="w-full rounded-lg shadow-2xl"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent pointer-events-none" />
         </div>
       </section>
 
@@ -590,26 +590,26 @@ export default function MobileAds() {
       <section className="py-16 px-4">
         <div className="text-center mb-10">
           <Badge className="bg-green-100 text-green-700 border-green-200 mb-3">Testimonials</Badge>
-          <h2 className="text-3xl font-bold mb-2 text-foreground">Loved by 10,000+ Merchants</h2>
-          <p className="text-muted-foreground">See what our customers say</p>
+          <h2 className="text-3xl font-bold mb-2 text-gray-900">Loved by 10,000+ Merchants</h2>
+          <p className="text-gray-500">See what our customers say</p>
         </div>
         
         <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
           {TESTIMONIALS.map((t, i) => (
-            <div key={i} className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+            <div key={i} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
               <div className="flex gap-0.5 mb-3">
                 {[...Array(t.rating)].map((_, j) => (
                   <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
-              <p className="text-sm mb-4 text-muted-foreground">"{t.text}"</p>
+              <p className="text-sm mb-4 text-gray-500">"{t.text}"</p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold text-primary-foreground">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center text-sm font-bold text-white">
                   {t.name[0]}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.role}</p>
+                  <p className="text-sm font-semibold text-gray-900">{t.name}</p>
+                  <p className="text-xs text-gray-500">{t.role}</p>
                 </div>
               </div>
             </div>
@@ -622,32 +622,32 @@ export default function MobileAds() {
         <div className="flex justify-center gap-12 max-w-md mx-auto">
           <div className="text-center">
             <Shield className="w-10 h-10 text-green-600 mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">Secure<br />Payment</p>
+            <p className="text-xs text-gray-500">Secure<br />Payment</p>
           </div>
           <div className="text-center">
-            <Clock className="w-10 h-10 text-primary mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">5 Minute<br />Setup</p>
+            <Clock className="w-10 h-10 text-violet-600 mx-auto mb-2" />
+            <p className="text-xs text-gray-500">5 Minute<br />Setup</p>
           </div>
           <div className="text-center">
             <Zap className="w-10 h-10 text-yellow-500 mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">Instant<br />Results</p>
+            <p className="text-xs text-gray-500">Instant<br />Results</p>
           </div>
         </div>
       </section>
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-transparent pt-10 pb-6 px-4 z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white to-transparent pt-10 pb-6 px-4 z-40">
         <div className="max-w-md mx-auto">
           <Button 
             onClick={() => setShowPricing(true)}
-            className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 font-bold py-6 rounded-xl shadow-xl shadow-primary/25 text-base text-primary-foreground"
+            className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold py-6 rounded-xl shadow-xl shadow-violet-500/25 text-base text-white"
           >
             Start Free Trial – 70% OFF
             <ChevronRight className="w-5 h-5 ml-1" />
           </Button>
           <div className="flex items-center justify-center gap-2 mt-3">
             <ShopifyLogo />
-            <span className="text-xs text-muted-foreground font-medium">Built for Shopify</span>
+            <span className="text-xs text-gray-500 font-medium">Built for Shopify</span>
           </div>
         </div>
       </div>
