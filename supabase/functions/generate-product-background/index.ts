@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 /**
- * POST-PROCESSING: Force exact format dimensions by center-cropping the generated image
+ * POST-PROCESSING: Force exact format dimensions using FIT (not crop)
+ * This preserves the ENTIRE product without cutting anything off
  */
 async function enforceImageFormat(
   base64Image: string,
@@ -11,7 +12,7 @@ async function enforceImageFormat(
   targetHeight: number
 ): Promise<string> {
   try {
-    console.log(`[POST-PROCESS] 📐 Enforcing format: ${targetWidth}x${targetHeight}`);
+    console.log(`[POST-PROCESS] 📐 Enforcing format (FIT mode): ${targetWidth}x${targetHeight}`);
     
     const base64Match = base64Image.match(/data:image\/[^;]+;base64,(.+)/);
     const base64Data = base64Match ? base64Match[1] : base64Image;
@@ -28,32 +29,40 @@ async function enforceImageFormat(
     
     console.log(`[POST-PROCESS] 📐 Source: ${srcWidth}x${srcHeight} -> Target: ${targetWidth}x${targetHeight}`);
     
-    const srcAspect = srcWidth / srcHeight;
-    const targetAspect = targetWidth / targetHeight;
+    // Calculate scale to FIT image within target (preserve aspect ratio, no cropping)
+    const scaleX = targetWidth / srcWidth;
+    const scaleY = targetHeight / srcHeight;
+    const scale = Math.min(scaleX, scaleY);
     
-    let cropX = 0, cropY = 0, cropWidth = srcWidth, cropHeight = srcHeight;
+    const newWidth = Math.round(srcWidth * scale);
+    const newHeight = Math.round(srcHeight * scale);
     
-    if (Math.abs(srcAspect - targetAspect) > 0.01) {
-      if (srcAspect > targetAspect) {
-        cropWidth = Math.round(srcHeight * targetAspect);
-        cropX = Math.round((srcWidth - cropWidth) / 2);
-      } else {
-        cropHeight = Math.round(srcWidth / targetAspect);
-        cropY = Math.round((srcHeight - cropHeight) / 2);
-      }
-      console.log(`[POST-PROCESS] ✂️ Cropping: x=${cropX}, y=${cropY}, w=${cropWidth}, h=${cropHeight}`);
-    }
+    console.log(`[POST-PROCESS] 🔄 Scaling: ${srcWidth}x${srcHeight} -> ${newWidth}x${newHeight} (scale: ${scale.toFixed(3)})`);
     
-    const cropped = image.crop(cropX, cropY, cropWidth, cropHeight);
-    const resized = cropped.resize(targetWidth, targetHeight);
-    const outputBytes = await resized.encode();
+    // Resize the image to fit within target dimensions
+    const resized = image.resize(newWidth, newHeight);
+    
+    // Create a new canvas with target dimensions (white background)
+    const canvas = new Image(targetWidth, targetHeight);
+    canvas.fill(0xFFFFFFFF); // White background
+    
+    // Calculate position to center the resized image on canvas
+    const offsetX = Math.round((targetWidth - newWidth) / 2);
+    const offsetY = Math.round((targetHeight - newHeight) / 2);
+    
+    console.log(`[POST-PROCESS] 📍 Centering: offset (${offsetX}, ${offsetY})`);
+    
+    // Composite the resized image onto the white canvas
+    canvas.composite(resized, offsetX, offsetY);
+    
+    const outputBytes = await canvas.encode();
     
     let binary = '';
     for (let i = 0; i < outputBytes.byteLength; i++) {
       binary += String.fromCharCode(outputBytes[i]);
     }
     
-    console.log(`[POST-PROCESS] ✅ Format enforced: ${targetWidth}x${targetHeight}`);
+    console.log(`[POST-PROCESS] ✅ Format enforced (FIT): ${targetWidth}x${targetHeight}`);
     return `data:image/png;base64,${btoa(binary)}`;
   } catch (error) {
     console.error(`[POST-PROCESS] ❌ Failed:`, error);
@@ -151,6 +160,22 @@ serve(async (req) => {
       console.log(`[product-bg] 🔍 SERP data enrichment applied`);
     }
     
+    // 🆕 Build SERP-based orientation instructions
+    let orientationInstructions = "";
+    if (serpData) {
+      orientationInstructions = `
+🔄 ORIENTATION SELON LES STANDARDS DU MARCHÉ 🔄
+${serpData.dominantStyles?.length ? `📊 Styles de présentation populaires: ${serpData.dominantStyles.slice(0, 3).join(", ")}` : ""}
+${serpData.dimensions ? `📏 Dimensions produit: ${serpData.dimensions} - Orienter le produit pour montrer ces proportions correctement` : ""}
+
+⚠️ NE PAS RETOURNER, INVERSER OU MAL ORIENTER LE PRODUIT
+Le produit doit être présenté dans son orientation NATURELLE comme chez les concurrents.
+Si c'est un canapé → vue de FACE ou légère 3/4
+Si c'est une chaise → légère rotation pour montrer la profondeur
+Si c'est un lit → angle montrant la tête de lit et la longueur
+`;
+    }
+    
     // Add Vision AI data if available
     if (visionAiData?.description) {
       enrichedContext += `. Visual: ${visionAiData.description.slice(0, 100)}`;
@@ -217,6 +242,8 @@ You are a professional e-commerce product photographer with expertise in creatin
 
 PRODUCT: ${enrichedContext}
 IMAGE TYPE: ${isMainImage ? "MAIN PRODUCT IMAGE" : "SECONDARY/LIFESTYLE IMAGE"}
+
+${orientationInstructions}
 
 ${visualEnhancementInstructions}
 

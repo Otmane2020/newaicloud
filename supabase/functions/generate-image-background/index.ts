@@ -141,6 +141,19 @@ serve(async (req) => {
       console.log(`[image-bg] 🔍 SERP data enrichment applied`);
     }
     
+    // 🆕 Build SERP-based orientation instructions  
+    let orientationInstructions = "";
+    if (serpData) {
+      orientationInstructions = `
+🔄 ORIENTATION SELON LES STANDARDS DU MARCHÉ 🔄
+${serpData.dominantStyles?.length ? `📊 Styles de présentation populaires: ${serpData.dominantStyles.slice(0, 3).join(", ")}` : ""}
+${serpData.dimensions ? `📏 Dimensions produit: ${serpData.dimensions} - Orienter le produit pour montrer ces proportions correctement` : ""}
+
+⚠️ NE PAS RETOURNER, INVERSER OU MAL ORIENTER LE PRODUIT
+Le produit doit être présenté dans son orientation NATURELLE comme chez les concurrents.
+`;
+    }
+    
     // Add Vision AI data if available
     if (visionAiData?.description) {
       enrichedContext += `. Visual: ${visionAiData.description.slice(0, 100)}`;
@@ -248,6 +261,8 @@ You are a professional e-commerce product photographer with STRICT format requir
 
 PRODUCT: ${enrichedContext}
 USER REQUEST: ${prompt}
+
+${orientationInstructions}
 
 ${visualEnhancementInstructions}
 

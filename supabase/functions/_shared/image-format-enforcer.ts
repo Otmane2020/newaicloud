@@ -83,14 +83,86 @@ export function calculateCenterCrop(
 }
 
 /**
+ * Build SERP-based orientation instructions
+ * Adjusts product orientation based on competitor data
+ */
+export function buildOrientationInstructions(serpData?: {
+  dominantStyles?: string[];
+  dimensions?: string;
+  orientation?: string;
+  productCategory?: string;
+}): string {
+  if (!serpData) return "";
+  
+  let instructions = `
+🔄 ORIENTATION & POSITIONING ACCORDING TO MARKET STANDARDS 🔄
+
+`;
+
+  // Add orientation based on dominant styles
+  if (serpData.dominantStyles?.length) {
+    const styles = serpData.dominantStyles.slice(0, 3).join(", ");
+    instructions += `📊 Competitor analysis shows these popular presentation styles: ${styles}
+Orient and position the product similarly to match market expectations.
+
+`;
+  }
+
+  // Add dimension-based orientation hints
+  if (serpData.dimensions) {
+    instructions += `📏 Product dimensions from market data: ${serpData.dimensions}
+Ensure the product is displayed with CORRECT proportions matching these dimensions.
+If the product is a sofa/bed/table → show it from the FRONT or 3/4 ANGLE as competitors do.
+If the product is a chair → show it at a SLIGHT ANGLE for depth.
+
+`;
+  }
+
+  // Product category specific orientation
+  if (serpData.productCategory) {
+    const category = serpData.productCategory.toLowerCase();
+    if (category.includes("sofa") || category.includes("canapé")) {
+      instructions += `🛋️ SOFA ORIENTATION: Face-on or slight 3/4 angle. Show full length. Armrests visible on both sides.
+`;
+    } else if (category.includes("bed") || category.includes("lit")) {
+      instructions += `🛏️ BED ORIENTATION: Slight angle showing headboard and length. Natural bedroom perspective.
+`;
+    } else if (category.includes("chair") || category.includes("chaise")) {
+      instructions += `🪑 CHAIR ORIENTATION: 3/4 angle showing seat, back, and one side. Slight rotation for depth.
+`;
+    } else if (category.includes("table")) {
+      instructions += `🪵 TABLE ORIENTATION: Slight top-down angle showing surface. 3/4 view for depth perception.
+`;
+    }
+  }
+
+  instructions += `
+⚠️ CRITICAL: DO NOT ROTATE, FLIP, OR MIRROR THE PRODUCT INCORRECTLY
+The product must face the NATURAL viewing direction as shown in competitor images.
+If competitors show product facing LEFT → keep it facing LEFT
+If competitors show product facing FRONT → keep it facing FRONT
+
+`;
+
+  return instructions;
+}
+
+/**
  * Build strict format enforcement prompt header
  */
-export function buildFormatEnforcementPrompt(format: string): string {
+export function buildFormatEnforcementPrompt(format: string, serpData?: {
+  dominantStyles?: string[];
+  dimensions?: string;
+  orientation?: string;
+  productCategory?: string;
+}): string {
   const dims = getFormatDimensions(format);
   
   const isSquare = dims.width === dims.height;
   const isPortrait = dims.height > dims.width;
   const isLandscape = dims.width > dims.height;
+
+  const orientationInstructions = buildOrientationInstructions(serpData);
 
   return `
 🚨🚨🚨 CRITICAL FORMAT REQUIREMENT - ABSOLUTE PRIORITY 🚨🚨🚨
@@ -106,6 +178,7 @@ ${isLandscape ? `🖼️ HORIZONTAL LANDSCAPE: Width (${dims.width}) > Height ($
 Scale the product UP to TOUCH or NEARLY TOUCH the edges of the frame.
 NO excessive empty space or padding around the product.
 
+${orientationInstructions}
 `.trim();
 }
 
