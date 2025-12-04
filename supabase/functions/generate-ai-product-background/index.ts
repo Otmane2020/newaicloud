@@ -196,6 +196,23 @@ serve(async (req) => {
       }
       console.log(`[ai-bg-gen] 🔍 SERP data enrichment applied`);
     }
+    
+    // 🆕 Build SERP-based orientation instructions  
+    let orientationInstructions = "";
+    if (serpData) {
+      orientationInstructions = `
+🔄 ORIENTATION SELON LES STANDARDS DU MARCHÉ 🔄
+${serpData.dominantStyles?.length ? `📊 Styles de présentation populaires: ${serpData.dominantStyles.slice(0, 3).join(", ")}` : ""}
+${serpData.dimensions ? `📏 Dimensions produit: ${serpData.dimensions} - Orienter le produit pour montrer ces proportions correctement` : ""}
+
+⚠️ NE PAS RETOURNER, INVERSER OU MAL ORIENTER LE PRODUIT
+Le produit doit être présenté dans son orientation NATURELLE comme chez les concurrents.
+Si c'est un canapé → vue de FACE ou légère 3/4
+Si c'est une chaise → légère rotation pour montrer la profondeur  
+Si c'est un lit → angle montrant la tête de lit et la longueur
+Si c'est une table → légère vue plongeante montrant la surface
+`;
+    }
 
     console.log(`🎨 Generating AI background for: ${productTitle} (${targetType})`);
     console.log(`📝 Enriched context: ${productContext.slice(0, 100)}...`);
@@ -411,22 +428,28 @@ Tu effectues une ÉDITION de l'image fournie, PAS une génération nouvelle.
 Un produit spécifique que tu dois CONSERVER TEL QUEL.
 Dans cette image, le produit est : ${productContext}
 
+${orientationInstructions}
+
 🎯 TA MISSION EXACTE :
 1. GARDE le produit EXACTEMENT comme il apparaît dans l'image d'entrée
 2. REMPLACE UNIQUEMENT l'arrière-plan/fond de l'image
 3. NE MODIFIE PAS, NE REDESSINE PAS, NE RÉINTERPRÈTE PAS le produit
+4. CONSERVE L'ORIENTATION EXACTE du produit (ne pas retourner/inverser)
 
 ⚠️⚠️⚠️ EXEMPLES D'ERREURS FATALES ⚠️⚠️⚠️
 - Image d'entrée = SOMMIER (cadre métallique avec lattes) → Tu génères un LIT COMPLET avec matelas = ❌ ÉCHEC TOTAL
 - Image d'entrée = CHAISE simple → Tu génères un FAUTEUIL = ❌ ÉCHEC TOTAL  
 - Image d'entrée = TABLE basse → Tu génères une TABLE différente = ❌ ÉCHEC TOTAL
 - Tu changes la forme, couleur, ou type du produit = ❌ ÉCHEC TOTAL
+- Tu retournes/inverses le produit (miroir horizontal) = ❌ ÉCHEC TOTAL
 
 ✅ SUCCÈS = L'objet dans l'image de sortie est VISUELLEMENT IDENTIQUE à l'objet dans l'image d'entrée
 ✅ SUCCÈS = Seul le FOND/ARRIÈRE-PLAN a changé, le produit est COPIÉ à l'identique
+✅ SUCCÈS = L'ORIENTATION du produit est identique à l'entrée
 
 🔍 VÉRIFIE AVANT DE FINALISER :
 - Le produit dans ma sortie est-il le MÊME objet que dans l'entrée ? (même forme, même type, même couleur)
+- L'orientation est-elle identique ? (pas de miroir, pas de rotation)
 - Si l'entrée montre un sommier métallique → ma sortie montre-t-elle CE sommier métallique (pas un lit) ?
 `;
 
