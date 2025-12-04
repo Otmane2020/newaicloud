@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Check, Zap, ShoppingBag, TrendingUp, Clock, Shield, Star, X, Sparkles, BarChart3, Image, MessageSquare, Globe, ChevronRight, Play, Search, FileText, Tags, Home, Calendar } from "lucide-react";
+import { Check, Zap, ShoppingBag, TrendingUp, Clock, Shield, Star, X, Sparkles, BarChart3, Image, MessageSquare, Globe, ChevronRight, Play, Search, FileText, Tags, Home, Calendar, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -8,36 +8,29 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { EmbeddedCheckout } from "@/components/mobileads/EmbeddedCheckout";
 import phoneHandMockup from "@/assets/phone-hand-mockup.png";
 import laptopDashboardMockup from "@/assets/laptop-dashboard-mockup.png";
+import { supabase } from "@/integrations/supabase/client";
 
-// Real NewAI Plans with correct Stripe Price IDs
+// Plan interface matching database schema
 interface Plan {
   name: string;
   products: string;
   popular?: boolean;
   monthly: { priceId: string; price: number };
-  yearly: { priceId: string; price: number };
+  yearly: { priceId: string; price: number; yearlyTotal: number };
 }
 
-const PLANS: Record<string, Plan> = {
-  starter: {
-    name: "Starter",
-    products: "100 products",
-    monthly: { priceId: "price_1SXVN5Efti9t9nN9wL9xUjmb", price: 9.99 },
-    yearly: { priceId: "price_1SXVN6Efti9t9nN9bWUlHe3G", price: 7.99 },
-  },
-  pro: {
-    name: "Pro",
-    products: "1000 products",
-    popular: true,
-    monthly: { priceId: "price_1SXVN9Efti9t9nN95KliUmU2", price: 49 },
-    yearly: { priceId: "price_1SXVNAEfti9t9nN9CuRAwfu9", price: 39.20 },
-  },
-  business: {
-    name: "Business",
-    products: "2000 products",
-    monthly: { priceId: "price_1SXVNBEfti9t9nN9iNDQENRN", price: 98 },
-    yearly: { priceId: "price_1SXVNDEfti9t9nN9cVja1zy7", price: 78.40 },
-  }
+// Mapping UI plan keys to database plan_ids
+const PLAN_DB_MAPPING: Record<string, string> = {
+  starter: "starter",      // $9.99/mo, $95.90/year, 100 products
+  pro: "pro-500",          // $49/mo, $470.40/year, 1000 products  
+  business: "pro-1000",    // $98/mo, $940.80/year, 2000 products
+};
+
+// Plan metadata (non-price data)
+const PLAN_META: Record<string, { name: string; popular?: boolean }> = {
+  starter: { name: "Starter" },
+  pro: { name: "Pro", popular: true },
+  business: { name: "Business" },
 };
 
 const FEATURES = [
@@ -117,7 +110,56 @@ export default function MobileAds() {
   const [selectedPlan, setSelectedPlan] = useState<"starter" | "pro" | "business">("pro");
   const [showCheckout, setShowCheckout] = useState(false);
   const [countdown, setCountdown] = useState({ hours: 23, minutes: 59, seconds: 59 });
+  const [plans, setPlans] = useState<Record<string, Plan>>({});
+  const [loadingPlans, setLoadingPlans] = useState(true);
 
+  // Load plans from database like Onboarding.tsx
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const dbPlanIds = Object.values(PLAN_DB_MAPPING);
+        const { data, error } = await supabase
+          .from("subscription_plans")
+          .select("id, name, price_monthly, price_yearly, max_products, stripe_price_id_monthly, stripe_price_id_yearly")
+          .in("id", dbPlanIds);
+
+        if (error) throw error;
+
+        const loadedPlans: Record<string, Plan> = {};
+        
+        for (const [uiKey, dbId] of Object.entries(PLAN_DB_MAPPING)) {
+          const dbPlan = data?.find(p => p.id === dbId);
+          if (dbPlan) {
+            const yearlyMonthlyEquivalent = dbPlan.price_yearly / 12;
+            loadedPlans[uiKey] = {
+              name: PLAN_META[uiKey].name,
+              products: `${dbPlan.max_products} products`,
+              popular: PLAN_META[uiKey].popular,
+              monthly: {
+                priceId: dbPlan.stripe_price_id_monthly,
+                price: dbPlan.price_monthly,
+              },
+              yearly: {
+                priceId: dbPlan.stripe_price_id_yearly,
+                price: parseFloat(yearlyMonthlyEquivalent.toFixed(2)),
+                yearlyTotal: dbPlan.price_yearly,
+              },
+            };
+          }
+        }
+        
+        setPlans(loadedPlans);
+      } catch (error) {
+        console.error("Error loading plans:", error);
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+
+    loadPlans();
+  }, []);
+
+  // Countdown timer
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdown(prev => {
@@ -131,8 +173,15 @@ export default function MobileAds() {
   }, []);
 
   const getCurrentPrice = () => {
-    const plan = PLANS[selectedPlan];
+    const plan = plans[selectedPlan];
+    if (!plan) return 0;
     return billingPeriod === "yearly" ? plan.yearly.price : plan.monthly.price;
+  };
+
+  const getYearlyTotal = () => {
+    const plan = plans[selectedPlan];
+    if (!plan) return 0;
+    return plan.yearly.yearlyTotal;
   };
 
   return (
@@ -601,44 +650,55 @@ export default function MobileAds() {
 
             {/* Plans */}
             <div className="space-y-3">
-              {(["starter", "pro", "business"] as const).map((key) => {
-                const plan = PLANS[key];
-                const price = billingPeriod === "yearly" ? plan.yearly.price : plan.monthly.price;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedPlan(key)}
-                    className={`w-full p-4 rounded-xl border-2 text-left transition-all relative ${
-                      selectedPlan === key 
-                        ? "border-violet-500 bg-violet-50" 
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    {plan.popular && (
-                      <Badge className="absolute -top-2.5 right-3 bg-gradient-to-r from-violet-600 to-fuchsia-600">
-                        MOST POPULAR
-                      </Badge>
-                    )}
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          selectedPlan === key ? "border-violet-500 bg-violet-500" : "border-gray-300"
-                        }`}>
-                          {selectedPlan === key && <Check className="w-3 h-3 text-white" />}
+              {loadingPlans ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+                </div>
+              ) : (
+                (["starter", "pro", "business"] as const).map((key) => {
+                  const plan = plans[key];
+                  if (!plan) return null;
+                  const price = billingPeriod === "yearly" ? plan.yearly.price : plan.monthly.price;
+                  const yearlyTotal = plan.yearly.yearlyTotal;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedPlan(key)}
+                      className={`w-full p-4 rounded-xl border-2 text-left transition-all relative ${
+                        selectedPlan === key 
+                          ? "border-violet-500 bg-violet-50" 
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      {plan.popular && (
+                        <Badge className="absolute -top-2.5 right-3 bg-gradient-to-r from-violet-600 to-fuchsia-600">
+                          MOST POPULAR
+                        </Badge>
+                      )}
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            selectedPlan === key ? "border-violet-500 bg-violet-500" : "border-gray-300"
+                          }`}>
+                            {selectedPlan === key && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                          <div>
+                            <h4 className="font-bold">{plan.name}</h4>
+                            <p className="text-xs text-gray-500">{plan.products}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-bold">{plan.name}</h4>
-                          <p className="text-xs text-gray-500">{plan.products}</p>
+                        <div className="text-right">
+                          <span className="text-2xl font-black">${price}</span>
+                          <span className="text-gray-500 text-sm">/mo</span>
+                          {billingPeriod === "yearly" && (
+                            <p className="text-[10px] text-gray-400">Billed ${yearlyTotal}/year</p>
+                          )}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-2xl font-black">${price}</span>
-                        <span className="text-gray-500 text-sm">/mo</span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })
+              )}
             </div>
 
             {/* Features Included */}
@@ -659,9 +719,13 @@ export default function MobileAds() {
           <div className="sticky bottom-0 bg-white p-5 border-t shadow-lg">
             <Button 
               onClick={() => setShowCheckout(true)}
+              disabled={loadingPlans || !plans[selectedPlan]}
               className="w-full h-14 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold text-base rounded-xl"
             >
-              Continue – ${getCurrentPrice()}/mo
+              {billingPeriod === "yearly" 
+                ? `Continue – $${getYearlyTotal()}/year`
+                : `Continue – $${getCurrentPrice()}/mo`
+              }
               <ChevronRight className="w-5 h-5 ml-1" />
             </Button>
             <p className="text-center text-xs text-gray-500 mt-3">
@@ -679,14 +743,16 @@ export default function MobileAds() {
             <DialogDescription>Complete your NewAI subscription</DialogDescription>
           </VisuallyHidden>
           
-          <EmbeddedCheckout
-            selectedPlan={PLANS[selectedPlan]}
-            billingPeriod={billingPeriod}
-            onClose={() => {
-              setShowCheckout(false);
-              setShowPricing(false);
-            }}
-          />
+          {plans[selectedPlan] && (
+            <EmbeddedCheckout
+              selectedPlan={plans[selectedPlan]}
+              billingPeriod={billingPeriod}
+              onClose={() => {
+                setShowCheckout(false);
+                setShowPricing(false);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

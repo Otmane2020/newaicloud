@@ -16,7 +16,7 @@ interface Plan {
   name: string;
   products: string;
   monthly: { priceId: string; price: number };
-  yearly: { priceId: string; price: number };
+  yearly: { priceId: string; price: number; yearlyTotal: number };
 }
 
 interface EmbeddedCheckoutProps {
@@ -78,10 +78,11 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
   const price = billingPeriod === "yearly" ? selectedPlan.yearly.price : selectedPlan.monthly.price;
   const priceId = billingPeriod === "yearly" ? selectedPlan.yearly.priceId : selectedPlan.monthly.priceId;
   const originalPrice = billingPeriod === "yearly" ? selectedPlan.monthly.price : price;
-  const yearlyTotal = (price * 12).toFixed(2);
+  const yearlyTotal = billingPeriod === "yearly" ? selectedPlan.yearly.yearlyTotal : (price * 12);
   
   const discountAmount = appliedCoupon ? (couponDiscount > 0 ? price * (couponDiscount / 100) : price * 0.1) : 0;
   const finalPrice = price - discountAmount;
+  const finalYearlyTotal = billingPeriod === "yearly" ? (yearlyTotal - (yearlyTotal * (couponDiscount / 100))) : (finalPrice * 12);
 
   // Initialize PaymentRequest for Google Pay / Apple Pay
   useEffect(() => {
@@ -557,26 +558,45 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
 
             {/* Totals */}
             <div className="border-t border-gray-200 pt-3 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Subtotal</span>
-                <span>${(originalPrice).toFixed(2)}</span>
-              </div>
-              {billingPeriod === "yearly" && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Discount</span>
-                  <span className="text-green-600">-${(originalPrice - price).toFixed(2)}</span>
-                </div>
+              {billingPeriod === "yearly" ? (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Annual subscription</span>
+                    <span>${yearlyTotal.toFixed(2)}/year</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>Monthly equivalent</span>
+                    <span>${price.toFixed(2)}/mo</span>
+                  </div>
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Coupon ({couponDiscount}% off)</span>
+                      <span className="text-green-600">-${(yearlyTotal * (couponDiscount / 100)).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
+                    <span>Total due today</span>
+                    <span className="text-violet-600">USD ${finalYearlyTotal.toFixed(2)}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Monthly subscription</span>
+                    <span>${price.toFixed(2)}/mo</span>
+                  </div>
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Coupon ({couponDiscount}% off)</span>
+                      <span className="text-green-600">-${discountAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
+                    <span>Total due today</span>
+                    <span className="text-violet-600">USD ${finalPrice.toFixed(2)}</span>
+                  </div>
+                </>
               )}
-              {appliedCoupon && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Coupon</span>
-                  <span className="text-green-600">-${discountAmount.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
-                <span>Total</span>
-                <span className="text-violet-600">USD ${finalPrice.toFixed(2)}</span>
-              </div>
             </div>
           </div>
 
