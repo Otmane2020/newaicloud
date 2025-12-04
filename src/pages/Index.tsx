@@ -148,7 +148,7 @@ const Index = () => {
                 size="lg" 
                 variant="outline" 
                 className="text-white border-white/30 hover:bg-white/10 w-full sm:w-auto"
-                onClick={() => navigate('/demo')}
+                onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 <Play className="mr-2 w-4 h-4" />
                 {t.demo?.button?.label || "Demo"}
@@ -221,12 +221,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Referral Section - Only for authenticated users */}
-      {user && (
-        <section className="container mx-auto px-4 py-12">
-          <ReferralSystem />
-        </section>
-      )}
 
       {/* How It Works - Clean Steps */}
       <section className="py-16 sm:py-20">
@@ -271,10 +265,10 @@ const Index = () => {
       <section className="py-8 border-y border-border/50 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
-            <span className="text-sm text-muted-foreground">{language === 'fr' ? "Intégrations" : "Integrations"}:</span>
+            <span className="text-sm font-medium">{language === 'fr' ? "Intégrations" : "Integrations"}:</span>
             <div className="flex items-center gap-6">
               {INTEGRATIONS.map((int, i) => (
-                <div key={i} className="flex items-center gap-2 opacity-70 hover:opacity-100 transition-opacity">
+                <div key={i} className="flex items-center gap-2">
                   {int.logo}
                   <span className="text-sm font-medium hidden sm:inline">{int.name}</span>
                 </div>
