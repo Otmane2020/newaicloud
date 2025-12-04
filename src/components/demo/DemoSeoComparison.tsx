@@ -72,8 +72,8 @@ export const DemoSeoComparison = () => {
     return "bg-destructive";
   };
 
-  const handleTryDemo = async () => {
-    navigate('/demo');
+  const handleTryDemo = () => {
+    document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
