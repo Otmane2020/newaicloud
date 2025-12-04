@@ -10,7 +10,11 @@ import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements, PaymentRequestButtonElement } from "@stripe/react-stripe-js";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+if (!STRIPE_KEY) {
+  console.error("[EmbeddedCheckout] VITE_STRIPE_PUBLISHABLE_KEY is not set!");
+}
+const stripePromise = STRIPE_KEY ? loadStripe(STRIPE_KEY) : null;
 
 interface Plan {
   name: string;
@@ -818,6 +822,16 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
 }
 
 export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckoutProps) {
+  if (!stripePromise) {
+    return (
+      <div className="p-6 text-center">
+        <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+        <p className="text-destructive font-medium">Payment system unavailable</p>
+        <p className="text-muted-foreground text-sm mt-2">Please try again later or contact support.</p>
+      </div>
+    );
+  }
+  
   return (
     <Elements stripe={stripePromise}>
       <CheckoutForm selectedPlan={selectedPlan} billingPeriod={billingPeriod} onClose={onClose} />
