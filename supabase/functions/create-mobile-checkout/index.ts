@@ -1,4 +1,3 @@
-```ts
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
@@ -309,7 +308,7 @@ serve(async (req) => {
           } catch {
             // Not found by ID, search list
             const coupons = await stripe.coupons.list({ limit: 100 });
-            const foundCoupon = coupons.data.find((c) => 
+            const foundCoupon = coupons.data.find((c: Stripe.Coupon) => 
               c.valid &&
               ((c.name && c.name.toUpperCase() === upperCode) ||
                 c.id.toUpperCase() === upperCode)
@@ -517,7 +516,7 @@ serve(async (req) => {
       try {
         const coupons = await stripe.coupons.list({ limit: 100 });
         const upperCode = couponCode.toUpperCase();
-        const coupon = coupons.data.find((c) => 
+        const coupon = coupons.data.find((c: Stripe.Coupon) => 
           (c.name && c.name.toUpperCase() === upperCode) ||
           c.id.toUpperCase() === upperCode
         );
@@ -548,4 +547,3 @@ serve(async (req) => {
     );
   }
 });
-```
