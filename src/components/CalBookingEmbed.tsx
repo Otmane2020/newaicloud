@@ -60,7 +60,7 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
         <div 
           id="cal-booking-embed" 
           ref={containerRef}
-          className="w-full min-h-[500px] rounded-xl overflow-hidden"
+          className="w-full h-[450px] rounded-xl overflow-hidden"
         />
       </div>
     );
