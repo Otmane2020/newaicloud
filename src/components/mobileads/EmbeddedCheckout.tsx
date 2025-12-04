@@ -38,7 +38,7 @@ const COUNTRIES = [
   { code: "BE", name: "Belgium" },
 ];
 
-// Card form styles
+// Card form styles with billing address fields
 const cardElementOptions = {
   style: {
     base: {
@@ -49,6 +49,7 @@ const cardElementOptions = {
     },
     invalid: { color: '#ef4444' },
   },
+  hidePostalCode: false,
 };
 
 function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckoutProps) {
