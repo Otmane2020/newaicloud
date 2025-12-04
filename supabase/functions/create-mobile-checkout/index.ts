@@ -16,12 +16,15 @@ serve(async (req) => {
     const { 
       priceId, 
       email, 
-      password,
       fullName,
       billingAddress,
       couponCode,
       checkEmailOnly,
-      mode 
+      mode,
+      // For confirming payment and creating account
+      confirmPayment,
+      paymentIntentId,
+      subscriptionId
     } = await req.json();
 
     const supabase = createClient(
@@ -29,6 +32,10 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
+
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2025-08-27.basil",
+    });
 
     // Check if email already exists in Supabase
     if (checkEmailOnly && email) {
@@ -43,6 +50,97 @@ serve(async (req) => {
       );
     }
 
+    // STEP 2: After payment succeeds on frontend, create the account
+    if (confirmPayment && paymentIntentId && email) {
+      console.log("[create-mobile-checkout] Confirming payment and creating account for:", email);
+      
+      // Verify payment succeeded
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      
+      if (paymentIntent.status !== "succeeded") {
+        return new Response(
+          JSON.stringify({ error: "Payment not confirmed yet", status: paymentIntent.status }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log("[create-mobile-checkout] Payment verified as succeeded");
+
+      // Check if user already exists
+      const { data: existingUsers } = await supabase.auth.admin.listUsers();
+      const existingUser = existingUsers?.users?.find(
+        (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
+      );
+
+      if (existingUser) {
+        console.log("[create-mobile-checkout] User already exists:", existingUser.id);
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            userId: existingUser.id,
+            message: "User already exists"
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Generate password and create user
+      const generatedPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
+      
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email: email,
+        password: generatedPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName || "",
+          source: "mobile_ads_checkout"
+        }
+      });
+
+      if (createError) {
+        console.error("[create-mobile-checkout] Error creating user:", createError);
+        return new Response(
+          JSON.stringify({ error: createError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log("[create-mobile-checkout] User created:", newUser.user?.id);
+
+      // Create profile with active subscription
+      if (newUser?.user) {
+        await supabase.from("profiles").upsert({
+          id: newUser.user.id,
+          email: email,
+          full_name: fullName || "",
+          subscription_status: "active",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+        // Update subscription if we have the ID
+        if (subscriptionId) {
+          await stripe.subscriptions.update(subscriptionId, {
+            metadata: {
+              user_id: newUser.user.id,
+              user_email: email
+            }
+          });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          userId: newUser.user?.id,
+          tempPassword: generatedPassword,
+          email: email
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // STEP 1: Create payment intent (NO account creation yet)
     if (!priceId) {
       return new Response(
         JSON.stringify({ error: "Price ID is required" }),
@@ -69,10 +167,6 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
-    });
 
     const origin = req.headers.get("origin") || "https://newai.sale";
 
@@ -103,10 +197,9 @@ serve(async (req) => {
 
     // Mode: payment_intent - Create subscription with payment intent for Elements
     if (mode === "payment_intent") {
-      // Generate a random password for the new user
-      const generatedPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
+      console.log("[create-mobile-checkout] Creating subscription for:", email);
       
-      // Create subscription with payment intent
+      // Create subscription with payment intent (NO USER CREATED YET)
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
         items: [{ price: priceId }],
@@ -116,63 +209,34 @@ serve(async (req) => {
         metadata: {
           user_email: email,
           user_fullname: fullName || "",
-          create_account: "true",
-          generated_password: generatedPassword
+          pending_account: "true"
         }
       });
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
       const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
 
-      console.log("Payment intent created for subscription:", subscription.id);
-
-      // Create Supabase user account immediately (will be activated after payment)
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email: email,
-        password: generatedPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: fullName || "",
-          source: "mobile_ads_checkout"
-        }
-      });
-
-      if (createError) {
-        console.error("Error creating user:", createError);
-        // Don't fail - user can still pay, account will be created via webhook
-      } else if (newUser?.user) {
-        console.log("User created:", newUser.user.id);
-        
-        // Create profile
-        await supabase.from("profiles").upsert({
-          id: newUser.user.id,
-          email: email,
-          full_name: fullName || "",
-          subscription_status: "pending",
-          created_at: new Date().toISOString()
-        });
-      }
+      console.log("[create-mobile-checkout] Payment intent created:", paymentIntent.id, "for subscription:", subscription.id);
 
       return new Response(
         JSON.stringify({ 
           clientSecret: paymentIntent.client_secret,
           subscriptionId: subscription.id,
-          userEmail: email,
-          tempPassword: generatedPassword
+          paymentIntentId: paymentIntent.id,
+          userEmail: email
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Default: Embedded checkout mode
+    // Default: Redirect to Stripe Checkout
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      ui_mode: "embedded",
       customer: customerId,
       payment_method_types: ["card"],
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
-      return_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(email)}&new_account=true`,
-      automatic_tax: { enabled: false },
+      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(email)}&new_account=true`,
+      cancel_url: `${origin}/mobileads`,
       metadata: {
         user_email: email,
         user_fullname: fullName || "",
@@ -197,17 +261,17 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    console.log("Embedded checkout session created:", session.id);
+    console.log("[create-mobile-checkout] Checkout session created:", session.id);
 
     return new Response(
       JSON.stringify({ 
-        clientSecret: session.client_secret,
+        url: session.url,
         sessionId: session.id 
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
-    console.error("Checkout error:", error);
+    console.error("[create-mobile-checkout] Error:", error);
     return new Response(
       JSON.stringify({ error: error?.message || "Checkout failed" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
