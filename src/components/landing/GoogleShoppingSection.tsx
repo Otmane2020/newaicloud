@@ -2,17 +2,43 @@ import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/language";
 import { FileCode, Tag, Barcode, CheckCircle2, ShoppingCart, Globe } from "lucide-react";
 
-// Google Shopping Bag Logo
+// Google Shopping Bag Logo - Style like official Google Shopping bags
 const GoogleShoppingLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-8 h-8">
-    {/* Shopping bag body */}
-    <path fill="#4285F4" d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+  <svg viewBox="0 0 48 48" className="w-10 h-10">
+    {/* Shopping bag body - light lavender/white color */}
+    <path 
+      d="M8 16L12 44h24l4-28H8z" 
+      fill="#E8EAED" 
+      stroke="#DADCE0" 
+      strokeWidth="0.5"
+    />
+    {/* Bag shadow/depth */}
+    <path 
+      d="M12 44l-4-28h8l3 28H12z" 
+      fill="#D2D5DB" 
+      opacity="0.5"
+    />
     {/* Handle */}
-    <path d="M9 6V4.5C9 3.12 10.12 2 11.5 2h1C13.88 2 15 3.12 15 4.5V6" stroke="#FBBC05" strokeWidth="1.5" fill="none"/>
-    {/* Center circle */}
-    <circle cx="12" cy="13" r="3" fill="#EA4335"/>
-    {/* G letter */}
-    <path fill="white" d="M13 13h-1.5v1h2c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5c.41 0 .78.17 1.05.44l.7-.7C13.36 11.86 12.71 11.5 12 11.5c-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5 2.5-1.12 2.5-2.5v-1h-1.5z"/>
+    <path 
+      d="M16 16V12c0-4.42 3.58-8 8-8s8 3.58 8 8v4" 
+      stroke="#DADCE0" 
+      strokeWidth="2" 
+      fill="none"
+      strokeLinecap="round"
+    />
+    {/* Google G logo - multicolor */}
+    <g transform="translate(16, 24)">
+      {/* Blue arc */}
+      <path d="M16 8A8 8 0 0 1 8.7 15.3L4.2 11.8A12 12 0 0 0 8 -0.2V4A8 8 0 0 1 16 8z" fill="#4285F4"/>
+      {/* Green arc */}
+      <path d="M8.7 15.3A8 8 0 0 1 0 8H4A4 4 0 0 0 4.7 11.8z" fill="#34A853"/>
+      {/* Yellow arc */}
+      <path d="M0 8A8 8 0 0 1 2.3 2.3L5.8 5.8A4 4 0 0 0 4 8z" fill="#FBBC05"/>
+      {/* Red arc */}
+      <path d="M2.3 2.3A8 8 0 0 1 8 0V4A4 4 0 0 0 5.8 5.8z" fill="#EA4335"/>
+      {/* G horizontal bar */}
+      <rect x="8" y="6" width="6" height="4" fill="#4285F4"/>
+    </g>
   </svg>
 );
 
