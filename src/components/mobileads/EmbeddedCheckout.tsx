@@ -7,14 +7,41 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements, PaymentRequestButtonElement } from "@stripe/react-stripe-js";
 
-const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-if (!STRIPE_KEY) {
-  console.error("[EmbeddedCheckout] VITE_STRIPE_PUBLISHABLE_KEY is not set!");
+// Hook to load Stripe publishable key from edge function
+function useStripePromise() {
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadStripeKey() {
+      try {
+        const { data, error: fetchError } = await supabase.functions.invoke('get-stripe-config');
+        
+        if (fetchError || !data?.publishableKey) {
+          console.error("[EmbeddedCheckout] Failed to load Stripe config:", fetchError);
+          setError("Payment system configuration error");
+          setLoading(false);
+          return;
+        }
+
+        setStripePromise(loadStripe(data.publishableKey));
+        setLoading(false);
+      } catch (err) {
+        console.error("[EmbeddedCheckout] Error loading Stripe:", err);
+        setError("Payment system unavailable");
+        setLoading(false);
+      }
+    }
+
+    loadStripeKey();
+  }, []);
+
+  return { stripePromise, loading, error };
 }
-const stripePromise = STRIPE_KEY ? loadStripe(STRIPE_KEY) : null;
 
 interface Plan {
   name: string;
@@ -822,12 +849,23 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
 }
 
 export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckoutProps) {
-  if (!stripePromise) {
+  const { stripePromise, loading, error } = useStripePromise();
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center">
+        <Loader2 className="w-12 h-12 text-primary mx-auto mb-4 animate-spin" />
+        <p className="text-muted-foreground">Loading payment system...</p>
+      </div>
+    );
+  }
+
+  if (error || !stripePromise) {
     return (
       <div className="p-6 text-center">
         <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
         <p className="text-destructive font-medium">Payment system unavailable</p>
-        <p className="text-muted-foreground text-sm mt-2">Please try again later or contact support.</p>
+        <p className="text-muted-foreground text-sm mt-2">{error || "Please try again later or contact support."}</p>
       </div>
     );
   }
