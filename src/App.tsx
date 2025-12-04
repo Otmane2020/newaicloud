@@ -105,6 +105,7 @@ import SocialCallback from "./pages/SocialCallback";
 import ShareFacebookTest from "./pages/ShareFacebookTest";
 import AiCreativeStudio from "./pages/AiCreativeStudio";
 import MobileAds from "./pages/MobileAds";
+import MobileSuccess from "./pages/MobileSuccess";
 
 const queryClient = new QueryClient();
 
@@ -166,6 +167,7 @@ const App = () => (
             <Route path="/sitemap.xml" element={<SitemapXml />} />
             <Route path="/demo" element={<Demo />} />
             <Route path="/mobileads" element={<MobileAds />} />
+            <Route path="/mobile-success" element={<MobileSuccess />} />
             <Route path="/social-callback" element={<SocialCallback />} />
             <Route path="/sharefacebook" element={<ShareFacebookTest />} />
             <Route path="/translation" element={<TranslationAudit />} />
