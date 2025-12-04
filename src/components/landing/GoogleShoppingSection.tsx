@@ -57,77 +57,36 @@ export const GoogleShoppingSection = () => {
             </h2>
           </div>
 
-          {/* Desktop: Two column layout */}
-          <div className="lg:grid lg:grid-cols-2 lg:gap-8">
-          {/* Main Card */}
-          <div className="bg-card rounded-3xl p-6 lg:p-8 shadow-lg border border-border mb-6 lg:mb-0">
-            <div className="flex items-center justify-between mb-6">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Merchant Center
-              </span>
-              <Badge className="bg-success/10 text-success border-success/20 text-xs">
-                {language === 'fr' ? "Approuvé" : "Approved"}
-              </Badge>
-            </div>
-
-            {/* XML Feed Preview */}
-            <div className="bg-muted/50 rounded-xl p-4 mb-6 font-mono text-[10px] text-muted-foreground overflow-hidden">
-              <div className="flex items-center gap-2 mb-2">
-                <FileCode className="w-4 h-4 text-primary" />
-                <span className="text-xs font-semibold text-foreground">product_feed.xml</span>
-              </div>
-              <div className="space-y-1 opacity-80">
-                <p>&lt;product&gt;</p>
-                <p className="pl-4">&lt;title&gt;<span className="text-success">Optimized Title</span>&lt;/title&gt;</p>
-                <p className="pl-4">&lt;google_category&gt;<span className="text-primary">5678</span>&lt;/google_category&gt;</p>
-                <p className="pl-4">&lt;gtin&gt;<span className="text-warning">3760123456789</span>&lt;/gtin&gt;</p>
-                <p className="pl-4">&lt;brand&gt;<span className="text-accent-foreground">AI Generated</span>&lt;/brand&gt;</p>
-                <p>&lt;/product&gt;</p>
-              </div>
-            </div>
-
-            {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-3">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+          {/* Features and Badges */}
+          <div className="space-y-6">
+            {/* Feature Cards */}
+            <div className="grid grid-cols-3 gap-3 lg:gap-4">
+              {features.map((feature, index) => (
+                <div key={index} className="bg-card rounded-xl p-4 lg:p-6 text-center border border-border hover:border-primary/30 transition-colors">
+                  <div className={`w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 rounded-full ${feature.bgColor} flex items-center justify-center`}>
+                    <feature.icon className={`w-5 h-5 lg:w-6 lg:h-6 ${feature.color}`} />
+                  </div>
+                  <p className="text-xs lg:text-sm font-medium mb-1">{feature.title}</p>
+                  <p className="text-[10px] lg:text-xs text-muted-foreground">{feature.description}</p>
                 </div>
               ))}
             </div>
-          </div>
 
-          {/* Right Column on Desktop */}
-          <div className="space-y-6">
-          {/* Feature Cards */}
-          <div className="grid grid-cols-3 gap-3 lg:gap-4 mb-6 lg:mb-0">
-            {features.map((feature, index) => (
-              <div key={index} className="bg-card rounded-xl p-4 lg:p-6 text-center border border-border hover:border-primary/30 transition-colors">
-                <div className={`w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 rounded-full ${feature.bgColor} flex items-center justify-center`}>
-                  <feature.icon className={`w-5 h-5 lg:w-6 lg:h-6 ${feature.color}`} />
-                </div>
-                <p className="text-xs lg:text-sm font-medium mb-1">{feature.title}</p>
-                <p className="text-[10px] lg:text-xs text-muted-foreground">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Bottom Badges */}
-          <div className="flex items-center justify-center gap-2 lg:gap-3 flex-wrap">
-            <Badge variant="outline" className="text-xs lg:text-sm gap-1 lg:gap-2 px-3 lg:px-4 py-1.5 lg:py-2">
-              <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-success" />
-              {language === 'fr' ? "MPN inclus" : "MPN included"}
-            </Badge>
-            <Badge variant="outline" className="text-xs lg:text-sm gap-1 lg:gap-2 px-3 lg:px-4 py-1.5 lg:py-2">
-              <ShoppingCart className="w-3 h-3 lg:w-4 lg:h-4 text-primary" />
-              {language === 'fr' ? "Prix & Stock" : "Price & Stock"}
-            </Badge>
-            <Badge variant="outline" className="text-xs lg:text-sm gap-1 lg:gap-2 px-3 lg:px-4 py-1.5 lg:py-2">
-              <Globe className="w-3 h-3 lg:w-4 lg:h-4 text-warning" />
-              {language === 'fr' ? "Multi-langue" : "Multi-language"}
-            </Badge>
-          </div>
-          </div>
+            {/* Bottom Badges */}
+            <div className="flex items-center justify-center gap-2 lg:gap-3 flex-wrap">
+              <Badge variant="outline" className="text-xs lg:text-sm gap-1 lg:gap-2 px-3 lg:px-4 py-1.5 lg:py-2">
+                <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-success" />
+                {language === 'fr' ? "MPN inclus" : "MPN included"}
+              </Badge>
+              <Badge variant="outline" className="text-xs lg:text-sm gap-1 lg:gap-2 px-3 lg:px-4 py-1.5 lg:py-2">
+                <ShoppingCart className="w-3 h-3 lg:w-4 lg:h-4 text-primary" />
+                {language === 'fr' ? "Prix & Stock" : "Price & Stock"}
+              </Badge>
+              <Badge variant="outline" className="text-xs lg:text-sm gap-1 lg:gap-2 px-3 lg:px-4 py-1.5 lg:py-2">
+                <Globe className="w-3 h-3 lg:w-4 lg:h-4 text-warning" />
+                {language === 'fr' ? "Multi-langue" : "Multi-language"}
+              </Badge>
+            </div>
           </div>
         </div>
       </div>
