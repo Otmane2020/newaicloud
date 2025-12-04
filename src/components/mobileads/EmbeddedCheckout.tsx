@@ -146,28 +146,10 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
           return;
         }
 
-        // Handle 100% coupon case
+        // 100% coupons are blocked - this should never happen
         if (data.noPaymentRequired) {
-          ev.complete('success');
-          toast.success("Creating your account...");
-          
-          const { data: accountData } = await supabase.functions.invoke("create-mobile-checkout", {
-            body: { 
-              confirmPayment: true,
-              paymentIntentId: "coupon_free",
-              subscriptionId: data.subscriptionId,
-              customerId: data.customerId, // Pass customerId for stripe_customer_id
-              email: payerEmail,
-              password: password || (crypto.randomUUID().slice(0, 16) + "Aa1!"),
-              fullName: ev.payerName || fullName
-            }
-          });
-
-          if (accountData?.success) {
-            toast.success("Account created!");
-            onClose();
-            window.location.href = "/mobile-success";
-          }
+          ev.complete('fail');
+          toast.error("Payment is required");
           return;
         }
 
@@ -255,23 +237,22 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
       if (error || data?.error) {
         toast.error("Invalid coupon code");
       } else if (data?.valid) {
+        // Block 100% coupons - max 90%
+        const discount = data.percentOff || 10;
+        if (discount >= 100) {
+          toast.error("This coupon is not valid. Maximum discount is 90%.");
+          setCouponLoading(false);
+          return;
+        }
         setAppliedCoupon(data.couponId || couponCode.toUpperCase());
-        setCouponDiscount(data.percentOff || 10);
-        toast.success(`Coupon applied! ${data.percentOff || 10}% off`);
-      } else {
-        toast.error("Invalid coupon code");
-      }
-    } catch (err) {
-      // Fallback to hardcoded coupons
-      const upperCode = couponCode.toUpperCase();
-      if (upperCode === "BF70" || upperCode === "WELCOME10" || upperCode === "FREE") {
-        setAppliedCoupon(upperCode);
-        const discount = upperCode === "FREE" ? 100 : (upperCode === "BF70" ? 70 : 10);
         setCouponDiscount(discount);
         toast.success(`Coupon applied! ${discount}% off`);
       } else {
         toast.error("Invalid coupon code");
       }
+    } catch (err) {
+      // No fallback - all coupons must be validated by Stripe
+      toast.error("Invalid coupon code");
     }
     setCouponLoading(false);
   };
@@ -327,43 +308,9 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      // Handle 100% coupon case - no payment needed
+      // 100% coupons are blocked - this should never happen but handle gracefully
       if (data.noPaymentRequired) {
-        toast.success("Coupon applied! Creating your account...");
-        
-        // Create account directly without payment
-        const { data: accountData, error: accountError } = await supabase.functions.invoke("create-mobile-checkout", {
-          body: { 
-            confirmPayment: true,
-            paymentIntentId: "coupon_free", // Marker for free subscription
-            subscriptionId: data.subscriptionId,
-            customerId: data.customerId, // Pass customerId for stripe_customer_id in profile
-            email,
-            password,
-            fullName
-          }
-        });
-
-        if (accountError || accountData?.error) {
-          console.error("Account creation error:", accountError || accountData?.error);
-          toast.error("Account creation failed. Please contact support.");
-          return;
-        }
-
-        // Auto-login
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: email,
-          password: password
-        });
-        
-        if (signInError) {
-          toast.info("Account created! Please sign in manually.");
-        } else {
-          toast.success("Account created!");
-        }
-        
-        onClose();
-        window.location.href = "/mobile-success";
+        toast.error("Payment is required. Please enter your card details.");
         return;
       }
 
