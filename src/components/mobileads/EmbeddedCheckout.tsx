@@ -138,7 +138,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
 
     setIsLoading(true);
     try {
-      // Create payment intent
+      // Create payment intent and user account
       const { data, error } = await supabase.functions.invoke("create-mobile-checkout", {
         body: { 
           priceId,
@@ -154,6 +154,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
       });
 
       if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
       const cardElement = elements.getElement(CardElement);
       if (!cardElement) throw new Error("Card element not found");
@@ -175,7 +176,21 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
       if (stripeError) {
         toast.error(stripeError.message || "Payment failed");
       } else if (paymentIntent?.status === "succeeded") {
-        toast.success("Payment successful! Welcome to NewAI!");
+        toast.success("Payment successful! Logging you in...");
+        
+        // Auto-login with the created account
+        if (data.tempPassword) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: data.tempPassword
+          });
+          
+          if (signInError) {
+            console.error("Auto-login failed:", signInError);
+            toast.info("Account created! Please check your email to sign in.");
+          }
+        }
+        
         onClose();
         window.location.href = "/dashboard";
       }
@@ -218,6 +233,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                onBlur={(e) => { if (e.target.value && e.target.value.includes("@")) checkEmailExists(e.target.value); }}
                 className={`pl-10 h-11 bg-gray-50 border-gray-200 ${emailError ? "border-red-500" : ""}`}
               />
               {checkingEmail && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />}
