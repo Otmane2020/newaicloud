@@ -20,7 +20,8 @@ serve(async (req) => {
       fullName,
       billingAddress,
       couponCode,
-      checkEmailOnly 
+      checkEmailOnly,
+      mode 
     } = await req.json();
 
     const supabase = createClient(
@@ -49,9 +50,9 @@ serve(async (req) => {
       );
     }
 
-    if (!email || !password) {
+    if (!email) {
       return new Response(
-        JSON.stringify({ error: "Email and password are required" }),
+        JSON.stringify({ error: "Email is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -81,8 +82,7 @@ serve(async (req) => {
     
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-      // Update customer with billing address
-      if (billingAddress) {
+      if (billingAddress || fullName) {
         await stripe.customers.update(customerId, {
           name: fullName,
           address: billingAddress
@@ -95,13 +95,46 @@ serve(async (req) => {
         address: billingAddress,
         metadata: {
           pending_signup: "true",
-          password_hash: btoa(password) // Base64 encode for temp storage
+          source: "mobile_ads"
         }
       });
       customerId = newCustomer.id;
     }
 
-    // Build embedded checkout session params
+    // Mode: payment_intent - Create subscription with payment intent for Elements
+    if (mode === "payment_intent") {
+      // Get the price to determine the amount
+      const price = await stripe.prices.retrieve(priceId);
+      
+      // Create subscription with payment intent
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{ price: priceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+        metadata: {
+          user_email: email,
+          user_fullname: fullName || "",
+          create_account: "true"
+        }
+      });
+
+      const invoice = subscription.latest_invoice as Stripe.Invoice;
+      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+
+      console.log("Payment intent created for subscription:", subscription.id);
+
+      return new Response(
+        JSON.stringify({ 
+          clientSecret: paymentIntent.client_secret,
+          subscriptionId: subscription.id
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Default: Embedded checkout mode
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       ui_mode: "embedded",
       customer: customerId,
@@ -112,7 +145,6 @@ serve(async (req) => {
       automatic_tax: { enabled: false },
       metadata: {
         user_email: email,
-        user_password: btoa(password),
         user_fullname: fullName || "",
         create_account: "true"
       }

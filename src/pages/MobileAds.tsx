@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Check, Zap, ShoppingBag, TrendingUp, Clock, Shield, Star, X, Sparkles, BarChart3, Image, MessageSquare, Globe, ChevronRight, Play, Search, FileText, Tags } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Check, Zap, ShoppingBag, TrendingUp, Clock, Shield, Star, X, Sparkles, BarChart3, Image, MessageSquare, Globe, ChevronRight, Play, Search, FileText, Tags, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -132,17 +133,33 @@ export default function MobileAds() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
-      {/* Promo Banner */}
-      <div className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-violet-600 py-2.5 px-4 text-center sticky top-0 z-50">
-        <div className="flex items-center justify-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold">🔥 Black Friday Sale</span>
-          <Badge className="bg-yellow-400 text-black font-bold">70% OFF</Badge>
-          <span className="text-sm">ends in</span>
-          <span className="font-mono bg-black/30 px-2 py-0.5 rounded text-sm font-bold">
-            {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
-          </span>
+      {/* Header with Logo */}
+      <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-sm border-b border-white/5">
+        <div className="flex items-center justify-between px-4 py-3">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="relative">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+            </div>
+            <span className="text-lg font-bold bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
+              NewAI
+            </span>
+          </Link>
+          <Badge className="bg-yellow-400 text-black font-bold text-xs px-2 py-1">
+            70% OFF
+          </Badge>
         </div>
-      </div>
+        {/* Promo Strip */}
+        <div className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-violet-600 py-2 px-4 text-center">
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <span className="text-xs font-semibold">🔥 Black Friday</span>
+            <span className="font-mono bg-black/30 px-2 py-0.5 rounded text-xs font-bold">
+              {String(countdown.hours).padStart(2, '0')}:{String(countdown.minutes).padStart(2, '0')}:{String(countdown.seconds).padStart(2, '0')}
+            </span>
+          </div>
+        </div>
+      </header>
 
       {/* Hero Section - Phone in Hand Style */}
       <section className="relative px-4 pt-8 pb-12 overflow-hidden">
@@ -195,16 +212,78 @@ export default function MobileAds() {
         </div>
       </section>
 
-      {/* Integration Logos */}
-      <section className="py-8 px-4 border-y border-white/5">
-        <p className="text-center text-xs text-gray-500 mb-4">Works seamlessly with</p>
-        <div className="flex justify-center items-center gap-4 flex-wrap">
+      {/* Integrations - Phone Mockup Style */}
+      <section className="py-12 px-4 border-y border-white/5 bg-gradient-to-b from-transparent via-violet-900/10 to-transparent">
+        <p className="text-center text-xs text-gray-500 mb-6 uppercase tracking-wider">Works seamlessly with</p>
+        
+        {/* Floating logos above phone */}
+        <div className="flex justify-center items-center gap-6 flex-wrap mb-8">
           {INTEGRATIONS.map((int, i) => (
-            <div key={i} className="flex items-center gap-2 bg-white/5 px-4 py-2.5 rounded-full border border-white/10">
+            <div key={i} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-black/30 hover:scale-110 transition-transform">
               {int.logo}
-              <span className="text-sm text-gray-300 font-medium">{int.name}</span>
             </div>
           ))}
+        </div>
+
+        {/* Phone Mockup with Integrations App */}
+        <div className="relative mx-auto w-[260px]">
+          {/* Phone Frame */}
+          <div className="relative bg-black rounded-[40px] p-2 shadow-2xl shadow-black/50 border border-gray-800">
+            {/* Phone Screen */}
+            <div className="bg-gradient-to-b from-violet-50 to-white rounded-[32px] overflow-hidden">
+              {/* Status Bar */}
+              <div className="flex items-center justify-between px-5 py-2 bg-white/80">
+                <span className="text-[10px] text-gray-700 font-semibold">9:41</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-2 bg-gray-700 rounded-sm" />
+                </div>
+              </div>
+              
+              {/* Dynamic Island */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-full" />
+              
+              {/* App Content */}
+              <div className="px-4 pb-6 pt-2">
+                {/* App Header */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="font-bold text-gray-800 text-sm">NewAI</span>
+                </div>
+                
+                <h4 className="font-semibold text-gray-800 text-xs mb-3">Integrations</h4>
+                
+                {/* Integration Cards Grid */}
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { name: "Shopify", logo: <ShopifyLogo />, status: "Connected" },
+                    { name: "Google", logo: <GoogleMerchantLogo />, status: "Connected" },
+                    { name: "Facebook", logo: <FacebookLogo />, status: "Add" },
+                    { name: "Instagram", logo: <InstagramLogo />, status: "Add" },
+                  ].map((item, idx) => (
+                    <div key={idx} className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-6 h-6">{item.logo}</div>
+                        {item.status === "Connected" && (
+                          <span className="text-[8px] text-green-600 font-semibold">Connected</span>
+                        )}
+                      </div>
+                      <p className="text-[10px] font-medium text-gray-700">{item.name}</p>
+                      {item.status === "Add" && (
+                        <button className="mt-1 text-[8px] text-violet-600 font-semibold bg-violet-50 px-2 py-0.5 rounded">
+                          Add
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Glow effect */}
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[180px] h-[80px] bg-violet-500/30 blur-3xl rounded-full" />
         </div>
       </section>
 

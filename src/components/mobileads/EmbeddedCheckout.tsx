@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Check, Mail, ChevronRight, Lock, Tag, User, MapPin, Globe, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { Check, Mail, ChevronRight, Lock, Tag, User, MapPin, Globe, Eye, EyeOff, Loader2, AlertCircle, CreditCard, Building2, Shield, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
-import { EmbeddedCheckoutProvider, EmbeddedCheckout as StripeEmbeddedCheckout } from "@stripe/react-stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
@@ -36,40 +36,42 @@ const COUNTRIES = [
   { code: "IT", name: "Italy" },
   { code: "NL", name: "Netherlands" },
   { code: "BE", name: "Belgium" },
-  { code: "CH", name: "Switzerland" },
-  { code: "AT", name: "Austria" },
-  { code: "SE", name: "Sweden" },
-  { code: "NO", name: "Norway" },
-  { code: "DK", name: "Denmark" },
-  { code: "FI", name: "Finland" },
-  { code: "PT", name: "Portugal" },
-  { code: "IE", name: "Ireland" },
-  { code: "NZ", name: "New Zealand" },
-  { code: "JP", name: "Japan" },
 ];
 
-export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckoutProps) {
-  const [step, setStep] = useState(1);
+// Card form styles
+const cardElementOptions = {
+  style: {
+    base: {
+      fontSize: '16px',
+      color: '#1f2937',
+      '::placeholder': { color: '#9ca3af' },
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+    },
+    invalid: { color: '#ef4444' },
+  },
+};
+
+function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckoutProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
-  const [country, setCountry] = useState("");
+  const [country, setCountry] = useState("US");
   const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [acceptTerms, setAcceptTerms] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [couponLoading, setCouponLoading] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [checkingEmail, setCheckingEmail] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "bank">("card");
 
   const price = billingPeriod === "yearly" ? selectedPlan.yearly.price : selectedPlan.monthly.price;
   const priceId = billingPeriod === "yearly" ? selectedPlan.yearly.priceId : selectedPlan.monthly.priceId;
-  const yearlyTotal = (selectedPlan.yearly.price * 12).toFixed(2);
+  const originalPrice = billingPeriod === "yearly" ? selectedPlan.monthly.price : price;
+  const yearlyTotal = (price * 12).toFixed(2);
   
   const discountAmount = appliedCoupon ? price * 0.1 : 0;
   const finalPrice = price - discountAmount;
@@ -102,503 +104,357 @@ export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: Embed
     if (!couponCode.trim()) return;
     setCouponLoading(true);
     await new Promise(r => setTimeout(r, 500));
-    if (couponCode.toUpperCase() === "WELCOME10") {
-      setAppliedCoupon("WELCOME10");
-      toast.success("Coupon applied! 10% extra discount");
+    if (couponCode.toUpperCase() === "BF70" || couponCode.toUpperCase() === "WELCOME10") {
+      setAppliedCoupon(couponCode.toUpperCase());
+      toast.success("Coupon applied!");
     } else {
       toast.error("Invalid coupon code");
     }
     setCouponLoading(false);
   };
 
-  const validateStep1 = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!email || !email.includes("@")) {
-      toast.error("Please enter a valid email address");
-      return false;
+      toast.error("Please enter a valid email");
+      return;
     }
     if (!fullName.trim()) {
       toast.error("Please enter your full name");
-      return false;
-    }
-    
-    // Check if email already exists
-    const exists = await checkEmailExists(email);
-    if (exists) {
-      toast.error("This email is already registered. Please sign in instead.");
-      return false;
-    }
-    
-    return true;
-  };
-
-  const validateStep2 = () => {
-    if (!country) {
-      toast.error("Please select your country");
-      return false;
-    }
-    if (!address.trim()) {
-      toast.error("Please enter your address");
-      return false;
-    }
-    if (!city.trim()) {
-      toast.error("Please enter your city");
-      return false;
-    }
-    if (!postalCode.trim()) {
-      toast.error("Please enter your postal code");
-      return false;
-    }
-    return true;
-  };
-
-  const validateStep3 = () => {
-    if (password.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return false;
+      return;
     }
     if (!acceptTerms) {
-      toast.error("Please accept the terms and conditions");
-      return false;
+      toast.error("Please accept the terms");
+      return;
     }
-    return true;
-  };
+    if (!stripe || !elements) {
+      toast.error("Payment system not ready");
+      return;
+    }
 
-  const fetchClientSecret = useCallback(async () => {
-    const { data, error } = await supabase.functions.invoke("create-mobile-checkout", {
-      body: { 
-        priceId,
-        email,
-        password,
-        fullName,
-        billingAddress: {
-          country,
-          line1: address,
-          city,
-          postal_code: postalCode
-        },
-        couponCode: appliedCoupon
-      }
-    });
+    const exists = await checkEmailExists(email);
+    if (exists) return;
 
-    if (error) throw error;
-    return data.clientSecret;
-  }, [priceId, email, password, fullName, country, address, city, postalCode, appliedCoupon]);
-
-  const handleProceedToPayment = async () => {
-    if (!validateStep3()) return;
-    
     setIsLoading(true);
     try {
-      const secret = await fetchClientSecret();
-      if (secret) {
-        setClientSecret(secret);
-        setStep(4);
+      // Create payment intent
+      const { data, error } = await supabase.functions.invoke("create-mobile-checkout", {
+        body: { 
+          priceId,
+          email,
+          fullName,
+          billingAddress: {
+            country,
+            line1: address,
+          },
+          couponCode: appliedCoupon,
+          mode: "payment_intent"
+        }
+      });
+
+      if (error) throw error;
+
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) throw new Error("Card element not found");
+
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
+        data.clientSecret,
+        {
+          payment_method: {
+            card: cardElement,
+            billing_details: {
+              name: fullName,
+              email: email,
+              address: { country, line1: address }
+            }
+          }
+        }
+      );
+
+      if (stripeError) {
+        toast.error(stripeError.message || "Payment failed");
+      } else if (paymentIntent?.status === "succeeded") {
+        toast.success("Payment successful! Welcome to NewAI!");
+        onClose();
+        window.location.href = "/dashboard";
       }
     } catch (err: any) {
-      console.error("Checkout error:", err);
-      toast.error(err.message || "Failed to initialize checkout. Please try again.");
+      console.error("Payment error:", err);
+      toast.error(err.message || "Payment failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleStep1Continue = async () => {
-    setIsLoading(true);
-    const valid = await validateStep1();
-    setIsLoading(false);
-    if (valid) setStep(2);
-  };
-
-  // Show embedded checkout
-  if (step === 4 && clientSecret) {
-    return (
-      <div className="flex flex-col h-full max-h-[80vh]">
-        <div className="p-4 border-b bg-gray-50">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold">Complete Payment</h3>
-            <Button variant="ghost" size="sm" onClick={() => setStep(3)}>
-              Back
-            </Button>
-          </div>
-          <p className="text-sm text-gray-500 mt-1">
-            {selectedPlan.name} Plan • ${finalPrice.toFixed(2)}/mo
-          </p>
-        </div>
-        <div className="flex-1 overflow-hidden" id="checkout">
-          <EmbeddedCheckoutProvider
-            stripe={stripePromise}
-            options={{ clientSecret }}
-          >
-            <StripeEmbeddedCheckout />
-          </EmbeddedCheckoutProvider>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col h-full max-h-[80vh]">
-      {/* Steps indicator */}
-      <div className="flex items-center justify-center gap-2 py-4 border-b bg-gray-50">
-        {[1, 2, 3].map((s) => (
-          <div key={s} className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-              step >= s ? "bg-violet-600 text-white" : "bg-gray-200 text-gray-500"
-            }`}>
-              {step > s ? <Check className="w-4 h-4" /> : s}
-            </div>
-            {s < 3 && <div className={`w-8 h-1 mx-1 rounded ${step > s ? "bg-violet-600" : "bg-gray-200"}`} />}
+    <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[90vh]">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 bg-white z-10">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+            <span className="text-white font-bold text-xs">N</span>
           </div>
-        ))}
+          <span className="font-bold text-gray-900">NewAI</span>
+          <span className="text-gray-400 text-sm">Checkout</span>
+        </div>
+        <button type="button" onClick={onClose} className="text-violet-600 text-sm font-medium hover:underline">
+          Login
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {/* Step 1: Account & Order */}
-        {step === 1 && (
-          <div className="p-6 space-y-5">
-            <div>
-              <h3 className="font-bold text-lg mb-1">Create Your Account</h3>
-              <p className="text-sm text-gray-500">Enter your details to get started</p>
+      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+        {/* 1. Create Account */}
+        <section>
+          <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-xs flex items-center justify-center font-bold">1</span>
+            Create Account
+          </h3>
+          <div className="space-y-3">
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                className={`pl-10 h-11 bg-gray-50 border-gray-200 ${emailError ? "border-red-500" : ""}`}
+              />
+              {checkingEmail && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />}
             </div>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="pl-10 h-11"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setEmailError(null);
-                    }}
-                    className={`pl-10 h-11 ${emailError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                  />
-                  {checkingEmail && (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
-                  )}
-                </div>
-                {emailError && (
-                  <p className="text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {emailError}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Order Summary */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-              <h4 className="font-semibold text-sm">Order Summary</h4>
-              
-              <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">{selectedPlan.name[0]}</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold">{selectedPlan.name} Plan</p>
-                  <p className="text-xs text-gray-500">{selectedPlan.products} • {billingPeriod === "yearly" ? "Yearly" : "Monthly"}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold">${price}/mo</p>
-                </div>
-              </div>
-
-              {/* Coupon */}
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    placeholder="Coupon code"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    className="pl-9 h-10 text-sm"
-                    disabled={!!appliedCoupon}
-                  />
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleApplyCoupon}
-                  disabled={couponLoading || !!appliedCoupon}
-                  className="h-10"
-                >
-                  {appliedCoupon ? <Check className="w-4 h-4" /> : "Apply"}
-                </Button>
-              </div>
-              {appliedCoupon && (
-                <p className="text-xs text-green-600 flex items-center gap-1">
-                  <Check className="w-3 h-3" /> {appliedCoupon} applied - 10% extra off!
-                </p>
-              )}
-
-              {/* Totals */}
-              <div className="pt-3 border-t space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span>${price.toFixed(2)}/mo</span>
-                </div>
-                {billingPeriod === "yearly" && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Yearly Discount</span>
-                    <span className="text-green-600">-20%</span>
-                  </div>
-                )}
-                {appliedCoupon && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Coupon ({appliedCoupon})</span>
-                    <span className="text-green-600">-${discountAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                  <span>Total</span>
-                  <div className="text-right">
-                    <span className="text-violet-600">${finalPrice.toFixed(2)}/mo</span>
-                    {billingPeriod === "yearly" && (
-                      <p className="text-xs text-gray-500 font-normal">(${yearlyTotal}/year)</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <Button 
-              onClick={handleStep1Continue}
-              disabled={isLoading || checkingEmail}
-              className="w-full h-12 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold"
-            >
-              {isLoading || checkingEmail ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  Continue to Billing
-                  <ChevronRight className="w-5 h-5 ml-1" />
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-
-        {/* Step 2: Billing Details */}
-        {step === 2 && (
-          <div className="p-6 space-y-5">
-            <div>
-              <h3 className="font-bold text-lg mb-1">Billing Details</h3>
-              <p className="text-sm text-gray-500">Enter your billing address</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Select value={country} onValueChange={setCountry}>
-                  <SelectTrigger className="h-11">
-                    <Globe className="w-4 h-4 mr-2 text-gray-400" />
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COUNTRIES.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Street Address</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="address"
-                    type="text"
-                    placeholder="123 Main Street"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="pl-10 h-11"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    type="text"
-                    placeholder="New York"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="postalCode">Postal Code</Label>
-                  <Input
-                    id="postalCode"
-                    type="text"
-                    placeholder="10001"
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    className="h-11"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Summary Card */}
-            <div className="bg-violet-50 rounded-xl p-4 border border-violet-100">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Plan</span>
-                <span className="font-semibold">{selectedPlan.name} - {selectedPlan.products}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-bold">Total</span>
-                <span className="font-bold text-violet-600 text-xl">${finalPrice.toFixed(2)}/mo</span>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <Button 
-                variant="outline"
-                onClick={() => setStep(1)}
-                className="flex-1 h-12"
-              >
-                Back
-              </Button>
-              <Button 
-                onClick={() => validateStep2() && setStep(3)}
-                className="flex-1 h-12 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold"
-              >
-                Continue
-                <ChevronRight className="w-5 h-5 ml-1" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Password & Payment */}
-        {step === 3 && (
-          <div className="p-6 space-y-5">
-            <div>
-              <h3 className="font-bold text-lg mb-1">Create Password</h3>
-              <p className="text-sm text-gray-500">Set your account password to continue</p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Create Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Min. 8 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-11"
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500">You'll use this to access your NewAI dashboard</p>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <Checkbox 
-                  id="terms" 
-                  checked={acceptTerms} 
-                  onCheckedChange={(checked) => setAcceptTerms(checked as boolean)} 
-                />
-                <label htmlFor="terms" className="text-sm text-gray-600 cursor-pointer">
-                  I agree to the <a href="/terms" className="text-violet-600 hover:underline">Terms of Service</a> and{" "}
-                  <a href="/privacy" className="text-violet-600 hover:underline">Privacy Policy</a>
-                </label>
-              </div>
-            </div>
-
-            {/* Final Summary */}
-            <div className="bg-gradient-to-br from-violet-50 to-fuchsia-50 rounded-xl p-4 border border-violet-100">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Account</span>
-                  <span className="font-medium">{email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Plan</span>
-                  <span className="font-medium">{selectedPlan.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Billing</span>
-                  <span className="font-medium">{billingPeriod === "yearly" ? "Yearly" : "Monthly"}</span>
-                </div>
-                {appliedCoupon && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Coupon</span>
-                    <span className="font-medium">{appliedCoupon}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-lg pt-2 border-t border-violet-200">
-                  <span>Total</span>
-                  <span className="text-violet-600">${finalPrice.toFixed(2)}/mo</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <Button 
-                variant="outline"
-                onClick={() => setStep(2)}
-                className="flex-1 h-12"
-              >
-                Back
-              </Button>
-              <Button 
-                onClick={handleProceedToPayment}
-                disabled={isLoading}
-                className="flex-1 h-12 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    Proceed to Payment
-                    <ChevronRight className="w-5 h-5 ml-1" />
-                  </>
-                )}
-              </Button>
-            </div>
-
-            <p className="text-xs text-center text-gray-500 flex items-center justify-center gap-1">
-              <Lock className="w-3 h-3" />
-              Secured by Stripe • 256-bit SSL encryption
+            {emailError && (
+              <p className="text-sm text-red-500 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" /> {emailError}
+              </p>
+            )}
+            <p className="text-xs text-gray-500">
+              With this email address you'll get access to NewAI products. Please make sure it's correct.
             </p>
           </div>
-        )}
+        </section>
+
+        {/* 2. Order Summary */}
+        <section>
+          <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-xs flex items-center justify-center font-bold">2</span>
+            Order Summary
+          </h3>
+          
+          <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">{selectedPlan.name[0]}</span>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900">{selectedPlan.name}</p>
+                <p className="text-xs text-gray-500">{billingPeriod === "yearly" ? "Billed Yearly" : "Billed Monthly"}</p>
+              </div>
+              <div className="text-right">
+                {billingPeriod === "yearly" && (
+                  <p className="text-sm text-gray-400 line-through">${originalPrice.toFixed(2)}</p>
+                )}
+                <p className="font-bold text-gray-900">${price.toFixed(2)}</p>
+              </div>
+            </div>
+
+            {/* Coupon */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Coupon Code"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  className="pl-9 h-10 bg-white border-gray-200"
+                  disabled={!!appliedCoupon}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleApplyCoupon}
+                disabled={couponLoading || !!appliedCoupon}
+                className="h-10 px-4"
+              >
+                {appliedCoupon ? <Check className="w-4 h-4 text-green-500" /> : "Apply"}
+              </Button>
+            </div>
+            {appliedCoupon && (
+              <div className="flex items-center gap-1 text-green-600 text-sm">
+                <Check className="w-4 h-4" />
+                <span>{appliedCoupon}</span>
+                <button type="button" onClick={() => setAppliedCoupon(null)} className="ml-auto text-gray-400 text-xs">×</button>
+              </div>
+            )}
+
+            {/* Totals */}
+            <div className="border-t border-gray-200 pt-3 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Subtotal</span>
+                <span>${(originalPrice).toFixed(2)}</span>
+              </div>
+              {billingPeriod === "yearly" && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Discount</span>
+                  <span className="text-green-600">-${(originalPrice - price).toFixed(2)}</span>
+                </div>
+              )}
+              {appliedCoupon && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Coupon</span>
+                  <span className="text-green-600">-${discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
+                <span>Total</span>
+                <span className="text-violet-600">USD ${finalPrice.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500 text-center mt-3">
+            By purchasing, you agree to our <a href="#" className="underline">Terms and Conditions</a> and <a href="#" className="underline">Privacy Policy</a>.
+          </p>
+        </section>
+
+        {/* 3. Select Payment Method */}
+        <section>
+          <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-xs flex items-center justify-center font-bold">3</span>
+            Select Payment Method
+          </h3>
+
+          <div className="flex gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("card")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${
+                paymentMethod === "card" ? "border-violet-600 bg-violet-50" : "border-gray-200"
+              }`}
+            >
+              <CreditCard className="w-4 h-4" />
+              <span className="text-sm font-medium">Card</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("bank")}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${
+                paymentMethod === "bank" ? "border-violet-600 bg-violet-50" : "border-gray-200"
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              <span className="text-sm font-medium">US bank account</span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <div className="p-3 border border-gray-200 rounded-lg bg-white">
+              <CardElement options={cardElementOptions} />
+            </div>
+            
+            <p className="text-xs text-gray-500">
+              By subscribing, you authorize NewAI to charge you according to the terms until you cancel.
+            </p>
+          </div>
+
+          {/* Guarantee */}
+          <div className="flex items-center justify-center gap-2 mt-4 py-3 bg-gray-50 rounded-lg">
+            <Shield className="w-5 h-5 text-green-500" />
+            <span className="text-sm text-gray-600">You are 100% backed by our <strong>14-day money-back guarantee</strong>.</span>
+          </div>
+        </section>
+
+        {/* 4. Add Billing Details */}
+        <section>
+          <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-xs flex items-center justify-center font-bold">4</span>
+            Add Billing Details
+          </h3>
+
+          <div className="space-y-3">
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="pl-10 h-11 bg-gray-50 border-gray-200"
+              />
+            </div>
+
+            <Select value={country} onValueChange={setCountry}>
+              <SelectTrigger className="h-11 bg-gray-50 border-gray-200">
+                <Globe className="w-4 h-4 mr-2 text-gray-400" />
+                <SelectValue placeholder="Country or region" />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="pl-10 h-11 bg-gray-50 border-gray-200"
+              />
+            </div>
+
+            <p className="text-xs text-gray-500">
+              Billing details are used for invoicing and subscription management.
+            </p>
+          </div>
+        </section>
+
+        {/* Terms */}
+        <div className="flex items-start gap-2 py-3">
+          <Checkbox
+            id="terms"
+            checked={acceptTerms}
+            onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
+            className="mt-0.5"
+          />
+          <label htmlFor="terms" className="text-xs text-gray-500 leading-relaxed">
+            By purchasing, you agree to our <a href="#" className="underline">Terms and Conditions</a> and <a href="#" className="underline">Privacy Policy</a>.
+          </label>
+        </div>
       </div>
-    </div>
+
+      {/* Submit Button */}
+      <div className="sticky bottom-0 bg-white border-t px-5 py-4 space-y-3">
+        <Button
+          type="submit"
+          disabled={isLoading || !stripe}
+          className="w-full h-12 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold text-base"
+        >
+          {isLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            "Submit"
+          )}
+        </Button>
+        
+        <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+          <Lock className="w-3 h-3" />
+          <span>Secure Checkout</span>
+          <span className="mx-1">|</span>
+          <span>Powered by</span>
+          <span className="font-semibold">stripe</span>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+export function EmbeddedCheckout({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckoutProps) {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm selectedPlan={selectedPlan} billingPeriod={billingPeriod} onClose={onClose} />
+    </Elements>
   );
 }
