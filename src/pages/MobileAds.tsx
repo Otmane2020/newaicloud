@@ -432,7 +432,7 @@ export default function MobileAds() {
             </Button>
             
             <Button 
-              onClick={() => window.open('https://cal.com/newai/30min', '_blank')}
+              onClick={() => window.open('https://cal.com/new-ai-isgo1m/30min?overlayCalendar=true', '_blank')}
               variant="outline"
               size="lg"
               className="w-full max-w-[300px] border-violet-400 text-violet-600 hover:bg-violet-50 font-bold py-6 rounded-2xl"
