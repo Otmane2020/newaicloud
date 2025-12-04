@@ -3,8 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 /**
- * POST-PROCESSING: Force exact format dimensions by center-cropping the generated image
- * Gemini ignores format instructions, so we MUST crop/resize after generation
+ * POST-PROCESSING: Force exact format dimensions using FIT (not crop)
+ * This preserves the ENTIRE product without cutting anything off
+ * Product is scaled to FIT within the canvas and centered
  */
 async function enforceImageFormat(
   base64Image: string,
@@ -12,7 +13,7 @@ async function enforceImageFormat(
   targetHeight: number
 ): Promise<string> {
   try {
-    console.log(`[POST-PROCESS] 📐 Enforcing format: ${targetWidth}x${targetHeight}`);
+    console.log(`[POST-PROCESS] 📐 Enforcing format (FIT mode): ${targetWidth}x${targetHeight}`);
     
     // Extract base64 data
     const base64Match = base64Image.match(/data:image\/[^;]+;base64,(.+)/);
@@ -32,38 +33,34 @@ async function enforceImageFormat(
     
     console.log(`[POST-PROCESS] 📐 Source: ${srcWidth}x${srcHeight} -> Target: ${targetWidth}x${targetHeight}`);
     
-    // Calculate center crop to achieve target aspect ratio
-    const srcAspect = srcWidth / srcHeight;
-    const targetAspect = targetWidth / targetHeight;
+    // Calculate scale to FIT image within target (preserve aspect ratio, no cropping)
+    const scaleX = targetWidth / srcWidth;
+    const scaleY = targetHeight / srcHeight;
+    const scale = Math.min(scaleX, scaleY); // Use smaller scale to ensure entire image fits
     
-    let cropX = 0;
-    let cropY = 0;
-    let cropWidth = srcWidth;
-    let cropHeight = srcHeight;
+    const newWidth = Math.round(srcWidth * scale);
+    const newHeight = Math.round(srcHeight * scale);
     
-    if (Math.abs(srcAspect - targetAspect) > 0.01) {
-      // Aspect ratios differ - need to crop
-      if (srcAspect > targetAspect) {
-        // Source is wider - crop sides
-        cropWidth = Math.round(srcHeight * targetAspect);
-        cropX = Math.round((srcWidth - cropWidth) / 2);
-      } else {
-        // Source is taller - crop top/bottom
-        cropHeight = Math.round(srcWidth / targetAspect);
-        cropY = Math.round((srcHeight - cropHeight) / 2);
-      }
-      
-      console.log(`[POST-PROCESS] ✂️ Cropping: x=${cropX}, y=${cropY}, w=${cropWidth}, h=${cropHeight}`);
-    }
+    console.log(`[POST-PROCESS] 🔄 Scaling: ${srcWidth}x${srcHeight} -> ${newWidth}x${newHeight} (scale: ${scale.toFixed(3)})`);
     
-    // Crop the image
-    const cropped = image.crop(cropX, cropY, cropWidth, cropHeight);
+    // Resize the image to fit within target dimensions
+    const resized = image.resize(newWidth, newHeight);
     
-    // Resize to exact target dimensions
-    const resized = cropped.resize(targetWidth, targetHeight);
+    // Create a new canvas with target dimensions (white background)
+    const canvas = new Image(targetWidth, targetHeight);
+    canvas.fill(0xFFFFFFFF); // White background (RGBA)
+    
+    // Calculate position to center the resized image on canvas
+    const offsetX = Math.round((targetWidth - newWidth) / 2);
+    const offsetY = Math.round((targetHeight - newHeight) / 2);
+    
+    console.log(`[POST-PROCESS] 📍 Centering: offset (${offsetX}, ${offsetY})`);
+    
+    // Composite the resized image onto the white canvas
+    canvas.composite(resized, offsetX, offsetY);
     
     // Encode back to PNG
-    const outputBytes = await resized.encode();
+    const outputBytes = await canvas.encode();
     
     // Convert to base64
     let binary = '';
@@ -73,7 +70,7 @@ async function enforceImageFormat(
     }
     const outputBase64 = btoa(binary);
     
-    console.log(`[POST-PROCESS] ✅ Format enforced: ${targetWidth}x${targetHeight}`);
+    console.log(`[POST-PROCESS] ✅ Format enforced (FIT): ${targetWidth}x${targetHeight} - product preserved entirely`);
     
     return `data:image/png;base64,${outputBase64}`;
   } catch (error) {

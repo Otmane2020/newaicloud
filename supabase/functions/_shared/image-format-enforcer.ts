@@ -25,6 +25,30 @@ export function getFormatDimensions(format: string): FormatDimensions {
 }
 
 /**
+ * Calculate FIT dimensions to preserve entire image (no cropping)
+ * Image is scaled to fit within target bounds and centered
+ */
+export function calculateFitDimensions(
+  srcWidth: number,
+  srcHeight: number,
+  targetWidth: number,
+  targetHeight: number
+): { newWidth: number; newHeight: number; offsetX: number; offsetY: number } {
+  const scaleX = targetWidth / srcWidth;
+  const scaleY = targetHeight / srcHeight;
+  const scale = Math.min(scaleX, scaleY); // Use smaller scale to ensure entire image fits
+  
+  const newWidth = Math.round(srcWidth * scale);
+  const newHeight = Math.round(srcHeight * scale);
+  
+  const offsetX = Math.round((targetWidth - newWidth) / 2);
+  const offsetY = Math.round((targetHeight - newHeight) / 2);
+  
+  return { newWidth, newHeight, offsetX, offsetY };
+}
+
+/**
+ * @deprecated Use calculateFitDimensions instead - cropping can cut off product edges
  * Calculate center crop coordinates to achieve target aspect ratio
  */
 export function calculateCenterCrop(
