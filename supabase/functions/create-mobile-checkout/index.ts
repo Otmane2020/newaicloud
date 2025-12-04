@@ -288,9 +288,10 @@ serve(async (req) => {
         console.log("[create-mobile-checkout] No payment required (100% coupon), paying $0 invoice to activate");
         
         // Pay the $0 invoice to move subscription from incomplete to active
+        // Use paid_out_of_band for $0 invoices as no payment method is needed
         if (invoice.id && invoice.status === 'open') {
-          await stripe.invoices.pay(invoice.id);
-          console.log("[create-mobile-checkout] $0 invoice paid, subscription now active:", subscription.id);
+          await stripe.invoices.pay(invoice.id, { paid_out_of_band: true });
+          console.log("[create-mobile-checkout] $0 invoice paid out of band, subscription now active:", subscription.id);
         }
         
         return new Response(
