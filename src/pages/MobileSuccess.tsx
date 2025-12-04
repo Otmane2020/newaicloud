@@ -41,10 +41,12 @@ const MobileSuccess = () => {
                 left: `${Math.random() * 100}%`,
                 top: `${Math.random() * 50}%`,
                 animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${1 + Math.random()}s`
+                animationDuration: `${1 + Math.random()}s`,
               }}
             >
-              <Sparkles className={`w-4 h-4 ${i % 3 === 0 ? 'text-emerald-400' : i % 3 === 1 ? 'text-violet-400' : 'text-amber-400'}`} />
+              <Sparkles
+                className={`w-4 h-4 ${i % 3 === 0 ? "text-emerald-400" : i % 3 === 1 ? "text-violet-400" : "text-amber-400"}`}
+              />
             </div>
           ))}
         </div>
@@ -69,9 +71,7 @@ const MobileSuccess = () => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-violet-600 bg-clip-text text-transparent">
               Payment Successful! 🎉
             </h1>
-            <p className="text-gray-500 text-sm">
-              Paiement réussi ! Votre abonnement est actif.
-            </p>
+            <p className="text-gray-500 text-sm">Paiement réussi ! Votre abonnement est actif.</p>
           </div>
 
           {/* Plan Badge */}
@@ -89,16 +89,15 @@ const MobileSuccess = () => {
             <p className="text-sm text-blue-700 text-left leading-relaxed">
               🇬🇧 Log in on a <strong>computer</strong> to access your dashboard.
             </p>
-            <p className="text-sm text-blue-600 text-left leading-relaxed">
-              🇫🇷 Connectez-vous sur <strong>ordinateur</strong> pour accéder à votre tableau de bord.
-            </p>
           </div>
 
           {/* Credentials */}
           {user?.email && (
             <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-left border border-gray-100">
-              <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide">Your credentials / Vos identifiants</p>
-              
+              <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide">
+                Your credentials / Vos identifiants
+              </p>
+
               <div className="flex items-center justify-between gap-2 bg-white rounded-lg p-3 border">
                 <div className="flex items-center gap-2 min-w-0">
                   <Mail className="w-4 h-4 text-violet-500 flex-shrink-0" />
@@ -113,7 +112,7 @@ const MobileSuccess = () => {
                   <Copy className="w-4 h-4 text-violet-500" />
                 </Button>
               </div>
-              
+
               <div className="flex items-center gap-2 text-sm bg-white rounded-lg p-3 border">
                 <Lock className="w-4 h-4 text-gray-400" />
                 <span className="text-gray-500">Password you created / Mot de passe choisi</span>
@@ -123,12 +122,10 @@ const MobileSuccess = () => {
 
           {/* Website URL */}
           <div className="pt-2 space-y-2">
-            <p className="text-sm text-gray-400">
-              Go to / Rendez-vous sur
-            </p>
-            <a 
-              href="https://newai.sale" 
-              target="_blank" 
+            <p className="text-sm text-gray-400">Go to / Rendez-vous sur</p>
+            <a
+              href="https://newai.sale"
+              target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-emerald-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
             >
@@ -138,9 +135,7 @@ const MobileSuccess = () => {
           </div>
 
           {/* Help text */}
-          <p className="text-xs text-gray-400 pt-2">
-            Need help? Contact us at support@newai.sale
-          </p>
+          <p className="text-xs text-gray-400 pt-2">Need help? Contact us at support@newai.sale</p>
         </CardContent>
       </Card>
     </div>
