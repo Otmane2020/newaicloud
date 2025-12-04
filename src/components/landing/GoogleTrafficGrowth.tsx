@@ -42,17 +42,19 @@ export const GoogleTrafficGrowth = () => {
   return (
     <section className="py-16 bg-gradient-to-b from-background to-muted/30">
       <div className="container mx-auto px-4">
-        <div className="max-w-lg mx-auto">
+        <div className="max-w-lg lg:max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-center gap-3 mb-8">
             <GoogleLogo />
-            <h2 className="text-xl sm:text-2xl font-bold">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">
               Google Search <span className="text-success">Traffic Growth</span>
             </h2>
           </div>
 
+          {/* Desktop: Two column layout */}
+          <div className="lg:grid lg:grid-cols-2 lg:gap-8">
           {/* Chart Card */}
-          <div className="bg-card rounded-3xl p-6 shadow-lg border border-border mb-6">
+          <div className="bg-card rounded-3xl p-6 lg:p-8 shadow-lg border border-border mb-6 lg:mb-0">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Search Console Impressions
@@ -101,44 +103,48 @@ export const GoogleTrafficGrowth = () => {
             </svg>
           </div>
 
+          {/* Right Column on Desktop */}
+          <div className="space-y-6">
           {/* Before/After Cards */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-muted/50 rounded-2xl p-5 text-center border border-border">
-              <p className="text-xs text-muted-foreground mb-2">
+          <div className="grid grid-cols-2 gap-4 mb-6 lg:mb-0">
+            <div className="bg-muted/50 rounded-2xl p-5 lg:p-6 text-center border border-border">
+              <p className="text-xs lg:text-sm text-muted-foreground mb-2">
                 {language === 'fr' ? "Avant NewAI" : "Before NewAI"}
               </p>
-              <p className="text-3xl font-bold text-muted-foreground">~200</p>
-              <p className="text-xs text-muted-foreground">{language === 'fr' ? "visites/mois" : "visits/month"}</p>
+              <p className="text-3xl lg:text-4xl font-bold text-muted-foreground">~200</p>
+              <p className="text-xs lg:text-sm text-muted-foreground">{language === 'fr' ? "visites/mois" : "visits/month"}</p>
             </div>
-            <div className="bg-success/10 rounded-2xl p-5 text-center border border-success/20">
-              <p className="text-xs text-success mb-2">
+            <div className="bg-success/10 rounded-2xl p-5 lg:p-6 text-center border border-success/20">
+              <p className="text-xs lg:text-sm text-success mb-2">
                 {language === 'fr' ? "Après 6 mois" : "After 6 months"}
               </p>
-              <p className="text-3xl font-bold text-success">10K+</p>
-              <p className="text-xs text-muted-foreground">{language === 'fr' ? "visites/mois" : "visits/month"}</p>
+              <p className="text-3xl lg:text-4xl font-bold text-success">10K+</p>
+              <p className="text-xs lg:text-sm text-muted-foreground">{language === 'fr' ? "visites/mois" : "visits/month"}</p>
             </div>
           </div>
 
           {/* Feature Badges */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-card rounded-xl p-4 text-center border border-border hover:border-primary/30 transition-colors">
-              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-muted flex items-center justify-center">
-                <Search className="w-5 h-5 text-muted-foreground" />
+          <div className="grid grid-cols-3 gap-3 lg:gap-4">
+            <div className="bg-card rounded-xl p-4 lg:p-6 text-center border border-border hover:border-primary/30 transition-colors">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 rounded-full bg-muted flex items-center justify-center">
+                <Search className="w-5 h-5 lg:w-6 lg:h-6 text-muted-foreground" />
               </div>
-              <p className="text-xs font-medium">Rich Snippets</p>
+              <p className="text-xs lg:text-sm font-medium">Rich Snippets</p>
             </div>
-            <div className="bg-card rounded-xl p-4 text-center border border-border hover:border-primary/30 transition-colors">
-              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-muted flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-muted-foreground" />
+            <div className="bg-card rounded-xl p-4 lg:p-6 text-center border border-border hover:border-primary/30 transition-colors">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 rounded-full bg-muted flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6 text-muted-foreground" />
               </div>
-              <p className="text-xs font-medium">SEO {language === 'fr' ? "Optimisé" : "Optimized"}</p>
+              <p className="text-xs lg:text-sm font-medium">SEO {language === 'fr' ? "Optimisé" : "Optimized"}</p>
             </div>
-            <div className="bg-card rounded-xl p-4 text-center border border-border hover:border-primary/30 transition-colors">
-              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-warning/10 flex items-center justify-center">
-                <Star className="w-5 h-5 text-warning" />
+            <div className="bg-card rounded-xl p-4 lg:p-6 text-center border border-border hover:border-primary/30 transition-colors">
+              <div className="w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 rounded-full bg-warning/10 flex items-center justify-center">
+                <Star className="w-5 h-5 lg:w-6 lg:h-6 text-warning" />
               </div>
-              <p className="text-xs font-medium">Top Rankings</p>
+              <p className="text-xs lg:text-sm font-medium">Top Rankings</p>
             </div>
+          </div>
+          </div>
           </div>
         </div>
       </div>
