@@ -46,7 +46,7 @@ export function LanguageSwitcher() {
           className="gap-2 px-3 py-2 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border border-primary/20 rounded-full transition-all duration-300 hover:scale-105"
         >
           <Globe className="h-4 w-4" />
-          <span className="text-xs font-bold uppercase tracking-wider">{language.toUpperCase()}</span>
+          <span className="text-xs font-bold uppercase tracking-wider">{language === 'en' ? 'EN' : 'FR'}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 p-2">
