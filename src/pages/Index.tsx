@@ -180,7 +180,7 @@ const Index = () => {
       </section>
 
       {/* Stats Section - Clean Grid */}
-      <section className="py-12 bg-gradient-to-b from-slate-950 to-background">
+      <section className="py-10 bg-gradient-to-b from-slate-950 to-background">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {[
@@ -189,12 +189,12 @@ const Index = () => {
               { value: "10h+", label: language === 'fr' ? "Économisées/sem" : "Saved Weekly", icon: Clock },
               { value: "Top 10", label: "Google", icon: BarChart3 },
             ].map((stat, i) => (
-              <div key={i} className="text-center p-4 rounded-xl bg-card/50 border border-border/50 hover:border-primary/30 transition-colors">
-                <stat.icon className="w-5 h-5 mx-auto mb-2 text-primary" />
-                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+              <div key={i} className="text-center p-5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 hover:border-primary/50 transition-colors">
+                <stat.icon className="w-6 h-6 mx-auto mb-2 text-primary" />
+                <div className="text-3xl sm:text-4xl font-black text-white">
                   {stat.value}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
+                <div className="text-sm text-gray-300 mt-1 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
