@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,11 +13,58 @@ serve(async (req) => {
   }
 
   try {
-    const { priceId, email, successUrl, cancelUrl, couponCode } = await req.json();
+    const { 
+      priceId, 
+      email, 
+      password,
+      fullName,
+      billingAddress,
+      couponCode,
+      checkEmailOnly 
+    } = await req.json();
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    // Check if email already exists in Supabase
+    if (checkEmailOnly && email) {
+      const { data: existingUsers } = await supabase.auth.admin.listUsers();
+      const emailExists = existingUsers?.users?.some(
+        (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
+      );
+      
+      return new Response(
+        JSON.stringify({ exists: emailExists }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!priceId) {
       return new Response(
         JSON.stringify({ error: "Price ID is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!email || !password) {
+      return new Response(
+        JSON.stringify({ error: "Email and password are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check if email already exists
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const emailExists = existingUsers?.users?.some(
+      (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+    
+    if (emailExists) {
+      return new Response(
+        JSON.stringify({ error: "An account with this email already exists. Please sign in instead." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -27,32 +75,48 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://newai.sale";
 
-    // Check if customer exists
-    let customerId: string | undefined;
-    if (email) {
-      const customers = await stripe.customers.list({ email, limit: 1 });
-      if (customers.data.length > 0) {
-        customerId = customers.data[0].id;
+    // Create or get Stripe customer
+    let customerId: string;
+    const customers = await stripe.customers.list({ email, limit: 1 });
+    
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+      // Update customer with billing address
+      if (billingAddress) {
+        await stripe.customers.update(customerId, {
+          name: fullName,
+          address: billingAddress
+        });
       }
+    } else {
+      const newCustomer = await stripe.customers.create({
+        email,
+        name: fullName,
+        address: billingAddress,
+        metadata: {
+          pending_signup: "true",
+          password_hash: btoa(password) // Base64 encode for temp storage
+        }
+      });
+      customerId = newCustomer.id;
     }
 
-    // Build checkout session params
-    const sessionParams: any = {
+    // Build embedded checkout session params
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      ui_mode: "embedded",
+      customer: customerId,
       payment_method_types: ["card"],
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl || `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || `${origin}/mobileads`,
-      allow_promotion_codes: true,
-      billing_address_collection: "required",
+      return_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(email)}&new_account=true`,
+      automatic_tax: { enabled: false },
+      metadata: {
+        user_email: email,
+        user_password: btoa(password),
+        user_fullname: fullName || "",
+        create_account: "true"
+      }
     };
-
-    // Add customer or customer_email
-    if (customerId) {
-      sessionParams.customer = customerId;
-    } else if (email) {
-      sessionParams.customer_email = email;
-    }
 
     // Apply coupon if provided
     if (couponCode) {
@@ -63,7 +127,6 @@ serve(async (req) => {
         );
         if (coupon) {
           sessionParams.discounts = [{ coupon: coupon.id }];
-          sessionParams.allow_promotion_codes = false;
         }
       } catch (e) {
         console.log("Coupon lookup error:", e);
@@ -72,8 +135,13 @@ serve(async (req) => {
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
+    console.log("Embedded checkout session created:", session.id);
+
     return new Response(
-      JSON.stringify({ url: session.url, sessionId: session.id }),
+      JSON.stringify({ 
+        clientSecret: session.client_secret,
+        sessionId: session.id 
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
