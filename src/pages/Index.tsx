@@ -17,6 +17,7 @@ import { formatPrice } from "@/lib/formatUtils";
 import { useEffect, useState } from "react";
 import { AIAssistant } from "@/components/AIAssistant";
 import { LandingPageVisionShowcase } from "@/components/landing/LandingPageVisionShowcase";
+import { GoogleTrafficGrowth } from "@/components/landing/GoogleTrafficGrowth";
 import { 
   Zap, 
   ShoppingBag, 
@@ -228,6 +229,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Google Traffic Growth */}
+      <GoogleTrafficGrowth />
 
 
       {/* How It Works - Clean Steps */}
