@@ -285,16 +285,16 @@ const Index = () => {
       </section>
 
       {/* Book a Demo Section */}
-      <section id="demo" className="py-16 sm:py-20 bg-gradient-to-b from-background to-muted/30">
+      <section id="demo" className="py-12 sm:py-16 bg-gradient-to-b from-background to-muted/30">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-10 space-y-3">
+          <div className="text-center mb-6 space-y-2">
             <Badge variant="outline" className="border-primary text-primary">
               {language === 'fr' ? "Découvrir NewAI" : "Discover NewAI"}
             </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold">
+            <h2 className="text-2xl sm:text-3xl font-bold">
               {language === 'fr' ? "Réservez votre démo gratuite" : "Book your free demo"}
             </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
               {language === 'fr' 
                 ? "30 minutes pour découvrir comment NewAI peut transformer votre boutique"
                 : "30 minutes to discover how NewAI can transform your store"}
@@ -304,7 +304,7 @@ const Index = () => {
               <span>{language === 'fr' ? "Lun-Ven, 10h30-16h30 (Paris)" : "Mon-Fri, 10:30AM-4:30PM (Paris)"}</span>
             </div>
           </div>
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-2xl mx-auto">
             <CalBookingEmbed minimal />
           </div>
         </div>
