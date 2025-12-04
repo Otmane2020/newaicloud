@@ -329,7 +329,9 @@ serve(async (req) => {
         status: invoice?.status,
         amountDue,
         hasPendingSetupIntent: !!pendingSetupIntent,
-        pendingSetupIntentId: pendingSetupIntent?.id
+        pendingSetupIntentId: pendingSetupIntent?.id,
+        hasPaymentIntent: !!invoice?.payment_intent,
+        paymentIntentId: typeof invoice?.payment_intent === 'string' ? invoice.payment_intent : (invoice?.payment_intent as any)?.id
       });
 
       // Block only if truly free (amount_due is 0)
@@ -351,17 +353,27 @@ serve(async (req) => {
             subscriptionId: subscription.id,
             setupIntentId: pendingSetupIntent.id,
             customerId: customerId,
-            type: 'setup_intent', // Tell frontend to use confirmSetup
+            type: 'setup_intent',
             userEmail: email
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Fallback: Check if invoice has a payment_intent (happens when amount is due)
-      const paymentIntent = invoice?.payment_intent;
+      // Check if invoice has a payment_intent from expand
+      let paymentIntent = invoice?.payment_intent;
+      
+      // If not expanded, retrieve the invoice directly to get payment_intent
+      if (!paymentIntent && invoice?.id) {
+        console.log("[create-mobile-checkout] Retrieving invoice directly to get payment_intent");
+        const fullInvoice = await stripe.invoices.retrieve(invoice.id, {
+          expand: ['payment_intent']
+        });
+        paymentIntent = fullInvoice.payment_intent;
+        console.log("[create-mobile-checkout] Retrieved invoice payment_intent:", typeof paymentIntent === 'string' ? paymentIntent : (paymentIntent as any)?.id);
+      }
+      
       if (paymentIntent) {
-        // Get the full payment intent with client_secret
         const fullPaymentIntent = typeof paymentIntent === 'string' 
           ? await stripe.paymentIntents.retrieve(paymentIntent)
           : paymentIntent as Stripe.PaymentIntent;
@@ -374,52 +386,6 @@ serve(async (req) => {
               subscriptionId: subscription.id,
               paymentIntentId: fullPaymentIntent.id,
               customerId: customerId,
-              type: 'payment_intent', // Tell frontend to use confirmCardPayment
-              userEmail: email
-            }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-      }
-
-      // Last fallback: re-fetch subscription and check both again
-      console.log("[create-mobile-checkout] No intent found, re-fetching subscription");
-      const refreshedSub = await stripe.subscriptions.retrieve(subscription.id, {
-        expand: ['pending_setup_intent', 'latest_invoice.payment_intent']
-      });
-      
-      const refreshedSetupIntent = refreshedSub.pending_setup_intent as Stripe.SetupIntent;
-      if (refreshedSetupIntent?.client_secret) {
-        console.log("[create-mobile-checkout] Success after refresh - returning SetupIntent:", refreshedSetupIntent.id);
-        return new Response(
-          JSON.stringify({ 
-            clientSecret: refreshedSetupIntent.client_secret,
-            subscriptionId: subscription.id,
-            setupIntentId: refreshedSetupIntent.id,
-            customerId: customerId,
-            type: 'setup_intent',
-            userEmail: email
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Check refreshed invoice payment_intent
-      const refreshedInvoice = refreshedSub.latest_invoice as Stripe.Invoice;
-      const refreshedPaymentIntent = refreshedInvoice?.payment_intent;
-      if (refreshedPaymentIntent) {
-        const fullPi = typeof refreshedPaymentIntent === 'string'
-          ? await stripe.paymentIntents.retrieve(refreshedPaymentIntent)
-          : refreshedPaymentIntent as Stripe.PaymentIntent;
-        
-        if (fullPi?.client_secret) {
-          console.log("[create-mobile-checkout] Success after refresh - returning PaymentIntent:", fullPi.id);
-          return new Response(
-            JSON.stringify({ 
-              clientSecret: fullPi.client_secret,
-              subscriptionId: subscription.id,
-              paymentIntentId: fullPi.id,
-              customerId: customerId,
               type: 'payment_intent',
               userEmail: email
             }),
@@ -428,8 +394,37 @@ serve(async (req) => {
         }
       }
 
+      // If still no intent, create a SetupIntent manually to collect payment method
+      console.log("[create-mobile-checkout] Creating SetupIntent manually for subscription");
+      const manualSetupIntent = await stripe.setupIntents.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        usage: 'off_session',
+        metadata: {
+          subscription_id: subscription.id,
+          invoice_id: invoice?.id || '',
+          user_email: email
+        }
+      });
+
+      if (manualSetupIntent?.client_secret) {
+        console.log("[create-mobile-checkout] Success - returning manual SetupIntent:", manualSetupIntent.id);
+        return new Response(
+          JSON.stringify({ 
+            clientSecret: manualSetupIntent.client_secret,
+            subscriptionId: subscription.id,
+            setupIntentId: manualSetupIntent.id,
+            customerId: customerId,
+            type: 'setup_intent',
+            userEmail: email,
+            requiresInvoicePayment: true // Flag that invoice needs to be paid after setup
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // If still nothing, return error
-      console.error("[create-mobile-checkout] No SetupIntent or PaymentIntent found for subscription");
+      console.error("[create-mobile-checkout] Failed to create any intent for subscription");
       return new Response(
         JSON.stringify({ error: "Could not initialize payment. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
