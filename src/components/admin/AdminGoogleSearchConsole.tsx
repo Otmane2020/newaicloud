@@ -107,7 +107,7 @@ export function AdminGoogleSearchConsole() {
         provider: 'google',
         options: {
           scopes: 'https://www.googleapis.com/auth/webmasters https://www.googleapis.com/auth/indexing',
-          redirectTo: `${window.location.origin}/super-admin?tab=gsc`,
+          redirectTo: `${window.location.origin}/superadmin?tab=gsc`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

@@ -431,25 +431,24 @@ Dans cette image, le produit est : ${productContext}
 ${orientationInstructions}
 
 🎯 TA MISSION EXACTE :
-1. GARDE le produit EXACTEMENT comme il apparaît dans l'image d'entrée
-2. REMPLACE UNIQUEMENT l'arrière-plan/fond de l'image
-3. NE MODIFIE PAS, NE REDESSINE PAS, NE RÉINTERPRÈTE PAS le produit
-4. CONSERVE L'ORIENTATION EXACTE du produit (ne pas retourner/inverser)
+1. EXTRAIS le produit de l'image d'entrée
+2. REMPLACE l'arrière-plan/fond de l'image
+3. SI LE PRODUIT EST MAL ORIENTÉ → CORRIGE pour montrer la vue de face ou 3/4 professionnelle
+4. NE MODIFIE PAS le type/forme/couleur du produit, seulement sa présentation
 
 ⚠️⚠️⚠️ EXEMPLES D'ERREURS FATALES ⚠️⚠️⚠️
 - Image d'entrée = SOMMIER (cadre métallique avec lattes) → Tu génères un LIT COMPLET avec matelas = ❌ ÉCHEC TOTAL
 - Image d'entrée = CHAISE simple → Tu génères un FAUTEUIL = ❌ ÉCHEC TOTAL  
 - Image d'entrée = TABLE basse → Tu génères une TABLE différente = ❌ ÉCHEC TOTAL
 - Tu changes la forme, couleur, ou type du produit = ❌ ÉCHEC TOTAL
-- Tu retournes/inverses le produit (miroir horizontal) = ❌ ÉCHEC TOTAL
 
-✅ SUCCÈS = L'objet dans l'image de sortie est VISUELLEMENT IDENTIQUE à l'objet dans l'image d'entrée
-✅ SUCCÈS = Seul le FOND/ARRIÈRE-PLAN a changé, le produit est COPIÉ à l'identique
-✅ SUCCÈS = L'ORIENTATION du produit est identique à l'entrée
+✅ SUCCÈS = L'objet dans l'image de sortie est le MÊME TYPE que dans l'image d'entrée
+✅ SUCCÈS = Seul le FOND/ARRIÈRE-PLAN a changé
+✅ SUCCÈS = Le produit est présenté avec une vue professionnelle (face ou 3/4)
 
 🔍 VÉRIFIE AVANT DE FINALISER :
-- Le produit dans ma sortie est-il le MÊME objet que dans l'entrée ? (même forme, même type, même couleur)
-- L'orientation est-elle identique ? (pas de miroir, pas de rotation)
+- Le produit dans ma sortie est-il le MÊME TYPE d'objet que dans l'entrée ? (même forme, même type, même couleur)
+- Le produit est-il présenté de manière professionnelle ?
 - Si l'entrée montre un sommier métallique → ma sortie montre-t-elle CE sommier métallique (pas un lit) ?
 `;
 
