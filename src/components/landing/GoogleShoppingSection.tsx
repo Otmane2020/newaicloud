@@ -24,19 +24,19 @@ const GoogleShoppingLogo = () => (
       strokeLinecap="round"
     />
     {/* Google G logo - multicolor on bag */}
-    <g transform="translate(22, 30)">
-      {/* Circle background */}
-      <circle cx="10" cy="10" r="10" fill="white"/>
-      {/* Blue section */}
-      <path d="M10 0A10 10 0 0 1 20 10h-4a6 6 0 0 0-6-6V0z" fill="#4285F4"/>
-      {/* Green section */}
-      <path d="M20 10a10 10 0 0 1-10 10v-4a6 6 0 0 0 6-6h4z" fill="#34A853"/>
-      {/* Yellow section */}
-      <path d="M10 20A10 10 0 0 1 0 10h4a6 6 0 0 0 6 6v4z" fill="#FBBC05"/>
-      {/* Red section */}
-      <path d="M0 10a10 10 0 0 1 10-10v4a6 6 0 0 0-6 6H0z" fill="#EA4335"/>
-      {/* G bar */}
-      <rect x="10" y="8" width="8" height="4" fill="#4285F4"/>
+    <g transform="translate(22, 28)">
+      {/* White circle background */}
+      <circle cx="10" cy="10" r="11" fill="white"/>
+      {/* Red - top left quadrant */}
+      <path d="M10 0 A10 10 0 0 0 0 10 L4 10 A6 6 0 0 1 10 4 Z" fill="#EA4335"/>
+      {/* Yellow - bottom left quadrant */}
+      <path d="M0 10 A10 10 0 0 0 10 20 L10 16 A6 6 0 0 1 4 10 Z" fill="#FBBC05"/>
+      {/* Green - bottom right quadrant */}
+      <path d="M10 20 A10 10 0 0 0 20 10 L16 10 A6 6 0 0 1 10 16 Z" fill="#34A853"/>
+      {/* Blue - top right quadrant + bar */}
+      <path d="M20 10 A10 10 0 0 0 10 0 L10 4 A6 6 0 0 1 16 10 Z" fill="#4285F4"/>
+      {/* G horizontal bar */}
+      <rect x="10" y="8" width="10" height="4" fill="#4285F4"/>
     </g>
   </svg>
 );
