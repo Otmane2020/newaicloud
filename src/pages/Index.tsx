@@ -6,6 +6,7 @@ import { PublicHeader } from "@/components/PublicHeader";
 import PricingComparison from "@/components/PricingComparison";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { DemoSeoComparison } from "@/components/demo/DemoSeoComparison";
+import { CalBookingEmbed } from "@/components/CalBookingEmbed";
 
 import { ReferralSystem } from "@/components/dashboard/ReferralSystem";
 import { ContactForm } from "@/components/ContactForm";
@@ -199,6 +200,29 @@ const Index = () => {
               )}
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Book a Demo Section */}
+      <section id="demo" className="container mx-auto px-4 py-16 sm:py-24">
+        <div className="text-center mb-12 space-y-4">
+          <Badge variant="outline" className="border-primary text-primary text-xs sm:text-sm">
+            {language === 'fr' ? "Découvrir NewAI" : "Discover NewAI"}
+          </Badge>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
+            {language === 'fr' ? "Réservez votre démo gratuite" : "Book your free demo"}
+          </h2>
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
+            {language === 'fr' 
+              ? "30 minutes pour découvrir comment NewAI peut transformer votre boutique Shopify"
+              : "30 minutes to discover how NewAI can transform your Shopify store"}
+          </p>
+          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+            <span>{language === 'fr' ? "Lun-Ven, 10h30-16h30 (Paris)" : "Mon-Fri, 10:30AM-4:30PM (Paris)"}</span>
+          </div>
+        </div>
+        <div className="max-w-4xl mx-auto">
+          <CalBookingEmbed minimal />
         </div>
       </section>
 
