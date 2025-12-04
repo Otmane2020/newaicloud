@@ -14,18 +14,18 @@ const CAL_LINK = "https://cal.com/new-ai-isgo1m/30min?overlayCalendar=true";
 export function CalBookingEmbed({ className = "", minimal = false }: CalBookingEmbedProps) {
   const { language } = useTranslation();
 
-  const title = language === 'fr' ? "Réserver une démo" : "Book a Demo";
-  const subtitle = language === 'fr' 
-    ? "Découvrez comment NewAI peut transformer votre boutique Shopify"
-    : "Discover how NewAI can transform your Shopify store";
-  const duration = language === 'fr' ? "30 minutes" : "30 minutes";
-  const availability = language === 'fr' 
-    ? "Lun-Ven, 10h30-16h30 (Paris)"
-    : "Mon-Fri, 10:30AM-4:30PM (Paris)";
-  const buttonText = language === 'fr' ? "Réserver maintenant" : "Book now";
+  const title = language === "fr" ? "Réserver une démo" : "Book a Demo";
+  const subtitle =
+    language === "fr"
+      ? "Découvrez comment NewAI peut transformer votre boutique Shopify"
+      : "Discover how NewAI can transform your Shopify store";
+  const duration = language === "fr" ? "30 minutes" : "30 minutes";
+  const availability = language === "fr";
+
+  const buttonText = language === "fr" ? "Réserver maintenant" : "Book now";
 
   const handleBooking = () => {
-    window.open(CAL_LINK, '_blank');
+    window.open(CAL_LINK, "_blank");
   };
 
   if (minimal) {
@@ -41,11 +41,7 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
             <span>{availability}</span>
           </div>
         </div>
-        <Button 
-          size="lg" 
-          onClick={handleBooking}
-          className="px-8"
-        >
+        <Button size="lg" onClick={handleBooking} className="px-8">
           <Video className="w-4 h-4 mr-2" />
           {buttonText}
           <ExternalLink className="w-4 h-4 ml-2" />
@@ -59,7 +55,7 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
       <div className="text-center space-y-3">
         <Badge className="bg-primary/10 text-primary border-primary/20">
           <Video className="w-3 h-3 mr-1.5" />
-          {language === 'fr' ? "Appel vidéo" : "Video call"}
+          {language === "fr" ? "Appel vidéo" : "Video call"}
         </Badge>
         <h3 className="text-2xl sm:text-3xl font-bold">{title}</h3>
         <p className="text-muted-foreground">{subtitle}</p>
@@ -77,11 +73,7 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
       </div>
 
       <div className="flex justify-center">
-        <Button 
-          size="lg" 
-          onClick={handleBooking}
-          className="px-8"
-        >
+        <Button size="lg" onClick={handleBooking} className="px-8">
           <Video className="w-4 h-4 mr-2" />
           {buttonText}
           <ExternalLink className="w-4 h-4 ml-2" />
