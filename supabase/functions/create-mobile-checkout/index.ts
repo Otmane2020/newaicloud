@@ -283,9 +283,15 @@ serve(async (req) => {
       const invoice = subscription.latest_invoice as Stripe.Invoice;
       const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent | null;
 
-      // If 100% coupon applied, no payment needed - subscription is already active
+      // If 100% coupon applied, no payment needed - need to pay $0 invoice to activate subscription
       if (!paymentIntent) {
-        console.log("[create-mobile-checkout] No payment required (100% coupon), subscription active:", subscription.id, "customerId:", customerId);
+        console.log("[create-mobile-checkout] No payment required (100% coupon), paying $0 invoice to activate");
+        
+        // Pay the $0 invoice to move subscription from incomplete to active
+        if (invoice.id && invoice.status === 'open') {
+          await stripe.invoices.pay(invoice.id);
+          console.log("[create-mobile-checkout] $0 invoice paid, subscription now active:", subscription.id);
+        }
         
         return new Response(
           JSON.stringify({ 
