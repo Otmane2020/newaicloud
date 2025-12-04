@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout as StripeEmbeddedCheckout } from "@stripe/react-stripe-js";
 
-const stripePromise = loadStripe("pk_live_51OkmX3Efti9t9nN9FQlJLAWNZT7N4LJYlG0NZoXw3Yz8F2RNpJJVzqE6Z5hK3xYQVf8WqTk7fKZ6tJLZ3hO3nUiW00e9rVUXPZ");
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 interface Plan {
   name: string;
