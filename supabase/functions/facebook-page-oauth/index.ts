@@ -18,22 +18,38 @@ Deno.serve(async (req) => {
     if (req.method === 'GET') {
       const url = new URL(req.url);
       const code = url.searchParams.get('code');
-      const state = url.searchParams.get('state'); // This is the user_id
+      const stateParam = url.searchParams.get('state'); // Contains userId and isAdmin flag
       const error = url.searchParams.get('error');
       const errorDescription = url.searchParams.get('error_description');
 
-      console.log('Facebook OAuth callback received:', { code: !!code, state, error });
+      console.log('Facebook OAuth callback received:', { code: !!code, state: stateParam, error });
+
+      // Parse state to get userId and isAdmin
+      let userId: string;
+      let isAdmin = false;
+      try {
+        const stateData = JSON.parse(decodeURIComponent(stateParam || ''));
+        userId = stateData.userId;
+        isAdmin = stateData.isAdmin || false;
+      } catch {
+        userId = stateParam || ''; // Fallback if state is just userId
+      }
+
+      const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
+      const redirectBase = isAdmin ? '/superadmin?tab=social-media' : '/social-media';
 
       if (error) {
         console.error('Facebook OAuth error:', error, errorDescription);
-        const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
-        const redirectUrl = `${frontendUrl}/social-media?error=${encodeURIComponent(`${error}: ${errorDescription}`)}`;
+        const redirectUrl = `${frontendUrl}${redirectBase}&error=${encodeURIComponent(`${error}: ${errorDescription}`)}`;
         return Response.redirect(redirectUrl, 302);
       }
 
-      if (!code || !state) {
+      if (!code || !userId) {
         throw new Error('Missing code or state parameter');
       }
+
+      // Replace state variable usage with userId
+      const state = userId;
 
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -84,8 +100,7 @@ Deno.serve(async (req) => {
       console.log('Total pages fetched:', allPages.length);
 
       if (allPages.length === 0) {
-        const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
-        const redirectUrl = `${frontendUrl}/social-media?error=${encodeURIComponent('Aucune page Facebook trouvée. Veuillez créer une page Facebook.')}`;
+        const redirectUrl = `${frontendUrl}${redirectBase}&error=${encodeURIComponent('Aucune page Facebook trouvée. Veuillez créer une page Facebook.')}`;
         return Response.redirect(redirectUrl, 302);
       }
 
@@ -196,13 +211,12 @@ Deno.serve(async (req) => {
         // Don't fail the whole flow if Instagram fetch fails
       }
 
-      // Redirect directly to /social-media with success message
+      // Redirect with success message (use admin redirect if applicable)
       const successMessage = instagramAccountName 
         ? `Facebook (${page.name}) et Instagram (${instagramAccountName}) connectés avec succès!`
         : `Facebook (${page.name}) connecté avec succès!`;
 
-      const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://newai.sale';
-      const redirectUrl = `${frontendUrl}/social-media?success=true&message=${encodeURIComponent(successMessage)}`;
+      const redirectUrl = `${frontendUrl}${redirectBase}&success=true&message=${encodeURIComponent(successMessage)}`;
 
       console.log('Single page connected, redirecting to:', redirectUrl);
 
@@ -394,8 +408,13 @@ Deno.serve(async (req) => {
       }
 
       if (action === 'connect') {
+        const { isAdmin } = body;
         const appId = Deno.env.get('FACEBOOK_APP_ID')!;
         const redirectUri = `${supabaseUrl}/functions/v1/facebook-page-oauth`;
+        
+        // Encode state with userId and isAdmin flag
+        const stateData = JSON.stringify({ userId: user.id, isAdmin: isAdmin || false });
+        const encodedState = encodeURIComponent(stateData);
         
         // Extended scope to include Instagram Business permissions
         const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +
@@ -403,9 +422,9 @@ Deno.serve(async (req) => {
           `redirect_uri=${encodeURIComponent(redirectUri)}&` +
           `scope=pages_manage_posts,pages_read_engagement,pages_show_list,instagram_basic,instagram_content_publish&` +
           `response_type=code&` +
-          `state=${user.id}`;
+          `state=${encodedState}`;
 
-        console.log('Generated Facebook auth URL for user:', user.id);
+        console.log('Generated Facebook auth URL for user:', user.id, 'isAdmin:', isAdmin);
 
         return new Response(
           JSON.stringify({ authUrl }),
