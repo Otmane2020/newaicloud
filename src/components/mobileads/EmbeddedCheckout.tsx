@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Check, Mail, ChevronRight, Lock, Tag, User, MapPin, Globe, Eye, EyeOff, Loader2, AlertCircle, CreditCard, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements, CardElement, useStripe, useElements, PaymentRequestButtonElement } from "@stripe/react-stripe-js";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
@@ -72,6 +72,8 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
   const [couponLoading, setCouponLoading] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const [paymentRequest, setPaymentRequest] = useState<any>(null);
+  const [canMakePayment, setCanMakePayment] = useState(false);
 
   const price = billingPeriod === "yearly" ? selectedPlan.yearly.price : selectedPlan.monthly.price;
   const priceId = billingPeriod === "yearly" ? selectedPlan.yearly.priceId : selectedPlan.monthly.priceId;
@@ -80,6 +82,141 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
   
   const discountAmount = appliedCoupon ? (couponDiscount > 0 ? price * (couponDiscount / 100) : price * 0.1) : 0;
   const finalPrice = price - discountAmount;
+
+  // Initialize PaymentRequest for Google Pay / Apple Pay
+  useEffect(() => {
+    if (!stripe) return;
+
+    const pr = stripe.paymentRequest({
+      country: 'US',
+      currency: 'usd',
+      total: {
+        label: `${selectedPlan.name} - ${billingPeriod === 'yearly' ? 'Yearly' : 'Monthly'}`,
+        amount: Math.round(finalPrice * 100), // Convert to cents
+      },
+      requestPayerName: true,
+      requestPayerEmail: true,
+    });
+
+    pr.canMakePayment().then(result => {
+      if (result) {
+        setPaymentRequest(pr);
+        setCanMakePayment(true);
+      }
+    });
+
+    pr.on('paymentmethod', async (ev) => {
+      try {
+        // Validate email first
+        const payerEmail = ev.payerEmail || email;
+        if (!payerEmail) {
+          ev.complete('fail');
+          toast.error("Email is required");
+          return;
+        }
+
+        // Check if email exists
+        const { data: checkData } = await supabase.functions.invoke("create-mobile-checkout", {
+          body: { checkEmailOnly: true, email: payerEmail }
+        });
+        
+        if (checkData?.exists) {
+          ev.complete('fail');
+          toast.error("This email is already registered. Please sign in instead.");
+          return;
+        }
+
+        // Create subscription
+        const { data, error } = await supabase.functions.invoke("create-mobile-checkout", {
+          body: { 
+            priceId,
+            email: payerEmail,
+            password: password || (crypto.randomUUID().slice(0, 16) + "Aa1!"),
+            fullName: ev.payerName || fullName,
+            billingPeriod,
+            couponCode: appliedCoupon,
+            mode: "payment_intent"
+          }
+        });
+
+        if (error || data.error) {
+          ev.complete('fail');
+          toast.error(data?.error || "Payment failed");
+          return;
+        }
+
+        // Handle 100% coupon case
+        if (data.noPaymentRequired) {
+          ev.complete('success');
+          toast.success("Creating your account...");
+          
+          const { data: accountData } = await supabase.functions.invoke("create-mobile-checkout", {
+            body: { 
+              confirmPayment: true,
+              paymentIntentId: "coupon_free",
+              subscriptionId: data.subscriptionId,
+              email: payerEmail,
+              password: password || (crypto.randomUUID().slice(0, 16) + "Aa1!"),
+              fullName: ev.payerName || fullName
+            }
+          });
+
+          if (accountData?.success) {
+            toast.success("Welcome to NewAI!");
+            onClose();
+            window.location.href = "/dashboard";
+          }
+          return;
+        }
+
+        // Confirm payment with the payment method from Google/Apple Pay
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          data.clientSecret,
+          { payment_method: ev.paymentMethod.id },
+          { handleActions: false }
+        );
+
+        if (confirmError) {
+          ev.complete('fail');
+          toast.error(confirmError.message || "Payment failed");
+          return;
+        }
+
+        if (paymentIntent?.status === 'requires_action') {
+          const { error: actionError } = await stripe.confirmCardPayment(data.clientSecret);
+          if (actionError) {
+            ev.complete('fail');
+            toast.error(actionError.message || "Payment failed");
+            return;
+          }
+        }
+
+        ev.complete('success');
+        toast.success("Payment successful! Creating your account...");
+
+        // Create account after successful payment
+        const { data: accountData } = await supabase.functions.invoke("create-mobile-checkout", {
+          body: { 
+            confirmPayment: true,
+            paymentIntentId: paymentIntent?.id || data.paymentIntentId,
+            subscriptionId: data.subscriptionId,
+            email: payerEmail,
+            password: password || (crypto.randomUUID().slice(0, 16) + "Aa1!"),
+            fullName: ev.payerName || fullName
+          }
+        });
+
+        if (accountData?.success) {
+          toast.success("Welcome to NewAI!");
+          onClose();
+          window.location.href = "/dashboard";
+        }
+      } catch (err: any) {
+        ev.complete('fail');
+        toast.error(err.message || "Payment failed");
+      }
+    });
+  }, [stripe, finalPrice, selectedPlan, billingPeriod, priceId, email, password, fullName, appliedCoupon, onClose]);
 
   const checkEmailExists = async (emailToCheck: string): Promise<boolean> => {
     try {
@@ -454,6 +591,21 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
             <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-xs flex items-center justify-center font-bold">3</span>
             Select Payment Method
           </h3>
+
+          {/* Google Pay / Apple Pay */}
+          {canMakePayment && paymentRequest && (
+            <div className="mb-4">
+              <PaymentRequestButtonElement
+                options={{ paymentRequest }}
+                className="w-full"
+              />
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px bg-gray-200"></div>
+                <span className="text-xs text-gray-400">OR</span>
+                <div className="flex-1 h-px bg-gray-200"></div>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 mb-4 p-3 bg-violet-50 rounded-lg border-2 border-violet-600">
             <CreditCard className="w-4 h-4 text-violet-600" />
