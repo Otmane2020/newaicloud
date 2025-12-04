@@ -131,6 +131,7 @@ export default function Products() {
         body: { 
           productId: product.id,
           productTitle: product.title,
+          productImageUrl: product.image_url, // 🆕 Required for image-to-image editing
           productDescription: product.description || '',
           productType: product.product_type || '',
           vendor: product.vendor || '',

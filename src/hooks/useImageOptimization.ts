@@ -143,11 +143,13 @@ export const useImageOptimization = () => {
   const generateAIBackgroundVariants = useMutation({
     mutationFn: async ({ 
       productTitle,
+      productImageUrl,
       basePrompt = '',
       style = 'professional',
       format = 'square'
     }: { 
       productTitle: string;
+      productImageUrl: string;
       basePrompt?: string;
       style?: string;
       format?: string;
@@ -155,10 +157,10 @@ export const useImageOptimization = () => {
       setIsOptimizing(true);
       
       try {
-        console.log('🎨 [AI_BG] Starting generation for:', productTitle);
+        console.log('🎨 [AI_BG] Starting generation for:', productTitle, 'with image:', productImageUrl?.substring(0, 50));
         
         const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
-          body: { productTitle, basePrompt, style, format }
+          body: { productTitle, productImageUrl, basePrompt, style, format }
         });
 
         if (error) {

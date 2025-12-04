@@ -356,9 +356,10 @@ export const ProductMediaOptimization = () => {
     try {
       const result = await generateAIBackgroundVariants.mutateAsync({
         productTitle: product.title,
+        productImageUrl: image.src, // 🆕 Required for image-to-image editing
         basePrompt: aiPrompt,
         style: 'professional',
-        format: selectedFormat // 🆕 Use selected format
+        format: selectedFormat
       });
 
       if (result.variants && result.variants.length > 0) {
