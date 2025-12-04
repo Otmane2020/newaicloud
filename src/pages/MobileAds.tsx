@@ -376,13 +376,19 @@ export default function MobileAds() {
 
       {/* Sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f] to-transparent pt-10 pb-6 px-4 z-40">
-        <Button 
-          onClick={() => setShowPricing(true)}
-          className="w-full max-w-md mx-auto block bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold py-6 rounded-xl shadow-xl shadow-violet-500/25 text-base"
-        >
-          Get 70% OFF – From $7.99/mo
-          <ChevronRight className="w-5 h-5 ml-1" />
-        </Button>
+        <div className="max-w-md mx-auto">
+          <Button 
+            onClick={() => setShowPricing(true)}
+            className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold py-6 rounded-xl shadow-xl shadow-violet-500/25 text-base"
+          >
+            Start Free Trial – 70% OFF
+            <ChevronRight className="w-5 h-5 ml-1" />
+          </Button>
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <ShopifyLogo />
+            <span className="text-xs text-gray-400 font-medium">Built for Shopify</span>
+          </div>
+        </div>
       </div>
 
       {/* Pricing Dialog */}

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,14 @@ interface Message {
 export function AIAssistant() {
   const { user } = useAuth();
   const { t, language } = useTranslation();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Hide on /mobileads route
+  const hiddenRoutes = ['/mobileads'];
+  if (hiddenRoutes.includes(location.pathname)) {
+    return null;
+  }
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
