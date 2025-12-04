@@ -296,16 +296,43 @@ serve(async (req) => {
 
       // Check actual amount due - payment required if amount > 0
       const amountDue = invoice.amount_due || 0;
-      console.log("[create-mobile-checkout] Invoice amount_due:", amountDue, "cents");
+      console.log("[create-mobile-checkout] Invoice amount_due:", amountDue, "cents, paymentIntent exists:", !!paymentIntent);
 
-      // ALWAYS require payment - reject if somehow amount is 0
-      if (amountDue === 0 || !paymentIntent) {
-        console.log("[create-mobile-checkout] BLOCKED: Zero amount or no paymentIntent - cancelling subscription");
-        // Cancel the subscription to prevent free access
+      // Block only if truly free (amount_due is 0)
+      if (amountDue === 0) {
+        console.log("[create-mobile-checkout] BLOCKED: Zero amount - cancelling subscription");
         await stripe.subscriptions.cancel(subscription.id);
         return new Response(
-          JSON.stringify({ error: "Payment is required. Please use a valid payment method." }),
+          JSON.stringify({ error: "Payment is required. 100% discount coupons are not allowed." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // If amount > 0 but no paymentIntent, create one
+      if (!paymentIntent) {
+        console.log("[create-mobile-checkout] No paymentIntent on invoice, fetching subscription payment intent");
+        // For subscriptions, we need the client secret from the payment intent
+        const updatedInvoice = await stripe.invoices.retrieve(invoice.id, {
+          expand: ['payment_intent']
+        });
+        const retrievedPaymentIntent = updatedInvoice.payment_intent as Stripe.PaymentIntent | null;
+        
+        if (!retrievedPaymentIntent) {
+          console.log("[create-mobile-checkout] Still no paymentIntent after re-fetch");
+          return new Response(
+            JSON.stringify({ error: "Unable to process payment. Please try again." }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            clientSecret: retrievedPaymentIntent.client_secret,
+            subscriptionId: subscription.id,
+            paymentIntentId: retrievedPaymentIntent.id,
+            userEmail: email
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
