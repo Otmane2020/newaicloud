@@ -279,7 +279,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Google Phone Mockups */}
+      {/* Google Phone Mockups - Visual Impact */}
       <GooglePhoneMockups />
 
       {/* Google Shopping Ready */}
@@ -327,90 +327,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Integrations Bar */}
-      <section className="py-8 border-y border-border/50 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
-            <span className="text-sm font-medium">{language === "fr" ? "Intégrations" : "Integrations"}:</span>
-            <div className="flex items-center gap-6">
-              {INTEGRATIONS.map((int, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  {int.logo}
-                  <span className="text-sm font-medium hidden sm:inline">{int.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Book a Demo Section */}
-      <section id="demo" className="py-12 sm:py-16 bg-gradient-to-b from-background to-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-6 space-y-2">
-            <Badge variant="outline" className="border-primary text-primary">
-              {language === "fr" ? "Découvrir NewAI" : "Discover NewAI"}
-            </Badge>
-            <h2 className="text-2xl sm:text-3xl font-bold">
-              {language === "fr" ? "Réservez votre démo gratuite" : "Book your free demo"}
-            </h2>
-            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-              {language === "fr"
-                ? "30 minutes pour découvrir comment NewAI peut transformer votre boutique"
-                : "30 minutes to discover how NewAI can transform your store"}
-            </p>
-            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{language === "fr" ? "Lun-Ven, 10h30-16h30 " : "Mon-Fri, 10:30AM-4:30PM"}</span>
-            </div>
-          </div>
-          <div className="max-w-2xl mx-auto">
-            <CalBookingEmbed minimal />
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-16 px-4 bg-muted/20">
-        <div className="text-center mb-10">
-          <Badge className="bg-success/20 text-success border-success/30 mb-3">Testimonials</Badge>
-          <h2 className="text-3xl font-bold mb-2">
-            {language === "fr" ? "Aimé par 10 000+ Marchands" : "Loved by 10,000+ Merchants"}
-          </h2>
-          <p className="text-muted-foreground">
-            {language === "fr" ? "Découvrez ce que disent nos clients" : "See what our customers say"}
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
-          {TESTIMONIALS.map((t, i) => (
-            <div key={i} className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-              <div className="flex gap-0.5 mb-3">
-                {[...Array(t.rating)].map((_, j) => (
-                  <Star key={j} className="w-4 h-4 fill-warning text-warning" />
-                ))}
-              </div>
-              <p className="text-sm mb-4 text-muted-foreground">"{t.text}"</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-sm font-bold text-primary-foreground">
-                  {t.name[0]}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.role}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Demo SEO Comparison Section */}
-      <DemoSeoComparison />
-
-      {/* Landing Page Vision AI Showcase */}
-      <LandingPageVisionShowcase />
-
       {/* Key Features - Clean Cards */}
       <section id="features" className="py-16 sm:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
@@ -450,6 +366,89 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Demo SEO Comparison Section */}
+      <DemoSeoComparison />
+
+      {/* Landing Page Vision AI Showcase */}
+      <LandingPageVisionShowcase />
+
+      {/* Book a Demo Section */}
+      <section id="demo" className="py-12 sm:py-16 bg-gradient-to-b from-background to-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-6 space-y-2">
+            <Badge variant="outline" className="border-primary text-primary">
+              {language === "fr" ? "Découvrir NewAI" : "Discover NewAI"}
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              {language === "fr" ? "Réservez votre démo gratuite" : "Book your free demo"}
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+              {language === "fr"
+                ? "30 minutes pour découvrir comment NewAI peut transformer votre boutique"
+                : "30 minutes to discover how NewAI can transform your store"}
+            </p>
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <Clock className="w-3.5 h-3.5" />
+              <span>{language === "fr" ? "Lun-Ven, 10h30-16h30 " : "Mon-Fri, 10:30AM-4:30PM"}</span>
+            </div>
+          </div>
+          <div className="max-w-2xl mx-auto">
+            <CalBookingEmbed minimal />
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section - Side by Side */}
+      <section id="benefits" className="py-16 sm:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-10 items-center max-w-6xl mx-auto">
+            <div className="space-y-5">
+              <Badge variant="outline" className="border-success text-success">
+                {t.landing.benefits.badge}
+              </Badge>
+              <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.benefits.title}</h2>
+              <p className="text-muted-foreground">{t.landing.benefits.subtitle}</p>
+
+              <div className="space-y-3 pt-2">
+                {t.landing.benefits.items.map((benefit: any, index: number) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-background transition-colors"
+                  >
+                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-sm">{benefit.title}</p>
+                      <p className="text-xs text-muted-foreground">{benefit.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button size="lg" className="mt-4" onClick={() => navigate("/auth?mode=signup")}>
+                {t.landing.benefits.cta}
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-3xl blur-2xl" />
+              <Card className="relative p-6 border-2 border-primary/20">
+                <div className="grid grid-cols-2 gap-6">
+                  {t.landing.benefits.stats.map((stat: any, index: number) => (
+                    <div key={index} className="text-center p-4 rounded-xl bg-muted/50">
+                      <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+                        {stat.value}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials - Clean Design */}
       <section className="py-16 sm:py-20">
         <div className="container mx-auto px-4">
@@ -481,6 +480,23 @@ const Index = () => {
                 </div>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Integrations Bar */}
+      <section className="py-8 border-y border-border/50 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+            <span className="text-sm font-medium">{language === "fr" ? "Intégrations" : "Integrations"}:</span>
+            <div className="flex items-center gap-6">
+              {INTEGRATIONS.map((int, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  {int.logo}
+                  <span className="text-sm font-medium hidden sm:inline">{int.name}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
