@@ -289,7 +289,7 @@ export default function MobileAds() {
         </div>
       </section>
 
-      {/* Google Search Traffic Progression */}
+      {/* Google Search Traffic Progression with Growth Curve */}
       <section className="py-10 px-4 bg-white">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-center gap-3 mb-6">
@@ -304,35 +304,93 @@ export default function MobileAds() {
             </h2>
           </div>
           
-          {/* Traffic progression bars */}
-          <div className="space-y-4 max-w-md mx-auto">
-            <div className="bg-gray-100 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-gray-600">Before NewAI</span>
-                <span className="text-sm font-bold text-gray-900">~200 visits/mo</span>
-              </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full w-[15%] bg-gray-400 rounded-full"></div>
+          {/* Growth Curve Chart */}
+          <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-5 border border-gray-200 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Search Console Impressions</span>
+              <Badge className="bg-green-100 text-green-700 text-xs">+500%</Badge>
+            </div>
+            
+            {/* SVG Growth Curve */}
+            <div className="relative h-40 w-full">
+              <svg viewBox="0 0 400 160" className="w-full h-full" preserveAspectRatio="none">
+                {/* Grid lines */}
+                <line x1="0" y1="40" x2="400" y2="40" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4"/>
+                <line x1="0" y1="80" x2="400" y2="80" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4"/>
+                <line x1="0" y1="120" x2="400" y2="120" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4"/>
+                
+                {/* Gradient definition */}
+                <defs>
+                  <linearGradient id="growthGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#3b82f6"/>
+                    <stop offset="100%" stopColor="#22c55e"/>
+                  </linearGradient>
+                  <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3"/>
+                    <stop offset="100%" stopColor="#22c55e" stopOpacity="0.05"/>
+                  </linearGradient>
+                </defs>
+                
+                {/* Area fill */}
+                <path 
+                  d="M0,140 L0,140 Q50,138 80,135 Q120,130 160,120 Q200,100 240,70 Q280,40 320,25 Q360,15 400,10 L400,160 L0,160 Z" 
+                  fill="url(#areaGradient)"
+                />
+                
+                {/* Growth curve line */}
+                <path 
+                  d="M0,140 Q50,138 80,135 Q120,130 160,120 Q200,100 240,70 Q280,40 320,25 Q360,15 400,10" 
+                  fill="none" 
+                  stroke="url(#growthGradient)" 
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+                
+                {/* Data points */}
+                <circle cx="0" cy="140" r="4" fill="#3b82f6"/>
+                <circle cx="80" cy="135" r="4" fill="#3b82f6"/>
+                <circle cx="160" cy="120" r="4" fill="#60a5fa"/>
+                <circle cx="240" cy="70" r="4" fill="#4ade80"/>
+                <circle cx="320" cy="25" r="4" fill="#22c55e"/>
+                <circle cx="400" cy="10" r="6" fill="#22c55e" stroke="#fff" strokeWidth="2"/>
+              </svg>
+              
+              {/* Y-axis labels */}
+              <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-[10px] text-gray-400 -ml-1">
+                <span>10K</span>
+                <span>5K</span>
+                <span>1K</span>
+                <span>200</span>
               </div>
             </div>
             
-            <div className="flex items-center justify-center">
-              <ArrowRight className="w-5 h-5 text-violet-500" />
+            {/* X-axis labels */}
+            <div className="flex justify-between text-[10px] text-gray-500 mt-2 px-2">
+              <span>Month 1</span>
+              <span>Month 2</span>
+              <span>Month 3</span>
+              <span>Month 4</span>
+              <span>Month 5</span>
+              <span>Month 6</span>
             </div>
-            
-            <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-green-200 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-green-700">After 3 months</span>
-                <span className="text-sm font-bold text-green-600">+500% Traffic</span>
-              </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full w-[90%] bg-gradient-to-r from-blue-500 to-green-500 rounded-full"></div>
-              </div>
+          </div>
+          
+          {/* Before/After comparison */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="bg-gray-100 rounded-xl p-4 text-center">
+              <div className="text-xs text-gray-500 mb-1">Before NewAI</div>
+              <div className="text-2xl font-black text-gray-400">~200</div>
+              <div className="text-xs text-gray-500">visits/month</div>
+            </div>
+            <div className="bg-gradient-to-r from-blue-100 to-green-100 rounded-xl p-4 text-center border border-green-200">
+              <div className="text-xs text-green-600 mb-1">After 6 months</div>
+              <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-600">10K+</div>
+              <div className="text-xs text-green-600">visits/month</div>
             </div>
           </div>
           
           {/* Google benefits */}
-          <div className="grid grid-cols-3 gap-3 mt-6">
+          <div className="grid grid-cols-3 gap-3">
             <div className="text-center p-3 bg-blue-50 rounded-xl">
               <Search className="w-5 h-5 mx-auto mb-1 text-blue-600" />
               <p className="text-xs font-semibold text-gray-900">Rich Snippets</p>
