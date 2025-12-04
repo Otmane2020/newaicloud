@@ -308,78 +308,43 @@ serve(async (req) => {
         );
       }
 
-      // If amount > 0 but no paymentIntent, finalize invoice to create one
+      // If amount > 0 but no paymentIntent, re-fetch invoice to get it
       if (!paymentIntent) {
-        console.log("[create-mobile-checkout] No paymentIntent on invoice, finalizing to create one");
+        console.log("[create-mobile-checkout] No paymentIntent on invoice, re-fetching with expand");
         
-        try {
-          // Finalize the invoice if it's still a draft - this creates the payment intent
-          if (invoice.status === 'draft') {
-            console.log("[create-mobile-checkout] Invoice is draft, finalizing...");
-            const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id, {
-              expand: ['payment_intent']
-            });
-            const retrievedPaymentIntent = finalizedInvoice.payment_intent as Stripe.PaymentIntent | null;
-            
-            if (retrievedPaymentIntent?.client_secret) {
-              console.log("[create-mobile-checkout] Got paymentIntent after finalizing:", retrievedPaymentIntent.id);
-              return new Response(
-                JSON.stringify({ 
-                  clientSecret: retrievedPaymentIntent.client_secret,
-                  subscriptionId: subscription.id,
-                  paymentIntentId: retrievedPaymentIntent.id,
-                  userEmail: email
-                }),
-                { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-              );
-            }
-          }
-          
-          // If still no payment intent, try to pay the invoice which creates one
-          console.log("[create-mobile-checkout] Attempting to create payment intent via invoice pay");
-          const paidInvoice = await stripe.invoices.pay(invoice.id, {
-            expand: ['payment_intent']
-          });
-          const paidPaymentIntent = paidInvoice.payment_intent as Stripe.PaymentIntent | null;
-          
-          if (paidPaymentIntent?.client_secret) {
-            console.log("[create-mobile-checkout] Got paymentIntent after pay:", paidPaymentIntent.id);
-            return new Response(
-              JSON.stringify({ 
-                clientSecret: paidPaymentIntent.client_secret,
-                subscriptionId: subscription.id,
-                paymentIntentId: paidPaymentIntent.id,
-                userEmail: email
-              }),
-              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-        } catch (invoiceError) {
-          console.log("[create-mobile-checkout] Error processing invoice:", invoiceError);
-        }
-        
-        // Last resort: create a standalone payment intent
-        console.log("[create-mobile-checkout] Creating standalone payment intent for amount:", amountDue);
-        const customerId = subscription.customer as string;
-        const newPaymentIntent = await stripe.paymentIntents.create({
-          amount: amountDue,
-          currency: invoice.currency || 'eur',
-          customer: customerId,
-          metadata: {
-            subscription_id: subscription.id,
-            invoice_id: invoice.id,
-            email: email
-          }
+        // Re-fetch invoice with proper expand - Stripe should have created paymentIntent with default_incomplete
+        const refreshedInvoice = await stripe.invoices.retrieve(invoice.id, {
+          expand: ['payment_intent']
         });
         
+        const refreshedPaymentIntent = refreshedInvoice.payment_intent as Stripe.PaymentIntent | null;
+        
+        if (refreshedPaymentIntent?.client_secret) {
+          console.log("[create-mobile-checkout] Got paymentIntent after refresh:", refreshedPaymentIntent.id);
+          return new Response(
+            JSON.stringify({ 
+              clientSecret: refreshedPaymentIntent.client_secret,
+              subscriptionId: subscription.id,
+              paymentIntentId: refreshedPaymentIntent.id,
+              userEmail: email
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        
+        // Still no paymentIntent - this shouldn't happen with default_incomplete, log and cancel
+        console.error("[create-mobile-checkout] Still no paymentIntent after refresh", {
+          invoiceId: invoice.id,
+          invoiceStatus: refreshedInvoice.status,
+          amountDue: refreshedInvoice.amount_due
+        });
+        
+        // Cancel the defective subscription
+        await stripe.subscriptions.cancel(subscription.id);
+        
         return new Response(
-          JSON.stringify({ 
-            clientSecret: newPaymentIntent.client_secret,
-            subscriptionId: subscription.id,
-            paymentIntentId: newPaymentIntent.id,
-            userEmail: email
-          }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Unable to initialize payment. Please try again." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
