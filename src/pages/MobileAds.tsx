@@ -733,10 +733,10 @@ export default function MobileAds() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="text-2xl font-black">${price}</span>
+                          <span className="text-2xl font-black">${price.toFixed(2)}</span>
                           <span className="text-gray-500 text-sm">/mo</span>
                           {billingPeriod === "yearly" && (
-                            <p className="text-[10px] text-gray-400">Billed ${yearlyTotal}/year</p>
+                            <p className="text-[10px] text-gray-400">Billed ${yearlyTotal.toFixed(2)}/year</p>
                           )}
                         </div>
                       </div>
@@ -768,8 +768,8 @@ export default function MobileAds() {
               className="w-full h-14 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold text-base rounded-xl"
             >
               {billingPeriod === "yearly" 
-                ? `Continue – $${getYearlyTotal()}/year`
-                : `Continue – $${getCurrentPrice()}/mo`
+                ? `Continue – $${getYearlyTotal().toFixed(2)}/year`
+                : `Continue – $${getCurrentPrice().toFixed(2)}/mo`
               }
               <ChevronRight className="w-5 h-5 ml-1" />
             </Button>

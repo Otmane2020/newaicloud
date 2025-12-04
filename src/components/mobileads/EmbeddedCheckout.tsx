@@ -156,6 +156,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
               confirmPayment: true,
               paymentIntentId: "coupon_free",
               subscriptionId: data.subscriptionId,
+              customerId: data.customerId, // Pass customerId for stripe_customer_id
               email: payerEmail,
               password: password || (crypto.randomUUID().slice(0, 16) + "Aa1!"),
               fullName: ev.payerName || fullName
@@ -336,6 +337,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
             confirmPayment: true,
             paymentIntentId: "coupon_free", // Marker for free subscription
             subscriptionId: data.subscriptionId,
+            customerId: data.customerId, // Pass customerId for stripe_customer_id in profile
             email,
             password,
             fullName
