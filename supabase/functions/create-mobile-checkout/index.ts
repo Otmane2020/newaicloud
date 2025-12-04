@@ -16,6 +16,7 @@ serve(async (req) => {
     const { 
       priceId, 
       email, 
+      password,
       fullName,
       billingAddress,
       couponCode,
@@ -84,12 +85,12 @@ serve(async (req) => {
         );
       }
 
-      // Generate password and create user
-      const generatedPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
+      // Use the password provided by user, or generate one as fallback
+      const userPassword = password || (crypto.randomUUID().slice(0, 16) + "Aa1!");
       
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: email,
-        password: generatedPassword,
+        password: userPassword,
         email_confirm: true,
         user_metadata: {
           full_name: fullName || "",
@@ -133,7 +134,6 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true,
           userId: newUser.user?.id,
-          tempPassword: generatedPassword,
           email: email
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

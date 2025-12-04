@@ -63,18 +63,13 @@ const ShopifyLogo = () => (
   </svg>
 );
 
+// Official Brand Logos
 const GoogleMerchantLogo = () => (
   <svg viewBox="0 0 24 24" className="w-6 h-6">
     <path fill="#4285F4" d="M22 12l-10 10L2 12l10-10z"/>
     <path fill="#EA4335" d="M12 2L2 12h5l5-5 5 5h5z"/>
     <path fill="#FBBC05" d="M7 12l5 10 5-10H7z"/>
     <path fill="#34A853" d="M12 22l5-10h-5v10z"/>
-  </svg>
-);
-
-const GoogleSearchConsoleLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-6 h-6">
-    <path fill="#4285F4" d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
   </svg>
 );
 
@@ -87,7 +82,7 @@ const FacebookLogo = () => (
 const InstagramLogo = () => (
   <svg viewBox="0 0 24 24" className="w-6 h-6">
     <defs>
-      <linearGradient id="ig-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <linearGradient id="ig-gradient-main" x1="0%" y1="100%" x2="100%" y2="0%">
         <stop offset="0%" stopColor="#FFDC80"/>
         <stop offset="25%" stopColor="#FCAF45"/>
         <stop offset="50%" stopColor="#F77737"/>
@@ -95,16 +90,61 @@ const InstagramLogo = () => (
         <stop offset="100%" stopColor="#C13584"/>
       </linearGradient>
     </defs>
-    <path fill="url(#ig-gradient)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+    <path fill="url(#ig-gradient-main)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+  </svg>
+);
+
+const GmailLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
+    <path fill="#4285F4" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/>
+    <path fill="#34A853" d="M5.455 4.64L12 9.548l6.545-4.91V4.64L12 9.548 5.455 4.64z" opacity="0"/>
+    <path fill="#EA4335" d="M0 5.457c0-.904.732-1.636 1.636-1.636h.001L5.455 4.64v6.09L0 5.82V5.457z"/>
+    <path fill="#FBBC05" d="M24 5.457c0-.904-.732-1.636-1.636-1.636h-.001L18.545 4.64v6.09L24 5.82V5.457z"/>
+  </svg>
+);
+
+const GoogleCalendarLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
+    <path fill="#4285F4" d="M18.316 5.684H5.684v12.632h12.632V5.684z"/>
+    <path fill="#FFFFFF" d="M16.105 10.842h-2.526V8.316h1.263v1.263h1.263v1.263zm-4.421 0h-2.526V8.316h1.263v1.263h1.263v1.263zm4.421 3.79h-2.526v-2.527h2.526v2.526zm-4.421 0h-2.526v-2.527h2.526v2.526z"/>
+    <path fill="#EA4335" d="M5.684 5.684V3.158h2.526v2.526H5.684z"/>
+    <path fill="#34A853" d="M18.316 5.684V3.158h-2.526v2.526h2.526z"/>
+    <path fill="#FBBC05" d="M18.316 18.316h2.526V5.684h-2.526v12.632z"/>
+    <path fill="#4285F4" d="M3.158 18.316h2.526V5.684H3.158v12.632z"/>
+  </svg>
+);
+
+const OutlookLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
+    <path fill="#0078D4" d="M24 7.387v10.478c0 .23-.08.424-.238.576-.158.152-.352.228-.584.228h-8.234v-7.09l1.078.756c.12.085.252.128.395.128.144 0 .275-.043.395-.128l6.6-4.62c.153-.108.266-.236.34-.384a.863.863 0 0 0 .11-.398.69.69 0 0 0-.166-.47c-.11-.132-.29-.198-.54-.198h-.002l-8.005 5.61V4.615h8.028c.232 0 .426.076.584.228.158.152.238.345.238.576v1.968z"/>
+    <path fill="#0078D4" d="M14.17 18.669h-8.92a.696.696 0 0 1-.516-.212.696.696 0 0 1-.212-.516V6.06c0-.2.07-.372.212-.516a.696.696 0 0 1 .516-.212h8.92c.2 0 .372.07.516.212.142.144.212.316.212.516v11.88a.696.696 0 0 1-.212.516.696.696 0 0 1-.516.212z"/>
+    <path fill="#FFFFFF" d="M9.71 8.516c-1.464 0-2.652 1.188-2.652 2.652s1.188 2.652 2.652 2.652 2.652-1.188 2.652-2.652-1.188-2.652-2.652-2.652zm0 4.304c-.912 0-1.652-.74-1.652-1.652s.74-1.652 1.652-1.652 1.652.74 1.652 1.652-.74 1.652-1.652 1.652z"/>
+  </svg>
+);
+
+const GoogleDriveLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
+    <path fill="#4285F4" d="M7.71 15.667L5 20h14l2.71-4.333H7.71z"/>
+    <path fill="#FBBC05" d="M15.427 4H8.573L1.5 15.667h6.21L15.428 4z"/>
+    <path fill="#34A853" d="M22.5 15.667L15.427 4l-3.856 6.163L16.29 20l6.21-4.333z"/>
+  </svg>
+);
+
+const NotionLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
+    <path fill="#000000" d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.98-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466l1.823 1.447zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.84-.046.933-.56.933-1.167V6.354c0-.606-.233-.933-.746-.886l-15.177.887c-.56.046-.747.326-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.746 0-.933-.234-1.495-.933l-4.577-7.186v6.952l1.448.327s0 .84-1.168.84l-3.22.186c-.094-.187 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.454-.233 4.763 7.278v-6.44l-1.215-.14c-.093-.514.28-.887.747-.933l3.222-.186zm-12.292-4.24l15.224-.933c1.82-.14 2.287.467 2.287 1.493v13.717c0 1.12-.42 1.773-1.588 1.867l-15.784.933c-.887.047-1.307-.093-1.773-.7l-2.85-3.686c-.514-.653-.747-1.12-.747-1.68V5.94c0-.746.28-1.307 1.214-1.4z" fillRule="evenodd"/>
   </svg>
 );
 
 const INTEGRATIONS = [
-  { name: "Shopify", logo: <ShopifyLogo /> },
-  { name: "Google Merchant", logo: <GoogleMerchantLogo /> },
-  { name: "Search Console", logo: <GoogleSearchConsoleLogo /> },
   { name: "Facebook", logo: <FacebookLogo /> },
   { name: "Instagram", logo: <InstagramLogo /> },
+  { name: "Gmail", logo: <GmailLogo /> },
+  { name: "Calendar", logo: <GoogleCalendarLogo /> },
+  { name: "Outlook", logo: <OutlookLogo /> },
+  { name: "Drive", logo: <GoogleDriveLogo /> },
+  { name: "Merchant", logo: <GoogleMerchantLogo /> },
+  { name: "Notion", logo: <NotionLogo /> },
 ];
 
 export default function MobileAds() {
@@ -257,16 +297,16 @@ export default function MobileAds() {
                 {/* Integration Cards Grid */}
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { name: "Shopify", logo: <ShopifyLogo />, status: "Connected" },
-                    { name: "Google", logo: <GoogleMerchantLogo />, status: "Connected" },
-                    { name: "Facebook", logo: <FacebookLogo />, status: "Add" },
+                    { name: "Facebook", logo: <FacebookLogo />, status: "Added" },
                     { name: "Instagram", logo: <InstagramLogo />, status: "Add" },
+                    { name: "Gmail", logo: <GmailLogo />, status: "Added" },
+                    { name: "Shopify", logo: <ShopifyLogo />, status: "Added" },
                   ].map((item, idx) => (
                     <div key={idx} className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
                       <div className="flex items-center gap-2 mb-1.5">
                         <div className="w-6 h-6">{item.logo}</div>
-                        {item.status === "Connected" && (
-                          <span className="text-[8px] text-green-600 font-semibold">Connected</span>
+                        {item.status === "Added" && (
+                          <span className="text-[8px] text-green-600 font-semibold bg-green-50 px-1.5 py-0.5 rounded">Added</span>
                         )}
                       </div>
                       <p className="text-[10px] font-medium text-gray-700">{item.name}</p>
@@ -308,6 +348,105 @@ export default function MobileAds() {
         </div>
       </section>
 
+      {/* Before/After Landing Pages */}
+      <section className="py-16 px-4 bg-gradient-to-b from-violet-900/10 to-transparent">
+        <div className="text-center mb-10">
+          <Badge className="bg-green-500/20 text-green-300 border-green-500/30 mb-3">
+            <Sparkles className="w-3 h-3 mr-1" />
+            AI Magic
+          </Badge>
+          <h2 className="text-3xl font-bold mb-2">Transform Your Product Pages</h2>
+          <p className="text-gray-500">See the difference AI-powered landing pages make</p>
+        </div>
+
+        <div className="max-w-4xl mx-auto">
+          {/* Before/After Cards */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Before Card */}
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition" />
+              <div className="relative bg-[#0f0f15] rounded-2xl border border-white/10 overflow-hidden">
+                <div className="bg-red-500/10 px-4 py-2 border-b border-white/5">
+                  <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Before</span>
+                </div>
+                <div className="p-4">
+                  <div className="bg-gray-800 rounded-lg p-3 mb-3">
+                    <div className="w-full h-32 bg-gray-700 rounded-md mb-3 flex items-center justify-center">
+                      <Image className="w-8 h-8 text-gray-500" />
+                    </div>
+                    <div className="h-3 bg-gray-600 rounded w-3/4 mb-2" />
+                    <div className="h-2 bg-gray-600 rounded w-full mb-1" />
+                    <div className="h-2 bg-gray-600 rounded w-2/3" />
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <X className="w-3 h-3 text-red-400" />
+                    <span>Plain product page</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                    <X className="w-3 h-3 text-red-400" />
+                    <span>Low conversion rate</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                    <X className="w-3 h-3 text-red-400" />
+                    <span>No SEO optimization</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* After Card */}
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500/30 to-emerald-500/30 rounded-2xl blur opacity-50 group-hover:opacity-75 transition" />
+              <div className="relative bg-[#0f0f15] rounded-2xl border border-green-500/20 overflow-hidden">
+                <div className="bg-green-500/10 px-4 py-2 border-b border-green-500/10">
+                  <span className="text-xs font-bold text-green-400 uppercase tracking-wider">After NewAI</span>
+                </div>
+                <div className="p-4">
+                  <div className="bg-gradient-to-br from-violet-900/50 to-fuchsia-900/50 rounded-lg p-3 mb-3">
+                    <div className="w-full h-32 bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 rounded-md mb-3 flex items-center justify-center border border-violet-500/20">
+                      <div className="text-center">
+                        <Sparkles className="w-6 h-6 text-violet-400 mx-auto mb-1" />
+                        <span className="text-xs text-violet-300">AI Enhanced</span>
+                      </div>
+                    </div>
+                    <div className="h-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded w-full mb-2" />
+                    <div className="h-2 bg-violet-500/50 rounded w-full mb-1" />
+                    <div className="h-2 bg-violet-500/30 rounded w-4/5" />
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <Check className="w-3 h-3 text-green-400" />
+                    <span>High-converting design</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                    <Check className="w-3 h-3 text-green-400" />
+                    <span>SEO-optimized content</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                    <Check className="w-3 h-3 text-green-400" />
+                    <span>Smart CTAs & trust signals</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mt-8">
+            <div className="text-center p-4 bg-white/[0.02] rounded-xl border border-white/5">
+              <div className="text-2xl font-black text-green-400">+180%</div>
+              <p className="text-xs text-gray-500 mt-1">Conversion Rate</p>
+            </div>
+            <div className="text-center p-4 bg-white/[0.02] rounded-xl border border-white/5">
+              <div className="text-2xl font-black text-violet-400">+250%</div>
+              <p className="text-xs text-gray-500 mt-1">Organic Traffic</p>
+            </div>
+            <div className="text-center p-4 bg-white/[0.02] rounded-xl border border-white/5">
+              <div className="text-2xl font-black text-fuchsia-400">5 min</div>
+              <p className="text-xs text-gray-500 mt-1">Setup Time</p>
+            </div>
+          </div>
+        </div>
+      </section>
       {/* App Preview - Laptop */}
       <section className="py-16 px-4 bg-gradient-to-b from-violet-900/20 to-transparent">
         <div className="text-center mb-8">
