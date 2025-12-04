@@ -315,7 +315,7 @@ const Index = () => {
       {/* Testimonials Section */}
       <section className="py-16 px-4 bg-muted/20">
         <div className="text-center mb-10">
-          <Badge className="bg-green-100 text-green-700 border-green-200 mb-3">Testimonials</Badge>
+          <Badge className="bg-success/20 text-success border-success/30 mb-3">Testimonials</Badge>
           <h2 className="text-3xl font-bold mb-2">
             {language === 'fr' ? "Aimé par 10 000+ Marchands" : "Loved by 10,000+ Merchants"}
           </h2>
@@ -329,7 +329,7 @@ const Index = () => {
             <div key={i} className="bg-card border border-border rounded-2xl p-5 shadow-sm">
               <div className="flex gap-0.5 mb-3">
                 {[...Array(t.rating)].map((_, j) => (
-                  <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <Star key={j} className="w-4 h-4 fill-warning text-warning" />
                 ))}
               </div>
               <p className="text-sm mb-4 text-muted-foreground">"{t.text}"</p>
