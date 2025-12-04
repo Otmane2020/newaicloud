@@ -48,17 +48,19 @@ export const GoogleShoppingSection = () => {
   return (
     <section className="py-16 bg-gradient-to-b from-muted/30 to-background">
       <div className="container mx-auto px-4">
-        <div className="max-w-lg mx-auto">
+        <div className="max-w-lg lg:max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-center gap-3 mb-8">
             <GoogleShoppingLogo />
-            <h2 className="text-xl sm:text-2xl font-bold">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">
               Google <span className="text-primary">Shopping</span> Ready
             </h2>
           </div>
 
+          {/* Desktop: Two column layout */}
+          <div className="lg:grid lg:grid-cols-2 lg:gap-8">
           {/* Main Card */}
-          <div className="bg-card rounded-3xl p-6 shadow-lg border border-border mb-6">
+          <div className="bg-card rounded-3xl p-6 lg:p-8 shadow-lg border border-border mb-6 lg:mb-0">
             <div className="flex items-center justify-between mb-6">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Merchant Center
@@ -95,33 +97,37 @@ export const GoogleShoppingSection = () => {
             </div>
           </div>
 
+          {/* Right Column on Desktop */}
+          <div className="space-y-6">
           {/* Feature Cards */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-3 gap-3 lg:gap-4 mb-6 lg:mb-0">
             {features.map((feature, index) => (
-              <div key={index} className="bg-card rounded-xl p-4 text-center border border-border hover:border-primary/30 transition-colors">
-                <div className={`w-10 h-10 mx-auto mb-2 rounded-full ${feature.bgColor} flex items-center justify-center`}>
-                  <feature.icon className={`w-5 h-5 ${feature.color}`} />
+              <div key={index} className="bg-card rounded-xl p-4 lg:p-6 text-center border border-border hover:border-primary/30 transition-colors">
+                <div className={`w-10 h-10 lg:w-12 lg:h-12 mx-auto mb-2 rounded-full ${feature.bgColor} flex items-center justify-center`}>
+                  <feature.icon className={`w-5 h-5 lg:w-6 lg:h-6 ${feature.color}`} />
                 </div>
-                <p className="text-xs font-medium mb-1">{feature.title}</p>
-                <p className="text-[10px] text-muted-foreground">{feature.description}</p>
+                <p className="text-xs lg:text-sm font-medium mb-1">{feature.title}</p>
+                <p className="text-[10px] lg:text-xs text-muted-foreground">{feature.description}</p>
               </div>
             ))}
           </div>
 
           {/* Bottom Badges */}
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            <Badge variant="outline" className="text-xs gap-1">
-              <CheckCircle2 className="w-3 h-3 text-success" />
+          <div className="flex items-center justify-center gap-2 lg:gap-3 flex-wrap">
+            <Badge variant="outline" className="text-xs lg:text-sm gap-1 lg:gap-2 px-3 lg:px-4 py-1.5 lg:py-2">
+              <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-success" />
               {language === 'fr' ? "MPN inclus" : "MPN included"}
             </Badge>
-            <Badge variant="outline" className="text-xs gap-1">
-              <ShoppingCart className="w-3 h-3 text-primary" />
+            <Badge variant="outline" className="text-xs lg:text-sm gap-1 lg:gap-2 px-3 lg:px-4 py-1.5 lg:py-2">
+              <ShoppingCart className="w-3 h-3 lg:w-4 lg:h-4 text-primary" />
               {language === 'fr' ? "Prix & Stock" : "Price & Stock"}
             </Badge>
-            <Badge variant="outline" className="text-xs gap-1">
-              <Globe className="w-3 h-3 text-warning" />
+            <Badge variant="outline" className="text-xs lg:text-sm gap-1 lg:gap-2 px-3 lg:px-4 py-1.5 lg:py-2">
+              <Globe className="w-3 h-3 lg:w-4 lg:h-4 text-warning" />
               {language === 'fr' ? "Multi-langue" : "Multi-language"}
             </Badge>
+          </div>
+          </div>
           </div>
         </div>
       </div>

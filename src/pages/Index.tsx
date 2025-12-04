@@ -19,6 +19,7 @@ import { AIAssistant } from "@/components/AIAssistant";
 import { LandingPageVisionShowcase } from "@/components/landing/LandingPageVisionShowcase";
 import { GoogleTrafficGrowth } from "@/components/landing/GoogleTrafficGrowth";
 import { GoogleShoppingSection } from "@/components/landing/GoogleShoppingSection";
+import { GooglePhoneMockups } from "@/components/landing/GooglePhoneMockups";
 import {
   Zap,
   ShoppingBag,
@@ -278,11 +279,14 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Google Traffic Growth */}
-      <GoogleTrafficGrowth />
+      {/* Google Phone Mockups */}
+      <GooglePhoneMockups />
 
       {/* Google Shopping Ready */}
       <GoogleShoppingSection />
+
+      {/* Google Traffic Growth */}
+      <GoogleTrafficGrowth />
 
       {/* How It Works - Clean Steps */}
       <section className="py-16 sm:py-20">
