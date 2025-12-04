@@ -62,8 +62,11 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
   const [fullName, setFullName] = useState("");
   const [country, setCountry] = useState("US");
   const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState<number>(0);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [couponLoading, setCouponLoading] = useState(false);
@@ -76,7 +79,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
   const originalPrice = billingPeriod === "yearly" ? selectedPlan.monthly.price : price;
   const yearlyTotal = (price * 12).toFixed(2);
   
-  const discountAmount = appliedCoupon ? price * 0.1 : 0;
+  const discountAmount = appliedCoupon ? (couponDiscount > 0 ? price * (couponDiscount / 100) : price * 0.1) : 0;
   const finalPrice = price - discountAmount;
 
   const checkEmailExists = async (emailToCheck: string): Promise<boolean> => {
@@ -106,12 +109,29 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
     setCouponLoading(true);
-    await new Promise(r => setTimeout(r, 500));
-    if (couponCode.toUpperCase() === "BF70" || couponCode.toUpperCase() === "WELCOME10") {
-      setAppliedCoupon(couponCode.toUpperCase());
-      toast.success("Coupon applied!");
-    } else {
-      toast.error("Invalid coupon code");
+    try {
+      const { data, error } = await supabase.functions.invoke("validate-coupon", {
+        body: { couponCode: couponCode.trim() }
+      });
+      
+      if (error || data?.error) {
+        toast.error("Invalid coupon code");
+      } else if (data?.valid) {
+        setAppliedCoupon(data.couponId || couponCode.toUpperCase());
+        setCouponDiscount(data.percentOff || 10);
+        toast.success(`Coupon applied! ${data.percentOff || 10}% off`);
+      } else {
+        toast.error("Invalid coupon code");
+      }
+    } catch (err) {
+      // Fallback to hardcoded coupons
+      if (couponCode.toUpperCase() === "BF70" || couponCode.toUpperCase() === "WELCOME10") {
+        setAppliedCoupon(couponCode.toUpperCase());
+        setCouponDiscount(couponCode.toUpperCase() === "BF70" ? 70 : 10);
+        toast.success("Coupon applied!");
+      } else {
+        toast.error("Invalid coupon code");
+      }
     }
     setCouponLoading(false);
   };
@@ -152,9 +172,12 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
           email,
           password,
           fullName,
+          billingPeriod,
           billingAddress: {
             country,
             line1: address,
+            city,
+            postal_code: postalCode,
           },
           couponCode: appliedCoupon,
           mode: "payment_intent"
@@ -176,7 +199,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
             billing_details: {
               name: fullName,
               email: email,
-              address: { country, line1: address }
+              address: { country, line1: address, city, postal_code: postalCode }
             }
           }
         }
@@ -350,8 +373,8 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
             {appliedCoupon && (
               <div className="flex items-center gap-1 text-green-600 text-sm">
                 <Check className="w-4 h-4" />
-                <span>{appliedCoupon}</span>
-                <button type="button" onClick={() => setAppliedCoupon(null)} className="ml-auto text-gray-400 text-xs">×</button>
+                <span>{appliedCoupon} ({couponDiscount}% off)</span>
+                <button type="button" onClick={() => { setAppliedCoupon(null); setCouponDiscount(0); }} className="ml-auto text-gray-400 text-xs hover:text-gray-600">×</button>
               </div>
             )}
 
@@ -470,6 +493,21 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 className="pl-10 h-11 bg-gray-50 border-gray-200"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                placeholder="City"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="h-11 bg-gray-50 border-gray-200"
+              />
+              <Input
+                placeholder="Postal Code"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                className="h-11 bg-gray-50 border-gray-200"
               />
             </div>
 
