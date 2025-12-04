@@ -23,16 +23,16 @@ interface Plan {
 
 // Mapping UI plan keys to database plan_ids
 const PLAN_DB_MAPPING: Record<string, string> = {
-  starter: "starter",      // $9.99/mo, $95.90/year, 100 products
-  pro: "pro-500",          // $49/mo, $470.40/year, 1000 products  
-  business: "pro-1000",    // $98/mo, $940.80/year, 2000 products
+  starter: "starter",           // $9.99/mo, $95.90/year, 100 products
+  pro: "pro-500",               // $49/mo, $470.40/year, 1000 products  
+  enterprise: "enterprise-2000", // $199/mo, $1910.40/year, 2000 optimizations
 };
 
 // Plan metadata (non-price data)
 const PLAN_META: Record<string, { name: string; popular?: boolean }> = {
   starter: { name: "Starter" },
   pro: { name: "Pro", popular: true },
-  business: { name: "Business" },
+  enterprise: { name: "Enterprise" },
 };
 
 const FEATURES = [
@@ -109,7 +109,7 @@ const INTEGRATIONS = [
 export default function MobileAds() {
   const [showPricing, setShowPricing] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<"yearly" | "monthly">("yearly");
-  const [selectedPlan, setSelectedPlan] = useState<"starter" | "pro" | "business">("pro");
+  const [selectedPlan, setSelectedPlan] = useState<"starter" | "pro" | "enterprise">("pro");
   const [showCheckout, setShowCheckout] = useState(false);
   const [countdown, setCountdown] = useState({ hours: 23, minutes: 59, seconds: 59 });
   const [plans, setPlans] = useState<Record<string, Plan>>({});
@@ -133,9 +133,15 @@ export default function MobileAds() {
           const dbPlan = data?.find(p => p.id === dbId);
           if (dbPlan) {
             const yearlyMonthlyEquivalent = dbPlan.price_yearly / 12;
+            // Custom labels for each plan
+            const productLabels: Record<string, string> = {
+              starter: "100 products",
+              pro: "1,000 products",
+              enterprise: "2,000 optimizations/month"
+            };
             loadedPlans[uiKey] = {
               name: PLAN_META[uiKey].name,
-              products: `${dbPlan.max_products} products`,
+              products: productLabels[uiKey] || `${dbPlan.max_products} products`,
               popular: PLAN_META[uiKey].popular,
               monthly: {
                 priceId: dbPlan.stripe_price_id_monthly,
@@ -818,7 +824,7 @@ export default function MobileAds() {
                   <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
                 </div>
               ) : (
-                (["starter", "pro", "business"] as const).map((key) => {
+                (["starter", "pro", "enterprise"] as const).map((key) => {
                   const plan = plans[key];
                   if (!plan) return null;
                   const price = billingPeriod === "yearly" ? plan.yearly.price : plan.monthly.price;
