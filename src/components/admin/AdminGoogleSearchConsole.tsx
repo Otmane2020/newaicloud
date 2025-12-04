@@ -103,23 +103,34 @@ export function AdminGoogleSearchConsole() {
   const connectGoogle = async () => {
     setConnecting(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/webmasters https://www.googleapis.com/auth/indexing',
-          redirectTo: `${window.location.origin}/superadmin?tab=gsc`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        }
+      // Use popup OAuth approach instead of signInWithOAuth
+      const response = await supabase.functions.invoke("google-gsc-oauth", {
+        body: { action: "connect", isAdmin: true },
       });
 
-      if (error) throw error;
+      if (response.error) throw response.error;
+      
+      if (response.data?.authUrl) {
+        // Open popup for OAuth
+        const popup = window.open(
+          response.data.authUrl,
+          "google_gsc_oauth",
+          "width=600,height=700,scrollbars=yes"
+        );
+
+        // Poll for popup close and reload data
+        const pollTimer = setInterval(() => {
+          if (popup?.closed) {
+            clearInterval(pollTimer);
+            setConnecting(false);
+            loadData();
+            checkGoogleConnection();
+          }
+        }, 1000);
+      }
     } catch (error: any) {
       console.error("Error connecting Google:", error);
       toast.error(error.message || "Erreur de connexion Google");
-    } finally {
       setConnecting(false);
     }
   };

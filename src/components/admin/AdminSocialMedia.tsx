@@ -112,7 +112,7 @@ export function AdminSocialMedia() {
     setConnecting(true);
     try {
       const response = await supabase.functions.invoke("facebook-page-oauth", {
-        body: { action: "connect" },
+        body: { action: "connect", isAdmin: true },
       });
 
       if (response.error) throw response.error;

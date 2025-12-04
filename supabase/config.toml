@@ -543,3 +543,6 @@ verify_jwt = false
 
 [functions.create-mobile-checkout]
 verify_jwt = false
+
+[functions.google-gsc-oauth]
+verify_jwt = false
