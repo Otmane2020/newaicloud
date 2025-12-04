@@ -67,7 +67,7 @@ export const PublicHeader = () => {
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <LanguageSwitcher />
-            <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => navigate("/demo")}>
+            <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => window.open('https://cal.com/new-ai-isgo1m/30min?overlayCalendar=true', '_blank')}>
               <Play className="w-4 h-4 mr-1" />
               {t.landing.header.demo}
               <Badge className="ml-2 bg-success text-success-foreground text-[10px] px-1.5">{t.demo?.button?.badge || "Free"}</Badge>
@@ -120,7 +120,7 @@ export const PublicHeader = () => {
                 <div className="pb-2">
                   <LanguageSwitcher />
                 </div>
-                <Button variant="outline" className="w-full border-primary/50 text-primary" onClick={() => navigate("/demo")}>
+                <Button variant="outline" className="w-full border-primary/50 text-primary" onClick={() => window.open('https://cal.com/new-ai-isgo1m/30min?overlayCalendar=true', '_blank')}>
                   <Play className="w-4 h-4 mr-1" />
                   {t.landing.header.demo}
                   <Badge className="ml-2 bg-success text-success-foreground text-[10px]">{t.demo?.button?.badge || "Free"}</Badge>
