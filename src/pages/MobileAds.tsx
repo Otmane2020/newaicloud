@@ -20,21 +20,21 @@ const PLANS: Record<string, Plan> = {
   starter: {
     name: "Starter",
     products: "100 products",
-    monthly: { priceId: "price_1QYN5cEfti9t9nN94TfjVgas", price: 9.99 },
-    yearly: { priceId: "price_1QYN5cEfti9t9nN9xV5GaJbS", price: 7.99 },
+    monthly: { priceId: "price_1SXVNYEfti9t9nN9rLPoX47O", price: 3.18 },
+    yearly: { priceId: "price_1SXVNZEfti9t9nN94DUSEydX", price: 2.55 },
   },
   pro: {
     name: "Pro",
-    products: "1000 products",
+    products: "500 products",
     popular: true,
-    monthly: { priceId: "price_1QYN67Efti9t9nN9JcHhKnFv", price: 49 },
-    yearly: { priceId: "price_1QYN67Efti9t9nN9Xj1tRrQd", price: 39.20 },
+    monthly: { priceId: "price_1SXVNWEfti9t9nN91PsPoSZo", price: 15.92 },
+    yearly: { priceId: "price_1SXVNXEfti9t9nN9UlFZWukM", price: 12.74 },
   },
   business: {
     name: "Business",
     products: "2000 products",
-    monthly: { priceId: "price_1QYN6PEfti9t9nN9p5bXBSqJ", price: 98 },
-    yearly: { priceId: "price_1QYN6PEfti9t9nN9BqGy9TZt", price: 78.40 },
+    monthly: { priceId: "price_1SXVNbEfti9t9nN9jsQWZ5VG", price: 63.68 },
+    yearly: { priceId: "price_1SXVNcEfti9t9nN9Odk0dDrl", price: 50.94 },
   }
 };
 
