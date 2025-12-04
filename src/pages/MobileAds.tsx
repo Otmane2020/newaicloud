@@ -164,6 +164,25 @@ export default function MobileAds() {
         </div>
       </header>
 
+      {/* AI-Powered E-commerce Header Section */}
+      <section className="py-10 px-4 text-center">
+        <Badge className="bg-white/10 border-white/20 text-white mb-4">
+          <Sparkles className="w-3 h-3 mr-1.5" />
+          AI-Powered E-commerce
+        </Badge>
+        
+        <h1 className="text-4xl sm:text-5xl font-black leading-[1.1] mb-4">
+          Automate Your{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400">
+            Store Success
+          </span>
+        </h1>
+        
+        <p className="text-gray-400 text-base max-w-md mx-auto">
+          AI SEO, smart backgrounds, landing pages & automated marketing. All in one powerful platform.
+        </p>
+      </section>
+
       {/* Stats Section - Traffic Machine */}
       <section className="py-8 px-4 bg-gradient-to-b from-violet-900/20 to-transparent">
         <div className="max-w-4xl mx-auto">
@@ -222,24 +241,6 @@ export default function MobileAds() {
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
         
         <div className="relative max-w-lg mx-auto">
-          <div className="text-center mb-6">
-            <Badge className="bg-white/10 border-white/20 text-white mb-4">
-              <Sparkles className="w-3 h-3 mr-1.5" />
-              AI-Powered E-commerce
-            </Badge>
-            
-            <h1 className="text-4xl sm:text-5xl font-black leading-[1.1] mb-4">
-              Automate Your{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400">
-                Store Success
-              </span>
-            </h1>
-            
-            <p className="text-gray-400 text-base mb-6 max-w-sm mx-auto">
-              AI SEO, smart backgrounds, landing pages & automated marketing. All in one powerful platform.
-            </p>
-          </div>
-
           {/* Phone Mockup - Hand holding phone */}
           <div className="relative mx-auto w-[280px] sm:w-[320px] mb-8">
             <img 
