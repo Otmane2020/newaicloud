@@ -1,222 +1,199 @@
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useTranslation } from "@/lib/language";
-import { useNavigate } from "react-router-dom";
 import { 
   TrendingUp, 
-  TrendingDown, 
   ArrowRight, 
   CheckCircle2, 
   XCircle,
   Sparkles,
-  Search,
-  Image,
-  FileText,
-  Tags
+  Zap
 } from "lucide-react";
 
-interface SeoMetric {
-  label: string;
-  before: number;
-  after: number;
-  icon: React.ReactNode;
-}
-
 export const DemoSeoComparison = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { t, language } = useTranslation();
 
-  // Simulated SEO scores - Before (poor) vs After (optimized with NewAI)
-  const metrics: SeoMetric[] = [
-    { 
-      label: t.demo?.comparison?.metrics?.metaTitles || "Meta Titles", 
-      before: 25, 
-      after: 92,
-      icon: <Search className="w-4 h-4" />
-    },
-    { 
-      label: t.demo?.comparison?.metrics?.metaDescriptions || "Meta Descriptions", 
-      before: 18, 
-      after: 88,
-      icon: <FileText className="w-4 h-4" />
-    },
-    { 
-      label: t.demo?.comparison?.metrics?.altTexts || "Image ALT Texts", 
-      before: 12, 
-      after: 95,
-      icon: <Image className="w-4 h-4" />
-    },
-    { 
-      label: t.demo?.comparison?.metrics?.productTags || "Product Tags", 
-      before: 35, 
-      after: 89,
-      icon: <Tags className="w-4 h-4" />
-    },
-  ];
+  const beforeScore = 23;
+  const afterScore = 91;
+  const improvement = afterScore - beforeScore;
 
-  const globalScoreBefore = Math.round(metrics.reduce((acc, m) => acc + m.before, 0) / metrics.length);
-  const globalScoreAfter = Math.round(metrics.reduce((acc, m) => acc + m.after, 0) / metrics.length);
-  const improvement = globalScoreAfter - globalScoreBefore;
+  const beforeIssues = language === 'fr' 
+    ? ["Meta descriptions manquantes", "Pas de textes ALT", "Mauvais tags produits"]
+    : ["Missing meta descriptions", "No image ALT texts", "Poor product tagging"];
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-success";
-    if (score >= 50) return "text-warning";
-    return "text-destructive";
-  };
-
-  const getProgressColor = (score: number) => {
-    if (score >= 80) return "bg-success";
-    if (score >= 50) return "bg-warning";
-    return "bg-destructive";
-  };
+  const afterBenefits = language === 'fr'
+    ? ["Meta optimisées pour tous les produits", "Textes ALT générés par IA", "Tags produits intelligents"]
+    : ["Optimized meta for all products", "AI-generated ALT texts", "Smart product tags"];
 
   const handleTryDemo = () => {
     document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <section className="container mx-auto px-4 py-16 sm:py-24">
-      <div className="text-center mb-12 space-y-4">
-        <Badge variant="outline" className="border-primary text-primary">
-          <Sparkles className="w-4 h-4 mr-2" />
-          {t.demo?.comparison?.badge || "See the Difference"}
-        </Badge>
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
-          {t.demo?.comparison?.title || "Before & After NewAI"}
-        </h2>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          {t.demo?.comparison?.subtitle || "See how NewAI transforms your Shopify store's SEO scores in minutes"}
-        </p>
-      </div>
+    <section className="py-20 bg-gradient-to-b from-muted/30 to-background overflow-hidden">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-16 space-y-4">
+          <Badge variant="outline" className="border-primary text-primary px-4 py-1">
+            <Sparkles className="w-4 h-4 mr-2" />
+            {language === 'fr' ? "Voyez la différence" : "See the Difference"}
+          </Badge>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
+            {language === 'fr' ? "Avant & Après NewAI" : "Before & After NewAI"}
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            {language === 'fr' 
+              ? "Découvrez comment NewAI transforme vos scores SEO en quelques minutes"
+              : "See how NewAI transforms your SEO scores in minutes"}
+          </p>
+        </div>
 
-      <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-        {/* Before Card */}
-        <Card className="p-6 border-2 border-destructive/30 bg-destructive/5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-destructive text-destructive-foreground px-4 py-1 text-sm font-medium rounded-bl-lg">
-            {t.demo?.comparison?.before || "Before"}
-          </div>
-          
-          <div className="mt-6 space-y-6">
-            <div className="text-center">
-              <div className={`text-5xl font-bold ${getScoreColor(globalScoreBefore)}`}>
-                {globalScoreBefore}%
-              </div>
-              <p className="text-muted-foreground text-sm mt-1">
-                {t.demo?.comparison?.globalScore || "Global SEO Score"}
-              </p>
-              <div className="flex items-center justify-center gap-2 mt-2 text-destructive">
-                <TrendingDown className="w-4 h-4" />
-                <span className="text-sm">{t.demo?.comparison?.poorSeo || "Poor SEO"}</span>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {metrics.map((metric, index) => (
-                <div key={index} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      {metric.icon}
-                      <span>{metric.label}</span>
-                    </div>
-                    <span className={getScoreColor(metric.before)}>{metric.before}%</span>
-                  </div>
-                  <Progress 
-                    value={metric.before} 
-                    className="h-2"
-                  />
+        {/* Comparison Visual */}
+        <div className="max-w-4xl mx-auto">
+          <div className="relative flex flex-col md:flex-row items-stretch gap-4 md:gap-0">
+            
+            {/* Before */}
+            <div className="flex-1 relative">
+              <div className="bg-card border border-border rounded-2xl md:rounded-r-none p-8 h-full">
+                <div className="absolute -top-3 left-6">
+                  <span className="bg-destructive text-destructive-foreground px-4 py-1.5 rounded-full text-sm font-semibold">
+                    {language === 'fr' ? "Avant" : "Before"}
+                  </span>
                 </div>
-              ))}
-            </div>
-
-            <div className="space-y-2 pt-4 border-t">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <XCircle className="w-4 h-4 text-destructive" />
-                {t.demo?.comparison?.issues?.missingMeta || "Missing meta descriptions"}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <XCircle className="w-4 h-4 text-destructive" />
-                {t.demo?.comparison?.issues?.noAlt || "No image ALT texts"}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <XCircle className="w-4 h-4 text-destructive" />
-                {t.demo?.comparison?.issues?.poorTags || "Poor product tagging"}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* After Card */}
-        <Card className="p-6 border-2 border-success/30 bg-success/5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-success text-success-foreground px-4 py-1 text-sm font-medium rounded-bl-lg">
-            {t.demo?.comparison?.after || "After NewAI"}
-          </div>
-          
-          <div className="mt-6 space-y-6">
-            <div className="text-center">
-              <div className={`text-5xl font-bold ${getScoreColor(globalScoreAfter)}`}>
-                {globalScoreAfter}%
-              </div>
-              <p className="text-muted-foreground text-sm mt-1">
-                {t.demo?.comparison?.globalScore || "Global SEO Score"}
-              </p>
-              <div className="flex items-center justify-center gap-2 mt-2 text-success">
-                <TrendingUp className="w-4 h-4" />
-                <span className="text-sm font-medium">+{improvement}% {t.demo?.comparison?.improvement || "improvement"}</span>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {metrics.map((metric, index) => (
-                <div key={index} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      {metric.icon}
-                      <span>{metric.label}</span>
+                
+                <div className="mt-4 flex flex-col items-center">
+                  {/* Score Circle */}
+                  <div className="relative w-32 h-32 mb-6">
+                    <svg className="w-full h-full -rotate-90">
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="56"
+                        stroke="currentColor"
+                        strokeWidth="12"
+                        fill="none"
+                        className="text-muted"
+                      />
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="56"
+                        stroke="currentColor"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeDasharray={`${beforeScore * 3.51} 351`}
+                        className="text-destructive"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-4xl font-bold text-destructive">{beforeScore}%</span>
                     </div>
-                    <span className={getScoreColor(metric.after)}>{metric.after}%</span>
                   </div>
-                  <Progress 
-                    value={metric.after} 
-                    className="h-2"
-                  />
+                  
+                  <p className="text-muted-foreground text-sm mb-6">
+                    {language === 'fr' ? "Score SEO Global" : "Global SEO Score"}
+                  </p>
+                  
+                  {/* Issues List */}
+                  <div className="space-y-3 w-full">
+                    {beforeIssues.map((issue, i) => (
+                      <div key={i} className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <XCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+                        <span>{issue}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
 
-            <div className="space-y-2 pt-4 border-t">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle2 className="w-4 h-4 text-success" />
-                {t.demo?.comparison?.benefits?.optimizedMeta || "Optimized meta for all products"}
+            {/* Arrow Divider */}
+            <div className="hidden md:flex items-center justify-center z-10 -mx-6">
+              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                <ArrowRight className="w-6 h-6 text-primary-foreground" />
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle2 className="w-4 h-4 text-success" />
-                {t.demo?.comparison?.benefits?.aiAlt || "AI-generated ALT texts"}
+            </div>
+            <div className="flex md:hidden items-center justify-center py-2">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg rotate-90">
+                <ArrowRight className="w-5 h-5 text-primary-foreground" />
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle2 className="w-4 h-4 text-success" />
-                {t.demo?.comparison?.benefits?.smartTags || "Smart product tags"}
+            </div>
+
+            {/* After */}
+            <div className="flex-1 relative">
+              <div className="bg-gradient-to-br from-primary/10 via-card to-success/10 border-2 border-primary/30 rounded-2xl md:rounded-l-none p-8 h-full shadow-lg shadow-primary/10">
+                <div className="absolute -top-3 left-6">
+                  <span className="bg-gradient-to-r from-primary to-success text-primary-foreground px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5" />
+                    {language === 'fr' ? "Après NewAI" : "After NewAI"}
+                  </span>
+                </div>
+                
+                <div className="mt-4 flex flex-col items-center">
+                  {/* Score Circle */}
+                  <div className="relative w-32 h-32 mb-6">
+                    <svg className="w-full h-full -rotate-90">
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="56"
+                        stroke="currentColor"
+                        strokeWidth="12"
+                        fill="none"
+                        className="text-muted"
+                      />
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="56"
+                        stroke="currentColor"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeDasharray={`${afterScore * 3.51} 351`}
+                        className="text-success"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-4xl font-bold text-success">{afterScore}%</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 mb-6">
+                    <TrendingUp className="w-5 h-5 text-success" />
+                    <span className="text-success font-semibold">+{improvement}%</span>
+                  </div>
+                  
+                  {/* Benefits List */}
+                  <div className="space-y-3 w-full">
+                    {afterBenefits.map((benefit, i) => (
+                      <div key={i} className="flex items-center gap-3 text-sm">
+                        <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                        <span>{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </Card>
-      </div>
+        </div>
 
-      {/* CTA */}
-      <div className="text-center mt-10">
-        <Button 
-          size="lg" 
-          className="group bg-gradient-primary shadow-glow"
-          onClick={handleTryDemo}
-        >
-          <Sparkles className="w-5 h-5 mr-2" />
-          {t.demo?.comparison?.cta || "Try the Demo"}
-          <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-        </Button>
-        <p className="text-sm text-muted-foreground mt-3">
-          {t.demo?.comparison?.noCreditCard || "No credit card required • Instant access"}
-        </p>
+        {/* CTA */}
+        <div className="text-center mt-12">
+          <Button 
+            size="lg" 
+            className="group px-8"
+            onClick={handleTryDemo}
+          >
+            <Sparkles className="w-5 h-5 mr-2" />
+            {language === 'fr' ? "Réserver une démo" : "Book a Demo"}
+            <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </Button>
+          <p className="text-sm text-muted-foreground mt-3">
+            {language === 'fr' ? "Sans carte bancaire • Accès instantané" : "No credit card required • Instant access"}
+          </p>
+        </div>
       </div>
     </section>
   );
