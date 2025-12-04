@@ -56,6 +56,8 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
   const elements = useElements();
   
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [country, setCountry] = useState("US");
   const [address, setAddress] = useState("");
@@ -124,6 +126,10 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
       toast.error("Please enter your full name");
       return;
     }
+    if (!password || password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
     if (!acceptTerms) {
       toast.error("Please accept the terms");
       return;
@@ -143,6 +149,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
         body: { 
           priceId,
           email,
+          password,
           fullName,
           billingAddress: {
             country,
@@ -189,6 +196,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
             paymentIntentId: paymentIntent.id,
             subscriptionId: data.subscriptionId,
             email,
+            password,
             fullName
           }
         });
@@ -200,18 +208,16 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
         }
 
         // STEP 4: Auto-login with the created account
-        if (accountData?.tempPassword) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: accountData.tempPassword
-          });
-          
-          if (signInError) {
-            console.error("Auto-login failed:", signInError);
-            toast.info("Account created! Please sign in manually.");
-          } else {
-            toast.success("Welcome to NewAI!");
-          }
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+        
+        if (signInError) {
+          console.error("Auto-login failed:", signInError);
+          toast.info("Account created! Please sign in manually.");
+        } else {
+          toast.success("Welcome to NewAI!");
         }
         
         onClose();
@@ -268,8 +274,28 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
                 <AlertCircle className="w-4 h-4" /> {emailError}
               </p>
             )}
+            
+            {/* Password Field */}
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 pr-10 h-11 bg-gray-50 border-gray-200"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            
             <p className="text-xs text-gray-500">
-              With this email address you'll get access to NewAI products. Please make sure it's correct.
+              Use this password to access your NewAI dashboard.
             </p>
           </div>
         </section>
