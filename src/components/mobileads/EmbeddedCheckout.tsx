@@ -138,7 +138,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
 
     setIsLoading(true);
     try {
-      // Create payment intent and user account
+      // STEP 1: Create payment intent (NO account created yet)
       const { data, error } = await supabase.functions.invoke("create-mobile-checkout", {
         body: { 
           priceId,
@@ -159,6 +159,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
       const cardElement = elements.getElement(CardElement);
       if (!cardElement) throw new Error("Card element not found");
 
+      // STEP 2: Confirm card payment with Stripe
       const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
         data.clientSecret,
         {
@@ -175,24 +176,48 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
 
       if (stripeError) {
         toast.error(stripeError.message || "Payment failed");
-      } else if (paymentIntent?.status === "succeeded") {
-        toast.success("Payment successful! Logging you in...");
+        return;
+      }
+      
+      if (paymentIntent?.status === "succeeded") {
+        toast.success("Payment successful! Creating your account...");
         
-        // Auto-login with the created account
-        if (data.tempPassword) {
+        // STEP 3: After payment succeeds, create the account
+        const { data: accountData, error: accountError } = await supabase.functions.invoke("create-mobile-checkout", {
+          body: { 
+            confirmPayment: true,
+            paymentIntentId: paymentIntent.id,
+            subscriptionId: data.subscriptionId,
+            email,
+            fullName
+          }
+        });
+
+        if (accountError || accountData?.error) {
+          console.error("Account creation error:", accountError || accountData?.error);
+          toast.error("Payment succeeded but account creation failed. Please contact support.");
+          return;
+        }
+
+        // STEP 4: Auto-login with the created account
+        if (accountData?.tempPassword) {
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email: email,
-            password: data.tempPassword
+            password: accountData.tempPassword
           });
           
           if (signInError) {
             console.error("Auto-login failed:", signInError);
-            toast.info("Account created! Please check your email to sign in.");
+            toast.info("Account created! Please sign in manually.");
+          } else {
+            toast.success("Welcome to NewAI!");
           }
         }
         
         onClose();
         window.location.href = "/dashboard";
+      } else {
+        toast.error("Payment was not completed. Please try again.");
       }
     } catch (err: any) {
       console.error("Payment error:", err);
