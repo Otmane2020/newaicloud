@@ -153,47 +153,92 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
           return;
         }
 
-        // Confirm payment with the payment method from Google/Apple Pay
-        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-          data.clientSecret,
-          { payment_method: ev.paymentMethod.id },
-          { handleActions: false }
-        );
+        // Confirm payment based on type returned from backend
+        if (data.type === 'setup_intent') {
+          // Use confirmSetup for SetupIntent
+          const { error: setupError, setupIntent } = await stripe.confirmSetup({
+            clientSecret: data.clientSecret,
+            payment_method: ev.paymentMethod.id,
+            redirect: 'if_required'
+          } as any);
 
-        if (confirmError) {
-          ev.complete('fail');
-          toast.error(confirmError.message || "Payment failed");
-          return;
-        }
-
-        if (paymentIntent?.status === 'requires_action') {
-          const { error: actionError } = await stripe.confirmCardPayment(data.clientSecret);
-          if (actionError) {
+          if (setupError) {
             ev.complete('fail');
-            toast.error(actionError.message || "Payment failed");
+            toast.error(setupError.message || "Payment setup failed");
             return;
           }
-        }
 
-        ev.complete('success');
-        toast.success("Payment successful! Creating your account...");
-
-        // Create account after successful payment
-        const { data: accountData } = await supabase.functions.invoke("create-mobile-checkout", {
-          body: { 
-            confirmPayment: true,
-            paymentIntentId: paymentIntent?.id || data.paymentIntentId,
-            subscriptionId: data.subscriptionId,
-            email: payerEmail,
-            password: password || (crypto.randomUUID().slice(0, 16) + "Aa1!"),
-            fullName: ev.payerName || fullName
+          if (setupIntent?.status !== 'succeeded') {
+            ev.complete('fail');
+            toast.error("Payment setup was not completed");
+            return;
           }
-        });
 
-        if (accountData?.success) {
-          toast.success("Account created!");
-          onClose();
-          window.location.href = "/mobile-success";
+          ev.complete('success');
+          toast.success("Payment method saved! Creating your account...");
+
+          // Create account after successful setup
+          const { data: accountData } = await supabase.functions.invoke("create-mobile-checkout", {
+            body: { 
+              confirmPayment: true,
+              paymentIntentId: data.setupIntentId,
+              subscriptionId: data.subscriptionId,
+              customerId: data.customerId,
+              email: payerEmail,
+              password: password || (crypto.randomUUID().slice(0, 16) + "Aa1!"),
+              fullName: ev.payerName || fullName
+            }
+          });
+
+          if (accountData?.success) {
+            toast.success("Account created!");
+            onClose();
+            window.location.href = "/mobile-success";
+          }
+        } else {
+          // Fallback: confirmCardPayment for PaymentIntent
+          const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+            data.clientSecret,
+            { payment_method: ev.paymentMethod.id },
+            { handleActions: false }
+          );
+
+          if (confirmError) {
+            ev.complete('fail');
+            toast.error(confirmError.message || "Payment failed");
+            return;
+          }
+
+          if (paymentIntent?.status === 'requires_action') {
+            const { error: actionError } = await stripe.confirmCardPayment(data.clientSecret);
+            if (actionError) {
+              ev.complete('fail');
+              toast.error(actionError.message || "Payment failed");
+              return;
+            }
+          }
+
+          ev.complete('success');
+          toast.success("Payment successful! Creating your account...");
+
+          // Create account after successful payment
+          const { data: accountData } = await supabase.functions.invoke("create-mobile-checkout", {
+            body: { 
+              confirmPayment: true,
+              paymentIntentId: paymentIntent?.id || data.paymentIntentId,
+              subscriptionId: data.subscriptionId,
+              customerId: data.customerId,
+              email: payerEmail,
+              password: password || (crypto.randomUUID().slice(0, 16) + "Aa1!"),
+              fullName: ev.payerName || fullName
+            }
+          });
+
+          if (accountData?.success) {
+            toast.success("Account created!");
+            onClose();
+            window.location.href = "/mobile-success";
+          }
         }
       } catch (err: any) {
         ev.complete('fail');
@@ -317,10 +362,11 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
       const cardElement = elements.getElement(CardElement);
       if (!cardElement) throw new Error("Card element not found");
 
-      // STEP 2: Confirm card payment with Stripe
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
-        data.clientSecret,
-        {
+      // STEP 2: Confirm payment based on type returned from backend
+      if (data.type === 'setup_intent') {
+        // Use confirmSetup for SetupIntent (default_incomplete creates this)
+        const { error: setupError, setupIntent } = await stripe.confirmSetup({
+          clientSecret: data.clientSecret,
           payment_method: {
             card: cardElement,
             billing_details: {
@@ -328,53 +374,115 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
               email: email,
               address: { country, line1: address, city, postal_code: postalCode }
             }
-          }
-        }
-      );
+          },
+          redirect: 'if_required'
+        } as any);
 
-      if (stripeError) {
-        toast.error(stripeError.message || "Payment failed");
-        return;
-      }
-      
-      if (paymentIntent?.status === "succeeded") {
-        toast.success("Payment successful! Creating your account...");
-        
-        // STEP 3: After payment succeeds, create the account
-        const { data: accountData, error: accountError } = await supabase.functions.invoke("create-mobile-checkout", {
-          body: { 
-            confirmPayment: true,
-            paymentIntentId: paymentIntent.id,
-            subscriptionId: data.subscriptionId,
-            email,
-            password,
-            fullName
-          }
-        });
-
-        if (accountError || accountData?.error) {
-          console.error("Account creation error:", accountError || accountData?.error);
-          toast.error("Payment succeeded but account creation failed. Please contact support.");
+        if (setupError) {
+          toast.error(setupError.message || "Payment setup failed");
           return;
         }
 
-        // STEP 4: Auto-login with the created account
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: email,
-          password: password
-        });
-        
-        if (signInError) {
-          console.error("Auto-login failed:", signInError);
-          toast.info("Account created! Please sign in manually.");
+        if (setupIntent?.status === "succeeded") {
+          toast.success("Payment method saved! Creating your account...");
+          
+          // After SetupIntent succeeds, subscription is automatically activated
+          // Now create the user account
+          const { data: accountData, error: accountError } = await supabase.functions.invoke("create-mobile-checkout", {
+            body: { 
+              confirmPayment: true,
+              paymentIntentId: data.setupIntentId, // Use setupIntentId for verification
+              subscriptionId: data.subscriptionId,
+              customerId: data.customerId,
+              email,
+              password,
+              fullName
+            }
+          });
+
+          if (accountError || accountData?.error) {
+            console.error("Account creation error:", accountError || accountData?.error);
+            toast.error("Payment succeeded but account creation failed. Please contact support.");
+            return;
+          }
+
+          // Auto-login
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (signInError) {
+            console.error("Auto-login failed:", signInError);
+            toast.info("Account created! Please sign in manually.");
+          } else {
+            toast.success("Account created!");
+          }
+          
+          onClose();
+          window.location.href = "/mobile-success";
         } else {
-          toast.success("Account created!");
+          toast.error("Payment setup was not completed. Please try again.");
+        }
+      } else {
+        // Fallback: use confirmCardPayment for PaymentIntent
+        const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
+          data.clientSecret,
+          {
+            payment_method: {
+              card: cardElement,
+              billing_details: {
+                name: fullName,
+                email: email,
+                address: { country, line1: address, city, postal_code: postalCode }
+              }
+            }
+          }
+        );
+
+        if (stripeError) {
+          toast.error(stripeError.message || "Payment failed");
+          return;
         }
         
-        onClose();
-        window.location.href = "/mobile-success";
-      } else {
-        toast.error("Payment was not completed. Please try again.");
+        if (paymentIntent?.status === "succeeded") {
+          toast.success("Payment successful! Creating your account...");
+          
+          const { data: accountData, error: accountError } = await supabase.functions.invoke("create-mobile-checkout", {
+            body: { 
+              confirmPayment: true,
+              paymentIntentId: paymentIntent.id,
+              subscriptionId: data.subscriptionId,
+              customerId: data.customerId,
+              email,
+              password,
+              fullName
+            }
+          });
+
+          if (accountError || accountData?.error) {
+            console.error("Account creation error:", accountError || accountData?.error);
+            toast.error("Payment succeeded but account creation failed. Please contact support.");
+            return;
+          }
+
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (signInError) {
+            console.error("Auto-login failed:", signInError);
+            toast.info("Account created! Please sign in manually.");
+          } else {
+            toast.success("Account created!");
+          }
+          
+          onClose();
+          window.location.href = "/mobile-success";
+        } else {
+          toast.error("Payment was not completed. Please try again.");
+        }
       }
     } catch (err: any) {
       console.error("Payment error:", err);

@@ -56,7 +56,7 @@ serve(async (req) => {
     if (confirmPayment && email) {
       console.log("[create-mobile-checkout] Confirming payment and creating account for:", email);
       
-      // Verify payment succeeded - no free coupons allowed
+      // Verify payment/setup succeeded - no free coupons allowed
       if (!paymentIntentId || paymentIntentId === "coupon_free") {
         return new Response(
           JSON.stringify({ error: "Valid payment is required" }),
@@ -64,11 +64,27 @@ serve(async (req) => {
         );
       }
       
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      // Try to verify as SetupIntent first, then PaymentIntent
+      let verified = false;
+      try {
+        // Check if it's a SetupIntent (starts with seti_)
+        if (paymentIntentId.startsWith('seti_')) {
+          const setupIntent = await stripe.setupIntents.retrieve(paymentIntentId);
+          verified = setupIntent.status === "succeeded";
+          console.log("[create-mobile-checkout] SetupIntent status:", setupIntent.status);
+        } else {
+          // It's a PaymentIntent (starts with pi_)
+          const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+          verified = paymentIntent.status === "succeeded";
+          console.log("[create-mobile-checkout] PaymentIntent status:", paymentIntent.status);
+        }
+      } catch (e) {
+        console.error("[create-mobile-checkout] Error verifying intent:", e);
+      }
       
-      if (paymentIntent.status !== "succeeded") {
+      if (!verified) {
         return new Response(
-          JSON.stringify({ error: "Payment not confirmed yet", status: paymentIntent.status }),
+          JSON.stringify({ error: "Payment not confirmed yet" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -261,13 +277,20 @@ serve(async (req) => {
         }
       }
 
-      // Create subscription with payment intent (NO USER CREATED YET)
+      // Create subscription with pending_setup_intent (NO USER CREATED YET)
+      // Using pending_setup_intent because with default_incomplete + no payment method,
+      // Stripe doesn't create a payment_intent but ALWAYS creates a pending_setup_intent
       const subscriptionParams: Stripe.SubscriptionCreateParams = {
         customer: customerId,
         items: [{ price: priceId }],
         payment_behavior: 'default_incomplete',
-        payment_settings: { save_default_payment_method: 'on_subscription' },
-        expand: ['latest_invoice.payment_intent'],
+        payment_settings: { 
+          save_default_payment_method: 'on_subscription',
+          payment_method_options: {
+            card: { request_three_d_secure: 'automatic' }
+          }
+        },
+        expand: ['pending_setup_intent', 'latest_invoice'],
         metadata: {
           user_email: email,
           user_fullname: fullName || "",
@@ -277,7 +300,6 @@ serve(async (req) => {
 
       // Apply coupon if found - but BLOCK 100% coupons
       if (couponId) {
-        // Verify coupon doesn't give 100% discount
         const couponDetails = await stripe.coupons.retrieve(couponId);
         if (couponDetails.percent_off === 100 || (couponDetails.amount_off && couponDetails.amount_off >= 10000)) {
           console.log("[create-mobile-checkout] BLOCKED: 100% coupon attempted:", couponId);
@@ -290,18 +312,19 @@ serve(async (req) => {
       }
 
       const subscription = await stripe.subscriptions.create(subscriptionParams);
+      console.log("[create-mobile-checkout] Subscription created:", subscription.id);
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
-      let paymentIntent = invoice.payment_intent as Stripe.PaymentIntent | string | null;
+      const pendingSetupIntent = subscription.pending_setup_intent as Stripe.SetupIntent;
 
       // Check actual amount due - payment required if amount > 0
-      const amountDue = invoice.amount_due || 0;
+      const amountDue = invoice?.amount_due || 0;
       console.log("[create-mobile-checkout] Invoice details:", {
-        id: invoice.id,
-        status: invoice.status,
+        id: invoice?.id,
+        status: invoice?.status,
         amountDue,
-        paymentIntentType: typeof paymentIntent,
-        paymentIntentValue: paymentIntent
+        hasPendingSetupIntent: !!pendingSetupIntent,
+        pendingSetupIntentId: pendingSetupIntent?.id
       });
 
       // Block only if truly free (amount_due is 0)
@@ -314,76 +337,49 @@ serve(async (req) => {
         );
       }
 
-      // Handle paymentIntent - it might be a string ID or an object
-      let clientSecret: string | null = null;
-      let paymentIntentId: string | null = null;
-
-      if (paymentIntent) {
-        if (typeof paymentIntent === 'string') {
-          // It's just an ID, retrieve the full object
-          console.log("[create-mobile-checkout] PaymentIntent is string ID, retrieving:", paymentIntent);
-          const fullPaymentIntent = await stripe.paymentIntents.retrieve(paymentIntent);
-          clientSecret = fullPaymentIntent.client_secret;
-          paymentIntentId = fullPaymentIntent.id;
-        } else {
-          // It's already an expanded object
-          clientSecret = paymentIntent.client_secret;
-          paymentIntentId = paymentIntent.id;
-        }
+      // Use pending_setup_intent (always created with default_incomplete)
+      if (pendingSetupIntent?.client_secret) {
+        console.log("[create-mobile-checkout] Success - returning SetupIntent clientSecret:", pendingSetupIntent.id);
+        return new Response(
+          JSON.stringify({ 
+            clientSecret: pendingSetupIntent.client_secret,
+            subscriptionId: subscription.id,
+            setupIntentId: pendingSetupIntent.id,
+            customerId: customerId,
+            type: 'setup_intent', // Tell frontend to use confirmSetup
+            userEmail: email
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
-      // If still no clientSecret, re-fetch invoice
-      if (!clientSecret) {
-        console.log("[create-mobile-checkout] No clientSecret yet, re-fetching invoice");
-        const refreshedInvoice = await stripe.invoices.retrieve(invoice.id, {
-          expand: ['payment_intent']
-        });
-        
-        const refreshedPI = refreshedInvoice.payment_intent;
-        console.log("[create-mobile-checkout] Refreshed invoice payment_intent:", {
-          type: typeof refreshedPI,
-          value: refreshedPI
-        });
-        
-        if (refreshedPI) {
-          if (typeof refreshedPI === 'string') {
-            const fullPI = await stripe.paymentIntents.retrieve(refreshedPI);
-            clientSecret = fullPI.client_secret;
-            paymentIntentId = fullPI.id;
-          } else {
-            clientSecret = (refreshedPI as Stripe.PaymentIntent).client_secret;
-            paymentIntentId = (refreshedPI as Stripe.PaymentIntent).id;
-          }
-        }
+      // Fallback: if no pending_setup_intent, retrieve subscription again with expand
+      console.log("[create-mobile-checkout] No pending_setup_intent found, re-fetching subscription");
+      const refreshedSub = await stripe.subscriptions.retrieve(subscription.id, {
+        expand: ['pending_setup_intent']
+      });
+      
+      const refreshedSetupIntent = refreshedSub.pending_setup_intent as Stripe.SetupIntent;
+      if (refreshedSetupIntent?.client_secret) {
+        console.log("[create-mobile-checkout] Success after refresh - returning SetupIntent:", refreshedSetupIntent.id);
+        return new Response(
+          JSON.stringify({ 
+            clientSecret: refreshedSetupIntent.client_secret,
+            subscriptionId: subscription.id,
+            setupIntentId: refreshedSetupIntent.id,
+            customerId: customerId,
+            type: 'setup_intent',
+            userEmail: email
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
-      // If STILL no clientSecret, create PaymentIntent manually for this invoice
-      if (!clientSecret) {
-        console.log("[create-mobile-checkout] Creating PaymentIntent manually for invoice");
-        const newPI = await stripe.paymentIntents.create({
-          amount: amountDue,
-          currency: invoice.currency || 'usd',
-          customer: customerId,
-          metadata: {
-            invoice_id: invoice.id,
-            subscription_id: subscription.id,
-            email: email
-          }
-        });
-        clientSecret = newPI.client_secret;
-        paymentIntentId = newPI.id;
-      }
-
-      console.log("[create-mobile-checkout] Success - returning clientSecret for PI:", paymentIntentId);
-
+      // If still nothing, return error
+      console.error("[create-mobile-checkout] No SetupIntent found for subscription");
       return new Response(
-        JSON.stringify({ 
-          clientSecret,
-          subscriptionId: subscription.id,
-          paymentIntentId,
-          userEmail: email
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Could not initialize payment. Please try again." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
