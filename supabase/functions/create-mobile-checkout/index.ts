@@ -1,3 +1,4 @@
+```ts
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
@@ -5,11 +6,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
@@ -36,19 +38,27 @@ serve(async (req) => {
     );
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
+      // use a valid API version; you can update to your preferred pinned date
+      apiVersion: "2024-06-20",
     });
 
-    // Check if email already exists in Supabase using direct SQL query (reliable for all users)
-    if (checkEmailOnly && email) {
-      console.log("[create-mobile-checkout] Checking if email exists:", email);
+    const normalizedEmail = email?.toLowerCase().trim();
+
+    // 🔹 STEP 0: Check if email exists (fast path for frontend validation)
+    if (checkEmailOnly && normalizedEmail) {
+      console.log("[create-mobile-checkout] Checking if email exists:", normalizedEmail);
       
-      const { data: emailExists, error: checkError } = await supabase.rpc('check_user_email_exists', {
-        p_email: email.toLowerCase().trim()
-      });
+      const { data: emailExists, error: checkError } = await supabase.rpc(
+        "check_user_email_exists",
+        { p_email: normalizedEmail }
+      );
       
       if (checkError) {
         console.error("[create-mobile-checkout] Error checking email:", checkError);
+        return new Response(
+          JSON.stringify({ error: "Failed to check email" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
       
       console.log("[create-mobile-checkout] Email exists result:", emailExists);
@@ -59,9 +69,9 @@ serve(async (req) => {
       );
     }
 
-    // STEP 2: After payment succeeds on frontend, create the account
-    if (confirmPayment && email) {
-      console.log("[create-mobile-checkout] Confirming payment and creating account for:", email);
+    // 🔹 STEP 2: After payment succeeds on frontend, create the account
+    if (confirmPayment && normalizedEmail) {
+      console.log("[create-mobile-checkout] Confirming payment and creating account for:", normalizedEmail);
       
       // Verify payment/setup succeeded - no free coupons allowed
       if (!paymentIntentId || paymentIntentId === "coupon_free") {
@@ -74,13 +84,13 @@ serve(async (req) => {
       // Try to verify as SetupIntent first, then PaymentIntent
       let verified = false;
       try {
-        // Check if it's a SetupIntent (starts with seti_)
-        if (paymentIntentId.startsWith('seti_')) {
+        if (paymentIntentId.startsWith("seti_")) {
+          // SetupIntent
           const setupIntent = await stripe.setupIntents.retrieve(paymentIntentId);
           verified = setupIntent.status === "succeeded";
           console.log("[create-mobile-checkout] SetupIntent status:", setupIntent.status);
         } else {
-          // It's a PaymentIntent (starts with pi_)
+          // PaymentIntent
           const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
           verified = paymentIntent.status === "succeeded";
           console.log("[create-mobile-checkout] PaymentIntent status:", paymentIntent.status);
@@ -97,13 +107,22 @@ serve(async (req) => {
       }
       console.log("[create-mobile-checkout] Payment verified as succeeded");
 
-      // Check if user already exists using RPC (reliable for all users)
-      const { data: emailExists } = await supabase.rpc('check_user_email_exists', {
-        p_email: email.toLowerCase().trim()
-      });
+      // Check if user already exists using RPC
+      const { data: emailExists, error: emailExistsError } = await supabase.rpc(
+        "check_user_email_exists",
+        { p_email: normalizedEmail }
+      );
+
+      if (emailExistsError) {
+        console.error("[create-mobile-checkout] Error checking email before create:", emailExistsError);
+        return new Response(
+          JSON.stringify({ error: "Failed to verify email" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       if (emailExists === true) {
-        console.log("[create-mobile-checkout] User already exists with email:", email);
+        console.log("[create-mobile-checkout] User already exists with email:", normalizedEmail);
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -114,27 +133,39 @@ serve(async (req) => {
       }
 
       // Use the password provided by user, or generate one as fallback
-      const userPassword = password || (crypto.randomUUID().slice(0, 16) + "Aa1!");
+      const userPassword =
+        password || (crypto.randomUUID().slice(0, 16) + "Aa1!");
       
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email: email,
-        password: userPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: fullName || "",
-          source: "mobile_ads_checkout"
-        }
-      });
+      const { data: newUser, error: createError } =
+        await supabase.auth.admin.createUser({
+          email: normalizedEmail,
+          password: userPassword,
+          email_confirm: true,
+          user_metadata: {
+            full_name: fullName || "",
+            source: "mobile_ads_checkout",
+          },
+        });
 
       if (createError) {
         console.error("[create-mobile-checkout] Error creating user:", createError);
         
         // Handle race condition: user might have been created by another concurrent request
-        if (createError.message?.includes("already been registered") || createError.message?.includes("already exists")) {
+        if (
+          createError.message?.includes("already been registered") ||
+          createError.message?.includes("already exists")
+        ) {
           console.log("[create-mobile-checkout] User already exists (race condition), fetching existing user");
-          const { data: usersAfterError } = await supabase.auth.admin.listUsers();
+          const { data: usersAfterError, error: listError } =
+            await supabase.auth.admin.listUsers();
+          
+          if (listError) {
+            console.error("[create-mobile-checkout] Error listing users after race:", listError);
+          }
+
           const existingUserAfterError = usersAfterError?.users?.find(
-            (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
+            (u: { email?: string }) =>
+              u.email?.toLowerCase() === normalizedEmail
           );
           
           if (existingUserAfterError) {
@@ -161,12 +192,12 @@ serve(async (req) => {
       if (newUser?.user) {
         await supabase.from("profiles").upsert({
           id: newUser.user.id,
-          email: email,
+          email: normalizedEmail,
           full_name: fullName || "",
           subscription_status: "active",
           stripe_customer_id: receivedCustomerId || null,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         });
 
         // Update subscription if we have the ID
@@ -174,8 +205,8 @@ serve(async (req) => {
           await stripe.subscriptions.update(subscriptionId, {
             metadata: {
               user_id: newUser.user.id,
-              user_email: email
-            }
+              user_email: normalizedEmail,
+            },
           });
         }
       }
@@ -184,13 +215,13 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true,
           userId: newUser.user?.id,
-          email: email
+          email: normalizedEmail,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // STEP 1: Create payment intent (NO account creation yet)
+    // 🔹 STEP 1: Create payment intent / setup intent (NO account creation yet)
     if (!priceId) {
       return new Response(
         JSON.stringify({ error: "Price ID is required" }),
@@ -198,79 +229,90 @@ serve(async (req) => {
       );
     }
 
-    if (!email) {
+    if (!normalizedEmail) {
       return new Response(
         JSON.stringify({ error: "Email is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if email already exists
-    console.log("[create-mobile-checkout] Checking if email exists:", email);
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    console.log("[create-mobile-checkout] Total users found:", existingUsers?.users?.length);
-    const existingUser = existingUsers?.users?.find(
-      (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
-    );
-    
-    if (existingUser) {
-      console.log("[create-mobile-checkout] Email already exists:", email, "User ID:", existingUser.id);
+    // Check if email already exists using RPC (consistent with checkEmailOnly)
+    console.log("[create-mobile-checkout] Checking if email exists:", normalizedEmail);
+    const { data: emailExistsStep1, error: emailExistsStep1Error } =
+      await supabase.rpc("check_user_email_exists", {
+        p_email: normalizedEmail,
+      });
+
+    if (emailExistsStep1Error) {
+      console.error("[create-mobile-checkout] Error checking email before subscription:", emailExistsStep1Error);
       return new Response(
-        JSON.stringify({ error: "An account with this email already exists. Please sign in instead." }),
+        JSON.stringify({ error: "Failed to verify email" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (emailExistsStep1 === true) {
+      console.log("[create-mobile-checkout] Email already exists:", normalizedEmail);
+      return new Response(
+        JSON.stringify({
+          error: "An account with this email already exists. Please sign in instead.",
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    console.log("[create-mobile-checkout] Email is available:", email);
+
+    console.log("[create-mobile-checkout] Email is available:", normalizedEmail);
 
     const origin = req.headers.get("origin") || "https://newai.sale";
 
     // Create or get Stripe customer
     let customerId: string;
-    const customers = await stripe.customers.list({ email, limit: 1 });
+    const customers = await stripe.customers.list({ email: normalizedEmail, limit: 1 });
     
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       if (billingAddress || fullName) {
         await stripe.customers.update(customerId, {
           name: fullName,
-          address: billingAddress
+          address: billingAddress,
         });
       }
     } else {
       const newCustomer = await stripe.customers.create({
-        email,
+        email: normalizedEmail,
         name: fullName,
         address: billingAddress,
         metadata: {
           pending_signup: "true",
-          source: "mobile_ads"
-        }
+          source: "mobile_ads",
+        },
       });
       customerId = newCustomer.id;
     }
 
-    // Mode: payment_intent - Create subscription with payment intent for Elements
+    // Mode: payment_intent - Create subscription with pending setup intent for Elements
     if (mode === "payment_intent") {
-      console.log("[create-mobile-checkout] Creating subscription for:", email);
+      console.log("[create-mobile-checkout] Creating subscription for:", normalizedEmail);
       
       // Check if coupon should be applied
       let couponId: string | undefined;
       if (couponCode) {
         try {
+          const upperCode = couponCode.toUpperCase();
+
           // Try to retrieve by ID first
           try {
-            const coupon = await stripe.coupons.retrieve(couponCode.toUpperCase());
+            const coupon = await stripe.coupons.retrieve(upperCode);
             if (coupon && coupon.valid) {
               couponId = coupon.id;
             }
-          } catch (e) {
+          } catch {
             // Not found by ID, search list
             const coupons = await stripe.coupons.list({ limit: 100 });
-            const foundCoupon = coupons.data.find((c: Stripe.Coupon) => 
-              c.valid && (
-                c.name?.toUpperCase() === couponCode.toUpperCase() || 
-                c.id.toUpperCase() === couponCode.toUpperCase()
-              )
+            const foundCoupon = coupons.data.find((c) => 
+              c.valid &&
+              ((c.name && c.name.toUpperCase() === upperCode) ||
+                c.id.toUpperCase() === upperCode)
             );
             if (foundCoupon) {
               couponId = foundCoupon.id;
@@ -282,34 +324,36 @@ serve(async (req) => {
         }
       }
 
-      // Create subscription with pending_setup_intent (NO USER CREATED YET)
-      // Using pending_setup_intent because with default_incomplete + no payment method,
-      // Stripe doesn't create a payment_intent but ALWAYS creates a pending_setup_intent
       const subscriptionParams: Stripe.SubscriptionCreateParams = {
         customer: customerId,
         items: [{ price: priceId }],
-        payment_behavior: 'default_incomplete',
+        payment_behavior: "default_incomplete",
         payment_settings: { 
-          save_default_payment_method: 'on_subscription',
+          save_default_payment_method: "on_subscription",
           payment_method_options: {
-            card: { request_three_d_secure: 'automatic' }
-          }
+            card: { request_three_d_secure: "automatic" },
+          },
         },
-        expand: ['pending_setup_intent', 'latest_invoice.payment_intent'],
+        expand: ["pending_setup_intent", "latest_invoice.payment_intent"],
         metadata: {
-          user_email: email,
+          user_email: normalizedEmail,
           user_fullname: fullName || "",
-          pending_account: "true"
-        }
+          pending_account: "true",
+        },
       };
 
       // Apply coupon if found - but BLOCK 100% coupons
       if (couponId) {
         const couponDetails = await stripe.coupons.retrieve(couponId);
-        if (couponDetails.percent_off === 100 || (couponDetails.amount_off && couponDetails.amount_off >= 10000)) {
+        if (
+          couponDetails.percent_off === 100 ||
+          (couponDetails.amount_off && couponDetails.amount_off >= 10000)
+        ) {
           console.log("[create-mobile-checkout] BLOCKED: 100% coupon attempted:", couponId);
           return new Response(
-            JSON.stringify({ error: "This coupon code is not valid. Maximum discount is 90%." }),
+            JSON.stringify({
+              error: "This coupon code is not valid. Maximum discount is 90%.",
+            }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -330,8 +374,6 @@ serve(async (req) => {
         amountDue,
         hasPendingSetupIntent: !!pendingSetupIntent,
         pendingSetupIntentId: pendingSetupIntent?.id,
-        hasPaymentIntent: !!invoice?.payment_intent,
-        paymentIntentId: typeof invoice?.payment_intent === 'string' ? invoice.payment_intent : (invoice?.payment_intent as any)?.id
       });
 
       // Block only if truly free (amount_due is 0)
@@ -339,125 +381,151 @@ serve(async (req) => {
         console.log("[create-mobile-checkout] BLOCKED: Zero amount - cancelling subscription");
         await stripe.subscriptions.cancel(subscription.id);
         return new Response(
-          JSON.stringify({ error: "Payment is required. 100% discount coupons are not allowed." }),
+          JSON.stringify({
+            error: "Payment is required. 100% discount coupons are not allowed.",
+          }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Use pending_setup_intent if available
+      // Prefer pending_setup_intent if available
       if (pendingSetupIntent?.client_secret) {
-        console.log("[create-mobile-checkout] Success - returning SetupIntent clientSecret:", pendingSetupIntent.id);
+        console.log(
+          "[create-mobile-checkout] Success - returning SetupIntent clientSecret:",
+          pendingSetupIntent.id
+        );
         return new Response(
           JSON.stringify({ 
             clientSecret: pendingSetupIntent.client_secret,
             subscriptionId: subscription.id,
             setupIntentId: pendingSetupIntent.id,
-            customerId: customerId,
-            type: 'setup_intent',
-            userEmail: email
+            customerId,
+            type: "setup_intent", // Tell frontend to use confirmSetup
+            userEmail: normalizedEmail,
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Check if invoice has a payment_intent from expand
-      let paymentIntent = invoice?.payment_intent;
-      
-      // If not expanded, retrieve the invoice directly to get payment_intent
-      if (!paymentIntent && invoice?.id) {
-        console.log("[create-mobile-checkout] Retrieving invoice directly to get payment_intent");
-        const fullInvoice = await stripe.invoices.retrieve(invoice.id, {
-          expand: ['payment_intent']
-        });
-        paymentIntent = fullInvoice.payment_intent;
-        console.log("[create-mobile-checkout] Retrieved invoice payment_intent:", typeof paymentIntent === 'string' ? paymentIntent : (paymentIntent as any)?.id);
-      }
-      
+      // Fallback: Check if invoice has a payment_intent (happens when amount is due)
+      const paymentIntent = invoice?.payment_intent;
       if (paymentIntent) {
-        const fullPaymentIntent = typeof paymentIntent === 'string' 
-          ? await stripe.paymentIntents.retrieve(paymentIntent)
-          : paymentIntent as Stripe.PaymentIntent;
+        const fullPaymentIntent =
+          typeof paymentIntent === "string"
+            ? await stripe.paymentIntents.retrieve(paymentIntent)
+            : (paymentIntent as Stripe.PaymentIntent);
         
         if (fullPaymentIntent?.client_secret) {
-          console.log("[create-mobile-checkout] Success - returning PaymentIntent clientSecret:", fullPaymentIntent.id);
+          console.log(
+            "[create-mobile-checkout] Success - returning PaymentIntent clientSecret:",
+            fullPaymentIntent.id
+          );
           return new Response(
             JSON.stringify({ 
               clientSecret: fullPaymentIntent.client_secret,
               subscriptionId: subscription.id,
               paymentIntentId: fullPaymentIntent.id,
-              customerId: customerId,
-              type: 'payment_intent',
-              userEmail: email
+              customerId,
+              type: "payment_intent", // Tell frontend to use confirmCardPayment
+              userEmail: normalizedEmail,
             }),
             { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       }
 
-      // If still no intent, create a SetupIntent manually to collect payment method
-      console.log("[create-mobile-checkout] Creating SetupIntent manually for subscription");
-      const manualSetupIntent = await stripe.setupIntents.create({
-        customer: customerId,
-        payment_method_types: ['card'],
-        usage: 'off_session',
-        metadata: {
-          subscription_id: subscription.id,
-          invoice_id: invoice?.id || '',
-          user_email: email
-        }
+      // Last fallback: re-fetch subscription and check both again
+      console.log("[create-mobile-checkout] No intent found, re-fetching subscription");
+      const refreshedSub = await stripe.subscriptions.retrieve(subscription.id, {
+        expand: ["pending_setup_intent", "latest_invoice.payment_intent"],
       });
-
-      if (manualSetupIntent?.client_secret) {
-        console.log("[create-mobile-checkout] Success - returning manual SetupIntent:", manualSetupIntent.id);
+      
+      const refreshedSetupIntent = refreshedSub.pending_setup_intent as Stripe.SetupIntent;
+      if (refreshedSetupIntent?.client_secret) {
+        console.log(
+          "[create-mobile-checkout] Success after refresh - returning SetupIntent:",
+          refreshedSetupIntent.id
+        );
         return new Response(
           JSON.stringify({ 
-            clientSecret: manualSetupIntent.client_secret,
-            subscriptionId: subscription.id,
-            setupIntentId: manualSetupIntent.id,
-            customerId: customerId,
-            type: 'setup_intent',
-            userEmail: email,
-            requiresInvoicePayment: true // Flag that invoice needs to be paid after setup
+            clientSecret: refreshedSetupIntent.client_secret,
+            subscriptionId: refreshedSub.id,
+            setupIntentId: refreshedSetupIntent.id,
+            customerId,
+            type: "setup_intent",
+            userEmail: normalizedEmail,
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
+      // Check refreshed invoice payment_intent
+      const refreshedInvoice = refreshedSub.latest_invoice as Stripe.Invoice;
+      const refreshedPaymentIntent = refreshedInvoice?.payment_intent;
+      if (refreshedPaymentIntent) {
+        const fullPi =
+          typeof refreshedPaymentIntent === "string"
+            ? await stripe.paymentIntents.retrieve(refreshedPaymentIntent)
+            : (refreshedPaymentIntent as Stripe.PaymentIntent);
+        
+        if (fullPi?.client_secret) {
+          console.log(
+            "[create-mobile-checkout] Success after refresh - returning PaymentIntent:",
+            fullPi.id
+          );
+          return new Response(
+            JSON.stringify({ 
+              clientSecret: fullPi.client_secret,
+              subscriptionId: refreshedSub.id,
+              paymentIntentId: fullPi.id,
+              customerId,
+              type: "payment_intent",
+              userEmail: normalizedEmail,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
       // If still nothing, return error
-      console.error("[create-mobile-checkout] Failed to create any intent for subscription");
+      console.error("[create-mobile-checkout] No SetupIntent or PaymentIntent found for subscription");
       return new Response(
         JSON.stringify({ error: "Could not initialize payment. Please try again." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Default: Redirect to Stripe Checkout
+    // 🔹 Default: Redirect to Stripe Checkout (classic Checkout Session)
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       payment_method_types: ["card"],
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(email)}&new_account=true`,
+      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(
+        normalizedEmail
+      )}&new_account=true`,
       cancel_url: `${origin}/mobileads`,
       metadata: {
-        user_email: email,
+        user_email: normalizedEmail,
         user_fullname: fullName || "",
-        create_account: "true"
-      }
+        create_account: "true",
+      },
     };
 
-    // Apply coupon if provided
+    // Apply coupon if provided (non-blocking)
     if (couponCode) {
       try {
         const coupons = await stripe.coupons.list({ limit: 100 });
-        const coupon = coupons.data.find((c: { name?: string; id: string }) => 
-          c.name?.toUpperCase() === couponCode.toUpperCase() || c.id.toUpperCase() === couponCode.toUpperCase()
+        const upperCode = couponCode.toUpperCase();
+        const coupon = coupons.data.find((c) => 
+          (c.name && c.name.toUpperCase() === upperCode) ||
+          c.id.toUpperCase() === upperCode
         );
         if (coupon) {
           sessionParams.discounts = [{ coupon: coupon.id }];
         }
       } catch (e) {
-        console.log("Coupon lookup error:", e);
+        console.log("[create-mobile-checkout] Coupon lookup error (checkout session):", e);
       }
     }
 
@@ -468,7 +536,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         url: session.url,
-        sessionId: session.id 
+        sessionId: session.id,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -480,3 +548,4 @@ serve(async (req) => {
     );
   }
 });
+```
