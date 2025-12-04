@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { AIAssistant } from "@/components/AIAssistant";
 import { LandingPageVisionShowcase } from "@/components/landing/LandingPageVisionShowcase";
 import { GoogleTrafficGrowth } from "@/components/landing/GoogleTrafficGrowth";
+import { GoogleShoppingSection } from "@/components/landing/GoogleShoppingSection";
 import {
   Zap,
   ShoppingBag,
@@ -279,6 +280,9 @@ const Index = () => {
 
       {/* Google Traffic Growth */}
       <GoogleTrafficGrowth />
+
+      {/* Google Shopping Ready */}
+      <GoogleShoppingSection />
 
       {/* How It Works - Clean Steps */}
       <section className="py-16 sm:py-20">
