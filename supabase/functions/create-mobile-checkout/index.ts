@@ -39,15 +39,22 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Check if email already exists in Supabase
+    // Check if email already exists in Supabase using direct SQL query (reliable for all users)
     if (checkEmailOnly && email) {
-      const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const emailExists = existingUsers?.users?.some(
-        (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
-      );
+      console.log("[create-mobile-checkout] Checking if email exists:", email);
+      
+      const { data: emailExists, error: checkError } = await supabase.rpc('check_user_email_exists', {
+        p_email: email.toLowerCase().trim()
+      });
+      
+      if (checkError) {
+        console.error("[create-mobile-checkout] Error checking email:", checkError);
+      }
+      
+      console.log("[create-mobile-checkout] Email exists result:", emailExists);
       
       return new Response(
-        JSON.stringify({ exists: emailExists }),
+        JSON.stringify({ exists: emailExists === true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -90,18 +97,16 @@ serve(async (req) => {
       }
       console.log("[create-mobile-checkout] Payment verified as succeeded");
 
-      // Check if user already exists
-      const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const existingUser = existingUsers?.users?.find(
-        (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
-      );
+      // Check if user already exists using RPC (reliable for all users)
+      const { data: emailExists } = await supabase.rpc('check_user_email_exists', {
+        p_email: email.toLowerCase().trim()
+      });
 
-      if (existingUser) {
-        console.log("[create-mobile-checkout] User already exists:", existingUser.id);
+      if (emailExists === true) {
+        console.log("[create-mobile-checkout] User already exists with email:", email);
         return new Response(
           JSON.stringify({ 
             success: true, 
-            userId: existingUser.id,
             message: "User already exists"
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

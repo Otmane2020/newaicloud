@@ -6195,6 +6195,7 @@ export type Database = {
         Args: { p_email: string; p_ip: unknown }
         Returns: Json
       }
+      check_user_email_exists: { Args: { p_email: string }; Returns: boolean }
       cleanup_expired_gsc_cache: { Args: never; Returns: undefined }
       cleanup_expired_oauth_pages: { Args: never; Returns: undefined }
       cleanup_expired_shopify_tokens: {
