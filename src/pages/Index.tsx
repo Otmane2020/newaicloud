@@ -82,6 +82,12 @@ const INTEGRATIONS = [
   { name: "Instagram", logo: <InstagramLogo /> },
 ];
 
+const TESTIMONIALS = [
+  { name: "Sarah M.", role: "Shopify Merchant", text: "NewAI doubled my organic traffic in just 2 months. The AI SEO is incredible!", rating: 5 },
+  { name: "Marc D.", role: "E-commerce Owner", text: "The smart backgrounds saved me $500/month in photo editing costs. Game changer!", rating: 5 },
+  { name: "Julie P.", role: "Store Manager", text: "Setup took 5 minutes and I saw ROI within 2 weeks. Highly recommend!", rating: 5 },
+];
+
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -303,6 +309,41 @@ const Index = () => {
           <div className="max-w-2xl mx-auto">
             <CalBookingEmbed minimal />
           </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-16 px-4 bg-muted/20">
+        <div className="text-center mb-10">
+          <Badge className="bg-green-100 text-green-700 border-green-200 mb-3">Testimonials</Badge>
+          <h2 className="text-3xl font-bold mb-2">
+            {language === 'fr' ? "Aimé par 10 000+ Marchands" : "Loved by 10,000+ Merchants"}
+          </h2>
+          <p className="text-muted-foreground">
+            {language === 'fr' ? "Découvrez ce que disent nos clients" : "See what our customers say"}
+          </p>
+        </div>
+        
+        <div className="grid sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          {TESTIMONIALS.map((t, i) => (
+            <div key={i} className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+              <div className="flex gap-0.5 mb-3">
+                {[...Array(t.rating)].map((_, j) => (
+                  <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <p className="text-sm mb-4 text-muted-foreground">"{t.text}"</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-sm font-bold text-primary-foreground">
+                  {t.name[0]}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">{t.role}</p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
