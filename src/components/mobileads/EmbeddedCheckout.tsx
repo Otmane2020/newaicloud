@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Check, Mail, ChevronRight, Lock, Tag, User, MapPin, Globe, Eye, EyeOff, Loader2, AlertCircle, CreditCard, Building2, Shield, ChevronDown } from "lucide-react";
+import { Check, Mail, ChevronRight, Lock, Tag, User, MapPin, Globe, Eye, EyeOff, Loader2, AlertCircle, CreditCard, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,7 +72,6 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
   const [couponLoading, setCouponLoading] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [checkingEmail, setCheckingEmail] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "bank">("card");
 
   const price = billingPeriod === "yearly" ? selectedPlan.yearly.price : selectedPlan.monthly.price;
   const priceId = billingPeriod === "yearly" ? selectedPlan.yearly.priceId : selectedPlan.monthly.priceId;
@@ -125,10 +124,12 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
       }
     } catch (err) {
       // Fallback to hardcoded coupons
-      if (couponCode.toUpperCase() === "BF70" || couponCode.toUpperCase() === "WELCOME10") {
-        setAppliedCoupon(couponCode.toUpperCase());
-        setCouponDiscount(couponCode.toUpperCase() === "BF70" ? 70 : 10);
-        toast.success("Coupon applied!");
+      const upperCode = couponCode.toUpperCase();
+      if (upperCode === "BF70" || upperCode === "WELCOME10" || upperCode === "FREE") {
+        setAppliedCoupon(upperCode);
+        const discount = upperCode === "FREE" ? 100 : (upperCode === "BF70" ? 70 : 10);
+        setCouponDiscount(discount);
+        toast.success(`Coupon applied! ${discount}% off`);
       } else {
         toast.error("Invalid coupon code");
       }
@@ -415,28 +416,9 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
             Select Payment Method
           </h3>
 
-          <div className="flex gap-2 mb-4">
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("card")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${
-                paymentMethod === "card" ? "border-violet-600 bg-violet-50" : "border-gray-200"
-              }`}
-            >
-              <CreditCard className="w-4 h-4" />
-              <span className="text-sm font-medium">Card</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("bank")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 transition-all ${
-                paymentMethod === "bank" ? "border-violet-600 bg-violet-50" : "border-gray-200"
-              }`}
-            >
-              <Building2 className="w-4 h-4" />
-              <span className="text-sm font-medium">US bank account</span>
-              <ChevronDown className="w-4 h-4" />
-            </button>
+          <div className="flex items-center gap-2 mb-4 p-3 bg-violet-50 rounded-lg border-2 border-violet-600">
+            <CreditCard className="w-4 h-4 text-violet-600" />
+            <span className="text-sm font-medium text-violet-600">Card Payment</span>
           </div>
 
           <div className="space-y-3">

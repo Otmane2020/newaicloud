@@ -678,19 +678,8 @@ export default function MobileAds() {
             <DialogTitle>Checkout</DialogTitle>
             <DialogDescription>Complete your NewAI subscription</DialogDescription>
           </VisuallyHidden>
-          <div className="sticky top-0 bg-white z-10 px-5 pt-5 pb-3 border-b">
-            <div className="flex justify-between items-center">
-              <div>
-                <span className="text-lg font-bold text-violet-600">NewAI</span>
-                <span className="text-gray-400 ml-2">Checkout</span>
-              </div>
-              <button onClick={() => setShowCheckout(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
           
-          <EmbeddedCheckout 
+          <EmbeddedCheckout
             selectedPlan={PLANS[selectedPlan]}
             billingPeriod={billingPeriod}
             onClose={() => {
