@@ -4,7 +4,7 @@ import { FileCode, Tag, Barcode, CheckCircle2, ShoppingCart, Globe } from "lucid
 
 // Google Shopping Bag Logo - Style like official Google Shopping bags
 const GoogleShoppingLogo = () => (
-  <svg viewBox="0 0 48 48" className="w-10 h-10">
+  <svg viewBox="0 0 48 48" className="w-14 h-14 lg:w-16 lg:h-16">
     {/* Shopping bag body - light lavender/white color */}
     <path 
       d="M8 16L12 44h24l4-28H8z" 
