@@ -2,42 +2,41 @@ import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/language";
 import { FileCode, Tag, Barcode, CheckCircle2, ShoppingCart, Globe } from "lucide-react";
 
-// Google Shopping Bag Logo - Style like official Google Shopping bags
+// Google Shopping Bag Logo - Official style with multicolor G
 const GoogleShoppingLogo = () => (
-  <svg viewBox="0 0 48 48" className="w-14 h-14 lg:w-16 lg:h-16">
-    {/* Shopping bag body - light lavender/white color */}
+  <svg viewBox="0 0 64 64" className="w-14 h-14 lg:w-16 lg:h-16">
+    {/* Shopping bag body */}
     <path 
-      d="M8 16L12 44h24l4-28H8z" 
-      fill="#E8EAED" 
-      stroke="#DADCE0" 
-      strokeWidth="0.5"
+      d="M12 20L16 56h32l4-36H12z" 
+      fill="#4285F4"
     />
-    {/* Bag shadow/depth */}
+    {/* Bag highlight */}
     <path 
-      d="M12 44l-4-28h8l3 28H12z" 
-      fill="#D2D5DB" 
-      opacity="0.5"
+      d="M12 20L16 56h6l-4-36H12z" 
+      fill="#3367D6"
     />
     {/* Handle */}
     <path 
-      d="M16 16V12c0-4.42 3.58-8 8-8s8 3.58 8 8v4" 
-      stroke="#DADCE0" 
-      strokeWidth="2" 
+      d="M20 20V14c0-6.63 5.37-12 12-12s12 5.37 12 12v6" 
+      stroke="#4285F4" 
+      strokeWidth="4" 
       fill="none"
       strokeLinecap="round"
     />
-    {/* Google G logo - multicolor */}
-    <g transform="translate(16, 24)">
-      {/* Blue arc */}
-      <path d="M16 8A8 8 0 0 1 8.7 15.3L4.2 11.8A12 12 0 0 0 8 -0.2V4A8 8 0 0 1 16 8z" fill="#4285F4"/>
-      {/* Green arc */}
-      <path d="M8.7 15.3A8 8 0 0 1 0 8H4A4 4 0 0 0 4.7 11.8z" fill="#34A853"/>
-      {/* Yellow arc */}
-      <path d="M0 8A8 8 0 0 1 2.3 2.3L5.8 5.8A4 4 0 0 0 4 8z" fill="#FBBC05"/>
-      {/* Red arc */}
-      <path d="M2.3 2.3A8 8 0 0 1 8 0V4A4 4 0 0 0 5.8 5.8z" fill="#EA4335"/>
-      {/* G horizontal bar */}
-      <rect x="8" y="6" width="6" height="4" fill="#4285F4"/>
+    {/* Google G logo - multicolor on bag */}
+    <g transform="translate(22, 30)">
+      {/* Circle background */}
+      <circle cx="10" cy="10" r="10" fill="white"/>
+      {/* Blue section */}
+      <path d="M10 0A10 10 0 0 1 20 10h-4a6 6 0 0 0-6-6V0z" fill="#4285F4"/>
+      {/* Green section */}
+      <path d="M20 10a10 10 0 0 1-10 10v-4a6 6 0 0 0 6-6h4z" fill="#34A853"/>
+      {/* Yellow section */}
+      <path d="M10 20A10 10 0 0 1 0 10h4a6 6 0 0 0 6 6v4z" fill="#FBBC05"/>
+      {/* Red section */}
+      <path d="M0 10a10 10 0 0 1 10-10v4a6 6 0 0 0-6 6H0z" fill="#EA4335"/>
+      {/* G bar */}
+      <rect x="10" y="8" width="8" height="4" fill="#4285F4"/>
     </g>
   </svg>
 );
