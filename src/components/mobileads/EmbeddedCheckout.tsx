@@ -164,9 +164,9 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
           });
 
           if (accountData?.success) {
-            toast.success("Welcome to NewAI!");
+            toast.success("Account created!");
             onClose();
-            window.location.href = "/dashboard";
+            window.location.href = "/mobile-success";
           }
           return;
         }
@@ -209,9 +209,9 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
         });
 
         if (accountData?.success) {
-          toast.success("Welcome to NewAI!");
+          toast.success("Account created!");
           onClose();
-          window.location.href = "/dashboard";
+          window.location.href = "/mobile-success";
         }
       } catch (err: any) {
         ev.complete('fail');
@@ -359,11 +359,11 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
         if (signInError) {
           toast.info("Account created! Please sign in manually.");
         } else {
-          toast.success("Welcome to NewAI!");
+          toast.success("Account created!");
         }
         
         onClose();
-        window.location.href = "/dashboard";
+        window.location.href = "/mobile-success";
         return;
       }
 
@@ -421,11 +421,11 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
           console.error("Auto-login failed:", signInError);
           toast.info("Account created! Please sign in manually.");
         } else {
-          toast.success("Welcome to NewAI!");
+          toast.success("Account created!");
         }
         
         onClose();
-        window.location.href = "/dashboard";
+        window.location.href = "/mobile-success";
       } else {
         toast.error("Payment was not completed. Please try again.");
       }
