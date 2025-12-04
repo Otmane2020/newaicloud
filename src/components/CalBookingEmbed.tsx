@@ -28,7 +28,7 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
         // @ts-ignore
         window.Cal("inline", {
           elementOrSelector: "#cal-booking-embed",
-          calLink: "newai/30min",
+          calLink: "new-ai-isgo1m/30min",
           layout: "month_view",
           config: {
             theme: "light",
