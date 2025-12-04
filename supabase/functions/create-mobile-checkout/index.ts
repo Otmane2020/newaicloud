@@ -52,20 +52,24 @@ serve(async (req) => {
     }
 
     // STEP 2: After payment succeeds on frontend, create the account
-    if (confirmPayment && paymentIntentId && email) {
+    if (confirmPayment && email) {
       console.log("[create-mobile-checkout] Confirming payment and creating account for:", email);
       
-      // Verify payment succeeded
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      
-      if (paymentIntent.status !== "succeeded") {
-        return new Response(
-          JSON.stringify({ error: "Payment not confirmed yet", status: paymentIntent.status }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      // For free coupon, skip payment verification
+      if (paymentIntentId !== "coupon_free") {
+        // Verify payment succeeded
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        
+        if (paymentIntent.status !== "succeeded") {
+          return new Response(
+            JSON.stringify({ error: "Payment not confirmed yet", status: paymentIntent.status }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        console.log("[create-mobile-checkout] Payment verified as succeeded");
+      } else {
+        console.log("[create-mobile-checkout] Free coupon - skipping payment verification");
       }
-
-      console.log("[create-mobile-checkout] Payment verified as succeeded");
 
       // Check if user already exists
       const { data: existingUsers } = await supabase.auth.admin.listUsers();
@@ -250,7 +254,21 @@ serve(async (req) => {
       const subscription = await stripe.subscriptions.create(subscriptionParams);
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent | null;
+
+      // If 100% coupon applied, no payment needed - subscription is already active
+      if (!paymentIntent) {
+        console.log("[create-mobile-checkout] No payment required (100% coupon), subscription active:", subscription.id);
+        
+        return new Response(
+          JSON.stringify({ 
+            noPaymentRequired: true,
+            subscriptionId: subscription.id,
+            userEmail: email
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       console.log("[create-mobile-checkout] Payment intent created:", paymentIntent.id, "for subscription:", subscription.id);
 

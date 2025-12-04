@@ -188,6 +188,45 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
+      // Handle 100% coupon case - no payment needed
+      if (data.noPaymentRequired) {
+        toast.success("Coupon applied! Creating your account...");
+        
+        // Create account directly without payment
+        const { data: accountData, error: accountError } = await supabase.functions.invoke("create-mobile-checkout", {
+          body: { 
+            confirmPayment: true,
+            paymentIntentId: "coupon_free", // Marker for free subscription
+            subscriptionId: data.subscriptionId,
+            email,
+            password,
+            fullName
+          }
+        });
+
+        if (accountError || accountData?.error) {
+          console.error("Account creation error:", accountError || accountData?.error);
+          toast.error("Account creation failed. Please contact support.");
+          return;
+        }
+
+        // Auto-login
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+        
+        if (signInError) {
+          toast.info("Account created! Please sign in manually.");
+        } else {
+          toast.success("Welcome to NewAI!");
+        }
+        
+        onClose();
+        window.location.href = "/dashboard";
+        return;
+      }
+
       const cardElement = elements.getElement(CardElement);
       if (!cardElement) throw new Error("Card element not found");
 
