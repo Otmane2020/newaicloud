@@ -54,11 +54,11 @@ const TESTIMONIALS = [
 ];
 
 const INTEGRATIONS = [
-  { name: "Shopify", icon: "🛒" },
-  { name: "Google Merchant", icon: "📊" },
-  { name: "Facebook", icon: "📘" },
-  { name: "Instagram", icon: "📸" },
-  { name: "Google Ads", icon: "📢" },
+  { name: "Shopify", icon: <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M15.337 3.415c-.025-.146-.148-.232-.257-.243-.108-.012-2.292-.108-2.292-.108s-1.525-1.477-1.69-1.643c-.163-.167-.483-.117-.607-.08-.003 0-.308.095-.787.243-.171-.503-.47-1.086-.992-1.386C8.057-.194 7.24.009 6.563.328c-.21.099-.418.222-.618.359C5.625.375 5.318.165 4.97.165c-1.283 0-2.343 1.609-2.808 2.958-.606.127-1.035.217-1.063.226C.593 3.492.565 3.52.544 4.008.527 4.384 0 18.102 0 18.102l11.463 2.077 6.233-1.548s-2.343-15.092-2.359-15.216zM10.38 2.237l-1.282.396c0-.013 0-.024.002-.038.001-.32-.045-.58-.112-.79l.89.156c.17.034.339.08.502.276zm-1.836-.674c.066.23.108.53.105.905v.07l-1.739.538c.336-1.028.967-1.527 1.506-1.62.057.028.091.06.128.107zm-.835-.53c.055 0 .107.016.159.044-.718.338-1.488 1.189-1.813 2.893l-1.379.426c.382-1.312 1.274-3.363 3.033-3.363z"/><path d="M15.08 3.172c-.108-.012-2.292-.108-2.292-.108s-1.525-1.477-1.69-1.643c-.062-.062-.142-.092-.226-.105l-.935 19.09 6.233-1.548s-2.343-15.092-2.359-15.216c-.025-.146-.148-.232-.257-.243-.076-.008-.342-.027-.474-.027z" fillOpacity=".5"/></svg> },
+  { name: "Google Merchant", icon: <svg viewBox="0 0 24 24" className="w-5 h-5"><rect x="2" y="2" width="9" height="9" fill="#4285F4"/><rect x="13" y="2" width="9" height="9" fill="#EA4335"/><rect x="2" y="13" width="9" height="9" fill="#34A853"/><rect x="13" y="13" width="9" height="9" fill="#FBBC05"/></svg> },
+  { name: "Facebook", icon: <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> },
+  { name: "Instagram", icon: <svg viewBox="0 0 24 24" className="w-5 h-5"><defs><linearGradient id="ig" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="#FFDC80"/><stop offset="25%" stopColor="#FCAF45"/><stop offset="50%" stopColor="#F77737"/><stop offset="75%" stopColor="#F56040"/><stop offset="100%" stopColor="#C13584"/></linearGradient></defs><path fill="url(#ig)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg> },
+  { name: "Google Ads", icon: <svg viewBox="0 0 24 24" className="w-5 h-5"><path fill="#FBBC05" d="M3.5 21a3.5 3.5 0 100-7 3.5 3.5 0 000 7z"/><path fill="#34A853" d="M7.71 20.71L20.71 3.29a2 2 0 00-3.42-2.08L4.29 18.63a2 2 0 003.42 2.08z"/><path fill="#4285F4" d="M16.29 20.71L3.29 3.29a2 2 0 013.42-2.08l13 17.42a2 2 0 01-3.42 2.08z"/></svg> },
 ];
 
 export default function MobileAds() {
@@ -153,10 +153,10 @@ export default function MobileAds() {
       {/* Integration Logos */}
       <section className="py-8 px-4 border-y border-white/5">
         <p className="text-center text-xs text-gray-500 mb-4">Works seamlessly with</p>
-        <div className="flex justify-center items-center gap-6 flex-wrap">
+        <div className="flex justify-center items-center gap-4 flex-wrap">
           {INTEGRATIONS.map((int, i) => (
-            <div key={i} className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full">
-              <span className="text-lg">{int.icon}</span>
+            <div key={i} className="flex items-center gap-2 bg-white/5 px-4 py-2.5 rounded-full border border-white/10">
+              {int.icon}
               <span className="text-sm text-gray-300 font-medium">{int.name}</span>
             </div>
           ))}
