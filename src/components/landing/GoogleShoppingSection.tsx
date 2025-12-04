@@ -26,15 +26,15 @@ const GoogleShoppingLogo = () => (
     {/* Google G logo - multicolor on bag */}
     <g transform="translate(22, 28)">
       {/* White circle background */}
-      <circle cx="10" cy="10" r="11" fill="white"/>
-      {/* Red - top left quadrant */}
-      <path d="M10 0 A10 10 0 0 0 0 10 L4 10 A6 6 0 0 1 10 4 Z" fill="#EA4335"/>
-      {/* Yellow - bottom left quadrant */}
-      <path d="M0 10 A10 10 0 0 0 10 20 L10 16 A6 6 0 0 1 4 10 Z" fill="#FBBC05"/>
-      {/* Green - bottom right quadrant */}
-      <path d="M10 20 A10 10 0 0 0 20 10 L16 10 A6 6 0 0 1 10 16 Z" fill="#34A853"/>
-      {/* Blue - top right quadrant + bar */}
-      <path d="M20 10 A10 10 0 0 0 10 0 L10 4 A6 6 0 0 1 16 10 Z" fill="#4285F4"/>
+      <circle cx="10" cy="10" r="11" fill="#FFFFFF"/>
+      {/* Red - top arc */}
+      <path d="M10,0 C4.5,0 0,4.5 0,10 L4,10 C4,6.7 6.7,4 10,4 L10,0" fill="#EA4335"/>
+      {/* Yellow - left arc */}
+      <path d="M0,10 C0,15.5 4.5,20 10,20 L10,16 C6.7,16 4,13.3 4,10 L0,10" fill="#FBBC05"/>
+      {/* Green - bottom arc */}
+      <path d="M10,20 C15.5,20 20,15.5 20,10 L16,10 C16,13.3 13.3,16 10,16 L10,20" fill="#34A853"/>
+      {/* Blue - right arc */}
+      <path d="M20,10 C20,4.5 15.5,0 10,0 L10,4 C13.3,4 16,6.7 16,10 L20,10" fill="#4285F4"/>
       {/* G horizontal bar */}
       <rect x="10" y="8" width="10" height="4" fill="#4285F4"/>
     </g>
