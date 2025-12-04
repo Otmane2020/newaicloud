@@ -160,17 +160,21 @@ serve(async (req) => {
     }
 
     // Check if email already exists
+    console.log("[create-mobile-checkout] Checking if email exists:", email);
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const emailExists = existingUsers?.users?.some(
+    console.log("[create-mobile-checkout] Total users found:", existingUsers?.users?.length);
+    const existingUser = existingUsers?.users?.find(
       (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
     );
     
-    if (emailExists) {
+    if (existingUser) {
+      console.log("[create-mobile-checkout] Email already exists:", email, "User ID:", existingUser.id);
       return new Response(
         JSON.stringify({ error: "An account with this email already exists. Please sign in instead." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    console.log("[create-mobile-checkout] Email is available:", email);
 
     const origin = req.headers.get("origin") || "https://newai.sale";
 
