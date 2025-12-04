@@ -25,7 +25,8 @@ serve(async (req) => {
       // For confirming payment and creating account
       confirmPayment,
       paymentIntentId,
-      subscriptionId
+      subscriptionId,
+      customerId: receivedCustomerId
     } = await req.json();
 
     const supabase = createClient(
@@ -133,13 +134,14 @@ serve(async (req) => {
 
       console.log("[create-mobile-checkout] User created:", newUser.user?.id);
 
-      // Create profile with active subscription
+      // Create profile with active subscription and stripe_customer_id
       if (newUser?.user) {
         await supabase.from("profiles").upsert({
           id: newUser.user.id,
           email: email,
           full_name: fullName || "",
           subscription_status: "active",
+          stripe_customer_id: receivedCustomerId || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -283,13 +285,14 @@ serve(async (req) => {
 
       // If 100% coupon applied, no payment needed - subscription is already active
       if (!paymentIntent) {
-        console.log("[create-mobile-checkout] No payment required (100% coupon), subscription active:", subscription.id);
+        console.log("[create-mobile-checkout] No payment required (100% coupon), subscription active:", subscription.id, "customerId:", customerId);
         
         return new Response(
           JSON.stringify({ 
             noPaymentRequired: true,
             subscriptionId: subscription.id,
-            userEmail: email
+            userEmail: email,
+            customerId: customerId
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
