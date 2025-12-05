@@ -131,268 +131,268 @@ export function ExportPanel({
   const totalDuration = clips.reduce((acc, clip) => acc + (clip.duration_seconds || 5), 0);
 
   return (
-    <Card className="bg-card/50 backdrop-blur border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Download className="w-4 h-4 text-cyan-400" />
-          Export Vidéo
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Clips info */}
-        {clips.length > 0 && (
-          <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Clips à exporter</span>
-              <span className="font-medium">{clips.length}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm mt-1">
-              <span className="text-muted-foreground">Durée totale</span>
-              <span className="font-medium">{Math.floor(totalDuration / 60)}:{(totalDuration % 60).toString().padStart(2, '0')}</span>
-            </div>
-          </div>
-        )}
+    <div className="p-4 space-y-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Download className="w-4 h-4 text-cyan-400" />
+        <span className="font-medium text-white">Export Vidéo</span>
+      </div>
 
-        {/* Export Complete - Download Section */}
-        {exportComplete && !isExporting && (
-          <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30 space-y-3">
-            <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-              <Check className="w-5 h-5" />
-              <span className="font-medium">Export terminé!</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FileVideo className="w-4 h-4" />
-              <span>video_export_{config.resolution}_{config.quality}.{config.format}</span>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
-                onClick={handleDownload}
-              >
-                <Download className="w-4 h-4" />
-                Télécharger
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => {
-                  toast({ title: "Lien copié", description: "Le lien de téléchargement a été copié" });
-                }}
-              >
-                <ExternalLink className="w-4 h-4" />
-              </Button>
-            </div>
+      {/* Clips info */}
+      {clips.length > 0 && (
+        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-white/50">Clips</span>
+            <span className="font-medium text-white">{clips.length}</span>
           </div>
-        )}
-
-        {/* Input Aspect Ratio */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded">INPUT</span>
-            Format source
-          </Label>
-          <div className="grid grid-cols-3 gap-2">
-            {ASPECT_RATIOS.map((ratio) => (
-              <Button
-                key={`input-${ratio.id}`}
-                variant={config.inputAspect === ratio.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setConfig({ ...config, inputAspect: ratio.id as any });
-                  onInputAspectChange?.(ratio.id as any);
-                }}
-                className={`flex flex-col gap-1 h-auto py-2 ${
-                  config.inputAspect === ratio.id ? "bg-blue-600 hover:bg-blue-700" : ""
-                }`}
-              >
-                <span className="text-lg">{ratio.icon}</span>
-                <span className="text-xs font-medium">{ratio.label}</span>
-                <span className="text-[10px] opacity-70">{ratio.desc}</span>
-              </Button>
-            ))}
+          <div className="flex items-center justify-between text-sm mt-1">
+            <span className="text-white/50">Durée</span>
+            <span className="font-medium text-white">{Math.floor(totalDuration / 60)}:{(totalDuration % 60).toString().padStart(2, '0')}</span>
           </div>
         </div>
+      )}
 
-        {/* Output Aspect Ratio */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded">OUTPUT</span>
-            Format export
-          </Label>
-          <div className="grid grid-cols-3 gap-2">
-            {ASPECT_RATIOS.map((ratio) => (
-              <Button
-                key={`output-${ratio.id}`}
-                variant={config.outputAspect === ratio.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setConfig({ ...config, outputAspect: ratio.id as any });
-                  onOutputAspectChange?.(ratio.id as any);
-                }}
-                className={`flex flex-col gap-1 h-auto py-2 ${
-                  config.outputAspect === ratio.id ? "bg-green-600 hover:bg-green-700" : ""
-                }`}
-              >
-                <span className="text-lg">{ratio.icon}</span>
-                <span className="text-xs font-medium">{ratio.label}</span>
-                <span className="text-[10px] opacity-70">{ratio.desc}</span>
-              </Button>
-            ))}
+      {/* Export Complete - Download Section */}
+      {exportComplete && !isExporting && (
+        <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30 space-y-3">
+          <div className="flex items-center gap-2 text-green-400">
+            <Check className="w-5 h-5" />
+            <span className="font-medium">Export terminé!</span>
           </div>
-        </div>
-
-        {/* Resolution */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Résolution</Label>
-          <RadioGroup
-            value={config.resolution}
-            onValueChange={(v) => setConfig({ ...config, resolution: v as any })}
-            className="grid grid-cols-3 gap-2"
-          >
-            {RESOLUTIONS.map((res) => (
-              <Label
-                key={res.id}
-                htmlFor={`res-${res.id}`}
-                className={`flex flex-col items-center p-3 rounded-lg border cursor-pointer transition-all ${
-                  config.resolution === res.id
-                    ? "border-cyan-500 bg-cyan-500/10"
-                    : "border-border/50 hover:border-border"
-                }`}
-              >
-                <RadioGroupItem value={res.id} id={`res-${res.id}`} className="sr-only" />
-                <res.icon className="w-5 h-5 mb-1" />
-                <span className="text-xs font-medium">{res.label}</span>
-                <span className="text-[10px] text-muted-foreground">{res.dimensions}</span>
-              </Label>
-            ))}
-          </RadioGroup>
-        </div>
-
-        {/* Format */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Format</Label>
-          <RadioGroup
-            value={config.format}
-            onValueChange={(v) => setConfig({ ...config, format: v as any })}
-            className="space-y-1"
-          >
-            {FORMATS.map((fmt) => (
-              <Label
-                key={fmt.id}
-                htmlFor={`fmt-${fmt.id}`}
-                className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-all ${
-                  config.format === fmt.id
-                    ? "border-cyan-500 bg-cyan-500/10"
-                    : "border-border/50 hover:border-border"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value={fmt.id} id={`fmt-${fmt.id}`} />
-                  <div>
-                    <span className="text-sm font-medium">{fmt.label}</span>
-                    <span className="text-xs text-muted-foreground ml-2">({fmt.codec})</span>
-                  </div>
-                </div>
-                <span className="text-xs text-muted-foreground">{fmt.description}</span>
-              </Label>
-            ))}
-          </RadioGroup>
-        </div>
-
-        {/* Quality */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Qualité</Label>
+          <div className="flex items-center gap-2 text-sm text-white/50">
+            <FileVideo className="w-4 h-4" />
+            <span>video_export_{config.resolution}_{config.quality}.{config.format}</span>
+          </div>
           <div className="flex gap-2">
-            {QUALITIES.map((q) => (
-              <Button
-                key={q.id}
-                variant={config.quality === q.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setConfig({ ...config, quality: q.id as any })}
-                className="flex-1 flex-col h-auto py-2"
-              >
-                <span className="text-xs font-medium">{q.label}</span>
-                <span className="text-[10px] opacity-70">{q.bitrate}</span>
-              </Button>
-            ))}
+            <Button 
+              className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
+              onClick={handleDownload}
+            >
+              <Download className="w-4 h-4" />
+              Télécharger
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="border-white/10 hover:bg-white/5"
+              onClick={() => {
+                toast({ title: "Lien copié", description: "Le lien de téléchargement a été copié" });
+              }}
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Button>
           </div>
-          <p className="text-xs text-muted-foreground text-center">
-            {QUALITIES.find((q) => q.id === config.quality)?.desc}
+        </div>
+      )}
+
+      {/* Input Aspect Ratio */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium flex items-center gap-2 text-white/80">
+          <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded">INPUT</span>
+          Format source
+        </Label>
+        <div className="grid grid-cols-3 gap-2">
+          {ASPECT_RATIOS.map((ratio) => (
+            <Button
+              key={`input-${ratio.id}`}
+              variant={config.inputAspect === ratio.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setConfig({ ...config, inputAspect: ratio.id as any });
+                onInputAspectChange?.(ratio.id as any);
+              }}
+              className={`flex flex-col gap-1 h-auto py-2 border-white/10 ${
+                config.inputAspect === ratio.id ? "bg-blue-600 hover:bg-blue-700" : "hover:bg-white/5"
+              }`}
+            >
+              <span className="text-lg">{ratio.icon}</span>
+              <span className="text-xs font-medium">{ratio.label}</span>
+              <span className="text-[10px] opacity-70">{ratio.desc}</span>
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Output Aspect Ratio */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium flex items-center gap-2 text-white/80">
+          <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded">OUTPUT</span>
+          Format export
+        </Label>
+        <div className="grid grid-cols-3 gap-2">
+          {ASPECT_RATIOS.map((ratio) => (
+            <Button
+              key={`output-${ratio.id}`}
+              variant={config.outputAspect === ratio.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setConfig({ ...config, outputAspect: ratio.id as any });
+                onOutputAspectChange?.(ratio.id as any);
+              }}
+              className={`flex flex-col gap-1 h-auto py-2 border-white/10 ${
+                config.outputAspect === ratio.id ? "bg-green-600 hover:bg-green-700" : "hover:bg-white/5"
+              }`}
+            >
+              <span className="text-lg">{ratio.icon}</span>
+              <span className="text-xs font-medium">{ratio.label}</span>
+              <span className="text-[10px] opacity-70">{ratio.desc}</span>
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Resolution */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-white/80">Résolution</Label>
+        <RadioGroup
+          value={config.resolution}
+          onValueChange={(v) => setConfig({ ...config, resolution: v as any })}
+          className="grid grid-cols-3 gap-2"
+        >
+          {RESOLUTIONS.map((res) => (
+            <Label
+              key={res.id}
+              htmlFor={`res-${res.id}`}
+              className={`flex flex-col items-center p-3 rounded-lg border cursor-pointer transition-all ${
+                config.resolution === res.id
+                  ? "border-cyan-500 bg-cyan-500/10"
+                  : "border-white/10 hover:border-white/20"
+              }`}
+            >
+              <RadioGroupItem value={res.id} id={`res-${res.id}`} className="sr-only" />
+              <res.icon className="w-5 h-5 mb-1 text-white/70" />
+              <span className="text-xs font-medium text-white">{res.label}</span>
+              <span className="text-[10px] text-white/50">{res.dimensions}</span>
+            </Label>
+          ))}
+        </RadioGroup>
+      </div>
+
+      {/* Format */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-white/80">Format</Label>
+        <RadioGroup
+          value={config.format}
+          onValueChange={(v) => setConfig({ ...config, format: v as any })}
+          className="space-y-1"
+        >
+          {FORMATS.map((fmt) => (
+            <Label
+              key={fmt.id}
+              htmlFor={`fmt-${fmt.id}`}
+              className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-all ${
+                config.format === fmt.id
+                  ? "border-cyan-500 bg-cyan-500/10"
+                  : "border-white/10 hover:border-white/20"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value={fmt.id} id={`fmt-${fmt.id}`} />
+                <div>
+                  <span className="text-sm font-medium text-white">{fmt.label}</span>
+                  <span className="text-xs text-white/50 ml-2">({fmt.codec})</span>
+                </div>
+              </div>
+              <span className="text-xs text-white/50">{fmt.description}</span>
+            </Label>
+          ))}
+        </RadioGroup>
+      </div>
+
+      {/* Quality */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-white/80">Qualité</Label>
+        <div className="flex gap-2">
+          {QUALITIES.map((q) => (
+            <Button
+              key={q.id}
+              variant={config.quality === q.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => setConfig({ ...config, quality: q.id as any })}
+              className={`flex-1 flex-col h-auto py-2 border-white/10 ${
+                config.quality === q.id ? "" : "hover:bg-white/5"
+              }`}
+            >
+              <span className="text-xs font-medium">{q.label}</span>
+              <span className="text-[10px] opacity-70">{q.bitrate}</span>
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs text-white/40 text-center">
+          {QUALITIES.find((q) => q.id === config.quality)?.desc}
+        </p>
+      </div>
+
+      {/* Export Progress */}
+      {isExporting && (
+        <div className="space-y-2 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center gap-2 text-white">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Export en cours...
+            </span>
+            <span className="font-medium text-white">{Math.round(progress)}%</span>
+          </div>
+          <Progress value={progress} className="h-2" />
+          <p className="text-xs text-white/50">
+            {progress < 30 && "Préparation des clips..."}
+            {progress >= 30 && progress < 60 && "Encodage vidéo..."}
+            {progress >= 60 && progress < 90 && "Application des transitions..."}
+            {progress >= 90 && "Finalisation..."}
           </p>
         </div>
+      )}
 
-        {/* Export Progress */}
-        {isExporting && (
-          <div className="space-y-2 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-            <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Export en cours...
-              </span>
-              <span className="font-medium">{Math.round(progress)}%</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-            <p className="text-xs text-muted-foreground">
-              {progress < 30 && "Préparation des clips..."}
-              {progress >= 30 && progress < 60 && "Encodage vidéo..."}
-              {progress >= 60 && progress < 90 && "Application des transitions..."}
-              {progress >= 90 && "Finalisation..."}
-            </p>
-          </div>
-        )}
-
-        {/* Warning for 4K */}
-        {config.resolution === "4k" && !isExporting && !exportComplete && (
-          <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
-            <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-600 dark:text-amber-400">
-              L'export 4K peut prendre plusieurs minutes selon la durée de la vidéo.
-            </p>
-          </div>
-        )}
-
-        {/* Export Button */}
-        {!exportComplete && (
-          <Button
-            className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
-            onClick={handleExport}
-            disabled={disabled || isExporting || clips.length === 0}
-          >
-            {isExporting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Export en cours...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                Exporter la vidéo
-              </>
-            )}
-          </Button>
-        )}
-
-        {/* New Export Button after completion */}
-        {exportComplete && !isExporting && (
-          <Button
-            variant="outline"
-            className="w-full gap-2"
-            onClick={handleExport}
-            disabled={clips.length === 0}
-          >
-            <Download className="w-4 h-4" />
-            Nouvel export
-          </Button>
-        )}
-
-        {/* Export Info */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <Badge variant="outline" className="text-[10px]">
-            {config.resolution} • {config.format.toUpperCase()} • {config.quality}
-          </Badge>
-          <span>{estimatedSize()}</span>
+      {/* Warning for 4K */}
+      {config.resolution === "4k" && !isExporting && !exportComplete && (
+        <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-400">
+            L'export 4K peut prendre plusieurs minutes.
+          </p>
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      {/* Export Button */}
+      {!exportComplete && (
+        <Button
+          className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
+          onClick={handleExport}
+          disabled={disabled || isExporting || clips.length === 0}
+        >
+          {isExporting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Export en cours...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              Exporter la vidéo
+            </>
+          )}
+        </Button>
+      )}
+
+      {/* New Export Button after completion */}
+      {exportComplete && !isExporting && (
+        <Button
+          variant="outline"
+          className="w-full gap-2 border-white/10 hover:bg-white/5"
+          onClick={handleExport}
+          disabled={clips.length === 0}
+        >
+          <Download className="w-4 h-4" />
+          Nouvel export
+        </Button>
+      )}
+
+      {/* Export Info */}
+      <div className="flex items-center justify-between text-xs text-white/40">
+        <Badge variant="outline" className="text-[10px] border-white/20 text-white/60">
+          {config.resolution} • {config.format.toUpperCase()} • {config.quality}
+        </Badge>
+        <span>{estimatedSize()}</span>
+      </div>
+    </div>
   );
 }

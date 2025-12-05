@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Video, Sparkles, Settings, Plus, Film, Wand2 } from "lucide-react";
+import { Video, Sparkles, Settings, Plus, Film, Wand2, Layers, Type, Image, Upload, Box, Music, Scissors } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 import { ClipLibrary } from "./video-ads/ClipLibrary";
 import { StoryboardEditor } from "./video-ads/StoryboardEditor";
@@ -10,11 +10,12 @@ import { EffectsPanel } from "./video-ads/EffectsPanel";
 import { VideoPreview } from "./video-ads/VideoPreview";
 import { TemplateGallery } from "./video-ads/TemplateGallery";
 import { ScriptGenerator } from "./video-ads/ScriptGenerator";
-import { ProVideoTimeline } from "./video-ads/ProVideoTimeline";
+import { CanvaStyleTimeline } from "./video-ads/CanvaStyleTimeline";
 import { AnimationsPanel } from "./video-ads/AnimationsPanel";
 import { ExportPanel } from "./video-ads/ExportPanel";
 import { AIVideoGenerator } from "./video-ads/AIVideoGenerator";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface VideoClip {
   id: string;
@@ -357,20 +358,47 @@ export default function VideoAdsStudio() {
           </div>
         </TabsContent>
 
-        {/* Montage Tab - Pro Style (CapCut-like) */}
-        <TabsContent value="montage" className="space-y-6">
-          <div className="grid grid-cols-12 gap-6">
-            {/* Left - Clip Library & Animations */}
-            <div className="col-span-12 lg:col-span-3 space-y-4">
-              <Card className="bg-card/50 backdrop-blur border-border/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Film className="w-4 h-4 text-cyan-400" />
-                    Bibliothèque
-                  </CardTitle>
-                  <p className="text-xs text-muted-foreground">Cliquez pour ajouter à la timeline</p>
-                </CardHeader>
-                <CardContent className="max-h-[300px] overflow-y-auto">
+        {/* Montage Tab - Canva Style */}
+        <TabsContent value="montage" className="h-[calc(100vh-200px)]">
+          <div className="flex h-full gap-0 bg-[#0f0f1a] rounded-xl overflow-hidden">
+            {/* Left Sidebar - Icon Navigation */}
+            <div className="w-16 bg-[#1a1a2e] border-r border-white/5 flex flex-col items-center py-4 gap-1">
+              {[
+                { icon: Layers, label: "Design", active: true },
+                { icon: Box, label: "Éléments" },
+                { icon: Type, label: "Texte" },
+                { icon: Image, label: "Marque" },
+                { icon: Upload, label: "Importer" },
+                { icon: Scissors, label: "Outils" },
+                { icon: Music, label: "Audio" },
+              ].map((item, idx) => (
+                <button
+                  key={idx}
+                  className={cn(
+                    "w-12 h-12 flex flex-col items-center justify-center rounded-lg transition-colors gap-0.5",
+                    item.active 
+                      ? "bg-cyan-500/20 text-cyan-400" 
+                      : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                  )}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="text-[9px]">{item.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Left Panel - Library */}
+            <div className="w-72 bg-[#1a1a2e] border-r border-white/5 flex flex-col">
+              <div className="p-4 border-b border-white/5">
+                <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <span className="text-sm text-white/70">Générer le design</span>
+                </div>
+              </div>
+              
+              <div className="p-4 flex-1 overflow-y-auto">
+                <h3 className="text-xs font-medium text-white/50 mb-3">Clips disponibles</h3>
+                <div className="grid grid-cols-2 gap-2">
                   <ClipLibrary 
                     onSelect={(clip) => {
                       setSelectedClip(clip);
@@ -378,23 +406,28 @@ export default function VideoAdsStudio() {
                     }} 
                     selectedClip={selectedClip} 
                   />
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              {/* Animations Panel */}
-              <Card className="bg-card/50 backdrop-blur border-border/50 h-[300px]">
-                <AnimationsPanel 
-                  onSelectAnimation={(anim) => {
-                    toast({ title: `Effet "${anim.name}" sélectionné` });
-                  }}
-                  selectedAnimationId={null}
-                />
-              </Card>
+              {/* Templates */}
+              <div className="p-4 border-t border-white/5">
+                <h3 className="text-xs font-medium text-white/50 mb-3">Modèles</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {["Promo", "Story", "Intro", "Outro"].map((name) => (
+                    <div 
+                      key={name}
+                      className="aspect-video rounded bg-gradient-to-br from-purple-600/30 to-cyan-600/30 flex items-center justify-center cursor-pointer hover:ring-1 hover:ring-white/20"
+                    >
+                      <span className="text-[10px] text-white/60">{name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* Center - Pro Video Timeline with multi-track */}
-            <div className="col-span-12 lg:col-span-6">
-              <ProVideoTimeline
+            {/* Center - Preview & Timeline */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <CanvaStyleTimeline
                 clips={timelineClips.map(c => ({
                   id: c.id,
                   title: c.title,
@@ -416,8 +449,8 @@ export default function VideoAdsStudio() {
               />
             </div>
 
-            {/* Right - Export Panel */}
-            <div className="col-span-12 lg:col-span-3 space-y-4">
+            {/* Right Panel - Export */}
+            <div className="w-72 bg-[#1a1a2e] border-l border-white/5 overflow-y-auto">
               <ExportPanel
                 onExport={handleExport}
                 isExporting={isExporting}
@@ -430,8 +463,6 @@ export default function VideoAdsStudio() {
                 onInputAspectChange={setInputFormat}
                 onOutputAspectChange={setOutputFormat}
               />
-
-              <EffectsPanel effects={effects} onChange={setEffects} />
             </div>
           </div>
         </TabsContent>
