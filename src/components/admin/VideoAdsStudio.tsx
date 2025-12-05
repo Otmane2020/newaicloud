@@ -69,7 +69,8 @@ export default function VideoAdsStudio() {
     transitions: true,
   });
   const [texts, setTexts] = useState<Record<number, string>>({});
-  const [format, setFormat] = useState<"9:16" | "1:1" | "16:9">("9:16");
+  const [inputFormat, setInputFormat] = useState<"9:16" | "1:1" | "16:9">("9:16");
+  const [outputFormat, setOutputFormat] = useState<"9:16" | "1:1" | "16:9">("9:16");
   const [activeTab, setActiveTab] = useState("studio");
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
@@ -221,7 +222,8 @@ export default function VideoAdsStudio() {
             duration: totalDuration,
             clips: timelineClips.length,
             transitions: transitionsCount,
-            aspectRatio: format
+            inputAspect: inputFormat,
+            outputAspect: outputFormat
           };
           
           console.log(`[Export] Complete:`, exportData);
@@ -307,33 +309,33 @@ export default function VideoAdsStudio() {
                 storyboard={storyboard}
                 effects={effects}
                 texts={texts}
-                format={format}
+                format={inputFormat}
               />
 
               {/* Format Selector */}
               <Card className="mt-4 bg-card/50 backdrop-blur border-border/50">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Format d'export</span>
+                    <span className="text-sm font-medium">Format d'entrée</span>
                     <div className="flex gap-2">
                       <Button
-                        variant={format === "9:16" ? "default" : "outline"}
+                        variant={inputFormat === "9:16" ? "default" : "outline"}
                         size="sm"
-                        onClick={() => setFormat("9:16")}
+                        onClick={() => setInputFormat("9:16")}
                       >
                         📱 9:16
                       </Button>
                       <Button
-                        variant={format === "1:1" ? "default" : "outline"}
+                        variant={inputFormat === "1:1" ? "default" : "outline"}
                         size="sm"
-                        onClick={() => setFormat("1:1")}
+                        onClick={() => setInputFormat("1:1")}
                       >
                         ⬜ 1:1
                       </Button>
                       <Button
-                        variant={format === "16:9" ? "default" : "outline"}
+                        variant={inputFormat === "16:9" ? "default" : "outline"}
                         size="sm"
-                        onClick={() => setFormat("16:9")}
+                        onClick={() => setInputFormat("16:9")}
                       >
                         🖥️ 16:9
                       </Button>
@@ -401,7 +403,7 @@ export default function VideoAdsStudio() {
                   videoUrl: c.file_url,
                   transition: c.transition
                 }))}
-                format={format}
+                format={inputFormat}
                 onReorder={(fromIdx, toIdx) => {
                   const newClips = [...timelineClips];
                   const [removed] = newClips.splice(fromIdx, 1);
@@ -414,7 +416,7 @@ export default function VideoAdsStudio() {
               />
             </div>
 
-            {/* Right - Export Panel & Format */}
+            {/* Right - Export Panel */}
             <div className="col-span-12 lg:col-span-3 space-y-4">
               <ExportPanel
                 onExport={handleExport}
@@ -423,43 +425,11 @@ export default function VideoAdsStudio() {
                 disabled={timelineClips.length === 0}
                 clips={timelineClips}
                 exportComplete={exportComplete}
+                inputAspect={inputFormat}
+                outputAspect={outputFormat}
+                onInputAspectChange={setInputFormat}
+                onOutputAspectChange={setOutputFormat}
               />
-
-              {/* Format */}
-              <Card className="bg-card/50 backdrop-blur border-border/50">
-                <CardContent className="p-4 space-y-3">
-                  <span className="text-sm font-medium">Format vidéo</span>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button
-                      variant={format === "9:16" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFormat("9:16")}
-                      className="text-xs flex flex-col gap-1 h-auto py-2"
-                    >
-                      <span>📱</span>
-                      <span>9:16</span>
-                    </Button>
-                    <Button
-                      variant={format === "1:1" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFormat("1:1")}
-                      className="text-xs flex flex-col gap-1 h-auto py-2"
-                    >
-                      <span>⬜</span>
-                      <span>1:1</span>
-                    </Button>
-                    <Button
-                      variant={format === "16:9" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFormat("16:9")}
-                      className="text-xs flex flex-col gap-1 h-auto py-2"
-                    >
-                      <span>🖥️</span>
-                      <span>16:9</span>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
 
               <EffectsPanel effects={effects} onChange={setEffects} />
             </div>
