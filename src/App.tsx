@@ -107,6 +107,7 @@ import AiCreativeStudio from "./pages/AiCreativeStudio";
 import MobileAds from "./pages/MobileAds";
 import MobileSuccess from "./pages/MobileSuccess";
 import AnimationAds from "./pages/AnimationAds";
+import NewAIVideoGenerator from "./components/video/NewAIVideoGenerator";
 
 const queryClient = new QueryClient();
 
@@ -170,6 +171,7 @@ const App = () => (
             <Route path="/mobileads" element={<MobileAds />} />
             <Route path="/mobile-success" element={<MobileSuccess />} />
             <Route path="/animationads" element={<AnimationAds />} />
+            <Route path="/videogenerator" element={<NewAIVideoGenerator />} />
             <Route path="/social-callback" element={<SocialCallback />} />
             <Route path="/sharefacebook" element={<ShareFacebookTest />} />
             <Route path="/translation" element={<TranslationAudit />} />
