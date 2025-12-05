@@ -12,6 +12,8 @@ interface ExportConfig {
   resolution: "720p" | "1080p" | "4k";
   format: "mp4" | "webm" | "mov";
   quality: "standard" | "high" | "ultra";
+  inputAspect: "9:16" | "1:1" | "16:9";
+  outputAspect: "9:16" | "1:1" | "16:9";
 }
 
 interface ExportPanelProps {
@@ -22,6 +24,10 @@ interface ExportPanelProps {
   clips?: any[];
   exportComplete?: boolean;
   exportedVideoUrl?: string;
+  inputAspect?: "9:16" | "1:1" | "16:9";
+  outputAspect?: "9:16" | "1:1" | "16:9";
+  onInputAspectChange?: (aspect: "9:16" | "1:1" | "16:9") => void;
+  onOutputAspectChange?: (aspect: "9:16" | "1:1" | "16:9") => void;
 }
 
 const RESOLUTIONS = [
@@ -42,6 +48,12 @@ const QUALITIES = [
   { id: "ultra", label: "Ultra", bitrate: "32 Mbps", desc: "Broadcast" },
 ];
 
+const ASPECT_RATIOS = [
+  { id: "9:16", label: "9:16", icon: "📱", desc: "Mobile/Story" },
+  { id: "1:1", label: "1:1", icon: "⬜", desc: "Instagram" },
+  { id: "16:9", label: "16:9", icon: "🖥️", desc: "YouTube/TV" },
+];
+
 export function ExportPanel({ 
   onExport, 
   isExporting, 
@@ -49,14 +61,25 @@ export function ExportPanel({
   disabled,
   clips = [],
   exportComplete = false,
-  exportedVideoUrl
+  exportedVideoUrl,
+  inputAspect = "9:16",
+  outputAspect = "9:16",
+  onInputAspectChange,
+  onOutputAspectChange
 }: ExportPanelProps) {
   const { toast } = useToast();
   const [config, setConfig] = useState<ExportConfig>({
     resolution: "1080p",
     format: "mp4",
     quality: "high",
+    inputAspect: inputAspect,
+    outputAspect: outputAspect,
   });
+
+  // Sync external aspect changes
+  React.useEffect(() => {
+    setConfig(prev => ({ ...prev, inputAspect, outputAspect }));
+  }, [inputAspect, outputAspect]);
 
   const handleExport = () => {
     if (clips.length === 0) {
@@ -161,6 +184,62 @@ export function ExportPanel({
             </div>
           </div>
         )}
+
+        {/* Input Aspect Ratio */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium flex items-center gap-2">
+            <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded">INPUT</span>
+            Format source
+          </Label>
+          <div className="grid grid-cols-3 gap-2">
+            {ASPECT_RATIOS.map((ratio) => (
+              <Button
+                key={`input-${ratio.id}`}
+                variant={config.inputAspect === ratio.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setConfig({ ...config, inputAspect: ratio.id as any });
+                  onInputAspectChange?.(ratio.id as any);
+                }}
+                className={`flex flex-col gap-1 h-auto py-2 ${
+                  config.inputAspect === ratio.id ? "bg-blue-600 hover:bg-blue-700" : ""
+                }`}
+              >
+                <span className="text-lg">{ratio.icon}</span>
+                <span className="text-xs font-medium">{ratio.label}</span>
+                <span className="text-[10px] opacity-70">{ratio.desc}</span>
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        {/* Output Aspect Ratio */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium flex items-center gap-2">
+            <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded">OUTPUT</span>
+            Format export
+          </Label>
+          <div className="grid grid-cols-3 gap-2">
+            {ASPECT_RATIOS.map((ratio) => (
+              <Button
+                key={`output-${ratio.id}`}
+                variant={config.outputAspect === ratio.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setConfig({ ...config, outputAspect: ratio.id as any });
+                  onOutputAspectChange?.(ratio.id as any);
+                }}
+                className={`flex flex-col gap-1 h-auto py-2 ${
+                  config.outputAspect === ratio.id ? "bg-green-600 hover:bg-green-700" : ""
+                }`}
+              >
+                <span className="text-lg">{ratio.icon}</span>
+                <span className="text-xs font-medium">{ratio.label}</span>
+                <span className="text-[10px] opacity-70">{ratio.desc}</span>
+              </Button>
+            ))}
+          </div>
+        </div>
 
         {/* Resolution */}
         <div className="space-y-2">
