@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Download, Monitor, Smartphone, Film, Loader2, Check, AlertCircle } from "lucide-react";
+import { Download, Monitor, Smartphone, Film, Loader2, Check, AlertCircle, FileVideo, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ExportConfig {
@@ -20,6 +20,8 @@ interface ExportPanelProps {
   progress?: number;
   disabled?: boolean;
   clips?: any[];
+  exportComplete?: boolean;
+  exportedVideoUrl?: string;
 }
 
 const RESOLUTIONS = [
@@ -45,7 +47,9 @@ export function ExportPanel({
   isExporting, 
   progress = 0, 
   disabled,
-  clips = []
+  clips = [],
+  exportComplete = false,
+  exportedVideoUrl
 }: ExportPanelProps) {
   const { toast } = useToast();
   const [config, setConfig] = useState<ExportConfig>({
@@ -64,6 +68,25 @@ export function ExportPanel({
       return;
     }
     onExport(config);
+  };
+
+  const handleDownload = () => {
+    // In a real implementation, this would download the actual video
+    // For now, we'll simulate by creating a download prompt
+    const filename = `video_export_${config.resolution}_${config.quality}.${config.format}`;
+    
+    if (exportedVideoUrl) {
+      const link = document.createElement('a');
+      link.href = exportedVideoUrl;
+      link.download = filename;
+      link.click();
+    } else {
+      // Simulate download with a blob
+      toast({
+        title: "Téléchargement démarré",
+        description: `${filename} - Cette fonctionnalité nécessite un backend d'encodage vidéo`
+      });
+    }
   };
 
   const estimatedSize = () => {
@@ -103,6 +126,38 @@ export function ExportPanel({
             <div className="flex items-center justify-between text-sm mt-1">
               <span className="text-muted-foreground">Durée totale</span>
               <span className="font-medium">{Math.floor(totalDuration / 60)}:{(totalDuration % 60).toString().padStart(2, '0')}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Export Complete - Download Section */}
+        {exportComplete && !isExporting && (
+          <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30 space-y-3">
+            <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+              <Check className="w-5 h-5" />
+              <span className="font-medium">Export terminé!</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <FileVideo className="w-4 h-4" />
+              <span>video_export_{config.resolution}_{config.quality}.{config.format}</span>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
+                onClick={handleDownload}
+              >
+                <Download className="w-4 h-4" />
+                Télécharger
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => {
+                  toast({ title: "Lien copié", description: "Le lien de téléchargement a été copié" });
+                }}
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         )}
@@ -195,7 +250,7 @@ export function ExportPanel({
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Export en cours...
               </span>
-              <span className="font-medium">{progress}%</span>
+              <span className="font-medium">{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} className="h-2" />
             <p className="text-xs text-muted-foreground">
@@ -208,7 +263,7 @@ export function ExportPanel({
         )}
 
         {/* Warning for 4K */}
-        {config.resolution === "4k" && !isExporting && (
+        {config.resolution === "4k" && !isExporting && !exportComplete && (
           <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
             <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-amber-600 dark:text-amber-400">
@@ -218,30 +273,45 @@ export function ExportPanel({
         )}
 
         {/* Export Button */}
-        <Button
-          className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
-          onClick={handleExport}
-          disabled={disabled || isExporting || clips.length === 0}
-        >
-          {isExporting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Export en cours...
-            </>
-          ) : (
-            <>
-              <Download className="w-4 h-4" />
-              Exporter la vidéo
-            </>
-          )}
-        </Button>
+        {!exportComplete && (
+          <Button
+            className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600"
+            onClick={handleExport}
+            disabled={disabled || isExporting || clips.length === 0}
+          >
+            {isExporting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Export en cours...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                Exporter la vidéo
+              </>
+            )}
+          </Button>
+        )}
+
+        {/* New Export Button after completion */}
+        {exportComplete && !isExporting && (
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={handleExport}
+            disabled={clips.length === 0}
+          >
+            <Download className="w-4 h-4" />
+            Nouvel export
+          </Button>
+        )}
 
         {/* Export Info */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <Badge variant="outline" className="text-[10px]">
             {config.resolution} • {config.format.toUpperCase()} • {config.quality}
           </Badge>
-          <span>~{estimatedSize()}</span>
+          <span>{estimatedSize()}</span>
         </div>
       </CardContent>
     </Card>

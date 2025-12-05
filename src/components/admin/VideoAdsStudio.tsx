@@ -73,6 +73,7 @@ export default function VideoAdsStudio() {
   const [activeTab, setActiveTab] = useState("studio");
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [exportComplete, setExportComplete] = useState(false);
 
   const handleApplyTemplate = (sections: StoryboardSection[]) => {
     setStoryboard(sections);
@@ -161,9 +162,11 @@ export default function VideoAdsStudio() {
 
   // Change transition
   const handleTransitionChange = (id: string, transition: string) => {
-    setTimelineClips(
-      timelineClips.map((c) => (c.id === id ? { ...c, transition } : c))
+    console.log(`[VideoAdsStudio] Transition changed for ${id}: ${transition}`);
+    setTimelineClips(prev =>
+      prev.map((c) => (c.id === id ? { ...c, transition } : c))
     );
+    toast({ title: `Transition: ${transition}`, description: "Transition mise à jour" });
   };
 
   // Export video with quality settings
@@ -175,6 +178,7 @@ export default function VideoAdsStudio() {
 
     setIsExporting(true);
     setExportProgress(0);
+    setExportComplete(false);
 
     // Calculate export speed based on quality settings
     const qualityMultiplier = config.quality === "ultra" ? 3 : config.quality === "high" ? 2 : 1;
@@ -206,6 +210,7 @@ export default function VideoAdsStudio() {
         if (prev >= 100) {
           clearInterval(interval);
           setIsExporting(false);
+          setExportComplete(true);
           
           // Generate mock download
           const exportData = {
@@ -417,6 +422,7 @@ export default function VideoAdsStudio() {
                 progress={exportProgress}
                 disabled={timelineClips.length === 0}
                 clips={timelineClips}
+                exportComplete={exportComplete}
               />
 
               {/* Format */}

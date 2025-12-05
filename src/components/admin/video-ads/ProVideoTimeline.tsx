@@ -241,13 +241,51 @@ export const ProVideoTimeline = ({ clips, format = "9:16", onReorder, onRemove, 
         </Button>
       </div>
 
+      {/* Playback Progress Bar */}
+      <div className="px-4 py-3 bg-muted/20 border-b border-border">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground font-mono w-12">
+            {formatTime(globalTime)}
+          </span>
+          <div className="flex-1 relative">
+            <Slider
+              value={[totalDuration > 0 ? (globalTime / totalDuration) * 100 : 0]}
+              onValueChange={(v) => {
+                const newTime = (v[0] / 100) * totalDuration;
+                handleSeek(newTime);
+              }}
+              max={100}
+              step={0.1}
+              className="cursor-pointer"
+            />
+            {/* Clip markers on seek bar */}
+            <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 pointer-events-none">
+              {clips.reduce((acc, clip, index) => {
+                if (index === 0) return [0];
+                const pos = (acc[acc.length - 1] + clips[index - 1].duration);
+                return [...acc, pos];
+              }, [] as number[]).slice(1).map((pos, i) => (
+                <div 
+                  key={i}
+                  className="absolute w-0.5 h-3 bg-border/50 -translate-x-1/2"
+                  style={{ left: `${(pos / totalDuration) * 100}%` }}
+                />
+              ))}
+            </div>
+          </div>
+          <span className="text-xs text-muted-foreground font-mono w-12 text-right">
+            {formatTime(totalDuration)}
+          </span>
+        </div>
+      </div>
+
       {/* Playback Controls */}
       <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b border-border">
         <div className="flex items-center gap-2">
-          <Button size="icon" variant="ghost" onClick={handleRestart}>
+          <Button size="icon" variant="ghost" onClick={handleRestart} title="Recommencer">
             <SkipBack className="h-4 w-4" />
           </Button>
-          <Button size="icon" variant="ghost" onClick={handleSkipBack} disabled={currentClipIndex === 0}>
+          <Button size="icon" variant="ghost" onClick={handleSkipBack} disabled={currentClipIndex === 0} title="Clip précédent">
             <SkipBack className="h-4 w-4" />
           </Button>
           <Button 
@@ -255,10 +293,11 @@ export const ProVideoTimeline = ({ clips, format = "9:16", onReorder, onRemove, 
             variant="default"
             className="h-10 w-10 rounded-full"
             onClick={handlePlayPause}
+            title={isPlaying ? "Pause" : "Lecture"}
           >
             {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
           </Button>
-          <Button size="icon" variant="ghost" onClick={handleSkipForward} disabled={currentClipIndex === clips.length - 1}>
+          <Button size="icon" variant="ghost" onClick={handleSkipForward} disabled={currentClipIndex === clips.length - 1} title="Clip suivant">
             <SkipForward className="h-4 w-4" />
           </Button>
         </div>
