@@ -1,4 +1,5 @@
-import { Film, GripVertical, Copy, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Film, GripVertical, Copy, Trash2, MoveHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -45,42 +46,83 @@ export const VideoTrack = ({
   currentTime,
   selectedClipId,
   onSelectClip,
+  onReorder,
   onRemove,
   onDuplicate,
   onTransitionChange,
 }: VideoTrackProps) => {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
   let accumulatedTime = 0;
 
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, toIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex !== null && draggedIndex !== toIndex) {
+      onReorder(draggedIndex, toIndex);
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   return (
-    <div className="flex items-center min-h-[64px] bg-background border-b border-border">
+    <div className="flex items-center min-h-[80px] bg-background border-b border-border">
       {/* Track Label */}
-      <div className="w-12 h-16 flex flex-col items-center justify-center border-r border-border bg-muted/20 shrink-0">
+      <div className="w-12 h-20 flex flex-col items-center justify-center border-r border-border bg-muted/20 shrink-0">
         <Film className="h-4 w-4 text-blue-500" />
         <span className="text-[9px] text-muted-foreground mt-0.5">Vidéo</span>
       </div>
 
       {/* Track Content */}
       <div className="flex-1 h-full relative overflow-x-auto">
-        <div className="flex items-center px-1 gap-0 min-h-[64px] py-1">
+        <div className="flex items-center px-2 gap-1 min-h-[80px] py-2">
           {clips.map((clip, index) => {
             const clipStart = accumulatedTime;
-            const clipWidth = Math.max((clip.duration / totalDuration) * 100, 8);
+            const clipWidth = Math.max((clip.duration / totalDuration) * 100, 10);
             accumulatedTime += clip.duration;
             
             const isSelected = selectedClipId === clip.id;
             const isPlaying = currentTime >= clipStart && currentTime < clipStart + clip.duration;
+            const isDragging = draggedIndex === index;
+            const isDragOver = dragOverIndex === index;
 
             return (
-              <div key={clip.id} className="flex items-center">
+              <div key={clip.id} className="flex items-center shrink-0">
                 {/* Transition selector between clips */}
                 {index > 0 && (
-                  <div className="flex flex-col items-center justify-center px-1 z-10">
+                  <div className="flex flex-col items-center justify-center px-1 z-10 shrink-0">
                     <Select
                       value={clip.transition || "fade"}
-                      onValueChange={(value) => onTransitionChange?.(clip.id, value)}
+                      onValueChange={(value) => {
+                        console.log(`Transition changed for clip ${clip.id}: ${value}`);
+                        onTransitionChange?.(clip.id, value);
+                      }}
                     >
-                      <SelectTrigger className="h-7 w-16 text-[10px] bg-muted/80 border-border/50">
-                        <SelectValue />
+                      <SelectTrigger className="h-8 w-20 text-[10px] bg-muted/80 border-border/50 hover:bg-muted">
+                        <SelectValue placeholder="Transition" />
                       </SelectTrigger>
                       <SelectContent>
                         {TRANSITIONS.map((t) => (
@@ -96,18 +138,25 @@ export const VideoTrack = ({
                   </div>
                 )}
 
-                {/* Clip */}
+                {/* Clip - Draggable */}
                 <div
-                  className={`h-12 rounded-md overflow-hidden cursor-pointer transition-all relative group ${
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={`h-14 rounded-md overflow-hidden cursor-grab active:cursor-grabbing transition-all relative group shrink-0 ${
+                    isDragging ? 'opacity-50 scale-95' : ''
+                  } ${isDragOver ? 'ring-2 ring-cyan-500 ring-offset-2' : ''} ${
                     isSelected 
                       ? 'ring-2 ring-primary shadow-lg' 
                       : isPlaying 
-                        ? 'ring-1 ring-blue-400' 
+                        ? 'ring-2 ring-blue-400' 
                         : 'hover:ring-1 hover:ring-muted-foreground/50'
                   }`}
                   style={{ 
-                    width: `${clipWidth}%`,
-                    minWidth: '70px',
+                    width: `${Math.max(clipWidth * 3, 100)}px`,
                     background: clip.thumbnailUrl 
                       ? `linear-gradient(to right, rgba(0,0,0,0.3), rgba(0,0,0,0.1)), url(${clip.thumbnailUrl}) center/cover`
                       : 'linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.1))'
@@ -115,59 +164,62 @@ export const VideoTrack = ({
                   onClick={() => onSelectClip(clip.id)}
                 >
                   {/* Grip handle */}
-                  <div className="absolute left-0 top-0 bottom-0 w-4 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
-                    <GripVertical className="h-3 w-3 text-white" />
+                  <div className="absolute left-0 top-0 bottom-0 w-5 flex items-center justify-center bg-black/40 cursor-grab">
+                    <GripVertical className="h-4 w-4 text-white" />
                   </div>
 
                   {/* Actions: Duplicate & Delete */}
-                  <div className="absolute top-1 left-5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     {onDuplicate && (
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-5 w-5 bg-black/50 hover:bg-black/70"
+                        className="h-6 w-6 bg-black/50 hover:bg-black/70"
                         onClick={(e) => {
                           e.stopPropagation();
                           onDuplicate(clip);
                         }}
                       >
-                        <Copy className="h-2.5 w-2.5 text-white" />
+                        <Copy className="h-3 w-3 text-white" />
                       </Button>
                     )}
                     {onRemove && (
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-5 w-5 bg-black/50 hover:bg-red-600/80"
+                        className="h-6 w-6 bg-black/50 hover:bg-red-600/80"
                         onClick={(e) => {
                           e.stopPropagation();
                           onRemove(clip.id);
                         }}
                       >
-                        <Trash2 className="h-2.5 w-2.5 text-white" />
+                        <Trash2 className="h-3 w-3 text-white" />
                       </Button>
                     )}
                   </div>
 
                   {/* Clip info */}
-                  <div className="absolute inset-0 flex items-end p-1">
+                  <div className="absolute bottom-1 left-6 right-1">
                     <div className="flex items-center gap-1 bg-black/60 rounded px-1 py-0.5">
-                      <span className="text-[9px] text-white font-medium truncate max-w-[80px]">
+                      <span className="text-[10px] text-white font-medium truncate">
                         {clip.title}
                       </span>
                     </div>
                   </div>
 
                   {/* Duration badge */}
-                  <div className="absolute top-1 right-1 bg-black/60 rounded px-1">
-                    <span className="text-[8px] text-white font-mono">
-                      {Math.floor(clip.duration / 60)}:{(clip.duration % 60).toString().padStart(2, '0')}
+                  <div className="absolute top-1 left-6 bg-black/60 rounded px-1">
+                    <span className="text-[9px] text-white font-mono">
+                      {Math.floor(clip.duration / 60)}:{Math.floor(clip.duration % 60).toString().padStart(2, '0')}
                     </span>
                   </div>
 
-                  {/* Trim handles */}
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/80 opacity-0 group-hover:opacity-100 cursor-ew-resize" />
-                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary/80 opacity-0 group-hover:opacity-100 cursor-ew-resize" />
+                  {/* Drag indicator */}
+                  {isDragOver && (
+                    <div className="absolute inset-0 bg-cyan-500/20 flex items-center justify-center">
+                      <MoveHorizontal className="h-6 w-6 text-cyan-400" />
+                    </div>
+                  )}
                 </div>
               </div>
             );
