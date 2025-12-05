@@ -67,8 +67,19 @@ export function ExportPanel({
   };
 
   const estimatedSize = () => {
-    const res = RESOLUTIONS.find(r => r.id === config.resolution);
-    return res?.size || "~100 MB";
+    const qualityMultiplier = config.quality === "ultra" ? 2 : config.quality === "high" ? 1.5 : 1;
+    const resMultiplier = config.resolution === "4k" ? 4 : config.resolution === "1080p" ? 2 : 1;
+    
+    // Base size per minute based on format
+    const basePerMin = config.format === "mov" ? 100 : config.format === "webm" ? 30 : 50;
+    const durationMin = totalDuration / 60;
+    
+    const sizeMB = Math.round(basePerMin * resMultiplier * qualityMultiplier * Math.max(durationMin, 0.5));
+    
+    if (sizeMB >= 1000) {
+      return `~${(sizeMB / 1000).toFixed(1)} GB`;
+    }
+    return `~${sizeMB} MB`;
   };
 
   const totalDuration = clips.reduce((acc, clip) => acc + (clip.duration_seconds || 5), 0);

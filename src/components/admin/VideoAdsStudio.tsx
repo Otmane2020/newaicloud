@@ -166,7 +166,7 @@ export default function VideoAdsStudio() {
     );
   };
 
-  // Export video
+  // Export video with quality settings
   const handleExport = async (config: { resolution: string; format: string; quality: string }) => {
     if (timelineClips.length === 0) {
       toast({ title: "Ajoutez des clips à la timeline", variant: "destructive" });
@@ -176,18 +176,68 @@ export default function VideoAdsStudio() {
     setIsExporting(true);
     setExportProgress(0);
 
-    // Simulate export progress
+    // Calculate export speed based on quality settings
+    const qualityMultiplier = config.quality === "ultra" ? 3 : config.quality === "high" ? 2 : 1;
+    const resolutionMultiplier = config.resolution === "4k" ? 4 : config.resolution === "1080p" ? 2 : 1;
+    const baseSpeed = 300; // Base ms per step
+    const exportSpeed = Math.max(100, baseSpeed / (qualityMultiplier * resolutionMultiplier / 2));
+
+    // Get bitrate based on quality
+    const bitrates = { standard: "8 Mbps", high: "16 Mbps", ultra: "32 Mbps" };
+    const resolutions = { "720p": "1280×720", "1080p": "1920×1080", "4k": "3840×2160" };
+
+    // Calculate total duration and transitions
+    const totalDuration = timelineClips.reduce((sum, c) => sum + (c.duration_seconds || 5), 0);
+    const transitionsCount = timelineClips.filter((c, i) => i > 0 && c.transition && c.transition !== "none").length;
+
+    console.log(`[Export] Starting export:
+      - Resolution: ${config.resolution} (${resolutions[config.resolution as keyof typeof resolutions]})
+      - Format: ${config.format.toUpperCase()}
+      - Quality: ${config.quality} (${bitrates[config.quality as keyof typeof bitrates]})
+      - Clips: ${timelineClips.length}
+      - Transitions: ${transitionsCount}
+      - Total Duration: ${totalDuration}s
+    `);
+
+    // Simulate export progress with realistic steps
+    let currentProgress = 0;
     const interval = setInterval(() => {
       setExportProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
           setIsExporting(false);
-          toast({ title: `Vidéo exportée en ${config.resolution} ${config.format.toUpperCase()}` });
+          
+          // Generate mock download
+          const exportData = {
+            resolution: resolutions[config.resolution as keyof typeof resolutions] || config.resolution,
+            format: config.format,
+            quality: config.quality,
+            bitrate: bitrates[config.quality as keyof typeof bitrates],
+            duration: totalDuration,
+            clips: timelineClips.length,
+            transitions: transitionsCount,
+            aspectRatio: format
+          };
+          
+          console.log(`[Export] Complete:`, exportData);
+          
+          toast({ 
+            title: "Vidéo exportée avec succès",
+            description: `${config.resolution} • ${config.format.toUpperCase()} • ${config.quality} (${bitrates[config.quality as keyof typeof bitrates]})`
+          });
           return 100;
         }
-        return prev + 5;
+        
+        // Variable progress increments based on stage
+        let increment = 2;
+        if (prev < 20) increment = 3; // Preparation fast
+        else if (prev < 60) increment = 2; // Encoding medium
+        else if (prev < 85) increment = 1.5; // Transitions slower
+        else increment = 1; // Finalization slowest
+        
+        return Math.min(prev + increment, 100);
       });
-    }, 200);
+    }, exportSpeed);
   };
 
   return (
