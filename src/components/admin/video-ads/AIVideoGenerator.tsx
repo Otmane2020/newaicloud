@@ -106,6 +106,7 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [autoConvertToVideo, setAutoConvertToVideo] = useState(true);
 
   const handleTemplateSelect = (template: typeof PROMPT_TEMPLATES[0]) => {
     setPrompt(template.prompt);
@@ -113,6 +114,36 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
 
   const handleNanoBananaTemplateSelect = (template: typeof NANO_BANANA_TEMPLATES[0]) => {
     setPrompt(template.prompt);
+  };
+
+  const convertImageToVideo = async (imageUrlToConvert: string) => {
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-video-clip", {
+        body: {
+          mode: "image-to-video",
+          imageUrl: imageUrlToConvert,
+          duration,
+          motionIntensity,
+          style,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      setGeneratedVideoUrl(data.videoUrl);
+      toast({ title: "🎬 Vidéo générée avec succès!" });
+    } catch (error: any) {
+      console.error("Error converting to video:", error);
+      toast({
+        title: "Erreur de conversion vidéo",
+        description: error.message || "Impossible de créer la vidéo",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleGenerateImage = async () => {
@@ -123,6 +154,7 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
 
     setIsGenerating(true);
     setGeneratedImageUrl(null);
+    setGeneratedVideoUrl(null);
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-nano-banana-image", {
@@ -138,6 +170,12 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
 
       setGeneratedImageUrl(data.imageUrl);
       toast({ title: "🍌 Image générée avec Nano Banana Pro!" });
+
+      // Auto-convert to video if enabled
+      if (autoConvertToVideo) {
+        toast({ title: "🎬 Conversion en vidéo en cours..." });
+        await convertImageToVideo(data.imageUrl);
+      }
     } catch (error: any) {
       console.error("Error generating image:", error);
       toast({
@@ -145,7 +183,6 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
         description: error.message || "Impossible de générer l'image",
         variant: "destructive",
       });
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -347,10 +384,30 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
                   <Badge variant="outline" className="text-yellow-500 border-yellow-500">Gemini AI</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Génération d'images IA ultra-rapide avec Google Gemini. Créez des visuels puis convertissez-les en vidéo.
+                  Génération d'images IA puis conversion automatique en vidéo. Workflow complet Image → Vidéo.
                 </p>
               </CardContent>
             </Card>
+
+            {/* Auto Video Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg border border-yellow-500/30 bg-yellow-500/5">
+              <div className="flex items-center gap-2">
+                <Film className="w-4 h-4 text-yellow-500" />
+                <span className="text-sm font-medium">Générer vidéo automatiquement</span>
+              </div>
+              <button
+                onClick={() => setAutoConvertToVideo(!autoConvertToVideo)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  autoConvertToVideo ? "bg-yellow-500" : "bg-muted"
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                    autoConvertToVideo ? "translate-x-7" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
 
             <div>
               <Label className="text-sm font-medium mb-2 block">Templates Nano Banana</Label>
