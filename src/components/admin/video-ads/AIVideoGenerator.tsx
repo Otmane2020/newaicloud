@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,7 +17,8 @@ import {
   Zap,
   Film,
   Wand2,
-  Check
+  Check,
+  Banana
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -66,23 +66,130 @@ const PROMPT_TEMPLATES = [
   },
 ];
 
+const NANO_BANANA_TEMPLATES = [
+  {
+    id: "product-hero",
+    name: "Hero Shot",
+    icon: "🌟",
+    prompt: "Professional product photography, premium lighting, clean background, commercial quality",
+  },
+  {
+    id: "lifestyle-scene",
+    name: "Lifestyle Scene",
+    icon: "🏡",
+    prompt: "Product in a beautiful lifestyle setting, natural lighting, warm ambiance, magazine quality",
+  },
+  {
+    id: "abstract-promo",
+    name: "Abstract Promo",
+    icon: "🎨",
+    prompt: "Abstract colorful background with product floating, dynamic composition, eye-catching",
+  },
+  {
+    id: "minimal",
+    name: "Minimal Clean",
+    icon: "⬜",
+    prompt: "Ultra minimalist composition, white space, single product focus, elegant simplicity",
+  },
+];
+
 export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [mode, setMode] = useState<"image-to-video" | "text-to-video">("text-to-video");
+  const [mode, setMode] = useState<"image-to-video" | "text-to-video" | "nano-banana">("text-to-video");
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [duration, setDuration] = useState(4);
   const [motionIntensity, setMotionIntensity] = useState<"subtle" | "medium" | "dynamic">("medium");
   const [style, setStyle] = useState<"cinematic" | "commercial" | "lifestyle">("cinematic");
+  const [aspectRatio, setAspectRatio] = useState<"1:1" | "16:9" | "9:16" | "4:3">("16:9");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
 
   const handleTemplateSelect = (template: typeof PROMPT_TEMPLATES[0]) => {
     setPrompt(template.prompt);
   };
 
+  const handleNanoBananaTemplateSelect = (template: typeof NANO_BANANA_TEMPLATES[0]) => {
+    setPrompt(template.prompt);
+  };
+
+  const handleGenerateImage = async () => {
+    if (!prompt.trim()) {
+      toast({ title: "Veuillez entrer un prompt", variant: "destructive" });
+      return;
+    }
+
+    setIsGenerating(true);
+    setGeneratedImageUrl(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-nano-banana-image", {
+        body: {
+          prompt,
+          aspectRatio,
+          style,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      setGeneratedImageUrl(data.imageUrl);
+      toast({ title: "🍌 Image générée avec Nano Banana Pro!" });
+    } catch (error: any) {
+      console.error("Error generating image:", error);
+      toast({
+        title: "Erreur de génération",
+        description: error.message || "Impossible de générer l'image",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleConvertToVideo = async () => {
+    if (!generatedImageUrl) return;
+
+    setIsGenerating(true);
+    setGeneratedVideoUrl(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-video-clip", {
+        body: {
+          mode: "image-to-video",
+          imageUrl: generatedImageUrl,
+          duration,
+          motionIntensity,
+          style,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      setGeneratedVideoUrl(data.videoUrl);
+      toast({ title: "Vidéo créée à partir de l'image!" });
+    } catch (error: any) {
+      console.error("Error converting to video:", error);
+      toast({
+        title: "Erreur de conversion",
+        description: error.message || "Impossible de créer la vidéo",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleGenerate = async () => {
+    if (mode === "nano-banana") {
+      await handleGenerateImage();
+      return;
+    }
+
     if (mode === "text-to-video" && !prompt.trim()) {
       toast({ title: "Veuillez entrer un prompt", variant: "destructive" });
       return;
@@ -131,8 +238,14 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
       toast({ title: "Clip ajouté à la bibliothèque" });
       setIsOpen(false);
       setGeneratedVideoUrl(null);
+      setGeneratedImageUrl(null);
       setPrompt("");
     }
+  };
+
+  const handleReset = () => {
+    setGeneratedVideoUrl(null);
+    setGeneratedImageUrl(null);
   };
 
   return (
@@ -151,8 +264,8 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={mode} onValueChange={(v) => setMode(v as typeof mode)} className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={mode} onValueChange={(v) => { setMode(v as typeof mode); handleReset(); }} className="mt-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="text-to-video" className="gap-2">
               <Type className="w-4 h-4" />
               Texte → Vidéo
@@ -161,11 +274,14 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
               <ImageIcon className="w-4 h-4" />
               Image → Vidéo
             </TabsTrigger>
+            <TabsTrigger value="nano-banana" className="gap-2 text-yellow-500">
+              <Banana className="w-4 h-4" />
+              Nano Banana Pro
+            </TabsTrigger>
           </TabsList>
 
           {/* Text to Video */}
           <TabsContent value="text-to-video" className="space-y-4 mt-4">
-            {/* Prompt Templates */}
             <div>
               <Label className="text-sm font-medium mb-2 block">Templates de prompt</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -182,7 +298,6 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
               </div>
             </div>
 
-            {/* Custom Prompt */}
             <div>
               <Label htmlFor="prompt" className="text-sm font-medium">
                 Prompt personnalisé
@@ -221,105 +336,213 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
               </div>
             )}
           </TabsContent>
+
+          {/* Nano Banana Pro */}
+          <TabsContent value="nano-banana" className="space-y-4 mt-4">
+            <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Banana className="w-5 h-5 text-yellow-500" />
+                  <span className="font-bold text-yellow-500">Nano Banana Pro</span>
+                  <Badge variant="outline" className="text-yellow-500 border-yellow-500">Gemini AI</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Génération d'images IA ultra-rapide avec Google Gemini. Créez des visuels puis convertissez-les en vidéo.
+                </p>
+              </CardContent>
+            </Card>
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Templates Nano Banana</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {NANO_BANANA_TEMPLATES.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => handleNanoBananaTemplateSelect(template)}
+                    className="p-3 rounded-lg border border-yellow-500/30 hover:border-yellow-500 hover:bg-yellow-500/10 transition-all text-left"
+                  >
+                    <div className="text-2xl mb-1">{template.icon}</div>
+                    <div className="text-xs font-medium">{template.name}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="nano-prompt" className="text-sm font-medium">
+                Prompt personnalisé
+              </Label>
+              <Textarea
+                id="nano-prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Décrivez l'image que vous souhaitez générer..."
+                className="mt-2 min-h-[100px]"
+              />
+            </div>
+
+            {/* Aspect Ratio */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Format d'image</Label>
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { value: "1:1", label: "Carré" },
+                  { value: "16:9", label: "Paysage" },
+                  { value: "9:16", label: "Portrait" },
+                  { value: "4:3", label: "Standard" },
+                ].map((ratio) => (
+                  <button
+                    key={ratio.value}
+                    onClick={() => setAspectRatio(ratio.value as typeof aspectRatio)}
+                    className={`px-4 py-2 rounded-lg border transition-all ${
+                      aspectRatio === ratio.value
+                        ? "bg-yellow-500 text-black border-yellow-500"
+                        : "bg-background border-border hover:border-yellow-500/50"
+                    }`}
+                  >
+                    {ratio.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Generated Image Preview */}
+            {generatedImageUrl && (
+              <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2 text-yellow-500">
+                    <Check className="w-4 h-4" />
+                    Image générée!
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <img
+                    src={generatedImageUrl}
+                    alt="Generated"
+                    className="w-full rounded-lg"
+                  />
+                  <Button
+                    onClick={handleConvertToVideo}
+                    disabled={isGenerating}
+                    className="w-full mt-3 gap-2 bg-gradient-to-r from-yellow-500 to-orange-500"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Conversion en vidéo...
+                      </>
+                    ) : (
+                      <>
+                        <Film className="w-4 h-4" />
+                        Convertir en vidéo
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
         </Tabs>
 
-        {/* Parameters */}
-        <div className="grid grid-cols-2 gap-4 mt-6">
-          {/* Duration */}
-          <Card className="bg-card/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Clock className="w-4 h-4 text-cyan-400" />
-                Durée
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RadioGroup
-                value={duration.toString()}
-                onValueChange={(v) => setDuration(Number(v))}
-                className="flex gap-2"
-              >
-                {[2, 4, 6].map((d) => (
-                  <div key={d} className="flex items-center">
-                    <RadioGroupItem value={d.toString()} id={`duration-${d}`} className="sr-only" />
-                    <Label
-                      htmlFor={`duration-${d}`}
-                      className={`px-3 py-2 rounded-md cursor-pointer border transition-all ${
-                        duration === d
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-border hover:border-primary/50"
-                      }`}
-                    >
-                      {d}s
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </CardContent>
-          </Card>
+        {/* Parameters (for video modes) */}
+        {mode !== "nano-banana" && (
+          <div className="grid grid-cols-2 gap-4 mt-6">
+            <Card className="bg-card/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-cyan-400" />
+                  Durée
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={duration.toString()}
+                  onValueChange={(v) => setDuration(Number(v))}
+                  className="flex gap-2"
+                >
+                  {[2, 4, 6].map((d) => (
+                    <div key={d} className="flex items-center">
+                      <RadioGroupItem value={d.toString()} id={`duration-${d}`} className="sr-only" />
+                      <Label
+                        htmlFor={`duration-${d}`}
+                        className={`px-3 py-2 rounded-md cursor-pointer border transition-all ${
+                          duration === d
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:border-primary/50"
+                        }`}
+                      >
+                        {d}s
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </CardContent>
+            </Card>
 
-          {/* Motion Intensity */}
-          <Card className="bg-card/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Zap className="w-4 h-4 text-yellow-400" />
-                Mouvement
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RadioGroup
-                value={motionIntensity}
-                onValueChange={(v) => setMotionIntensity(v as typeof motionIntensity)}
-                className="flex gap-2"
-              >
-                {[
-                  { value: "subtle", label: "Subtil" },
-                  { value: "medium", label: "Moyen" },
-                  { value: "dynamic", label: "Dynamique" },
-                ].map((opt) => (
-                  <div key={opt.value} className="flex items-center">
-                    <RadioGroupItem value={opt.value} id={`motion-${opt.value}`} className="sr-only" />
-                    <Label
-                      htmlFor={`motion-${opt.value}`}
-                      className={`px-3 py-2 rounded-md cursor-pointer border transition-all text-xs ${
-                        motionIntensity === opt.value
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-border hover:border-primary/50"
-                      }`}
-                    >
-                      {opt.label}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="bg-card/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-yellow-400" />
+                  Mouvement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RadioGroup
+                  value={motionIntensity}
+                  onValueChange={(v) => setMotionIntensity(v as typeof motionIntensity)}
+                  className="flex gap-2"
+                >
+                  {[
+                    { value: "subtle", label: "Subtil" },
+                    { value: "medium", label: "Moyen" },
+                    { value: "dynamic", label: "Dynamique" },
+                  ].map((opt) => (
+                    <div key={opt.value} className="flex items-center">
+                      <RadioGroupItem value={opt.value} id={`motion-${opt.value}`} className="sr-only" />
+                      <Label
+                        htmlFor={`motion-${opt.value}`}
+                        className={`px-3 py-2 rounded-md cursor-pointer border transition-all text-xs ${
+                          motionIntensity === opt.value
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:border-primary/50"
+                        }`}
+                      >
+                        {opt.label}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Style */}
-        <div className="mt-4">
-          <Label className="text-sm font-medium mb-2 block">Style visuel</Label>
-          <div className="flex gap-2">
-            {[
-              { value: "cinematic", label: "🎬 Cinématique", desc: "Éclairage dramatique" },
-              { value: "commercial", label: "📺 Commercial", desc: "Lumineux et pro" },
-              { value: "lifestyle", label: "🏡 Lifestyle", desc: "Naturel et chaleureux" },
-            ].map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setStyle(s.value as typeof style)}
-                className={`flex-1 p-3 rounded-lg border transition-all text-left ${
-                  style === s.value
-                    ? "bg-primary/10 border-primary"
-                    : "bg-card/50 border-border/50 hover:border-primary/50"
-                }`}
-              >
-                <div className="font-medium text-sm">{s.label}</div>
-                <div className="text-xs text-muted-foreground">{s.desc}</div>
-              </button>
-            ))}
+        {mode !== "nano-banana" && (
+          <div className="mt-4">
+            <Label className="text-sm font-medium mb-2 block">Style visuel</Label>
+            <div className="flex gap-2">
+              {[
+                { value: "cinematic", label: "🎬 Cinématique", desc: "Éclairage dramatique" },
+                { value: "commercial", label: "📺 Commercial", desc: "Lumineux et pro" },
+                { value: "lifestyle", label: "🏡 Lifestyle", desc: "Naturel et chaleureux" },
+              ].map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => setStyle(s.value as typeof style)}
+                  className={`flex-1 p-3 rounded-lg border transition-all text-left ${
+                    style === s.value
+                      ? "bg-primary/10 border-primary"
+                      : "bg-card/50 border-border/50 hover:border-primary/50"
+                  }`}
+                >
+                  <div className="font-medium text-sm">{s.label}</div>
+                  <div className="text-xs text-muted-foreground">{s.desc}</div>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Generated Video Preview */}
         {generatedVideoUrl && (
@@ -348,24 +571,28 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
             <Button
               onClick={handleGenerate}
               disabled={isGenerating}
-              className="flex-1 gap-2 bg-gradient-to-r from-purple-500 to-cyan-500"
+              className={`flex-1 gap-2 ${
+                mode === "nano-banana"
+                  ? "bg-gradient-to-r from-yellow-500 to-orange-500"
+                  : "bg-gradient-to-r from-purple-500 to-cyan-500"
+              }`}
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Génération en cours...
+                  {mode === "nano-banana" ? "Génération image..." : "Génération vidéo..."}
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
-                  Générer la vidéo
+                  {mode === "nano-banana" ? <Banana className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                  {mode === "nano-banana" ? "Générer l'image" : "Générer la vidéo"}
                 </>
               )}
             </Button>
           ) : (
             <>
               <Button
-                onClick={() => setGeneratedVideoUrl(null)}
+                onClick={handleReset}
                 variant="outline"
                 className="flex-1"
               >
@@ -384,7 +611,10 @@ export function AIVideoGenerator({ onVideoGenerated }: AIVideoGeneratorProps) {
 
         {/* Cost Info */}
         <p className="text-xs text-muted-foreground text-center mt-4">
-          Coût estimé: ~0.05$ par vidéo générée ({duration}s)
+          {mode === "nano-banana" 
+            ? "🍌 Nano Banana Pro - Génération d'images Gemini AI"
+            : `Coût estimé: ~0.05$ par vidéo générée (${duration}s)`
+          }
         </p>
       </DialogContent>
     </Dialog>
