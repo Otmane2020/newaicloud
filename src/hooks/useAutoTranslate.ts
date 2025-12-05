@@ -8,6 +8,10 @@ interface TranslationCache {
 // Global cache to avoid re-translating the same content
 const translationCache: TranslationCache = {};
 
+// Maps to store original French texts for restoration
+const originalTextMap = new WeakMap<Node, string>();
+const originalAttrMap = new Map<string, { element: Element; attr: string; original: string }>();
+
 // Elements to skip during translation
 const SKIP_TAGS = new Set([
   'SCRIPT', 'STYLE', 'NOSCRIPT', 'IFRAME', 'OBJECT', 'EMBED', 
@@ -23,13 +27,43 @@ const MIN_TEXT_LENGTH = 2;
 // Maximum batch size for API calls
 const BATCH_SIZE = 50;
 
+// Counter for unique attribute keys
+let attrKeyCounter = 0;
+
 export function useAutoTranslate(language: string, enabled: boolean = true) {
   const isTranslatingRef = useRef(false);
   const lastLanguageRef = useRef(language);
   const observerRef = useRef<MutationObserver | null>(null);
+  const translatedNodesRef = useRef<Set<Node>>(new Set());
+  const translatedAttrsRef = useRef<Set<string>>(new Set());
 
   const getCacheKey = useCallback((text: string, targetLang: string) => {
     return `${targetLang}:${text}`;
+  }, []);
+
+  // Restore all original French texts
+  const restoreOriginalTexts = useCallback(() => {
+    console.log("[useAutoTranslate] Restoring original French texts");
+    
+    // Restore text nodes
+    translatedNodesRef.current.forEach((node) => {
+      const original = originalTextMap.get(node);
+      if (original && node.textContent !== original) {
+        node.textContent = original;
+      }
+    });
+    
+    // Restore attributes
+    translatedAttrsRef.current.forEach((key) => {
+      const data = originalAttrMap.get(key);
+      if (data && data.element && document.contains(data.element)) {
+        if (data.element.getAttribute(data.attr) !== data.original) {
+          data.element.setAttribute(data.attr, data.original);
+        }
+      }
+    });
+    
+    console.log(`[useAutoTranslate] Restored ${translatedNodesRef.current.size} text nodes and ${translatedAttrsRef.current.size} attributes`);
   }, []);
 
   const translateTexts = useCallback(async (texts: string[], targetLang: string): Promise<string[]> => {
@@ -134,8 +168,8 @@ export function useAutoTranslate(language: string, enabled: boolean = true) {
     return textNodes;
   }, []);
 
-  const collectAttributes = useCallback((root: Element): { element: Element; attr: string; text: string }[] => {
-    const attrs: { element: Element; attr: string; text: string }[] = [];
+  const collectAttributes = useCallback((root: Element): { element: Element; attr: string; text: string; key: string }[] => {
+    const attrs: { element: Element; attr: string; text: string; key: string }[] = [];
     const elements = root.querySelectorAll('*');
     
     elements.forEach((el) => {
@@ -145,7 +179,8 @@ export function useAutoTranslate(language: string, enabled: boolean = true) {
       TRANSLATABLE_ATTRS.forEach((attr) => {
         const value = el.getAttribute(attr);
         if (value && value.length >= MIN_TEXT_LENGTH && !/^[\d\s.,€$%]+$/.test(value)) {
-          attrs.push({ element: el, attr, text: value });
+          const key = `attr_${attrKeyCounter++}`;
+          attrs.push({ element: el, attr, text: value, key });
         }
       });
     });
@@ -155,7 +190,12 @@ export function useAutoTranslate(language: string, enabled: boolean = true) {
 
   const translatePage = useCallback(async (targetLang: string) => {
     if (isTranslatingRef.current) return;
-    if (targetLang === 'fr') return; // French is the base language, no translation needed
+    
+    // If switching back to French, restore original texts
+    if (targetLang === 'fr') {
+      restoreOriginalTexts();
+      return;
+    }
     
     isTranslatingRef.current = true;
     console.log(`[useAutoTranslate] Translating page to ${targetLang}`);
@@ -179,6 +219,25 @@ export function useAutoTranslate(language: string, enabled: boolean = true) {
       }
 
       console.log(`[useAutoTranslate] Found ${allTexts.length} texts to translate`);
+
+      // Store original texts before translation
+      textNodes.forEach((item) => {
+        if (!originalTextMap.has(item.node)) {
+          originalTextMap.set(item.node, item.node.textContent || '');
+          translatedNodesRef.current.add(item.node);
+        }
+      });
+      
+      attrItems.forEach((item) => {
+        if (!originalAttrMap.has(item.key)) {
+          originalAttrMap.set(item.key, {
+            element: item.element,
+            attr: item.attr,
+            original: item.text
+          });
+          translatedAttrsRef.current.add(item.key);
+        }
+      });
 
       // Translate in batches
       const translatedTexts: string[] = [];
@@ -214,7 +273,7 @@ export function useAutoTranslate(language: string, enabled: boolean = true) {
     } finally {
       isTranslatingRef.current = false;
     }
-  }, [collectTextNodes, collectAttributes, translateTexts]);
+  }, [collectTextNodes, collectAttributes, translateTexts, restoreOriginalTexts]);
 
   // Translate when language changes
   useEffect(() => {
@@ -275,6 +334,7 @@ export function useAutoTranslate(language: string, enabled: boolean = true) {
 
   return {
     translatePage,
+    restoreOriginalTexts,
     isTranslating: isTranslatingRef.current,
   };
 }
