@@ -343,7 +343,8 @@ export default function VideoAdsStudio() {
                   title: c.title,
                   duration: c.duration_seconds || 5,
                   thumbnailUrl: c.thumbnail_url,
-                  videoUrl: c.file_url
+                  videoUrl: c.file_url,
+                  transition: c.transition
                 }))}
                 format={format}
                 onReorder={(fromIdx, toIdx) => {
@@ -354,6 +355,7 @@ export default function VideoAdsStudio() {
                 }}
                 onRemove={handleRemoveFromTimeline}
                 onDuplicate={handleDuplicateClip}
+                onTransitionChange={handleTransitionChange}
               />
             </div>
 
