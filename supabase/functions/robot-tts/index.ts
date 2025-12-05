@@ -5,13 +5,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Chunked base64 encoding to avoid stack overflow
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 8192;
+  let binary = '';
+  
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  
+  return btoa(binary);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Safe HealthCheck handler
   const body = await req.json().catch(() => ({}));
+  
+  // Health check
   if (body?.healthCheck === true) {
     return new Response(JSON.stringify({ ok: true }), { 
       status: 200, 
@@ -31,7 +46,7 @@ serve(async (req) => {
       throw new Error("ElevenLabs API key not configured");
     }
 
-    // Call ElevenLabs TTS API with high-quality voice (Roger - male voice)
+    // Call ElevenLabs TTS API with Roger voice
     const response = await fetch("https://api.elevenlabs.io/v1/text-to-speech/CwhRBWXzGAHq8TQ4Fs17", {
       method: "POST",
       headers: {
@@ -53,13 +68,8 @@ serve(async (req) => {
       throw new Error(`ElevenLabs TTS error: ${error}`);
     }
 
-    // Get audio as array buffer
     const audioBuffer = await response.arrayBuffer();
-    
-    // Convert to base64
-    const base64Audio = btoa(
-      String.fromCharCode(...new Uint8Array(audioBuffer))
-    );
+    const base64Audio = arrayBufferToBase64(audioBuffer);
 
     return new Response(
       JSON.stringify({ 
