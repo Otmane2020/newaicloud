@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 // ========= SLIDES VISUELS =========
 const SLIDES = [
-const SLIDES = [
   { text:"NewAI — the AI that boosts Shopify SEO automatically.", img:"/lovable-uploads/newai-hero.png" },
   { text:"3x Faster workflow — +50% Traffic — Save 10h Weekly.", img:"/lovable-uploads/stats.png" },
   { text:"Visible everywhere: Google Search • Shopping • Discover", img:"/lovable-uploads/google-search.png" },
