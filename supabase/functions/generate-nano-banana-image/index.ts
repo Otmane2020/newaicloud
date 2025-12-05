@@ -26,9 +26,9 @@ serve(async (req) => {
       });
     }
 
-    const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GOOGLE_GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY not configured");
     }
 
     const { prompt, aspectRatio = "16:9", style } = body;
@@ -39,72 +39,70 @@ serve(async (req) => {
 
     console.log(`[Nano Banana Pro] Generating image - Prompt: ${prompt.slice(0, 50)}..., Aspect: ${aspectRatio}`);
 
-    // Build enhanced prompt
+    // Build enhanced prompt with aspect ratio instructions
     let enhancedPrompt = prompt;
     if (style) {
       enhancedPrompt = `${prompt}, ${style} style`;
     }
+    
+    // Add aspect ratio instruction
+    const aspectInstructions: Record<string, string> = {
+      "1:1": "Create a square image (1:1 aspect ratio)",
+      "16:9": "Create a widescreen landscape image (16:9 aspect ratio)",
+      "9:16": "Create a vertical portrait image (9:16 aspect ratio)",
+      "4:3": "Create a standard landscape image (4:3 aspect ratio)",
+      "3:4": "Create a standard portrait image (3:4 aspect ratio)",
+    };
 
-    // Use Gemini's image generation model (google/gemini-2.5-flash-image)
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `Generate a high-quality image: ${enhancedPrompt}. Aspect ratio: ${aspectRatio}. Make it professional, visually stunning, and suitable for advertising.`
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            responseModalities: ["TEXT", "IMAGE"],
-          },
-        }),
-      }
-    );
+    const finalPrompt = `${enhancedPrompt}. ${aspectInstructions[aspectRatio] || ""}. High quality, professional, visually stunning, suitable for advertising.`;
+
+    // Use Lovable AI Gateway with Nano Banana model
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: finalPrompt
+          }
+        ],
+        modalities: ["image", "text"]
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[Nano Banana Pro] API error:", errorText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      console.error("[Nano Banana Pro] API error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please try again later.");
+      }
+      if (response.status === 402) {
+        throw new Error("Insufficient credits. Please add credits to your workspace.");
+      }
+      
+      throw new Error(`API error: ${response.status}`);
     }
 
     const data = await response.json();
     console.log("[Nano Banana Pro] Response received");
 
-    // Extract image from response
-    let imageData: string | null = null;
-    let mimeType = "image/png";
+    // Extract image from Lovable AI response format
+    let imageUrl: string | null = null;
 
-    if (data.candidates?.[0]?.content?.parts) {
-      for (const part of data.candidates[0].content.parts) {
-        if (part.inlineData) {
-          imageData = part.inlineData.data;
-          mimeType = part.inlineData.mimeType || "image/png";
-          break;
-        }
-      }
+    if (data.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
+      imageUrl = data.choices[0].message.images[0].image_url.url;
     }
 
-    if (!imageData) {
-      // Try alternative response format
-      if (data.images?.[0]) {
-        imageData = data.images[0];
-      } else {
-        console.error("[Nano Banana Pro] No image in response:", JSON.stringify(data).slice(0, 500));
-        throw new Error("No image generated in response");
-      }
+    if (!imageUrl) {
+      console.error("[Nano Banana Pro] No image in response:", JSON.stringify(data).slice(0, 500));
+      throw new Error("No image generated in response");
     }
-
-    // Convert to data URL
-    const imageUrl = `data:${mimeType};base64,${imageData}`;
 
     console.log("[Nano Banana Pro] Image generated successfully");
 
@@ -112,7 +110,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         imageUrl,
-        prompt: enhancedPrompt,
+        prompt: finalPrompt,
         aspectRatio,
       }),
       {
