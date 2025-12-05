@@ -6,16 +6,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 // ========= SLIDES VISUELS =========
 const SLIDES = [
-  { text: "NewAI — the AI that boosts Shopify SEO automatically.", img: "/lovable-uploads/newai-logo.png" },
-  { text: "3x Faster workflow — +50% Traffic — Save 10h Weekly.", img: "/lovable-uploads/newai-logo.png" },
-  { text: "Visible everywhere: Google Search • Shopping • Discover", img: "/lovable-uploads/newai-logo.png" },
-  { text: "Auto-SEO: Meta Tags, Descriptions, ALT Vision, Smart Tagging", img: "/lovable-uploads/newai-logo.png" },
-  { text: "Before → After Vision AI +68% conversion", img: "/lovable-uploads/newai-logo.png" },
-  { text: "Google Shopping XML Feed • GTIN/EAN validated • 0 errors", img: "/lovable-uploads/newai-logo.png" },
-  { text: "AI Blog • Product Pages • HTML SEO Content", img: "/lovable-uploads/newai-logo.png" },
-  { text: "Real Growth: 200 → 10K monthly impressions", img: "/lovable-uploads/newai-logo.png" },
-  { text: "Pricing: Starter 9.99 • Pro 39 • Enterprise 139", img: "/lovable-uploads/newai-logo.png" },
-  { text: "Try it FREE today — No Credit Card", img: "/lovable-uploads/newai-logo.png" }
+const SLIDES = [
+  { text:"NewAI — the AI that boosts Shopify SEO automatically.", img:"/lovable-uploads/newai-hero.png" },
+  { text:"3x Faster workflow — +50% Traffic — Save 10h Weekly.", img:"/lovable-uploads/stats.png" },
+  { text:"Visible everywhere: Google Search • Shopping • Discover", img:"/lovable-uploads/google-search.png" },
+  { text:"Auto SEO: Meta Tags • Descriptions • ALT Vision • Smart Tagging", img:"/lovable-uploads/seo-dashboard.png" },
+
+  { text:"Before → After Vision AI (+68% conversion)", img:"/lovable-uploads/sofa-before.jpg", img2:"/lovable-uploads/sofa-after.jpg" },
+
+  { text:"Google Shopping Feed XML • GTIN/EAN validated • 0 errors", img:"/lovable-uploads/google-feed.png" },
+  { text:"AI Blog • Product Pages • HTML SEO Content", img:"/lovable-uploads/blog.png" },
+  { text:"Real Growth: 200 → 10K monthly impressions", img:"/lovable-uploads/seo-graph.png" },
+  { text:"Pricing: Starter 9.99 • Pro 39 • Enterprise 139", img:"/lovable-uploads/pricing.png" },
+  { text:"Try NewAI FREE today — No Credit Card", img:"/lovable-uploads/cta.png" }
 ];
 
 // ========= SOUS-TITRES STYLE =========
