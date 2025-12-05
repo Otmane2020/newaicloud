@@ -14,6 +14,7 @@ interface VideoClip {
   duration: number;
   thumbnailUrl?: string;
   videoUrl: string;
+  transition?: string;
 }
 
 interface AudioClipData {
@@ -39,9 +40,10 @@ interface ProVideoTimelineProps {
   onReorder: (fromIndex: number, toIndex: number) => void;
   onRemove: (id: string) => void;
   onDuplicate?: (clip: VideoClip) => void;
+  onTransitionChange?: (clipId: string, transition: string) => void;
 }
 
-export const ProVideoTimeline = ({ clips, format = "16:9", onReorder, onRemove, onDuplicate }: ProVideoTimelineProps) => {
+export const ProVideoTimeline = ({ clips, format = "9:16", onReorder, onRemove, onDuplicate, onTransitionChange }: ProVideoTimelineProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -202,11 +204,11 @@ export const ProVideoTimeline = ({ clips, format = "16:9", onReorder, onRemove, 
   return (
     <div className="flex flex-col bg-card rounded-lg border border-border overflow-hidden">
       {/* Video Preview */}
-      <div className={`relative bg-black ${
-        format === "9:16" ? "aspect-[9/16] max-h-[500px]" : 
-        format === "1:1" ? "aspect-square max-h-[400px]" : 
-        "aspect-video max-h-[400px]"
-      } mx-auto`}>
+      <div className={`relative bg-black mx-auto ${
+        format === "9:16" ? "aspect-[9/16] max-h-[500px] w-auto" : 
+        format === "1:1" ? "aspect-square max-h-[400px] w-auto" : 
+        "aspect-[16/9] w-full max-h-[400px]"
+      }`}>
         <video
           ref={videoRef}
           src={currentClip?.videoUrl}
@@ -319,6 +321,7 @@ export const ProVideoTimeline = ({ clips, format = "16:9", onReorder, onRemove, 
           onReorder={onReorder}
           onRemove={onRemove}
           onDuplicate={onDuplicate}
+          onTransitionChange={onTransitionChange}
         />
 
         {/* Audio Track */}
