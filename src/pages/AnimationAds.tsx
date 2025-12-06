@@ -27,13 +27,15 @@ import shopifyLogo from "@/assets/shopify-logo.svg";
 // Audio cache for ElevenLabs narration
 const audioCache: Record<number, string> = {};
 
-// ========= ENGLISH NARRATIONS =========
+// ========= ENGLISH NARRATIONS (11 slides) =========
 const SLIDE_NARRATIONS_EN = [
   "NewAI — the AI that boosts your Shopify SEO automatically. Connect Shopify, Google, Facebook and Instagram in one click!",
   "Real results: 3x faster workflow, 50% more traffic, save 10 hours weekly, and Top 10 Google ranking!",
-  "Appear on Google Search, Shopping, and Discover — reach millions of potential customers!",
-  "Watch your SEO score transform from 34% to 95% — fully automated with AI optimization!",
-  "See the difference! Before: plain white background. After: Vision AI professional staging. Plus 68% more conversions!",
+  "Showcase your products in style! Professional photos, 3D animations, and dynamic galleries!",
+  "Dominate Google Search! Appear in Search, Shopping, and Discover with AI-powered optimization!",
+  "Watch your SEO score skyrocket! From struggling to thriving — all fully automated!",
+  "Transform your SEO from 34% to 95%! AI optimization that actually works!",
+  "See the difference! Before: plain white. After: Vision AI professional staging. Plus 68% more conversions!",
   "Auto-generated landing pages with AI — conversion-optimized HTML ready to deploy in seconds!",
   "AI Vision analyzes and enhances every product image. Alt text, backgrounds, optimization — all automatic!",
   "Google Shopping ready! XML feed, category mapping, GTIN validation. Zero errors guaranteed!",
