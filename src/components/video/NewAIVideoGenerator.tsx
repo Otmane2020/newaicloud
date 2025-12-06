@@ -65,7 +65,7 @@ const FloatingParticles = () => (
 const SlideHero = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
-    <ParticleExplosion trigger={true} count={20} />
+    <ParticleExplosion trigger={true} particleCount={20} />
     
     <motion.div
       className="relative z-10 mb-4"
@@ -172,7 +172,7 @@ const SlideGoogle = () => (
 
     <div className="flex gap-2">
       {["Search", "Shopping", "Discover"].map((item, i) => (
-        <FloatingElement key={i} delay={i * 0.1} amp={3}>
+        <FloatingElement key={i} delay={i * 0.1} amplitude={3}>
           <motion.div
             className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2 text-center"
             initial={{ y: 50, opacity: 0 }}
@@ -190,7 +190,7 @@ const SlideGoogle = () => (
 // Slide 5: Before/After
 const SlideBeforeAfter = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-3 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
-    <ParticleExplosion trigger={true} count={12} />
+    <ParticleExplosion trigger={true} particleCount={12} />
     
     <h2 className="text-lg font-black text-white text-center mb-2 z-10">
       <GlitchText>Vision AI</GlitchText>
@@ -364,7 +364,7 @@ const SlidePricing = () => (
 const SlideCTA = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
-    <ParticleExplosion trigger={true} count={25} />
+    <ParticleExplosion trigger={true} particleCount={25} />
     
     <motion.div
       className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center shadow-2xl mb-4"

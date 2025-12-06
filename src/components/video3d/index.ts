@@ -10,8 +10,7 @@ export {
   ParticleExplosion,
   SpeedLines,
   MorphingGradient,
+  Rotating3D,
   FloatingElement,
   NeonText,
-  CTAPulse,
-  ChromaticSplit,
 } from "./ViralEffects";
