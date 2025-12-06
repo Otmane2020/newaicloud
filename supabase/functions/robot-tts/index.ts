@@ -64,8 +64,26 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`ElevenLabs TTS error: ${error}`);
+      const errorText = await response.text();
+      
+      // Check for quota exceeded - return graceful response instead of error
+      if (response.status === 401 || errorText.includes('quota_exceeded')) {
+        console.warn("ElevenLabs quota exceeded, returning silent response");
+        return new Response(
+          JSON.stringify({ 
+            audio: null,
+            format: "mp3",
+            quotaExceeded: true,
+            message: "ElevenLabs quota exceeded - audio skipped"
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          }
+        );
+      }
+      
+      throw new Error(`ElevenLabs TTS error: ${errorText}`);
     }
 
     const audioBuffer = await response.arrayBuffer();
