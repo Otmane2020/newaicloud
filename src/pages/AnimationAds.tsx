@@ -1,25 +1,37 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Volume2, VolumeX, ArrowRight, Check, Star, Zap, TrendingUp, Target, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+
+// Import components
+import { SEOScoreCircle } from "@/components/video3d/SEOScoreCircle";
+import { BeforeAfterSplit } from "@/components/video3d/BeforeAfterSplit";
+import { LandingPageMockup } from "@/components/video3d/LandingPageMockup";
+import { ImageEnhancement } from "@/components/video3d/ImageEnhancement";
+import { 
+  GlitchText, 
+  ParticleExplosion, 
+  SpeedLines, 
+  ZoomPunch,
+  FloatingElement,
+  NeonText 
+} from "@/components/video3d/ViralEffects";
 
 // Import real assets
 import sofaWhiteBackground from "@/assets/sofa-white-background.jpg";
 import sofaWithBackground from "@/assets/sofa-with-background.jpg";
 import shopifyLogo from "@/assets/shopify-logo.svg";
 
-// Voice narration for each slide
-const SLIDE_NARRATIONS = [
-  "NewAI, l'intelligence artificielle qui transforme votre e-commerce. Connectez Shopify, Google, Facebook et Instagram en un clic.",
-  "Des résultats concrets: 3 fois plus rapide, 50% plus de trafic, 10 heures économisées par semaine, et un classement Top 10 sur Google!",
-  "Vos produits visibles partout sur Google: Search, Shopping et Discover. Maximum de visibilité garantie!",
-  "Optimisation SEO automatique. NewAI analyse et optimise chaque produit pour Google. Regardez vos erreurs disparaître!",
-  "Voyez la différence! Avant NewAI: fond blanc basique. Après NewAI: mise en scène professionnelle par l'IA. Plus 68% de conversions!",
-  "Google Shopping Ready! Feed XML automatique, catégories Google optimisées, validation GTIN. Zéro erreur garantie!",
-  "Témoignages clients: Sarah a augmenté son trafic de 180%. Marc économise 10 heures par semaine. Prix à partir de 49 dollars par mois!",
-  "Commencez maintenant! Essai gratuit sans carte bancaire. Rejoignez plus de 500 vendeurs satisfaits!"
+// ========= ENGLISH NARRATIONS =========
+const SLIDE_NARRATIONS_EN = [
+  "NewAI — the AI that boosts your Shopify SEO automatically. Connect Shopify, Google, Facebook and Instagram in one click!",
+  "Real results: 3x faster workflow, 50% more traffic, save 10 hours weekly, and Top 10 Google ranking!",
+  "Watch your SEO score transform from 34% to 95% — fully automated with AI optimization!",
+  "See the difference! Before: plain white background. After: Vision AI professional staging. Plus 68% more conversions!",
+  "Auto-generated landing pages with AI — conversion-optimized HTML ready to deploy in seconds!",
+  "AI Vision analyzes and enhances every product image. Alt text, backgrounds, optimization — all automatic!",
+  "Google Shopping ready! XML feed, category mapping, GTIN validation. Zero errors guaranteed!",
+  "Start your free trial today. No credit card required. Join 500+ successful sellers!"
 ];
 
 // Google Logo SVG
@@ -53,7 +65,7 @@ const InstagramLogo = () => (
   </svg>
 );
 
-// Counter Animation Component
+// Counter Animation
 const AnimatedCounter = ({ value, suffix = "", prefix = "" }: { value: number; suffix?: string; prefix?: string }) => {
   const [count, setCount] = useState(0);
   
@@ -78,43 +90,6 @@ const AnimatedCounter = ({ value, suffix = "", prefix = "" }: { value: number; s
   
   return <span>{prefix}{count}{suffix}</span>;
 };
-
-// Speed Lines Effect
-const SpeedLines = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    {[...Array(20)].map((_, i) => (
-      <motion.div
-        key={i}
-        className="absolute h-0.5 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-        style={{
-          top: `${Math.random() * 100}%`,
-          left: '-100%',
-          width: `${50 + Math.random() * 100}px`,
-        }}
-        animate={{
-          x: ['0%', '200vw'],
-        }}
-        transition={{
-          duration: 0.4 + Math.random() * 0.3,
-          delay: i * 0.05,
-          ease: "linear",
-        }}
-      />
-    ))}
-  </div>
-);
-
-// Glowing Burst Effect
-const GlowBurst = () => (
-  <motion.div
-    className="absolute inset-0 pointer-events-none"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: [0, 1, 0] }}
-    transition={{ duration: 0.5 }}
-  >
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200%] h-[200%] bg-gradient-radial from-blue-500/50 via-transparent to-transparent" />
-  </motion.div>
-);
 
 // Floating Particles
 const FloatingParticles = () => (
@@ -143,66 +118,47 @@ const FloatingParticles = () => (
   </div>
 );
 
-// Hand Pointer Animation (like the reference)
-const HandPointer = ({ className }: { className?: string }) => (
-  <motion.div
-    className={`absolute ${className}`}
-    animate={{
-      y: [0, -10, 0],
-      rotate: [0, 5, 0],
-    }}
-    transition={{
-      duration: 1,
-      repeat: Infinity,
-    }}
-  >
-    <svg viewBox="0 0 64 64" className="w-16 h-16 drop-shadow-2xl">
-      <path fill="#FFCC4D" d="M52 36.142c0-2.757-1.953-5.063-4.548-5.603l.376-3.02c.094-.746-.053-1.478-.424-2.117-.373-.639-.936-1.121-1.63-1.396-.695-.275-1.445-.325-2.172-.144a3.605 3.605 0 0 0-1.916 1.18l-.354.425c.011-.144.018-.289.018-.435 0-3.584-2.916-6.5-6.5-6.5s-6.5 2.916-6.5 6.5v2.022l-.453-.556a3.601 3.601 0 0 0-2.501-1.379 3.583 3.583 0 0 0-2.73.819c-.781.672-1.248 1.637-1.314 2.716-.067 1.079.284 2.094.988 2.859l3.088 3.353a21.71 21.71 0 0 0-.358 3.877c0 11.598 9.402 21 21 21 11.598 0 21-9.402 21-21 0-1.24-.125-2.45-.353-3.626A5.646 5.646 0 0 0 52 36.142z"/>
-      <path fill="#F4900C" d="M34.85 18.532c-2.416 0-4.398 1.843-4.615 4.191l-1.385-1.686c-.436-.531-1.056-.879-1.745-.977a2.585 2.585 0 0 0-1.964.59c-.562.483-.898 1.177-.946 1.954-.047.777.204 1.508.711 2.058l5.594 6.071v-5.701c0-2.481 2.019-4.5 4.5-4.5s4.5 2.019 4.5 4.5a4.49 4.49 0 0 1-.736 2.467l-.708.851c.386-.141.802-.218 1.231-.218a3.644 3.644 0 0 1 3.113 1.766l.238-1.908c.062-.494-.036-1.004-.286-1.436-.251-.434-.633-.76-1.106-.947a2.594 2.594 0 0 0-2.776.702l-1.676 2.015v-3.292c0-3.584-2.916-6.5-6.5-6.5h-.449z"/>
-    </svg>
-  </motion.div>
-);
-
-// Slide 1: Intro NewAI with crazy blue theme
+// ========= SLIDE 1: INTRO =========
 const SlideIntro = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
+    <ParticleExplosion trigger={true} particleCount={25} />
     
     {/* Central Glow */}
     <motion.div
-      className="absolute w-64 h-64 bg-blue-400/30 rounded-full blur-3xl"
-      animate={{
-        scale: [1, 1.5, 1],
-        opacity: [0.3, 0.6, 0.3],
-      }}
+      className="absolute w-64 h-64 bg-purple-400/30 rounded-full blur-3xl"
+      animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
       transition={{ duration: 3, repeat: Infinity }}
     />
 
-    {/* NewAI Logo */}
+    {/* 3D Logo */}
     <motion.div
       className="relative z-10 mb-6"
-      initial={{ scale: 0, rotate: -180 }}
-      animate={{ scale: 1, rotate: 0 }}
+      initial={{ scale: 0, rotateY: -180 }}
+      animate={{ scale: 1, rotateY: 0 }}
       transition={{ type: "spring", stiffness: 150, damping: 15 }}
+      style={{ perspective: 1000, transformStyle: "preserve-3d" }}
     >
       <motion.div 
         className="absolute inset-0 blur-3xl bg-white/50 rounded-full scale-150"
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{ duration: 2, repeat: Infinity }}
       />
-      <div className="relative w-28 h-28 rounded-3xl bg-white flex items-center justify-center shadow-2xl">
-        <span className="text-blue-600 text-5xl font-black">N</span>
-      </div>
+      <motion.div 
+        className="relative w-28 h-28 rounded-3xl bg-white flex items-center justify-center shadow-2xl"
+        animate={{ rotateY: [0, 360] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        <span className="text-purple-600 text-5xl font-black">N</span>
+      </motion.div>
     </motion.div>
 
-    <motion.h1
-      className="text-5xl font-black text-white text-center mb-2 drop-shadow-lg"
-      initial={{ y: 30, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.3 }}
-    >
-      NewAI
-    </motion.h1>
+    <ZoomPunch delay={0.3}>
+      <GlitchText className="text-5xl font-black text-white text-center drop-shadow-lg">
+        NewAI
+      </GlitchText>
+    </ZoomPunch>
 
     <motion.p
       className="text-xl text-white/90 text-center mb-8 font-semibold"
@@ -210,15 +166,16 @@ const SlideIntro = () => (
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.4 }}
     >
-      AI-Powered E-commerce
+      <NeonText color="#a855f7">AI-Powered E-commerce</NeonText>
     </motion.p>
 
-    {/* Integration Logos */}
+    {/* 3D Integration Logos */}
     <motion.div
       className="flex items-center gap-3 z-10"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.6 }}
+      style={{ perspective: 800 }}
     >
       {[
         { logo: <img src={shopifyLogo} alt="Shopify" className="w-9 h-9" />, delay: 0.7 },
@@ -226,48 +183,49 @@ const SlideIntro = () => (
         { logo: <FacebookLogo />, delay: 0.9 },
         { logo: <InstagramLogo />, delay: 1 },
       ].map((item, i) => (
-        <motion.div
-          key={i}
-          className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl"
-          initial={{ scale: 0, y: 50 }}
-          animate={{ scale: 1, y: 0 }}
-          transition={{ delay: item.delay, type: "spring", stiffness: 200 }}
-          whileHover={{ scale: 1.1 }}
-        >
-          {item.logo}
-        </motion.div>
+        <FloatingElement key={i} delay={i * 0.2} amplitude={5}>
+          <motion.div
+            className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl"
+            initial={{ scale: 0, rotateY: 90 }}
+            animate={{ scale: 1, rotateY: 0 }}
+            transition={{ delay: item.delay, type: "spring", stiffness: 200 }}
+            whileHover={{ scale: 1.1, rotateY: 15 }}
+            style={{ transformStyle: "preserve-3d" }}
+          >
+            {item.logo}
+          </motion.div>
+        </FloatingElement>
       ))}
     </motion.div>
   </motion.div>
 );
 
-// Slide 2: Stats with explosive animations
+// ========= SLIDE 2: STATS =========
 const SlideStats = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <SpeedLines />
     
-    <motion.h2
-      className="text-3xl font-black text-white text-center mb-8 drop-shadow-lg"
-      initial={{ scale: 3, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 100 }}
-    >
-      Résultats <span className="text-yellow-300">Garantis</span>
-    </motion.h2>
+    <ZoomPunch>
+      <GlitchText className="text-3xl font-black text-white text-center mb-8 drop-shadow-lg">
+        <span className="text-yellow-300">Real</span> Results
+      </GlitchText>
+    </ZoomPunch>
 
-    <div className="grid grid-cols-2 gap-4 w-full max-w-xs z-10">
+    <div className="grid grid-cols-2 gap-4 w-full max-w-xs z-10" style={{ perspective: 1000 }}>
       {[
-        { value: 3, suffix: "x", label: "Plus rapide", color: "bg-gradient-to-br from-emerald-400 to-teal-500" },
-        { value: 50, suffix: "%", label: "Plus de trafic", color: "bg-gradient-to-br from-yellow-400 to-orange-500" },
-        { value: 10, suffix: "h+", label: "Économisées", color: "bg-gradient-to-br from-pink-400 to-rose-500" },
-        { value: 10, prefix: "Top ", label: "Google", color: "bg-gradient-to-br from-blue-400 to-indigo-500" },
+        { value: 3, suffix: "x", label: "Faster", color: "from-emerald-400 to-teal-500" },
+        { value: 50, suffix: "%", label: "More Traffic", color: "from-yellow-400 to-orange-500" },
+        { value: 10, suffix: "h+", label: "Saved Weekly", color: "from-pink-400 to-rose-500" },
+        { value: 10, prefix: "Top ", label: "Google", color: "from-blue-400 to-indigo-500" },
       ].map((stat, i) => (
         <motion.div
           key={i}
-          className={`${stat.color} rounded-2xl p-5 text-center shadow-xl`}
-          initial={{ scale: 0, rotate: 180 }}
-          animate={{ scale: 1, rotate: 0 }}
+          className={`bg-gradient-to-br ${stat.color} rounded-2xl p-5 text-center shadow-xl`}
+          initial={{ scale: 0, rotateX: 90 }}
+          animate={{ scale: 1, rotateX: 0 }}
           transition={{ delay: 0.2 + i * 0.15, type: "spring", stiffness: 150 }}
+          style={{ transformStyle: "preserve-3d" }}
+          whileHover={{ scale: 1.05, rotateY: 10 }}
         >
           <motion.div 
             className="text-4xl font-black text-white drop-shadow-lg"
@@ -283,311 +241,169 @@ const SlideStats = () => (
   </motion.div>
 );
 
-// Slide 3: Google Phone Mockups
-const SlideGooglePhones = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900">
+// ========= SLIDE 3: SEO SCORE =========
+const SlideSEOScore = () => (
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
     
-    <motion.h2
-      className="text-2xl font-black text-white text-center mb-6 z-10"
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-    >
-      Visible partout sur <span className="text-yellow-300">Google</span>
-    </motion.h2>
-
-    <div className="relative flex items-end justify-center gap-2 z-10">
-      {/* Left Phone - Search */}
-      <motion.div
-        className="w-24 bg-white rounded-2xl overflow-hidden shadow-2xl"
-        initial={{ x: -150, opacity: 0, rotate: -30 }}
-        animate={{ x: 0, opacity: 1, rotate: -6 }}
-        transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
-      >
-        <div className="bg-gray-100 h-4 flex items-center justify-center">
-          <div className="w-8 h-1 bg-gray-300 rounded-full" />
-        </div>
-        <div className="p-2">
-          <div className="flex items-center gap-1 bg-gray-100 rounded-full px-2 py-1 mb-2">
-            <GoogleLogo />
-          </div>
-          <img src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&h=120&fit=crop" alt="Search" className="w-full h-16 object-cover rounded-lg mb-1" />
-          <div className="flex items-center gap-0.5">
-            {[1,2,3,4,5].map(i => <Star key={i} className="w-2 h-2 fill-yellow-400 text-yellow-400" />)}
-          </div>
-          <p className="text-[8px] font-bold text-green-600">€899</p>
-        </div>
-        <p className="text-[9px] text-center py-1 text-gray-600 font-bold bg-gray-50">Search</p>
-      </motion.div>
-
-      {/* Center Phone - Shopping */}
-      <motion.div
-        className="w-36 bg-white rounded-2xl overflow-hidden shadow-2xl z-20 border-4 border-blue-400"
-        initial={{ y: 150, opacity: 0, scale: 0.5 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
-      >
-        <div className="bg-blue-500 h-5 flex items-center justify-center">
-          <span className="text-[9px] text-white font-bold">Google Shopping</span>
-        </div>
-        <div className="p-3">
-          <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&h=140&fit=crop" alt="Shopping" className="w-full h-24 object-cover rounded-lg mb-2" />
-          <p className="text-[10px] font-bold">Nike Air Max 90</p>
-          <p className="text-sm font-black text-green-600">€149,99</p>
-          <div className="flex items-center gap-0.5 mt-1">
-            {[1,2,3,4].map(i => <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />)}
-            <Star className="w-3 h-3 text-gray-300" />
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Right Phone - Discover */}
-      <motion.div
-        className="w-24 bg-white rounded-2xl overflow-hidden shadow-2xl"
-        initial={{ x: 150, opacity: 0, rotate: 30 }}
-        animate={{ x: 0, opacity: 1, rotate: 6 }}
-        transition={{ delay: 0.7, type: "spring", stiffness: 100 }}
-      >
-        <div className="bg-gray-100 h-4 flex items-center justify-center">
-          <div className="w-8 h-1 bg-gray-300 rounded-full" />
-        </div>
-        <div className="p-2">
-          <div className="flex items-center gap-1 mb-2">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-red-500 to-yellow-500 flex items-center justify-center">
-              <span className="text-[7px] text-white font-bold">D</span>
-            </div>
-            <span className="text-[8px] font-bold">Discover</span>
-          </div>
-          <img src="https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=200&h=100&fit=crop" alt="Discover" className="w-full h-14 object-cover rounded-lg mb-1" />
-          <p className="text-[7px] font-medium line-clamp-2">Tendances 2024</p>
-        </div>
-        <p className="text-[9px] text-center py-1 text-gray-600 font-bold bg-gray-50">Discover</p>
-      </motion.div>
-    </div>
-
-    <HandPointer className="bottom-20 right-8" />
-  </motion.div>
-);
-
-// Slide 4: SEO Optimization Phone (like reference image)
-const SlideSEOOptimization = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 overflow-hidden">
-    <SpeedLines />
+    <ZoomPunch>
+      <h2 className="text-2xl font-black text-white text-center mb-2">
+        <GlitchText>SEO Score</GlitchText>
+      </h2>
+    </ZoomPunch>
     
-    {/* Glowing light effect from side */}
-    <motion.div
-      className="absolute right-0 top-1/2 -translate-y-1/2 w-48 h-96 bg-gradient-to-l from-cyan-400/60 via-blue-400/30 to-transparent blur-3xl"
-      animate={{
-        opacity: [0.5, 1, 0.5],
-        x: [0, -20, 0],
-      }}
-      transition={{ duration: 2, repeat: Infinity }}
-    />
-
-    <motion.div
-      className="relative bg-white rounded-[2.5rem] overflow-hidden shadow-2xl w-72 border-8 border-gray-900"
-      initial={{ x: -200, rotate: -20, opacity: 0 }}
-      animate={{ x: 0, rotate: -5, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 80 }}
+    <motion.p
+      className="text-lg text-white/80 text-center mb-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.3 }}
     >
-      {/* Phone notch */}
-      <div className="bg-gray-900 h-8 flex items-center justify-between px-6">
-        <span className="text-white text-xs">31:20</span>
-        <div className="w-16 h-4 bg-black rounded-full" />
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-2 bg-white/80 rounded-sm" />
-        </div>
-      </div>
-
-      {/* App Header */}
-      <div className="bg-white px-4 py-3 border-b flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-gray-500">← Shopify</span>
-        </div>
-        <span className="font-bold text-lg">Shopify</span>
-        <span className="bg-blue-500 text-white text-xs px-3 py-1 rounded-full">Go Vite</span>
-      </div>
-
-      {/* Main content */}
-      <div className="p-4">
-        <p className="text-gray-600 mb-4">Grulotiye:</p>
-        
-        {/* Big percentage */}
-        <motion.div 
-          className="text-center mb-4"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.5, type: "spring" }}
-        >
-          <span className="text-6xl font-black text-red-500">34%</span>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <div className="h-2 w-24 bg-red-500 rounded-full" />
-            <span className="text-red-500 font-bold">4%</span>
-          </div>
-        </motion.div>
-
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-gray-600">Fldive manen</span>
-          <span className="text-gray-400 text-sm">Pragan Sow...</span>
-        </div>
-
-        {/* SEO Optimization Title */}
-        <motion.h3
-          className="text-2xl font-black text-gray-900 mb-4"
-          initial={{ x: -50, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.7 }}
-        >
-          Optimisation SEO<br/>Automatique
-        </motion.h3>
-
-        {/* Progress items */}
-        <div className="space-y-3">
-          {[
-            { icon: "✓", label: "Erreurs Corrigées", sublabel: "Pormeaetie soht. ubranul", value: "0%", color: "text-blue-500" },
-            { icon: "📝", label: "Description", value: "A+ 17%", color: "text-gray-700" },
-            { icon: "🔄", label: "Rloumtlexie", value: "36,156%", color: "text-gray-700" },
-            { icon: "📊", label: "Der Valison", sublabel: "cheome", value: "66,0lnf %", color: "text-gray-700" },
-          ].map((item, i) => (
-            <motion.div
-              key={i}
-              className="flex items-center justify-between py-2 border-b border-gray-100"
-              initial={{ x: 50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.8 + i * 0.1 }}
-            >
-              <div className="flex items-center gap-3">
-                <span className={`w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center ${item.color}`}>
-                  {item.icon}
-                </span>
-                <div>
-                  <p className="font-semibold text-sm">{item.label}</p>
-                  {item.sublabel && <p className="text-xs text-gray-400">{item.sublabel}</p>}
-                </div>
-              </div>
-              <span className="font-bold text-sm">{item.value}</span>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-
-    <HandPointer className="bottom-32 right-16 scale-125" />
-  </motion.div>
-);
-
-// Slide 5: Before/After like reference
-const SlideBeforeAfter = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900">
-    <GlowBurst />
-    
-    <motion.h2
-      className="text-2xl font-black text-white text-center mb-2 z-10"
-      initial={{ y: -30, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-    >
-      See the Difference
-    </motion.h2>
-    <motion.h3
-      className="text-xl font-bold text-white text-center mb-2 z-10"
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.1 }}
-    >
-      Before & AI NewAI
-    </motion.h3>
+      <span className="text-red-400">34%</span> → <span className="text-green-400">95%</span>
+    </motion.p>
 
     <motion.div
-      className="bg-blue-500 px-4 py-2 rounded-full mb-4 z-10"
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
-      transition={{ delay: 0.3, type: "spring" }}
+      transition={{ delay: 0.5, type: "spring" }}
     >
-      <span className="text-white font-bold">+68% Impeoricemecn</span>
+      <SEOScoreCircle startScore={34} endScore={95} duration={2.5} />
     </motion.div>
 
-    <div className="flex gap-3 w-full max-w-sm z-10">
-      {/* Before Phone */}
-      <motion.div
-        className="flex-1 bg-white rounded-2xl overflow-hidden shadow-xl"
-        initial={{ x: -100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ delay: 0.4, type: "spring" }}
-      >
-        <div className="bg-gray-100 h-5 flex items-center justify-center">
-          <span className="text-[8px] text-gray-500">Avant</span>
-        </div>
-        <img src={sofaWhiteBackground} alt="Before" className="w-full h-32 object-cover" />
-        <div className="p-2 text-center">
-          <p className="text-xs text-gray-500">Fond blanc</p>
-          <p className="text-sm font-bold text-gray-400">799 €</p>
-        </div>
-      </motion.div>
-
-      {/* After Phone */}
-      <motion.div
-        className="flex-1 bg-white rounded-2xl overflow-hidden shadow-xl border-2 border-blue-400"
-        initial={{ x: 100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ delay: 0.6, type: "spring" }}
-      >
-        <div className="bg-blue-500 h-5 flex items-center justify-center">
-          <span className="text-[8px] text-white font-bold">After Vision AI</span>
-        </div>
-        <motion.img 
-          src={sofaWithBackground} 
-          alt="After" 
-          className="w-full h-32 object-cover"
-          animate={{ scale: [1, 1.02, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
-        <div className="p-2 text-center">
-          <p className="text-xs text-blue-500 font-semibold">After Vision AI</p>
-          <p className="text-lg font-black text-gray-900">1 299 €</p>
-          <p className="text-[10px] text-gray-500">Gray velvet 3seater sooth</p>
-        </div>
-      </motion.div>
-    </div>
+    <motion.div
+      className="mt-6 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3"
+      initial={{ y: 50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 1.5 }}
+    >
+      <p className="text-white font-bold text-center">
+        ✨ <NeonText color="#22c55e">Fully Automated</NeonText> ✨
+      </p>
+    </motion.div>
   </motion.div>
 );
 
-// Slide 6: Google Shopping Features
+// ========= SLIDE 4: BEFORE/AFTER =========
+const SlideBeforeAfter = () => (
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+    <ParticleExplosion trigger={true} particleCount={15} />
+    
+    <ZoomPunch>
+      <h2 className="text-2xl font-black text-white text-center mb-1 z-10">
+        <GlitchText>See the Difference</GlitchText>
+      </h2>
+    </ZoomPunch>
+    
+    <motion.p
+      className="text-sm text-white/80 text-center mb-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.3 }}
+    >
+      Vision AI Enhancement
+    </motion.p>
+
+    <BeforeAfterSplit 
+      beforeImage={sofaWhiteBackground}
+      afterImage={sofaWithBackground}
+      beforeLabel="BEFORE"
+      afterLabel="AFTER AI"
+      conversionBoost="+68%"
+    />
+  </motion.div>
+);
+
+// ========= SLIDE 5: LANDING PAGE =========
+const SlideLandingPage = () => (
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+    <FloatingParticles />
+    
+    <ZoomPunch>
+      <h2 className="text-xl font-black text-white text-center mb-2">
+        <GlitchText>AI Landing Pages</GlitchText>
+      </h2>
+    </ZoomPunch>
+    
+    <motion.p
+      className="text-sm text-white/80 text-center mb-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.3 }}
+    >
+      Generated in seconds
+    </motion.p>
+
+    <LandingPageMockup 
+      productTitle="Premium Velvet Sofa"
+      productPrice="$1,299"
+    />
+  </motion.div>
+);
+
+// ========= SLIDE 6: IMAGE ENHANCEMENT =========
+const SlideImageEnhancement = () => (
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+    <SpeedLines />
+    
+    <ZoomPunch>
+      <h2 className="text-xl font-black text-white text-center mb-2">
+        <GlitchText>Vision AI</GlitchText>
+      </h2>
+    </ZoomPunch>
+    
+    <motion.p
+      className="text-sm text-white/80 text-center mb-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.3 }}
+    >
+      Image Treatment & Optimization
+    </motion.p>
+
+    <ImageEnhancement />
+  </motion.div>
+);
+
+// ========= SLIDE 7: GOOGLE SHOPPING =========
 const SlideGoogleShopping = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
     
     <motion.div
       className="mb-6"
-      initial={{ scale: 0, rotate: -180 }}
-      animate={{ scale: 1, rotate: 0 }}
+      initial={{ scale: 0, rotateY: -180 }}
+      animate={{ scale: 1, rotateY: 0 }}
       transition={{ type: "spring" }}
+      style={{ perspective: 1000 }}
     >
-      <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl">
+      <motion.div 
+        className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl"
+        animate={{ rotateY: [0, 360] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+        style={{ transformStyle: "preserve-3d" }}
+      >
         <GoogleLogo />
-      </div>
+      </motion.div>
     </motion.div>
 
-    <motion.h2
-      className="text-2xl font-black text-white text-center mb-6"
-      initial={{ y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.3 }}
-    >
-      Google Shopping<br/><span className="text-yellow-300">Ready</span>
-    </motion.h2>
+    <ZoomPunch>
+      <h2 className="text-2xl font-black text-white text-center mb-6">
+        Google Shopping <span className="text-yellow-300">Ready</span>
+      </h2>
+    </ZoomPunch>
 
     <div className="space-y-3 w-full max-w-xs">
       {[
-        { icon: <Check className="w-5 h-5" />, label: "XML Feed Auto", desc: "Généré automatiquement" },
-        { icon: <Target className="w-5 h-5" />, label: "Google Categories", desc: "Mapping intelligent" },
-        { icon: <Sparkles className="w-5 h-5" />, label: "GTIN/EAN", desc: "Validation complète" },
+        { icon: <Check className="w-5 h-5" />, label: "XML Feed Auto", desc: "Generated automatically" },
+        { icon: <Target className="w-5 h-5" />, label: "Google Categories", desc: "Smart mapping" },
+        { icon: <Sparkles className="w-5 h-5" />, label: "GTIN/EAN", desc: "Full validation" },
       ].map((item, i) => (
         <motion.div
           key={i}
           className="bg-white/20 backdrop-blur-md rounded-xl p-4 flex items-center gap-4"
-          initial={{ x: i % 2 === 0 ? -100 : 100, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
+          initial={{ x: i % 2 === 0 ? -100 : 100, opacity: 0, rotateY: i % 2 === 0 ? -30 : 30 }}
+          animate={{ x: 0, opacity: 1, rotateY: 0 }}
           transition={{ delay: 0.5 + i * 0.15, type: "spring" }}
+          style={{ transformStyle: "preserve-3d" }}
         >
           <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white">
             {item.icon}
@@ -606,95 +422,19 @@ const SlideGoogleShopping = () => (
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 1 }}
     >
-      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">0 Erreurs</span>
-      <span className="bg-blue-400 text-white px-3 py-1 rounded-full text-sm font-bold">100% GMC</span>
+      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">0 Errors</span>
+      <span className="bg-blue-400 text-white px-3 py-1 rounded-full text-sm font-bold">100% GMC Ready</span>
     </motion.div>
   </motion.div>
 );
 
-// Slide 7: Testimonials & Pricing
-const SlideTestimonials = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-100 to-white overflow-hidden">
-    {/* Blue burst effect at bottom */}
-    <motion.div
-      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-48 bg-gradient-to-t from-blue-600 to-transparent"
-      initial={{ y: 100 }}
-      animate={{ y: 0 }}
-      transition={{ delay: 0.5 }}
-    />
-    <motion.div
-      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-64"
-      initial={{ scale: 0 }}
-      animate={{ scale: [1, 1.2, 1] }}
-      transition={{ delay: 0.7, duration: 1, repeat: Infinity }}
-    >
-      {/* Light rays */}
-      {[...Array(12)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute bottom-0 left-1/2 w-1 h-32 bg-gradient-to-t from-white/80 to-transparent origin-bottom"
-          style={{ transform: `translateX(-50%) rotate(${i * 30}deg)` }}
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ delay: 0.8 + i * 0.05 }}
-        />
-      ))}
-    </motion.div>
-
-    <motion.h2
-      className="text-2xl font-bold text-gray-900 mb-4 z-10"
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-    >
-      Pricing
-    </motion.h2>
-
-    {/* Testimonials */}
-    <div className="space-y-3 w-full max-w-xs mb-4 z-10">
-      {[
-        { name: "Sarah Chan", text: "Our organic traffic increased by 180%", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=60&h=60&fit=crop" },
-        { name: "Marc D.", text: "10 heures économisées par semaine", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop" },
-      ].map((item, i) => (
-        <motion.div
-          key={i}
-          className="bg-white rounded-xl p-3 flex items-center gap-3 shadow-lg"
-          initial={{ x: -100, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.3 + i * 0.2 }}
-        >
-          <img src={item.avatar} alt={item.name} className="w-12 h-12 rounded-full object-cover" />
-          <div>
-            <p className="font-bold text-sm">{item.name}</p>
-            <p className="text-xs text-gray-600">{item.text}</p>
-          </div>
-        </motion.div>
-      ))}
-    </div>
-
-    {/* Price */}
-    <motion.div
-      className="bg-white rounded-2xl p-4 shadow-xl z-10"
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      transition={{ delay: 0.7, type: "spring" }}
-    >
-      <span className="text-xs text-blue-600 font-bold">#LIMITED2024</span>
-      <div className="flex items-baseline">
-        <span className="text-4xl font-black text-gray-900">$49</span>
-        <span className="text-gray-500 ml-1">.99</span>
-      </div>
-      <span className="text-gray-600">monthly</span>
-    </motion.div>
-  </motion.div>
-);
-
-// Slide 8: Final CTA
+// ========= SLIDE 8: CTA =========
 const SlideCTA = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
-    <GlowBurst />
+    <ParticleExplosion trigger={true} particleCount={30} />
     
-    {/* Logo */}
+    {/* 3D Logo */}
     <motion.div
       className="mb-6"
       initial={{ scale: 0 }}
@@ -706,24 +446,26 @@ const SlideCTA = () => (
         animate={{
           boxShadow: [
             "0 0 30px rgba(255,255,255,0.3)",
-            "0 0 60px rgba(255,255,255,0.5)",
+            "0 0 60px rgba(168,85,247,0.8)",
             "0 0 30px rgba(255,255,255,0.3)",
           ],
+          rotateY: [0, 360],
         }}
-        transition={{ duration: 2, repeat: Infinity }}
+        transition={{ 
+          boxShadow: { duration: 2, repeat: Infinity },
+          rotateY: { duration: 8, repeat: Infinity, ease: "linear" }
+        }}
+        style={{ transformStyle: "preserve-3d" }}
       >
-        <span className="text-blue-600 text-5xl font-black">N</span>
+        <span className="text-purple-600 text-5xl font-black">N</span>
       </motion.div>
     </motion.div>
 
-    <motion.h2
-      className="text-3xl font-black text-white text-center mb-4"
-      initial={{ y: 30, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.3 }}
-    >
-      Commencez<br/>Maintenant
-    </motion.h2>
+    <ZoomPunch>
+      <GlitchText className="text-3xl font-black text-white text-center mb-4">
+        Start Free Today
+      </GlitchText>
+    </ZoomPunch>
 
     <motion.div
       className="mb-6"
@@ -732,19 +474,19 @@ const SlideCTA = () => (
       transition={{ delay: 0.5, type: "spring" }}
     >
       <motion.button
-        className="bg-white text-blue-600 font-black text-xl px-8 py-4 rounded-2xl shadow-2xl"
+        className="bg-white text-purple-600 font-black text-xl px-8 py-4 rounded-2xl shadow-2xl"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         animate={{
           boxShadow: [
-            "0 0 20px rgba(255,255,255,0.5)",
-            "0 0 40px rgba(255,255,255,0.8)",
-            "0 0 20px rgba(255,255,255,0.5)",
+            "0 0 20px rgba(168,85,247,0.5)",
+            "0 0 50px rgba(168,85,247,0.9)",
+            "0 0 20px rgba(168,85,247,0.5)",
           ],
         }}
         transition={{ duration: 1.5, repeat: Infinity }}
       >
-        🚀 Essai Gratuit
+        🚀 Free Trial
       </motion.button>
     </motion.div>
 
@@ -754,7 +496,7 @@ const SlideCTA = () => (
       animate={{ opacity: 1 }}
       transition={{ delay: 0.7 }}
     >
-      Sans carte bancaire
+      No credit card required
     </motion.p>
 
     {/* Stats */}
@@ -764,25 +506,25 @@ const SlideCTA = () => (
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.9 }}
     >
-      <div className="text-center">
-        <p className="text-2xl font-black text-yellow-300">10K+</p>
-        <p className="text-white/70 text-xs">Produits</p>
-      </div>
-      <div className="text-center">
-        <p className="text-2xl font-black text-green-400">500+</p>
-        <p className="text-white/70 text-xs">Vendeurs</p>
-      </div>
-      <div className="text-center">
-        <p className="text-2xl font-black text-pink-400">95%</p>
-        <p className="text-white/70 text-xs">Satisfaction</p>
-      </div>
+      {[
+        { value: "10K+", label: "Products", color: "text-yellow-300" },
+        { value: "500+", label: "Sellers", color: "text-green-400" },
+        { value: "95%", label: "Satisfaction", color: "text-pink-400" },
+      ].map((stat, i) => (
+        <FloatingElement key={i} delay={i * 0.2} amplitude={3}>
+          <div className="text-center">
+            <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
+            <p className="text-white/70 text-xs">{stat.label}</p>
+          </div>
+        </FloatingElement>
+      ))}
     </motion.div>
   </motion.div>
 );
 
 // All slides
-const slides = [SlideIntro, SlideStats, SlideGooglePhones, SlideSEOOptimization, SlideBeforeAfter, SlideGoogleShopping, SlideTestimonials, SlideCTA];
-const SLIDE_DURATION = 6000; // 6 seconds per slide
+const slides = [SlideIntro, SlideStats, SlideSEOScore, SlideBeforeAfter, SlideLandingPage, SlideImageEnhancement, SlideGoogleShopping, SlideCTA];
+const SLIDE_DURATION = 6000;
 
 export default function AnimationAds() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -802,7 +544,7 @@ export default function AnimationAds() {
     return () => clearInterval(timer);
   }, [isPlaying]);
 
-  // Play voice narration when slide changes
+  // Play voice narration when slide changes (ENGLISH)
   useEffect(() => {
     if (isMuted) return;
     
@@ -811,7 +553,7 @@ export default function AnimationAds() {
         setIsLoadingAudio(true);
         
         const { data, error } = await supabase.functions.invoke('robot-tts', {
-          body: { text: SLIDE_NARRATIONS[currentSlide] }
+          body: { text: SLIDE_NARRATIONS_EN[currentSlide] }
         });
 
         if (error) {
@@ -820,13 +562,11 @@ export default function AnimationAds() {
         }
 
         if (data?.audio) {
-          // Stop previous audio
           if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
           }
 
-          // Create and play new audio
           const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
           audioRef.current = audio;
           audio.volume = 0.8;
@@ -860,15 +600,16 @@ export default function AnimationAds() {
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       {/* 9:16 Container */}
-      <div className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900">
+      <div className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide}
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 1.1, rotateY: -10 }}
+            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
             transition={{ duration: 0.5 }}
+            style={{ perspective: 1000 }}
           >
             <CurrentSlideComponent />
           </motion.div>
@@ -889,34 +630,35 @@ export default function AnimationAds() {
 
         {/* Controls */}
         <div className="absolute top-4 right-4 flex gap-2 z-30">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="w-10 h-10 rounded-full bg-black/30 text-white hover:bg-black/50"
+          <button
             onClick={toggleMute}
+            className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
           >
             {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="w-10 h-10 rounded-full bg-black/30 text-white hover:bg-black/50"
+          </button>
+          <button
             onClick={() => setIsPlaying(!isPlaying)}
+            className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
           >
             {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-          </Button>
+          </button>
         </div>
 
-        {/* Audio loading indicator */}
+        {/* Loading indicator */}
         {isLoadingAudio && (
           <div className="absolute top-4 left-4 z-30">
             <motion.div
-              className="w-3 h-3 bg-green-400 rounded-full"
+              className="w-3 h-3 bg-purple-400 rounded-full"
               animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
-              transition={{ duration: 0.8, repeat: Infinity }}
+              transition={{ duration: 1, repeat: Infinity }}
             />
           </div>
         )}
+
+        {/* Slide counter */}
+        <div className="absolute top-4 left-4 z-30 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+          <span className="text-white text-sm font-bold">{currentSlide + 1}/{slides.length}</span>
+        </div>
       </div>
     </div>
   );
