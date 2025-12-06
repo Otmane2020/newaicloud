@@ -24,6 +24,11 @@ import sofaWhiteBackground from "@/assets/sofa-white-background.jpg";
 import sofaWithBackground from "@/assets/sofa-with-background.jpg";
 import shopifyLogo from "@/assets/shopify-logo.svg";
 
+// Import mockup images for 3D carousel
+import googleMockupsPhones from "@/assets/mockups/google-mockups-phones.png";
+import searchConsoleGrowth from "@/assets/mockups/search-console-growth.png";
+import seoBeforeAfter from "@/assets/mockups/seo-before-after.png";
+
 // ========= ENGLISH NARRATIONS =========
 const SLIDE_NARRATIONS_EN = [
   "NewAI — the AI that boosts your Shopify SEO automatically. Connect Shopify, Google, Facebook and Instagram in one click!",
@@ -248,51 +253,166 @@ const SlideStats = () => (
   </motion.div>
 );
 
-// ========= SLIDE 3: GOOGLE PHONE MOCKUPS =========
-const SlideGoogleMockups = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
-    <FloatingParticles />
-    
-    <ZoomPunch>
-      <h2 className="text-xl font-black text-white text-center mb-4">
-        Visible on <span className="text-yellow-300">Google</span>
-      </h2>
-    </ZoomPunch>
-    
-    <div className="flex gap-2 w-full max-w-sm justify-center" style={{ perspective: 1200 }}>
-      {[
-        { title: "Search", icon: "🔍", color: "from-blue-500/20 to-blue-600/20" },
-        { title: "Shopping", icon: "🛒", color: "from-green-500/20 to-green-600/20" },
-        { title: "Discover", icon: "✨", color: "from-purple-500/20 to-purple-600/20" },
-      ].map((item, i) => (
-        <motion.div
-          key={i}
-          className={`flex-1 bg-gradient-to-br ${item.color} backdrop-blur-sm rounded-2xl p-3 border border-white/20`}
-          initial={{ y: 100, opacity: 0, rotateY: i === 0 ? -30 : i === 2 ? 30 : 0 }}
-          animate={{ y: 0, opacity: 1, rotateY: 0 }}
-          transition={{ delay: 0.3 + i * 0.15, type: "spring", stiffness: 100 }}
-          style={{ transformStyle: "preserve-3d" }}
-        >
-          {/* Phone Frame */}
-          <div className="bg-white rounded-xl p-2 shadow-xl">
-            <div className="h-2 w-8 bg-gray-200 rounded-full mx-auto mb-2" />
+// ========= SLIDE 3: 3D IMAGE CAROUSEL =========
+const Slide3DImageCarousel = () => {
+  const [activeImage, setActiveImage] = useState(0);
+  
+  const carouselImages = [
+    { src: googleMockupsPhones, label: "Google Presence", type: "shopify" },
+    { src: searchConsoleGrowth, label: "Traffic Growth +500%", type: "search" },
+    { src: seoBeforeAfter, label: "SEO Score +68%", type: "seo" },
+    { src: googleMockupsPhones, label: "Rich Results", type: "shopify" },
+    { src: searchConsoleGrowth, label: "Search Console", type: "search" },
+    { src: googleMockupsPhones, label: "Google Shopping", type: "shopify" },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveImage(prev => (prev + 1) % carouselImages.length);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-white overflow-hidden">
+      {/* Title */}
+      <motion.h2
+        className="text-xl font-black text-gray-900 text-center mb-3 z-20"
+        initial={{ y: -30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <span className="text-purple-600">NewAI</span> Results
+      </motion.h2>
+
+      {/* 3D Carousel */}
+      <div 
+        className="relative w-full h-64 flex items-center justify-center"
+        style={{ perspective: 1200 }}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeImage}
+            className="absolute w-[90%] h-full rounded-2xl overflow-hidden shadow-2xl bg-white"
+            initial={{ 
+              opacity: 0, 
+              rotateY: 90, 
+              scale: 0.5,
+              x: 200,
+              z: -200
+            }}
+            animate={{ 
+              opacity: 1, 
+              rotateY: 0, 
+              scale: 1,
+              x: 0,
+              z: 0
+            }}
+            exit={{ 
+              opacity: 0, 
+              rotateY: -90, 
+              scale: 0.5,
+              x: -200,
+              z: -200
+            }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 100, 
+              damping: 15,
+              duration: 0.5
+            }}
+            style={{ 
+              transformStyle: "preserve-3d",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+            }}
+          >
+            <img 
+              src={carouselImages[activeImage].src} 
+              alt={carouselImages[activeImage].label}
+              className="w-full h-full object-contain bg-white"
+            />
+            
+            {/* Label overlay */}
             <motion.div 
-              className="text-3xl text-center mb-2"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 1, repeat: Infinity, delay: i * 0.3 }}
+              className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-purple-600 to-transparent p-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              {item.icon}
+              <p className="text-white font-bold text-center text-sm">
+                {carouselImages[activeImage].label}
+              </p>
             </motion.div>
-            <div className="h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg" />
-            </div>
-          </div>
-          <p className="text-white text-xs font-bold text-center mt-2">{item.title}</p>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Side preview cards */}
+        <motion.div 
+          className="absolute left-0 w-16 h-40 bg-white/80 rounded-xl shadow-lg overflow-hidden"
+          style={{ 
+            transform: "translateX(-20px) rotateY(30deg) scale(0.7)",
+            transformStyle: "preserve-3d"
+          }}
+          animate={{ opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <img 
+            src={carouselImages[(activeImage - 1 + carouselImages.length) % carouselImages.length].src} 
+            alt="prev"
+            className="w-full h-full object-cover opacity-50"
+          />
         </motion.div>
-      ))}
-    </div>
-  </motion.div>
-);
+        
+        <motion.div 
+          className="absolute right-0 w-16 h-40 bg-white/80 rounded-xl shadow-lg overflow-hidden"
+          style={{ 
+            transform: "translateX(20px) rotateY(-30deg) scale(0.7)",
+            transformStyle: "preserve-3d"
+          }}
+          animate={{ opacity: [0.3, 0.5, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+        >
+          <img 
+            src={carouselImages[(activeImage + 1) % carouselImages.length].src} 
+            alt="next"
+            className="w-full h-full object-cover opacity-50"
+          />
+        </motion.div>
+      </div>
+
+      {/* Progress dots */}
+      <div className="flex gap-2 mt-4 z-20">
+        {carouselImages.map((_, i) => (
+          <motion.div
+            key={i}
+            className={`w-2 h-2 rounded-full ${i === activeImage ? 'bg-purple-600' : 'bg-gray-300'}`}
+            animate={i === activeImage ? { scale: [1, 1.3, 1] } : {}}
+            transition={{ duration: 0.3 }}
+          />
+        ))}
+      </div>
+
+      {/* Type indicators */}
+      <div className="flex gap-3 mt-3 z-20">
+        {[
+          { label: "Shopify", color: "bg-green-500" },
+          { label: "Search", color: "bg-blue-500" },
+          { label: "SEO", color: "bg-orange-500" },
+        ].map((type, i) => (
+          <motion.span
+            key={i}
+            className={`${type.color} text-white text-xs px-2 py-1 rounded-full font-bold`}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.5 + i * 0.1 }}
+          >
+            {type.label}
+          </motion.span>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
 
 // ========= SLIDE 4: SEO SCORE =========
 const SlideSEOScore = () => (
@@ -595,7 +715,7 @@ const SlideCTA = () => (
 );
 
 // All slides
-const slides = [SlideIntro, SlideStats, SlideGoogleMockups, SlideSEOScore, SlideBeforeAfter, SlideLandingPage, SlideImageEnhancement, SlideGoogleShopping, SlideCTA];
+const slides = [SlideIntro, SlideStats, Slide3DImageCarousel, SlideSEOScore, SlideBeforeAfter, SlideLandingPage, SlideImageEnhancement, SlideGoogleShopping, SlideCTA];
 const SLIDE_DURATION = 4000; // Reduced from 6000ms to 4000ms
 
 export default function AnimationAds() {
