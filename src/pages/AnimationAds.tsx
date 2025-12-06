@@ -997,7 +997,7 @@ export default function AnimationAds() {
   const containerRef = useRef<HTMLDivElement>(null);
   const audioQueueRef = useRef<HTMLAudioElement[]>([]);
 
-  // Preload ALL audio on mount for seamless playback
+  // Preload audio SEQUENTIALLY to avoid ElevenLabs rate limit (max 10 concurrent)
   useEffect(() => {
     const preloadAllAudio = async () => {
       if (audioPreloadPromise) return;
@@ -1005,15 +1005,26 @@ export default function AnimationAds() {
       setIsLoadingAudio(true);
       
       audioPreloadPromise = (async () => {
-        const promises = SLIDE_NARRATIONS_EN.map(async (text, index) => {
-          if (audioCache.has(index)) return;
+        // Load audio SEQUENTIALLY with delay to avoid rate limit
+        for (let index = 0; index < SLIDE_NARRATIONS_EN.length; index++) {
+          if (audioCache.has(index)) continue;
+          
+          const text = SLIDE_NARRATIONS_EN[index];
           
           try {
+            // Add delay between requests to avoid rate limit
+            if (index > 0) {
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
             const { data, error } = await supabase.functions.invoke('robot-tts', {
               body: { text }
             });
             
-            if (error || data?.quotaExceeded || !data?.audio) return;
+            if (error || data?.quotaExceeded || !data?.audio) {
+              console.warn(`Audio ${index} failed or quota exceeded`);
+              continue;
+            }
             
             const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
             audio.volume = 0.8;
@@ -1026,12 +1037,11 @@ export default function AnimationAds() {
             });
             
             audioCache.set(index, audio);
+            console.log(`✓ Audio ${index + 1}/${SLIDE_NARRATIONS_EN.length} loaded`);
           } catch (err) {
             console.error(`Failed to preload audio ${index}:`, err);
           }
-        });
-        
-        await Promise.all(promises);
+        }
       })();
       
       await audioPreloadPromise;
