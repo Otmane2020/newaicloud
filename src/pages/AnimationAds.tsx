@@ -1366,12 +1366,12 @@ export default function AnimationAds() {
     
     setIsExporting(true);
     setIsPlaying(false);
-    toast.info("Capturing slides... Please wait");
+    toast.info("Capturing slides for MP4 export...");
 
     try {
       const container = containerRef.current;
       
-      // Create canvas for video
+      // Create canvas for video - 9:16 aspect ratio
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
       canvas.width = 1080;
@@ -1385,7 +1385,7 @@ export default function AnimationAds() {
         toast.info(`Capturing slide ${i + 1}/${slides.length}`, { id: 'export-progress' });
         
         // Wait for animations to settle
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 1200));
         
         const capturedCanvas = await html2canvas(container, {
           scale: 2,
@@ -1400,17 +1400,24 @@ export default function AnimationAds() {
         slideImages.push(capturedCanvas);
       }
       
-      toast.info("Encoding video...", { id: 'export-progress' });
+      toast.info("Encoding MP4 video...", { id: 'export-progress' });
       
-      // Setup MediaRecorder
+      // Try MP4 first (Safari/iOS), fallback to WebM
+      let mimeType = 'video/webm;codecs=vp9';
+      let fileExt = 'webm';
+      
+      if (MediaRecorder.isTypeSupported('video/mp4')) {
+        mimeType = 'video/mp4';
+        fileExt = 'mp4';
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=h264')) {
+        mimeType = 'video/webm;codecs=h264';
+        fileExt = 'webm';
+      }
+      
       const stream = canvas.captureStream(30);
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
-        ? 'video/webm;codecs=vp9' 
-        : 'video/webm';
-      
       const recorder = new MediaRecorder(stream, { 
         mimeType,
-        videoBitsPerSecond: 8000000
+        videoBitsPerSecond: 10000000 // 10 Mbps for quality
       });
       
       const chunks: Blob[] = [];
@@ -1423,7 +1430,7 @@ export default function AnimationAds() {
       // Draw each slide for 4 seconds at 30fps
       const fps = 30;
       const slideDurationMs = 4000;
-      const framesPerSlide = (slideDurationMs / 1000) * fps;
+      const framesPerSlide = Math.floor((slideDurationMs / 1000) * fps);
       
       for (let slideIdx = 0; slideIdx < slideImages.length; slideIdx++) {
         const img = slideImages[slideIdx];
@@ -1433,8 +1440,8 @@ export default function AnimationAds() {
           ctx.fillStyle = slideIdx % 2 === 0 ? '#1e40af' : '#ffffff';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           
-          // Scale and center the captured image
-          const scale = Math.min(
+          // Scale and center the captured image to fill canvas
+          const scale = Math.max(
             canvas.width / img.width,
             canvas.height / img.height
           );
@@ -1443,6 +1450,7 @@ export default function AnimationAds() {
           
           ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
           
+          // Sync frame timing
           await new Promise(r => setTimeout(r, 1000 / fps));
         }
         
@@ -1459,7 +1467,7 @@ export default function AnimationAds() {
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = 'NewAI-Ad.webm';
+          a.download = `NewAI-Ad.${fileExt}`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -1468,13 +1476,13 @@ export default function AnimationAds() {
         };
       });
       
-      toast.success("Video exported successfully!");
+      toast.success(`Video exported as ${fileExt.toUpperCase()}!`);
       setIsExporting(false);
       setCurrentSlide(0);
       
     } catch (error) {
       console.error('Export error:', error);
-      toast.error("Export failed. Try screen recording instead.");
+      toast.error("Export failed. Try using screen recording.");
       setIsExporting(false);
     }
   };
