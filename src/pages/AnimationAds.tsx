@@ -25,24 +25,36 @@ import sofaWhiteBackground from "@/assets/sofa-white-background.jpg";
 import sofaWithBackground from "@/assets/sofa-with-background.jpg";
 import shopifyLogo from "@/assets/shopify-logo.svg";
 
-// Audio cache for ElevenLabs narration - preloaded queue
+// ========= PRE-GENERATED AUDIO (stored base64 - no API calls) =========
+// Audio is pre-generated and stored to avoid ElevenLabs API calls
+const PRELOADED_AUDIO_URLS = [
+  // Slide 0: Hook
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-0.mp3",
+  // Slide 1: Stats  
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-1.mp3",
+  // Slide 2: Products
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-2.mp3",
+  // Slide 3: Google
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-3.mp3",
+  // Slide 4: SEO Score
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-4.mp3",
+  // Slide 5: Before/After SEO
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-5.mp3",
+  // Slide 6: Vision AI
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-6.mp3",
+  // Slide 7: Landing Page
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-7.mp3",
+  // Slide 8: Image Enhancement
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-8.mp3",
+  // Slide 9: Google Shopping
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-9.mp3",
+  // Slide 10: CTA
+  "https://nekqqlhrjgmyudmmewas.supabase.co/storage/v1/object/public/audio-cache/animationads/slide-10.mp3",
+];
+
+// Audio cache - loaded from storage URLs
 const audioCache: Map<number, HTMLAudioElement> = new Map();
 let audioPreloadPromise: Promise<void> | null = null;
-
-// ========= ENGLISH NARRATIONS (11 slides) =========
-const SLIDE_NARRATIONS_EN = [
-  "NewAI — the AI that boosts your Shopify SEO automatically. Connect Shopify, Google, Facebook and Instagram in one click!",
-  "Real results: 3x faster workflow, 50% more traffic, save 10 hours weekly, and Top 10 Google ranking!",
-  "Showcase your products in style! Professional photos, 3D animations, and dynamic galleries!",
-  "Dominate Google Search! Appear in Search, Shopping, and Discover with AI-powered optimization!",
-  "Watch your SEO score skyrocket! From struggling to thriving — all fully automated!",
-  "Transform your SEO from 34% to 95%! AI optimization that actually works!",
-  "See the difference! Before: plain white. After: Vision AI professional staging. Plus 68% more conversions!",
-  "Auto-generated landing pages with AI — conversion-optimized HTML ready to deploy in seconds!",
-  "AI Vision analyzes and enhances every product image. Alt text, backgrounds, optimization — all automatic!",
-  "Google Shopping ready! XML feed, category mapping, GTIN validation. Zero errors guaranteed!",
-  "Start your free trial today. No credit card required. Join 500+ successful sellers!"
-];
 
 // Slide backgrounds alternating white/blue
 const SLIDE_BACKGROUNDS = [
@@ -997,7 +1009,7 @@ export default function AnimationAds() {
   const containerRef = useRef<HTMLDivElement>(null);
   const audioQueueRef = useRef<HTMLAudioElement[]>([]);
 
-  // Preload audio SEQUENTIALLY to avoid ElevenLabs rate limit (max 10 concurrent)
+  // Preload audio from pre-stored URLs (NO API calls - instant load)
   useEffect(() => {
     const preloadAllAudio = async () => {
       if (audioPreloadPromise) return;
@@ -1005,39 +1017,26 @@ export default function AnimationAds() {
       setIsLoadingAudio(true);
       
       audioPreloadPromise = (async () => {
-        // Load audio SEQUENTIALLY with delay to avoid rate limit
-        for (let index = 0; index < SLIDE_NARRATIONS_EN.length; index++) {
+        // Load audio from pre-stored URLs - no API calls needed
+        for (let index = 0; index < PRELOADED_AUDIO_URLS.length; index++) {
           if (audioCache.has(index)) continue;
           
-          const text = SLIDE_NARRATIONS_EN[index];
-          
           try {
-            // Add delay between requests to avoid rate limit
-            if (index > 0) {
-              await new Promise(resolve => setTimeout(resolve, 300));
-            }
-            
-            const { data, error } = await supabase.functions.invoke('robot-tts', {
-              body: { text }
-            });
-            
-            if (error || data?.quotaExceeded || !data?.audio) {
-              console.warn(`Audio ${index} failed or quota exceeded`);
-              continue;
-            }
-            
-            const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+            const audioUrl = PRELOADED_AUDIO_URLS[index];
+            const audio = new Audio(audioUrl);
             audio.volume = 0.8;
             audio.preload = 'auto';
+            audio.crossOrigin = 'anonymous';
             
             // Wait for audio to be loaded
-            await new Promise<void>((resolve) => {
+            await new Promise<void>((resolve, reject) => {
               audio.addEventListener('canplaythrough', () => resolve(), { once: true });
+              audio.addEventListener('error', () => reject(new Error(`Failed to load audio ${index}`)), { once: true });
               audio.load();
             });
             
             audioCache.set(index, audio);
-            console.log(`✓ Audio ${index + 1}/${SLIDE_NARRATIONS_EN.length} loaded`);
+            console.log(`✓ Audio ${index + 1}/${PRELOADED_AUDIO_URLS.length} loaded from cache`);
           } catch (err) {
             console.error(`Failed to preload audio ${index}:`, err);
           }
