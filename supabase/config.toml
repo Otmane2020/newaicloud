@@ -549,3 +549,9 @@ verify_jwt = false
 
 [functions.google-gsc-oauth]
 verify_jwt = false
+
+[functions.robot-tts]
+verify_jwt = false
+
+[functions.generate-animation-audio]
+verify_jwt = false
