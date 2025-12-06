@@ -3,7 +3,17 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+// Auto detect mime for audio
+function detectMime(base64: string) {
+  if (base64.startsWith("/+MY")) return "audio/mpeg"; // mp3
+  if (base64.startsWith("GkXf")) return "audio/webm"; // webm
+  if (base64.startsWith("UklG")) return "audio/wav"; // wav
+  if (base64.startsWith("T2dn")) return "audio/ogg"; // ogg
+  return "audio/webm"; // fallback
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,27 +21,29 @@ serve(async (req) => {
   }
 
   try {
-    const { audio } = await req.json();
+    const { audio, translateTo = "fr" } = await req.json();
 
     if (!audio) {
-      throw new Error("Audio data is required");
+      return new Response(JSON.stringify({ error: "Missing 'audio' base64 field." }), {
+        status: 400,
+        headers: corsHeaders,
+      });
     }
 
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!lovableApiKey) {
-      throw new Error("Lovable API key not configured");
+      throw new Error("LOVABLE_API_KEY is not set in edge config!");
     }
 
-    console.log("Transcribing audio with Gemini...");
+    const mime = detectMime(audio);
+    const audioDataUri = `data:${mime};base64,${audio}`;
 
-    // Convert base64 audio to data URI for Gemini
-    const audioDataUri = `data:audio/webm;base64,${audio}`;
+    console.log("🎧 Audio received, sending to Gemini STT...");
 
-    // Use Lovable AI (Gemini 2.5 Flash) for audio transcription
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${lovableApiKey}`,
+        Authorization: `Bearer ${lovableApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -42,53 +54,52 @@ serve(async (req) => {
             content: [
               {
                 type: "text",
-                text: "Transcris cet audio en français. Retourne uniquement le texte transcrit, sans commentaires ni formatage."
+                text:
+                  translateTo === "fr"
+                    ? "Transcris cet audio en français. Réponds uniquement le texte propre, sans commentaires."
+                    : "Transcribe this audio in English. Reply only with the clean text.",
               },
               {
                 type: "audio_url",
-                audio_url: {
-                  url: audioDataUri
-                }
-              }
-            ]
-          }
-        ]
+                audio_url: { url: audioDataUri },
+              },
+            ],
+          },
+        ],
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("Lovable AI error:", error);
-      throw new Error(`Transcription error: ${error}`);
+      console.error("❌ Gemini STT Error:", error);
+      throw new Error(error);
     }
 
     const result = await response.json();
-    const text = result.choices?.[0]?.message?.content;
+    const text = result?.choices?.[0]?.message?.content?.trim();
 
-    if (!text) {
-      throw new Error("No transcription returned from AI");
-    }
+    if (!text) throw new Error("AI returned empty response");
 
-    console.log("Transcription successful:", text);
+    console.log("✅ Transcription successful:", text);
 
     return new Response(
-      JSON.stringify({ 
-        text: text.trim()
+      JSON.stringify({
+        text,
+        wordCount: text.split(" ").length,
+        language: translateTo,
+        timestamp: Date.now(),
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (error) {
-    console.error("STT error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+  } catch (err) {
+    console.error("⚠ STT Handler Error:", err);
+
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
+      JSON.stringify({
+        error: err.message || "Unexpected error",
+        tip: "Verify your base64 audio and LOVABLE_API_KEY.",
+      }),
+      { status: 500, headers: corsHeaders },
     );
   }
 });
