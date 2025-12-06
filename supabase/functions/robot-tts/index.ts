@@ -38,7 +38,10 @@ serve(async (req) => {
     }
 
     if (!text || text.length < 2) {
-      throw new Error("Missing or empty text input");
+      return Response.json(
+        { audio: null, quotaExceeded: false, error: "Missing or empty text input" },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
     if (text.length > 550) {
