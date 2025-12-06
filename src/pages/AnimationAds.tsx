@@ -1366,10 +1366,13 @@ export default function AnimationAds() {
     
     setIsExporting(true);
     setIsPlaying(false);
-    toast.info("Capturing video frames...");
+    toast.info("Recording video... Please wait");
 
     try {
       const container = containerRef.current;
+      
+      // Use getDisplayMedia for screen capture of the container area
+      // Or fallback to canvas recording
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
@@ -1377,15 +1380,22 @@ export default function AnimationAds() {
         throw new Error('Cannot get canvas context');
       }
 
-      // Set canvas size to match container
-      const rect = container.getBoundingClientRect();
-      canvas.width = rect.width * 2; // Higher resolution
-      canvas.height = rect.height * 2;
+      // Set canvas size (9:16 aspect ratio)
+      canvas.width = 1080;
+      canvas.height = 1920;
       
       const stream = canvas.captureStream(30);
+      
+      // Check for supported mime types
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
+        ? 'video/webm;codecs=vp9' 
+        : MediaRecorder.isTypeSupported('video/webm') 
+          ? 'video/webm'
+          : 'video/mp4';
+      
       const recorder = new MediaRecorder(stream, { 
-        mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 5000000
+        mimeType,
+        videoBitsPerSecond: 8000000
       });
       
       const chunks: Blob[] = [];
@@ -1393,52 +1403,86 @@ export default function AnimationAds() {
         if (e.data.size > 0) chunks.push(e.data);
       };
       
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'NewAI-Ad.webm';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast.success("Video exported successfully!");
-        setIsExporting(false);
-      };
+      const recordingComplete = new Promise<void>((resolve) => {
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = mimeType.includes('mp4') ? 'NewAI-Ad.mp4' : 'NewAI-Ad.webm';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast.success("Video exported!");
+          resolve();
+        };
+      });
       
       recorder.start(100);
       
-      // Capture frames for each slide
-      for (let i = 0; i < slides.length; i++) {
-        setCurrentSlide(i);
-        await new Promise(r => setTimeout(r, 800)); // Wait for animation
+      // Record each slide
+      const slideDuration = 4000; // 4 seconds per slide
+      const frameRate = 30;
+      const frameInterval = 1000 / frameRate;
+      
+      for (let slideIdx = 0; slideIdx < slides.length; slideIdx++) {
+        setCurrentSlide(slideIdx);
         
-        // Capture frame using html2canvas
-        const capturedCanvas = await html2canvas(container, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: null,
-        });
+        // Wait for slide transition animation
+        await new Promise(r => setTimeout(r, 700));
         
-        // Draw to recording canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(capturedCanvas, 0, 0, canvas.width, canvas.height);
+        // Capture frames for this slide duration
+        const framesPerSlide = Math.floor((slideDuration - 700) / frameInterval);
         
-        // Hold frame for slide duration
-        const frameDuration = 4000; // 4 seconds per slide
-        const frameInterval = 33; // ~30fps
-        for (let f = 0; f < frameDuration / frameInterval; f++) {
+        for (let frame = 0; frame < framesPerSlide; frame++) {
+          try {
+            const capturedCanvas = await html2canvas(container, {
+              scale: 2,
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: '#1e40af',
+              logging: false,
+            });
+            
+            ctx.fillStyle = '#1e40af';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Calculate scaling to fit 9:16
+            const scale = Math.min(
+              canvas.width / capturedCanvas.width,
+              canvas.height / capturedCanvas.height
+            );
+            const x = (canvas.width - capturedCanvas.width * scale) / 2;
+            const y = (canvas.height - capturedCanvas.height * scale) / 2;
+            
+            ctx.drawImage(
+              capturedCanvas, 
+              x, y, 
+              capturedCanvas.width * scale, 
+              capturedCanvas.height * scale
+            );
+          } catch (err) {
+            // Continue on frame capture error
+          }
+          
           await new Promise(r => setTimeout(r, frameInterval));
+          
+          // Update progress
+          const progress = Math.round(((slideIdx * framesPerSlide + frame) / (slides.length * framesPerSlide)) * 100);
+          if (frame % 10 === 0) {
+            toast.info(`Recording: ${progress}%`, { id: 'export-progress' });
+          }
         }
       }
       
       recorder.stop();
+      await recordingComplete;
+      setIsExporting(false);
       
     } catch (error) {
       console.error('Export error:', error);
-      toast.error("Export failed. Try screen recording instead.");
+      toast.error("Export failed. Try using screen recording.");
       setIsExporting(false);
     }
   };
