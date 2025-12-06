@@ -65,7 +65,7 @@ const FloatingParticles = () => (
 const SlideHero = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
-    <ParticleExplosion trigger={true} particleCount={20} />
+    <ParticleExplosion trigger={true} count={20} />
     
     <motion.div
       className="relative z-10 mb-4"
@@ -172,7 +172,7 @@ const SlideGoogle = () => (
 
     <div className="flex gap-2">
       {["Search", "Shopping", "Discover"].map((item, i) => (
-        <FloatingElement key={i} delay={i * 0.1} amplitude={3}>
+        <FloatingElement key={i} delay={i * 0.1} amp={3}>
           <motion.div
             className="bg-white/20 backdrop-blur-sm rounded-xl px-3 py-2 text-center"
             initial={{ y: 50, opacity: 0 }}
@@ -190,7 +190,7 @@ const SlideGoogle = () => (
 // Slide 5: Before/After
 const SlideBeforeAfter = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-3 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
-    <ParticleExplosion trigger={true} particleCount={12} />
+    <ParticleExplosion trigger={true} count={12} />
     
     <h2 className="text-lg font-black text-white text-center mb-2 z-10">
       <GlitchText>Vision AI</GlitchText>
@@ -364,7 +364,7 @@ const SlidePricing = () => (
 const SlideCTA = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
-    <ParticleExplosion trigger={true} particleCount={25} />
+    <ParticleExplosion trigger={true} count={25} />
     
     <motion.div
       className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center shadow-2xl mb-4"
@@ -438,6 +438,12 @@ async function speak(text: string, audioRef: React.MutableRefObject<HTMLAudioEle
       return;
     }
 
+    // Handle quota exceeded gracefully
+    if (data?.quotaExceeded) {
+      console.log('ElevenLabs quota exceeded - playing without audio');
+      return;
+    }
+
     if (data?.audio) {
       const binaryString = atob(data.audio);
       const bytes = new Uint8Array(binaryString.length);
@@ -500,68 +506,69 @@ export default function NewAIVideoGenerator() {
   const CurrentSlideComponent = SLIDES[currentSlide].component;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black">
+    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 gap-4">
+      {/* Controls */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setIsPlaying(p => !p)}
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg flex items-center gap-2"
+        >
+          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          {isPlaying ? "Pause" : "Play"}
+        </button>
+        <button
+          onClick={toggleMute}
+          className="px-4 py-2 bg-gray-700 text-white rounded-lg flex items-center gap-2"
+        >
+          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+        </button>
+        <button
+          onClick={generateVideo}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2"
+        >
+          <Download className="w-4 h-4" />
+          Export
+        </button>
+      </div>
+
+      {/* Video Container */}
       <div
         id="video-capture"
-        className="relative w-[400px] aspect-[9/16] rounded-3xl overflow-hidden bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900"
+        className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl"
+        style={{ perspective: 1200 }}
       >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide}
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.1, rotateY: -10 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
-            transition={{ duration: 0.4 }}
-            style={{ perspective: 1000 }}
+            initial={{ opacity: 0, rotateY: -45, scale: 0.8 }}
+            animate={{ opacity: 1, rotateY: 0, scale: 1 }}
+            exit={{ opacity: 0, rotateY: 45, scale: 0.8 }}
+            transition={{ duration: 0.5 }}
+            style={{ transformStyle: "preserve-3d" }}
           >
             <CurrentSlideComponent />
           </motion.div>
         </AnimatePresence>
 
-        {/* Slide indicator */}
-        <div className="absolute top-4 left-4 flex gap-1 z-20">
-          {SLIDES.map((_, idx) => (
-            <div
-              key={idx}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                idx === currentSlide ? 'bg-yellow-400' : 'bg-white/30'
+        {/* Progress */}
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-30">
+          {SLIDES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentSlide(i)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                i === currentSlide ? "bg-white w-5" : "bg-white/40"
               }`}
             />
           ))}
         </div>
 
-        {/* CONTROLS */}
-        <div className="absolute top-4 right-4 flex gap-2 z-20">
-          <button
-            className="p-2 bg-white/20 rounded-full text-white hover:bg-white/30 transition-colors"
-            onClick={toggleMute}
-          >
-            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-          </button>
-          <button
-            className="p-2 bg-white/20 rounded-full text-white hover:bg-white/30 transition-colors"
-            onClick={() => setIsPlaying(p => !p)}
-          >
-            {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-          </button>
-          <button
-            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
-            onClick={generateVideo}
-          >
-            <Download size={20} />
-          </button>
-        </div>
-
-        {/* Progress bar */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-20">
-          <motion.div
-            className="h-full bg-yellow-400"
-            initial={{ width: "0%" }}
-            animate={{ width: "100%" }}
-            transition={{ duration: 4, ease: "linear" }}
-            key={currentSlide}
-          />
+        {/* Slide counter */}
+        <div className="absolute top-3 left-3 z-30 bg-black/30 backdrop-blur-sm rounded-full px-2.5 py-0.5">
+          <span className="text-white text-xs font-bold">
+            {currentSlide + 1}/{SLIDES.length}
+          </span>
         </div>
       </div>
     </div>

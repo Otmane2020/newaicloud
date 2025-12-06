@@ -92,11 +92,12 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Unexpected error";
     console.error("⚠ STT Handler Error:", err);
 
     return new Response(
       JSON.stringify({
-        error: err.message || "Unexpected error",
+        error: errorMessage,
         tip: "Verify your base64 audio and LOVABLE_API_KEY.",
       }),
       { status: 500, headers: corsHeaders },

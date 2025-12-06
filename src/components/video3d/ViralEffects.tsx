@@ -222,6 +222,23 @@ export const FloatingElement = ({
   </motion.div>
 );
 
+/* =================== ROTATING 3D ===================== */
+export const Rotating3D = ({
+  children,
+  duration = 8,
+}: {
+  children: ReactNode;
+  duration?: number;
+}) => (
+  <motion.div
+    animate={{ rotateY: [0, 360] }}
+    transition={{ duration, repeat: Infinity, ease: "linear" }}
+    style={{ transformStyle: "preserve-3d" }}
+  >
+    {children}
+  </motion.div>
+);
+
 /* =================== CHROMATIC SPLIT ===================== */
 export const ChromaticSplit = ({ children }: { children: ReactNode }) => (
   <motion.div
@@ -241,7 +258,7 @@ export default {
   ParticleExplosion,
   SpeedLines,
   MorphingGradient,
-  Rotating3D: () => null,
+  Rotating3D,
   FloatingElement,
   NeonText,
   CTAPulse,
