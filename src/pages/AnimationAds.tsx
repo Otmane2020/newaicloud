@@ -1009,7 +1009,7 @@ export default function AnimationAds() {
   const containerRef = useRef<HTMLDivElement>(null);
   const audioQueueRef = useRef<HTMLAudioElement[]>([]);
 
-  // Preload audio from pre-stored URLs (NO API calls - instant load)
+  // Preload audio from storage or generate via ElevenLabs if not available
   useEffect(() => {
     const preloadAllAudio = async () => {
       if (audioPreloadPromise) return;
@@ -1017,7 +1017,7 @@ export default function AnimationAds() {
       setIsLoadingAudio(true);
       
       audioPreloadPromise = (async () => {
-        // Load audio from pre-stored URLs - no API calls needed
+        // Try to load audio from storage first
         for (let index = 0; index < PRELOADED_AUDIO_URLS.length; index++) {
           if (audioCache.has(index)) continue;
           
@@ -1026,19 +1026,58 @@ export default function AnimationAds() {
             const audio = new Audio(audioUrl);
             audio.volume = 0.8;
             audio.preload = 'auto';
-            audio.crossOrigin = 'anonymous';
             
-            // Wait for audio to be loaded
-            await new Promise<void>((resolve, reject) => {
-              audio.addEventListener('canplaythrough', () => resolve(), { once: true });
-              audio.addEventListener('error', () => reject(new Error(`Failed to load audio ${index}`)), { once: true });
-              audio.load();
-            });
+            // Wait for audio to be loaded with timeout
+            await Promise.race([
+              new Promise<void>((resolve, reject) => {
+                audio.addEventListener('canplaythrough', () => resolve(), { once: true });
+                audio.addEventListener('error', () => reject(new Error(`Storage audio not found`)), { once: true });
+                audio.load();
+              }),
+              new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+            ]);
             
             audioCache.set(index, audio);
-            console.log(`✓ Audio ${index + 1}/${PRELOADED_AUDIO_URLS.length} loaded from cache`);
+            console.log(`✓ Audio ${index + 1}/${PRELOADED_AUDIO_URLS.length} loaded from storage`);
           } catch (err) {
-            console.error(`Failed to preload audio ${index}:`, err);
+            // Fallback: generate via ElevenLabs API
+            console.log(`Audio ${index} not in storage, generating via API...`);
+            try {
+              const narrations = [
+                "NewAI — the AI that boosts your Shopify SEO automatically. Connect Shopify, Google, Facebook and Instagram in one click!",
+                "Real results: 3x faster workflow, 50% more traffic, save 10 hours weekly, and Top 10 Google ranking!",
+                "Showcase your products in style! Professional photos, 3D animations, and dynamic galleries!",
+                "Dominate Google Search! Appear in Search, Shopping, and Discover with AI-powered optimization!",
+                "Watch your SEO score skyrocket! From struggling to thriving — all fully automated!",
+                "Transform your SEO from 34% to 95%! AI optimization that actually works!",
+                "See the difference! Before: plain white. After: Vision AI professional staging. Plus 68% more conversions!",
+                "Auto-generated landing pages with AI — conversion-optimized HTML ready to deploy in seconds!",
+                "AI Vision analyzes and enhances every product image. Alt text, backgrounds, optimization — all automatic!",
+                "Google Shopping ready! XML feed, category mapping, GTIN validation. Zero errors guaranteed!",
+                "Start your free trial today. No credit card required. Join 500+ successful sellers!"
+              ];
+              
+              const { data, error } = await supabase.functions.invoke('robot-tts', {
+                body: { text: narrations[index] }
+              });
+              
+              if (!error && data?.audio && !data?.quotaExceeded) {
+                const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+                audio.volume = 0.8;
+                audio.preload = 'auto';
+                await new Promise<void>((resolve) => {
+                  audio.addEventListener('canplaythrough', () => resolve(), { once: true });
+                  audio.load();
+                });
+                audioCache.set(index, audio);
+                console.log(`✓ Audio ${index + 1} generated via API`);
+              }
+              
+              // Small delay to avoid rate limit
+              await new Promise(resolve => setTimeout(resolve, 400));
+            } catch (apiErr) {
+              console.error(`Failed to generate audio ${index}:`, apiErr);
+            }
           }
         }
       })();
