@@ -46,8 +46,8 @@ serve(async (req) => {
       throw new Error("ElevenLabs API key not configured");
     }
 
-    // Call ElevenLabs TTS API with Roger voice
-    const response = await fetch("https://api.elevenlabs.io/v1/text-to-speech/CwhRBWXzGAHq8TQ4Fs17", {
+    // Call ElevenLabs TTS API with custom voice (9Qd2dAu97Sqnt7S88BrY)
+    const response = await fetch("https://api.elevenlabs.io/v1/text-to-speech/9Qd2dAu97Sqnt7S88BrY", {
       method: "POST",
       headers: {
         "xi-api-key": elevenlabsApiKey,
