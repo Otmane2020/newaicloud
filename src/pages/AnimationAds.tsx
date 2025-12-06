@@ -253,160 +253,67 @@ const SlideStats = () => (
   </motion.div>
 );
 
-// ========= SLIDE 3: 3D IMAGE CAROUSEL =========
-const Slide3DImageCarousel = () => {
-  const [activeImage, setActiveImage] = useState(0);
+// ========= SLIDE 3: SHOPIFY - 3 Photos Scrolling =========
+const SlideShopifyPhotos = () => {
+  const [activePhoto, setActivePhoto] = useState(0);
   
-  const carouselImages = [
-    { src: googleMockupsPhones, label: "Google Presence", type: "shopify" },
-    { src: searchConsoleGrowth, label: "Traffic Growth +500%", type: "search" },
-    { src: seoBeforeAfter, label: "SEO Score +68%", type: "seo" },
-    { src: googleMockupsPhones, label: "Rich Results", type: "shopify" },
-    { src: searchConsoleGrowth, label: "Search Console", type: "search" },
-    { src: googleMockupsPhones, label: "Google Shopping", type: "shopify" },
-  ];
-
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveImage(prev => (prev + 1) % carouselImages.length);
-    }, 1200);
+      setActivePhoto(prev => (prev + 1) % 3);
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-white overflow-hidden">
-      {/* Title */}
       <motion.h2
-        className="text-xl font-black text-gray-900 text-center mb-3 z-20"
+        className="text-xl font-black text-gray-900 text-center mb-4 z-20"
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
       >
-        <span className="text-purple-600">NewAI</span> Results
+        <span className="text-green-600">Shopify</span> + Google
       </motion.h2>
 
-      {/* 3D Carousel */}
-      <div 
-        className="relative w-full h-64 flex items-center justify-center"
-        style={{ perspective: 1200 }}
-      >
+      <div className="relative w-full h-56 flex items-center justify-center" style={{ perspective: 1200 }}>
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeImage}
-            className="absolute w-[90%] h-full rounded-2xl overflow-hidden shadow-2xl bg-white"
-            initial={{ 
-              opacity: 0, 
-              rotateY: 90, 
-              scale: 0.5,
-              x: 200,
-              z: -200
-            }}
-            animate={{ 
-              opacity: 1, 
-              rotateY: 0, 
-              scale: 1,
-              x: 0,
-              z: 0
-            }}
-            exit={{ 
-              opacity: 0, 
-              rotateY: -90, 
-              scale: 0.5,
-              x: -200,
-              z: -200
-            }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 100, 
-              damping: 15,
-              duration: 0.5
-            }}
-            style={{ 
-              transformStyle: "preserve-3d",
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
-            }}
+            key={activePhoto}
+            className="absolute w-[85%] h-full rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-100"
+            initial={{ opacity: 0, rotateY: 90, scale: 0.6, x: 150 }}
+            animate={{ opacity: 1, rotateY: 0, scale: 1, x: 0 }}
+            exit={{ opacity: 0, rotateY: -90, scale: 0.6, x: -150 }}
+            transition={{ type: "spring", stiffness: 120, damping: 15 }}
+            style={{ transformStyle: "preserve-3d", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)" }}
           >
             <img 
-              src={carouselImages[activeImage].src} 
-              alt={carouselImages[activeImage].label}
-              className="w-full h-full object-contain bg-white"
+              src={googleMockupsPhones} 
+              alt="Google Mockups"
+              className="w-full h-full object-contain"
             />
-            
-            {/* Label overlay */}
-            <motion.div 
-              className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-purple-600 to-transparent p-3"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <p className="text-white font-bold text-center text-sm">
-                {carouselImages[activeImage].label}
-              </p>
-            </motion.div>
           </motion.div>
         </AnimatePresence>
-
-        {/* Side preview cards */}
-        <motion.div 
-          className="absolute left-0 w-16 h-40 bg-white/80 rounded-xl shadow-lg overflow-hidden"
-          style={{ 
-            transform: "translateX(-20px) rotateY(30deg) scale(0.7)",
-            transformStyle: "preserve-3d"
-          }}
-          animate={{ opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <img 
-            src={carouselImages[(activeImage - 1 + carouselImages.length) % carouselImages.length].src} 
-            alt="prev"
-            className="w-full h-full object-cover opacity-50"
-          />
-        </motion.div>
-        
-        <motion.div 
-          className="absolute right-0 w-16 h-40 bg-white/80 rounded-xl shadow-lg overflow-hidden"
-          style={{ 
-            transform: "translateX(20px) rotateY(-30deg) scale(0.7)",
-            transformStyle: "preserve-3d"
-          }}
-          animate={{ opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-        >
-          <img 
-            src={carouselImages[(activeImage + 1) % carouselImages.length].src} 
-            alt="next"
-            className="w-full h-full object-cover opacity-50"
-          />
-        </motion.div>
       </div>
 
-      {/* Progress dots */}
-      <div className="flex gap-2 mt-4 z-20">
-        {carouselImages.map((_, i) => (
+      <div className="flex gap-2 mt-4">
+        {[0, 1, 2].map(i => (
           <motion.div
             key={i}
-            className={`w-2 h-2 rounded-full ${i === activeImage ? 'bg-purple-600' : 'bg-gray-300'}`}
-            animate={i === activeImage ? { scale: [1, 1.3, 1] } : {}}
-            transition={{ duration: 0.3 }}
+            className={`w-3 h-3 rounded-full ${i === activePhoto ? 'bg-green-600' : 'bg-gray-300'}`}
+            animate={i === activePhoto ? { scale: [1, 1.4, 1] } : {}}
           />
         ))}
       </div>
 
-      {/* Type indicators */}
-      <div className="flex gap-3 mt-3 z-20">
-        {[
-          { label: "Shopify", color: "bg-green-500" },
-          { label: "Search", color: "bg-blue-500" },
-          { label: "SEO", color: "bg-orange-500" },
-        ].map((type, i) => (
+      <div className="flex gap-2 mt-3">
+        {["Search", "Shopping", "Discover"].map((label, i) => (
           <motion.span
             key={i}
-            className={`${type.color} text-white text-xs px-2 py-1 rounded-full font-bold`}
+            className={`text-xs px-3 py-1 rounded-full font-bold ${i === activePhoto ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.5 + i * 0.1 }}
+            transition={{ delay: 0.3 + i * 0.1 }}
           >
-            {type.label}
+            {label}
           </motion.span>
         ))}
       </div>
@@ -414,7 +321,161 @@ const Slide3DImageCarousel = () => {
   );
 };
 
-// ========= SLIDE 4: SEO SCORE =========
+// ========= SLIDE 4: SEARCH CONSOLE - 2 Photos 3D Mockup =========
+const SlideSearchConsole = () => {
+  const [showSecond, setShowSecond] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSecond(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-white overflow-hidden">
+      <motion.h2
+        className="text-xl font-black text-gray-900 text-center mb-4 z-20"
+        initial={{ y: -30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+      >
+        <span className="text-blue-600">Search Console</span> Growth
+      </motion.h2>
+
+      <div className="relative w-full h-64 flex items-center justify-center" style={{ perspective: 1500 }}>
+        {/* First card - tilted left */}
+        <motion.div
+          className="absolute w-[75%] h-48 rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-100"
+          initial={{ opacity: 0, rotateY: -45, rotateZ: -5, x: -80, scale: 0.8 }}
+          animate={{ opacity: 1, rotateY: -15, rotateZ: -3, x: -40, scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 100, delay: 0.3 }}
+          style={{ transformStyle: "preserve-3d", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.2)" }}
+        >
+          <img 
+            src={searchConsoleGrowth} 
+            alt="Search Console"
+            className="w-full h-full object-contain"
+          />
+          <motion.div 
+            className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-bold"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
+          >
+            +500%
+          </motion.div>
+        </motion.div>
+
+        {/* Second card - tilted right */}
+        <motion.div
+          className="absolute w-[75%] h-48 rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-100"
+          initial={{ opacity: 0, rotateY: 45, rotateZ: 5, x: 80, scale: 0.8 }}
+          animate={{ 
+            opacity: showSecond ? 1 : 0, 
+            rotateY: showSecond ? 15 : 45, 
+            rotateZ: 3, 
+            x: showSecond ? 40 : 80, 
+            scale: 0.9 
+          }}
+          transition={{ type: "spring", stiffness: 100 }}
+          style={{ transformStyle: "preserve-3d", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.2)", zIndex: showSecond ? 10 : 0 }}
+        >
+          <img 
+            src={searchConsoleGrowth} 
+            alt="Search Console"
+            className="w-full h-full object-contain"
+          />
+          <motion.div 
+            className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full font-bold"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
+          >
+            10K+
+          </motion.div>
+        </motion.div>
+      </div>
+
+      <motion.div 
+        className="flex gap-4 mt-4"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.8 }}
+      >
+        <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-bold">Before: ~200/month</span>
+        <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-bold">After: 10K+/month</span>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// ========= SLIDE 5: SEO BEFORE/AFTER - Score Mockup =========
+const SlideSEOBeforeAfter = () => (
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-white overflow-hidden">
+    <motion.h2
+      className="text-xl font-black text-gray-900 text-center mb-4 z-20"
+      initial={{ y: -30, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+    >
+      <span className="text-orange-600">SEO Score</span> Transformation
+    </motion.h2>
+
+    <motion.div
+      className="relative w-[90%] rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-100"
+      initial={{ opacity: 0, scale: 0.7, rotateX: 30 }}
+      animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+      transition={{ type: "spring", stiffness: 100, delay: 0.3 }}
+      style={{ 
+        perspective: 1200,
+        transformStyle: "preserve-3d", 
+        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.2)" 
+      }}
+    >
+      <img 
+        src={seoBeforeAfter} 
+        alt="SEO Before After"
+        className="w-full h-auto object-contain"
+      />
+      
+      {/* Animated overlay highlights */}
+      <motion.div 
+        className="absolute top-4 left-4 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold"
+        initial={{ scale: 0 }}
+        animate={{ scale: [0, 1.2, 1] }}
+        transition={{ delay: 0.8 }}
+      >
+        23%
+      </motion.div>
+      
+      <motion.div 
+        className="absolute top-4 right-4 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold"
+        initial={{ scale: 0 }}
+        animate={{ scale: [0, 1.2, 1] }}
+        transition={{ delay: 1.2 }}
+      >
+        91%
+      </motion.div>
+
+      <motion.div 
+        className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white text-xs px-3 py-1 rounded-full font-bold"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 1.5 }}
+      >
+        +68% Improvement
+      </motion.div>
+    </motion.div>
+
+    <motion.div 
+      className="flex gap-3 mt-4"
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 1 }}
+    >
+      <span className="text-gray-500 text-xs">✗ Missing meta</span>
+      <span className="text-gray-500 text-xs">→</span>
+      <span className="text-green-600 text-xs font-bold">✓ AI Optimized</span>
+    </motion.div>
+  </motion.div>
+);
+
+// ========= SLIDE 6: SEO SCORE (Original) =========
 const SlideSEOScore = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
@@ -715,7 +776,7 @@ const SlideCTA = () => (
 );
 
 // All slides
-const slides = [SlideIntro, SlideStats, Slide3DImageCarousel, SlideSEOScore, SlideBeforeAfter, SlideLandingPage, SlideImageEnhancement, SlideGoogleShopping, SlideCTA];
+const slides = [SlideIntro, SlideStats, SlideShopifyPhotos, SlideSearchConsole, SlideSEOBeforeAfter, SlideSEOScore, SlideBeforeAfter, SlideLandingPage, SlideImageEnhancement, SlideGoogleShopping, SlideCTA];
 const SLIDE_DURATION = 4000; // Reduced from 6000ms to 4000ms
 
 export default function AnimationAds() {
