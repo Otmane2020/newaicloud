@@ -126,22 +126,22 @@ const FloatingParticles = () => (
   </div>
 );
 
-// 3D Slide transition variants
+// 3D Slide transition variants - smoother like video
 const slideTransition3D = {
-  initial: { opacity: 0, rotateY: -45, scale: 0.8, z: -200 },
-  animate: { opacity: 1, rotateY: 0, scale: 1, z: 0 },
-  exit: { opacity: 0, rotateY: 45, scale: 0.8, z: -200 }
+  initial: { opacity: 0, rotateY: -30, scale: 0.95, x: 50 },
+  animate: { opacity: 1, rotateY: 0, scale: 1, x: 0 },
+  exit: { opacity: 0, rotateY: 15, scale: 0.98, x: -30 }
 };
 
 // ========= SLIDE 1: INTRO =========
 const SlideIntro = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
     <FloatingParticles />
     <ParticleExplosion trigger={true} count={25} />
     
     {/* Central Glow */}
     <motion.div
-      className="absolute w-64 h-64 bg-purple-400/30 rounded-full blur-3xl"
+      className="absolute w-64 h-64 bg-blue-400/30 rounded-full blur-3xl"
       animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
       transition={{ duration: 3, repeat: Infinity }}
     />
@@ -161,7 +161,7 @@ const SlideIntro = () => (
       />
       <Rotating3D duration={8}>
         <motion.div className="relative w-28 h-28 rounded-3xl bg-white flex items-center justify-center shadow-2xl">
-          <span className="text-purple-600 text-5xl font-black">N</span>
+          <span className="text-blue-600 text-5xl font-black">N</span>
         </motion.div>
       </Rotating3D>
     </motion.div>
@@ -178,7 +178,7 @@ const SlideIntro = () => (
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.4 }}
     >
-      <NeonText color="#a855f7">AI-Powered E-commerce</NeonText>
+      <NeonText color="#3b82f6">AI-Powered E-commerce</NeonText>
     </motion.p>
 
     {/* 3D Integration Logos */}
@@ -214,7 +214,7 @@ const SlideIntro = () => (
 
 // ========= SLIDE 2: STATS =========
 const SlideStats = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
     <SpeedLines />
     
     <ZoomPunch>
@@ -289,7 +289,7 @@ const SlideShopifyPhotos = () => {
   ];
 
   return (
-    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-emerald-600 via-green-700 to-teal-900 overflow-hidden">
+    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 overflow-hidden">
       {/* Floating icons background */}
       {[Rocket, TrendingUp, Zap, Star, Award].map((Icon, i) => (
         <motion.div
@@ -417,7 +417,7 @@ const SlideSearchConsole = () => {
   }, []);
 
   return (
-    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-900 overflow-hidden">
+    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 overflow-hidden">
       {/* Floating decorative icons */}
       {[LineChart, TrendingUp, Search, Eye, ArrowUp, BarChart3].map((Icon, i) => (
         <motion.div
@@ -560,7 +560,7 @@ const SlideSEOBeforeAfter = () => {
   }, []);
 
   return (
-    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 overflow-hidden">
+    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 overflow-hidden">
       {/* Floating decorative icons */}
       {[Target, Zap, Sparkles, Image, ChevronRight, Smartphone].map((Icon, i) => (
         <motion.div
@@ -741,7 +741,7 @@ const SlideSEOBeforeAfter = () => {
 
 // ========= SLIDE 6: SEO SCORE (Original) =========
 const SlideSEOScore = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
     <FloatingParticles />
     
     <ZoomPunch>
@@ -783,7 +783,7 @@ const SlideSEOScore = () => (
 
 // ========= SLIDE 5: BEFORE/AFTER =========
 const SlideBeforeAfter = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
     <ParticleExplosion trigger={true} count={15} />
     
     <ZoomPunch>
@@ -820,7 +820,7 @@ const SlideBeforeAfter = () => (
 
 // ========= SLIDE 6: LANDING PAGE =========
 const SlideLandingPage = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
     <FloatingParticles />
     
     <ZoomPunch>
@@ -854,7 +854,7 @@ const SlideLandingPage = () => (
 
 // ========= SLIDE 7: IMAGE ENHANCEMENT =========
 const SlideImageEnhancement = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
     <SpeedLines />
     
     <ZoomPunch>
@@ -885,7 +885,7 @@ const SlideImageEnhancement = () => (
 
 // ========= SLIDE 8: GOOGLE SHOPPING =========
 const SlideGoogleShopping = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
     <FloatingParticles />
     
     <motion.div
@@ -947,7 +947,7 @@ const SlideGoogleShopping = () => (
 
 // ========= SLIDE 9: CTA =========
 const SlideCTA = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
     <FloatingParticles />
     <ParticleExplosion trigger={true} count={30} />
     
@@ -974,7 +974,7 @@ const SlideCTA = () => (
         }}
         style={{ transformStyle: "preserve-3d" }}
       >
-        <span className="text-purple-600 text-5xl font-black">N</span>
+        <span className="text-blue-600 text-5xl font-black">N</span>
       </motion.div>
     </motion.div>
 
@@ -991,14 +991,14 @@ const SlideCTA = () => (
       transition={{ delay: 0.5, type: "spring" }}
     >
       <motion.button
-        className="bg-white text-purple-600 font-black text-xl px-8 py-4 rounded-2xl shadow-2xl"
+        className="bg-white text-blue-600 font-black text-xl px-8 py-4 rounded-2xl shadow-2xl"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         animate={{
           boxShadow: [
-            "0 0 20px rgba(168,85,247,0.5)",
-            "0 0 50px rgba(168,85,247,0.9)",
-            "0 0 20px rgba(168,85,247,0.5)",
+            "0 0 20px rgba(59,130,246,0.5)",
+            "0 0 50px rgba(59,130,246,0.9)",
+            "0 0 20px rgba(59,130,246,0.5)",
           ],
         }}
         transition={{ duration: 1.5, repeat: Infinity }}
@@ -1173,13 +1173,13 @@ Ou utilisez l'export vidéo intégré (bientôt disponible).
   const CurrentSlideComponent = slides[currentSlide];
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 gap-4">
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 gap-4">
       {/* Export Buttons */}
       <div className="flex gap-3">
         <Button
           onClick={handleExportVideo}
           disabled={isExporting}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
         >
           <Film className="w-4 h-4 mr-2" />
           {isExporting ? 'Exporting...' : 'Export Video'}
@@ -1197,34 +1197,31 @@ Ou utilisez l'export vidéo intégré (bientôt disponible).
       {/* 9:16 Container */}
       <div 
         ref={containerRef}
-        className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900"
+        className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900"
         style={{ perspective: 1200 }}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
           <motion.div
             key={currentSlide}
             className="absolute inset-0"
             initial={slideTransition3D.initial}
             animate={slideTransition3D.animate}
             exit={slideTransition3D.exit}
-            transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
             style={{ transformStyle: "preserve-3d" }}
           >
             <CurrentSlideComponent />
           </motion.div>
         </AnimatePresence>
 
-        {/* Progress dots */}
-        <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-30">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentSlide(i)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                i === currentSlide ? 'bg-white w-6' : 'bg-white/40'
-              }`}
-            />
-          ))}
+        {/* Progress bar - video style */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-30">
+          <motion.div 
+            className="h-full bg-white"
+            initial={{ width: "0%" }}
+            animate={{ width: `${((currentSlide + 1) / slides.length) * 100}%` }}
+            transition={{ duration: 0.3 }}
+          />
         </div>
 
         {/* Controls */}
@@ -1247,7 +1244,7 @@ Ou utilisez l'export vidéo intégré (bientôt disponible).
         {isLoadingAudio && (
           <div className="absolute top-4 left-16 z-30">
             <motion.div
-              className="w-3 h-3 bg-purple-400 rounded-full"
+              className="w-3 h-3 bg-blue-400 rounded-full"
               animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
             />
