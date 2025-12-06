@@ -9,6 +9,7 @@ import { SEOScoreCircle } from "@/components/video3d/SEOScoreCircle";
 import { BeforeAfterSplit } from "@/components/video3d/BeforeAfterSplit";
 import { LandingPageMockup } from "@/components/video3d/LandingPageMockup";
 import { ImageEnhancement } from "@/components/video3d/ImageEnhancement";
+import { GooglePhoneMockups3D } from "@/components/video3d/GooglePhoneMockups3D";
 import { 
   GlitchText, 
   ParticleExplosion, 
@@ -293,43 +294,10 @@ const SlideStats = () => (
   </motion.div>
 );
 
-// ========= SLIDE 3: SHOPIFY - 3D Mobile Full Screen =========
-const SlideShopifyPhotos = () => {
-  const [activeStep, setActiveStep] = useState(0);
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveStep(prev => (prev + 1) % 3);
-    }, 1200);
-    return () => clearInterval(interval);
-  }, []);
-
-  const steps = [
-    { 
-      icon: ShoppingCart, 
-      title: "Google Search", 
-      subtitle: "Top 10 ranking",
-      color: "from-blue-500 to-blue-600",
-      stats: ["#1 Position", "5M+ Views", "CTR 12%"]
-    },
-    { 
-      icon: Package, 
-      title: "Google Shopping", 
-      subtitle: "Product feed optimized",
-      color: "from-green-500 to-emerald-600",
-      stats: ["Zero Errors", "100% GMC", "Auto Sync"]
-    },
-    { 
-      icon: Globe, 
-      title: "Google Discover", 
-      subtitle: "Content distribution",
-      color: "from-orange-500 to-red-500",
-      stats: ["10K+ Reach", "Viral", "AI Content"]
-    },
-  ];
-
+// ========= SLIDE 3: GOOGLE MOCKUPS - 3D Phone with Search/Shopping/Discover =========
+const SlideGoogleMockups = () => {
   return (
-    <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[2]} overflow-hidden`}>
+    <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-4 ${SLIDE_BACKGROUNDS[2]} overflow-hidden`}>
       {/* Floating icons background */}
       {[Rocket, TrendingUp, Zap, Star, Award].map((Icon, i) => (
         <motion.div
@@ -338,7 +306,6 @@ const SlideShopifyPhotos = () => {
           style={{ 
             left: `${10 + i * 20}%`, 
             top: `${15 + (i % 3) * 25}%`,
-            fontSize: 20 + i * 8 
           }}
           animate={{ 
             y: [0, -15, 0], 
@@ -347,101 +314,37 @@ const SlideShopifyPhotos = () => {
           }}
           transition={{ duration: 3 + i * 0.5, repeat: Infinity, delay: i * 0.3 }}
         >
-          <Icon size={24 + i * 6} />
+          <Icon size={20 + i * 4} />
         </motion.div>
       ))}
 
       {/* Header */}
       <ZoomPunch>
-        <div className="flex items-center gap-3 mb-6 z-10">
-          <img src={shopifyLogo} alt="Shopify" className="w-10 h-10" />
-          <GlitchText className="text-3xl font-black text-white">
-            + Google
+        <div className="flex items-center gap-2 mb-2 z-10">
+          <GoogleLogo />
+          <GlitchText className="text-2xl font-black text-white">
+            Dominate Google
           </GlitchText>
         </div>
       </ZoomPunch>
-
-      {/* 3D Phone Mockup */}
-      <motion.div 
-        className="relative w-64 h-80 z-10"
-        style={{ perspective: 1200 }}
+      
+      <motion.p
+        className="text-white/80 text-sm text-center mb-4 z-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
       >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeStep}
-            className={`absolute inset-0 bg-gradient-to-br ${steps[activeStep].color} rounded-3xl p-6 flex flex-col items-center justify-center shadow-2xl`}
-            initial={{ opacity: 0, rotateY: 90, scale: 0.7 }}
-            animate={{ opacity: 1, rotateY: 0, scale: 1 }}
-            exit={{ opacity: 0, rotateY: -90, scale: 0.7 }}
-            transition={{ type: "spring", stiffness: 100, damping: 15 }}
-            style={{ transformStyle: "preserve-3d", boxShadow: "0 40px 80px -20px rgba(0,0,0,0.4)" }}
-          >
-            {/* Phone notch */}
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-black/30 rounded-full" />
-            
-            {/* Icon */}
-            <motion.div
-              className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-4"
-              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              {(() => {
-                const Icon = steps[activeStep].icon;
-                return <Icon className="w-10 h-10 text-white" />;
-              })()}
-            </motion.div>
+        Search • Shopping • Discover
+      </motion.p>
 
-            <h3 className="text-2xl font-black text-white text-center mb-1">
-              {steps[activeStep].title}
-            </h3>
-            <p className="text-white/80 text-sm mb-4">{steps[activeStep].subtitle}</p>
-
-            {/* Stats pills */}
-            <div className="flex flex-wrap gap-2 justify-center">
-              {steps[activeStep].stats.map((stat, i) => (
-                <motion.span
-                  key={i}
-                  className="bg-white/25 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-bold"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
-                >
-                  {stat}
-                </motion.span>
-              ))}
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </motion.div>
-
-      {/* Navigation dots */}
-      <div className="flex gap-3 mt-6 z-10">
-        {steps.map((_, i) => (
-          <motion.div
-            key={i}
-            className={`w-3 h-3 rounded-full transition-all ${i === activeStep ? 'bg-white w-8' : 'bg-white/40'}`}
-            animate={i === activeStep ? { scale: [1, 1.2, 1] } : {}}
-          />
-        ))}
-      </div>
-
-      {/* Bottom icons */}
+      {/* 3D Phone Mockups Component */}
       <motion.div 
-        className="absolute bottom-8 flex gap-4"
-        initial={{ y: 30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
+        className="z-10"
+        initial={{ scale: 0.8, opacity: 0, rotateY: -30 }}
+        animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+        transition={{ type: "spring", stiffness: 80, delay: 0.2 }}
       >
-        {[Rocket, BarChart3, Shield].map((Icon, i) => (
-          <motion.div
-            key={i}
-            className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center"
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
-          >
-            <Icon className="w-6 h-6 text-white" />
-          </motion.div>
-        ))}
+        <GooglePhoneMockups3D autoRotate={true} />
       </motion.div>
     </motion.div>
   );
@@ -1080,8 +983,8 @@ const SlideCTA = () => (
 );
 
 // All slides
-const slides = [SlideIntro, SlideStats, SlideShopifyPhotos, SlideSearchConsole, SlideSEOBeforeAfter, SlideSEOScore, SlideBeforeAfter, SlideLandingPage, SlideImageEnhancement, SlideGoogleShopping, SlideCTA];
-const SLIDE_DURATION = 4000; // Reduced from 6000ms to 4000ms
+const slides = [SlideIntro, SlideStats, SlideGoogleMockups, SlideSearchConsole, SlideSEOBeforeAfter, SlideSEOScore, SlideBeforeAfter, SlideLandingPage, SlideImageEnhancement, SlideGoogleShopping, SlideCTA];
+const SLIDE_DURATION = 5000; // Increased for seamless audio - no cuts between slides
 
 export default function AnimationAds() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -1150,27 +1053,47 @@ export default function AnimationAds() {
     return () => clearInterval(timer);
   }, [isPlaying]);
 
-  // Play voice narration when slide changes - seamless from cache
+  // Play voice narration when slide changes - SEAMLESS continuous audio
   useEffect(() => {
     if (isMuted || !audioReady) return;
     
     const playNarration = async () => {
-      // Stop current audio smoothly
+      // Fade out current audio smoothly instead of abrupt stop
       if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+        const currentAudio = audioRef.current;
+        // Quick fade out over 200ms
+        const fadeInterval = setInterval(() => {
+          if (currentAudio.volume > 0.1) {
+            currentAudio.volume = Math.max(0, currentAudio.volume - 0.2);
+          } else {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+            clearInterval(fadeInterval);
+          }
+        }, 40);
       }
+      
+      // Small delay for smooth transition between narrations
+      await new Promise(resolve => setTimeout(resolve, 150));
       
       // Get cached audio
       const cachedAudio = audioCache.get(currentSlide);
       if (cachedAudio) {
         // Clone the audio to allow replay
         const audio = cachedAudio.cloneNode(true) as HTMLAudioElement;
-        audio.volume = 0.8;
+        audio.volume = 0; // Start at 0 for fade in
         audioRef.current = audio;
         
         try {
           await audio.play();
+          // Fade in smoothly
+          const fadeInInterval = setInterval(() => {
+            if (audio.volume < 0.8) {
+              audio.volume = Math.min(0.8, audio.volume + 0.2);
+            } else {
+              clearInterval(fadeInInterval);
+            }
+          }, 40);
         } catch (err) {
           console.error('Playback error:', err);
         }
@@ -1180,9 +1103,7 @@ export default function AnimationAds() {
     playNarration();
     
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      // Don't abruptly stop - let fade handle it
     };
   }, [currentSlide, isMuted, audioReady]);
 
