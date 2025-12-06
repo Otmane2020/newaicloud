@@ -1,21 +1,25 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
+/* ---------------------------------------------
+   GLOBAL CORS — autorise requêtes web/app
+--------------------------------------------- */
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Chunked base64 encoding to avoid stack overflow
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
+/* ---------------------------------------------
+   Convert ArrayBuffer → Base64 safely
+--------------------------------------------- */
+function toBase64(buffer: ArrayBuffer) {
+  let binary = "";
   const bytes = new Uint8Array(buffer);
-  const chunkSize = 8192;
-  let binary = '';
-  
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode(...chunk);
+  const chunk = 8192;
+
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
-  
   return btoa(binary);
 }
 
@@ -24,90 +28,87 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const body = await req.json().catch(() => ({}));
-  
-  // Health check
-  if (body?.healthCheck === true) {
-    return new Response(JSON.stringify({ ok: true }), { 
-      status: 200, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  }
-
   try {
-    const { text } = body;
+    const body = await req.json().catch(() => ({}));
+    const text = body?.text?.trim();
 
-    if (!text) {
-      throw new Error("Text is required");
+    // 🔍 Health Check
+    if (body?.health === true) {
+      return Response.json({ status: "ok", service: "ElevenLabs-TTS" }, { headers: corsHeaders });
     }
 
-    const elevenlabsApiKey = Deno.env.get("ELEVENLABS_API_KEY");
-    if (!elevenlabsApiKey) {
-      throw new Error("ElevenLabs API key not configured");
+    if (!text || text.length < 2) {
+      throw new Error("Missing or empty text input");
     }
 
-    // Call ElevenLabs TTS API with custom voice (9Qd2dAu97Sqnt7S88BrY)
-    const response = await fetch("https://api.elevenlabs.io/v1/text-to-speech/9Qd2dAu97Sqnt7S88BrY", {
+    if (text.length > 550) {
+      return Response.json(
+        { error: "Text too long. Max = 550 chars", received: text.length },
+        { status: 400, headers: corsHeaders },
+      );
+    }
+
+    const API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+    if (!API_KEY) throw new Error("Missing ELEVENLABS_API_KEY");
+
+    console.log("🎤 Generating TTS…", text.slice(0, 60) + "...");
+
+    /* ---------------------------------------
+       🔥 ElevenLabs Request
+       Voice: 9Qd2dAu97Sqnt7S88BrY (male voice)
+    ---------------------------------------- */
+    const res = await fetch("https://api.elevenlabs.io/v1/text-to-speech/9Qd2dAu97Sqnt7S88BrY", {
       method: "POST",
       headers: {
-        "xi-api-key": elevenlabsApiKey,
+        "xi-api-key": API_KEY,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        text: text,
+        text,
         model_id: "eleven_turbo_v2_5",
         voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
+          stability: 0.52,
+          similarity_boost: 0.78,
+          style: 0.23,
+          use_speaker_boost: true,
         },
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      
-      // Check for quota exceeded - return graceful response instead of error
-      if (response.status === 401 || errorText.includes('quota_exceeded')) {
-        console.warn("ElevenLabs quota exceeded, returning silent response");
-        return new Response(
-          JSON.stringify({ 
-            audio: null,
-            format: "mp3",
-            quotaExceeded: true,
-            message: "ElevenLabs quota exceeded - audio skipped"
-          }),
+    // 🛑 Quota / Error handling clean
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.warn("❗ Eleven error:", errorText);
+
+      if (errorText.includes("quota")) {
+        return Response.json(
           {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200,
-          }
+            audio: null,
+            quotaExceeded: true,
+            message: "Quota exceeded — voice skipped gracefully",
+          },
+          { headers: corsHeaders },
         );
       }
-      
-      throw new Error(`ElevenLabs TTS error: ${errorText}`);
+      throw new Error(errorText);
     }
 
-    const audioBuffer = await response.arrayBuffer();
-    const base64Audio = arrayBufferToBase64(audioBuffer);
+    const audioBuffer = await res.arrayBuffer();
+    const base64Audio = toBase64(audioBuffer);
 
-    return new Response(
-      JSON.stringify({ 
+    return Response.json(
+      {
         audio: base64Audio,
-        format: "mp3"
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+        voice: "9Qd2dAu97Sqnt7S88BrY",
+        size: audioBuffer.byteLength,
+        format: "mp3",
+        success: true,
+        preview_url: `data:audio/mp3;base64,${base64Audio}`,
+      },
+      { headers: corsHeaders },
     );
-  } catch (error) {
-    console.error("TTS error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+  } catch (err) {
+    console.error("🛑 TTS Error:", err.message);
+    return Response.json({ success: false, error: err.message }, { status: 500, headers: corsHeaders });
   }
 });
