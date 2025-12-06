@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles, Download, Film } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles, Download, Film, Rocket, TrendingUp, Zap, ShoppingCart, Package, BarChart3, LineChart, Search, Eye, Image, ArrowUp, ChevronRight, Globe, Smartphone, Award, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -24,10 +24,8 @@ import sofaWhiteBackground from "@/assets/sofa-white-background.jpg";
 import sofaWithBackground from "@/assets/sofa-with-background.jpg";
 import shopifyLogo from "@/assets/shopify-logo.svg";
 
-// Import mockup images for 3D carousel
-import googleMockupsPhones from "@/assets/mockups/google-mockups-phones.png";
-import searchConsoleGrowth from "@/assets/mockups/search-console-growth.png";
-import seoBeforeAfter from "@/assets/mockups/seo-before-after.png";
+// Audio cache for ElevenLabs narration
+const audioCache: Record<number, string> = {};
 
 // ========= ENGLISH NARRATIONS =========
 const SLIDE_NARRATIONS_EN = [
@@ -253,227 +251,491 @@ const SlideStats = () => (
   </motion.div>
 );
 
-// ========= SLIDE 3: SHOPIFY - 3 Photos Scrolling =========
+// ========= SLIDE 3: SHOPIFY - 3D Mobile Full Screen =========
 const SlideShopifyPhotos = () => {
-  const [activePhoto, setActivePhoto] = useState(0);
+  const [activeStep, setActiveStep] = useState(0);
   
   useEffect(() => {
     const interval = setInterval(() => {
-      setActivePhoto(prev => (prev + 1) % 3);
-    }, 1000);
+      setActiveStep(prev => (prev + 1) % 3);
+    }, 1200);
     return () => clearInterval(interval);
   }, []);
 
-  return (
-    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-white overflow-hidden">
-      <motion.h2
-        className="text-xl font-black text-gray-900 text-center mb-4 z-20"
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-      >
-        <span className="text-green-600">Shopify</span> + Google
-      </motion.h2>
+  const steps = [
+    { 
+      icon: ShoppingCart, 
+      title: "Google Search", 
+      subtitle: "Top 10 ranking",
+      color: "from-blue-500 to-blue-600",
+      stats: ["#1 Position", "5M+ Views", "CTR 12%"]
+    },
+    { 
+      icon: Package, 
+      title: "Google Shopping", 
+      subtitle: "Product feed optimized",
+      color: "from-green-500 to-emerald-600",
+      stats: ["Zero Errors", "100% GMC", "Auto Sync"]
+    },
+    { 
+      icon: Globe, 
+      title: "Google Discover", 
+      subtitle: "Content distribution",
+      color: "from-orange-500 to-red-500",
+      stats: ["10K+ Reach", "Viral", "AI Content"]
+    },
+  ];
 
-      <div className="relative w-full h-56 flex items-center justify-center" style={{ perspective: 1200 }}>
+  return (
+    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-emerald-600 via-green-700 to-teal-900 overflow-hidden">
+      {/* Floating icons background */}
+      {[Rocket, TrendingUp, Zap, Star, Award].map((Icon, i) => (
+        <motion.div
+          key={i}
+          className="absolute text-white/10"
+          style={{ 
+            left: `${10 + i * 20}%`, 
+            top: `${15 + (i % 3) * 25}%`,
+            fontSize: 20 + i * 8 
+          }}
+          animate={{ 
+            y: [0, -15, 0], 
+            rotate: [0, 10, -10, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 3 + i * 0.5, repeat: Infinity, delay: i * 0.3 }}
+        >
+          <Icon size={24 + i * 6} />
+        </motion.div>
+      ))}
+
+      {/* Header */}
+      <ZoomPunch>
+        <div className="flex items-center gap-3 mb-6 z-10">
+          <img src={shopifyLogo} alt="Shopify" className="w-10 h-10" />
+          <GlitchText className="text-3xl font-black text-white">
+            + Google
+          </GlitchText>
+        </div>
+      </ZoomPunch>
+
+      {/* 3D Phone Mockup */}
+      <motion.div 
+        className="relative w-64 h-80 z-10"
+        style={{ perspective: 1200 }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
-            key={activePhoto}
-            className="absolute w-[85%] h-full rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-100"
-            initial={{ opacity: 0, rotateY: 90, scale: 0.6, x: 150 }}
-            animate={{ opacity: 1, rotateY: 0, scale: 1, x: 0 }}
-            exit={{ opacity: 0, rotateY: -90, scale: 0.6, x: -150 }}
-            transition={{ type: "spring", stiffness: 120, damping: 15 }}
-            style={{ transformStyle: "preserve-3d", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)" }}
+            key={activeStep}
+            className={`absolute inset-0 bg-gradient-to-br ${steps[activeStep].color} rounded-3xl p-6 flex flex-col items-center justify-center shadow-2xl`}
+            initial={{ opacity: 0, rotateY: 90, scale: 0.7 }}
+            animate={{ opacity: 1, rotateY: 0, scale: 1 }}
+            exit={{ opacity: 0, rotateY: -90, scale: 0.7 }}
+            transition={{ type: "spring", stiffness: 100, damping: 15 }}
+            style={{ transformStyle: "preserve-3d", boxShadow: "0 40px 80px -20px rgba(0,0,0,0.4)" }}
           >
-            <img 
-              src={googleMockupsPhones} 
-              alt="Google Mockups"
-              className="w-full h-full object-contain"
-            />
+            {/* Phone notch */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-black/30 rounded-full" />
+            
+            {/* Icon */}
+            <motion.div
+              className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-4"
+              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              {(() => {
+                const Icon = steps[activeStep].icon;
+                return <Icon className="w-10 h-10 text-white" />;
+              })()}
+            </motion.div>
+
+            <h3 className="text-2xl font-black text-white text-center mb-1">
+              {steps[activeStep].title}
+            </h3>
+            <p className="text-white/80 text-sm mb-4">{steps[activeStep].subtitle}</p>
+
+            {/* Stats pills */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              {steps[activeStep].stats.map((stat, i) => (
+                <motion.span
+                  key={i}
+                  className="bg-white/25 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full font-bold"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3 + i * 0.1 }}
+                >
+                  {stat}
+                </motion.span>
+              ))}
+            </div>
           </motion.div>
         </AnimatePresence>
-      </div>
+      </motion.div>
 
-      <div className="flex gap-2 mt-4">
-        {[0, 1, 2].map(i => (
+      {/* Navigation dots */}
+      <div className="flex gap-3 mt-6 z-10">
+        {steps.map((_, i) => (
           <motion.div
             key={i}
-            className={`w-3 h-3 rounded-full ${i === activePhoto ? 'bg-green-600' : 'bg-gray-300'}`}
-            animate={i === activePhoto ? { scale: [1, 1.4, 1] } : {}}
+            className={`w-3 h-3 rounded-full transition-all ${i === activeStep ? 'bg-white w-8' : 'bg-white/40'}`}
+            animate={i === activeStep ? { scale: [1, 1.2, 1] } : {}}
           />
         ))}
       </div>
 
-      <div className="flex gap-2 mt-3">
-        {["Search", "Shopping", "Discover"].map((label, i) => (
-          <motion.span
+      {/* Bottom icons */}
+      <motion.div 
+        className="absolute bottom-8 flex gap-4"
+        initial={{ y: 30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        {[Rocket, BarChart3, Shield].map((Icon, i) => (
+          <motion.div
             key={i}
-            className={`text-xs px-3 py-1 rounded-full font-bold ${i === activePhoto ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'}`}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.3 + i * 0.1 }}
+            className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center"
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
           >
-            {label}
-          </motion.span>
+            <Icon className="w-6 h-6 text-white" />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </motion.div>
   );
 };
 
-// ========= SLIDE 4: SEARCH CONSOLE - 2 Photos 3D Mockup =========
+// ========= SLIDE 4: SEARCH CONSOLE - 3D Growth Dashboard =========
 const SlideSearchConsole = () => {
-  const [showSecond, setShowSecond] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   
   useEffect(() => {
-    const timer = setTimeout(() => setShowSecond(true), 1500);
+    const timer = setTimeout(() => setShowStats(true), 800);
     return () => clearTimeout(timer);
   }, []);
 
   return (
-    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-white overflow-hidden">
-      <motion.h2
-        className="text-xl font-black text-gray-900 text-center mb-4 z-20"
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-      >
-        <span className="text-blue-600">Search Console</span> Growth
-      </motion.h2>
-
-      <div className="relative w-full h-64 flex items-center justify-center" style={{ perspective: 1500 }}>
-        {/* First card - tilted left */}
+    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-900 overflow-hidden">
+      {/* Floating decorative icons */}
+      {[LineChart, TrendingUp, Search, Eye, ArrowUp, BarChart3].map((Icon, i) => (
         <motion.div
-          className="absolute w-[75%] h-48 rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-100"
-          initial={{ opacity: 0, rotateY: -45, rotateZ: -5, x: -80, scale: 0.8 }}
-          animate={{ opacity: 1, rotateY: -15, rotateZ: -3, x: -40, scale: 0.9 }}
-          transition={{ type: "spring", stiffness: 100, delay: 0.3 }}
-          style={{ transformStyle: "preserve-3d", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.2)" }}
+          key={i}
+          className="absolute text-white/10"
+          style={{ 
+            left: `${5 + i * 15}%`, 
+            top: `${10 + (i % 4) * 20}%`,
+          }}
+          animate={{ 
+            y: [0, -20, 0], 
+            x: [0, 10, 0],
+            rotate: [0, 15, -15, 0],
+          }}
+          transition={{ duration: 4 + i * 0.3, repeat: Infinity, delay: i * 0.2 }}
         >
-          <img 
-            src={searchConsoleGrowth} 
-            alt="Search Console"
-            className="w-full h-full object-contain"
-          />
+          <Icon size={20 + i * 4} />
+        </motion.div>
+      ))}
+
+      {/* Header */}
+      <ZoomPunch>
+        <div className="flex items-center gap-2 mb-4 z-10">
+          <Search className="w-8 h-8 text-white" />
+          <GlitchText className="text-2xl font-black text-white">
+            Search Console
+          </GlitchText>
+        </div>
+      </ZoomPunch>
+
+      {/* 3D Dual Cards */}
+      <div className="relative w-full h-72 z-10" style={{ perspective: 1500 }}>
+        {/* Before Card */}
+        <motion.div
+          className="absolute left-2 top-8 w-40 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 shadow-2xl"
+          initial={{ opacity: 0, rotateY: -45, x: -50, scale: 0.7 }}
+          animate={{ opacity: 1, rotateY: -20, x: 0, scale: 1 }}
+          transition={{ type: "spring", stiffness: 80, delay: 0.3 }}
+          style={{ transformStyle: "preserve-3d", boxShadow: "0 30px 60px -15px rgba(0,0,0,0.4)" }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="w-5 h-5 text-white/80" />
+            <span className="text-white/80 text-xs font-bold">BEFORE</span>
+          </div>
+          <div className="text-4xl font-black text-white mb-1">~200</div>
+          <div className="text-white/70 text-xs">clicks/month</div>
           <motion.div 
-            className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-bold"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 1, repeat: Infinity }}
+            className="mt-3 flex gap-1"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
           >
-            +500%
+            {[20, 30, 25, 35, 28].map((h, i) => (
+              <div 
+                key={i} 
+                className="w-4 bg-white/30 rounded-sm"
+                style={{ height: h }}
+              />
+            ))}
           </motion.div>
         </motion.div>
 
-        {/* Second card - tilted right */}
+        {/* After Card */}
         <motion.div
-          className="absolute w-[75%] h-48 rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-100"
-          initial={{ opacity: 0, rotateY: 45, rotateZ: 5, x: 80, scale: 0.8 }}
-          animate={{ 
-            opacity: showSecond ? 1 : 0, 
-            rotateY: showSecond ? 15 : 45, 
-            rotateZ: 3, 
-            x: showSecond ? 40 : 80, 
-            scale: 0.9 
-          }}
-          transition={{ type: "spring", stiffness: 100 }}
-          style={{ transformStyle: "preserve-3d", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.2)", zIndex: showSecond ? 10 : 0 }}
+          className="absolute right-2 top-4 w-44 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 shadow-2xl z-10"
+          initial={{ opacity: 0, rotateY: 45, x: 50, scale: 0.7 }}
+          animate={{ opacity: showStats ? 1 : 0, rotateY: showStats ? 15 : 45, x: 0, scale: showStats ? 1.05 : 0.7 }}
+          transition={{ type: "spring", stiffness: 80 }}
+          style={{ transformStyle: "preserve-3d", boxShadow: "0 40px 80px -20px rgba(0,0,0,0.5)" }}
         >
-          <img 
-            src={searchConsoleGrowth} 
-            alt="Search Console"
-            className="w-full h-full object-contain"
-          />
+          <div className="flex items-center gap-2 mb-3">
+            <Rocket className="w-5 h-5 text-white" />
+            <span className="text-yellow-300 text-xs font-bold">AFTER AI</span>
+          </div>
+          <div className="text-5xl font-black text-white mb-1">10K+</div>
+          <div className="text-white/80 text-xs">clicks/month</div>
           <motion.div 
-            className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full font-bold"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
+            className="mt-3 flex gap-1 items-end"
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
           >
-            10K+
+            {[30, 45, 55, 70, 90].map((h, i) => (
+              <motion.div 
+                key={i} 
+                className="w-5 bg-white/50 rounded-sm"
+                initial={{ height: 20 }}
+                animate={{ height: h }}
+                transition={{ delay: 0.5 + i * 0.15, duration: 0.5 }}
+              />
+            ))}
           </motion.div>
+        </motion.div>
+
+        {/* Growth arrow */}
+        <motion.div
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          initial={{ scale: 0, rotate: -45 }}
+          animate={{ scale: showStats ? 1 : 0, rotate: 0 }}
+          transition={{ delay: 1.2, type: "spring" }}
+        >
+          <div className="bg-yellow-400 rounded-full p-3 shadow-lg">
+            <ArrowUp className="w-8 h-8 text-gray-900" />
+          </div>
         </motion.div>
       </div>
 
+      {/* Bottom stats row */}
       <motion.div 
-        className="flex gap-4 mt-4"
-        initial={{ y: 20, opacity: 0 }}
+        className="flex gap-3 mt-4 z-10"
+        initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.8 }}
+        transition={{ delay: 1 }}
       >
-        <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-bold">Before: ~200/month</span>
-        <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-bold">After: 10K+/month</span>
+        {[
+          { icon: TrendingUp, label: "+5000%", color: "bg-green-500" },
+          { icon: Eye, label: "1M Views", color: "bg-blue-500" },
+          { icon: Award, label: "Top 3", color: "bg-yellow-500" },
+        ].map(({ icon: Icon, label, color }, i) => (
+          <motion.div
+            key={i}
+            className={`${color} text-white text-xs px-3 py-2 rounded-xl font-bold flex items-center gap-1 shadow-lg`}
+            animate={{ y: [0, -3, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+          >
+            <Icon className="w-3 h-3" />
+            {label}
+          </motion.div>
+        ))}
       </motion.div>
     </motion.div>
   );
 };
 
-// ========= SLIDE 5: SEO BEFORE/AFTER - Score Mockup =========
-const SlideSEOBeforeAfter = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-white overflow-hidden">
-    <motion.h2
-      className="text-xl font-black text-gray-900 text-center mb-4 z-20"
-      initial={{ y: -30, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-    >
-      <span className="text-orange-600">SEO Score</span> Transformation
-    </motion.h2>
+// ========= SLIDE 5: SEO BEFORE/AFTER - Full Screen 3D Score =========
+const SlideSEOBeforeAfter = () => {
+  const [showAfter, setShowAfter] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setShowAfter(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
-    <motion.div
-      className="relative w-[90%] rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-100"
-      initial={{ opacity: 0, scale: 0.7, rotateX: 30 }}
-      animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-      transition={{ type: "spring", stiffness: 100, delay: 0.3 }}
-      style={{ 
-        perspective: 1200,
-        transformStyle: "preserve-3d", 
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.2)" 
-      }}
-    >
-      <img 
-        src={seoBeforeAfter} 
-        alt="SEO Before After"
-        className="w-full h-auto object-contain"
-      />
-      
-      {/* Animated overlay highlights */}
-      <motion.div 
-        className="absolute top-4 left-4 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold"
-        initial={{ scale: 0 }}
-        animate={{ scale: [0, 1.2, 1] }}
-        transition={{ delay: 0.8 }}
-      >
-        23%
-      </motion.div>
-      
-      <motion.div 
-        className="absolute top-4 right-4 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold"
-        initial={{ scale: 0 }}
-        animate={{ scale: [0, 1.2, 1] }}
-        transition={{ delay: 1.2 }}
-      >
-        91%
-      </motion.div>
+  return (
+    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 overflow-hidden">
+      {/* Floating decorative icons */}
+      {[Target, Zap, Sparkles, Image, ChevronRight, Smartphone].map((Icon, i) => (
+        <motion.div
+          key={i}
+          className="absolute text-white/10"
+          style={{ 
+            left: `${8 + i * 14}%`, 
+            top: `${12 + (i % 3) * 28}%`,
+          }}
+          animate={{ 
+            y: [0, -15, 0], 
+            scale: [1, 1.2, 1],
+            rotate: [0, 10, -10, 0],
+          }}
+          transition={{ duration: 3 + i * 0.4, repeat: Infinity, delay: i * 0.25 }}
+        >
+          <Icon size={18 + i * 5} />
+        </motion.div>
+      ))}
 
-      <motion.div 
-        className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white text-xs px-3 py-1 rounded-full font-bold"
-        initial={{ y: 20, opacity: 0 }}
+      {/* Header */}
+      <ZoomPunch>
+        <div className="flex items-center gap-2 mb-6 z-10">
+          <Target className="w-8 h-8 text-white" />
+          <GlitchText className="text-2xl font-black text-white">
+            SEO Score
+          </GlitchText>
+        </div>
+      </ZoomPunch>
+
+      {/* 3D Comparison */}
+      <div className="relative w-full flex justify-center gap-4 z-10" style={{ perspective: 1200 }}>
+        {/* Before Score */}
+        <motion.div
+          className="w-36 bg-gradient-to-br from-red-600 to-red-700 rounded-3xl p-5 shadow-2xl"
+          initial={{ opacity: 0, rotateY: -30, x: -30, scale: 0.8 }}
+          animate={{ opacity: 1, rotateY: -10, x: 0, scale: 1 }}
+          transition={{ type: "spring", stiffness: 80, delay: 0.3 }}
+          style={{ transformStyle: "preserve-3d", boxShadow: "0 30px 60px -15px rgba(0,0,0,0.4)" }}
+        >
+          <div className="text-white/70 text-xs font-bold mb-2 flex items-center gap-1">
+            <span className="w-2 h-2 bg-red-400 rounded-full" />
+            BEFORE
+          </div>
+          
+          {/* Circular Score */}
+          <div className="relative w-24 h-24 mx-auto mb-3">
+            <svg className="w-full h-full -rotate-90">
+              <circle cx="48" cy="48" r="42" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="8" />
+              <motion.circle 
+                cx="48" cy="48" r="42" fill="none" stroke="#ef4444" strokeWidth="8"
+                strokeDasharray={264}
+                initial={{ strokeDashoffset: 264 }}
+                animate={{ strokeDashoffset: 264 - (264 * 0.23) }}
+                transition={{ duration: 1.5, delay: 0.5 }}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-3xl font-black text-white">23%</span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {["Missing meta", "No alt text", "Slow load"].map((issue, i) => (
+              <div key={i} className="flex items-center gap-1 text-white/70 text-xs">
+                <span className="text-red-400">✗</span> {issue}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Arrow */}
+        <motion.div
+          className="flex items-center"
+          initial={{ scale: 0 }}
+          animate={{ scale: showAfter ? 1 : 0 }}
+          transition={{ delay: 1.2, type: "spring" }}
+        >
+          <motion.div
+            animate={{ x: [0, 5, 0] }}
+            transition={{ duration: 1, repeat: Infinity }}
+          >
+            <Rocket className="w-8 h-8 text-yellow-300" />
+          </motion.div>
+        </motion.div>
+
+        {/* After Score */}
+        <motion.div
+          className="w-40 bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl p-5 shadow-2xl"
+          initial={{ opacity: 0, rotateY: 30, x: 30, scale: 0.8 }}
+          animate={{ 
+            opacity: showAfter ? 1 : 0, 
+            rotateY: showAfter ? 10 : 30, 
+            x: 0, 
+            scale: showAfter ? 1.05 : 0.8 
+          }}
+          transition={{ type: "spring", stiffness: 80 }}
+          style={{ transformStyle: "preserve-3d", boxShadow: "0 40px 80px -20px rgba(0,0,0,0.5)" }}
+        >
+          <div className="text-yellow-300 text-xs font-bold mb-2 flex items-center gap-1">
+            <Sparkles className="w-3 h-3" />
+            AFTER AI
+          </div>
+          
+          {/* Circular Score */}
+          <div className="relative w-28 h-28 mx-auto mb-3">
+            <svg className="w-full h-full -rotate-90">
+              <circle cx="56" cy="56" r="48" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="10" />
+              <motion.circle 
+                cx="56" cy="56" r="48" fill="none" stroke="#22c55e" strokeWidth="10"
+                strokeDasharray={301}
+                initial={{ strokeDashoffset: 301 }}
+                animate={{ strokeDashoffset: showAfter ? 301 - (301 * 0.91) : 301 }}
+                transition={{ duration: 2, delay: 1.5 }}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.span 
+                className="text-4xl font-black text-white"
+                animate={showAfter ? { scale: [1, 1.1, 1] } : {}}
+                transition={{ duration: 0.5, delay: 2.5 }}
+              >
+                91%
+              </motion.span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {["AI meta tags", "Vision alt text", "Optimized"].map((fix, i) => (
+              <motion.div 
+                key={i} 
+                className="flex items-center gap-1 text-white text-xs"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: showAfter ? 1 : 0, x: 0 }}
+                transition={{ delay: 2 + i * 0.2 }}
+              >
+                <Check className="w-3 h-3 text-yellow-300" /> {fix}
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Bottom improvement badge */}
+      <motion.div
+        className="mt-6 bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3 flex items-center gap-3 z-10"
+        initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 2.5 }}
+      >
+        <TrendingUp className="w-6 h-6 text-yellow-300" />
+        <span className="text-white font-black text-lg">+68% Improvement</span>
+      </motion.div>
+
+      {/* Bottom icons */}
+      <motion.div 
+        className="absolute bottom-6 flex gap-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 1.5 }}
       >
-        +68% Improvement
+        {[Zap, Shield, Award].map((Icon, i) => (
+          <motion.div
+            key={i}
+            className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center"
+            animate={{ y: [0, -4, 0] }}
+            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15 }}
+          >
+            <Icon className="w-5 h-5 text-white/80" />
+          </motion.div>
+        ))}
       </motion.div>
     </motion.div>
-
-    <motion.div 
-      className="flex gap-3 mt-4"
-      initial={{ y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 1 }}
-    >
-      <span className="text-gray-500 text-xs">✗ Missing meta</span>
-      <span className="text-gray-500 text-xs">→</span>
-      <span className="text-green-600 text-xs font-bold">✓ AI Optimized</span>
-    </motion.div>
-  </motion.div>
-);
+  );
+};
 
 // ========= SLIDE 6: SEO SCORE (Original) =========
 const SlideSEOScore = () => (
@@ -799,14 +1061,29 @@ export default function AnimationAds() {
     return () => clearInterval(timer);
   }, [isPlaying]);
 
-  // Play voice narration when slide changes (ENGLISH)
+  // Play voice narration when slide changes (ENGLISH) - WITH CACHE
   useEffect(() => {
     if (isMuted) return;
     
     const playNarration = async () => {
       try {
         setIsLoadingAudio(true);
+
+        // Check cache first
+        if (audioCache[currentSlide]) {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+          }
+          const audio = new Audio(`data:audio/mp3;base64,${audioCache[currentSlide]}`);
+          audioRef.current = audio;
+          audio.volume = 0.8;
+          await audio.play();
+          setIsLoadingAudio(false);
+          return;
+        }
         
+        // Generate and cache
         const { data, error } = await supabase.functions.invoke('robot-tts', {
           body: { text: SLIDE_NARRATIONS_EN[currentSlide] }
         });
@@ -823,6 +1100,9 @@ export default function AnimationAds() {
         }
 
         if (data?.audio) {
+          // Store in cache
+          audioCache[currentSlide] = data.audio;
+
           if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current = null;
