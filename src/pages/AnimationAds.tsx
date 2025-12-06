@@ -1366,32 +1366,47 @@ export default function AnimationAds() {
     
     setIsExporting(true);
     setIsPlaying(false);
-    toast.info("Recording video... Please wait");
+    toast.info("Capturing slides... Please wait");
 
     try {
       const container = containerRef.current;
       
-      // Use getDisplayMedia for screen capture of the container area
-      // Or fallback to canvas recording
+      // Create canvas for video
       const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) {
-        throw new Error('Cannot get canvas context');
-      }
-
-      // Set canvas size (9:16 aspect ratio)
+      const ctx = canvas.getContext('2d')!;
       canvas.width = 1080;
       canvas.height = 1920;
       
-      const stream = canvas.captureStream(30);
+      // Capture all slides first
+      const slideImages: HTMLCanvasElement[] = [];
       
-      // Check for supported mime types
+      for (let i = 0; i < slides.length; i++) {
+        setCurrentSlide(i);
+        toast.info(`Capturing slide ${i + 1}/${slides.length}`, { id: 'export-progress' });
+        
+        // Wait for animations to settle
+        await new Promise(r => setTimeout(r, 1500));
+        
+        const capturedCanvas = await html2canvas(container, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: i % 2 === 0 ? '#1e40af' : '#ffffff',
+          logging: false,
+          width: container.offsetWidth,
+          height: container.offsetHeight,
+        });
+        
+        slideImages.push(capturedCanvas);
+      }
+      
+      toast.info("Encoding video...", { id: 'export-progress' });
+      
+      // Setup MediaRecorder
+      const stream = canvas.captureStream(30);
       const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
         ? 'video/webm;codecs=vp9' 
-        : MediaRecorder.isTypeSupported('video/webm') 
-          ? 'video/webm'
-          : 'video/mp4';
+        : 'video/webm';
       
       const recorder = new MediaRecorder(stream, { 
         mimeType,
@@ -1403,86 +1418,63 @@ export default function AnimationAds() {
         if (e.data.size > 0) chunks.push(e.data);
       };
       
-      const recordingComplete = new Promise<void>((resolve) => {
+      recorder.start(100);
+      
+      // Draw each slide for 4 seconds at 30fps
+      const fps = 30;
+      const slideDurationMs = 4000;
+      const framesPerSlide = (slideDurationMs / 1000) * fps;
+      
+      for (let slideIdx = 0; slideIdx < slideImages.length; slideIdx++) {
+        const img = slideImages[slideIdx];
+        
+        for (let frame = 0; frame < framesPerSlide; frame++) {
+          // Clear and fill background
+          ctx.fillStyle = slideIdx % 2 === 0 ? '#1e40af' : '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Scale and center the captured image
+          const scale = Math.min(
+            canvas.width / img.width,
+            canvas.height / img.height
+          );
+          const x = (canvas.width - img.width * scale) / 2;
+          const y = (canvas.height - img.height * scale) / 2;
+          
+          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+          
+          await new Promise(r => setTimeout(r, 1000 / fps));
+        }
+        
+        const progress = Math.round(((slideIdx + 1) / slideImages.length) * 100);
+        toast.info(`Encoding: ${progress}%`, { id: 'export-progress' });
+      }
+      
+      // Stop and download
+      recorder.stop();
+      
+      await new Promise<void>((resolve) => {
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: mimeType });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = mimeType.includes('mp4') ? 'NewAI-Ad.mp4' : 'NewAI-Ad.webm';
+          a.download = 'NewAI-Ad.webm';
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
-          toast.success("Video exported!");
           resolve();
         };
       });
       
-      recorder.start(100);
-      
-      // Record each slide
-      const slideDuration = 4000; // 4 seconds per slide
-      const frameRate = 30;
-      const frameInterval = 1000 / frameRate;
-      
-      for (let slideIdx = 0; slideIdx < slides.length; slideIdx++) {
-        setCurrentSlide(slideIdx);
-        
-        // Wait for slide transition animation
-        await new Promise(r => setTimeout(r, 700));
-        
-        // Capture frames for this slide duration
-        const framesPerSlide = Math.floor((slideDuration - 700) / frameInterval);
-        
-        for (let frame = 0; frame < framesPerSlide; frame++) {
-          try {
-            const capturedCanvas = await html2canvas(container, {
-              scale: 2,
-              useCORS: true,
-              allowTaint: true,
-              backgroundColor: '#1e40af',
-              logging: false,
-            });
-            
-            ctx.fillStyle = '#1e40af';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Calculate scaling to fit 9:16
-            const scale = Math.min(
-              canvas.width / capturedCanvas.width,
-              canvas.height / capturedCanvas.height
-            );
-            const x = (canvas.width - capturedCanvas.width * scale) / 2;
-            const y = (canvas.height - capturedCanvas.height * scale) / 2;
-            
-            ctx.drawImage(
-              capturedCanvas, 
-              x, y, 
-              capturedCanvas.width * scale, 
-              capturedCanvas.height * scale
-            );
-          } catch (err) {
-            // Continue on frame capture error
-          }
-          
-          await new Promise(r => setTimeout(r, frameInterval));
-          
-          // Update progress
-          const progress = Math.round(((slideIdx * framesPerSlide + frame) / (slides.length * framesPerSlide)) * 100);
-          if (frame % 10 === 0) {
-            toast.info(`Recording: ${progress}%`, { id: 'export-progress' });
-          }
-        }
-      }
-      
-      recorder.stop();
-      await recordingComplete;
+      toast.success("Video exported successfully!");
       setIsExporting(false);
+      setCurrentSlide(0);
       
     } catch (error) {
       console.error('Export error:', error);
-      toast.error("Export failed. Try using screen recording.");
+      toast.error("Export failed. Try screen recording instead.");
       setIsExporting(false);
     }
   };
