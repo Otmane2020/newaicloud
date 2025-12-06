@@ -555,3 +555,6 @@ verify_jwt = false
 
 [functions.generate-animation-audio]
 verify_jwt = false
+
+[functions.generate-animationads-audio]
+verify_jwt = false
