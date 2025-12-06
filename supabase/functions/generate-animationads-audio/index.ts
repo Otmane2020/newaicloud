@@ -72,7 +72,7 @@ serve(async (req) => {
         
         // Call ElevenLabs API
         const response = await fetch(
-          'https://api.elevenlabs.io/v1/text-to-speech/9BWtsMINqrJLrRacOk9x', // Aria voice
+          'https://api.elevenlabs.io/v1/text-to-speech/9Qd2dAu97Sqnt7S88BrY',
           {
             method: 'POST',
             headers: {
