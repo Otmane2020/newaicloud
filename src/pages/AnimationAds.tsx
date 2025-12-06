@@ -736,58 +736,61 @@ const SlideSEOScore = () => (
   </motion.div>
 );
 
-// ========= SLIDE 5: BEFORE/AFTER - 3D Rotating Phone with White Background =========
+// ========= SLIDE 5: BEFORE/AFTER - 3D Tilted Phones with Zoom Animation =========
 const SlideBeforeAfter = () => {
   const [showAfter, setShowAfter] = useState(false);
   
   useEffect(() => {
-    const timer = setTimeout(() => setShowAfter(true), 1200);
+    const timer = setTimeout(() => setShowAfter(true), 800);
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-4 ${SLIDE_BACKGROUNDS[6]} overflow-hidden`}>
-      {/* Background particles */}
-      <ParticleExplosion trigger={true} count={20} />
-      <SpeedLines />
+      {/* Background glow effects */}
+      <motion.div
+        className="absolute w-96 h-96 bg-blue-400/20 rounded-full blur-[100px]"
+        animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 4, repeat: Infinity }}
+      />
       
       {/* Floating decorative elements */}
       {[Image, Sparkles, Eye, Camera, Wand2].map((Icon, i) => (
         <motion.div
           key={i}
-          className="absolute text-white/15"
+          className="absolute text-white/10"
           style={{ 
-            left: `${8 + i * 18}%`, 
-            top: `${10 + (i % 3) * 25}%`,
+            left: `${5 + i * 20}%`, 
+            top: `${8 + (i % 3) * 28}%`,
           }}
           animate={{ 
-            y: [0, -20, 0], 
-            rotate: [0, 15, -15, 0],
-            scale: [1, 1.2, 1],
+            y: [0, -15, 0], 
+            rotate: [0, 10, -10, 0],
+            scale: [1, 1.15, 1],
           }}
-          transition={{ duration: 3 + i * 0.4, repeat: Infinity, delay: i * 0.2 }}
+          transition={{ duration: 3 + i * 0.3, repeat: Infinity, delay: i * 0.15 }}
         >
-          <Icon size={20 + i * 5} />
+          <Icon size={18 + i * 4} />
         </motion.div>
       ))}
 
-      {/* Header with glitch */}
+      {/* Header */}
       <ZoomPunch>
         <div className="flex items-center gap-2 mb-1 z-10">
           <motion.div
             animate={{ rotate: [0, 10, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <Eye className="w-7 h-7 text-white" />
+            <Eye className="w-6 h-6 text-white" />
           </motion.div>
-          <GlitchText className="text-2xl font-black text-white">
+          <GlitchText className="text-xl font-black text-white">
             See the Difference
           </GlitchText>
         </div>
       </ZoomPunch>
       
       <motion.p
-        className="text-sm text-white/80 text-center mb-3 z-10"
+        className="text-sm text-white/80 text-center mb-2 z-10"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -797,154 +800,178 @@ const SlideBeforeAfter = () => {
 
       {/* Conversion Badge */}
       <motion.div
-        className="mb-4 z-20"
+        className="mb-3 z-20"
         initial={{ scale: 0, y: -20 }}
         animate={{ scale: 1, y: 0 }}
-        transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+        transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
       >
         <motion.div 
-          className="bg-gradient-to-r from-green-400 to-emerald-500 px-5 py-2 rounded-full shadow-2xl border border-white/30"
+          className="bg-gradient-to-r from-green-400 to-emerald-500 px-4 py-1.5 rounded-full shadow-2xl border border-white/30"
           animate={{ scale: [1, 1.05, 1] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         >
-          <span className="text-white font-black text-lg">+68% Conversions 🚀</span>
+          <span className="text-white font-black text-base">+68% Conversions 🚀</span>
         </motion.div>
       </motion.div>
 
-      {/* 3D Phone Comparison with Rotation/Zoom */}
-      <div className="relative w-full flex justify-center gap-3 z-10" style={{ perspective: 1500 }}>
-        {/* Before Phone - Rotating in from left */}
+      {/* 3D Tilted Phones - Strong inclination left/right with zoom */}
+      <div className="relative w-full flex justify-center items-center z-10" style={{ perspective: 2000 }}>
+        
+        {/* Before Phone - Tilted LEFT with zoom animation */}
         <motion.div
           className="relative"
-          initial={{ x: -150, rotateY: -60, rotateX: 15, scale: 0.6, opacity: 0 }}
-          animate={{ x: 0, rotateY: -12, rotateX: 5, scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 60, damping: 15, delay: 0.2 }}
-          style={{ transformStyle: "preserve-3d" }}
+          initial={{ x: -200, rotateY: -90, rotateZ: -20, scale: 0.3, opacity: 0 }}
+          animate={{ 
+            x: showAfter ? -20 : 0, 
+            rotateY: -25, 
+            rotateZ: -8,
+            rotateX: 5,
+            scale: showAfter ? [0.85, 0.9, 0.85] : 1, 
+            opacity: 1 
+          }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 50, 
+            damping: 12, 
+            delay: 0.1,
+            scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+          }}
+          style={{ transformStyle: "preserve-3d", transformOrigin: "center center" }}
         >
+          {/* Red glow behind */}
+          <motion.div
+            className="absolute inset-0 rounded-[28px] blur-3xl bg-red-500/40 -z-10"
+            animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.15, 1] }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+          />
+          
           {/* Phone Frame */}
-          <div className="relative w-36 bg-gradient-to-b from-gray-800 to-gray-900 rounded-[24px] p-1.5 shadow-2xl border border-gray-600">
+          <div className="relative w-32 bg-gradient-to-b from-gray-700 to-gray-900 rounded-[24px] p-1.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] border border-gray-600">
             {/* Notch */}
-            <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-16 h-4 bg-black rounded-full z-20" />
+            <div className="absolute top-1 left-1/2 -translate-x-1/2 w-14 h-3.5 bg-black rounded-full z-20" />
             
             {/* Screen */}
             <div className="bg-white rounded-[20px] overflow-hidden">
-              <div className="bg-red-500 text-white text-xs font-bold py-1.5 text-center mt-3">
+              <div className="bg-red-500 text-white text-[10px] font-bold py-1 text-center mt-2.5">
                 ✕ BEFORE
               </div>
               
-              <div className="relative h-44 bg-gray-100">
+              <div className="relative h-40 bg-gray-100">
                 <img 
                   src={sofaWhiteBackground} 
-                  className="w-full h-full object-cover grayscale opacity-80" 
+                  className="w-full h-full object-cover grayscale opacity-75" 
                   alt="Before"
                 />
-                <div className="absolute inset-0 bg-black/20" />
+                <div className="absolute inset-0 bg-black/25" />
                 
                 {/* Sad overlay */}
                 <motion.div
                   className="absolute inset-0 flex items-center justify-center"
-                  animate={{ opacity: [0.5, 0.8, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
+                  animate={{ opacity: [0.5, 0.9, 0.5] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
                 >
-                  <div className="bg-red-500/80 rounded-full p-2">
-                    <span className="text-white text-xl">😔</span>
+                  <div className="bg-red-500/90 rounded-full p-2 shadow-lg">
+                    <span className="text-white text-lg">😔</span>
                   </div>
                 </motion.div>
               </div>
               
-              <div className="p-2 text-center text-xs text-gray-500 font-medium">
+              <div className="p-1.5 text-center text-[9px] text-gray-500 font-medium">
                 Plain • Low Quality
               </div>
             </div>
           </div>
-          
-          {/* Red glow behind */}
-          <motion.div
-            className="absolute inset-0 rounded-[24px] blur-2xl bg-red-500/30 -z-10"
-            animate={{ opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
         </motion.div>
 
-        {/* Arrow in center */}
+        {/* Arrow in center - pulsing */}
         <motion.div
-          className="flex items-center z-20"
-          initial={{ scale: 0 }}
-          animate={{ scale: showAfter ? 1 : 0 }}
-          transition={{ delay: 1.3, type: "spring" }}
+          className="mx-2 z-30"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: showAfter ? 1 : 0, opacity: showAfter ? 1 : 0 }}
+          transition={{ delay: 0.8, type: "spring", stiffness: 300 }}
         >
           <motion.div
-            animate={{ x: [0, 8, 0], scale: [1, 1.1, 1] }}
-            transition={{ duration: 0.8, repeat: Infinity }}
+            animate={{ 
+              x: [0, 10, 0], 
+              scale: [1, 1.2, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{ duration: 0.6, repeat: Infinity }}
           >
-            <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-9 h-9 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center shadow-xl">
               <ArrowRight className="w-5 h-5 text-gray-900" />
             </div>
           </motion.div>
         </motion.div>
 
-        {/* After Phone - Rotating in from right with zoom */}
+        {/* After Phone - Tilted RIGHT with zoom animation (bigger, emphasized) */}
         <motion.div
           className="relative"
-          initial={{ x: 150, rotateY: 60, rotateX: -15, scale: 0.6, opacity: 0 }}
+          initial={{ x: 200, rotateY: 90, rotateZ: 20, scale: 0.3, opacity: 0 }}
           animate={{ 
-            x: 0, 
-            rotateY: showAfter ? 8 : 40, 
-            rotateX: showAfter ? -3 : -10, 
-            scale: showAfter ? 1.08 : 0.8, 
-            opacity: showAfter ? 1 : 0.3 
+            x: showAfter ? 20 : 0, 
+            rotateY: 20, 
+            rotateZ: 6,
+            rotateX: -3,
+            scale: showAfter ? [1.05, 1.15, 1.05] : 0.9, 
+            opacity: showAfter ? 1 : 0.5 
           }}
-          transition={{ type: "spring", stiffness: 60, damping: 15 }}
-          style={{ transformStyle: "preserve-3d" }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 50, 
+            damping: 12,
+            scale: { duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }
+          }}
+          style={{ transformStyle: "preserve-3d", transformOrigin: "center center" }}
         >
-          {/* Glow effect */}
+          {/* Blue/cyan glow behind - more intense */}
           <motion.div
-            className="absolute inset-0 rounded-[28px] blur-3xl bg-blue-400/50 -z-10"
-            animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.1, 1] }}
+            className="absolute inset-0 rounded-[32px] blur-[40px] bg-gradient-to-r from-blue-400 to-cyan-400 -z-10"
+            animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.2, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           />
           
-          {/* Phone Frame */}
-          <div className="relative w-40 bg-gradient-to-b from-gray-700 to-gray-900 rounded-[28px] p-2 shadow-2xl border-2 border-blue-400/50">
+          {/* Phone Frame - slightly larger */}
+          <div className="relative w-36 bg-gradient-to-b from-gray-600 to-gray-900 rounded-[28px] p-2 shadow-[0_30px_80px_-20px_rgba(59,130,246,0.6)] border-2 border-blue-400/60">
             {/* Notch */}
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-18 h-5 bg-black rounded-full z-20" />
+            <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-16 h-4 bg-black rounded-full z-20" />
             
             {/* Screen */}
             <div className="bg-white rounded-[22px] overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold py-2 text-center mt-4">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-[10px] font-bold py-1.5 text-center mt-3">
                 ✨ AFTER AI
               </div>
               
-              <div className="relative h-48">
+              <div className="relative h-44">
                 <motion.img 
                   src={sofaWithBackground} 
                   className="w-full h-full object-cover" 
                   alt="After"
-                  animate={{ scale: [1, 1.03, 1] }}
+                  animate={{ scale: [1, 1.04, 1] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 />
                 
-                {/* Shine effect */}
+                {/* Shine sweep effect */}
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                  animate={{ x: ["-100%", "200%"] }}
-                  transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1.5 }}
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent"
+                  animate={{ x: ["-150%", "250%"] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
                 />
                 
-                {/* Success overlay */}
+                {/* Success checkmark */}
                 <motion.div
                   className="absolute top-2 right-2"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: showAfter ? 1 : 0 }}
-                  transition={{ delay: 1.8, type: "spring" }}
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: showAfter ? 1 : 0, rotate: 0 }}
+                  transition={{ delay: 1.2, type: "spring", stiffness: 200 }}
                 >
-                  <div className="bg-green-500 rounded-full p-1.5 shadow-lg">
-                    <Check className="w-4 h-4 text-white" />
+                  <div className="bg-green-500 rounded-full p-1.5 shadow-lg border-2 border-white">
+                    <Check className="w-3.5 h-3.5 text-white" />
                   </div>
                 </motion.div>
               </div>
               
-              <div className="p-2 text-center text-xs font-bold text-blue-600">
+              <div className="p-1.5 text-center text-[9px] font-bold text-blue-600">
                 AI Background • Pro Quality
               </div>
             </div>
@@ -952,23 +979,23 @@ const SlideBeforeAfter = () => {
         </motion.div>
       </div>
 
-      {/* Bottom stats */}
+      {/* Bottom stats badges */}
       <motion.div 
-        className="flex gap-2 mt-4 z-10"
+        className="flex gap-2 mt-3 z-10"
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 2 }}
+        transition={{ delay: 1.5 }}
       >
         {[
-          { icon: Image, label: "HD Quality", color: "bg-blue-500" },
-          { icon: Sparkles, label: "AI Enhanced", color: "bg-purple-500" },
+          { icon: Image, label: "HD", color: "bg-blue-500" },
+          { icon: Sparkles, label: "AI", color: "bg-purple-500" },
           { icon: TrendingUp, label: "+68%", color: "bg-green-500" },
         ].map(({ icon: Icon, label, color }, i) => (
           <motion.div
             key={i}
-            className={`${color} text-white text-xs px-2 py-1.5 rounded-xl font-bold flex items-center gap-1 shadow-lg`}
-            animate={{ y: [0, -3, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+            className={`${color} text-white text-[10px] px-2 py-1 rounded-lg font-bold flex items-center gap-1 shadow-lg`}
+            animate={{ y: [0, -4, 0], scale: [1, 1.05, 1] }}
+            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15 }}
           >
             <Icon className="w-3 h-3" />
             {label}
