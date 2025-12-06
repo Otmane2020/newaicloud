@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles, Download, Film, Rocket, TrendingUp, Zap, ShoppingCart, Package, BarChart3, LineChart, Search, Eye, Image, ArrowUp, ChevronRight, Globe, Smartphone, Award, Shield, Camera, Wand2, ArrowRight } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles, Download, Film, Rocket, TrendingUp, Zap, ShoppingCart, Package, BarChart3, LineChart, Search, Eye, Image, ArrowUp, ChevronRight, Globe, Smartphone, Award, Shield, Camera, Wand2, ArrowRight, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import html2canvas from "html2canvas";
 
 // Import components
 import { SEOScoreCircle } from "@/components/video3d/SEOScoreCircle";
@@ -1360,35 +1362,104 @@ export default function AnimationAds() {
   };
 
   const handleExportVideo = async () => {
+    if (!containerRef.current) return;
+    
     setIsExporting(true);
-    // Simulate export - in production you would use a library like html2canvas + video encoder
-    setTimeout(() => {
+    setIsPlaying(false);
+    toast.info("Capturing video frames...");
+
+    try {
+      const container = containerRef.current;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Cannot get canvas context');
+      }
+
+      // Set canvas size to match container
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width * 2; // Higher resolution
+      canvas.height = rect.height * 2;
+      
+      const stream = canvas.captureStream(30);
+      const recorder = new MediaRecorder(stream, { 
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 5000000
+      });
+      
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'NewAI-Ad.webm';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success("Video exported successfully!");
+        setIsExporting(false);
+      };
+      
+      recorder.start(100);
+      
+      // Capture frames for each slide
+      for (let i = 0; i < slides.length; i++) {
+        setCurrentSlide(i);
+        await new Promise(r => setTimeout(r, 800)); // Wait for animation
+        
+        // Capture frame using html2canvas
+        const capturedCanvas = await html2canvas(container, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: null,
+        });
+        
+        // Draw to recording canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(capturedCanvas, 0, 0, canvas.width, canvas.height);
+        
+        // Hold frame for slide duration
+        const frameDuration = 4000; // 4 seconds per slide
+        const frameInterval = 33; // ~30fps
+        for (let f = 0; f < frameDuration / frameInterval; f++) {
+          await new Promise(r => setTimeout(r, frameInterval));
+        }
+      }
+      
+      recorder.stop();
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error("Export failed. Try screen recording instead.");
       setIsExporting(false);
-      alert('Video export coming soon! For now, use screen recording.');
-    }, 2000);
+    }
+  };
+
+  const handleGenerateAudio = async () => {
+    toast.info("Generating audio narrations...");
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-animationads-audio');
+      if (error) throw error;
+      
+      toast.success(data.message || "Audio generated!");
+      // Reload audio cache
+      window.location.reload();
+    } catch (error) {
+      console.error('Audio generation error:', error);
+      toast.error("Failed to generate audio");
+    }
   };
 
   const handleDownload = () => {
-    // Create a download link for screen recording instructions
-    const instructions = `
-NewAI Animation Ads - Export Instructions
-==========================================
-
-Pour exporter cette vidéo:
-1. Utilisez un logiciel d'enregistrement d'écran (OBS, Loom, etc.)
-2. Enregistrez la vidéo en format 9:16 (vertical)
-3. Durée totale: environ ${slides.length * 4} secondes
-
-Ou utilisez l'export vidéo intégré (bientôt disponible).
-    `;
-    
-    const blob = new Blob([instructions], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'newai-video-instructions.txt';
-    a.click();
-    URL.revokeObjectURL(url);
+    toast.info("Use Export Video button for video download");
   };
 
   const CurrentSlideComponent = slides[currentSlide];
@@ -1406,12 +1477,12 @@ Ou utilisez l'export vidéo intégré (bientôt disponible).
           {isExporting ? 'Exporting...' : 'Export Video'}
         </Button>
         <Button
-          onClick={handleDownload}
+          onClick={handleGenerateAudio}
           variant="outline"
           className="border-white/30 text-white hover:bg-white/10"
         >
-          <Download className="w-4 h-4 mr-2" />
-          Download
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Generate Audio
         </Button>
       </div>
 
