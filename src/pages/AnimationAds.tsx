@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles, Download, Film, Rocket, TrendingUp, Zap, ShoppingCart, Package, BarChart3, LineChart, Search, Eye, Image, ArrowUp, ChevronRight, Globe, Smartphone, Award, Shield } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles, Download, Film, Rocket, TrendingUp, Zap, ShoppingCart, Package, BarChart3, LineChart, Search, Eye, Image, ArrowUp, ChevronRight, Globe, Smartphone, Award, Shield, Camera, Wand2, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -736,42 +736,248 @@ const SlideSEOScore = () => (
   </motion.div>
 );
 
-// ========= SLIDE 5: BEFORE/AFTER =========
-const SlideBeforeAfter = () => (
-  <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-4 ${SLIDE_BACKGROUNDS[6]}`}>
-    <ParticleExplosion trigger={true} count={15} />
-    
-    <ZoomPunch>
-      <h2 className="text-2xl font-black text-white text-center mb-1 z-10">
-        <GlitchText>See the Difference</GlitchText>
-      </h2>
-    </ZoomPunch>
-    
-    <motion.p
-      className="text-sm text-white/80 text-center mb-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 0.3 }}
-    >
-      Vision AI Enhancement
-    </motion.p>
+// ========= SLIDE 5: BEFORE/AFTER - 3D Rotating Phone with White Background =========
+const SlideBeforeAfter = () => {
+  const [showAfter, setShowAfter] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setShowAfter(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
-    <motion.div
-      initial={{ scale: 0.8, rotateX: 30 }}
-      animate={{ scale: 1, rotateX: 0 }}
-      transition={{ type: "spring", stiffness: 100 }}
-      style={{ perspective: 1000 }}
-    >
-      <BeforeAfterSplit 
-        beforeImage={sofaWhiteBackground}
-        afterImage={sofaWithBackground}
-        beforeLabel="BEFORE"
-        afterLabel="AFTER AI"
-        conversionBoost="+68%"
-      />
+  return (
+    <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-4 ${SLIDE_BACKGROUNDS[6]} overflow-hidden`}>
+      {/* Background particles */}
+      <ParticleExplosion trigger={true} count={20} />
+      <SpeedLines />
+      
+      {/* Floating decorative elements */}
+      {[Image, Sparkles, Eye, Camera, Wand2].map((Icon, i) => (
+        <motion.div
+          key={i}
+          className="absolute text-white/15"
+          style={{ 
+            left: `${8 + i * 18}%`, 
+            top: `${10 + (i % 3) * 25}%`,
+          }}
+          animate={{ 
+            y: [0, -20, 0], 
+            rotate: [0, 15, -15, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{ duration: 3 + i * 0.4, repeat: Infinity, delay: i * 0.2 }}
+        >
+          <Icon size={20 + i * 5} />
+        </motion.div>
+      ))}
+
+      {/* Header with glitch */}
+      <ZoomPunch>
+        <div className="flex items-center gap-2 mb-1 z-10">
+          <motion.div
+            animate={{ rotate: [0, 10, -10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Eye className="w-7 h-7 text-white" />
+          </motion.div>
+          <GlitchText className="text-2xl font-black text-white">
+            See the Difference
+          </GlitchText>
+        </div>
+      </ZoomPunch>
+      
+      <motion.p
+        className="text-sm text-white/80 text-center mb-3 z-10"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <NeonText color="#60a5fa">Vision AI Enhancement</NeonText>
+      </motion.p>
+
+      {/* Conversion Badge */}
+      <motion.div
+        className="mb-4 z-20"
+        initial={{ scale: 0, y: -20 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+      >
+        <motion.div 
+          className="bg-gradient-to-r from-green-400 to-emerald-500 px-5 py-2 rounded-full shadow-2xl border border-white/30"
+          animate={{ scale: [1, 1.05, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          <span className="text-white font-black text-lg">+68% Conversions 🚀</span>
+        </motion.div>
+      </motion.div>
+
+      {/* 3D Phone Comparison with Rotation/Zoom */}
+      <div className="relative w-full flex justify-center gap-3 z-10" style={{ perspective: 1500 }}>
+        {/* Before Phone - Rotating in from left */}
+        <motion.div
+          className="relative"
+          initial={{ x: -150, rotateY: -60, rotateX: 15, scale: 0.6, opacity: 0 }}
+          animate={{ x: 0, rotateY: -12, rotateX: 5, scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 60, damping: 15, delay: 0.2 }}
+          style={{ transformStyle: "preserve-3d" }}
+        >
+          {/* Phone Frame */}
+          <div className="relative w-36 bg-gradient-to-b from-gray-800 to-gray-900 rounded-[24px] p-1.5 shadow-2xl border border-gray-600">
+            {/* Notch */}
+            <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-16 h-4 bg-black rounded-full z-20" />
+            
+            {/* Screen */}
+            <div className="bg-white rounded-[20px] overflow-hidden">
+              <div className="bg-red-500 text-white text-xs font-bold py-1.5 text-center mt-3">
+                ✕ BEFORE
+              </div>
+              
+              <div className="relative h-44 bg-gray-100">
+                <img 
+                  src={sofaWhiteBackground} 
+                  className="w-full h-full object-cover grayscale opacity-80" 
+                  alt="Before"
+                />
+                <div className="absolute inset-0 bg-black/20" />
+                
+                {/* Sad overlay */}
+                <motion.div
+                  className="absolute inset-0 flex items-center justify-center"
+                  animate={{ opacity: [0.5, 0.8, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <div className="bg-red-500/80 rounded-full p-2">
+                    <span className="text-white text-xl">😔</span>
+                  </div>
+                </motion.div>
+              </div>
+              
+              <div className="p-2 text-center text-xs text-gray-500 font-medium">
+                Plain • Low Quality
+              </div>
+            </div>
+          </div>
+          
+          {/* Red glow behind */}
+          <motion.div
+            className="absolute inset-0 rounded-[24px] blur-2xl bg-red-500/30 -z-10"
+            animate={{ opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+        </motion.div>
+
+        {/* Arrow in center */}
+        <motion.div
+          className="flex items-center z-20"
+          initial={{ scale: 0 }}
+          animate={{ scale: showAfter ? 1 : 0 }}
+          transition={{ delay: 1.3, type: "spring" }}
+        >
+          <motion.div
+            animate={{ x: [0, 8, 0], scale: [1, 1.1, 1] }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+          >
+            <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg">
+              <ArrowRight className="w-5 h-5 text-gray-900" />
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* After Phone - Rotating in from right with zoom */}
+        <motion.div
+          className="relative"
+          initial={{ x: 150, rotateY: 60, rotateX: -15, scale: 0.6, opacity: 0 }}
+          animate={{ 
+            x: 0, 
+            rotateY: showAfter ? 8 : 40, 
+            rotateX: showAfter ? -3 : -10, 
+            scale: showAfter ? 1.08 : 0.8, 
+            opacity: showAfter ? 1 : 0.3 
+          }}
+          transition={{ type: "spring", stiffness: 60, damping: 15 }}
+          style={{ transformStyle: "preserve-3d" }}
+        >
+          {/* Glow effect */}
+          <motion.div
+            className="absolute inset-0 rounded-[28px] blur-3xl bg-blue-400/50 -z-10"
+            animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+          
+          {/* Phone Frame */}
+          <div className="relative w-40 bg-gradient-to-b from-gray-700 to-gray-900 rounded-[28px] p-2 shadow-2xl border-2 border-blue-400/50">
+            {/* Notch */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 w-18 h-5 bg-black rounded-full z-20" />
+            
+            {/* Screen */}
+            <div className="bg-white rounded-[22px] overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold py-2 text-center mt-4">
+                ✨ AFTER AI
+              </div>
+              
+              <div className="relative h-48">
+                <motion.img 
+                  src={sofaWithBackground} 
+                  className="w-full h-full object-cover" 
+                  alt="After"
+                  animate={{ scale: [1, 1.03, 1] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                />
+                
+                {/* Shine effect */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                  animate={{ x: ["-100%", "200%"] }}
+                  transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1.5 }}
+                />
+                
+                {/* Success overlay */}
+                <motion.div
+                  className="absolute top-2 right-2"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: showAfter ? 1 : 0 }}
+                  transition={{ delay: 1.8, type: "spring" }}
+                >
+                  <div className="bg-green-500 rounded-full p-1.5 shadow-lg">
+                    <Check className="w-4 h-4 text-white" />
+                  </div>
+                </motion.div>
+              </div>
+              
+              <div className="p-2 text-center text-xs font-bold text-blue-600">
+                AI Background • Pro Quality
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Bottom stats */}
+      <motion.div 
+        className="flex gap-2 mt-4 z-10"
+        initial={{ y: 30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 2 }}
+      >
+        {[
+          { icon: Image, label: "HD Quality", color: "bg-blue-500" },
+          { icon: Sparkles, label: "AI Enhanced", color: "bg-purple-500" },
+          { icon: TrendingUp, label: "+68%", color: "bg-green-500" },
+        ].map(({ icon: Icon, label, color }, i) => (
+          <motion.div
+            key={i}
+            className={`${color} text-white text-xs px-2 py-1.5 rounded-xl font-bold flex items-center gap-1 shadow-lg`}
+            animate={{ y: [0, -3, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+          >
+            <Icon className="w-3 h-3" />
+            {label}
+          </motion.div>
+        ))}
+      </motion.div>
     </motion.div>
-  </motion.div>
-);
+  );
+};
 
 // ========= SLIDE 6: LANDING PAGE =========
 const SlideLandingPage = () => (
@@ -1009,7 +1215,7 @@ export default function AnimationAds() {
   const containerRef = useRef<HTMLDivElement>(null);
   const audioQueueRef = useRef<HTMLAudioElement[]>([]);
 
-  // Preload audio from storage or generate via ElevenLabs if not available
+  // Load audio ONLY from pre-stored cache - NO ElevenLabs API calls
   useEffect(() => {
     const preloadAllAudio = async () => {
       if (audioPreloadPromise) return;
@@ -1017,7 +1223,7 @@ export default function AnimationAds() {
       setIsLoadingAudio(true);
       
       audioPreloadPromise = (async () => {
-        // Try to load audio from storage first
+        // Load audio from storage only - no fallback to API
         for (let index = 0; index < PRELOADED_AUDIO_URLS.length; index++) {
           if (audioCache.has(index)) continue;
           
@@ -1031,53 +1237,17 @@ export default function AnimationAds() {
             await Promise.race([
               new Promise<void>((resolve, reject) => {
                 audio.addEventListener('canplaythrough', () => resolve(), { once: true });
-                audio.addEventListener('error', () => reject(new Error(`Storage audio not found`)), { once: true });
+                audio.addEventListener('error', () => reject(new Error(`Audio not found in storage`)), { once: true });
                 audio.load();
               }),
-              new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+              new Promise<void>((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
             ]);
             
             audioCache.set(index, audio);
             console.log(`✓ Audio ${index + 1}/${PRELOADED_AUDIO_URLS.length} loaded from storage`);
           } catch (err) {
-            // Fallback: generate via ElevenLabs API
-            console.log(`Audio ${index} not in storage, generating via API...`);
-            try {
-              const narrations = [
-                "NewAI — the AI that boosts your Shopify SEO automatically. Connect Shopify, Google, Facebook and Instagram in one click!",
-                "Real results: 3x faster workflow, 50% more traffic, save 10 hours weekly, and Top 10 Google ranking!",
-                "Showcase your products in style! Professional photos, 3D animations, and dynamic galleries!",
-                "Dominate Google Search! Appear in Search, Shopping, and Discover with AI-powered optimization!",
-                "Watch your SEO score skyrocket! From struggling to thriving — all fully automated!",
-                "Transform your SEO from 34% to 95%! AI optimization that actually works!",
-                "See the difference! Before: plain white. After: Vision AI professional staging. Plus 68% more conversions!",
-                "Auto-generated landing pages with AI — conversion-optimized HTML ready to deploy in seconds!",
-                "AI Vision analyzes and enhances every product image. Alt text, backgrounds, optimization — all automatic!",
-                "Google Shopping ready! XML feed, category mapping, GTIN validation. Zero errors guaranteed!",
-                "Start your free trial today. No credit card required. Join 500+ successful sellers!"
-              ];
-              
-              const { data, error } = await supabase.functions.invoke('robot-tts', {
-                body: { text: narrations[index] }
-              });
-              
-              if (!error && data?.audio && !data?.quotaExceeded) {
-                const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
-                audio.volume = 0.8;
-                audio.preload = 'auto';
-                await new Promise<void>((resolve) => {
-                  audio.addEventListener('canplaythrough', () => resolve(), { once: true });
-                  audio.load();
-                });
-                audioCache.set(index, audio);
-                console.log(`✓ Audio ${index + 1} generated via API`);
-              }
-              
-              // Small delay to avoid rate limit
-              await new Promise(resolve => setTimeout(resolve, 400));
-            } catch (apiErr) {
-              console.error(`Failed to generate audio ${index}:`, apiErr);
-            }
+            // Audio not available in storage - skip silently (no API calls)
+            console.log(`⚠ Audio ${index} not available in storage, skipping`);
           }
         }
       })();
