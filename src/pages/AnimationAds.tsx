@@ -24,8 +24,9 @@ import sofaWhiteBackground from "@/assets/sofa-white-background.jpg";
 import sofaWithBackground from "@/assets/sofa-with-background.jpg";
 import shopifyLogo from "@/assets/shopify-logo.svg";
 
-// Audio cache for ElevenLabs narration
-const audioCache: Record<number, string> = {};
+// Audio cache for ElevenLabs narration - preloaded queue
+const audioCache: Map<number, HTMLAudioElement> = new Map();
+let audioPreloadPromise: Promise<void> | null = null;
 
 // ========= ENGLISH NARRATIONS (11 slides) =========
 const SLIDE_NARRATIONS_EN = [
@@ -41,6 +42,24 @@ const SLIDE_NARRATIONS_EN = [
   "Google Shopping ready! XML feed, category mapping, GTIN validation. Zero errors guaranteed!",
   "Start your free trial today. No credit card required. Join 500+ successful sellers!"
 ];
+
+// Slide backgrounds alternating white/blue
+const SLIDE_BACKGROUNDS = [
+  "bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900", // 0 - blue
+  "bg-gradient-to-br from-white via-slate-50 to-blue-100",     // 1 - white
+  "bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900", // 2 - blue
+  "bg-gradient-to-br from-white via-slate-50 to-blue-100",     // 3 - white
+  "bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900", // 4 - blue
+  "bg-gradient-to-br from-white via-slate-50 to-blue-100",     // 5 - white
+  "bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900", // 6 - blue
+  "bg-gradient-to-br from-white via-slate-50 to-blue-100",     // 7 - white
+  "bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900", // 8 - blue
+  "bg-gradient-to-br from-white via-slate-50 to-blue-100",     // 9 - white
+  "bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900", // 10 - blue (CTA)
+];
+
+// Text colors based on background
+const getTextColor = (slideIndex: number) => slideIndex % 2 === 0 ? "text-white" : "text-blue-900";
 
 // Google Logo SVG
 const GoogleLogo = () => (
@@ -126,16 +145,37 @@ const FloatingParticles = () => (
   </div>
 );
 
-// 3D Slide transition variants - smoother like video
+// 3D Cube Flip Transition - smooth cinematic rotation
 const slideTransition3D = {
-  initial: { opacity: 0, rotateY: -30, scale: 0.95, x: 50 },
-  animate: { opacity: 1, rotateY: 0, scale: 1, x: 0 },
-  exit: { opacity: 0, rotateY: 15, scale: 0.98, x: -30 }
+  initial: { 
+    opacity: 0, 
+    rotateY: 90, 
+    rotateX: 15,
+    scale: 0.8, 
+    x: 100,
+    z: -200
+  },
+  animate: { 
+    opacity: 1, 
+    rotateY: 0, 
+    rotateX: 0,
+    scale: 1, 
+    x: 0,
+    z: 0
+  },
+  exit: { 
+    opacity: 0, 
+    rotateY: -90, 
+    rotateX: -15,
+    scale: 0.8, 
+    x: -100,
+    z: -200
+  }
 };
 
 // ========= SLIDE 1: INTRO =========
 const SlideIntro = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
+  <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[0]}`}>
     <FloatingParticles />
     <ParticleExplosion trigger={true} count={25} />
     
@@ -214,12 +254,12 @@ const SlideIntro = () => (
 
 // ========= SLIDE 2: STATS =========
 const SlideStats = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
+  <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[1]}`}>
     <SpeedLines />
     
     <ZoomPunch>
-      <GlitchText className="text-3xl font-black text-white text-center mb-8 drop-shadow-lg">
-        <span className="text-yellow-300">Real</span> Results
+      <GlitchText className="text-3xl font-black text-blue-900 text-center mb-8 drop-shadow-sm">
+        <span className="text-blue-600">Real</span> Results
       </GlitchText>
     </ZoomPunch>
 
@@ -289,7 +329,7 @@ const SlideShopifyPhotos = () => {
   ];
 
   return (
-    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 overflow-hidden">
+    <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[2]} overflow-hidden`}>
       {/* Floating icons background */}
       {[Rocket, TrendingUp, Zap, Star, Award].map((Icon, i) => (
         <motion.div
@@ -417,12 +457,12 @@ const SlideSearchConsole = () => {
   }, []);
 
   return (
-    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 overflow-hidden">
+    <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[3]} overflow-hidden`}>
       {/* Floating decorative icons */}
       {[LineChart, TrendingUp, Search, Eye, ArrowUp, BarChart3].map((Icon, i) => (
         <motion.div
           key={i}
-          className="absolute text-white/10"
+          className="absolute text-blue-300/30"
           style={{ 
             left: `${5 + i * 15}%`, 
             top: `${10 + (i % 4) * 20}%`,
@@ -441,8 +481,8 @@ const SlideSearchConsole = () => {
       {/* Header */}
       <ZoomPunch>
         <div className="flex items-center gap-2 mb-4 z-10">
-          <Search className="w-8 h-8 text-white" />
-          <GlitchText className="text-2xl font-black text-white">
+          <Search className="w-8 h-8 text-blue-600" />
+          <GlitchText className="text-2xl font-black text-blue-900">
             Search Console
           </GlitchText>
         </div>
@@ -560,7 +600,7 @@ const SlideSEOBeforeAfter = () => {
   }, []);
 
   return (
-    <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 overflow-hidden">
+    <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[4]} overflow-hidden`}>
       {/* Floating decorative icons */}
       {[Target, Zap, Sparkles, Image, ChevronRight, Smartphone].map((Icon, i) => (
         <motion.div
@@ -741,22 +781,22 @@ const SlideSEOBeforeAfter = () => {
 
 // ========= SLIDE 6: SEO SCORE (Original) =========
 const SlideSEOScore = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
+  <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[5]}`}>
     <FloatingParticles />
     
     <ZoomPunch>
-      <h2 className="text-2xl font-black text-white text-center mb-2">
+      <h2 className="text-2xl font-black text-blue-900 text-center mb-2">
         <GlitchText>SEO Score</GlitchText>
       </h2>
     </ZoomPunch>
     
     <motion.p
-      className="text-lg text-white/80 text-center mb-6"
+      className="text-lg text-blue-700 text-center mb-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.3 }}
     >
-      <span className="text-red-400">34%</span> → <span className="text-green-400">95%</span>
+      <span className="text-red-500">34%</span> → <span className="text-green-500">95%</span>
     </motion.p>
 
     <motion.div
@@ -769,12 +809,12 @@ const SlideSEOScore = () => (
     </motion.div>
 
     <motion.div
-      className="mt-6 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3"
+      className="mt-6 bg-blue-100 backdrop-blur-sm rounded-xl px-6 py-3"
       initial={{ y: 50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 1.2 }}
     >
-      <p className="text-white font-bold text-center">
+      <p className="text-blue-900 font-bold text-center">
         ✨ <NeonText color="#22c55e">Fully Automated</NeonText> ✨
       </p>
     </motion.div>
@@ -783,7 +823,7 @@ const SlideSEOScore = () => (
 
 // ========= SLIDE 5: BEFORE/AFTER =========
 const SlideBeforeAfter = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
+  <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-4 ${SLIDE_BACKGROUNDS[6]}`}>
     <ParticleExplosion trigger={true} count={15} />
     
     <ZoomPunch>
@@ -820,17 +860,17 @@ const SlideBeforeAfter = () => (
 
 // ========= SLIDE 6: LANDING PAGE =========
 const SlideLandingPage = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
+  <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-4 ${SLIDE_BACKGROUNDS[7]}`}>
     <FloatingParticles />
     
     <ZoomPunch>
-      <h2 className="text-xl font-black text-white text-center mb-2">
+      <h2 className="text-xl font-black text-blue-900 text-center mb-2">
         <GlitchText>AI Landing Pages</GlitchText>
       </h2>
     </ZoomPunch>
     
     <motion.p
-      className="text-sm text-white/80 text-center mb-4"
+      className="text-sm text-blue-700 text-center mb-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.3 }}
@@ -854,7 +894,7 @@ const SlideLandingPage = () => (
 
 // ========= SLIDE 7: IMAGE ENHANCEMENT =========
 const SlideImageEnhancement = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
+  <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-4 ${SLIDE_BACKGROUNDS[8]}`}>
     <SpeedLines />
     
     <ZoomPunch>
@@ -885,7 +925,7 @@ const SlideImageEnhancement = () => (
 
 // ========= SLIDE 8: GOOGLE SHOPPING =========
 const SlideGoogleShopping = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
+  <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[9]}`}>
     <FloatingParticles />
     
     <motion.div
@@ -903,8 +943,8 @@ const SlideGoogleShopping = () => (
     </motion.div>
 
     <ZoomPunch>
-      <h2 className="text-2xl font-black text-white text-center mb-6">
-        Google Shopping <span className="text-yellow-300">Ready</span>
+      <h2 className="text-2xl font-black text-blue-900 text-center mb-6">
+        Google Shopping <span className="text-blue-600">Ready</span>
       </h2>
     </ZoomPunch>
 
@@ -916,7 +956,7 @@ const SlideGoogleShopping = () => (
       ].map((item, i) => (
         <motion.div
           key={i}
-          className="bg-white/20 backdrop-blur-md rounded-xl p-4 flex items-center gap-4"
+          className="bg-blue-100 backdrop-blur-md rounded-xl p-4 flex items-center gap-4"
           initial={{ x: i % 2 === 0 ? -100 : 100, opacity: 0, rotateY: i % 2 === 0 ? -30 : 30 }}
           animate={{ x: 0, opacity: 1, rotateY: 0 }}
           transition={{ delay: 0.5 + i * 0.15, type: "spring" }}
@@ -926,8 +966,8 @@ const SlideGoogleShopping = () => (
             {item.icon}
           </div>
           <div>
-            <p className="text-white font-bold">{item.label}</p>
-            <p className="text-white/70 text-sm">{item.desc}</p>
+            <p className="text-blue-900 font-bold">{item.label}</p>
+            <p className="text-blue-600 text-sm">{item.desc}</p>
           </div>
         </motion.div>
       ))}
@@ -940,14 +980,14 @@ const SlideGoogleShopping = () => (
       transition={{ delay: 1 }}
     >
       <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">0 Errors</span>
-      <span className="bg-blue-400 text-white px-3 py-1 rounded-full text-sm font-bold">100% GMC Ready</span>
+      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">100% GMC Ready</span>
     </motion.div>
   </motion.div>
 );
 
 // ========= SLIDE 9: CTA =========
 const SlideCTA = () => (
-  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900">
+  <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[10]}`}>
     <FloatingParticles />
     <ParticleExplosion trigger={true} count={30} />
     
@@ -1049,8 +1089,55 @@ export default function AnimationAds() {
   const [isMuted, setIsMuted] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const audioQueueRef = useRef<HTMLAudioElement[]>([]);
+
+  // Preload ALL audio on mount for seamless playback
+  useEffect(() => {
+    const preloadAllAudio = async () => {
+      if (audioPreloadPromise) return;
+      
+      setIsLoadingAudio(true);
+      
+      audioPreloadPromise = (async () => {
+        const promises = SLIDE_NARRATIONS_EN.map(async (text, index) => {
+          if (audioCache.has(index)) return;
+          
+          try {
+            const { data, error } = await supabase.functions.invoke('robot-tts', {
+              body: { text }
+            });
+            
+            if (error || data?.quotaExceeded || !data?.audio) return;
+            
+            const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+            audio.volume = 0.8;
+            audio.preload = 'auto';
+            
+            // Wait for audio to be loaded
+            await new Promise<void>((resolve) => {
+              audio.addEventListener('canplaythrough', () => resolve(), { once: true });
+              audio.load();
+            });
+            
+            audioCache.set(index, audio);
+          } catch (err) {
+            console.error(`Failed to preload audio ${index}:`, err);
+          }
+        });
+        
+        await Promise.all(promises);
+      })();
+      
+      await audioPreloadPromise;
+      setIsLoadingAudio(false);
+      setAudioReady(true);
+    };
+    
+    preloadAllAudio();
+  }, []);
 
   // Auto-advance slides
   useEffect(() => {
@@ -1063,73 +1150,41 @@ export default function AnimationAds() {
     return () => clearInterval(timer);
   }, [isPlaying]);
 
-  // Play voice narration when slide changes (ENGLISH) - WITH CACHE
+  // Play voice narration when slide changes - seamless from cache
   useEffect(() => {
-    if (isMuted) return;
+    if (isMuted || !audioReady) return;
     
     const playNarration = async () => {
-      try {
-        setIsLoadingAudio(true);
-
-        // Check cache first
-        if (audioCache[currentSlide]) {
-          if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-          }
-          const audio = new Audio(`data:audio/mp3;base64,${audioCache[currentSlide]}`);
-          audioRef.current = audio;
-          audio.volume = 0.8;
-          await audio.play();
-          setIsLoadingAudio(false);
-          return;
-        }
+      // Stop current audio smoothly
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      
+      // Get cached audio
+      const cachedAudio = audioCache.get(currentSlide);
+      if (cachedAudio) {
+        // Clone the audio to allow replay
+        const audio = cachedAudio.cloneNode(true) as HTMLAudioElement;
+        audio.volume = 0.8;
+        audioRef.current = audio;
         
-        // Generate and cache
-        const { data, error } = await supabase.functions.invoke('robot-tts', {
-          body: { text: SLIDE_NARRATIONS_EN[currentSlide] }
-        });
-
-        if (error) {
-          console.error('TTS error:', error);
-          return;
-        }
-
-        // Handle quota exceeded gracefully
-        if (data?.quotaExceeded) {
-          console.log('ElevenLabs quota exceeded - playing without audio');
-          return;
-        }
-
-        if (data?.audio) {
-          // Store in cache
-          audioCache[currentSlide] = data.audio;
-
-          if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-          }
-
-          const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
-          audioRef.current = audio;
-          audio.volume = 0.8;
+        try {
           await audio.play();
+        } catch (err) {
+          console.error('Playback error:', err);
         }
-      } catch (err) {
-        console.error('Narration error:', err);
-      } finally {
-        setIsLoadingAudio(false);
       }
     };
-
+    
     playNarration();
-
+    
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
       }
     };
-  }, [currentSlide, isMuted]);
+  }, [currentSlide, isMuted, audioReady]);
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
@@ -1207,8 +1262,13 @@ Ou utilisez l'export vidéo intégré (bientôt disponible).
             initial={slideTransition3D.initial}
             animate={slideTransition3D.animate}
             exit={slideTransition3D.exit}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-            style={{ transformStyle: "preserve-3d" }}
+            transition={{ 
+              duration: 0.6, 
+              ease: [0.25, 0.46, 0.45, 0.94],
+              rotateY: { type: "spring", stiffness: 80, damping: 20 },
+              rotateX: { type: "spring", stiffness: 100, damping: 25 }
+            }}
+            style={{ transformStyle: "preserve-3d", transformOrigin: "center center" }}
           >
             <CurrentSlideComponent />
           </motion.div>
