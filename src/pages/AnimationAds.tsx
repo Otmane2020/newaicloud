@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles, Download, Film } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
 // Import components
 import { SEOScoreCircle } from "@/components/video3d/SEOScoreCircle";
@@ -14,7 +15,8 @@ import {
   SpeedLines, 
   ZoomPunch,
   FloatingElement,
-  NeonText 
+  NeonText,
+  Rotating3D
 } from "@/components/video3d/ViralEffects";
 
 // Import real assets
@@ -26,6 +28,7 @@ import shopifyLogo from "@/assets/shopify-logo.svg";
 const SLIDE_NARRATIONS_EN = [
   "NewAI — the AI that boosts your Shopify SEO automatically. Connect Shopify, Google, Facebook and Instagram in one click!",
   "Real results: 3x faster workflow, 50% more traffic, save 10 hours weekly, and Top 10 Google ranking!",
+  "Appear on Google Search, Shopping, and Discover — reach millions of potential customers!",
   "Watch your SEO score transform from 34% to 95% — fully automated with AI optimization!",
   "See the difference! Before: plain white background. After: Vision AI professional staging. Plus 68% more conversions!",
   "Auto-generated landing pages with AI — conversion-optimized HTML ready to deploy in seconds!",
@@ -70,8 +73,8 @@ const AnimatedCounter = ({ value, suffix = "", prefix = "" }: { value: number; s
   const [count, setCount] = useState(0);
   
   useEffect(() => {
-    const duration = 1500;
-    const steps = 30;
+    const duration = 1200;
+    const steps = 25;
     const increment = value / steps;
     let current = 0;
     
@@ -118,11 +121,18 @@ const FloatingParticles = () => (
   </div>
 );
 
+// 3D Slide transition variants
+const slideTransition3D = {
+  initial: { opacity: 0, rotateY: -45, scale: 0.8, z: -200 },
+  animate: { opacity: 1, rotateY: 0, scale: 1, z: 0 },
+  exit: { opacity: 0, rotateY: 45, scale: 0.8, z: -200 }
+};
+
 // ========= SLIDE 1: INTRO =========
 const SlideIntro = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
-    <ParticleExplosion trigger={true} particleCount={25} />
+    <ParticleExplosion trigger={true} count={25} />
     
     {/* Central Glow */}
     <motion.div
@@ -144,14 +154,11 @@ const SlideIntro = () => (
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{ duration: 2, repeat: Infinity }}
       />
-      <motion.div 
-        className="relative w-28 h-28 rounded-3xl bg-white flex items-center justify-center shadow-2xl"
-        animate={{ rotateY: [0, 360] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-        style={{ transformStyle: "preserve-3d" }}
-      >
-        <span className="text-purple-600 text-5xl font-black">N</span>
-      </motion.div>
+      <Rotating3D duration={8}>
+        <motion.div className="relative w-28 h-28 rounded-3xl bg-white flex items-center justify-center shadow-2xl">
+          <span className="text-purple-600 text-5xl font-black">N</span>
+        </motion.div>
+      </Rotating3D>
     </motion.div>
 
     <ZoomPunch delay={0.3}>
@@ -183,7 +190,7 @@ const SlideIntro = () => (
         { logo: <FacebookLogo />, delay: 0.9 },
         { logo: <InstagramLogo />, delay: 1 },
       ].map((item, i) => (
-        <FloatingElement key={i} delay={i * 0.2} amplitude={5}>
+        <FloatingElement key={i} delay={i * 0.2} amp={5}>
           <motion.div
             className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl"
             initial={{ scale: 0, rotateY: 90 }}
@@ -241,7 +248,53 @@ const SlideStats = () => (
   </motion.div>
 );
 
-// ========= SLIDE 3: SEO SCORE =========
+// ========= SLIDE 3: GOOGLE PHONE MOCKUPS =========
+const SlideGoogleMockups = () => (
+  <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+    <FloatingParticles />
+    
+    <ZoomPunch>
+      <h2 className="text-xl font-black text-white text-center mb-4">
+        Visible on <span className="text-yellow-300">Google</span>
+      </h2>
+    </ZoomPunch>
+    
+    <div className="flex gap-2 w-full max-w-sm justify-center" style={{ perspective: 1200 }}>
+      {[
+        { title: "Search", icon: "🔍", color: "from-blue-500/20 to-blue-600/20" },
+        { title: "Shopping", icon: "🛒", color: "from-green-500/20 to-green-600/20" },
+        { title: "Discover", icon: "✨", color: "from-purple-500/20 to-purple-600/20" },
+      ].map((item, i) => (
+        <motion.div
+          key={i}
+          className={`flex-1 bg-gradient-to-br ${item.color} backdrop-blur-sm rounded-2xl p-3 border border-white/20`}
+          initial={{ y: 100, opacity: 0, rotateY: i === 0 ? -30 : i === 2 ? 30 : 0 }}
+          animate={{ y: 0, opacity: 1, rotateY: 0 }}
+          transition={{ delay: 0.3 + i * 0.15, type: "spring", stiffness: 100 }}
+          style={{ transformStyle: "preserve-3d" }}
+        >
+          {/* Phone Frame */}
+          <div className="bg-white rounded-xl p-2 shadow-xl">
+            <div className="h-2 w-8 bg-gray-200 rounded-full mx-auto mb-2" />
+            <motion.div 
+              className="text-3xl text-center mb-2"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1, repeat: Infinity, delay: i * 0.3 }}
+            >
+              {item.icon}
+            </motion.div>
+            <div className="h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg" />
+            </div>
+          </div>
+          <p className="text-white text-xs font-bold text-center mt-2">{item.title}</p>
+        </motion.div>
+      ))}
+    </div>
+  </motion.div>
+);
+
+// ========= SLIDE 4: SEO SCORE =========
 const SlideSEOScore = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
@@ -262,18 +315,19 @@ const SlideSEOScore = () => (
     </motion.p>
 
     <motion.div
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
+      initial={{ scale: 0, rotateY: -180 }}
+      animate={{ scale: 1, rotateY: 0 }}
       transition={{ delay: 0.5, type: "spring" }}
+      style={{ perspective: 1000 }}
     >
-      <SEOScoreCircle startScore={34} endScore={95} duration={2.5} />
+      <SEOScoreCircle startScore={34} endScore={95} duration={2} />
     </motion.div>
 
     <motion.div
       className="mt-6 bg-white/10 backdrop-blur-sm rounded-xl px-6 py-3"
       initial={{ y: 50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 1.5 }}
+      transition={{ delay: 1.2 }}
     >
       <p className="text-white font-bold text-center">
         ✨ <NeonText color="#22c55e">Fully Automated</NeonText> ✨
@@ -282,10 +336,10 @@ const SlideSEOScore = () => (
   </motion.div>
 );
 
-// ========= SLIDE 4: BEFORE/AFTER =========
+// ========= SLIDE 5: BEFORE/AFTER =========
 const SlideBeforeAfter = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
-    <ParticleExplosion trigger={true} particleCount={15} />
+    <ParticleExplosion trigger={true} count={15} />
     
     <ZoomPunch>
       <h2 className="text-2xl font-black text-white text-center mb-1 z-10">
@@ -302,17 +356,24 @@ const SlideBeforeAfter = () => (
       Vision AI Enhancement
     </motion.p>
 
-    <BeforeAfterSplit 
-      beforeImage={sofaWhiteBackground}
-      afterImage={sofaWithBackground}
-      beforeLabel="BEFORE"
-      afterLabel="AFTER AI"
-      conversionBoost="+68%"
-    />
+    <motion.div
+      initial={{ scale: 0.8, rotateX: 30 }}
+      animate={{ scale: 1, rotateX: 0 }}
+      transition={{ type: "spring", stiffness: 100 }}
+      style={{ perspective: 1000 }}
+    >
+      <BeforeAfterSplit 
+        beforeImage={sofaWhiteBackground}
+        afterImage={sofaWithBackground}
+        beforeLabel="BEFORE"
+        afterLabel="AFTER AI"
+        conversionBoost="+68%"
+      />
+    </motion.div>
   </motion.div>
 );
 
-// ========= SLIDE 5: LANDING PAGE =========
+// ========= SLIDE 6: LANDING PAGE =========
 const SlideLandingPage = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
@@ -332,14 +393,21 @@ const SlideLandingPage = () => (
       Generated in seconds
     </motion.p>
 
-    <LandingPageMockup 
-      productTitle="Premium Velvet Sofa"
-      productPrice="$1,299"
-    />
+    <motion.div
+      initial={{ scale: 0.7, rotateY: -20 }}
+      animate={{ scale: 1, rotateY: 0 }}
+      transition={{ type: "spring" }}
+      style={{ perspective: 1000 }}
+    >
+      <LandingPageMockup 
+        productTitle="Premium Velvet Sofa"
+        productPrice="$1,299"
+      />
+    </motion.div>
   </motion.div>
 );
 
-// ========= SLIDE 6: IMAGE ENHANCEMENT =========
+// ========= SLIDE 7: IMAGE ENHANCEMENT =========
 const SlideImageEnhancement = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <SpeedLines />
@@ -359,11 +427,18 @@ const SlideImageEnhancement = () => (
       Image Treatment & Optimization
     </motion.p>
 
-    <ImageEnhancement />
+    <motion.div
+      initial={{ scale: 0.8, rotateX: -20 }}
+      animate={{ scale: 1, rotateX: 0 }}
+      transition={{ type: "spring" }}
+      style={{ perspective: 1000 }}
+    >
+      <ImageEnhancement />
+    </motion.div>
   </motion.div>
 );
 
-// ========= SLIDE 7: GOOGLE SHOPPING =========
+// ========= SLIDE 8: GOOGLE SHOPPING =========
 const SlideGoogleShopping = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
@@ -375,14 +450,11 @@ const SlideGoogleShopping = () => (
       transition={{ type: "spring" }}
       style={{ perspective: 1000 }}
     >
-      <motion.div 
-        className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl"
-        animate={{ rotateY: [0, 360] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-        style={{ transformStyle: "preserve-3d" }}
-      >
-        <GoogleLogo />
-      </motion.div>
+      <Rotating3D duration={6}>
+        <motion.div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-2xl">
+          <GoogleLogo />
+        </motion.div>
+      </Rotating3D>
     </motion.div>
 
     <ZoomPunch>
@@ -428,11 +500,11 @@ const SlideGoogleShopping = () => (
   </motion.div>
 );
 
-// ========= SLIDE 8: CTA =========
+// ========= SLIDE 9: CTA =========
 const SlideCTA = () => (
   <motion.div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
     <FloatingParticles />
-    <ParticleExplosion trigger={true} particleCount={30} />
+    <ParticleExplosion trigger={true} count={30} />
     
     {/* 3D Logo */}
     <motion.div
@@ -511,7 +583,7 @@ const SlideCTA = () => (
         { value: "500+", label: "Sellers", color: "text-green-400" },
         { value: "95%", label: "Satisfaction", color: "text-pink-400" },
       ].map((stat, i) => (
-        <FloatingElement key={i} delay={i * 0.2} amplitude={3}>
+        <FloatingElement key={i} delay={i * 0.2} amp={3}>
           <div className="text-center">
             <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
             <p className="text-white/70 text-xs">{stat.label}</p>
@@ -523,15 +595,17 @@ const SlideCTA = () => (
 );
 
 // All slides
-const slides = [SlideIntro, SlideStats, SlideSEOScore, SlideBeforeAfter, SlideLandingPage, SlideImageEnhancement, SlideGoogleShopping, SlideCTA];
-const SLIDE_DURATION = 6000;
+const slides = [SlideIntro, SlideStats, SlideGoogleMockups, SlideSEOScore, SlideBeforeAfter, SlideLandingPage, SlideImageEnhancement, SlideGoogleShopping, SlideCTA];
+const SLIDE_DURATION = 4000; // Reduced from 6000ms to 4000ms
 
 export default function AnimationAds() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto-advance slides
   useEffect(() => {
@@ -558,6 +632,12 @@ export default function AnimationAds() {
 
         if (error) {
           console.error('TTS error:', error);
+          return;
+        }
+
+        // Handle quota exceeded gracefully
+        if (data?.quotaExceeded) {
+          console.log('ElevenLabs quota exceeded - playing without audio');
           return;
         }
 
@@ -595,21 +675,77 @@ export default function AnimationAds() {
     }
   };
 
+  const handleExportVideo = async () => {
+    setIsExporting(true);
+    // Simulate export - in production you would use a library like html2canvas + video encoder
+    setTimeout(() => {
+      setIsExporting(false);
+      alert('Video export coming soon! For now, use screen recording.');
+    }, 2000);
+  };
+
+  const handleDownload = () => {
+    // Create a download link for screen recording instructions
+    const instructions = `
+NewAI Animation Ads - Export Instructions
+==========================================
+
+Pour exporter cette vidéo:
+1. Utilisez un logiciel d'enregistrement d'écran (OBS, Loom, etc.)
+2. Enregistrez la vidéo en format 9:16 (vertical)
+3. Durée totale: environ ${slides.length * 4} secondes
+
+Ou utilisez l'export vidéo intégré (bientôt disponible).
+    `;
+    
+    const blob = new Blob([instructions], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'newai-video-instructions.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const CurrentSlideComponent = slides[currentSlide];
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 gap-4">
+      {/* Export Buttons */}
+      <div className="flex gap-3">
+        <Button
+          onClick={handleExportVideo}
+          disabled={isExporting}
+          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+        >
+          <Film className="w-4 h-4 mr-2" />
+          {isExporting ? 'Exporting...' : 'Export Video'}
+        </Button>
+        <Button
+          onClick={handleDownload}
+          variant="outline"
+          className="border-white/30 text-white hover:bg-white/10"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Download
+        </Button>
+      </div>
+
       {/* 9:16 Container */}
-      <div className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900">
+      <div 
+        ref={containerRef}
+        className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-900"
+        style={{ perspective: 1200 }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide}
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.1, rotateY: -10 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            exit={{ opacity: 0, scale: 0.9, rotateY: 10 }}
-            transition={{ duration: 0.5 }}
-            style={{ perspective: 1000 }}
+            initial={slideTransition3D.initial}
+            animate={slideTransition3D.animate}
+            exit={slideTransition3D.exit}
+            transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+            style={{ transformStyle: "preserve-3d" }}
           >
             <CurrentSlideComponent />
           </motion.div>
@@ -646,7 +782,7 @@ export default function AnimationAds() {
 
         {/* Loading indicator */}
         {isLoadingAudio && (
-          <div className="absolute top-4 left-4 z-30">
+          <div className="absolute top-4 left-16 z-30">
             <motion.div
               className="w-3 h-3 bg-purple-400 rounded-full"
               animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}

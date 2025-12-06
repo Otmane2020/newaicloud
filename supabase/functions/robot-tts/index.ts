@@ -108,7 +108,8 @@ serve(async (req) => {
       { headers: corsHeaders },
     );
   } catch (err) {
-    console.error("🛑 TTS Error:", err.message);
-    return Response.json({ success: false, error: err.message }, { status: 500, headers: corsHeaders });
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    console.error("🛑 TTS Error:", errorMessage);
+    return Response.json({ success: false, error: errorMessage }, { status: 500, headers: corsHeaders });
   }
 });
