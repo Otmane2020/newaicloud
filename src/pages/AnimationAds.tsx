@@ -1365,53 +1365,26 @@ export default function AnimationAds() {
     if (!containerRef.current) return;
     
     setIsExporting(true);
-    setIsPlaying(false);
-    toast.info("Capturing slides...");
+    toast.info("Recording animations in real-time...");
 
     try {
       const container = containerRef.current;
       
-      // Capture all slides as PNG images
-      const slideImages: string[] = [];
-      
-      for (let i = 0; i < slides.length; i++) {
-        setCurrentSlide(i);
-        toast.info(`Capturing slide ${i + 1}/${slides.length}`, { id: 'export-progress' });
-        
-        // Wait for animations to settle
-        await new Promise(r => setTimeout(r, 1500));
-        
-        const capturedCanvas = await html2canvas(container, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: i % 2 === 0 ? '#1e40af' : '#ffffff',
-          logging: false,
-          width: container.offsetWidth,
-          height: container.offsetHeight,
-        });
-        
-        // Convert to data URL
-        slideImages.push(capturedCanvas.toDataURL('image/png'));
-      }
-      
-      toast.info("Creating video...", { id: 'export-progress' });
-      
-      // Create video canvas - 9:16 aspect ratio for mobile
+      // Create a canvas to draw each frame
       const videoCanvas = document.createElement('canvas');
       const ctx = videoCanvas.getContext('2d')!;
       videoCanvas.width = 1080;
       videoCanvas.height = 1920;
       
-      // Use WebM with VP8 (most compatible)
+      // Setup MediaRecorder
       const stream = videoCanvas.captureStream(30);
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8') 
-        ? 'video/webm;codecs=vp8' 
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
+        ? 'video/webm;codecs=vp9' 
         : 'video/webm';
       
       const recorder = new MediaRecorder(stream, { 
         mimeType,
-        videoBitsPerSecond: 8000000
+        videoBitsPerSecond: 10000000
       });
       
       const chunks: Blob[] = [];
@@ -1421,40 +1394,52 @@ export default function AnimationAds() {
       
       recorder.start(100);
       
-      // Draw each slide for 4 seconds
-      const fps = 30;
-      const slideDurationMs = 4000;
-      const frameInterval = 1000 / fps;
+      // Record each slide with real animations
+      const slideDuration = 5000; // 5 seconds per slide
+      const frameRate = 30;
+      const frameInterval = 1000 / frameRate;
       
-      for (let slideIdx = 0; slideIdx < slideImages.length; slideIdx++) {
-        const img = document.createElement('img');
-        img.src = slideImages[slideIdx];
-        await new Promise<void>(resolve => { img.onload = () => resolve(); });
+      setCurrentSlide(0);
+      setIsPlaying(true);
+      
+      for (let slideIdx = 0; slideIdx < slides.length; slideIdx++) {
+        setCurrentSlide(slideIdx);
+        toast.info(`Recording slide ${slideIdx + 1}/${slides.length}`, { id: 'export-progress' });
         
         const startTime = Date.now();
-        const endTime = startTime + slideDurationMs;
+        const endTime = startTime + slideDuration;
         
+        // Capture frames in real-time while animations play
         while (Date.now() < endTime) {
-          // Clear and fill background
+          // Capture current state of container using html2canvas
+          const capturedCanvas = await html2canvas(container, {
+            scale: 1,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: slideIdx % 2 === 0 ? '#1e40af' : '#ffffff',
+            logging: false,
+          });
+          
+          // Draw to video canvas with proper scaling
           ctx.fillStyle = slideIdx % 2 === 0 ? '#1e40af' : '#ffffff';
           ctx.fillRect(0, 0, videoCanvas.width, videoCanvas.height);
           
-          // Scale to fill canvas
           const scale = Math.max(
-            videoCanvas.width / img.width,
-            videoCanvas.height / img.height
+            videoCanvas.width / capturedCanvas.width,
+            videoCanvas.height / capturedCanvas.height
           );
-          const x = (videoCanvas.width - img.width * scale) / 2;
-          const y = (videoCanvas.height - img.height * scale) / 2;
+          const x = (videoCanvas.width - capturedCanvas.width * scale) / 2;
+          const y = (videoCanvas.height - capturedCanvas.height * scale) / 2;
           
-          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+          ctx.drawImage(capturedCanvas, x, y, capturedCanvas.width * scale, capturedCanvas.height * scale);
           
-          await new Promise(r => setTimeout(r, frameInterval));
+          // Wait for next frame
+          await new Promise(r => setTimeout(r, frameInterval * 3)); // Capture every 3rd frame for performance
         }
-        
-        const progress = Math.round(((slideIdx + 1) / slideImages.length) * 100);
-        toast.info(`Encoding: ${progress}%`, { id: 'export-progress' });
       }
+      
+      setIsPlaying(false);
+      toast.info("Finalizing video...", { id: 'export-progress' });
       
       // Stop recording
       recorder.stop();
@@ -1474,14 +1459,15 @@ export default function AnimationAds() {
         };
       });
       
-      toast.success("Video exported! Convert to MP4 with online tools if needed.");
+      toast.success("Video with animations exported!");
       setIsExporting(false);
       setCurrentSlide(0);
       
     } catch (error) {
       console.error('Export error:', error);
-      toast.error("Export failed. Try screen recording.");
+      toast.error("Export failed. Use screen recording instead.");
       setIsExporting(false);
+      setIsPlaying(false);
     }
   };
 
