@@ -1366,26 +1366,20 @@ export default function AnimationAds() {
     
     setIsExporting(true);
     setIsPlaying(false);
-    toast.info("Capturing slides for MP4 export...");
+    toast.info("Capturing slides...");
 
     try {
       const container = containerRef.current;
       
-      // Create canvas for video - 9:16 aspect ratio
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d')!;
-      canvas.width = 1080;
-      canvas.height = 1920;
-      
-      // Capture all slides first
-      const slideImages: HTMLCanvasElement[] = [];
+      // Capture all slides as PNG images
+      const slideImages: string[] = [];
       
       for (let i = 0; i < slides.length; i++) {
         setCurrentSlide(i);
         toast.info(`Capturing slide ${i + 1}/${slides.length}`, { id: 'export-progress' });
         
         // Wait for animations to settle
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, 1500));
         
         const capturedCanvas = await html2canvas(container, {
           scale: 2,
@@ -1397,27 +1391,27 @@ export default function AnimationAds() {
           height: container.offsetHeight,
         });
         
-        slideImages.push(capturedCanvas);
+        // Convert to data URL
+        slideImages.push(capturedCanvas.toDataURL('image/png'));
       }
       
-      toast.info("Encoding MP4 video...", { id: 'export-progress' });
+      toast.info("Creating video...", { id: 'export-progress' });
       
-      // Try MP4 first (Safari/iOS), fallback to WebM
-      let mimeType = 'video/webm;codecs=vp9';
-      let fileExt = 'webm';
+      // Create video canvas - 9:16 aspect ratio for mobile
+      const videoCanvas = document.createElement('canvas');
+      const ctx = videoCanvas.getContext('2d')!;
+      videoCanvas.width = 1080;
+      videoCanvas.height = 1920;
       
-      if (MediaRecorder.isTypeSupported('video/mp4')) {
-        mimeType = 'video/mp4';
-        fileExt = 'mp4';
-      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=h264')) {
-        mimeType = 'video/webm;codecs=h264';
-        fileExt = 'webm';
-      }
+      // Use WebM with VP8 (most compatible)
+      const stream = videoCanvas.captureStream(30);
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8') 
+        ? 'video/webm;codecs=vp8' 
+        : 'video/webm';
       
-      const stream = canvas.captureStream(30);
       const recorder = new MediaRecorder(stream, { 
         mimeType,
-        videoBitsPerSecond: 10000000 // 10 Mbps for quality
+        videoBitsPerSecond: 8000000
       });
       
       const chunks: Blob[] = [];
@@ -1427,47 +1421,51 @@ export default function AnimationAds() {
       
       recorder.start(100);
       
-      // Draw each slide for 4 seconds at 30fps
+      // Draw each slide for 4 seconds
       const fps = 30;
       const slideDurationMs = 4000;
-      const framesPerSlide = Math.floor((slideDurationMs / 1000) * fps);
+      const frameInterval = 1000 / fps;
       
       for (let slideIdx = 0; slideIdx < slideImages.length; slideIdx++) {
-        const img = slideImages[slideIdx];
+        const img = document.createElement('img');
+        img.src = slideImages[slideIdx];
+        await new Promise<void>(resolve => { img.onload = () => resolve(); });
         
-        for (let frame = 0; frame < framesPerSlide; frame++) {
+        const startTime = Date.now();
+        const endTime = startTime + slideDurationMs;
+        
+        while (Date.now() < endTime) {
           // Clear and fill background
           ctx.fillStyle = slideIdx % 2 === 0 ? '#1e40af' : '#ffffff';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillRect(0, 0, videoCanvas.width, videoCanvas.height);
           
-          // Scale and center the captured image to fill canvas
+          // Scale to fill canvas
           const scale = Math.max(
-            canvas.width / img.width,
-            canvas.height / img.height
+            videoCanvas.width / img.width,
+            videoCanvas.height / img.height
           );
-          const x = (canvas.width - img.width * scale) / 2;
-          const y = (canvas.height - img.height * scale) / 2;
+          const x = (videoCanvas.width - img.width * scale) / 2;
+          const y = (videoCanvas.height - img.height * scale) / 2;
           
           ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
           
-          // Sync frame timing
-          await new Promise(r => setTimeout(r, 1000 / fps));
+          await new Promise(r => setTimeout(r, frameInterval));
         }
         
         const progress = Math.round(((slideIdx + 1) / slideImages.length) * 100);
         toast.info(`Encoding: ${progress}%`, { id: 'export-progress' });
       }
       
-      // Stop and download
+      // Stop recording
       recorder.stop();
       
       await new Promise<void>((resolve) => {
         recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: mimeType });
+          const blob = new Blob(chunks, { type: 'video/webm' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `NewAI-Ad.${fileExt}`;
+          a.download = 'NewAI-Ad.webm';
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -1476,13 +1474,13 @@ export default function AnimationAds() {
         };
       });
       
-      toast.success(`Video exported as ${fileExt.toUpperCase()}!`);
+      toast.success("Video exported! Convert to MP4 with online tools if needed.");
       setIsExporting(false);
       setCurrentSlide(0);
       
     } catch (error) {
       console.error('Export error:', error);
-      toast.error("Export failed. Try using screen recording.");
+      toast.error("Export failed. Try screen recording.");
       setIsExporting(false);
     }
   };
