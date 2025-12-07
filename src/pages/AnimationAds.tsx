@@ -19,7 +19,18 @@ import {
   ZoomPunch,
   FloatingElement,
   NeonText,
-  Rotating3D
+  Rotating3D,
+  RGBSplit,
+  VHSEffect,
+  TextPop,
+  BeatPulse,
+  ZoomBurst,
+  FlashEffect,
+  SwipeIn,
+  BounceDrop,
+  EmojiRain,
+  FireBorder,
+  CameraShake
 } from "@/components/video3d/ViralEffects";
 
 // Import real assets
@@ -188,11 +199,20 @@ const slideTransition3D = {
   }
 };
 
-// ========= SLIDE 1: INTRO =========
+// ========= SLIDE 1: INTRO - VIRAL TIKTOK STYLE =========
 const SlideIntro = () => (
   <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[0]}`}>
     <FloatingParticles />
-    <ParticleExplosion trigger={true} count={25} />
+    <ParticleExplosion trigger={true} count={35} />
+    <EmojiRain emojis={['🚀', '💯', '✨', '🔥', '💰']} count={15} />
+    
+    {/* VHS Scan Lines overlay */}
+    <div 
+      className="absolute inset-0 pointer-events-none z-50 opacity-20"
+      style={{
+        background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px)',
+      }}
+    />
     
     {/* Central Glow */}
     <motion.div
@@ -201,42 +221,47 @@ const SlideIntro = () => (
       transition={{ duration: 3, repeat: Infinity }}
     />
 
-    {/* 3D Logo */}
-    <motion.div
-      className="relative z-10 mb-6"
-      initial={{ scale: 0, rotateY: -180 }}
-      animate={{ scale: 1, rotateY: 0 }}
-      transition={{ type: "spring", stiffness: 150, damping: 15 }}
-      style={{ perspective: 1000, transformStyle: "preserve-3d" }}
-    >
-      <motion.div 
-        className="absolute inset-0 blur-3xl bg-white/50 rounded-full scale-150"
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 2, repeat: Infinity }}
-      />
-      <Rotating3D duration={8}>
-        <motion.div className="relative w-28 h-28 rounded-3xl bg-white flex items-center justify-center shadow-2xl">
-          <span className="text-blue-600 text-5xl font-black">N</span>
-        </motion.div>
-      </Rotating3D>
-    </motion.div>
+    {/* 3D Logo with RGB Split */}
+    <RGBSplit intensity={3}>
+      <motion.div
+        className="relative z-10 mb-6"
+        initial={{ scale: 0, rotateY: -180 }}
+        animate={{ scale: 1, rotateY: 0 }}
+        transition={{ type: "spring", stiffness: 150, damping: 15 }}
+        style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+      >
+        <motion.div 
+          className="absolute inset-0 blur-3xl bg-white/50 rounded-full scale-150"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        <BeatPulse bpm={130}>
+          <Rotating3D duration={8}>
+            <motion.div className="relative w-28 h-28 rounded-3xl bg-white flex items-center justify-center shadow-2xl">
+              <span className="text-blue-600 text-5xl font-black">N</span>
+            </motion.div>
+          </Rotating3D>
+        </BeatPulse>
+      </motion.div>
+    </RGBSplit>
 
-    <ZoomPunch delay={0.3}>
-      <GlitchText className="text-5xl font-black text-white text-center drop-shadow-lg">
-        NewAI
-      </GlitchText>
-    </ZoomPunch>
+    <ZoomBurst delay={0.2}>
+      <CameraShake intensity={3} active={true}>
+        <GlitchText className="text-5xl font-black text-white text-center drop-shadow-lg">
+          NewAI
+        </GlitchText>
+      </CameraShake>
+    </ZoomBurst>
 
-    <motion.p
-      className="text-xl text-white/90 text-center mb-8 font-semibold"
-      initial={{ y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.4 }}
-    >
-      <NeonText color="#3b82f6">AI-Powered E-commerce</NeonText>
-    </motion.p>
+    <SwipeIn direction="up" delay={0.4}>
+      <motion.p
+        className="text-xl text-white/90 text-center mb-8 font-semibold"
+      >
+        <NeonText color="#3b82f6">AI-Powered E-commerce</NeonText>
+      </motion.p>
+    </SwipeIn>
 
-    {/* 3D Integration Logos */}
+    {/* 3D Integration Logos with Bounce */}
     <motion.div
       className="flex items-center gap-3 z-10"
       initial={{ opacity: 0 }}
@@ -250,33 +275,44 @@ const SlideIntro = () => (
         { logo: <FacebookLogo />, delay: 0.9 },
         { logo: <InstagramLogo />, delay: 1 },
       ].map((item, i) => (
-        <FloatingElement key={i} delay={i * 0.2} amp={5}>
-          <motion.div
-            className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl"
-            initial={{ scale: 0, rotateY: 90 }}
-            animate={{ scale: 1, rotateY: 0 }}
-            transition={{ delay: item.delay, type: "spring", stiffness: 200 }}
-            whileHover={{ scale: 1.1, rotateY: 15 }}
-            style={{ transformStyle: "preserve-3d" }}
-          >
-            {item.logo}
-          </motion.div>
-        </FloatingElement>
+        <BounceDrop key={i} delay={item.delay}>
+          <FloatingElement delay={i * 0.2} amp={5}>
+            <motion.div
+              className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl"
+              style={{ transformStyle: "preserve-3d" }}
+            >
+              {item.logo}
+            </motion.div>
+          </FloatingElement>
+        </BounceDrop>
       ))}
     </motion.div>
+    
+    {/* Flash on entry */}
+    <FlashEffect trigger={true} />
   </motion.div>
 );
 
-// ========= SLIDE 2: STATS =========
+// ========= SLIDE 2: STATS - VIRAL TIKTOK STYLE =========
 const SlideStats = () => (
   <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[1]}`}>
-    <SpeedLines />
+    <SpeedLines color="#3b82f6" />
     
-    <ZoomPunch>
-      <GlitchText className="text-3xl font-black text-blue-900 text-center mb-8 drop-shadow-sm">
-        <span className="text-blue-600">Real</span> Results
-      </GlitchText>
-    </ZoomPunch>
+    {/* VHS effect overlay */}
+    <div 
+      className="absolute inset-0 pointer-events-none z-40 opacity-10"
+      style={{
+        background: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.2) 3px, rgba(0,0,0,0.2) 6px)',
+      }}
+    />
+    
+    <TextPop delay={0}>
+      <RGBSplit intensity={2}>
+        <GlitchText className="text-3xl font-black text-blue-900 text-center mb-8 drop-shadow-sm">
+          <span className="text-blue-600">Real</span> Results
+        </GlitchText>
+      </RGBSplit>
+    </TextPop>
 
     <div className="grid grid-cols-2 gap-4 w-full max-w-xs z-10" style={{ perspective: 1000 }}>
       {[
@@ -285,26 +321,27 @@ const SlideStats = () => (
         { value: 10, suffix: "h+", label: "Saved Weekly", color: "from-pink-400 to-rose-500" },
         { value: 10, prefix: "Top ", label: "Google", color: "from-blue-400 to-indigo-500" },
       ].map((stat, i) => (
-        <motion.div
-          key={i}
-          className={`bg-gradient-to-br ${stat.color} rounded-2xl p-5 text-center shadow-xl`}
-          initial={{ scale: 0, rotateX: 90 }}
-          animate={{ scale: 1, rotateX: 0 }}
-          transition={{ delay: 0.2 + i * 0.15, type: "spring", stiffness: 150 }}
-          style={{ transformStyle: "preserve-3d" }}
-          whileHover={{ scale: 1.05, rotateY: 10 }}
-        >
-          <motion.div 
-            className="text-4xl font-black text-white drop-shadow-lg"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 0.5, delay: 0.5 + i * 0.15 }}
-          >
-            <AnimatedCounter value={stat.value} suffix={stat.suffix} prefix={stat.prefix} />
-          </motion.div>
-          <div className="text-sm text-white/90 font-bold mt-1">{stat.label}</div>
-        </motion.div>
+        <BounceDrop key={i} delay={0.2 + i * 0.12}>
+          <BeatPulse bpm={120}>
+            <motion.div
+              className={`bg-gradient-to-br ${stat.color} rounded-2xl p-5 text-center shadow-xl`}
+              style={{ transformStyle: "preserve-3d" }}
+            >
+              <motion.div 
+                className="text-4xl font-black text-white drop-shadow-lg"
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 0.4, delay: 0.5 + i * 0.15 }}
+              >
+                <AnimatedCounter value={stat.value} suffix={stat.suffix} prefix={stat.prefix} />
+              </motion.div>
+              <div className="text-sm text-white/90 font-bold mt-1">{stat.label}</div>
+            </motion.div>
+          </BeatPulse>
+        </BounceDrop>
       ))}
     </div>
+    
+    <FlashEffect trigger={true} />
   </motion.div>
 );
 
@@ -1135,97 +1172,111 @@ const SlideGoogleShopping = () => (
   </motion.div>
 );
 
-// ========= SLIDE 9: CTA =========
+// ========= SLIDE 9: CTA - VIRAL FINALE =========
 const SlideCTA = () => (
   <motion.div className={`absolute inset-0 flex flex-col items-center justify-center p-6 ${SLIDE_BACKGROUNDS[10]}`}>
     <FloatingParticles />
-    <ParticleExplosion trigger={true} count={30} />
+    <ParticleExplosion trigger={true} count={45} />
+    <EmojiRain emojis={['🔥', '💰', '🚀', '✨', '💯', '⭐']} count={25} />
     
-    {/* 3D Logo */}
-    <motion.div
-      className="mb-6"
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      transition={{ type: "spring" }}
-    >
+    {/* Intense VHS lines */}
+    <div 
+      className="absolute inset-0 pointer-events-none z-40 opacity-15"
+      style={{
+        background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.1) 2px, rgba(255,255,255,0.1) 4px)',
+      }}
+    />
+    
+    {/* 3D Logo with fire border */}
+    <FireBorder>
       <motion.div
-        className="w-24 h-24 rounded-3xl bg-white flex items-center justify-center shadow-2xl"
-        animate={{
-          boxShadow: [
-            "0 0 30px rgba(255,255,255,0.3)",
-            "0 0 60px rgba(168,85,247,0.8)",
-            "0 0 30px rgba(255,255,255,0.3)",
-          ],
-          rotateY: [0, 360],
-        }}
-        transition={{ 
-          boxShadow: { duration: 2, repeat: Infinity },
-          rotateY: { duration: 8, repeat: Infinity, ease: "linear" }
-        }}
-        style={{ transformStyle: "preserve-3d" }}
+        className="mb-6"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring" }}
       >
-        <span className="text-blue-600 text-5xl font-black">N</span>
+        <BeatPulse bpm={140}>
+          <RGBSplit intensity={4}>
+            <motion.div
+              className="w-24 h-24 rounded-3xl bg-white flex items-center justify-center shadow-2xl"
+              animate={{
+                boxShadow: [
+                  "0 0 30px rgba(255,255,255,0.3)",
+                  "0 0 80px rgba(168,85,247,0.9)",
+                  "0 0 30px rgba(255,255,255,0.3)",
+                ],
+                rotateY: [0, 360],
+              }}
+              transition={{ 
+                boxShadow: { duration: 1.5, repeat: Infinity },
+                rotateY: { duration: 6, repeat: Infinity, ease: "linear" }
+              }}
+              style={{ transformStyle: "preserve-3d" }}
+            >
+              <span className="text-blue-600 text-5xl font-black">N</span>
+            </motion.div>
+          </RGBSplit>
+        </BeatPulse>
       </motion.div>
-    </motion.div>
+    </FireBorder>
 
-    <ZoomPunch>
-      <GlitchText className="text-3xl font-black text-white text-center mb-4">
-        Start Free Today
-      </GlitchText>
-    </ZoomPunch>
+    <ZoomBurst delay={0.2}>
+      <CameraShake intensity={4} active={true}>
+        <GlitchText className="text-3xl font-black text-white text-center mb-4">
+          Start Free Today
+        </GlitchText>
+      </CameraShake>
+    </ZoomBurst>
 
-    <motion.div
-      className="mb-6"
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
-      transition={{ delay: 0.5, type: "spring" }}
-    >
-      <motion.button
-        className="bg-white text-blue-600 font-black text-xl px-8 py-4 rounded-2xl shadow-2xl"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        animate={{
-          boxShadow: [
-            "0 0 20px rgba(59,130,246,0.5)",
-            "0 0 50px rgba(59,130,246,0.9)",
-            "0 0 20px rgba(59,130,246,0.5)",
-          ],
-        }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-      >
-        🚀 Free Trial
-      </motion.button>
-    </motion.div>
+    <TextPop delay={0.4}>
+      <motion.div className="mb-6">
+        <motion.button
+          className="bg-white text-blue-600 font-black text-xl px-8 py-4 rounded-2xl shadow-2xl relative overflow-hidden"
+          animate={{
+            boxShadow: [
+              "0 0 20px rgba(59,130,246,0.5)",
+              "0 0 60px rgba(59,130,246,1)",
+              "0 0 20px rgba(59,130,246,0.5)",
+            ],
+            scale: [1, 1.05, 1],
+          }}
+          transition={{ duration: 1, repeat: Infinity }}
+        >
+          <span className="relative z-10">🚀 Free Trial</span>
+        </motion.button>
+      </motion.div>
+    </TextPop>
 
-    <motion.p
-      className="text-white/80 text-center mb-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 0.7 }}
-    >
-      No credit card required
-    </motion.p>
+    <SwipeIn direction="up" delay={0.6}>
+      <motion.p className="text-white/80 text-center mb-6">
+        No credit card required
+      </motion.p>
+    </SwipeIn>
 
-    {/* Stats */}
+    {/* Stats with bounce */}
     <motion.div
       className="flex gap-6"
       initial={{ y: 30, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.9 }}
+      transition={{ delay: 0.8 }}
     >
       {[
         { value: "10K+", label: "Products", color: "text-yellow-300" },
         { value: "500+", label: "Sellers", color: "text-green-400" },
         { value: "95%", label: "Satisfaction", color: "text-pink-400" },
       ].map((stat, i) => (
-        <FloatingElement key={i} delay={i * 0.2} amp={3}>
-          <div className="text-center">
-            <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
-            <p className="text-white/70 text-xs">{stat.label}</p>
-          </div>
-        </FloatingElement>
+        <BounceDrop key={i} delay={0.9 + i * 0.15}>
+          <BeatPulse bpm={120}>
+            <div className="text-center">
+              <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
+              <p className="text-white/70 text-xs">{stat.label}</p>
+            </div>
+          </BeatPulse>
+        </BounceDrop>
       ))}
     </motion.div>
+    
+    <FlashEffect trigger={true} />
   </motion.div>
 );
 
