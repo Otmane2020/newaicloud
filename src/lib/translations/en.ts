@@ -6966,9 +6966,10 @@ export const translations = {
       titleEnd: "With AI",
       subtitle:
         "Automate SEO optimization, generate high-quality content, and boost your organic traffic. Get your first results in under 5 minutes.",
-      ctaPrimary: "Start Free Trial",
+      ctaPrimary: "Get Started Now",
       ctaSecondary: "Watch Demo",
       setupTime: "Setup in 5 minutes",
+      noCommitment: "No commitment",
     },
     howItWorks: {
       badge: "Process",
