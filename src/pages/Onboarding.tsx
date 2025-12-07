@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
+import { SHOW_TRIAL_PLAN } from "@/config/features";
 import {
   Check,
   Sparkles,
@@ -1043,10 +1044,10 @@ export default function Onboarding() {
 
         {/* Plans */}
         <div
-          className={`grid grid-cols-1 ${!hasUsedTrial ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3"} gap-3 sm:gap-6 md:gap-8 max-w-[1600px] mx-auto mb-4 sm:mb-8 md:mb-10 px-2`}
+          className={`grid grid-cols-1 ${SHOW_TRIAL_PLAN && !hasUsedTrial ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3"} gap-3 sm:gap-6 md:gap-8 max-w-[1600px] mx-auto mb-4 sm:mb-8 md:mb-10 px-2`}
         >
-          {/* Free Trial Plan - Only show if user hasn't used their lifetime trial */}
-          {!hasUsedTrial &&
+          {/* Free Trial Plan - Only show if SHOW_TRIAL_PLAN is true and user hasn't used their lifetime trial */}
+          {SHOW_TRIAL_PLAN && !hasUsedTrial &&
             (() => {
               // Utiliser le vrai plan Trial depuis le state
               if (!trialPlan) return null;
