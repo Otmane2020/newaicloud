@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import React, { useState } from "react";
 import { useTranslation } from "@/lib/language";
 import { formatPrice, getCurrencySymbol } from "@/lib/formatUtils";
+import { SHOW_TRIAL_PLAN } from "@/config/features";
 
 const PricingComparison = () => {
   const isMobile = useIsMobile();
@@ -133,41 +134,43 @@ const PricingComparison = () => {
           </div>
 
           {/* Trial Plan Card - Mobile */}
-          <Card className="border-2 border-success bg-success/5">
-            <CardHeader>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-2xl font-bold">{t.trial.title}</h3>
-                <Badge className="bg-success text-success-foreground">{t.trial.free}</Badge>
-              </div>
-              <Badge variant="outline" className="border-success text-success w-fit">{t.trial.noCreditCard}</Badge>
-              <div className="text-3xl font-bold mt-4">{formatPrice(0, language)}</div>
-              <p className="text-sm text-muted-foreground">{t.trial.duration}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {features.map((category) => (
-                <div key={category.category}>
-                  <h4 className="font-semibold mb-2">{category.category}</h4>
-                  {category.items.map((item) => (
-                    <div key={item.name} className="flex items-start gap-2 mb-2">
-                      {typeof item.trial === 'boolean' ? (
-                        item.trial ? (
-                          <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
-                        ) : (
-                          <X className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
-                        )
-                      ) : (
-                        <span className="text-sm font-medium text-success">{item.trial}</span>
-                      )}
-                      <span className="text-sm text-muted-foreground">{item.name}</span>
-                    </div>
-                  ))}
+          {SHOW_TRIAL_PLAN && (
+            <Card className="border-2 border-success bg-success/5">
+              <CardHeader>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-2xl font-bold">{t.trial.title}</h3>
+                  <Badge className="bg-success text-success-foreground">{t.trial.free}</Badge>
                 </div>
-              ))}
-              <Button className="w-full bg-success hover:bg-success/90 text-success-foreground" onClick={() => window.location.href = '/auth?mode=signup&plan=trial'}>
-                {t.trial.startButton}
-              </Button>
-            </CardContent>
-          </Card>
+                <Badge variant="outline" className="border-success text-success w-fit">{t.trial.noCreditCard}</Badge>
+                <div className="text-3xl font-bold mt-4">{formatPrice(0, language)}</div>
+                <p className="text-sm text-muted-foreground">{t.trial.duration}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {features.map((category) => (
+                  <div key={category.category}>
+                    <h4 className="font-semibold mb-2">{category.category}</h4>
+                    {category.items.map((item) => (
+                      <div key={item.name} className="flex items-start gap-2 mb-2">
+                        {typeof item.trial === 'boolean' ? (
+                          item.trial ? (
+                            <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                          ) : (
+                            <X className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+                          )
+                        ) : (
+                          <span className="text-sm font-medium text-success">{item.trial}</span>
+                        )}
+                        <span className="text-sm text-muted-foreground">{item.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                <Button className="w-full bg-success hover:bg-success/90 text-success-foreground" onClick={() => window.location.href = '/auth?mode=signup&plan=trial'}>
+                  {t.trial.startButton}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {plans.map((plan) => (
             <Card key={plan} className="overflow-hidden">
@@ -275,13 +278,15 @@ const PricingComparison = () => {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="p-4 text-left font-semibold">{t.landing.pricing.comparison.featuresLabel}</th>
-              <th className="p-4 text-center">
-              <div className="flex flex-col items-center gap-2">
-                <Badge className="bg-success">{t.trial.title}</Badge>
-                <span className="text-2xl font-bold">{formatPrice(0, language)}</span>
-                <span className="text-xs text-muted-foreground">{t.trial.duration}</span>
-              </div>
+              {SHOW_TRIAL_PLAN && (
+                <th className="p-4 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <Badge className="bg-success">{t.trial.title}</Badge>
+                    <span className="text-2xl font-bold">{formatPrice(0, language)}</span>
+                    <span className="text-xs text-muted-foreground">{t.trial.duration}</span>
+                  </div>
                 </th>
+              )}
               <th className="p-4 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Badge variant="outline">{t.landing.pricing.plans.starter.name}</Badge>
@@ -318,7 +323,7 @@ const PricingComparison = () => {
             {features.map((category, categoryIndex) => (
               <React.Fragment key={`cat-${categoryIndex}`}>
                 <tr className="bg-muted/30">
-                  <td colSpan={5} className="p-3 font-semibold text-sm">
+                  <td colSpan={SHOW_TRIAL_PLAN ? 5 : 4} className="p-3 font-semibold text-sm">
                     {category.category}
                   </td>
                 </tr>
@@ -328,7 +333,7 @@ const PricingComparison = () => {
                     className="border-b hover:bg-muted/20 transition-colors"
                   >
                     <td className="p-4 text-sm">{item.name}</td>
-                    <td className="p-4 text-center">{renderValue(item.trial)}</td>
+                    {SHOW_TRIAL_PLAN && <td className="p-4 text-center">{renderValue(item.trial)}</td>}
                     <td className="p-4 text-center">{renderValue(item.starter)}</td>
                     <td className="p-4 text-center">{renderValue(item.pro)}</td>
                     <td className="p-4 text-center">{renderValue(item.enterprise)}</td>

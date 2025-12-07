@@ -189,7 +189,7 @@ export const LandingPageVisionShowcase = () => {
           <Button 
             size="lg" 
             className="bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg hover:shadow-xl transition-all"
-            onClick={() => navigate('/auth?mode=signup&plan=trial')}
+            onClick={() => navigate('/auth?mode=signup')}
           >
             {t.landingShowcase.cta}
             <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />

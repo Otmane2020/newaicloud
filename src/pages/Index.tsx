@@ -17,6 +17,7 @@ import { formatPrice } from "@/lib/formatUtils";
 import { useEffect, useState } from "react";
 import { AIAssistant } from "@/components/AIAssistant";
 import { LandingPageVisionShowcase } from "@/components/landing/LandingPageVisionShowcase";
+import { SHOW_TRIAL_PLAN } from "@/config/features";
 import { GoogleTrafficGrowth } from "@/components/landing/GoogleTrafficGrowth";
 import { GoogleShoppingSection } from "@/components/landing/GoogleShoppingSection";
 import { GooglePhoneMockups } from "@/components/landing/GooglePhoneMockups";
@@ -188,9 +189,9 @@ const Index = () => {
               <Button
                 size="lg"
                 className="group bg-success hover:bg-success/90 shadow-lg shadow-success/30 text-success-foreground w-full sm:w-auto"
-                onClick={() => navigate("/auth?mode=signup&plan=trial")}
+                onClick={() => navigate("/auth?mode=signup")}
               >
-                {t.trial.ctaPrimary}
+                {t.landing.hero.ctaPrimary}
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button
@@ -206,9 +207,6 @@ const Index = () => {
 
             {/* Trust Badges */}
             <div className="flex flex-col items-center gap-3 pt-2">
-              <Badge variant="outline" className="border-success/50 text-success bg-success/10 text-xs">
-                {t.trial.noCreditCard}
-              </Badge>
               <div className="flex items-center gap-4 text-xs text-gray-400">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-success" />
@@ -591,9 +589,9 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto mb-12">
+          <div className={`grid sm:grid-cols-2 ${SHOW_TRIAL_PLAN ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5 max-w-6xl mx-auto mb-12`}>
             {[
-              {
+              ...(SHOW_TRIAL_PLAN ? [{
                 key: "trial",
                 priceMonthly: 0,
                 priceYearly: 0,
@@ -602,7 +600,7 @@ const Index = () => {
                 featured: false,
                 isTrial: true,
                 hasPromo: false,
-              },
+              }] : []),
               {
                 key: "starter",
                 priceMonthly: 9.99,
