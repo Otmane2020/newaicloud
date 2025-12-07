@@ -41,6 +41,7 @@ import {
   Key,
   Code,
   Share2,
+  Palette,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -74,7 +75,7 @@ export function AppSidebar() {
   const { state, isMobile: sidebarIsMobile, openMobile, toggleSidebar } = useSidebar();
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const currentPath = location.pathname;
   const currentSearch = location.search;
   const [userPlan, setUserPlan] = useState<string | null>(null);
@@ -152,6 +153,7 @@ export function AppSidebar() {
 
   const bottomMenuItems = [
     ...(isTestAccount ? [{ title: t.navigation.aiSearch, url: "/search", icon: Search, key: "aiSearch" }] : []),
+    ...(isTestAccount ? [{ title: language === 'fr' ? 'Templates Boutique' : 'Store Templates', url: "/store-templates", icon: Palette, key: "storeTemplates" }] : []),
     { title: t.navigation.googleShopping, url: "/shopping", icon: ShoppingCart, key: "googleShopping" },
   ];
 
