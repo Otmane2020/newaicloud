@@ -108,6 +108,7 @@ import MobileAds from "./pages/MobileAds";
 import MobileSuccess from "./pages/MobileSuccess";
 import AnimationAds from "./pages/AnimationAds";
 import NewAIVideoGenerator from "./components/video/NewAIVideoGenerator";
+import StoreTemplates from "./pages/StoreTemplates";
 
 const queryClient = new QueryClient();
 
@@ -482,6 +483,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <SearchProducts />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/store-templates"
+              element={
+                <ProtectedLayout>
+                  <StoreTemplates />
                 </ProtectedLayout>
               }
             />
