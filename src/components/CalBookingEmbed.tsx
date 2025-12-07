@@ -1,15 +1,20 @@
+import { useEffect } from "react";
 import { useTranslation } from "@/lib/language";
-import { Calendar, Clock, Video, ExternalLink } from "lucide-react";
+import { Calendar, Clock, Video } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
+declare global {
+  interface Window {
+    Cal?: any;
+  }
+}
 
 interface CalBookingEmbedProps {
   className?: string;
   minimal?: boolean;
 }
-
-const CAL_LINK = "https://cal.com/new-ai-isgo1m/30min?overlayCalendar=true";
 
 export function CalBookingEmbed({ className = "", minimal = false }: CalBookingEmbedProps) {
   const { language } = useTranslation();
@@ -20,13 +25,45 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
       ? "Découvrez comment NewAI peut transformer votre boutique Shopify"
       : "Discover how NewAI can transform your Shopify store";
   const duration = language === "fr" ? "30 minutes" : "30 minutes";
-  const availability = language === "fr";
-
+  const availability = language === "fr" ? "Lun-Ven" : "Mon-Fri";
   const buttonText = language === "fr" ? "Réserver maintenant" : "Book now";
 
-  const handleBooking = () => {
-    window.open(CAL_LINK, "_blank");
-  };
+  useEffect(() => {
+    // Load Cal.com embed script
+    (function (C: any, A: string, L: string) {
+      let p = function (a: any, ar: any) { a.q.push(ar); };
+      let d = C.document;
+      C.Cal = C.Cal || function () {
+        let cal = C.Cal;
+        let ar = arguments;
+        if (!cal.loaded) {
+          cal.ns = {};
+          cal.q = cal.q || [];
+          const script = d.head.appendChild(d.createElement("script"));
+          script.src = A;
+          cal.loaded = true;
+        }
+        if (ar[0] === L) {
+          const api = function () { p(api, arguments); };
+          const namespace = ar[1];
+          (api as any).q = (api as any).q || [];
+          if (typeof namespace === "string") {
+            cal.ns[namespace] = cal.ns[namespace] || api;
+            p(cal.ns[namespace], ar);
+            p(cal, ["initNamespace", namespace]);
+          } else p(cal, ar);
+          return;
+        }
+        p(cal, ar);
+      };
+    })(window, "https://app.cal.com/embed/embed.js", "init");
+
+    window.Cal?.("init", "30min", { origin: "https://app.cal.com" });
+    window.Cal?.ns?.["30min"]?.("ui", { 
+      hideEventTypeDetails: false, 
+      layout: "month_view" 
+    });
+  }, []);
 
   if (minimal) {
     return (
@@ -41,10 +78,15 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
             <span>{availability}</span>
           </div>
         </div>
-        <Button size="lg" onClick={handleBooking} className="px-8">
+        <Button 
+          size="lg" 
+          className="px-8"
+          data-cal-link="new-ai-isgo1m/30min"
+          data-cal-namespace="30min"
+          data-cal-config='{"layout":"month_view"}'
+        >
           <Video className="w-4 h-4 mr-2" />
           {buttonText}
-          <ExternalLink className="w-4 h-4 ml-2" />
         </Button>
       </div>
     );
@@ -73,10 +115,15 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
       </div>
 
       <div className="flex justify-center">
-        <Button size="lg" onClick={handleBooking} className="px-8">
+        <Button 
+          size="lg" 
+          className="px-8"
+          data-cal-link="new-ai-isgo1m/30min"
+          data-cal-namespace="30min"
+          data-cal-config='{"layout":"month_view"}'
+        >
           <Video className="w-4 h-4 mr-2" />
           {buttonText}
-          <ExternalLink className="w-4 h-4 ml-2" />
         </Button>
       </div>
     </Card>
