@@ -7299,9 +7299,10 @@ export const translations = {
       titleEnd: "avec l'IA",
       subtitle:
         "Automatisez l'optimisation SEO, générez du contenu de qualité et boostez votre trafic organique. Obtenez vos premiers résultats en moins de 5 minutes.",
-      ctaPrimary: "Essai gratuit",
+      ctaPrimary: "Commencer maintenant",
       ctaSecondary: "Voir la démo",
       setupTime: "Installation en 5 minutes",
+      noCommitment: "Sans engagement",
     },
     howItWorks: {
       badge: "Processus",

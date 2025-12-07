@@ -214,7 +214,7 @@ const Index = () => {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-                  <span>{t.trial.trustBanner.cancelAnytime}</span>
+                  <span>{t.landing.hero.noCommitment}</span>
                 </div>
               </div>
             </div>
