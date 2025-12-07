@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles, Download, Film, Rocket, TrendingUp, Zap, ShoppingCart, Package, BarChart3, LineChart, Search, Eye, Image, ArrowUp, ChevronRight, Globe, Smartphone, Award, Shield, Camera, Wand2, ArrowRight, RefreshCw } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Star, Check, Target, Sparkles, Download, Film, Rocket, TrendingUp, Zap, ShoppingCart, Package, BarChart3, LineChart, Search, Eye, Image, ArrowUp, ChevronRight, Globe, Smartphone, Award, Shield, Camera, Wand2, ArrowRight, RefreshCw, Maximize, Minimize } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -1543,32 +1543,88 @@ export default function AnimationAds() {
 
   const CurrentSlideComponent = slides[currentSlide];
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = async () => {
+    if (!fullscreenContainerRef.current) return;
+    
+    try {
+      if (!document.fullscreenElement) {
+        await fullscreenContainerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+        // Lock to portrait orientation on mobile
+        if (screen.orientation && 'lock' in screen.orientation) {
+          try {
+            await (screen.orientation as any).lock('portrait');
+          } catch (e) {
+            // Orientation lock not supported
+          }
+        }
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+        if (screen.orientation && 'unlock' in screen.orientation) {
+          (screen.orientation as any).unlock();
+        }
+      }
+    } catch (error) {
+      console.error('Fullscreen error:', error);
+    }
+  };
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 gap-4">
       {/* Export Buttons */}
-      <div className="flex gap-3">
-        <Button
-          onClick={handleExportVideo}
-          disabled={isExporting}
-          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
-        >
-          <Film className="w-4 h-4 mr-2" />
-          {isExporting ? 'Exporting...' : 'Export Video'}
-        </Button>
-        <Button
-          onClick={handleGenerateAudio}
-          variant="outline"
-          className="border-white/30 text-white hover:bg-white/10"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Generate Audio
-        </Button>
-      </div>
+      {!isFullscreen && (
+        <div className="flex gap-3 flex-wrap justify-center">
+          <Button
+            onClick={handleExportVideo}
+            disabled={isExporting}
+            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
+          >
+            <Film className="w-4 h-4 mr-2" />
+            {isExporting ? 'Exporting...' : 'Export Video'}
+          </Button>
+          <Button
+            onClick={handleGenerateAudio}
+            variant="outline"
+            className="border-white/30 text-white hover:bg-white/10"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Generate Audio
+          </Button>
+          <Button
+            onClick={toggleFullscreen}
+            variant="outline"
+            className="border-white/30 text-white hover:bg-white/10"
+          >
+            <Maximize className="w-4 h-4 mr-2" />
+            Fullscreen Mobile
+          </Button>
+        </div>
+      )}
 
       {/* 9:16 Container */}
       <div 
-        ref={containerRef}
-        className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900"
+        ref={(el) => {
+          (containerRef as any).current = el;
+          (fullscreenContainerRef as any).current = el;
+        }}
+        className={`relative overflow-hidden shadow-2xl bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 ${
+          isFullscreen 
+            ? 'w-screen h-screen rounded-none' 
+            : 'w-full max-w-sm aspect-[9/16] rounded-3xl'
+        }`}
         style={{ perspective: 1200 }}
       >
         <AnimatePresence mode="sync">
@@ -1602,6 +1658,14 @@ export default function AnimationAds() {
 
         {/* Controls */}
         <div className="absolute top-4 right-4 flex gap-2 z-30">
+          {isFullscreen && (
+            <button
+              onClick={toggleFullscreen}
+              className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+            >
+              <Minimize className="w-5 h-5" />
+            </button>
+          )}
           <button
             onClick={toggleMute}
             className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
