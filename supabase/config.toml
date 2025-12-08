@@ -558,3 +558,12 @@ verify_jwt = false
 
 [functions.generate-animationads-audio]
 verify_jwt = false
+
+[functions.shopify-create-subscription]
+verify_jwt = true
+
+[functions.shopify-billing-callback]
+verify_jwt = false
+
+[functions.shopify-check-subscription]
+verify_jwt = true

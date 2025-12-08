@@ -8723,6 +8723,17 @@ export const translations = {
     fullDomain: "Full domain",
     advantage: "Advantage:",
     fullAccessFeatures: "Full access to all features (tags, scripts, content, etc.)",
+    // Shopify App Store installation (no manual URL entry per Shopify requirements)
+    installFromAppStore: "Install from Shopify App Store",
+    appStoreInstallDesc: "The recommended and secure way to connect your Shopify store is through the Shopify App Store.",
+    appStoreSecurityNote: "Installing via the App Store ensures secure OAuth authentication and automatic updates.",
+    step1ClickButton: "Click the button below to go to Shopify App Store",
+    step2InstallApp: "Click 'Install' on the app page",
+    step3Authorize: "Authorize the app permissions",
+    step4AutoConnect: "You'll be automatically connected back here",
+    goToAppStore: "Go to Shopify App Store",
+    redirectingToAppStore: "Redirecting to Shopify App Store",
+    installFromAppStoreDesc: "Install the app from there, then return here.",
   },
 
   // ============= Shopify Retry Claim =============

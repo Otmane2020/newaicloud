@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Loader2, ShoppingBag, Shield, Key } from "lucide-react";
+import { Info, Loader2, ShoppingBag, Shield, Key, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShopifyTokenGuide } from "./ShopifyTokenGuide";
@@ -12,6 +12,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useTranslation } from "@/lib/language";
+
+// For Shopify App Store installs, manual URL entry is NOT allowed per Shopify requirements
+// OAuth flow is initiated automatically via ?shop= parameter from Shopify
+const SHOPIFY_APP_STORE_URL = "https://apps.shopify.com/newai-ai-seo-and-marketing";
 
 interface ShopifyConnectionDialogProps {
   open: boolean;
@@ -21,76 +25,20 @@ interface ShopifyConnectionDialogProps {
 export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectionDialogProps) {
   const { limits, refresh: refreshLimits } = useUsageLimits();
   const { t } = useTranslation();
-  const [oauthShopName, setOauthShopName] = useState("");
-  const [oauthCommercialName, setOauthCommercialName] = useState("");
-  const [oauthLoading, setOauthLoading] = useState(false);
   
+  // Manual API Keys state (for advanced users outside App Store)
   const [manualStoreName, setManualStoreName] = useState("");
   const [manualCommercialName, setManualCommercialName] = useState("");
   const [manualApiKey, setManualApiKey] = useState("");
   const [manualApiSecret, setManualApiSecret] = useState("");
   const [manualLoading, setManualLoading] = useState(false);
 
-  const handleOAuthConnect = async () => {
-    if (!oauthShopName.trim()) {
-      toast.error(t.shopifyConnection.enterStoreName);
-      return;
-    }
-
-    try {
-      setOauthLoading(true);
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      // Vérification directe du nombre réel de boutiques
-      const { data: currentStores, error: countError } = await supabase
-        .from("shopify_connections")
-        .select("id", { count: 'exact' })
-        .eq("user_id", user.id);
-
-      if (countError) {
-        console.error('Error counting stores:', countError);
-        throw new Error("Error checking store limits");
-      }
-
-      const currentStoreCount = currentStores?.length || 0;
-      const maxStores = limits?.limits?.max_shopify_stores || 1;
-
-      // ✅ Check store limit with real count
-      if (!limits?.canAddShopifyStore || currentStoreCount >= maxStores) {
-        toast.error(t.shopifyConnection.storeLimitReached, {
-          description: t.shopifyConnection.storeLimitDesc.replace('{{current}}', String(currentStoreCount)).replace('{{max}}', String(maxStores)),
-        });
-        setOauthLoading(false);
-        return;
-      }
-
-      // Nettoyer le nom de la boutique
-      let cleanShopName = oauthShopName.trim()
-        .replace(/^https?:\/\//, '') // Enlever http:// ou https://
-        .replace(/\.myshopify\.com.*$/, '') // Enlever .myshopify.com et ce qui suit
-        .replace(/\/$/, ''); // Enlever le slash final si présent
-
-      const { data, error } = await supabase.functions.invoke("shopify-oauth", {
-        body: {
-          shopName: cleanShopName,
-          commercialName: oauthCommercialName.trim() || null,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.authUrl) {
-        toast.success(t.shopifyConnection.connecting);
-        window.location.href = data.authUrl;
-      }
-    } catch (error: any) {
-      console.error("OAuth error:", error);
-      toast.error(error.message || t.shopifyConnection.oauthError);
-    } finally {
-      setOauthLoading(false);
-    }
+  // OAuth via Shopify App Store - no manual URL entry allowed per Shopify requirements
+  const handleInstallFromAppStore = () => {
+    window.open(SHOPIFY_APP_STORE_URL, "_blank");
+    toast.success(t.shopifyConnection?.redirectingToAppStore || "Redirecting to Shopify App Store", {
+      description: t.shopifyConnection?.installFromAppStoreDesc || "Install the app from there, then return here."
+    });
   };
 
   const handleManualConnect = async () => {
@@ -246,71 +194,38 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                 </TabsTrigger>
               </TabsList>
 
-              {/* OAuth Tab */}
+              {/* OAuth Tab - Install from Shopify App Store (no manual URL entry) */}
               <TabsContent value="oauth" className="space-y-4 mt-4">
-                  <div className="space-y-4 p-4 border rounded-lg bg-card">
+                <div className="space-y-4 p-4 border rounded-lg bg-card">
                   <div className="flex items-center gap-2">
                     <Shield className="w-5 h-5 text-primary" />
-                    <h3 className="font-semibold text-sm sm:text-base">Connexion OAuth Sécurisée</h3>
+                    <h3 className="font-semibold text-sm sm:text-base">
+                      {t.shopifyConnection?.installFromAppStore || "Install from Shopify App Store"}
+                    </h3>
                   </div>
 
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    Méthode recommandée : connexion rapide et sécurisée via OAuth
+                    {t.shopifyConnection?.appStoreInstallDesc || "The recommended and secure way to connect your Shopify store is through the Shopify App Store."}
                   </p>
 
+                  <Alert className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+                    <Shield className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <AlertDescription className="text-xs text-green-900 dark:text-green-200">
+                      {t.shopifyConnection?.appStoreSecurityNote || "Installing via the App Store ensures secure OAuth authentication and automatic updates."}
+                    </AlertDescription>
+                  </Alert>
+
                   <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="oauth-commercial-name" className="text-sm">Nom commercial de votre boutique</Label>
-                      <Input
-                        id="oauth-commercial-name"
-                        placeholder="Movala, Decora Home, etc."
-                        value={oauthCommercialName}
-                        onChange={(e) => setOauthCommercialName(e.target.value)}
-                        className="text-sm"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Le nom qui apparaîtra dans l'interface (ex: "Movala")
-                      </p>
-                    </div>
+                    <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-2">
+                      <li>{t.shopifyConnection?.step1ClickButton || "Click the button below to go to Shopify App Store"}</li>
+                      <li>{t.shopifyConnection?.step2InstallApp || "Click 'Install' on the app page"}</li>
+                      <li>{t.shopifyConnection?.step3Authorize || "Authorize the app permissions"}</li>
+                      <li>{t.shopifyConnection?.step4AutoConnect || "You'll be automatically connected back here"}</li>
+                    </ol>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="oauth-shop-name" className="text-sm">Code technique de votre boutique</Label>
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <Input
-                          id="oauth-shop-name"
-                          placeholder="HBxv99-2F"
-                          value={oauthShopName}
-                          onChange={(e) => setOauthShopName(e.target.value)}
-                          className="flex-1 text-sm"
-                        />
-                        <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap text-center sm:text-left">
-                          .myshopify.com
-                        </span>
-                      </div>
-                    </div>
-
-                    <Alert>
-                      <Info className="h-4 w-4" />
-                      <AlertDescription className="text-xs">
-                        {t.shopifyConnection.findInUrl}{" "}
-                        <code className="bg-muted px-1 py-0.5 rounded text-xs break-all">
-                          admin.shopify.com/store/<strong>HBxv99-2F</strong>
-                        </code>
-                      </AlertDescription>
-                    </Alert>
-
-                    <Button onClick={handleOAuthConnect} disabled={oauthLoading} className="w-full text-sm">
-                      {oauthLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t.shopifyConnection.connecting}
-                        </>
-                      ) : (
-                        <>
-                          <Shield className="mr-2 h-4 w-4" />
-                          {t.shopifyConnection.connectWithOAuth}
-                        </>
-                      )}
+                    <Button onClick={handleInstallFromAppStore} className="w-full text-sm">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      {t.shopifyConnection?.goToAppStore || "Go to Shopify App Store"}
                     </Button>
                   </div>
                 </div>
