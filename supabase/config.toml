@@ -123,10 +123,10 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.generate-blog-article]
-verify_jwt = true
+verify_jwt = false
 
 [functions.sync-blog-to-shopify]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-tags]
 verify_jwt = true
