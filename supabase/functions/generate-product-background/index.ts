@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
+import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
 
 /**
  * POST-PROCESSING: Force exact format dimensions using FIT (not crop)
@@ -184,6 +185,11 @@ Si c'est un lit → angle montrant la tête de lit et la longueur
 
     console.log(`[product-bg] 📝 Enriched context: ${enrichedContext.slice(0, 200)}...`);
 
+    // 🆕 Generate lifestyle context based on product title
+    const lifestyleContext = generateLifestyleContext(productTitle);
+    const lifestylePromptSection = generateLifestylePromptSection(productTitle);
+    console.log(`[product-bg] 🏠 Lifestyle context: ${lifestyleContext.slice(0, 100)}...`);
+
     // 🆕 Format dimensions mapping
     const formatDimensions: Record<string, { width: number; height: number; ratio: string }> = {
       "square": { width: 1024, height: 1024, ratio: "1:1" },
@@ -240,8 +246,11 @@ Scale the product UP to TOUCH or NEARLY TOUCH the edges of the frame.
 
 You are a professional e-commerce product photographer with expertise in creating stunning product images.
 
+${lifestylePromptSection}
+
 PRODUCT: ${enrichedContext}
 IMAGE TYPE: ${isMainImage ? "MAIN PRODUCT IMAGE" : "SECONDARY/LIFESTYLE IMAGE"}
+🏠 LIFESTYLE CONTEXT: ${lifestyleContext}
 
 ${orientationInstructions}
 
