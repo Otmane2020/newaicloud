@@ -8770,6 +8770,17 @@ export const translations = {
     fullDomain: "Domaine complet",
     advantage: "Avantage :",
     fullAccessFeatures: "Accès complet à toutes les fonctionnalités (tags, scripts, contenus, etc.)",
+    // Installation Shopify App Store (pas de saisie manuelle d'URL selon les exigences Shopify)
+    installFromAppStore: "Installer depuis le Shopify App Store",
+    appStoreInstallDesc: "La méthode recommandée et sécurisée pour connecter votre boutique Shopify est via le Shopify App Store.",
+    appStoreSecurityNote: "L'installation via l'App Store garantit une authentification OAuth sécurisée et des mises à jour automatiques.",
+    step1ClickButton: "Cliquez sur le bouton ci-dessous pour accéder au Shopify App Store",
+    step2InstallApp: "Cliquez sur 'Installer' sur la page de l'app",
+    step3Authorize: "Autorisez les permissions de l'application",
+    step4AutoConnect: "Vous serez automatiquement reconnecté ici",
+    goToAppStore: "Aller sur le Shopify App Store",
+    redirectingToAppStore: "Redirection vers le Shopify App Store",
+    installFromAppStoreDesc: "Installez l'application depuis là-bas, puis revenez ici.",
   },
 
   // ============= Shopify Retry Claim =============

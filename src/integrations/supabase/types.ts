@@ -3637,6 +3637,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          billing_provider: string | null
           created_at: string
           credits: number | null
           current_plan_id: string | null
@@ -3661,6 +3662,7 @@ export type Database = {
           id: string
           onboarding_completed: boolean | null
           preferred_language: string | null
+          shopify_subscription_id: string | null
           signup_ip: unknown
           stripe_customer_id: string | null
           subscription_status: string | null
@@ -3669,6 +3671,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          billing_provider?: string | null
           created_at?: string
           credits?: number | null
           current_plan_id?: string | null
@@ -3693,6 +3696,7 @@ export type Database = {
           id: string
           onboarding_completed?: boolean | null
           preferred_language?: string | null
+          shopify_subscription_id?: string | null
           signup_ip?: unknown
           stripe_customer_id?: string | null
           subscription_status?: string | null
@@ -3701,6 +3705,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          billing_provider?: string | null
           created_at?: string
           credits?: number | null
           current_plan_id?: string | null
@@ -3725,6 +3730,7 @@ export type Database = {
           id?: string
           onboarding_completed?: boolean | null
           preferred_language?: string | null
+          shopify_subscription_id?: string | null
           signup_ip?: unknown
           stripe_customer_id?: string | null
           subscription_status?: string | null
@@ -4550,6 +4556,42 @@ export type Database = {
           pending_token?: string
           scope?: string | null
           shop_url?: string
+        }
+        Relationships: []
+      }
+      shopify_pending_subscriptions: {
+        Row: {
+          activated_at: string | null
+          billing_cycle: string
+          created_at: string
+          id: string
+          plan_id: string
+          shop_domain: string
+          shopify_subscription_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          billing_cycle?: string
+          created_at?: string
+          id?: string
+          plan_id: string
+          shop_domain: string
+          shopify_subscription_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          billing_cycle?: string
+          created_at?: string
+          id?: string
+          plan_id?: string
+          shop_domain?: string
+          shopify_subscription_id?: string | null
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
