@@ -106,7 +106,12 @@ export default function Onboarding() {
 
         console.log("📋 [AUTO-CLAIM] Profile status:", profile);
 
-        if (profile?.subscription_status === "active" || profile?.subscription_status === "trialing") {
+        // ✅ Vérifier si un VRAI plan a été choisi (pas juste "trial" auto-activé)
+        const hasRealSubscription = 
+          profile?.subscription_status === "active" || 
+          (profile?.subscription_status === "trialing" && profile?.current_plan_id && profile.current_plan_id !== "trial");
+        
+        if (hasRealSubscription) {
           console.log("✅ [AUTO-CLAIM] User has active subscription, auto-claiming Shopify");
 
           // Check if already has a Shopify connection
