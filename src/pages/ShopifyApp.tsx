@@ -9,7 +9,7 @@ export default function ShopifyApp() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "error">("loading");
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   useEffect(() => {
     const processPendingToken = async () => {
@@ -73,8 +73,11 @@ export default function ShopifyApp() {
             description: t.shopifyApp?.connectedToStore || "You are now connected to your store.",
           });
         } else {
+          // Nouveau message: pas de trial auto, doit choisir un plan
           toast.success(t.shopifyApp?.welcome || "Welcome!", {
-            description: t.shopifyApp?.trialActivated || "Your 14-day trial is now active.",
+            description: language === "fr" 
+              ? "Choisissez votre plan pour commencer." 
+              : "Choose your plan to get started.",
           });
         }
 
@@ -83,11 +86,13 @@ export default function ShopifyApp() {
           sessionStorage.setItem('pending_sync', shop);
         }
 
-        // Nouvel utilisateur → onboarding pour choix de plan, utilisateur existant → dashboard
+        // Nouvel utilisateur → onboarding pour choix de plan avec shop domain
+        // Utilisateur existant → dashboard
         if (data.is_returning_user) {
           navigate("/dashboard", { replace: true });
         } else {
-          navigate("/onboarding?shopify_pending=true", { replace: true });
+          // Passer le shop domain pour le Shopify Billing
+          navigate(`/onboarding?shopify_pending=true&shop=${encodeURIComponent(shop)}`, { replace: true });
         }
       } catch (err) {
         setStatus("error");
@@ -114,7 +119,11 @@ export default function ShopifyApp() {
       <div className="text-center">
         <Loader2 className="h-12 w-12 animate-spin mx-auto" />
         <h1 className="text-xl font-bold mt-4">{t.shopifyApp?.settingUp || "Setting up your app..."}</h1>
-        <p className="text-muted-foreground mt-2">{t.shopifyApp?.activatingTrial || "Your free trial is being activated."}</p>
+        <p className="text-muted-foreground mt-2">
+          {language === "fr" 
+            ? "Préparation de votre espace de travail..." 
+            : "Preparing your workspace..."}
+        </p>
       </div>
     </div>
   );

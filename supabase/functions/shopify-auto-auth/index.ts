@@ -128,24 +128,21 @@ serve(async (req) => {
       userId = newUser.user.id;
       console.log("[SHOPIFY-AUTO-AUTH] Nouvel utilisateur créé:", userId);
 
-      // 5. Activer le trial de 14 jours
-      const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 14);
-
+      // 5. Créer le profil SANS abonnement actif - l'utilisateur doit choisir un plan
+      // Plus de trial automatique - Shopify exige que le billing passe par leur API
       const { error: profileError } = await supabase.from("profiles").upsert({
         id: userId,
         email: email,
-        has_used_trial: true,
-        trial_ends_at: trialEndDate.toISOString(),
-        subscription_status: "trialing",
-        current_plan_id: "trial",
-        billing_provider: "shopify", // OAuth users use Shopify Billing
+        has_used_trial: false, // Pas encore utilisé - sera activé via Shopify Billing
+        subscription_status: "inactive", // Pas d'abonnement actif - doit choisir un plan
+        current_plan_id: null, // Sera défini après le choix du plan
+        billing_provider: "shopify", // OAuth users use Shopify Billing only
       });
 
       if (profileError) {
         console.error("[SHOPIFY-AUTO-AUTH] Erreur création profil:", profileError);
       } else {
-        console.log("[SHOPIFY-AUTO-AUTH] ✅ Trial activé jusqu'au", trialEndDate.toISOString());
+        console.log("[SHOPIFY-AUTO-AUTH] ✅ Profil créé - en attente de choix de plan");
       }
     }
 
