@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { getCurrencySymbol, formatPrice, getPriceByLanguage } from "@/lib/formatUtils";
 import { useShopifySync } from "@/hooks/useShopifySync";
 import { useAutoSyncProgress } from "@/contexts/AutoSyncContext";
+import { useShopifyBilling } from "@/hooks/useShopifyBilling";
 
 interface Plan {
   id: string;
@@ -72,6 +73,7 @@ export default function Onboarding() {
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
   const [useManualPromo, setUseManualPromo] = useState(false);
   const { syncShopifyStore } = useShopifySync();
+  const { isShopifyUser, billingProvider, createShopifySubscription, loading: shopifyBillingLoading } = useShopifyBilling();
 
   // ✅ Auto-detect and claim Shopify - DÉSACTIVÉ si checkout=success (handleCheckSubscription gère tout)
   useEffect(() => {
@@ -761,6 +763,7 @@ export default function Onboarding() {
     setLoading(true);
     try {
       console.log("🚀 Creating checkout for plan:", planId, "billing:", billingCycle, "trial:", isTrial);
+      console.log("📋 Billing provider:", billingProvider, "isShopifyUser:", isShopifyUser);
       console.log(
         "📋 Available plans:",
         plans.map((p) => ({ id: p.id, name: p.name })),
@@ -790,7 +793,7 @@ export default function Onboarding() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("subscription_status, trial_ends_at")
+        .select("subscription_status, trial_ends_at, billing_provider")
         .eq("id", user.id)
         .single();
 
@@ -800,12 +803,38 @@ export default function Onboarding() {
           (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date()),
       );
 
+      // Determine billing provider: profile value > hook detection > default to stripe
+      const effectiveBillingProvider = profile?.billing_provider || billingProvider || (isShopifyUser ? "shopify" : "stripe");
+
       console.log("💳 User subscription status:", {
         hasActiveSubscription,
         hasActiveTrial,
         subscriptionStatus: profile?.subscription_status,
+        effectiveBillingProvider,
       });
 
+      // ✅ SHOPIFY BILLING: If user came from Shopify App Store, use Shopify Billing API
+      if (effectiveBillingProvider === "shopify" || isShopifyUser) {
+        console.log("🛍️ [SHOPIFY-BILLING] Using Shopify Billing API for plan:", planId);
+        
+        toast.loading(language === "fr" ? "Création de l'abonnement Shopify..." : "Creating Shopify subscription...", { id: "shopify-checkout" });
+        
+        const result = await createShopifySubscription(planId, billingCycle);
+        
+        if (result?.confirmationUrl) {
+          console.log("✅ [SHOPIFY-BILLING] Redirecting to Shopify for payment approval");
+          toast.dismiss("shopify-checkout");
+          // Shopify will redirect back after payment approval
+          window.location.href = result.confirmationUrl;
+          return;
+        } else {
+          toast.dismiss("shopify-checkout");
+          toast.error(language === "fr" ? "Échec de la création de l'abonnement Shopify" : "Failed to create Shopify subscription");
+          return;
+        }
+      }
+
+      // ✅ STRIPE BILLING: Default path for non-Shopify users
       // If user has active subscription, use update-subscription for proration
       if (hasActiveSubscription) {
         const priceId =

@@ -231,8 +231,18 @@ export function ShopifyConnectionDialog({ open, onOpenChange }: ShopifyConnectio
                 </div>
               </TabsContent>
 
-              {/* Manual API Keys Tab */}
+              {/* Manual API Keys Tab - For advanced users outside App Store */}
               <TabsContent value="manual" className="space-y-6">
+                {/* Warning for manual API connection users */}
+                <Alert className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+                  <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <AlertDescription className="text-xs text-amber-900 dark:text-amber-200">
+                    <strong>⚠️ {t.shopifyConnection?.advancedUsersOnly || "Advanced Users Only"}</strong>
+                    <br />
+                    {t.shopifyConnection?.manualConnectionWarning || "This method is for developers or users who cannot install via the Shopify App Store. For App Store compliance, billing is handled differently."}
+                  </AlertDescription>
+                </Alert>
+
                 <Alert className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
                   <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   <AlertDescription className="text-xs text-blue-900 dark:text-blue-200">

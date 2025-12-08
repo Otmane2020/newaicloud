@@ -227,12 +227,21 @@ serve(async (req) => {
           is_active: true,
           connection_type: "oauth",
         });
+
+        // ✅ Set billing_provider = 'shopify' for OAuth users (App Store installations)
+        await supabase.from("profiles").update({
+          billing_provider: "shopify",
+          updated_at: new Date().toISOString(),
+        }).eq("id", oauthState.user_id);
+
+        console.log("[SHOPIFY-OAUTH] ✅ Set billing_provider to 'shopify' for user:", oauthState.user_id);
         
         console.log(JSON.stringify({
           event: 'oauth_callback_success',
           flow: 'classic',
           shop: shop,
           user_id: oauthState.user_id,
+          billing_provider: 'shopify',
           timestamp: new Date().toISOString()
         }));
 
