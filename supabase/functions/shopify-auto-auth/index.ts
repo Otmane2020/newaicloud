@@ -116,6 +116,7 @@ serve(async (req) => {
         trial_ends_at: trialEndDate.toISOString(),
         subscription_status: "trialing",
         current_plan_id: "trial",
+        billing_provider: "shopify", // OAuth users use Shopify Billing
       });
 
       if (profileError) {
