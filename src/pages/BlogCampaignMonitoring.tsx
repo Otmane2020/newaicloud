@@ -15,12 +15,14 @@ import {
   Play, 
   RefreshCw, 
   FileText,
-  Edit
+  Edit,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr, enUS } from 'date-fns/locale';
 import { useTranslation } from '@/lib/language';
 import { CampaignEditDialog } from '@/components/blog/CampaignEditDialog';
+import { CampaignArticlesDialog } from '@/components/blog/CampaignArticlesDialog';
 
 interface Campaign {
   id: string;
@@ -38,6 +40,7 @@ interface Campaign {
   target_audience: string | null;
   auto_post: boolean;
   execution_hour: number;
+  articles_generated: number | null;
 }
 
 interface Article {
@@ -55,6 +58,7 @@ export default function BlogCampaignMonitoring() {
   const [loading, setLoading] = useState(true);
   const [generatingCampaignId, setGeneratingCampaignId] = useState<string | null>(null);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [viewingArticlesCampaign, setViewingArticlesCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -239,6 +243,7 @@ export default function BlogCampaignMonitoring() {
                               disabled={generatingCampaignId === campaign.id}
                               size="sm"
                               variant="outline"
+                              title="Générer un article"
                             >
                               {generatingCampaignId === campaign.id ? (
                                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -247,9 +252,21 @@ export default function BlogCampaignMonitoring() {
                               )}
                             </Button>
                             <Button
+                              onClick={() => setViewingArticlesCampaign(campaign)}
+                              size="sm"
+                              variant="outline"
+                              title="Voir les articles"
+                            >
+                              <Eye className="w-4 h-4" />
+                              {campaign.articles_generated ? (
+                                <span className="ml-1 text-xs">({campaign.articles_generated})</span>
+                              ) : null}
+                            </Button>
+                            <Button
                               onClick={() => setEditingCampaign(campaign)}
                               size="sm"
                               variant="outline"
+                              title="Modifier"
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -308,6 +325,13 @@ export default function BlogCampaignMonitoring() {
         open={!!editingCampaign}
         onOpenChange={(open) => !open && setEditingCampaign(null)}
         onSuccess={loadData}
+      />
+
+      <CampaignArticlesDialog
+        campaignId={viewingArticlesCampaign?.id || null}
+        campaignName={viewingArticlesCampaign?.name || ''}
+        open={!!viewingArticlesCampaign}
+        onOpenChange={(open) => !open && setViewingArticlesCampaign(null)}
       />
     </div>
   );
