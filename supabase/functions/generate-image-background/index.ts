@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -163,6 +164,11 @@ Le produit doit être présenté dans son orientation NATURELLE comme chez les c
     console.log("🎨 Generating AI background:", { prompt, imageType, format, similarity });
     console.log(`[image-bg] 📝 Enriched context: ${enrichedContext.slice(0, 200)}...`);
 
+    // 🆕 Generate lifestyle context based on product title
+    const lifestyleContext = generateLifestyleContext(productTitle || "");
+    const lifestylePromptSection = generateLifestylePromptSection(productTitle || "");
+    console.log(`[image-bg] 🏠 Lifestyle context: ${lifestyleContext.slice(0, 100)}...`);
+
     // Initialize Supabase client for usage tracking (reuse authHeader from above)
     const supabaseClient = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
       global: { headers: { Authorization: authHeader! } },
@@ -259,8 +265,11 @@ Scale the product UP to TOUCH or NEARLY TOUCH the edges of the frame.
 
 You are a professional e-commerce product photographer with STRICT format requirements.
 
+${lifestylePromptSection}
+
 PRODUCT: ${enrichedContext}
 USER REQUEST: ${prompt}
+🏠 LIFESTYLE CONTEXT: ${lifestyleContext}
 
 ${orientationInstructions}
 

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
+import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
 
 /**
  * POST-PROCESSING: Force exact format dimensions using FIT (not crop)
@@ -242,13 +243,18 @@ serve(async (req) => {
       console.log(`[white-bg] 👁️ Vision AI data enrichment applied`);
     }
     
+    // 🆕 Generate lifestyle context based on product title
+    const lifestyleContext = generateLifestyleContext(productTitle || "");
+    const lifestylePromptSection = generateLifestylePromptSection(productTitle || "");
+    console.log(`[white-bg] 🏠 Lifestyle context: ${lifestyleContext.slice(0, 100)}...`);
+    
     console.log(`[white-bg] 📝 Enriched context: ${enrichedContext.slice(0, 200)}...`);
 
     // 🆕 Background style instructions
     const backgroundStyleInstructions: Record<string, string> = {
       "shopping": "Pure white e-commerce background (#FFFFFF). Clean, professional, product-focused. Subtle drop shadow for 3D depth.",
       "luxury_showroom": "LUXURY 3D SHOWROOM: Dark elegant showroom background (deep charcoal/black gradient). GLOSSY MARBLE FLOOR with PERFECT MIRROR REFLECTION of product. DRAMATIC SPOTLIGHT from above creating VOLUMETRIC LIGHT BEAMS. GOLDEN RAYS and FLOATING SPARKLE PARTICLES radiating from product. Professional RIM LIGHTING on product edges. 8K photorealistic CGI render quality. Think: Roche Bobois, EURODESIGN luxury furniture catalog.",
-      "lifestyle": "Warm, inviting lifestyle context. Natural light, soft tones. Product in realistic home/daily use setting. Beige/cream ambient tones.",
+      "lifestyle": `Warm, inviting lifestyle context. ${lifestyleContext}. Natural light, soft tones. Product in realistic home/daily use setting.`,
       "moderne": "Modern minimalist design. Clean lines, contemporary aesthetic. Geometric elements, neutral gray or off-white backdrop. Sleek and sophisticated.",
       "living_room": "Cozy living room interior. Product placed in realistic home setting with furniture hints. Warm ambient lighting, wooden accents.",
       "studio": "HIGH-END STUDIO PHOTOGRAPHY: Product placed on a clean, visible surface/table/pedestal with SOFT SHADOWS. Background is warm neutral cream/beige/off-white gradient (NOT pure white). Professional softbox lighting from front-left creating elegant soft shadows on the surface. The surface must be visible - product sits ON a table/platform. Think luxury product catalog: Gentle ambient light, smooth surface reflections, 3D depth from shadow. Art gallery or museum display aesthetic.",

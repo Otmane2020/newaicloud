@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,6 +119,11 @@ ${serpData.dimensions ? `📏 Product dimensions: ${serpData.dimensions}` : ""}
 
     console.log("🎨 Enriched product context:", enrichedContext);
 
+    // 🆕 Generate lifestyle context based on product title
+    const lifestyleContext = generateLifestyleContext(productTitle);
+    const lifestylePromptSection = generateLifestylePromptSection(productTitle);
+    console.log(`🏠 Lifestyle context: ${lifestyleContext.slice(0, 100)}...`);
+
     // 🆕 Visual Enhancement Instructions for Professional E-Commerce Quality
     const visualEnhancementInstructions = `
 VISUAL QUALITY ENHANCEMENT - PROFESSIONAL E-COMMERCE PHOTOGRAPHY:
@@ -176,9 +182,10 @@ CRITICAL RULES:
         prompt: `${imageEditingHeader}
 🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
 ${orientationInstructions}
+${lifestylePromptSection}
 TASK: Edit this product image - extract the product, correct orientation if needed, place in cozy lifestyle setting.
 Product: ${enrichedContext}
-Environment: Warm modern living room with soft ambient lighting, natural textures, wooden elements, neutral tones.
+Environment: ${lifestyleContext}. Warm modern living room with soft ambient lighting, natural textures, wooden elements, neutral tones.
 ${basePrompt}
 The product must be the hero element, well-lit, premium e-commerce aesthetic.`,
       },
@@ -188,9 +195,10 @@ The product must be the hero element, well-lit, premium e-commerce aesthetic.`,
         prompt: `${imageEditingHeader}
 🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
 ${orientationInstructions}
+${lifestylePromptSection}
 TASK: Edit this product image - extract the product, correct orientation if needed, place on clean studio background.
 Product: ${enrichedContext}
-Environment: Professional studio with pure white/light gray background, perfect soft lighting.
+Environment: Professional studio with pure white/light gray background, perfect soft lighting. Product context: ${lifestyleContext}.
 ${basePrompt}
 High-end commercial style, sharp focus, no distractions.`,
       },
@@ -200,9 +208,10 @@ High-end commercial style, sharp focus, no distractions.`,
         prompt: `${imageEditingHeader}
 🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
 ${orientationInstructions}
+${lifestylePromptSection}
 TASK: Edit this product image - extract the product, correct orientation if needed, place in luxurious natural setting.
 Product: ${enrichedContext}
-Environment: Elegant natural setting with green plants, wood textures, soft daylight, refined organic décor.
+Environment: ${lifestyleContext}. Elegant natural setting with green plants, wood textures, soft daylight, refined organic décor.
 ${basePrompt}
 Warm, high-end natural ambiance, premium lifestyle environment.`,
       },
@@ -212,9 +221,10 @@ Warm, high-end natural ambiance, premium lifestyle environment.`,
         prompt: `${imageEditingHeader}
 🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
 ${orientationInstructions}
+${lifestylePromptSection}
 TASK: Edit this product image - extract the product, correct orientation if needed, place in minimalist interior.
 Product: ${enrichedContext}
-Environment: Modern minimalist space with clean lines, neutral colors, soft daylight, uncluttered aesthetic.
+Environment: ${lifestyleContext}. Modern minimalist space with clean lines, neutral colors, soft daylight, uncluttered aesthetic.
 ${basePrompt}
 Sleek, contemporary composition ideal for e-commerce.`,
       },
@@ -224,9 +234,10 @@ Sleek, contemporary composition ideal for e-commerce.`,
         prompt: `${imageEditingHeader}
 🚨 OUTPUT FORMAT: EXACTLY ${dimensions} pixels (${aspectRatio} ratio). ${visualEnhancementInstructions}
 ${orientationInstructions}
+${lifestylePromptSection}
 TASK: Edit this product image - extract the product, correct orientation if needed, place in urban setting.
 Product: ${enrichedContext}
-Environment: Contemporary urban space with industrial elements, concrete textures, large windows, modern architecture.
+Environment: ${lifestyleContext}. Contemporary urban space with industrial elements, concrete textures, large windows, modern architecture.
 ${basePrompt}
 Stylish city-inspired atmosphere, premium lifestyle shot.`,
       },

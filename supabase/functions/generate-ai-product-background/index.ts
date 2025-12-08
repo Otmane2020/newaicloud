@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
+import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
 
 /**
  * POST-PROCESSING: Force exact format dimensions
@@ -220,6 +221,11 @@ Si c'est une table → légère vue plongeante montrant la surface
       console.log(`   Variant: ${variantOptions}`);
     }
 
+    // 🆕 Generate lifestyle context based on product title
+    const lifestyleContext = generateLifestyleContext(productTitle);
+    const lifestylePromptSection = generateLifestylePromptSection(productTitle);
+    console.log(`🏠 Lifestyle context: ${lifestyleContext.slice(0, 100)}...`);
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY not configured");
@@ -327,8 +333,11 @@ Simple retouche = ÉCHEC.
     const premiumLifestylePrompt = `
 🏆 PHOTOGRAPHIE E-COMMERCE PREMIUM - NOUVEL ENVIRONNEMENT OBLIGATOIRE
 
+${lifestylePromptSection}
+
 ⚠️ RÈGLE #1 : CRÉER UN NOUVEL ENVIRONNEMENT (PAS une retouche)
 Tu dois imaginer que tu TRANSPORTES le produit dans un NOUVEAU LIEU différent de l'original.
+🏠 CONTEXTE LIFESTYLE SUGGÉRÉ : ${lifestyleContext}
 
 🎬 NOUVELLE SCÈNE - CHANGEMENT RADICAL :
 - 🏠 Nouveau décor intérieur : Style DIFFÉRENT (moderne, scandinave, industriel, bohème, minimaliste)
