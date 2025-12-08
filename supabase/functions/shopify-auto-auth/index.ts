@@ -63,15 +63,38 @@ serve(async (req) => {
 
     console.log("[SHOPIFY-AUTO-AUTH] Email généré:", email);
 
-    // 3. Vérifier si l'utilisateur existe déjà
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users.find(u => u.email === email);
+    // 3. Vérifier si l'utilisateur existe déjà via RPC (plus fiable que listUsers qui pagine)
+    const { data: emailExists, error: rpcError } = await supabase.rpc('check_user_email_exists', { p_email: email });
+    
+    if (rpcError) {
+      console.error("[SHOPIFY-AUTO-AUTH] Erreur RPC check_user_email_exists:", rpcError);
+    }
 
     let userId: string;
+    let existingUser = null;
 
-    if (existingUser) {
-      console.log("[SHOPIFY-AUTO-AUTH] Utilisateur existant trouvé:", existingUser.id);
+    if (emailExists) {
+      // Récupérer l'utilisateur existant via listUsers filtré par email
+      const { data: usersData, error: listError } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1,
+      });
+      
+      // Chercher l'utilisateur par email dans tous les résultats
+      const { data: allUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+      const foundUser = allUsers?.users.find(u => u.email === email);
+      
+      if (!foundUser) {
+        console.error("[SHOPIFY-AUTO-AUTH] Utilisateur existe dans RPC mais introuvable dans listUsers");
+        return new Response(
+          JSON.stringify({ error: "User exists but could not be retrieved" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      existingUser = foundUser;
       userId = existingUser.id;
+      console.log("[SHOPIFY-AUTO-AUTH] Utilisateur existant trouvé via RPC:", userId);
       
       // Mettre à jour le mot de passe pour permettre la connexion
       const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {

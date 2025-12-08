@@ -83,7 +83,12 @@ export default function ShopifyApp() {
           sessionStorage.setItem('pending_sync', shop);
         }
 
-        navigate("/dashboard", { replace: true });
+        // Nouvel utilisateur → onboarding pour choix de plan, utilisateur existant → dashboard
+        if (data.is_returning_user) {
+          navigate("/dashboard", { replace: true });
+        } else {
+          navigate("/onboarding?shopify_pending=true", { replace: true });
+        }
       } catch (err) {
         setStatus("error");
         toast.error(t.shopifyApp?.unexpectedError || "Unexpected error");
