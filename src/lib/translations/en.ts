@@ -8734,6 +8734,9 @@ export const translations = {
     goToAppStore: "Go to Shopify App Store",
     redirectingToAppStore: "Redirecting to Shopify App Store",
     installFromAppStoreDesc: "Install the app from there, then return here.",
+    // Advanced users warning for manual API keys
+    advancedUsersOnly: "Advanced Users Only",
+    manualConnectionWarning: "This method is for developers or users who cannot install via the Shopify App Store. For App Store compliance, payment is handled via Stripe instead of Shopify Billing.",
   },
 
   // ============= Shopify Retry Claim =============
