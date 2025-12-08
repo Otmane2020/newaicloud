@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { sanitizeGeneratedHTML } from "../_shared/html-normalizer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -168,17 +169,27 @@ TOKENS CSS HSL OBLIGATOIRES (UTILISER EXACTEMENT):
 RÈGLES DE DESIGN STRICTES:
 ═══════════════════════════════════════════════════════
 
-1. ICÔNES SVG PROFESSIONNELLES:
-   - stroke-width: 1.5, viewBox="0 0 24 24", fill="none", stroke="currentColor"
-   - JAMAIS d'emoji
+⚠️⚠️⚠️ INTERDITS ABSOLUS - VIOLATION = ÉCHEC TOTAL:
+- https://via.placeholder.com (JAMAIS JAMAIS JAMAIS!)
+- Toute URL contenant "placeholder" 
+- Emoji comme icônes (❌🎉⭐ = INTERDIT)
+- Icônes externes (Font Awesome, Material Icons, etc.)
+- data:image URLs pour les images produit
 
-2. IMAGES PRODUIT:
-   - Image HERO: min-height: 400px, object-fit: cover
-   - border-radius: 12px et box-shadow subtile
+✅ ICÔNES SVG INLINE OBLIGATOIRES (EXEMPLES EXACTS):
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+</svg>
+Chaque icône DOIT avoir: viewBox="0 0 24 24", fill="none", stroke="currentColor", stroke-width="1.5"
 
-3. TYPOGRAPHIE:
-   - Titres: font-weight: 700
-   - Corps: font-weight: 400, line-height: 1.6
+✅ IMAGES PRODUIT - UTILISER LES URLs EXACTES FOURNIES:
+- Image HERO: UTILISER "${mainImage}" DIRECTEMENT
+- Autres images: UTILISER les URLs ${additionalImagesStr} DIRECTEMENT
+- min-height: 400px, object-fit: cover, border-radius: 12px
+
+✅ TYPOGRAPHIE:
+- Titres: font-weight: 700
+- Corps: font-weight: 400, line-height: 1.6
 
 ═══════════════════════════════════════════════════════
 STRUCTURE HTML REQUISE:
@@ -275,16 +286,31 @@ Génère le HTML complet avec FAQ COMPLÈTE et couleurs HSL exactes.`;
     const data = await aiResponse.json();
     let html = data?.choices?.[0]?.message?.content?.trim() || "";
 
-    // Basic cleanup
+    // Basic cleanup - remove markdown fences
     html = html.replace(/```html\n?/gi, "").replace(/```\n?/gi, "");
 
     // Ensure closing tags
     if (!html.includes("</body>")) html += "\n</body>";
     if (!html.includes("</html>")) html += "\n</html>";
 
-    // Replace any placeholder images with product images
-    html = html.replace(/https?:\/\/via\.placeholder\.com[^\s"')]+/gi, mainImage || "");
-    html = html.replace(/placeholder\.(com|jpg|png|webp)/gi, mainImage || "");
+    // Build product images array for sanitization
+    const productImagesForSanitize = images.map((src: string, index: number) => ({
+      src,
+      alt: `${productTitle} - Image ${index + 1}`
+    }));
+
+    // Apply full sanitization with image replacement (like generate-landing-ai)
+    html = sanitizeGeneratedHTML(html, productTitle, language, {
+      allowRootCss: true,
+      productImages: productImagesForSanitize
+    });
+
+    // Additional forced cleanup for any remaining placeholders
+    if (html.includes('via.placeholder.com') || html.includes('placeholder.')) {
+      console.warn("⚠️ Placeholders still detected after sanitization, forcing replacement...");
+      html = html.replace(/https?:\/\/via\.placeholder\.com[^\s"')]+/gi, mainImage || "");
+      html = html.replace(/https?:\/\/[^\s"')]*placeholder[^\s"')]+/gi, mainImage || "");
+    }
 
     if (html.length < 500) {
       return new Response(
