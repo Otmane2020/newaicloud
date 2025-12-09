@@ -29,11 +29,11 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!deepseekApiKey) {
+      throw new Error('DEEPSEEK_API_KEY not configured');
     }
 
     // Get the scheduled article
@@ -69,73 +69,52 @@ serve(async (req) => {
       : `Vous êtes un expert en rédaction de contenu SEO pour NewAI, une plateforme d'automatisation SEO pour Shopify. Rédigez des articles de blog complets et engageants pour aider les propriétaires de boutiques Shopify à améliorer leur présence en ligne.`;
 
     const contentPrompt = isEnglish
-      ? `Write a comprehensive, SEO-optimized blog article about "${article.title}" for NewAI.
+      ? `Write a concise, SEO-optimized blog article about "${article.title}" for NewAI (Shopify SEO platform).
 
-Target audience: Shopify store owners, e-commerce managers, digital marketers.
+Target: Shopify store owners, e-commerce managers.
 Category: ${article.category}
-Keywords to include naturally: ${article.keywords?.join(', ') || 'shopify, seo, e-commerce'}
+Keywords: ${article.keywords?.join(', ') || 'shopify, seo, e-commerce'}
 
-Article requirements:
-1. **Hook**: Start with a compelling statistic or problem statement
-2. **Problem**: Detail the pain points merchants face
-3. **Solution**: Explain how NewAI solves these problems with AI
-4. **Benefits**: List 5-7 key benefits with real examples
-5. **Features**: Describe specific NewAI features relevant to the topic
-6. **How It Works**: Step-by-step explanation
-7. **CTA**: Strong call-to-action to try NewAI free
+Structure (600-800 words max):
+1. Hook: Start with a compelling problem or stat
+2. Problem: Briefly explain merchant pain points
+3. Solution: How NewAI solves this with AI
+4. 3-4 Key Benefits with examples
+5. CTA: Try NewAI free
 
-Writing style:
-- Professional but conversational
-- Data-driven with specific numbers
-- Action-oriented with clear benefits
-- SEO-optimized with natural keyword usage
-- 1800-2200 words
-- Use H2 and H3 headings for structure
-- Include bullet points and numbered lists
+Style: Professional, data-driven, action-oriented.
+Format: Clean HTML (<h2>, <h3>, <p>, <ul>, <strong>). No <h1>.`
+      : `Rédigez un article de blog concis et optimisé SEO sur "${article.title}" pour NewAI (plateforme SEO Shopify).
 
-Format as clean HTML with semantic tags (<h2>, <h3>, <p>, <ul>, <ol>, <strong>).
-Do NOT include <h1> (added separately).`
-      : `Rédigez un article de blog complet et optimisé SEO sur "${article.title}" pour NewAI.
-
-Public cible : Propriétaires de boutiques Shopify, responsables e-commerce, marketeurs digitaux.
+Cible : Propriétaires de boutiques Shopify, responsables e-commerce.
 Catégorie : ${article.category}
-Mots-clés à inclure naturellement : ${article.keywords?.join(', ') || 'shopify, seo, e-commerce'}
+Mots-clés : ${article.keywords?.join(', ') || 'shopify, seo, e-commerce'}
 
-Exigences de l'article :
-1. **Accroche** : Commencez par une statistique convaincante ou un problème
-2. **Problème** : Détaillez les difficultés des marchands
-3. **Solution** : Expliquez comment NewAI résout ces problèmes avec l'IA
-4. **Avantages** : Listez 5-7 avantages clés avec exemples concrets
-5. **Fonctionnalités** : Décrivez les fonctionnalités NewAI pertinentes
-6. **Comment ça marche** : Explication étape par étape
-7. **CTA** : Appel à l'action fort pour essayer NewAI gratuitement
+Structure (600-800 mots max) :
+1. Accroche : Problème ou statistique convaincante
+2. Problème : Difficultés des marchands
+3. Solution : Comment NewAI résout avec l'IA
+4. 3-4 Avantages clés avec exemples
+5. CTA : Essayez NewAI gratuitement
 
-Style d'écriture :
-- Professionnel mais conversationnel
-- Axé sur les données avec des chiffres précis
-- Orienté action avec des avantages clairs
-- Optimisé SEO avec utilisation naturelle des mots-clés
-- 1800-2200 mots
-- Utilisez des titres H2 et H3 pour la structure
-- Incluez des listes à puces et numérotées
+Style : Professionnel, axé données, orienté action.
+Format : HTML propre (<h2>, <h3>, <p>, <ul>, <strong>). Pas de <h1>.`;
 
-Format : HTML propre avec balises sémantiques (<h2>, <h3>, <p>, <ul>, <ol>, <strong>).
-N'incluez PAS de <h1> (ajouté séparément).`;
-
-    // Generate content with AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Generate content with DeepSeek (cheaper: ~$0.09-0.12 per article)
+    const aiResponse = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${deepseekApiKey}`,
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: contentPrompt }
         ],
-        max_tokens: 4000
+        max_tokens: 1500,
+        temperature: 0.7
       }),
     });
 
@@ -156,16 +135,17 @@ N'incluez PAS de <h1> (ajouté séparément).`;
       ? `Write a compelling 155-character meta description for an article titled "${article.title}". Include a call-to-action.`
       : `Rédigez une méta-description convaincante de 155 caractères pour un article intitulé "${article.title}". Incluez un appel à l'action.`;
 
-    const metaResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const metaResponse = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${deepseekApiKey}`,
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'deepseek-chat',
         messages: [{ role: 'user', content: metaPrompt }],
-        max_tokens: 100
+        max_tokens: 80,
+        temperature: 0.7
       }),
     });
 
@@ -177,16 +157,17 @@ N'incluez PAS de <h1> (ajouté séparément).`;
       ? `Write a 2-sentence excerpt summarizing the key takeaway from an article about "${article.title}".`
       : `Rédigez un extrait de 2 phrases résumant le point clé d'un article sur "${article.title}".`;
 
-    const excerptResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const excerptResponse = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${deepseekApiKey}`,
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'deepseek-chat',
         messages: [{ role: 'user', content: excerptPrompt }],
-        max_tokens: 150
+        max_tokens: 100,
+        temperature: 0.7
       }),
     });
 
