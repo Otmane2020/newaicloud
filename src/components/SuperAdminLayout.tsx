@@ -3,7 +3,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SuperAdminNavigation } from "@/components/SuperAdminNavigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Menu, X } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { NotificationToggle } from "@/components/admin/NotificationToggle";
 
 interface SuperAdminLayoutProps {
   children: (props: { activeTab: string; setActiveTab: (tab: string) => void }) => React.ReactNode;
@@ -16,6 +19,13 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isOAuthPopup, setIsOAuthPopup] = useState(false);
   const [oauthProcessing, setOauthProcessing] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Fermer le menu mobile quand on change d'onglet
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+  };
 
   // Détecter immédiatement si c'est une popup OAuth Google Ads
   useEffect(() => {
@@ -165,10 +175,43 @@ export function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <SuperAdminNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="flex-1 ml-16 md:ml-64 transition-all duration-300 p-8">
-        {children({ activeTab, setActiveTab })}
+    <div className="min-h-screen bg-background">
+      {/* Mobile Header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 border-b bg-background z-50 flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-80">
+              <SuperAdminNavigation 
+                activeTab={activeTab} 
+                onTabChange={handleTabChange}
+                isMobile={true}
+              />
+            </SheetContent>
+          </Sheet>
+          <span className="font-bold text-orange-600">Admin</span>
+        </div>
+        <NotificationToggle compact />
+      </header>
+      
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:block fixed left-0 top-0 h-screen w-64 z-40">
+        <SuperAdminNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      </aside>
+      
+      {/* Main Content */}
+      <main className="lg:ml-64 pt-14 lg:pt-0 min-h-screen">
+        <div className="p-4 lg:p-8">
+          {/* Desktop notification toggle */}
+          <div className="hidden lg:flex justify-end mb-4">
+            <NotificationToggle />
+          </div>
+          {children({ activeTab, setActiveTab })}
+        </div>
       </main>
     </div>
   );
