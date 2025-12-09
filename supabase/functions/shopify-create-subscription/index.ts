@@ -16,7 +16,7 @@ const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EV
   "trial": { name: "14-Day Free Trial", price: 0, interval: "EVERY_30_DAYS", trialDays: 14 },
   
   // Starter - Monthly & Yearly
-  "starter-monthly": { name: "Starter (100 optimizations)", price: 9.99, interval: "EVERY_30_DAYS", trialDays: 7 },
+  "starter-monthly": { name: "Starter (100 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7 }, // Temporairement gratuit
   "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 95.90, interval: "ANNUAL", trialDays: 7 },
   
   // Pro tiers - Monthly
