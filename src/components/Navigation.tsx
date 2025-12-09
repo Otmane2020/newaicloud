@@ -28,7 +28,7 @@ import {
   History,
   Plug
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/language';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,10 +49,13 @@ export function Navigation() {
   const [userPlan, setUserPlan] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // Email avec accès complet à toutes les fonctionnalités
   const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
   const hasFullAccess = userEmail === FULL_ACCESS_EMAIL;
+  
+  console.log('🔐 [Navigation] userEmail:', userEmail, '| hasFullAccess:', hasFullAccess, '| isAuthLoading:', isAuthLoading);
 
   // Sections restreintes (visibles uniquement pour FULL_ACCESS_EMAIL)
   const restrictedPaths = [
@@ -158,49 +161,63 @@ export function Navigation() {
     return item;
   };
 
-  const menuItems = allMenuItems.map(filterMenuItem).filter(Boolean);
+  // Utiliser useMemo pour recalculer les menus quand hasFullAccess change
+  const menuItems = useMemo(() => {
+    return allMenuItems.map(filterMenuItem).filter(Boolean);
+  }, [hasFullAccess, t]);
 
-  const allBottomMenuItems = [
+  const allBottomMenuItems = useMemo(() => [
     { path: '/dashboard', label: t.navigation.account, icon: User, restricted: true },
     { path: '/notification-settings', label: t.navigation.notifications, icon: Bell },
     { path: '/subscription', label: t.navigation.subscription, icon: CreditCard, restricted: true },
     { path: '/integration', label: t.navigation.shopify, icon: Settings, restricted: true },
-  ];
+  ], [t]);
 
-  const bottomMenuItems = allBottomMenuItems.filter(item => !item.restricted || hasFullAccess);
+  const bottomMenuItems = useMemo(() => {
+    return allBottomMenuItems.filter(item => !item.restricted || hasFullAccess);
+  }, [allBottomMenuItems, hasFullAccess]);
 
   useEffect(() => {
     const checkAdminAndPlan = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email || null);
-        
-        const { data } = await supabase.rpc('has_role', {
-          _user_id: user.id,
-          _role: 'admin'
-        });
-        setIsAdmin(data || false);
+      setIsAuthLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          console.log('🔐 [Navigation] User fetched:', user.email);
+          setUserEmail(user.email || null);
+          
+          const { data } = await supabase.rpc('has_role', {
+            _user_id: user.id,
+            _role: 'admin'
+          });
+          setIsAdmin(data || false);
 
-        // Get user plan
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('current_plan_id, subscription_status')
-          .eq('id', user.id)
-          .single();
-
-        if (profile?.current_plan_id) {
-          const { data: plan } = await supabase
-            .from('subscription_plans')
-            .select('name')
-            .eq('id', profile.current_plan_id)
+          // Get user plan
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('current_plan_id, subscription_status')
+            .eq('id', user.id)
             .single();
 
-          if (plan) {
-            const isTrialing = profile.subscription_status === 'trialing';
-            const planName = isTrialing ? t.trial.title : plan.name;
-            setUserPlan(planName);
+          if (profile?.current_plan_id) {
+            const { data: plan } = await supabase
+              .from('subscription_plans')
+              .select('name')
+              .eq('id', profile.current_plan_id)
+              .single();
+
+            if (plan) {
+              const isTrialing = profile.subscription_status === 'trialing';
+              const planName = isTrialing ? t.trial.title : plan.name;
+              setUserPlan(planName);
+            }
           }
+        } else {
+          console.log('🔐 [Navigation] No user found');
+          setUserEmail(null);
         }
+      } finally {
+        setIsAuthLoading(false);
       }
     };
     checkAdminAndPlan();
