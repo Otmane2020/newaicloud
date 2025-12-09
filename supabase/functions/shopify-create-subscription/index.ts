@@ -12,6 +12,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Mapping des plans vers Shopify Billing - All tiers from database
 const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number }> = {
+  // Free test plan (à supprimer après tests)
+  "free-test-monthly": { name: "Free Test Plan", price: 0, interval: "EVERY_30_DAYS" },
+  "free-test-yearly": { name: "Free Test Plan", price: 0, interval: "ANNUAL" },
+  
   // Trial
   "trial": { name: "14-Day Free Trial", price: 0, interval: "EVERY_30_DAYS", trialDays: 14 },
   

@@ -11,6 +11,29 @@ import { toast } from "sonner";
 // Plans définis côté frontend - synchronisés avec shopify-create-subscription
 const PLANS = [
   {
+    id: "free-test",
+    name: "Free Test",
+    nameEn: "Free Test",
+    description: "Plan de test gratuit (à supprimer)",
+    descriptionEn: "Free test plan (to be removed)",
+    priceMonthly: 0,
+    priceYearly: 0,
+    icon: Zap,
+    color: "from-gray-400 to-gray-500",
+    features: {
+      fr: [
+        "Plan de test uniquement",
+        "Import produits",
+        "À supprimer après tests",
+      ],
+      en: [
+        "Test plan only",
+        "Product import",
+        "Remove after testing",
+      ],
+    },
+  },
+  {
     id: "starter",
     name: "Starter",
     nameEn: "Starter",
