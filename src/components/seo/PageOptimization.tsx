@@ -529,68 +529,7 @@ export function PageOptimization() {
     );
   };
 
-  const handleSyncAll = async () => {
-    const pagesToSync = pages.filter(p => p.optimized && (p.optimization_count || 0) > 0);
-    if (pagesToSync.length === 0) {
-      toast.info('No AI-optimized pages to sync');
-      return;
-    }
-    
-    setSyncing(true);
-    let successCount = 0;
-    
-    for (const page of pagesToSync) {
-      try {
-        const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
-          body: { pageId: page.id }
-        });
-        
-        if (error) throw error;
-        successCount++;
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    }
-    
-    setSyncing(false);
-    toast.success(`${successCount}/${pagesToSync.length} pages synchronized!`);
-    fetchPages();
-  };
-
-  const handleSyncSelected = async () => {
-    if (selectedPages.size === 0) return;
-    
-    const pagesToSync = Array.from(selectedPages).filter(pageId => {
-      const page = pages.find(p => p.id === pageId);
-      return page && page.optimized && (page.optimization_count || 0) > 0;
-    });
-    
-    if (pagesToSync.length === 0) {
-      toast.info('Aucune page AI-optimisée à synchroniser');
-      return;
-    }
-    
-    setSyncing(true);
-    let successCount = 0;
-    
-    for (const pageId of pagesToSync) {
-      try {
-        const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
-          body: { pageId }
-        });
-        
-        if (error) throw error;
-        successCount++;
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    }
-    
-    setSyncing(false);
-    setSelectedPages(new Set());
-    toast.success(`${successCount}/${pagesToSync.length} pages synchronized!`);
-    fetchPages();
-  };
+  // Sync functions removed - sync is automatic after optimization
 
   const handleOptimizePage = async (pageId: string, forceReoptimize = false) => {
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
@@ -626,59 +565,7 @@ export function PageOptimization() {
     }
   };
 
-  const handleOpenSyncDialog = () => {
-    setShowResultsDialog(false);
-    setShowSyncDialog(true);
-  };
-
-  const handleConfirmSync = async () => {
-    if (optimizedPages.length === 0) return;
-    
-    try {
-      setSyncing(true);
-      setShowSyncDialog(false);
-      
-      for (const page of optimizedPages) {
-        const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
-          body: { pageId: page.id }
-        });
-        
-        if (error) throw error;
-      }
-      
-      toast.success(`${optimizedPages.length} page(s) synchronisée(s)`);
-      await fetchPages();
-      setOptimizedPages([]);
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast.error(error.message || 'Erreur lors de la synchronisation');
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const handleSyncPage = async (pageId: string) => {
-    const page = pages.find(p => p.id === pageId);
-    if (!page || !page.optimized || (page.optimization_count || 0) === 0) {
-      toast.error('Seules les pages AI-optimisées peuvent être synchronisées');
-      return;
-    }
-    
-    try {
-      setSyncing(true);
-      const { error } = await supabase.functions.invoke('sync-page-to-shopify', {
-        body: { pageId }
-      });
-      
-      if (error) throw error;
-      toast.success('Page synchronized!');
-      fetchPages();
-    } catch (error: any) {
-      toast.error(error.message || 'Error');
-    } finally {
-      setSyncing(false);
-    }
-  };
+  // Sync dialog functions removed - sync is automatic
 
   if (!selectedStore) {
     return (
@@ -1217,18 +1104,6 @@ export function PageOptimization() {
                           >
                             <Sparkles className="w-4 h-4" />
                           </Button>
-                          {page.optimized && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleSyncPage(page.id)}
-                              disabled={syncing}
-                              title="Sync to Shopify"
-                              className="gap-2"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                            </Button>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>

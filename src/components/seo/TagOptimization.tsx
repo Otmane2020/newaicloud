@@ -606,77 +606,7 @@ export function TagOptimization() {
     );
   };
 
-  const handleSyncAll = async () => {
-    const productsToSync = products.filter(p => p.tags && !p.seo_synced_to_shopify);
-    if (productsToSync.length === 0) {
-      toast.info(t.seo.tags.allSynced);
-      return;
-    }
-    await handleBulkSync(productsToSync.map(p => p.id));
-  };
-
-  const handleSyncSelected = async () => {
-    const productsToSync = Array.from(selectedProducts).filter(id => {
-      const product = products.find(p => p.id === id);
-      return product && product.tags && !product.seo_synced_to_shopify;
-    });
-    if (productsToSync.length === 0) {
-      toast.info(t.seo.tags.noToSync);
-      return;
-    }
-    await handleBulkSync(productsToSync);
-  };
-
-  const handleBulkSync = async (productIds: string[]) => {
-    setShowResultsDialog(false);
-    setShowSyncDialog(false);
-    setShowProgressDialog(true);
-    setCurrentOperation('syncing');
-    setProgress({ current: 0, total: productIds.length });
-
-    const productsToSync = productIds.map(id => {
-      const product = products.find(p => p.id === id);
-      return { id, title: product?.title || '' };
-    });
-
-    await processBulkOperation(
-      'tags',
-      productsToSync,
-      async (item) => {
-        try {
-          const { data: authData } = await supabase.auth.getSession();
-          const response = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-seo-to-shopify`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${authData.session?.access_token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                productId: item.id, 
-                syncTags: true,
-                syncGoogleShopping: true,
-                force: true
-              }),
-            }
-          );
-          return response.ok;
-        } catch (error) {
-          console.error('Error syncing:', error);
-          return false;
-        }
-      },
-      'syncing',
-      async (results) => {
-        setShowProgressDialog(false);
-        setShowSuccessDialog(true);
-        setSelectedProducts(new Set());
-        await fetchProducts();
-        toast.success(`${results.success}/${productIds.length} tags synced`);
-      }
-    );
-  };
+  // Sync functions removed - sync is automatic after optimization
 
   const handleCloseProgressDialog = () => {
     setShowProgressDialog(false);
@@ -984,27 +914,6 @@ export function TagOptimization() {
                 <span className="hidden sm:inline">Optimize ({selectedProducts.size})</span>
               </Button>
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSyncSelected}
-                disabled={optimizationState.isRunning || selectedProducts.size === 0}
-                className="flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                <span className="hidden sm:inline">Sync ({selectedProducts.size})</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSyncAll}
-                disabled={optimizationState.isRunning || productsToSyncCount === 0}
-                className="flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                <span className="hidden sm:inline">Sync All</span>
-              </Button>
               
               <Button variant="outline" size="icon" onClick={fetchProducts}>
                 <RefreshCw className="w-4 h-4" />

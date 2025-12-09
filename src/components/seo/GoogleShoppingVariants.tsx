@@ -302,50 +302,7 @@ export function GoogleShoppingVariants() {
     }
   };
 
-  const handleSyncSelected = async () => {
-    const productIds = Array.from(selectedVariants);
-    
-    if (productIds.length === 0) {
-      toast.info('Sélectionnez au moins un produit');
-      return;
-    }
-
-    setSyncing(true);
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (const productId of productIds) {
-      try {
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-seo-to-shopify`;
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            productId, 
-            syncGoogleShopping: true
-          }),
-        });
-
-        if (response.ok) {
-          successCount++;
-        } else {
-          errorCount++;
-        }
-      } catch (error) {
-        console.error('Error syncing:', error);
-        errorCount++;
-      }
-    }
-
-    setSyncing(false);
-    setSelectedVariants(new Set());
-    
-    toast.success(`Synchronisation terminée: ${successCount} succès, ${errorCount} erreurs`);
-    await fetchVariants();
-  };
+  // Sync function removed - sync is automatic after optimization
 
   if (loading) {
     return (
@@ -545,25 +502,6 @@ export function GoogleShoppingVariants() {
                 <>
                   <Zap className="w-4 h-4" />
                   Générer GTIN ({selectedVariants.size})
-                </>
-              )}
-            </Button>
-            
-            <Button
-              onClick={handleSyncSelected}
-              disabled={syncing || selectedVariants.size === 0}
-              variant="secondary"
-              className="gap-2"
-            >
-              {syncing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Synchronisation...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  Synchroniser ({selectedVariants.size})
                 </>
               )}
             </Button>
