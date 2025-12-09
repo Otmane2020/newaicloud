@@ -575,13 +575,16 @@ const Index = () => {
               </button>
               <button
                 onClick={() => setBillingCycle("yearly")}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors relative ${
                   billingCycle === "yearly"
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {t.landing.pricing.yearly}
+                <Badge className="absolute -top-2 -right-2 bg-success text-[10px] px-1.5">
+                  -20%
+                </Badge>
               </button>
             </div>
           </div>

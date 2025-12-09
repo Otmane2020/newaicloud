@@ -43,7 +43,7 @@ const PLANS = [
     description: "Pour les boutiques en croissance",
     descriptionEn: "For growing stores",
     priceMonthly: 49,
-    priceYearly: 39.20, // /mois facturé annuellement (470.40€/an)
+    priceYearly: 39, // /mois facturé annuellement
     icon: Crown,
     color: "from-purple-500 to-pink-500",
     popular: true,
@@ -72,10 +72,8 @@ const PLANS = [
     nameEn: "Enterprise",
     description: "Pour les grandes boutiques et agences",
     descriptionEn: "For large stores and agencies",
-    priceMonthly: 139, // $199 avec -30% = $139
-    priceYearly: 111.20, // /mois facturé annuellement (1334.40€/an)
-    originalPrice: 199, // Prix barré original
-    discount: 30, // Pourcentage de réduction
+    priceMonthly: 199,
+    priceYearly: 159, // /mois facturé annuellement
     icon: Rocket,
     color: "from-amber-500 to-orange-500",
     features: {
@@ -271,14 +269,6 @@ export default function ShopifyPricingPlans({
               <CardContent className="space-y-6">
                 {/* Price */}
                 <div className="text-center">
-                  {plan.originalPrice && plan.discount && (
-                    <div className="flex items-center justify-center gap-2 mb-1">
-                      <span className="text-lg text-muted-foreground line-through">${plan.originalPrice}</span>
-                      <Badge variant="destructive" className="bg-red-500">
-                        -{plan.discount}%
-                      </Badge>
-                    </div>
-                  )}
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-bold">${price.toFixed(2)}</span>
                     <span className="text-muted-foreground">{t.perMonth}</span>
