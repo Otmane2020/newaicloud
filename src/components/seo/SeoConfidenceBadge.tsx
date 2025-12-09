@@ -20,7 +20,7 @@ export function SeoConfidenceBadge({
   className = '',
   hasImage = true,
   tags,
-  optimizationCount = 1,
+  optimizationCount = 0,
   itemId
 }: SeoConfidenceBadgeProps) {
   // Use the complete SEO score calculation
