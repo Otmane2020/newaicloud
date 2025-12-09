@@ -219,6 +219,32 @@ serve(async (req) => {
       trialEndsAt 
     });
 
+    // 🚀 DÉCLENCHER L'IMPORT APRÈS LE PAIEMENT CONFIRMÉ
+    // Fire-and-forget pour ne pas bloquer la redirection
+    try {
+      logStep("Triggering auto-sync after payment confirmed");
+      fetch(`${SUPABASE_URL}/functions/v1/trigger-auto-sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          user_id: pending.user_id,
+        }),
+      }).then(response => {
+        if (response.ok) {
+          console.log("[SHOPIFY-BILLING-CALLBACK] ✅ Import automatique déclenché après paiement");
+        } else {
+          console.error("[SHOPIFY-BILLING-CALLBACK] ⚠️ Erreur import:", response.status);
+        }
+      }).catch(err => {
+        console.error("[SHOPIFY-BILLING-CALLBACK] ⚠️ Import échoué:", err);
+      });
+    } catch (importError) {
+      logStep("Import trigger error (non-blocking)", { error: String(importError) });
+    }
+
     // Redirect to embedded Shopify dashboard with success
     return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard?subscription=active&plan=${pending.plan_id}`, 302);
 
