@@ -107,8 +107,12 @@ export function useShopifyBilling() {
       if (error) throw error;
 
       if (data?.confirmationUrl) {
-        // Redirect to Shopify for payment approval
-        window.location.href = data.confirmationUrl;
+        // Open Shopify payment page in new tab (required for standalone apps)
+        // admin.shopify.com blocks direct redirects from external domains
+        window.open(data.confirmationUrl, '_blank');
+        toast.success("Page de paiement Shopify ouverte", {
+          description: "Complétez le paiement dans le nouvel onglet puis revenez ici.",
+        });
         return data;
       }
 
