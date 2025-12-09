@@ -499,6 +499,9 @@ verify_jwt = false
 [functions.process-blog-campaigns]
 verify_jwt = false
 
+[functions.shopify-upgrade-subscription]
+verify_jwt = true
+
 [functions.facebook-page-oauth]
 verify_jwt = false
 
