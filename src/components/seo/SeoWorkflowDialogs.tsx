@@ -54,12 +54,12 @@ export function ProgressDialog({
   total 
 }: ProgressDialogProps) {
   const isComplete = current === total && total > 0;
-  const isProcessing = current > 0 && !isComplete;
+  const isProcessing = total > 0 && !isComplete;
   
-  // Calculate real percentage based on actual progress - starts at 0%
+  // Calculate real percentage - show progress during processing
+  // When current is 0 but total > 0, show a small initial progress to indicate activity
   const realPercentage = total > 0 ? Math.round((current / total) * 100) : 0;
-  // Show real percentage always - 0% at start, actual progress during, 100% when complete
-  const displayPercentage = realPercentage;
+  const displayPercentage = isProcessing && current === 0 ? 5 : realPercentage;
 
   const { t, tf } = useTranslation();
   
@@ -82,9 +82,10 @@ export function ProgressDialog({
     if (operation === 'syncing') {
       return tf('dialogs.seoWorkflow.progress.syncingDesc', { count: total });
     }
-    // Show "Item X of Y" with current progress (starts at 1 when processing)
-    const displayCurrent = current > 0 ? current : 1;
-    return tf('dialogs.seoWorkflow.progress.step', { current: displayCurrent, total });
+    // Show "Processing item X of Y" - when current is 0, we're processing item 1
+    const displayCurrent = current === 0 ? 1 : current;
+    const displayTotal = total;
+    return `Traitement en cours... ${displayCurrent}/${displayTotal}`;
   };
 
   return (
