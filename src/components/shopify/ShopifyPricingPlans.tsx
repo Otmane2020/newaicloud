@@ -72,8 +72,8 @@ const PLANS = [
     nameEn: "Enterprise",
     description: "Pour les grandes boutiques",
     descriptionEn: "For large stores",
-    priceMonthly: 98,
-    priceYearly: 78.40, // /mois facturé annuellement (940.80€/an)
+    priceMonthly: 199,
+    priceYearly: 159.20, // /mois facturé annuellement (1910.40€/an)
     icon: Rocket,
     color: "from-amber-500 to-orange-500",
     features: {
