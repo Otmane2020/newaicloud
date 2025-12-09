@@ -99,9 +99,9 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
     loadData();
     loadEmailStats();
 
-    // Notifications en temps réel pour nouveaux emails
+    // Notifications en temps réel pour nouveaux emails + mises à jour
     const emailChannel = supabase
-      .channel('new-admin-emails')
+      .channel('admin-emails-realtime')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -127,6 +127,14 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
           description: `Email reçu de ${payload.new.from_email}`,
           duration: 5000,
         });
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'admin_emails'
+      }, () => {
+        // Rafraîchir les stats quand un email est marqué lu/non lu
+        loadEmailStats();
       })
       .subscribe();
 
@@ -208,18 +216,25 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
     try {
       const { data, error } = await supabase
         .from('admin_emails')
-        .select('direction, status');
+        .select('direction, is_read');
 
       if (error) throw error;
 
+      const unreadCount = data?.filter(e => e.direction === 'incoming' && !e.is_read).length || 0;
+      
       const stats = {
         total: data?.length || 0,
         received: data?.filter(e => e.direction === 'incoming').length || 0,
         sent: data?.filter(e => e.direction === 'outgoing').length || 0,
-        unread: data?.filter(e => e.direction === 'incoming' && e.status !== 'read').length || 0,
+        unread: unreadCount,
       };
 
       setEmailStats(stats);
+      
+      // Reset hasNewEmail si plus aucun email non lu
+      if (unreadCount === 0) {
+        setHasNewEmail(false);
+      }
     } catch (error) {
       console.error('Error loading email stats:', error);
     }
@@ -471,7 +486,7 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
               </CardHeader>
             </Card>
 
-            <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-105" onClick={() => setActiveTab('emails')}>
+            <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-105" onClick={() => { setActiveTab('emails'); setHasNewEmail(false); }}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Mail className="w-5 h-5 text-orange-500" />
