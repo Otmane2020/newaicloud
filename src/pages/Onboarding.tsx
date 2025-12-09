@@ -75,6 +75,16 @@ export default function Onboarding() {
   const { syncShopifyStore } = useShopifySync();
   const { isShopifyUser, billingProvider, createShopifySubscription, loading: shopifyBillingLoading } = useShopifyBilling();
 
+  // 🚫 CRITICAL: Redirect Shopify users to SetupWizard (Shopify Billing) instead of Stripe onboarding
+  useEffect(() => {
+    if (isShopifyUser && billingProvider === 'shopify') {
+      console.log('🔄 [ONBOARDING] Shopify user detected, redirecting to SetupWizard for Shopify Billing');
+      const shop = searchParams.get('shop') || '';
+      const host = searchParams.get('host') || '';
+      navigate(`/app/setup-wizard?shop=${encodeURIComponent(shop)}&host=${encodeURIComponent(host)}&embedded=1`, { replace: true });
+    }
+  }, [isShopifyUser, billingProvider, navigate, searchParams]);
+
   // ✅ Auto-detect and claim Shopify - DÉSACTIVÉ si checkout=success (handleCheckSubscription gère tout)
   useEffect(() => {
     const autoClaimIfNeeded = async () => {
