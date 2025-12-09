@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Topics based on NewAI features - 5 EN + 5 FR per day
+// Topics based on NewAI features - 2 EN + 2 FR per week
 const TOPICS_EN = [
   { theme: 'seo_automation', title: 'How AI-Powered SEO Automation Transforms Shopify Stores', category: 'SEO', keywords: ['shopify seo', 'ai automation', 'ecommerce optimization'] },
   { theme: 'product_optimization', title: 'Mastering Product Title and Description Optimization for Higher Rankings', category: 'SEO', keywords: ['product seo', 'title optimization', 'shopify products'] },
@@ -54,29 +54,30 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    console.log(`[SCHEDULE-BLOG] Scheduling ${days * 10} articles for ${days} days...`);
+    // Calculate total articles: 2 FR + 2 EN per week = 4 articles per week
+    const weeksToSchedule = Math.ceil(days / 7);
+    const totalArticles = weeksToSchedule * 4; // 2 FR + 2 EN per week
+    console.log(`[SCHEDULE-BLOG] Scheduling ${totalArticles} articles for ${weeksToSchedule} weeks (2 FR + 2 EN per week)...`);
 
     const scheduledArticles = [];
     const now = new Date();
 
-    for (let day = 0; day < days; day++) {
-      const scheduledDate = new Date(now);
-      scheduledDate.setDate(scheduledDate.getDate() + day);
-      scheduledDate.setHours(9, 0, 0, 0); // 9:00 AM
-
-      // Pick 5 random EN topics for this day
+    for (let week = 0; week < weeksToSchedule; week++) {
+      // Pick 2 random EN topics for this week
       const shuffledEN = [...TOPICS_EN].sort(() => Math.random() - 0.5);
-      const dayTopicsEN = shuffledEN.slice(0, 5);
+      const weekTopicsEN = shuffledEN.slice(0, 2);
 
-      // Pick 5 random FR topics for this day
+      // Pick 2 random FR topics for this week
       const shuffledFR = [...TOPICS_FR].sort(() => Math.random() - 0.5);
-      const dayTopicsFR = shuffledFR.slice(0, 5);
+      const weekTopicsFR = shuffledFR.slice(0, 2);
 
-      // Schedule EN articles
-      for (let i = 0; i < dayTopicsEN.length; i++) {
-        const topic = dayTopicsEN[i];
-        const articleDate = new Date(scheduledDate);
-        articleDate.setHours(9 + i, 0, 0, 0); // Spread throughout the day
+      // Schedule EN articles (Tuesday and Thursday at 10:00)
+      const enScheduleDays = [2, 4]; // Tuesday, Thursday
+      for (let i = 0; i < weekTopicsEN.length; i++) {
+        const topic = weekTopicsEN[i];
+        const articleDate = new Date(now);
+        articleDate.setDate(articleDate.getDate() + (week * 7) + enScheduleDays[i]);
+        articleDate.setHours(10, 0, 0, 0);
 
         const slug = topic.title
           .toLowerCase()
@@ -95,11 +96,13 @@ serve(async (req) => {
         });
       }
 
-      // Schedule FR articles
-      for (let i = 0; i < dayTopicsFR.length; i++) {
-        const topic = dayTopicsFR[i];
-        const articleDate = new Date(scheduledDate);
-        articleDate.setHours(14 + i, 0, 0, 0); // Afternoon for FR
+      // Schedule FR articles (Monday and Wednesday at 14:00)
+      const frScheduleDays = [1, 3]; // Monday, Wednesday
+      for (let i = 0; i < weekTopicsFR.length; i++) {
+        const topic = weekTopicsFR[i];
+        const articleDate = new Date(now);
+        articleDate.setDate(articleDate.getDate() + (week * 7) + frScheduleDays[i]);
+        articleDate.setHours(14, 0, 0, 0);
 
         const slug = topic.title
           .toLowerCase()
