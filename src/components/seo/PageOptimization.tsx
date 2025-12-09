@@ -83,7 +83,6 @@ interface ShopifyPage {
 }
 
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
-type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function PageOptimization() {
@@ -98,7 +97,6 @@ export function PageOptimization() {
   const [pageStatusFilter, setPageStatusFilter] = useState('all');
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>(
     (searchParams.get("filter") as QualityFilter) || "all"
   );
@@ -234,10 +232,6 @@ export function PageOptimization() {
     // Status filter
     if (statusFilter === 'optimized' && !page.optimized) return false;
     if (statusFilter === 'not-optimized' && page.optimized) return false;
-
-    // Sync filter
-    if (syncFilter === 'synced' && !page.last_synced_at) return false;
-    if (syncFilter === 'not-synced' && page.last_synced_at) return false;
 
     // Quality filter
     if (qualityFilter !== 'all') {
@@ -809,45 +803,6 @@ export function PageOptimization() {
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to view</p>
         </Card>
         
-        <Card 
-          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setSyncFilter('not-synced');
-            toast.info(`${pages.filter(p => p.optimized && !p.last_synced_at).length} pages à synchroniser`);
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{pages.filter(p => p.optimized && !p.last_synced_at).length}</p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                AI-optimized only
-              </p>
-            </div>
-            <Clock className="w-8 h-8 text-purple-600" />
-          </div>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Click to view</p>
-        </Card>
-        
-        <Card 
-          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setSyncFilter('synced');
-            toast.info(`${pages.filter(p => p.last_synced_at).length} pages synchronisées`);
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{pages.filter(p => p.last_synced_at).length}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                Synced to Shopify
-              </p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-blue-600" />
-          </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to view</p>
-        </Card>
       </div>
 
       {/* Stats Cards - Enhanced Design */}
@@ -1117,16 +1072,6 @@ export function PageOptimization() {
                     </SelectContent>
                   </Select>
 
-                  <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
-                    <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
-                      <SelectValue placeholder="Sync" />
-                    </SelectTrigger>
-                    <SelectContent className="z-50 bg-background">
-                      <SelectItem value="all">All Sync</SelectItem>
-                      <SelectItem value="synced">Synced</SelectItem>
-                      <SelectItem value="not-synced">Not Synced</SelectItem>
-                    </SelectContent>
-                  </Select>
                   
                   <select
                     value={pageStatusFilter}

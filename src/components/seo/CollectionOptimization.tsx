@@ -97,10 +97,9 @@ interface Collection {
   updated_at: string;
 }
 
-type QuickFilterTab = 'all' | 'not-optimized' | 'optimized' | 'pending-sync' | 'synced';
+type QuickFilterTab = 'all' | 'not-optimized' | 'optimized';
 type SeoScoreSort = 'none' | 'asc' | 'desc';
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
-type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function CollectionOptimization() {
@@ -117,7 +116,6 @@ export function CollectionOptimization() {
   const [collectionStatusFilter, setCollectionStatusFilter] = useState('all');
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>(
     (searchParams.get("filter") as QualityFilter) || "all"
   );
@@ -322,16 +320,10 @@ export function CollectionOptimization() {
   const filteredCollections = collections.filter((collection) => {
     if (activeTab === 'not-optimized' && collection.optimization_count && collection.optimization_count > 0) return false;
     if (activeTab === 'optimized' && (!collection.optimization_count || collection.optimization_count === 0)) return false;
-    if (activeTab === 'pending-sync') return false; // No sync yet
-    if (activeTab === 'synced') return false; // No sync yet
 
     // Status filter
     if (statusFilter === 'optimized' && (!collection.optimization_count || collection.optimization_count === 0)) return false;
     if (statusFilter === 'not-optimized' && collection.optimization_count && collection.optimization_count > 0) return false;
-
-    // Sync filter
-    if (syncFilter === 'synced' && !collection.last_synced_at) return false;
-    if (syncFilter === 'not-synced' && collection.last_synced_at) return false;
 
     // Quality filter
     if (qualityFilter !== 'all') {
@@ -941,44 +933,6 @@ export function CollectionOptimization() {
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">Cliquer pour voir</p>
         </Card>
         
-        <Card 
-          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            toast.info('Fonction de synchronisation à venir');
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{pendingSyncCount}</p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                AI-optimisées seulement
-              </p>
-            </div>
-            <Upload className="w-8 h-8 text-purple-600" />
-          </div>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Bientôt disponible</p>
-        </Card>
-        
-        <Card 
-          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setSyncFilter('synced');
-            toast.info(`${syncedCount} collections synchronisées`);
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{syncedCount}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                Synced to Shopify
-              </p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-blue-600" />
-          </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Cliquer pour voir</p>
-        </Card>
       </div>
 
       {/* Usage limits alert */}
@@ -1105,16 +1059,6 @@ export function CollectionOptimization() {
               <option value="draft">Brouillon</option>
             </select>
 
-            <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
-              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
-                <SelectValue placeholder="Sync" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes Sync</SelectItem>
-                <SelectItem value="synced">Synchronisées</SelectItem>
-                <SelectItem value="not-synced">Non Synchronisées</SelectItem>
-              </SelectContent>
-            </Select>
 
             <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
               <SelectTrigger className="h-12 min-w-[180px]">
@@ -1197,16 +1141,6 @@ export function CollectionOptimization() {
                 {t.collections.optimization.actions.syncToShopify}
               </Button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSyncAllCollections}
-                disabled={syncing || collections.filter(c => c.optimization_count && c.optimization_count > 0).length === 0}
-                className="flex items-center gap-2 bg-gradient-to-r from-green-500/80 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md hover:shadow-lg border-green-600/40 text-white font-medium transition-all duration-300"
-              >
-                <Upload className="w-4 h-4" />
-                {t.collections.optimization.actions.syncAll}
-              </Button>
               
               <Button
                 variant="outline" 
@@ -1305,7 +1239,7 @@ export function CollectionOptimization() {
                     </button>
                   </TableHead>
                   <TableHead className="w-32">{t.collections.optimization.table.status}</TableHead>
-                  <TableHead className="w-32">{t.collections.optimization.table.synced}</TableHead>
+                  
                   <TableHead className="w-24">{t.collections.optimization.table.actions}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1439,19 +1373,6 @@ export function CollectionOptimization() {
                             </>
                           )}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {collection.last_synced_at ? (
-                          <Badge variant="default" className="bg-green-600 text-white">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Synced
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">
-                            <Clock className="w-3 h-3 mr-1" />
-                            Not synced
-                          </Badge>
-                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">

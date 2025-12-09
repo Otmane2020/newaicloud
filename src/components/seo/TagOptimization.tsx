@@ -72,9 +72,8 @@ interface Product {
   optimization_count: number;
 }
 
-type FilterType = 'all' | 'to_optimize' | 'tagged' | 'to_sync' | 'synced';
+type FilterType = 'all' | 'to_optimize' | 'tagged';
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
-type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export function TagOptimization() {
@@ -99,7 +98,6 @@ export function TagOptimization() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>(
     (searchParams.get("filter") as QualityFilter) || "all"
   );
@@ -204,16 +202,10 @@ export function TagOptimization() {
     
     if (filter === 'to_optimize' && isTrulyOptimized) return false;
     if (filter === 'tagged' && !isTrulyOptimized) return false;
-    if (filter === 'to_sync' && (product.seo_synced_to_shopify || !isTrulyOptimized)) return false;
-    if (filter === 'synced' && !product.seo_synced_to_shopify) return false;
 
     // Status filter
     if (statusFilter === 'optimized' && !isTrulyOptimized) return false;
     if (statusFilter === 'not-optimized' && isTrulyOptimized) return false;
-
-    // Sync filter
-    if (syncFilter === 'synced' && !product.seo_synced_to_shopify) return false;
-    if (syncFilter === 'not-synced' && product.seo_synced_to_shopify) return false;
 
     // Quality filter (for tags: max is 20 points)
     if (qualityFilter !== 'all') {
@@ -313,8 +305,6 @@ export function TagOptimization() {
     { id: 'all' as FilterType, label: t.seo.tags.filters.all, count: products.length },
     { id: 'to_optimize' as FilterType, label: t.seo.tags.filters.toOptimize, count: productsNotOptimized },
     { id: 'tagged' as FilterType, label: t.seo.tags.filters.optimized, count: productsOptimized },
-    { id: 'to_sync' as FilterType, label: t.seo.tags.filters.toSync, count: productsToSyncCount },
-    { id: 'synced' as FilterType, label: t.seo.tags.filters.synced, count: productsSynced },
   ];
 
   // Clickable stats handlers
@@ -328,15 +318,6 @@ export function TagOptimization() {
     toast.info(tf('seo.tags.messages.showingOptimized', { count: productsOptimized }));
   };
 
-  const handleToSyncClick = () => {
-    setFilter('to_sync');
-    toast.info(`Showing ${productsToSyncCount} products to synchronize`);
-  };
-
-  const handleSyncedClick = () => {
-    setFilter('synced');
-    toast.info(`Showing ${productsSynced} synchronized products`);
-  };
 
   const handleGenerateAll = () => {
     if (productsNotOptimized === 0) {
@@ -820,36 +801,6 @@ export function TagOptimization() {
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
         </Card>
         
-        <Card 
-          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleToSyncClick}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{productsToSyncCount}</p>
-            </div>
-            <Clock className="w-8 h-8 text-purple-600" />
-          </div>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Click to view</p>
-        </Card>
-        
-        <Card 
-          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleSyncedClick}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{productsSynced}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                Synced to Shopify
-              </p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-blue-600" />
-          </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to view</p>
-        </Card>
       </div>
 
       {/* Sticky Action Bar */}
@@ -890,26 +841,6 @@ export function TagOptimization() {
             >
               <Sparkles className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Générer tout</span>
-            </Button>
-            <Button
-              onClick={handleSyncSelected}
-              disabled={selectedProducts.size === 0}
-              variant="outline"
-              size="sm"
-              className="flex-1 sm:flex-none"
-            >
-              <Upload className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Synchroniser</span>
-            </Button>
-            <Button
-              onClick={handleSyncAll}
-              disabled={productsToSyncCount === 0}
-              variant="outline"
-              size="sm"
-              className="flex-1 sm:flex-none"
-            >
-              <Upload className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Synchroniser tout</span>
             </Button>
             <Button
               onClick={fetchProducts}
@@ -986,16 +917,6 @@ export function TagOptimization() {
               </SelectContent>
             </Select>
 
-            <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
-              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
-                <SelectValue placeholder="Sync" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sync</SelectItem>
-                <SelectItem value="synced">Synced</SelectItem>
-                <SelectItem value="not-synced">Not Synced</SelectItem>
-              </SelectContent>
-            </Select>
 
             <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
               <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">

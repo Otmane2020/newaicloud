@@ -90,11 +90,10 @@ interface ImageWithProduct extends ProductImage {
   product: Product;
 }
 
-type AltImageTab = 'all' | 'needs-alt' | 'has-alt' | 'to-sync';
+type AltImageTab = 'all' | 'needs-alt' | 'has-alt';
 type ContentTypeFilter = 'all' | 'products' | 'collections' | 'pages' | 'articles' | 'homepage';
 type SeoScoreSort = 'none' | 'asc' | 'desc';
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
-type SyncFilter = 'all' | 'synced' | 'not-synced';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
 export interface SeoAltImageRef {
@@ -113,7 +112,6 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
   const [searchTerm, setSearchTerm] = useState('');
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>('none');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [syncFilter, setSyncFilter] = useState<SyncFilter>('all');
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>(
     (searchParams.get("filter") as QualityFilter) || "all"
   );
@@ -363,15 +361,10 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
 
     if (activeTab === 'needs-alt' && (img.optimization_count && img.optimization_count > 0)) return false;
     if (activeTab === 'has-alt' && (!img.optimization_count || img.optimization_count === 0)) return false;
-    if (activeTab === 'to-sync' && (!img.alt_text || !img.optimization_count || img.last_synced_at)) return false;
 
     // Status filter
     if (statusFilter === 'optimized' && (!img.optimization_count || img.optimization_count === 0)) return false;
     if (statusFilter === 'not-optimized' && img.optimization_count && img.optimization_count > 0) return false;
-
-    // Sync filter - images don't have direct sync tracking, so we check if alt_text exists as proxy
-    if (syncFilter === 'synced' && !img.last_synced_at) return false;
-    if (syncFilter === 'not-synced' && img.last_synced_at) return false;
 
     // Quality filter - Use same logic as calculateImagesSeoScore (reference)
     if (qualityFilter !== 'all') {
@@ -785,7 +778,6 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     { id: 'all' as AltImageTab, label: t.seo.altImage.tabs.all, count: imagesFilteredByType.length },
     { id: 'needs-alt' as AltImageTab, label: t.seo.altImage.tabs.notOptimized, count: imagesNotOptimized },
     { id: 'has-alt' as AltImageTab, label: t.seo.altImage.tabs.optimized, count: imagesOptimizedByAI },
-    { id: 'to-sync' as AltImageTab, label: t.seo.altImage.tabs.toSync, count: imagesToSync }
   ];
 
   return (
@@ -909,27 +901,6 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.altImage.cards.clickToView}</p>
         </Card>
 
-        <Card
-          className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setActiveTab('to-sync');
-            toast.info(tf('seo.altImage.toasts.displayToSync', { count: imagesToSync }));
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                {t.seo.altImage.cards.toSync}
-              </p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{imagesToSync}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                {t.seo.altImage.cards.aiOnly}
-              </p>
-            </div>
-            <Upload className="w-8 h-8 text-blue-600" />
-          </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">{t.seo.altImage.cards.clickToView}</p>
-        </Card>
 
         <Card
           className="p-4 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 border-teal-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
@@ -1098,16 +1069,6 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
             </SelectContent>
           </Select>
 
-          <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
-            <SelectTrigger className="min-w-[150px]">
-              <SelectValue placeholder="Sync" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t.seo.altImage.table.allSync}</SelectItem>
-              <SelectItem value="synced">{t.seo.altImage.table.synced}</SelectItem>
-              <SelectItem value="not-synced">{t.seo.altImage.table.notSynced}</SelectItem>
-            </SelectContent>
-          </Select>
 
           <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
             <SelectTrigger className="min-w-[150px]">
