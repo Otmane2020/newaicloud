@@ -84,17 +84,23 @@ export function AppSidebar() {
   
   // Check if user is the test account
   const isTestAccount = user?.email === "sweet.deco.meubles@gmail.com";
+  
+  // Email with full access to all features
+  const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
+  const hasFullAccess = user?.email === FULL_ACCESS_EMAIL;
+  
+  console.log('🔐 [AppSidebar] userEmail:', user?.email, '| hasFullAccess:', hasFullAccess);
 
   const seoSubItems = [
-    { title: t.seo.submenu.products, url: "/seo?tab=products", icon: ShoppingBag, key: "products" },
+    { title: t.seo.submenu.products, url: "/seo?tab=products", icon: ShoppingBag, key: "products", restricted: true },
     { title: t.seo.submenu.collections, url: "/seo?tab=collections", icon: Package, key: "collections" },
     { title: t.seo.submenu.pages, url: "/seo?tab=pages", icon: FileText, key: "pages" },
     { title: t.seo.submenu.articles, url: "/seo?tab=articles", icon: FileText, key: "articles" },
     { title: t.seo.submenu.altimage, url: "/seo?tab=alt", icon: Image, key: "altimage" },
-    { title: t.seo.submenu.homepage, url: "/seo?tab=homepage", icon: Home, key: "homepage" },
+    { title: t.seo.submenu.homepage, url: "/seo?tab=homepage", icon: Home, key: "homepage", restricted: true },
     { title: t.seo.submenu.tags, url: "/seo?tab=tags", icon: Tags, key: "tags" },
     { title: t.seo.submenu.automation, url: "/seo?tab=automation", icon: Settings, key: "automation" },
-  ];
+  ].filter(item => !item.restricted || hasFullAccess);
 
 
   const auditSubItems = [
@@ -119,11 +125,11 @@ export function AppSidebar() {
     { title: t.blog.submenu.aiArticles, url: "/blog?subtab=create-article", icon: Sparkles, key: "aiArticles" },
     { title: t.blog.submenu.campaigns, url: "/blog?subtab=campaigns", icon: CalendarClock, key: "campaigns" },
     { title: t.blog.submenu.opportunities, url: "/blog?subtab=opportunities", icon: Lightbulb, key: "opportunities" },
-    { title: t.blog.submenu.netlinking, url: "/blog?subtab=netlinking", icon: Link, key: "netlinking" },
-    { title: t.blog.submenu.settings, url: "/blog?subtab=settings", icon: Settings, key: "settings" },
-  ];
+    { title: t.blog.submenu.netlinking, url: "/blog?subtab=netlinking", icon: Link, key: "netlinking", restricted: true },
+    { title: t.blog.submenu.settings, url: "/blog?subtab=settings", icon: Settings, key: "settings", restricted: true },
+  ].filter(item => !item.restricted || hasFullAccess);
 
-  // Social Media - Onglet principal séparé
+  // Social Media - Onglet principal séparé (restricted)
   const socialMediaSubItems = [
     { title: t.navigation.socialMediaSubmenu?.studio || "Studio", url: "/ai-creative-studio", icon: Sparkles, key: "studio" },
     { title: t.navigation.socialMediaSubmenu?.creativeHistory || "Historique", url: "/ai-creative-studio?tab=history", icon: History, key: "creativeHistory" },
@@ -154,7 +160,8 @@ export function AppSidebar() {
   const bottomMenuItems = [
     ...(isTestAccount ? [{ title: t.navigation.aiSearch, url: "/search", icon: Search, key: "aiSearch" }] : []),
     ...(isTestAccount ? [{ title: language === 'fr' ? 'Templates Boutique' : 'Store Templates', url: "/store-templates", icon: Palette, key: "storeTemplates" }] : []),
-    { title: t.navigation.googleShopping, url: "/shopping", icon: ShoppingCart, key: "googleShopping" },
+    // Google Shopping - restricted
+    ...(hasFullAccess ? [{ title: t.navigation.googleShopping, url: "/shopping", icon: ShoppingCart, key: "googleShopping" }] : []),
   ];
 
   const chatSubItems = [
@@ -167,13 +174,16 @@ export function AppSidebar() {
     { title: t.chat.submenu.settings, url: "/chat-settings", icon: Settings, key: "settings" },
   ];
 
-  // Build account items dynamically based on user plan
+  // Build account items dynamically based on user plan and access
   const accountSubItems = [
-    { title: t.account.submenu.profile, url: "/account?tab=profile", icon: User, key: "profile" },
-    { title: t.account.submenu.integrations, url: "/account?tab=integrations", icon: Package, key: "integrations" },
-    { title: t.account.submenu.subscription, url: "/account?tab=subscription", icon: CreditCard, key: "subscription" },
+    // Profile and Integrations - restricted
+    ...(hasFullAccess ? [{ title: t.account.submenu.profile, url: "/account?tab=profile", icon: User, key: "profile" }] : []),
+    ...(hasFullAccess ? [{ title: t.account.submenu.integrations, url: "/account?tab=integrations", icon: Package, key: "integrations" }] : []),
+    // Subscription - restricted (Billing)
+    ...(hasFullAccess ? [{ title: t.account.submenu.subscription, url: "/account?tab=subscription", icon: CreditCard, key: "subscription" }] : []),
     { title: t.usageLimits, url: "/account?tab=usage", icon: BarChart3, key: "usage" },
-    { title: t.account.submenu.billing, url: "/account?tab=billing", icon: Receipt, key: "billing" },
+    // Billing - restricted
+    ...(hasFullAccess ? [{ title: t.account.submenu.billing, url: "/account?tab=billing", icon: Receipt, key: "billing" }] : []),
     // Developer tools - Test account only
     ...(isTestAccount ? [
       { title: t.adminSidebar.cronMonitoring, url: "/cron-monitoring", icon: Clock, key: "cron-monitoring" },
@@ -303,7 +313,8 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {/* Product Optimization Menu with Submenu */}
+              {/* Product Optimization Menu with Submenu - restricted */}
+              {hasFullAccess && (
               <Collapsible defaultOpen={isProductOptimizationActive} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -329,6 +340,7 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+              )}
 
               {/* SEO Menu with Submenu */}
               <Collapsible defaultOpen={isSeoActive} className="group/collapsible">
@@ -353,7 +365,8 @@ export function AppSidebar() {
                         </SidebarMenuSubItem>
                       ))}
 
-                      {/* Nested Audit SEO submenu */}
+                      {/* Nested Audit SEO submenu - restricted */}
+                      {hasFullAccess && (
                       <Collapsible defaultOpen={isAuditActive} className="group/audit">
                         <SidebarMenuSubItem>
                           <CollapsibleTrigger asChild>
@@ -377,12 +390,14 @@ export function AppSidebar() {
                           </CollapsibleContent>
                         </SidebarMenuSubItem>
                       </Collapsible>
+                      )}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Google Search Console Menu */}
+              {/* Google Search Console Menu - restricted */}
+              {hasFullAccess && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive('/seo?tab=google-console')}>
                   <NavLink to="/seo?tab=google-console">
@@ -391,6 +406,7 @@ export function AppSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              )}
 
               {/* Blog Menu with Submenu */}
               <Collapsible defaultOpen={isBlogActive} className="group/collapsible">
@@ -419,7 +435,8 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Social Media - Onglet principal séparé */}
+              {/* Social Media - Onglet principal séparé - restricted */}
+              {hasFullAccess && (
               <Collapsible defaultOpen={isSocialMediaActive} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -471,6 +488,7 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+              )}
 
               {/* Bottom Menu Items */}
               {bottomMenuItems.map((item) => (
@@ -484,7 +502,8 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {/* Google Merchant Menu with Submenu */}
+              {/* Google Merchant Menu with Submenu - restricted */}
+              {hasFullAccess && (
               <Collapsible defaultOpen={isMerchantActive} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -510,6 +529,7 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+              )}
 
               {/* Google Ads Menu with Submenu */}
               {isTestAccount && (
@@ -569,7 +589,8 @@ export function AppSidebar() {
                 </Collapsible>
               )}
 
-              {/* Smart Pricing AI - Main Menu Item */}
+              {/* Smart Pricing AI - Main Menu Item - restricted */}
+              {hasFullAccess && (
               <SidebarMenuItem>
         <SidebarMenuButton asChild isActive={isPricingActive}>
           <NavLink to="/pricing" className="relative" onClick={handleNavClick}>
@@ -581,6 +602,7 @@ export function AppSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              )}
 
               {/* Account Menu with Submenu */}
               <Collapsible defaultOpen={isAccountActive} className="group/collapsible">
