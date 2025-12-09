@@ -24,7 +24,6 @@ import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
 import { ProgressBanner } from '@/components/seo/ProgressBanner';
 import { useOptimization } from '@/contexts/OptimizationContext';
-import { OptimizationCompletedDialog } from '@/components/OptimizationCompletedDialog';
 
 export default function SEO() {
   const { t } = useTranslation();
@@ -357,13 +356,7 @@ export default function SEO() {
         )}
       </div>
 
-      <OptimizationCompletedDialog
-        open={optimizationState.showCompletedDialog}
-        onOpenChange={setShowCompletedDialog}
-        onSyncShopify={handleSyncShopify}
-        type={optimizationState.type || ''}
-        totalOptimized={optimizationState.current}
-      />
+      {/* OptimizationCompletedDialog removed - handled by SeoOptimization.tsx ResultsDialog */}
     </div>
   );
 }
