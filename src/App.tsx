@@ -25,6 +25,7 @@ import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
 import { AdminLayout } from "./components/AdminLayout";
 import { SuperAdminLayout } from "./components/SuperAdminLayout";
+import { ShopifyEmbeddedLayout } from "./layouts/ShopifyEmbeddedLayout";
 import Index from "./pages/Index";
 import TranslationAudit from "./pages/TranslationAudit";
 import Admin from "./pages/Admin";
@@ -206,8 +207,11 @@ const App = () => (
           <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />
           <Route path="/shopify/success" element={<ShopifySuccess />} />
           <Route path="/shopify/billing-callback" element={<ShopifyBillingCallback />} />
-          <Route path="/app/setup-wizard" element={<SetupWizardPage />} />
-          <Route path="/app" element={<ShopifyApp />} />
+          {/* Shopify Embedded Routes */}
+          <Route element={<ShopifyEmbeddedLayout />}>
+            <Route path="/app/setup-wizard" element={<SetupWizardPage />} />
+            <Route path="/app" element={<ShopifyApp />} />
+          </Route>
             <Route
               path="/onboarding"
               element={
