@@ -623,19 +623,17 @@ export function SeoOptimization() {
       },
       'optimizing',
       async (results) => {
-        // Refresh products to get updated SEO data
-        await fetchProducts();
+        // Refresh limits only (not products to avoid page refresh)
         await refreshLimits();
         
         if (results.success > 0) {
-          // Auto-sync to Shopify after optimization
+          // Auto-sync to Shopify after optimization (silent, no UI update during)
           const productIdsToSync = productsToGenerate.map(p => p.id);
-          const syncedProductsList: Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }> = [];
           
-          // Sync each product
+          // Sync each product silently
           for (const productId of productIdsToSync) {
             try {
-              const { data, error } = await supabase.functions.invoke("sync-seo-to-shopify", {
+              await supabase.functions.invoke("sync-seo-to-shopify", {
                 body: {
                   productId,
                   syncTags: true,
@@ -643,26 +641,12 @@ export function SeoOptimization() {
                   force: true,
                 },
               });
-              
-              if (!error && data?.success) {
-                const product = productsToGenerate.find(p => p.id === productId);
-                if (product) {
-                  syncedProductsList.push({
-                    id: productId,
-                    title: product.title,
-                    shopifyUrl: data.shopifyUrl || '',
-                    resourceType: "product",
-                  });
-                }
-              }
             } catch (error) {
               console.error("Error syncing:", error);
             }
           }
           
-          await fetchProducts();
-          
-          // Fetch fresh optimized products for ResultsDialog
+          // Fetch fresh optimized products for ResultsDialog (single query, no page refresh)
           const { data: freshProducts } = await supabase
             .from('shopify_products')
             .select('*')
@@ -672,7 +656,8 @@ export function SeoOptimization() {
             setOptimizedProducts(freshProducts as Product[]);
           }
           
-                  // Synced items now shown in ResultsDialog automatically
+          // Refresh products list ONCE at the end (silently update state)
+          fetchProducts();
         } else if (results.error > 0) {
           toast.error(t.seo.optimization.optimizationError);
         }
@@ -745,18 +730,17 @@ export function SeoOptimization() {
       },
       'optimizing',
       async (results) => {
-        await fetchProducts();
+        // Refresh limits only (not products to avoid page refresh during operation)
         await refreshLimits();
         
         if (results.success > 0) {
-          // Auto-sync to Shopify after optimization
+          // Auto-sync to Shopify after optimization (silent)
           const productIdsToSync = productsToGenerate.map(p => p.id);
-          const syncedProductsList: Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }> = [];
           
-          // Sync each product
+          // Sync each product silently
           for (const productId of productIdsToSync) {
             try {
-              const { data, error } = await supabase.functions.invoke("sync-seo-to-shopify", {
+              await supabase.functions.invoke("sync-seo-to-shopify", {
                 body: {
                   productId,
                   syncTags: true,
@@ -764,26 +748,12 @@ export function SeoOptimization() {
                   force: true,
                 },
               });
-              
-              if (!error && data?.success) {
-                const product = productsToGenerate.find(p => p.id === productId);
-                if (product) {
-                  syncedProductsList.push({
-                    id: productId,
-                    title: product.title,
-                    shopifyUrl: data.shopifyUrl || '',
-                    resourceType: "product",
-                  });
-                }
-              }
             } catch (error) {
               console.error("Error syncing:", error);
             }
           }
           
-          await fetchProducts();
-          
-          // Fetch fresh optimized products for ResultsDialog
+          // Fetch fresh optimized products for ResultsDialog (single query)
           const { data: freshProducts } = await supabase
             .from('shopify_products')
             .select('*')
@@ -793,7 +763,8 @@ export function SeoOptimization() {
             setOptimizedProducts(freshProducts as Product[]);
           }
           
-          // Synced items now shown in ResultsDialog automatically
+          // Refresh products list ONCE at the end
+          fetchProducts();
         }
       }
     );

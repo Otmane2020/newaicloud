@@ -82,7 +82,9 @@ export function ProgressDialog({
     if (operation === 'syncing') {
       return tf('dialogs.seoWorkflow.progress.syncingDesc', { count: total });
     }
-    return tf('dialogs.seoWorkflow.progress.step', { current, total });
+    // Show "Item X of Y" with current progress (starts at 1 when processing)
+    const displayCurrent = current > 0 ? current : 1;
+    return tf('dialogs.seoWorkflow.progress.step', { current: displayCurrent, total });
   };
 
   return (
