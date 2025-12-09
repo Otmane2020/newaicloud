@@ -596,114 +596,6 @@ export function CollectionOptimization() {
     );
   };
 
-  const handleSyncCollections = async () => {
-    if (collectionsToSync.length === 0) return;
-
-    setShowSyncDialog(false);
-    
-    // Use global context processor - continues even if user changes tabs
-    processBulkOperation(
-      'collections',
-      collectionsToSync,
-      async (collection) => {
-        try {
-          const { error: seoError } = await supabase.functions.invoke('sync-seo-to-shopify', {
-            body: { 
-              collectionId: collection.id,
-              force: true
-            }
-          });
-
-          if (seoError) return false;
-          
-          // Sync image if exists
-          if (collection.image_url && !collection.image_url.startsWith('data:')) {
-            await supabase.functions.invoke('sync-collection-image-to-shopify', {
-              body: { collection_id: collection.id }
-            }).catch(() => {});
-          }
-          
-          return true;
-        } catch (error: any) {
-          console.error(`Error syncing collection ${collection.id}:`, error);
-          return false;
-        }
-      },
-      'syncing',
-      async (results) => {
-        await fetchCollections();
-        setCollectionsToSync([]);
-        if (results.success > 0) {
-          toast.success(tf('collections.optimization.messages.syncedToShopify', { count: results.success }));
-        }
-      }
-    );
-  };
-
-  const handleSyncAllCollections = async () => {
-    const allOptimized = collections.filter(c => c.optimization_count && c.optimization_count > 0);
-    
-    if (allOptimized.length === 0) {
-      toast.error(t.toasts.collections.import.noActiveConnection);
-      return;
-    }
-
-    // Use global context processor - continues even if user changes tabs
-    processBulkOperation(
-      'collections',
-      allOptimized,
-      async (collection) => {
-        try {
-          const { error: seoError } = await supabase.functions.invoke('sync-seo-to-shopify', {
-            body: { 
-              collectionId: collection.id,
-              force: true
-            }
-          });
-
-          if (seoError) return false;
-          
-          // Sync image if exists
-          if (collection.image_url && !collection.image_url.startsWith('data:')) {
-            await supabase.functions.invoke('sync-collection-image-to-shopify', {
-              body: { collection_id: collection.id }
-            }).catch(() => {});
-          }
-          
-          return true;
-        } catch (error: any) {
-          console.error(`Error syncing collection ${collection.id}:`, error);
-          return false;
-        }
-      },
-      'syncing',
-      async (results) => {
-        await fetchCollections();
-        if (results.success > 0) {
-          toast.success(tf('collections.optimization.messages.syncedToShopify', { count: results.success }));
-        }
-      }
-    );
-  };
-
-  const handleSyncProductCollections = async () => {
-    try {
-      setSyncing(true);
-      const toastId = toast.loading(t.toasts.collections.syncProgress.replace('{{count}}', '').replace('{{time}}', ''));
-
-      const { data, error } = await supabase.functions.invoke('sync-product-collections');
-
-      if (error) throw error;
-
-      toast.success(tf('toasts.collections.import.importSuccess', { count: data.updated_count || 0 }), { id: toastId });
-      await fetchCollections();
-    } catch (error: any) {
-      console.error('Error syncing product collections:', error);
-      toast.error(error.message || t.toasts.collections.syncError);
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const handleImportCollectionsFromShopify = async () => {
     setSyncing(true);
@@ -1101,24 +993,6 @@ export function CollectionOptimization() {
                 Optimiser tout
               </Button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const optimized = filteredCollections.filter(c => c.optimization_count && c.optimization_count > 0);
-                  if (optimized.length === 0) {
-                    toast.error('Aucune collection optimisée à synchroniser');
-                    return;
-                  }
-                  setCollectionsToSync(optimized);
-                  setShowSyncDialog(true);
-                }}
-                disabled={syncing || collections.filter(c => c.optimization_count && c.optimization_count > 0).length === 0}
-                className="flex items-center gap-2 bg-gradient-to-r from-secondary/80 to-secondary hover:from-secondary hover:to-secondary/90 shadow-md hover:shadow-lg border-secondary/40 text-secondary-foreground font-medium transition-all duration-300"
-              >
-                <Upload className="w-4 h-4" />
-                {t.collections.optimization.actions.syncToShopify}
-              </Button>
 
               
               <Button

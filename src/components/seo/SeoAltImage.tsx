@@ -679,60 +679,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     );
   };
 
-  const handleSyncSelected = async () => {
-    // Filter images that can be synced (exclude homepage images without shopify_image_id)
-    const imagesToSync = images.filter(
-      img => selectedImages.has(img.id) && 
-             img.alt_text && 
-             img.shopify_image_id && 
-             img.content_type !== 'homepage'
-    );
-
-    // Check if any homepage images were selected
-    const homepageImagesSelected = images.filter(
-      img => selectedImages.has(img.id) && img.content_type === 'homepage'
-    ).length;
-
-    if (homepageImagesSelected > 0) {
-      toast.info(`${homepageImagesSelected} image(s) homepage ne peuvent pas être synchronisées (elles existent dans le HTML de votre boutique)`);
-    }
-
-    if (imagesToSync.length === 0) {
-      if (homepageImagesSelected > 0) {
-        toast.error('Aucune image synchronisable sélectionnée. Les images homepage ne peuvent pas être synchronisées vers Shopify.');
-      } else {
-        toast.info('Aucune image à synchroniser');
-      }
-      return;
-    }
-
-    // Use global context processor - continues even if user changes tabs
-    processBulkOperation(
-      'alt',
-      imagesToSync,
-      async (img) => {
-        const { error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-          body: { 
-            imageId: img.id, 
-            syncAltText: true,
-            force: true
-          }
-        });
-        return !error;
-      },
-      'syncing',
-      async (results) => {
-        if (results.error > 0) {
-          toast.warning(tf('seo.altImage.toasts.syncWithErrors', { success: results.success, errors: results.error }));
-        } else if (results.success > 0) {
-          toast.success(tf('seo.altImage.toasts.syncSuccess', { success: results.success }));
-        }
-        
-        setSelectedImages(new Set());
-        await fetchImages();
-      }
-    );
-  };
+  // Sync function removed - sync is automatic after optimization
 
   const handleCloseProgressDialog = () => {
     setShowProgressDialog(false);
