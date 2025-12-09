@@ -150,13 +150,30 @@ export function CollectionOptimization() {
     return () => clearTimeout(timeoutId);
   }, [selectedStore?.id]);
 
-  // Auto-refresh toutes les 30 secondes pour détecter les suppressions Shopify
+  // Auto-refresh toutes les 60 secondes (silencieux, sans spinner)
   useEffect(() => {
     if (!selectedStore?.id) return;
     
-    const interval = setInterval(() => {
-      fetchCollections();
-    }, 30000); // 30 secondes
+    const interval = setInterval(async () => {
+      // Silent refresh - don't show loading spinner
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || !selectedStore) return;
+
+        const { data } = await supabase
+          .from('shopify_collections')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('store_id', selectedStore.id)
+          .order('title', { ascending: true });
+        
+        if (data) {
+          setCollections(data);
+        }
+      } catch (error) {
+        console.error('Silent refresh error:', error);
+      }
+    }, 60000); // 60 secondes
 
     return () => clearInterval(interval);
   }, [selectedStore?.id]);
@@ -672,7 +689,7 @@ export function CollectionOptimization() {
     );
   }
 
-  if (loading || loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
