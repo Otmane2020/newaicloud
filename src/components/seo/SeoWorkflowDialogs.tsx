@@ -329,18 +329,16 @@ export function ResultsDialog({
           </div>
         </ScrollArea>
 
-        <div className="flex flex-col gap-2 pt-4 border-t flex-shrink-0">
-          <Button
-            onClick={onSyncClick}
-            className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-            size="lg"
-          >
-            <Upload className="w-5 h-5 mr-2" />
-            {t.dialogs.seoWorkflow.results.syncWithShopify}
-          </Button>
+        <div className="flex flex-col gap-3 pt-4 border-t flex-shrink-0">
+          {/* Auto-sync confirmation message */}
+          <div className="flex items-center justify-center gap-2 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <span className="text-sm font-medium text-green-700 dark:text-green-300">
+              {"Synchronisé automatiquement avec Shopify"}
+            </span>
+          </div>
           <Button
             onClick={onClose}
-            variant="outline"
             className="w-full h-11"
             size="lg"
           >
