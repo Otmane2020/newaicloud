@@ -821,7 +821,7 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      console.log("🚀 [SHOPIFY-BILLING] Creating subscription for plan:", planId, "billing:", billingCycle);
+      console.log("🚀 [BILLING] Creating subscription for plan:", planId, "billing:", billingCycle, "isShopifyUser:", isShopifyUser, "billingProvider:", billingProvider);
 
       // Vérifier que le plan existe
       const selectedPlan = plans.find((p) => p.id === planId);
@@ -833,31 +833,72 @@ export default function Onboarding() {
 
       console.log("✅ Selected plan found:", { id: selectedPlan.id, name: selectedPlan.name });
 
-      toast.loading(
-        language === "fr" ? "Création de l'abonnement Shopify..." : "Creating Shopify subscription...", 
-        { id: "shopify-checkout" }
-      );
-      
-      // ✅ SHOPIFY BILLING ONLY - No Stripe fallback
-      const result = await createShopifySubscription(planId, billingCycle);
-      
-      if (result?.confirmationUrl) {
-        console.log("✅ [SHOPIFY-BILLING] Redirecting to Shopify for payment approval:", result.confirmationUrl);
-        toast.dismiss("shopify-checkout");
-        // Shopify will redirect back after payment approval
-        window.location.href = result.confirmationUrl;
-        return;
-      } else {
-        toast.dismiss("shopify-checkout");
-        toast.error(
-          language === "fr" 
-            ? "Échec de la création de l'abonnement Shopify" 
-            : "Failed to create Shopify subscription"
+      // 🔥 DUAL BILLING: Shopify users → Shopify Billing, Web users → Stripe
+      if (isShopifyUser || billingProvider === "shopify") {
+        console.log("🛍 [SHOPIFY-BILLING] Using Shopify Billing");
+        toast.loading(
+          language === "fr" ? "Création de l'abonnement Shopify..." : "Creating Shopify subscription...", 
+          { id: "billing-checkout" }
         );
+        
+        const result = await createShopifySubscription(planId, billingCycle);
+        
+        if (result?.confirmationUrl) {
+          console.log("✅ [SHOPIFY-BILLING] Redirecting to Shopify for payment approval:", result.confirmationUrl);
+          toast.dismiss("billing-checkout");
+          // For embedded apps: redirect the top-level window (Shopify Admin)
+          if (window.top) {
+            window.top.location.href = result.confirmationUrl;
+          } else {
+            window.location.href = result.confirmationUrl;
+          }
+          return;
+        } else {
+          toast.dismiss("billing-checkout");
+          toast.error(
+            language === "fr" 
+              ? "Échec de la création de l'abonnement Shopify" 
+              : "Failed to create Shopify subscription"
+          );
+        }
+      } else {
+        // 🌍 Web users → Stripe Checkout
+        console.log("💳 [STRIPE] Using Stripe Checkout");
+        toast.loading(
+          language === "fr" ? "Redirection vers le paiement..." : "Redirecting to payment...", 
+          { id: "billing-checkout" }
+        );
+
+        const { data, error } = await supabase.functions.invoke("create-checkout", {
+          body: {
+            plan_id: planId,
+            billing_period: billingCycle,
+            currency: language === "fr" ? "EUR" : "USD",
+            success_url: `${window.location.origin}/onboarding?checkout=success`,
+            cancel_url: `${window.location.origin}/onboarding?checkout=cancel`,
+          },
+        });
+
+        if (error) {
+          console.error("❌ [STRIPE] Checkout error:", error);
+          toast.dismiss("billing-checkout");
+          toast.error(
+            language === "fr" 
+              ? "Échec de la création du paiement" 
+              : "Failed to create payment session"
+          );
+          return;
+        }
+
+        if (data?.url) {
+          toast.dismiss("billing-checkout");
+          window.location.href = data.url;
+          return;
+        }
       }
     } catch (error) {
-      console.error("💥 [SHOPIFY-BILLING] Error creating subscription:", error);
-      toast.dismiss("shopify-checkout");
+      console.error("💥 [BILLING] Error creating subscription:", error);
+      toast.dismiss("billing-checkout");
       toast.error(
         language === "fr" 
           ? "Erreur lors de la création de l'abonnement" 
