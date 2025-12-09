@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { GoogleSearchPreview } from './GoogleSearchPreview';
 import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ArticlePreviewDialog } from '../blog/ArticlePreviewDialog';
 import { useStore } from '@/contexts/StoreContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,42 +53,13 @@ export function ProgressDialog({
   current, 
   total 
 }: ProgressDialogProps) {
-  const [animatedPercentage, setAnimatedPercentage] = useState(1);
   const isComplete = current === total && total > 0;
   const isProcessing = current > 0 && !isComplete;
-
-  // Simulate smooth progress animation
-  useEffect(() => {
-    if (!open) {
-      setAnimatedPercentage(1);
-      return;
-    }
-
-    // If complete, jump to 100%
-    if (isComplete) {
-      setAnimatedPercentage(100);
-      return;
-    }
-
-    // Otherwise, animate smoothly from 1% to 95%
-    const targetMax = 95;
-    const duration = 3000; // 3 seconds to reach 95%
-    const steps = 100;
-    const increment = targetMax / steps;
-    const intervalTime = duration / steps;
-
-    const interval = setInterval(() => {
-      setAnimatedPercentage((prev) => {
-        if (prev >= targetMax) {
-          clearInterval(interval);
-          return targetMax;
-        }
-        return Math.min(prev + increment, targetMax);
-      });
-    }, intervalTime);
-
-    return () => clearInterval(interval);
-  }, [open, isComplete]);
+  
+  // Calculate real percentage based on actual progress
+  const realPercentage = total > 0 ? Math.round((current / total) * 100) : 0;
+  // Ensure minimum 5% when processing starts to show activity
+  const displayPercentage = current > 0 || isComplete ? realPercentage : 5;
 
   const { t, tf } = useTranslation();
   
@@ -135,26 +106,21 @@ export function ProgressDialog({
             <h3 className="text-xl font-semibold">{getTitle()}</h3>
             <p className="text-sm text-muted-foreground">{getDescription()}</p>
             
-            {/* Animated Progress Bar with Blue Gradient */}
+            {/* Progress Bar with real percentage */}
             <div className="relative mt-4">
               <div className="h-3 w-full bg-muted rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-full transition-all duration-300 ease-out relative overflow-hidden"
-                  style={{ width: `${animatedPercentage}%` }}
+                  className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-full transition-all duration-500 ease-out relative overflow-hidden"
+                  style={{ width: `${displayPercentage}%` }}
                 >
                   {/* Animated shine effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
-                  
-                  {/* Moving gradient animation */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/50 via-blue-500/50 to-blue-600/50 animate-slide-in-right" 
-                       style={{ animationDuration: '2s', animationIterationCount: 'infinite' }} 
-                  />
                 </div>
               </div>
             </div>
             
-            <p className="text-lg font-bold text-blue-600 mt-2 animate-fade-in">
-              {total > 0 ? Math.round((current / total) * 100) : 0}%
+            <p className="text-lg font-bold text-blue-600 mt-2">
+              {displayPercentage}%
             </p>
           </div>
 
