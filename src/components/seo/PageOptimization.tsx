@@ -1312,7 +1312,6 @@ export function PageOptimization() {
           seo_description: p.seo_description || undefined,
           body_html: p.body_html
         }))}
-        onSyncClick={handleConfirmSync}
         onClose={() => setShowResultsDialog(false)}
       />
 

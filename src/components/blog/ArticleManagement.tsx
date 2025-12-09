@@ -1225,7 +1225,6 @@ const handleOptimizeArticle = async (articleId: string) => {
           content: a.content,
           featured_image: a.featured_image || undefined
         }))}
-        onSyncClick={handleOpenSyncDialog}
         onClose={() => setShowResultsDialog(false)}
       />
 

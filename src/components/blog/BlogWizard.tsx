@@ -1349,10 +1349,6 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               ]
             : []
         }
-        onSyncClick={() => {
-          setShowResultsDialog(false);
-          setShowSyncDialog(true);
-        }}
         onClose={handleSkipPublish}
       />
 
