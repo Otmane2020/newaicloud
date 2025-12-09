@@ -57,7 +57,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-import { ShopifySyncSuccessDialog } from "./ShopifySyncSuccessDialog";
+// ShopifySyncSuccessDialog removed - unified into ResultsDialog
 import { VisionAIBanner } from "./VisionAIBanner";
 import { GoogleSearchPreview } from "./GoogleSearchPreview";
 import { useStore } from "@/contexts/StoreContext";
@@ -135,9 +135,7 @@ export function SeoOptimization() {
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [syncedItems, setSyncedItems] = useState<
-    Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }>
-  >([]);
+  // syncedItems removed - unified into ResultsDialog
   
 
   const fetchProducts = async () => {
@@ -674,10 +672,7 @@ export function SeoOptimization() {
             setOptimizedProducts(freshProducts as Product[]);
           }
           
-          // Show ShopifySyncSuccessDialog with synced items
-          if (syncedProductsList.length > 0) {
-            setSyncedItems(syncedProductsList);
-          }
+                  // Synced items now shown in ResultsDialog automatically
         } else if (results.error > 0) {
           toast.error(t.seo.optimization.optimizationError);
         }
@@ -798,10 +793,7 @@ export function SeoOptimization() {
             setOptimizedProducts(freshProducts as Product[]);
           }
           
-          // Show ShopifySyncSuccessDialog with synced items
-          if (syncedProductsList.length > 0) {
-            setSyncedItems(syncedProductsList);
-          }
+          // Synced items now shown in ResultsDialog automatically
         }
       }
     );
@@ -1479,10 +1471,7 @@ export function SeoOptimization() {
         }}
       />
 
-      {/* Sync Confirmation Dialog */}
-
-      {/* Shopify Sync Success Dialog */}
-      <ShopifySyncSuccessDialog items={syncedItems} onClose={() => setSyncedItems([])} />
+      {/* Shopify Sync confirmation is now shown in ResultsDialog */}
 
 
       {limits?.shouldForcePayment ? (
