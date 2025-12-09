@@ -92,7 +92,11 @@ export default function ShopifyApp() {
           navigate("/dashboard", { replace: true });
         } else {
           // Redirection vers SetupWizard pour Shopify Billing (pas Stripe)
-          navigate(`/app/setup-wizard?shop=${encodeURIComponent(shop)}`, { replace: true });
+          // Conserver tous les query params (host, shop, etc.) pour App Bridge
+          const searchParams = new URLSearchParams(window.location.search);
+          searchParams.set("shop", shop);
+          searchParams.delete("pending_token"); // Supprimer le token utilisé
+          navigate(`/app/setup-wizard?${searchParams.toString()}`, { replace: true });
         }
       } catch (err) {
         setStatus("error");
