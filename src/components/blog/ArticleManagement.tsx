@@ -1071,17 +1071,6 @@ const handleOptimizeArticle = async (articleId: string) => {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        {article.status === 'draft' && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleSyncArticle(article.id)}
-                            disabled={syncing}
-                            title="Sync to Shopify"
-                          >
-                            <Upload className="w-4 h-4 text-green-600" />
-                          </Button>
-                        )}
                         <Button
                           size="sm"
                           variant="ghost"
@@ -1139,17 +1128,6 @@ const handleOptimizeArticle = async (articleId: string) => {
                     <Eye className="w-4 h-4 mr-1" />
                     View
                   </Button>
-                  {article.status === 'draft' && (
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleSyncArticle(article.id)}
-                      disabled={syncing}
-                    >
-                      <Upload className="w-4 h-4 mr-1" />
-                      Publish
-                    </Button>
-                  )}
                 </div>
               </div>
             </Card>
