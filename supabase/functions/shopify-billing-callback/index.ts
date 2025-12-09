@@ -33,7 +33,7 @@ serve(async (req) => {
 
     if (!shop) {
       logStep("Missing shop parameter");
-      return Response.redirect(`${APP_URL}/onboarding?error=missing_shop`, 302);
+      return Response.redirect(`${APP_URL}/app/setup-wizard?error=missing_shop`, 302);
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -50,7 +50,7 @@ serve(async (req) => {
 
     if (pendingError || !pending) {
       logStep("No pending subscription found", { error: pendingError });
-      return Response.redirect(`${APP_URL}/onboarding?error=no_pending_subscription`, 302);
+      return Response.redirect(`${APP_URL}/app/setup-wizard?error=no_pending_subscription&shop=${shop}`, 302);
     }
 
     logStep("Pending subscription found", { userId: pending.user_id, planId: pending.plan_id });
@@ -65,7 +65,7 @@ serve(async (req) => {
 
     if (connError || !connection) {
       logStep("No Shopify connection found", { error: connError });
-      return Response.redirect(`${APP_URL}/onboarding?error=no_connection`, 302);
+      return Response.redirect(`${APP_URL}/app/setup-wizard?error=no_connection&shop=${shop}`, 302);
     }
 
     // Verify the subscription status with Shopify
