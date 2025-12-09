@@ -16,7 +16,7 @@ const PLANS = [
     nameEn: "Starter",
     description: "Pour démarrer votre optimisation SEO",
     descriptionEn: "Start your SEO optimization journey",
-    priceMonthly: 9.99,
+    priceMonthly: 0, // Temporairement gratuit pour tests
     priceYearly: 7.99, // /mois facturé annuellement (95.90€/an)
     trialDays: 7,
     icon: Zap,
