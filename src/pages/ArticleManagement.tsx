@@ -1120,11 +1120,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
           seo_title: article.title,
           seo_description: article.meta_description
         }))}
-        onSyncClick={() => {
-          const articleIds = optimizedArticles.map(a => a.id);
-          setShowOptimizationResults(false);
-          syncToShopify(articleIds);
-        }}
         onClose={() => {
           setShowOptimizationResults(false);
           setSelectedArticles([]);

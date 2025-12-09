@@ -1481,9 +1481,6 @@ export function SeoOptimization() {
         onOpenChange={setShowResultsDialog}
         type="seo"
         items={optimizedProducts}
-        onSyncClick={async () => {
-          setShowResultsDialog(false);
-        }}
         onClose={handleCloseResultsDialog}
       />
 

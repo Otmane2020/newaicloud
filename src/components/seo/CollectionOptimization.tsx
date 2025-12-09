@@ -1563,17 +1563,12 @@ export function CollectionOptimization() {
         items={optimizedCollections.map(c => ({
           id: c.id,
           title: c.title,
-          handle: c.handle,  // Add handle for correct URL generation
+          handle: c.handle,
           seo_title: c.seo_title || '',
           seo_description: c.seo_description || '',
           body_html: c.body_html || '',
           image_url: c.image_url || ''
         }))}
-        onSyncClick={async () => {
-          setCollectionsToSync(optimizedCollections);
-          setShowResultsDialog(false);
-          await handleSyncCollections();
-        }}
         onClose={handleCloseResultsDialog}
       />
 

@@ -178,7 +178,6 @@ interface ResultsDialogProps {
   onOpenChange: (open: boolean) => void;
   type: WorkflowType;
   items: WorkflowItem[];
-  onSyncClick: () => void;
   onClose: () => void;
 }
 
@@ -187,7 +186,6 @@ export function ResultsDialog({
   onOpenChange,
   type,
   items,
-  onSyncClick,
   onClose,
 }: ResultsDialogProps) {
   const [showPreview, setShowPreview] = useState(false);

@@ -1012,41 +1012,6 @@ export function SeoAltImageList() {
         onOpenChange={setShowResultsDialog}
         type="alt"
         items={optimizedItems}
-        onSyncClick={async () => {
-          setShowResultsDialog(false);
-          
-          // Filter images that have Shopify ID
-          const syncableImages = optimizedItems.filter(img => img.shopify_image_id);
-          const imagesWithoutShopifyId = optimizedItems.filter(img => !img.shopify_image_id);
-          
-          if (syncableImages.length === 0) {
-            toast.error('Images non synchronisables', {
-              description: `Aucune image n'a d'ID Shopify. Les images de homepage ne peuvent pas être synchronisées.`
-            });
-            return;
-          }
-          
-          if (imagesWithoutShopifyId.length > 0) {
-            toast.warning('Certaines images ignorées', {
-              description: `${imagesWithoutShopifyId.length} image(s) de homepage sans ID Shopify seront ignorées.`
-            });
-          }
-          
-          const imagesWithProduct = syncableImages.map(img => {
-            const product = products.find(p => p.images.some(i => i.id === img.id));
-            return {
-              id: img.id,
-              src: img.image_url || '',
-              alt_text: img.alt_text,
-              position: 0,
-              product_id: product?.id || '',
-              product_title: product?.title,
-              shopify_image_id: img.shopify_image_id
-            };
-          });
-          setImagesToSync(imagesWithProduct);
-          await handleSyncImages();
-        }}
         onClose={() => setShowResultsDialog(false)}
       />
 

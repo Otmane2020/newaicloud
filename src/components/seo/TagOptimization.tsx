@@ -1416,14 +1416,6 @@ export function TagOptimization() {
         onOpenChange={setShowResultsDialog}
         type="tags"
         items={optimizedItems}
-        onSyncClick={async () => {
-          setShowResultsDialog(false);
-          const itemsWithTags = optimizedItems.filter(item => item.tags);
-          if (itemsWithTags.length > 0) {
-            setItemsToSync(itemsWithTags);
-            await handleBulkSync(itemsWithTags.map(item => item.id));
-          }
-        }}
         onClose={handleCloseResultsDialog}
       />
 

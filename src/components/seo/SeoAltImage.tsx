@@ -1407,10 +1407,6 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           alt_text: img.alt_text || '',
           image_url: img.src
         }))}
-        onSyncClick={() => {
-          setShowResultsDialog(false);
-          handleSyncSelected();
-        }}
         onClose={handleCloseResultsDialog}
       />
 
