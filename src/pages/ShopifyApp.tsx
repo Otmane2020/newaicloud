@@ -86,13 +86,13 @@ export default function ShopifyApp() {
           sessionStorage.setItem('pending_sync', shop);
         }
 
-        // Nouvel utilisateur → onboarding pour choix de plan avec shop domain
+        // Nouvel utilisateur → SetupWizard pour choix de plan Shopify Billing
         // Utilisateur existant → dashboard
         if (data.is_returning_user) {
           navigate("/dashboard", { replace: true });
         } else {
-          // Passer le shop domain pour le Shopify Billing
-          navigate(`/onboarding?shopify_pending=true&shop=${encodeURIComponent(shop)}`, { replace: true });
+          // Redirection vers SetupWizard pour Shopify Billing (pas Stripe)
+          navigate(`/app/setup-wizard?shop=${encodeURIComponent(shop)}`, { replace: true });
         }
       } catch (err) {
         setStatus("error");
