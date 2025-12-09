@@ -280,17 +280,6 @@ export function ResultsDialog({
                                 {t.dialogs.seoWorkflow.results.previewArticles}
                               </Button>
                             )}
-                            <div className="flex gap-2 mt-3">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => window.open(`/product/${item.id}/seo-analysis`, '_blank')}
-                                className="flex-1"
-                              >
-                                <TrendingUp className="w-4 h-4 mr-2" />
-                                {t.dialogs.seoWorkflow.results.seoAnalysis}
-                              </Button>
-                            </div>
                           </div>
                         )}
 
