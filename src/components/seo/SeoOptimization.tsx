@@ -14,7 +14,6 @@ import { useOptimization } from "@/contexts/OptimizationContext";
 import {
   ProgressDialog,
   ResultsDialog,
-  SyncConfirmationDialog,
   SuccessDialog,
   WorkflowItem,
 } from "./SeoWorkflowDialogs";
@@ -34,21 +33,18 @@ import {
   CheckCircle,
   Clock,
   Sparkles,
-  Upload,
   Loader2,
   Package,
-  TrendingUp,
   Target,
   Zap,
   ArrowRight,
-  Eye,
-  ExternalLink,
   Filter,
   Grid3x3,
   List,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  TrendingUp,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -85,10 +81,9 @@ interface Product {
   product_type: string;
 }
 
-type QuickFilterTab = "all" | "not-enriched" | "enriched" | "pending-sync" | "synced";
+type QuickFilterTab = "all" | "not-enriched" | "enriched";
 type SeoScoreSort = "none" | "asc" | "desc";
 type StatusFilter = "all" | "optimized" | "not-optimized";
-type SyncFilter = "all" | "synced" | "not-synced";
 type QualityFilter = "all" | "excellent" | "good" | "medium" | "poor";
 
 // Helper component for Google Search Preview in table
@@ -132,20 +127,17 @@ export function SeoOptimization() {
   const [productStatusFilter, setProductStatusFilter] = useState("all");
   const [seoScoreSort, setSeoScoreSort] = useState<SeoScoreSort>("none");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [syncFilter, setSyncFilter] = useState<SyncFilter>("all");
+  
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>(
     (searchParams.get("filter") as QualityFilter) || "all"
   );
   const [generating, setGenerating] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
-  const [showSyncDialog, setShowSyncDialog] = useState(false);
-  const [productsToSync, setProductsToSync] = useState<Product[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [syncedItems, setSyncedItems] = useState<
@@ -277,10 +269,6 @@ export function SeoOptimization() {
     }, {} as Record<string, number>)
   });
   
-  const pendingSyncCount = products.filter(
-    (p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify,
-  ).length;
-  const syncedCount = products.filter((p) => p.seo_synced_to_shopify && p.enrichment_status === "enriched").length;
   const optimizationRate = products.length > 0 ? Math.round((enrichedCount / products.length) * 100) : 0;
 
   // Calculate global SEO score with 30/70 weighting
@@ -390,24 +378,20 @@ export function SeoOptimization() {
 
   const filteredProducts = products
     .filter((product) => {
-      const { enrichment_status, seo_synced_to_shopify, product_type, title } = product;
+      const { enrichment_status, product_type, title } = product;
 
       // Early exclusion for tab filters
       const tabExclusions = {
         "not-enriched": enrichment_status === "enriched",
         enriched: enrichment_status !== "enriched",
-        "pending-sync": enrichment_status !== "enriched" || seo_synced_to_shopify,
-        synced: !seo_synced_to_shopify,
       };
 
       if (tabExclusions[activeTab]) return false;
 
-      // Status and sync filters
+      // Status filter
       if (
         (statusFilter === "optimized" && enrichment_status !== "enriched") ||
-        (statusFilter === "not-optimized" && enrichment_status === "enriched") ||
-        (syncFilter === "synced" && !seo_synced_to_shopify) ||
-        (syncFilter === "not-synced" && seo_synced_to_shopify)
+        (statusFilter === "not-optimized" && enrichment_status === "enriched")
       )
         return false;
 
@@ -515,8 +499,6 @@ export function SeoOptimization() {
     { id: "all" as QuickFilterTab, label: t.seo.optimization.allProducts, count: products.length },
     { id: "not-enriched" as QuickFilterTab, label: t.seo.optimization.toOptimize, count: notEnrichedCount },
     { id: "enriched" as QuickFilterTab, label: t.seo.optimization.optimizedTab, count: enrichedCount },
-    { id: "pending-sync" as QuickFilterTab, label: t.seo.optimization.toSynchronizeTab, count: pendingSyncCount },
-    { id: "synced" as QuickFilterTab, label: t.seo.optimization.synchronizedTab, count: syncedCount },
   ];
 
   // Clickable stats handlers
@@ -528,11 +510,6 @@ export function SeoOptimization() {
   const handleOptimizedClick = () => {
     setActiveTab("enriched");
     toast.info(tf("seo.optimization.showingOptimized", { count: enrichedCount }));
-  };
-
-  const handleSyncedClick = () => {
-    setActiveTab("synced");
-    toast.info(tf("seo.optimization.showingSynchronized", { count: syncedCount }));
   };
 
   const handleGenerateAll = () => {
@@ -819,121 +796,6 @@ export function SeoOptimization() {
     );
   };
 
-  const handleSyncSelected = async () => {
-    const productsToSync = products.filter((p) => selectedProducts.has(p.id) && p.enrichment_status === "enriched");
-
-    if (productsToSync.length === 0) {
-      toast.info(t.seo.optimization.noProductsToSynchronize);
-      return;
-    }
-
-    setShowResultsDialog(false);
-    setShowSyncDialog(false);
-    setSyncing(true);
-    setShowProgressDialog(true);
-    setIsOptimizationComplete(false);
-    setProgress({ current: 0, total: productsToSync.length });
-
-    const syncedItems: Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }> = [];
-
-    for (let i = 0; i < productsToSync.length; i++) {
-      try {
-        const { data, error } = await supabase.functions.invoke("sync-seo-to-shopify", {
-          body: {
-            productId: productsToSync[i].id,
-            syncTags: true,
-            syncGoogleShopping: true,
-            force: true, // Allow immediate sync after optimization
-          },
-        });
-
-        if (error) throw error;
-
-        if (data?.success && data?.shopifyUrl) {
-          syncedItems.push({
-            id: productsToSync[i].id,
-            title: productsToSync[i].title,
-            shopifyUrl: data.shopifyUrl,
-            resourceType: "product",
-          });
-        }
-
-        setProgress({ current: i + 1, total: productsToSync.length });
-      } catch (error) {
-        console.error("Error syncing:", error);
-      }
-    }
-
-    setSyncing(false);
-    setIsOptimizationComplete(true);
-    setSelectedProducts(new Set());
-
-    await fetchProducts();
-    await refreshLimits();
-
-    // Show success dialog with Shopify links
-    if (syncedItems.length > 0) {
-      setSyncedItems(syncedItems);
-    }
-  };
-
-  const handleSyncProducts = async (productIds: string[]) => {
-    if (productIds.length === 0) {
-      toast.info(t.seo.optimization.noProductsToSynchronize);
-      return;
-    }
-
-    setShowResultsDialog(false);
-    setShowSyncDialog(false);
-
-    const syncedProductsList: Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }> = [];
-
-    // Use global context processor for sync - continues even if user changes tabs
-    processBulkOperation(
-      'products',
-      productIds,
-      async (productId) => {
-        try {
-          const { data, error } = await supabase.functions.invoke("sync-seo-to-shopify", {
-            body: {
-              productId,
-              syncTags: true,
-              syncGoogleShopping: true,
-              force: true,
-            },
-          });
-          
-          if (!error && data?.success) {
-            // Get product title for success dialog
-            const product = products.find(p => p.id === productId);
-            if (product) {
-              syncedProductsList.push({
-                id: productId,
-                title: product.title,
-                shopifyUrl: data.shopifyUrl || '',
-                resourceType: "product",
-              });
-            }
-            return true;
-          }
-          return false;
-        } catch (error) {
-          console.error("Error syncing:", error);
-          return false;
-        }
-      },
-      'syncing',
-      async (results) => {
-        await fetchProducts();
-        await refreshLimits();
-        
-        if (results.success > 0) {
-          // Show ShopifySyncSuccessDialog with synced items
-          setSyncedItems(syncedProductsList);
-        }
-      }
-    );
-  };
 
   const handleCloseProgressDialog = () => {
     if (isOptimizationComplete) {
@@ -1061,7 +923,7 @@ export function SeoOptimization() {
       <VisionAIBanner />
 
       {/* Clickable Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card
           className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={handleNotOptimizedClick}
@@ -1098,40 +960,6 @@ export function SeoOptimization() {
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.optimization.clickToView}</p>
         </Card>
 
-        <Card
-          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setActiveTab("pending-sync");
-            toast.info(tf("seo.optimization.showingToSynchronize", { count: pendingSyncCount }));
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                {t.seo.optimization.toSynchronize}
-              </p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{pendingSyncCount}</p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{t.seo.optimization.aiOptimizedOnly}</p>
-            </div>
-            <Upload className="w-8 h-8 text-purple-600" />
-          </div>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">{t.seo.optimization.clickToView}</p>
-        </Card>
-
-        <Card
-          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleSyncedClick}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{t.seo.optimization.synchronized}</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{syncedCount}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{t.seo.optimization.aiOptimizedSynced}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-blue-600" />
-          </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">{t.seo.optimization.clickToView}</p>
-        </Card>
       </div>
 
       {/* Usage limits alert */}
@@ -1194,29 +1022,6 @@ export function SeoOptimization() {
             >
               <Sparkles className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Optimiser tout</span>
-            </Button>
-            <Button
-              onClick={handleSyncSelected}
-              disabled={selectedProducts.size === 0 || syncing}
-              variant="outline"
-              size="sm"
-            >
-              <Upload className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Synchroniser</span>
-            </Button>
-            <Button
-              onClick={() => {
-                const toSync = products
-                  .filter((p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify)
-                  .map((p) => p.id);
-                handleSyncProducts(toSync);
-              }}
-              disabled={syncing || pendingSyncCount === 0}
-              variant="outline"
-              size="sm"
-            >
-              <Upload className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Synchroniser tout</span>
             </Button>
             <Button onClick={fetchProducts} disabled={loading} variant="ghost" size="sm">
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -1302,16 +1107,6 @@ export function SeoOptimization() {
               </SelectContent>
             </Select>
 
-            <Select value={syncFilter} onValueChange={(value: SyncFilter) => setSyncFilter(value)}>
-              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
-                <SelectValue placeholder={t.seo.optimization.syncStatus} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t.seo.optimization.allSync}</SelectItem>
-                <SelectItem value="synced">{t.seo.optimization.synced}</SelectItem>
-                <SelectItem value="not-synced">{t.seo.optimization.toSynchronize}</SelectItem>
-              </SelectContent>
-            </Select>
 
             <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
               <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
@@ -1377,50 +1172,6 @@ export function SeoOptimization() {
                 {t.seo.optimization.optimizeAll}
               </Button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const toSync = products.filter((p) => selectedProducts.has(p.id) && p.seo_title && p.seo_description);
-                  if (toSync.length === 0) {
-                    toast.error(t.seo.optimization.noOptimizedProductsSelected);
-                    return;
-                  }
-                  setProductsToSync(toSync);
-                  setShowSyncDialog(true);
-                }}
-                disabled={syncing || selectedProducts.size === 0}
-                className="flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                {tf("seo.optimization.syncSelection", { count: selectedProducts.size })}
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const toSync = products.filter(
-                    (p) =>
-                      p.enrichment_status === "enriched" &&
-                      p.seo_title &&
-                      p.seo_description &&
-                      !p.seo_synced_to_shopify,
-                  );
-                  if (toSync.length === 0) {
-                    toast.info(t.seo.optimization.allOptimizedSynced);
-                    return;
-                  }
-                  setProductsToSync(toSync);
-                  setShowSyncDialog(true);
-                }}
-                disabled={syncing || pendingSyncCount === 0}
-                className="flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                <span className="hidden sm:inline">{tf("seo.optimization.syncAll", { count: pendingSyncCount })}</span>
-              </Button>
-
               <Button variant="outline" size="icon" onClick={fetchProducts}>
                 <RefreshCw className="w-4 h-4" />
               </Button>
@@ -1470,11 +1221,11 @@ export function SeoOptimization() {
       </div>
 
       {/* Progress Indicator */}
-      {(generating || syncing) && (
+      {generating && (
         <Card className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium">
-              {generating ? t.seo.optimization.generatingSeo : t.seo.optimization.synchronizing}
+              {t.seo.optimization.generatingSeo}
             </span>
             <span className="text-sm text-muted-foreground">
               {progress.current} / {progress.total}
@@ -1637,19 +1388,6 @@ export function SeoOptimization() {
                           >
                             <Sparkles className="w-4 h-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setProductsToSync([product]);
-                              setShowSyncDialog(true);
-                            }}
-                            disabled={!product.seo_title || !product.seo_description}
-                            title={t.seo.optimization.viewSync}
-                            className="hover:bg-gray-50"
-                          >
-                            <Eye className="w-5 h-5" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1756,18 +1494,6 @@ export function SeoOptimization() {
                       })()}
                     </div>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setProductsToSync([product]);
-                        setShowSyncDialog(true);
-                      }}
-                      disabled={!product.seo_title || !product.seo_description}
-                    >
-                      <Eye className="w-3 h-3 mr-1" />
-                      {t.seo.optimization.view}
-                    </Button>
                   </div>
                 </div>
               </Card>
@@ -1837,7 +1563,7 @@ export function SeoOptimization() {
         open={showProgressDialog}
         onOpenChange={setShowProgressDialog}
         type="seo"
-        operation={syncing ? "syncing" : "optimizing"}
+        operation="optimizing"
         current={progress.current}
         total={progress.total}
       />
@@ -1849,11 +1575,6 @@ export function SeoOptimization() {
         items={optimizedProducts}
         onSyncClick={async () => {
           setShowResultsDialog(false);
-          const productsWithSeo = optimizedProducts.filter((p) => p.seo_title || p.seo_description);
-          if (productsWithSeo.length > 0) {
-            setProductsToSync(productsWithSeo);
-            await handleSyncProducts(productsWithSeo.map(p => p.id));
-          }
         }}
         onClose={handleCloseResultsDialog}
       />
