@@ -107,13 +107,13 @@ export function useShopifyBilling() {
       if (error) throw error;
 
       if (data?.confirmationUrl) {
-        // For embedded apps: open payment in new tab to avoid X-Frame-Options blocking
-        // Shopify admin pages cannot be displayed in iframes
-        window.open(data.confirmationUrl, '_blank');
-        toast.success(
-          "Fenêtre de paiement Shopify ouverte",
-          { description: "Complétez le paiement dans le nouvel onglet, puis revenez ici." }
-        );
+        // For embedded apps: redirect the ENTIRE top-level window to Shopify payment
+        // This exits the iframe and navigates the full Shopify Admin page
+        if (window.top && window.top !== window) {
+          window.top.location.href = data.confirmationUrl;
+        } else {
+          window.location.href = data.confirmationUrl;
+        }
         return data;
       }
 
