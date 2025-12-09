@@ -163,7 +163,8 @@ serve(async (req) => {
       }
     `;
 
-    // Return URL goes to the edge function which handles verification and redirects to dashboard
+    // Return URL - Shopify will redirect here after payment confirmation
+    // This must be the edge function URL, Shopify Admin allows redirects to app backend endpoints
     const returnUrl = `${SUPABASE_URL}/functions/v1/shopify-billing-callback?shop=${encodeURIComponent(shopDomain)}&plan=${encodeURIComponent(planId)}&cycle=${billingCycle}`;
 
     const variables: any = {
