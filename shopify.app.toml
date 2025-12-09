@@ -2,8 +2,8 @@
 
 client_id = "a57869f9e856fc6af974670ab5dcd6a2"
 name = "NewAI - AI SEO and Marketing"
-application_url = "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-install"
-embedded = false
+application_url = "https://newai.sale/app/setup-wizard"
+embedded = true
 
 [build]
 automatically_update_urls_on_dev = true

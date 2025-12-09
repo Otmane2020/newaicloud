@@ -111,6 +111,7 @@ import MobileSuccess from "./pages/MobileSuccess";
 import AnimationAds from "./pages/AnimationAds";
 import NewAIVideoGenerator from "./components/video/NewAIVideoGenerator";
 import StoreTemplates from "./pages/StoreTemplates";
+import SetupWizardPage from "./pages/shopify/SetupWizard";
 
 const queryClient = new QueryClient();
 
@@ -205,6 +206,7 @@ const App = () => (
           <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />
           <Route path="/shopify/success" element={<ShopifySuccess />} />
           <Route path="/shopify/billing-callback" element={<ShopifyBillingCallback />} />
+          <Route path="/app/setup-wizard" element={<SetupWizardPage />} />
           <Route path="/app" element={<ShopifyApp />} />
             <Route
               path="/onboarding"
