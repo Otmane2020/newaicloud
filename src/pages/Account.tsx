@@ -16,13 +16,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/language';
 
+// Full access email - same as AppSidebar
+const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
+
 export default function Account() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'profile';
+  const activeTab = searchParams.get('tab') || 'usage';
   const { user } = useAuth();
   const { t } = useTranslation();
   const [planName, setPlanName] = useState<string | null>(null);
   const [isTrialing, setIsTrialing] = useState(false);
+
+  // Check if user has full access
+  const hasFullAccess = user?.email === FULL_ACCESS_EMAIL;
 
   useEffect(() => {
     const loadPlan = async () => {
@@ -72,13 +78,16 @@ export default function Account() {
 
       {/* Content */}
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })} className="mt-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">{t.account.tabs.profile}</TabsTrigger>
-          <TabsTrigger value="integrations">{t.account.tabs.integrations}</TabsTrigger>
-          <TabsTrigger value="subscription">{t.account.tabs.subscription}</TabsTrigger>
-          <TabsTrigger value="billing">{t.account.tabs.billing}</TabsTrigger>
-          <TabsTrigger value="usage">{t.account.tabs.limits}</TabsTrigger>
-        </TabsList>
+        {/* Hide horizontal tabs for non-full-access users */}
+        {hasFullAccess && (
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="profile">{t.account.tabs.profile}</TabsTrigger>
+            <TabsTrigger value="integrations">{t.account.tabs.integrations}</TabsTrigger>
+            <TabsTrigger value="subscription">{t.account.tabs.subscription}</TabsTrigger>
+            <TabsTrigger value="billing">{t.account.tabs.billing}</TabsTrigger>
+            <TabsTrigger value="usage">{t.account.tabs.limits}</TabsTrigger>
+          </TabsList>
+        )}
 
         <TabsContent value="profile" className="mt-6">
           <div className="bg-white rounded-lg border p-4 md:p-6">

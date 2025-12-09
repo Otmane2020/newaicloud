@@ -18,6 +18,7 @@ import { CurrentPlanCard } from "@/components/dashboard/CurrentPlanCard";
 import PricingComparison from "@/components/PricingComparison";
 import { getCurrencySymbol } from "@/lib/formatUtils";
 import { PricingCard } from "@/components/pricing/PricingCard";
+import { useShopifyBilling } from "@/hooks/useShopifyBilling";
 
 interface Plan {
   id: string;
@@ -54,6 +55,10 @@ const Subscription = () => {
   const [prorationInfo, setProrationInfo] = useState<any>(null);
   const [loadingProration, setLoadingProration] = useState(false);
   const [useManualPromo, setUseManualPromo] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  
+  // Shopify billing hook
+  const { isShopifyUser, billingProvider, createShopifySubscription, loading: shopifyLoading } = useShopifyBilling();
 
   const isUpgradeFlow = searchParams.get('upgrade') === 'true';
 
@@ -244,7 +249,15 @@ const Subscription = () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) throw new Error('Not authenticated');
 
-      // Check user status
+      // 🔧 SHOPIFY BILLING: Route Shopify users to Shopify Billing API
+      if (isShopifyUser || billingProvider === 'shopify') {
+        console.log('🛍️ Using Shopify Billing for Shopify user');
+        await createShopifySubscription(planId, billingCycle);
+        setCheckoutLoading(null);
+        return;
+      }
+
+      // Check user status (Stripe flow)
       const { data: profile } = await supabase
         .from('profiles')
         .select('subscription_status, trial_ends_at, stripe_customer_id')
@@ -277,7 +290,7 @@ const Subscription = () => {
           const { data, error } = await supabase.functions.invoke('update-subscription', {
             body: {
               new_plan_id: planId,
-              billing_period: 'monthly',
+              billing_period: billingCycle,
             },
           });
 
@@ -315,7 +328,7 @@ const Subscription = () => {
         const { data, error } = await supabase.functions.invoke('update-subscription', {
           body: {
             new_plan_id: planId,
-            billing_period: 'monthly',
+            billing_period: billingCycle,
           },
         });
 
@@ -348,7 +361,7 @@ const Subscription = () => {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           plan_id: planId,
-          billing_period: 'monthly',
+          billing_period: billingCycle,
           force_immediate_payment: isInTrial,
           use_manual_promo: useManualPromo,
         },
@@ -463,52 +476,85 @@ const Subscription = () => {
         <>
           <CurrentPlanCard />
 
-      {isUpgradeFlow && currentPlan && (
-        <Card className="p-4 sm:p-5 md:p-6 mb-6 sm:mb-7 md:mb-8 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 border-2 border-primary/30 dark:border-primary/50">
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h3 className="text-base sm:text-lg font-semibold mb-2">{t.seo.subscription.yourCurrentPlan}</h3>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <span className="text-xl sm:text-2xl">{getPlanIconEmoji(currentPlan.id)}</span>
-                  <div>
-                    <p className="text-lg sm:text-xl font-bold">{currentPlan.name}</p>
-                    <p className="text-muted-foreground text-xs sm:text-sm">{currentPlan.price_monthly}{currency}{t.seo.subscription.perMonth}</p>
-                  </div>
+          {/* Billing cycle toggle for Shopify users */}
+          {(isShopifyUser || billingProvider === 'shopify') && (
+            <Card className="p-4 sm:p-5 md:p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Package className="w-5 h-5 text-green-600" />
+                    {language === 'fr' ? 'Facturation Shopify' : 'Shopify Billing'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {language === 'fr' 
+                      ? 'Votre abonnement est géré via Shopify Billing' 
+                      : 'Your subscription is managed through Shopify Billing'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Label htmlFor="billing-cycle" className="text-sm font-medium">
+                    {language === 'fr' ? 'Cycle de facturation' : 'Billing Cycle'}
+                  </Label>
+                  <Select value={billingCycle} onValueChange={(v) => setBillingCycle(v as "monthly" | "yearly")}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">{language === 'fr' ? 'Mensuel' : 'Monthly'}</SelectItem>
+                      <SelectItem value="yearly">{language === 'fr' ? 'Annuel' : 'Yearly'}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <Badge variant="outline" className="text-sm sm:text-base md:text-lg px-3 py-1.5 sm:px-4 sm:py-2 border-primary self-start sm:self-auto">
-                {t.seo.subscription.currentPlanBadge}
-              </Badge>
-            </div>
+            </Card>
+          )}
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-border">
-              <div className="text-center">
-                <p className="text-xl sm:text-2xl font-bold text-primary">{currentPlan.max_optimizations_monthly}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{t.seo.subscription.monthlyOptimizations}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl sm:text-2xl font-bold text-primary">{currentPlan.max_products === -1 ? '∞' : currentPlan.max_products}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{t.seo.subscription.products}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl sm:text-2xl font-bold text-primary">{currentPlan.max_articles_monthly}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{t.seo.subscription.articlesPerMonth}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl sm:text-2xl font-bold text-primary">{currentPlan.max_shopify_stores}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{t.seo.subscription.stores}</p>
-              </div>
-            </div>
+          {isUpgradeFlow && currentPlan && (
+            <Card className="p-4 sm:p-5 md:p-6 mb-6 sm:mb-7 md:mb-8 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 border-2 border-primary/30 dark:border-primary/50">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">{t.seo.subscription.yourCurrentPlan}</h3>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <span className="text-xl sm:text-2xl">{getPlanIconEmoji(currentPlan.id)}</span>
+                      <div>
+                        <p className="text-lg sm:text-xl font-bold">{currentPlan.name}</p>
+                        <p className="text-muted-foreground text-xs sm:text-sm">{currentPlan.price_monthly}{currency}{t.seo.subscription.perMonth}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-sm sm:text-base md:text-lg px-3 py-1.5 sm:px-4 sm:py-2 border-primary self-start sm:self-auto">
+                    {t.seo.subscription.currentPlanBadge}
+                  </Badge>
+                </div>
 
-            <div className="bg-card p-4 rounded-lg border border-border">
-              <p className="text-sm font-medium text-primary">
-                {t.seo.subscription.limitReachedMessage}
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-border">
+                  <div className="text-center">
+                    <p className="text-xl sm:text-2xl font-bold text-primary">{currentPlan.max_optimizations_monthly}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{t.seo.subscription.monthlyOptimizations}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl sm:text-2xl font-bold text-primary">{currentPlan.max_products === -1 ? '∞' : currentPlan.max_products}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{t.seo.subscription.products}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl sm:text-2xl font-bold text-primary">{currentPlan.max_articles_monthly}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{t.seo.subscription.articlesPerMonth}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl sm:text-2xl font-bold text-primary">{currentPlan.max_shopify_stores}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">{t.seo.subscription.stores}</p>
+                  </div>
+                </div>
+
+                <div className="bg-card p-4 rounded-lg border border-border">
+                  <p className="text-sm font-medium text-primary">
+                    {t.seo.subscription.limitReachedMessage}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
 
       {/* Manual Promo Code Switch */}
       <div className="flex items-center justify-center gap-2 mb-6 p-4 bg-muted/50 rounded-lg max-w-md mx-auto">
