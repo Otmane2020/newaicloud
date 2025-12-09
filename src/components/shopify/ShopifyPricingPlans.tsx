@@ -4,97 +4,90 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Check, Zap, Crown, Rocket, Loader2, Sparkles } from "lucide-react";
+import { Check, Zap, Crown, Building2, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // Plans définis côté frontend - synchronisés avec shopify-create-subscription
 const PLANS = [
   {
-    id: "starter",
-    name: "Starter",
-    nameEn: "Starter",
-    description: "Pour démarrer votre optimisation SEO",
-    descriptionEn: "Start your SEO optimization journey",
-    priceMonthly: 9.99,
-    priceYearly: 7.99, // /mois facturé annuellement (95.90€/an)
-    trialDays: 7,
+    id: 'starter',
+    name: 'Starter',
+    description: {
+      en: 'Perfect for getting started',
+      fr: 'Parfait pour commencer'
+    },
+    monthlyPrice: 9.99,
+    yearlyPrice: 7.99,
+    features: {
+      en: [
+        '100 analyzed products',
+        '100 AI SEO optimizations / month',
+        '1 AI article / month'
+      ],
+      fr: [
+        '100 produits analysés',
+        '100 optimisations SEO IA / mois',
+        '1 article IA / mois'
+      ]
+    },
     icon: Zap,
-    color: "from-blue-500 to-cyan-500",
-    features: {
-      fr: [
-        "100 optimisations SEO/mois",
-        "Synchronisation Shopify",
-        "Textes alternatifs IA",
-        "Support email",
-      ],
-      en: [
-        "100 SEO optimizations/month",
-        "Shopify sync",
-        "AI alt texts",
-        "Email support",
-      ],
-    },
+    color: 'from-blue-500 to-cyan-500',
+    trialDays: 7
   },
   {
-    id: "pro-500",
-    name: "Pro",
-    nameEn: "Pro",
-    description: "Pour les boutiques en croissance",
-    descriptionEn: "For growing stores",
-    priceMonthly: 49,
-    priceYearly: 39, // /mois facturé annuellement
+    id: 'pro-500',
+    name: 'Pro',
+    description: {
+      en: 'For growing businesses',
+      fr: 'Pour les entreprises en croissance'
+    },
+    monthlyPrice: 49,
+    yearlyPrice: 39,
+    features: {
+      en: [
+        '1,000 analyzed products',
+        '500 AI SEO optimizations / month',
+        '5 AI articles / month',
+        '3 automatic AI campaigns / month'
+      ],
+      fr: [
+        '1 000 produits analysés',
+        '500 optimisations SEO IA / mois',
+        '5 articles IA / mois',
+        '3 campagnes IA automatiques / mois'
+      ]
+    },
     icon: Crown,
-    color: "from-purple-500 to-pink-500",
-    popular: true,
-    features: {
-      fr: [
-        "500 optimisations SEO/mois",
-        "Import jusqu'à 500 produits",
-        "Landing pages IA",
-        "Blog automatique",
-        "Google Shopping",
-        "Support prioritaire",
-      ],
-      en: [
-        "500 SEO optimizations/month",
-        "Import up to 500 products",
-        "AI landing pages",
-        "Automatic blog",
-        "Google Shopping",
-        "Priority support",
-      ],
-    },
+    color: 'from-purple-500 to-pink-500',
+    popular: true
   },
   {
-    id: "pro-1000",
-    name: "Enterprise",
-    nameEn: "Enterprise",
-    description: "Pour les grandes boutiques et agences",
-    descriptionEn: "For large stores and agencies",
-    priceMonthly: 199,
-    priceYearly: 159, // /mois facturé annuellement
-    icon: Rocket,
-    color: "from-amber-500 to-orange-500",
-    features: {
-      fr: [
-        "Produits illimités",
-        "2 000 optimisations SEO IA/mois",
-        "20 articles IA/mois",
-        "10 campagnes IA auto/mois (30 articles/campagne)",
-        "2 000 recherches IA Shopify/mois",
-        "Support dédié",
-      ],
-      en: [
-        "Unlimited products",
-        "2,000 AI SEO optimizations/month",
-        "20 AI articles/month",
-        "10 automatic AI campaigns/month (30 articles/campaign)",
-        "2,000 Shopify AI searches/month",
-        "Dedicated support",
-      ],
+    id: 'pro-1000',
+    name: 'Enterprise',
+    description: {
+      en: 'For large-scale operations',
+      fr: 'Pour les opérations à grande échelle'
     },
-  },
+    monthlyPrice: 199,
+    yearlyPrice: 159,
+    features: {
+      en: [
+        'Unlimited products',
+        '2,000 AI SEO optimizations / month',
+        '20 AI articles / month',
+        '10 automatic AI campaigns / month'
+      ],
+      fr: [
+        'Produits illimités',
+        '2 000 optimisations SEO IA / mois',
+        '20 articles IA / mois',
+        '10 campagnes IA automatiques / mois'
+      ]
+    },
+    icon: Building2,
+    color: 'from-amber-500 to-orange-500'
+  }
 ];
 
 interface ShopifyPricingPlansProps {
@@ -218,7 +211,7 @@ export default function ShopifyPricingPlans({
         >
           {t.yearly}
           <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-            {t.save}
+            -20%
           </Badge>
         </Label>
       </div>
@@ -227,7 +220,7 @@ export default function ShopifyPricingPlans({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {PLANS.map((plan) => {
           const Icon = plan.icon;
-          const price = billingCycle === "monthly" ? plan.priceMonthly : plan.priceYearly;
+          const price = billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice;
           const features = plan.features[language];
           const isSelected = selectedPlan === plan.id;
           const isLoading = loading && isSelected;
@@ -259,10 +252,10 @@ export default function ShopifyPricingPlans({
                   <Icon className="h-7 w-7 text-white" />
                 </div>
                 <CardTitle className="text-2xl">
-                  {language === "fr" ? plan.name : plan.nameEn}
+                  {plan.name}
                 </CardTitle>
                 <CardDescription>
-                  {language === "fr" ? plan.description : plan.descriptionEn}
+                  {plan.description[language]}
                 </CardDescription>
               </CardHeader>
 
