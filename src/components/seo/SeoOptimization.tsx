@@ -131,12 +131,7 @@ export function SeoOptimization() {
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>(
     (searchParams.get("filter") as QualityFilter) || "all"
   );
-  const [generating, setGenerating] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [showProgressDialog, setShowProgressDialog] = useState(false);
-  const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -560,7 +555,7 @@ export function SeoOptimization() {
     setSelectedProducts(newSelected);
   };
 
-  const { processBulkOperation, state: optimizationState } = useOptimization();
+  const { processBulkOperation, state: optimizationState, setShowDialog, setShowCompletedDialog } = useOptimization();
 
   const handleGenerateForSelected = async (productIds?: string[]) => {
     // Check usage limits first (only check optimization-specific limits)
@@ -669,11 +664,19 @@ export function SeoOptimization() {
           
           await fetchProducts();
           
-          // Show success dialog with synced items
+          // Fetch fresh optimized products for ResultsDialog
+          const { data: freshProducts } = await supabase
+            .from('shopify_products')
+            .select('*')
+            .in('id', productsToGenerate.map(p => p.id));
+          
+          if (freshProducts && freshProducts.length > 0) {
+            setOptimizedProducts(freshProducts as Product[]);
+          }
+          
+          // Show ShopifySyncSuccessDialog with synced items
           if (syncedProductsList.length > 0) {
             setSyncedItems(syncedProductsList);
-          } else {
-            toast.success(t.seo.optimization.productOptimized);
           }
         } else if (results.error > 0) {
           toast.error(t.seo.optimization.optimizationError);
@@ -785,11 +788,19 @@ export function SeoOptimization() {
           
           await fetchProducts();
           
-          // Show success dialog with synced items
+          // Fetch fresh optimized products for ResultsDialog
+          const { data: freshProducts } = await supabase
+            .from('shopify_products')
+            .select('*')
+            .in('id', productsToGenerate.map(p => p.id));
+          
+          if (freshProducts && freshProducts.length > 0) {
+            setOptimizedProducts(freshProducts as Product[]);
+          }
+          
+          // Show ShopifySyncSuccessDialog with synced items
           if (syncedProductsList.length > 0) {
             setSyncedItems(syncedProductsList);
-          } else {
-            toast.success(t.seo.optimization.productOptimized);
           }
         }
       }
@@ -797,26 +808,6 @@ export function SeoOptimization() {
   };
 
 
-  const handleCloseProgressDialog = () => {
-    if (isOptimizationComplete) {
-      const successCount = progress.current;
-      if (successCount > 0) {
-        toast.success(t.seo.optimization.syncCompleted, {
-          description: tf("seo.optimization.productsSynced", { count: successCount }),
-        });
-      }
-    }
-
-    setShowProgressDialog(false);
-    setIsOptimizationComplete(false);
-    setSelectedProducts(new Set());
-  };
-
-  const handleCloseResultsDialog = () => {
-    setShowResultsDialog(false);
-    setOptimizedProducts([]);
-    setSelectedProducts(new Set());
-  };
 
   if (loading) {
     return (
@@ -1143,17 +1134,17 @@ export function SeoOptimization() {
       </div>
 
       {/* Progress Indicator */}
-      {generating && (
+      {optimizationState.isRunning && optimizationState.type === 'products' && (
         <Card className="p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="font-medium">
               {t.seo.optimization.generatingSeo}
             </span>
             <span className="text-sm text-muted-foreground">
-              {progress.current} / {progress.total}
+              {optimizationState.current} / {optimizationState.total}
             </span>
           </div>
-          <Progress value={(progress.current / progress.total) * 100} className="h-2" />
+          <Progress value={(optimizationState.current / optimizationState.total) * 100} className="h-2" />
         </Card>
       )}
 
@@ -1466,22 +1457,26 @@ export function SeoOptimization() {
         </div>
       )}
 
-      {/* Dialogs */}
+      {/* Dialogs - Connected to OptimizationContext */}
       <ProgressDialog
-        open={showProgressDialog}
-        onOpenChange={setShowProgressDialog}
+        open={optimizationState.showDialog && optimizationState.isRunning && optimizationState.type === 'products'}
+        onOpenChange={(open) => setShowDialog(open)}
         type="seo"
-        operation="optimizing"
-        current={progress.current}
-        total={progress.total}
+        operation={optimizationState.operation}
+        current={optimizationState.current}
+        total={optimizationState.total}
       />
 
       <ResultsDialog
-        open={showResultsDialog}
-        onOpenChange={setShowResultsDialog}
+        open={optimizationState.showCompletedDialog && optimizationState.type === 'products'}
+        onOpenChange={(open) => setShowCompletedDialog(open)}
         type="seo"
         items={optimizedProducts}
-        onClose={handleCloseResultsDialog}
+        onClose={() => {
+          setShowCompletedDialog(false);
+          setOptimizedProducts([]);
+          setSelectedProducts(new Set());
+        }}
       />
 
       {/* Sync Confirmation Dialog */}
