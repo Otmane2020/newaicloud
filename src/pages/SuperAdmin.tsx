@@ -31,6 +31,7 @@ import AdminGoogleSearchConsole from '@/components/admin/AdminGoogleSearchConsol
 import AdminSocialMedia from '@/components/admin/AdminSocialMedia';
 import AdminGoogleMerchant from '@/components/admin/AdminGoogleMerchant';
 import { useTranslation } from '@/lib/language';
+import { BrowserNotificationService } from '@/lib/notificationService';
 
 interface StripeSubscription {
   id: string;
@@ -109,6 +110,18 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
       }, (payload) => {
         setHasNewEmail(true);
         loadEmailStats();
+        
+        // 🔔 Notification navigateur Chrome (desktop + mobile)
+        BrowserNotificationService.showNotification(
+          '📧 Nouveau message reçu',
+          {
+            body: `De: ${payload.new.from_email}\n${payload.new.subject}`,
+            tag: `email-${payload.new.id}`,
+            requireInteraction: true,
+          }
+        );
+        
+        // Toast in-app
         toast({
           title: '📧 Nouveau message',
           description: `Email reçu de ${payload.new.from_email}`,

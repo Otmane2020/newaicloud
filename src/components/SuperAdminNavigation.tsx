@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 interface SuperAdminNavigationProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  isMobile?: boolean;
 }
 
 interface NavCategory {
@@ -25,7 +26,7 @@ interface NavItem {
   id: string;
 }
 
-export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavigationProps) {
+export function SuperAdminNavigation({ activeTab, onTabChange, isMobile = false }: SuperAdminNavigationProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -122,12 +123,15 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
   ];
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-16 md:w-64 bg-card border-r transition-all duration-300">
+    <aside className={cn(
+      "bg-card border-r transition-all duration-300 h-full",
+      isMobile ? "w-full" : "fixed left-0 top-0 z-40 h-screen w-64"
+    )}>
       <div className="flex flex-col h-full">
         {/* Logo */}
-        <div className="flex items-center justify-center md:justify-start gap-3 p-4 border-b">
+        <div className="flex items-center gap-3 p-4 border-b">
           <Shield className="w-8 h-8 text-orange-600 flex-shrink-0" />
-          <span className="hidden md:block text-xl font-bold text-orange-600">
+          <span className="text-xl font-bold text-orange-600">
             {t.superAdmin.navigation.title}
           </span>
         </div>
@@ -149,16 +153,16 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
                   <CollapsibleTrigger className="w-full">
                     <div
                       className={cn(
-                        "flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 w-full",
+                        "flex items-center justify-between px-3 py-3 rounded-lg transition-all duration-200 w-full",
                         "hover:bg-accent/50 text-muted-foreground",
                         hasActiveItem && "text-foreground bg-accent/30"
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <CategoryIcon className="w-4 h-4 flex-shrink-0" />
-                        <span className="hidden md:block text-sm font-semibold">{category.label}</span>
+                        <CategoryIcon className="w-5 h-5 flex-shrink-0" />
+                        <span className="text-sm font-semibold">{category.label}</span>
                       </div>
-                      <div className="hidden md:block">
+                      <div>
                         {isOpen ? (
                           <ChevronDown className="w-4 h-4" />
                         ) : (
@@ -167,7 +171,7 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
                       </div>
                     </div>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="pl-2 md:pl-4 space-y-1 mt-1">
+                  <CollapsibleContent className="pl-4 space-y-1 mt-1">
                     {category.items.map((item) => {
                       const Icon = item.icon;
                       const isActive = activeTab === item.id;
@@ -177,13 +181,13 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
                           key={item.id}
                           onClick={() => onTabChange(item.id)}
                           className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 w-full",
+                            "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 w-full text-left",
                             "hover:bg-accent hover:text-accent-foreground text-sm",
                             isActive && "bg-accent text-accent-foreground font-medium"
                           )}
                         >
                           <Icon className="w-4 h-4 flex-shrink-0" />
-                          <span className="hidden md:block">{item.label}</span>
+                          <span>{item.label}</span>
                         </button>
                       );
                     })}
@@ -204,7 +208,7 @@ export function SuperAdminNavigation({ activeTab, onTabChange }: SuperAdminNavig
             )}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
-            <span className="hidden md:block">{t.superAdmin.navigation.logout}</span>
+            <span>{t.superAdmin.navigation.logout}</span>
           </button>
         </div>
       </div>
