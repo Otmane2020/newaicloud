@@ -21,7 +21,7 @@ const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EV
   
   // Pro tiers - Monthly
   "pro-500-monthly": { name: "Pro (500 optimizations)", price: 49.00, interval: "EVERY_30_DAYS" },
-  "pro-1000-monthly": { name: "Pro (1,000 optimizations)", price: 98.00, interval: "EVERY_30_DAYS" },
+  "pro-1000-monthly": { name: "Enterprise (1,000 optimizations)", price: 199.00, interval: "EVERY_30_DAYS" },
   "pro-2000-monthly": { name: "Pro (2,000 optimizations)", price: 196.00, interval: "EVERY_30_DAYS" },
   "pro-4000-monthly": { name: "Pro (4,000 optimizations)", price: 392.00, interval: "EVERY_30_DAYS" },
   "pro-8000-monthly": { name: "Pro (8,000 optimizations)", price: 784.00, interval: "EVERY_30_DAYS" },
@@ -31,7 +31,7 @@ const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EV
   
   // Pro tiers - Yearly (total annual price)
   "pro-500-yearly": { name: "Pro Annual (500 optimizations)", price: 470.40, interval: "ANNUAL" },
-  "pro-1000-yearly": { name: "Pro Annual (1,000 optimizations)", price: 940.80, interval: "ANNUAL" },
+  "pro-1000-yearly": { name: "Enterprise Annual (1,000 optimizations)", price: 1910.40, interval: "ANNUAL" },
   "pro-2000-yearly": { name: "Pro Annual (2,000 optimizations)", price: 1881.60, interval: "ANNUAL" },
   "pro-4000-yearly": { name: "Pro Annual (4,000 optimizations)", price: 3763.20, interval: "ANNUAL" },
   "pro-8000-yearly": { name: "Pro Annual (8,000 optimizations)", price: 7526.40, interval: "ANNUAL" },
