@@ -92,11 +92,13 @@ export default function ShopifyApp() {
           navigate("/dashboard", { replace: true });
         } else {
           // Redirection vers SetupWizard pour Shopify Billing (pas Stripe)
-          // Conserver tous les query params (host, shop, etc.) pour App Bridge
-          const searchParams = new URLSearchParams(window.location.search);
-          searchParams.set("shop", shop);
-          searchParams.delete("pending_token"); // Supprimer le token utilisé
-          navigate(`/app/setup-wizard?${searchParams.toString()}`, { replace: true });
+          // On conserve shop + host + embedded pour App Bridge v4
+          const redirectParams = new URLSearchParams({
+            shop,
+            host: params.get("host") || "",
+            embedded: "1",
+          });
+          navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
         }
       } catch (err) {
         setStatus("error");
