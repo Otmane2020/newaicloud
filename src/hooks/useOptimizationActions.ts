@@ -132,6 +132,8 @@ export const useOptimizationActions = () => {
       setProgress({ current: 0, total: collections.length, action: 'collections' });
 
       let processedCount = 0;
+      const optimizedCollectionIds: string[] = [];
+      
       for (const collection of collections) {
         try {
           const { error } = await supabase.functions.invoke('generate-collection-seo', {
@@ -144,9 +146,23 @@ export const useOptimizationActions = () => {
           });
           if (error) throw error;
           processedCount++;
+          optimizedCollectionIds.push(collection.id);
           setProgress({ current: processedCount, total: collections.length, action: 'collections' });
         } catch (err) {
           console.error('Error optimizing collection:', collection.id, err);
+        }
+      }
+
+      // Auto-sync to Shopify after optimization
+      if (optimizedCollectionIds.length > 0) {
+        for (const collectionId of optimizedCollectionIds) {
+          try {
+            await supabase.functions.invoke('sync-collection-seo-to-shopify', {
+              body: { collectionId }
+            });
+          } catch (err) {
+            console.error('Error syncing collection:', collectionId, err);
+          }
         }
       }
 
@@ -184,7 +200,7 @@ export const useOptimizationActions = () => {
 
       let query = supabase
         .from('product_images')
-        .select('id, src, product_id, image_type, shopify_products!inner(title)');
+        .select('id, src, product_id, shopify_products!inner(title)');
 
       if (imageIds && imageIds.length > 0) {
         query = query.in('id', imageIds);
@@ -252,6 +268,20 @@ export const useOptimizationActions = () => {
         );
       }
 
+      // Auto-sync ALT texts to Shopify after optimization
+      if (processedCount > 0) {
+        const processedImages = images.slice(0, processedCount);
+        for (const img of processedImages) {
+          try {
+            await supabase.functions.invoke('sync-alt-text-to-shopify', {
+              body: { imageId: img.id }
+            });
+          } catch (err) {
+            console.error('Error syncing ALT text:', img.id, err);
+          }
+        }
+      }
+
       await refreshLimits();
 
       if (processedCount > 0) {
@@ -302,6 +332,8 @@ export const useOptimizationActions = () => {
       setProgress({ current: 0, total: articles.length, action: 'articles' });
 
       let processedCount = 0;
+      const optimizedArticleIds: string[] = [];
+      
       for (const article of articles) {
         try {
           const { error } = await supabase.functions.invoke('generate-article-seo', {
@@ -313,9 +345,23 @@ export const useOptimizationActions = () => {
           });
           if (error) throw error;
           processedCount++;
+          optimizedArticleIds.push(article.id);
           setProgress({ current: processedCount, total: articles.length, action: 'articles' });
         } catch (err) {
           console.error('Error optimizing article:', article.id, err);
+        }
+      }
+
+      // Auto-sync to Shopify after optimization
+      if (optimizedArticleIds.length > 0) {
+        for (const articleId of optimizedArticleIds) {
+          try {
+            await supabase.functions.invoke('sync-article-seo-to-shopify', {
+              body: { articleId }
+            });
+          } catch (err) {
+            console.error('Error syncing article:', articleId, err);
+          }
         }
       }
 
@@ -370,6 +416,8 @@ export const useOptimizationActions = () => {
       setProgress({ current: 0, total: pages.length, action: 'pages' });
 
       let processedCount = 0;
+      const optimizedPageIds: string[] = [];
+      
       for (const page of pages) {
         try {
           const { error } = await supabase.functions.invoke('generate-page-seo', {
@@ -382,9 +430,23 @@ export const useOptimizationActions = () => {
           });
           if (error) throw error;
           processedCount++;
+          optimizedPageIds.push(page.id);
           setProgress({ current: processedCount, total: pages.length, action: 'pages' });
         } catch (err) {
           console.error('Error optimizing page:', page.id, err);
+        }
+      }
+
+      // Auto-sync to Shopify after optimization
+      if (optimizedPageIds.length > 0) {
+        for (const pageId of optimizedPageIds) {
+          try {
+            await supabase.functions.invoke('sync-page-seo-to-shopify', {
+              body: { pageId }
+            });
+          } catch (err) {
+            console.error('Error syncing page:', pageId, err);
+          }
         }
       }
 
