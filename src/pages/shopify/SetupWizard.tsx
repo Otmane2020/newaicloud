@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Check, Zap, Crown, Rocket } from "lucide-react";
+import { Loader2, Check, Zap, Crown, Rocket, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -18,9 +18,34 @@ interface Plan {
   icon: React.ElementType;
   popular?: boolean;
   trial?: number;
+  isFree?: boolean;
 }
 
 const plans: Plan[] = [
+  {
+    id: "free-trial",
+    name: "Essai Gratuit",
+    nameEn: "Free Trial",
+    price: 0,
+    priceYearly: 0,
+    trial: 14,
+    icon: Gift,
+    isFree: true,
+    features: [
+      "14 jours gratuits",
+      "10 optimisations SEO",
+      "Synchronisation Shopify",
+      "Textes alternatifs IA",
+      "Accès limité aux fonctionnalités",
+    ],
+    featuresEn: [
+      "14 days free",
+      "10 SEO optimizations",
+      "Shopify sync",
+      "AI alt texts",
+      "Limited feature access",
+    ],
+  },
   {
     id: "starter",
     name: "Starter",
@@ -117,11 +142,13 @@ export default function SetupWizard() {
     yearly: language === "fr" ? "Annuel" : "Yearly",
     save: language === "fr" ? "Économisez 20%" : "Save 20%",
     selectPlan: language === "fr" ? "Sélectionner" : "Select",
+    startTrial: language === "fr" ? "Démarrer l'essai" : "Start Trial",
     processing: language === "fr" ? "Traitement en cours..." : "Processing...",
     popular: language === "fr" ? "Populaire" : "Popular",
     trial: language === "fr" ? "Essai gratuit" : "Free trial",
     perMonth: language === "fr" ? "/mois" : "/month",
     days: language === "fr" ? "jours" : "days",
+    free: language === "fr" ? "Gratuit" : "Free",
     settingUp: language === "fr" ? "Configuration de votre compte..." : "Setting up your account...",
     errorTitle: language === "fr" ? "Erreur" : "Error",
     errorMessage: language === "fr" 
@@ -172,7 +199,7 @@ export default function SetupWizard() {
         body: {
           planId,
           billingCycle,
-          shop,
+          shopDomain: shop, // Corrected: use shopDomain instead of shop
         },
       });
 
@@ -181,6 +208,9 @@ export default function SetupWizard() {
       if (data?.confirmationUrl) {
         // Redirect to Shopify billing confirmation
         window.location.href = data.confirmationUrl;
+      } else if (data?.success && planId === "free-trial") {
+        // Free trial activated without Shopify billing
+        window.location.href = `/dashboard?trial=activated`;
       } else {
         throw new Error("No confirmation URL received");
       }
@@ -220,7 +250,7 @@ export default function SetupWizard() {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
@@ -257,10 +287,10 @@ export default function SetupWizard() {
         </div>
 
         {/* Plans grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan) => {
             const Icon = plan.icon;
-            const price = billingCycle === "yearly" ? plan.priceYearly : plan.price;
+            const price = plan.isFree ? 0 : (billingCycle === "yearly" ? plan.priceYearly : plan.price);
             const features = language === "fr" ? plan.features : plan.featuresEn;
             const planName = language === "fr" ? plan.name : plan.nameEn;
             const isSelected = selectedPlan === plan.id;
@@ -270,7 +300,7 @@ export default function SetupWizard() {
                 key={plan.id}
                 className={`relative transition-all ${
                   plan.popular ? "border-primary shadow-lg" : ""
-                } ${isSelected ? "ring-2 ring-primary" : ""}`}
+                } ${plan.isFree ? "border-success/50 bg-success/5" : ""} ${isSelected ? "ring-2 ring-primary" : ""}`}
               >
                 {plan.popular && (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -279,16 +309,22 @@ export default function SetupWizard() {
                 )}
                 
                 <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-3 rounded-full bg-primary/10 w-fit">
-                    <Icon className="h-6 w-6 text-primary" />
+                  <div className={`mx-auto mb-4 p-3 rounded-full w-fit ${plan.isFree ? "bg-success/10" : "bg-primary/10"}`}>
+                    <Icon className={`h-6 w-6 ${plan.isFree ? "text-success" : "text-primary"}`} />
                   </div>
                   <CardTitle className="text-xl">{planName}</CardTitle>
                   <div className="mt-2">
-                    <span className="text-4xl font-bold">${price.toFixed(2)}</span>
-                    <span className="text-muted-foreground">{t.perMonth}</span>
+                    {plan.isFree ? (
+                      <span className="text-4xl font-bold text-success">{t.free}</span>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-bold">${price.toFixed(2)}</span>
+                        <span className="text-muted-foreground">{t.perMonth}</span>
+                      </>
+                    )}
                   </div>
                   {plan.trial && (
-                    <Badge variant="outline" className="mt-2">
+                    <Badge variant="outline" className={`mt-2 ${plan.isFree ? "border-success text-success" : ""}`}>
                       {plan.trial} {t.days} {t.trial}
                     </Badge>
                   )}
@@ -298,18 +334,15 @@ export default function SetupWizard() {
                   <ul className="space-y-2">
                     {features.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-sm">
-                        <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <Check className={`h-4 w-4 mt-0.5 flex-shrink-0 ${plan.isFree ? "text-success" : "text-primary"}`} />
                         <span>{feature}</span>
                       </li>
                     ))}
                   </ul>
 
-                  <button
-                    className={`w-full h-11 px-6 py-2 rounded-lg font-semibold transition-all ${
-                      plan.popular 
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                        : "border-2 border-primary text-primary hover:bg-primary/10"
-                    } disabled:opacity-50`}
+                  <Button
+                    className={`w-full ${plan.isFree ? "bg-success hover:bg-success/90 text-success-foreground" : ""}`}
+                    variant={plan.popular ? "default" : plan.isFree ? "default" : "outline"}
                     onClick={() => handleSelectPlan(plan.id)}
                     disabled={loading}
                   >
@@ -319,9 +352,9 @@ export default function SetupWizard() {
                         {t.processing}
                       </span>
                     ) : (
-                      t.selectPlan
+                      plan.isFree ? t.startTrial : t.selectPlan
                     )}
-                  </button>
+                  </Button>
                 </CardContent>
               </Card>
             );

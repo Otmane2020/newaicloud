@@ -15,6 +15,12 @@ const logStep = (step: string, details?: any) => {
   console.log(`[SHOPIFY-BILLING-CALLBACK] ${step}${detailsStr}`);
 };
 
+// Extract shop handle from myshopify.com domain
+const getShopHandle = (shopDomain: string): string => {
+  // shop.myshopify.com -> shop
+  return shopDomain.replace(".myshopify.com", "").replace("https://", "").replace("http://", "");
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -36,6 +42,7 @@ serve(async (req) => {
       return Response.redirect(`${APP_URL}/app/setup-wizard?error=missing_shop`, 302);
     }
 
+    const shopHandle = getShopHandle(shop);
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Get the pending subscription
@@ -50,7 +57,7 @@ serve(async (req) => {
 
     if (pendingError || !pending) {
       logStep("No pending subscription found", { error: pendingError });
-      return Response.redirect(`${APP_URL}/app/setup-wizard?error=no_pending_subscription&shop=${shop}`, 302);
+      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?error=no_pending_subscription`, 302);
     }
 
     logStep("Pending subscription found", { userId: pending.user_id, planId: pending.plan_id });
@@ -65,7 +72,7 @@ serve(async (req) => {
 
     if (connError || !connection) {
       logStep("No Shopify connection found", { error: connError });
-      return Response.redirect(`${APP_URL}/app/setup-wizard?error=no_connection&shop=${shop}`, 302);
+      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?error=no_connection`, 302);
     }
 
     // Verify the subscription status with Shopify
@@ -111,7 +118,7 @@ serve(async (req) => {
     if (!shopifyResponse.ok) {
       const errorText = await shopifyResponse.text();
       logStep("Shopify API error", { status: shopifyResponse.status, error: errorText });
-      return Response.redirect(`${APP_URL}/onboarding?error=shopify_api_error`, 302);
+      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?error=shopify_api_error`, 302);
     }
 
     const shopifyData = await shopifyResponse.json();
@@ -127,7 +134,7 @@ serve(async (req) => {
         .update({ status: "declined" })
         .eq("id", pending.id);
       
-      return Response.redirect(`${APP_URL}/onboarding?error=subscription_declined`, 302);
+      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?error=subscription_declined`, 302);
     }
 
     const subscription = activeSubscriptions[0];
@@ -178,7 +185,7 @@ serve(async (req) => {
 
     if (profileError) {
       logStep("Error updating profile", { error: profileError });
-      return Response.redirect(`${APP_URL}/onboarding?error=profile_update_failed`, 302);
+      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?error=profile_update_failed`, 302);
     }
 
     // Update pending subscription status
@@ -212,12 +219,12 @@ serve(async (req) => {
       trialEndsAt 
     });
 
-    // Redirect to dashboard with success
-    return Response.redirect(`${APP_URL}/dashboard?subscription=active&plan=${pending.plan_id}`, 302);
+    // Redirect to embedded Shopify dashboard with success
+    return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard?subscription=active&plan=${pending.plan_id}`, 302);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return Response.redirect(`${APP_URL}/onboarding?error=unexpected_error`, 302);
+    return Response.redirect(`${APP_URL}/app/setup-wizard?error=unexpected_error`, 302);
   }
 });
