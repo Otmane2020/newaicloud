@@ -12,14 +12,12 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Mapping des plans vers Shopify Billing - All tiers from database
 const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number }> = {
-  // Free test plan - handled separately (bypass Shopify Billing)
-  
   // Trial
   "trial": { name: "14-Day Free Trial", price: 0, interval: "EVERY_30_DAYS", trialDays: 14 },
   
-  // Starter - Monthly & Yearly
-  "starter-monthly": { name: "Starter (100 optimizations)", price: 9.99, interval: "EVERY_30_DAYS", trialDays: 7 },
-  "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 95.90, interval: "ANNUAL", trialDays: 7 },
+  // Starter - Monthly & Yearly (TEMPORARY: $0 for testing)
+  "starter-monthly": { name: "Starter (100 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7 },
+  "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 0, interval: "ANNUAL", trialDays: 7 },
   
   // Pro tiers - Monthly
   "pro-500-monthly": { name: "Pro (500 optimizations)", price: 49.00, interval: "EVERY_30_DAYS" },
@@ -132,32 +130,6 @@ serve(async (req) => {
     // Determine plan key
     const planKey = planId === "trial" ? "trial" : `${planId}-${billingCycle}`;
     
-    // Handle FREE TEST plan - bypass Shopify Billing completely
-    if (planId === "free-test") {
-      logStep("Free test plan - bypassing Shopify Billing");
-      
-      // Directly activate subscription in database
-      await supabase.from("profiles").update({
-        subscription_status: "active",
-        current_plan_id: "free-test",
-        billing_provider: "shopify",
-        updated_at: new Date().toISOString()
-      }).eq("id", user.id);
-      
-      logStep("Free test plan activated for user", { userId: user.id });
-      
-      // Return direct redirect to dashboard (no Shopify payment page needed)
-      const dashboardUrl = `${APP_URL}/app/dashboard?shop=${encodeURIComponent(shopDomain)}&plan=free-test&activated=true`;
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          confirmationUrl: dashboardUrl,
-          message: "Free test plan activated" 
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
     
     const plan = SHOPIFY_PLANS[planKey];
 
