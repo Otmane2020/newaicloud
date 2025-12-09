@@ -355,18 +355,35 @@ serve(async (req) => {
     
     console.log(`[LIMITS] Using plan: ${plan.id} - isTrialing: ${isTrialing}, isPaid: ${isPaid}`);
 
-    // Use plan limits directly (trial plan limits for trialing, paid plan limits for paid)
+    // Check if user is on Starter plan TRIAL period (7 days with reduced limits)
+    // Starter trial: 30 optimizations, 1 article, 20 products
+    const isStarterTrial = plan.id === 'starter' && 
+                           profile.subscription_status === 'trialing' && 
+                           profile.trial_ends_at && 
+                           new Date(profile.trial_ends_at) > new Date();
+    
+    // Use reduced trial limits for Starter trial, otherwise full plan limits
     const limits = {
-      max_optimizations: plan.max_optimizations_monthly || 0,
-      max_articles: plan.max_articles_monthly || 0,
+      max_optimizations: isStarterTrial && plan.trial_max_optimizations 
+        ? plan.trial_max_optimizations 
+        : (plan.max_optimizations_monthly || 0),
+      max_articles: isStarterTrial && plan.trial_max_articles 
+        ? plan.trial_max_articles 
+        : (plan.max_articles_monthly || 0),
+      max_products: isStarterTrial && plan.trial_max_products 
+        ? plan.trial_max_products 
+        : (plan.max_products || 0),
       max_chat_responses: plan.max_chat_responses_monthly || 0,
       max_shopify_requests: plan.max_shopify_requests_monthly || 0,
-      max_products: plan.max_products || 0,
       max_shopify_stores: plan.max_shopify_stores || 1,
       max_campaigns: plan.max_campaigns || 0,
     };
     
-    console.log(`[LIMITS] ${isTrialing ? '🔴 TRIAL MODE' : '🟢 PAID MODE'} - Applied limits:`, limits);
+    if (isStarterTrial) {
+      console.log(`[LIMITS] 🔶 STARTER TRIAL MODE - Reduced limits applied (trial ends: ${profile.trial_ends_at}):`, limits);
+    } else {
+      console.log(`[LIMITS] ${isTrialing ? '🔴 TRIAL MODE' : '🟢 PAID MODE'} - Applied limits:`, limits);
+    }
 
     // Check if limits are reached
     // CRITICAL FIX: Trial users MUST respect the 50 optimization limit

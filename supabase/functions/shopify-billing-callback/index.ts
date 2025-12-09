@@ -143,21 +143,37 @@ serve(async (req) => {
       subscriptionEnd = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
     }
 
-    // Determine subscription status
-    const subscriptionStatus = subscription.trialDays > 0 ? "trialing" : "active";
+    // Determine subscription status and trial end date
+    // Starter plan has 7-day trial with reduced limits (30 optimizations)
+    const hasTrialDays = subscription.trialDays > 0;
+    const subscriptionStatus = hasTrialDays ? "trialing" : "active";
+    
+    // Calculate trial_ends_at for Starter plan (7 days)
+    let trialEndsAt = null;
+    if (hasTrialDays && pending.plan_id === "starter") {
+      trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      logStep("Starter plan with 7-day trial", { trialEndsAt });
+    }
 
     // Update user profile with subscription
+    const profileUpdate: Record<string, any> = {
+      subscription_status: subscriptionStatus,
+      current_plan_id: pending.plan_id,
+      subscription_start: new Date().toISOString(),
+      subscription_end: subscriptionEnd,
+      billing_provider: "shopify",
+      shopify_subscription_id: subscription.id,
+      updated_at: new Date().toISOString(),
+    };
+    
+    // Add trial_ends_at only for Starter plan with trial
+    if (trialEndsAt) {
+      profileUpdate.trial_ends_at = trialEndsAt;
+    }
+
     const { error: profileError } = await supabase
       .from("profiles")
-      .update({
-        subscription_status: subscriptionStatus,
-        current_plan_id: pending.plan_id,
-        subscription_start: new Date().toISOString(),
-        subscription_end: subscriptionEnd,
-        billing_provider: "shopify",
-        shopify_subscription_id: subscription.id,
-        updated_at: new Date().toISOString(),
-      })
+      .update(profileUpdate)
       .eq("id", pending.user_id);
 
     if (profileError) {
@@ -192,7 +208,8 @@ serve(async (req) => {
     logStep("Subscription activated successfully", { 
       userId: pending.user_id, 
       planId: pending.plan_id,
-      status: subscriptionStatus 
+      status: subscriptionStatus,
+      trialEndsAt 
     });
 
     // Redirect to dashboard with success
