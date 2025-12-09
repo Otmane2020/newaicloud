@@ -12,52 +12,17 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Mapping des plans vers Shopify Billing - All tiers from database
 const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number }> = {
-  // Trial
-  "trial": { name: "14-Day Free Trial", price: 0, interval: "EVERY_30_DAYS", trialDays: 14 },
+  // Starter - $9.99/month or $7.99/year (7-day trial)
+  "starter-monthly": { name: "Starter", price: 9.99, interval: "EVERY_30_DAYS", trialDays: 7 },
+  "starter-yearly": { name: "Starter", price: 95.88, interval: "ANNUAL", trialDays: 7 }, // $7.99/month billed annually
   
-  // Starter - Monthly & Yearly
-  "starter-monthly": { name: "Starter (100 optimizations)", price: 0.01, interval: "EVERY_30_DAYS", trialDays: 7 }, // Temporairement gratuit
-  "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 95.90, interval: "ANNUAL", trialDays: 7 },
+  // Pro - $49/month or $470/year
+  "pro-500-monthly": { name: "PRO", price: 49, interval: "EVERY_30_DAYS" },
+  "pro-500-yearly": { name: "PRO", price: 470, interval: "ANNUAL" },
   
-  // Pro tiers - Monthly
-  "pro-500-monthly": { name: "Pro (500 optimizations)", price: 49.00, interval: "EVERY_30_DAYS" },
-  "pro-1000-monthly": { name: "Enterprise (1,000 optimizations)", price: 199.00, interval: "EVERY_30_DAYS" },
-  "pro-2000-monthly": { name: "Pro (2,000 optimizations)", price: 196.00, interval: "EVERY_30_DAYS" },
-  "pro-4000-monthly": { name: "Pro (4,000 optimizations)", price: 392.00, interval: "EVERY_30_DAYS" },
-  "pro-8000-monthly": { name: "Pro (8,000 optimizations)", price: 784.00, interval: "EVERY_30_DAYS" },
-  "pro-16000-monthly": { name: "Pro (16,000 optimizations)", price: 1568.00, interval: "EVERY_30_DAYS" },
-  "pro-32000-monthly": { name: "Pro (32,000 optimizations)", price: 3136.00, interval: "EVERY_30_DAYS" },
-  "pro-50000-monthly": { name: "Pro (50,000 optimizations)", price: 4900.00, interval: "EVERY_30_DAYS" },
-  
-  // Pro tiers - Yearly (total annual price)
-  "pro-500-yearly": { name: "Pro Annual (500 optimizations)", price: 470.40, interval: "ANNUAL" },
-  "pro-1000-yearly": { name: "Enterprise Annual (1,000 optimizations)", price: 1910.40, interval: "ANNUAL" },
-  "pro-2000-yearly": { name: "Pro Annual (2,000 optimizations)", price: 1881.60, interval: "ANNUAL" },
-  "pro-4000-yearly": { name: "Pro Annual (4,000 optimizations)", price: 3763.20, interval: "ANNUAL" },
-  "pro-8000-yearly": { name: "Pro Annual (8,000 optimizations)", price: 7526.40, interval: "ANNUAL" },
-  "pro-16000-yearly": { name: "Pro Annual (16,000 optimizations)", price: 15052.80, interval: "ANNUAL" },
-  "pro-32000-yearly": { name: "Pro Annual (32,000 optimizations)", price: 30105.60, interval: "ANNUAL" },
-  "pro-50000-yearly": { name: "Pro Annual (50,000 optimizations)", price: 47040.00, interval: "ANNUAL" },
-  
-  // Enterprise tiers - Monthly
-  "enterprise-2000-monthly": { name: "Enterprise (2,000 optimizations)", price: 199.00, interval: "EVERY_30_DAYS" },
-  "enterprise-4000-monthly": { name: "Enterprise (4,000 optimizations)", price: 398.00, interval: "EVERY_30_DAYS" },
-  "enterprise-8000-monthly": { name: "Enterprise (8,000 optimizations)", price: 796.00, interval: "EVERY_30_DAYS" },
-  "enterprise-16000-monthly": { name: "Enterprise (16,000 optimizations)", price: 1592.00, interval: "EVERY_30_DAYS" },
-  "enterprise-32000-monthly": { name: "Enterprise (32,000 optimizations)", price: 3184.00, interval: "EVERY_30_DAYS" },
-  "enterprise-64000-monthly": { name: "Enterprise (64,000 optimizations)", price: 6368.00, interval: "EVERY_30_DAYS" },
-  "enterprise-128000-monthly": { name: "Enterprise (128,000 optimizations)", price: 12736.00, interval: "EVERY_30_DAYS" },
-  "enterprise-200000-monthly": { name: "Enterprise (200,000 optimizations)", price: 19900.00, interval: "EVERY_30_DAYS" },
-  
-  // Enterprise tiers - Yearly (total annual price)
-  "enterprise-2000-yearly": { name: "Enterprise Annual (2,000 optimizations)", price: 1910.40, interval: "ANNUAL" },
-  "enterprise-4000-yearly": { name: "Enterprise Annual (4,000 optimizations)", price: 3820.80, interval: "ANNUAL" },
-  "enterprise-8000-yearly": { name: "Enterprise Annual (8,000 optimizations)", price: 7641.60, interval: "ANNUAL" },
-  "enterprise-16000-yearly": { name: "Enterprise Annual (16,000 optimizations)", price: 15283.20, interval: "ANNUAL" },
-  "enterprise-32000-yearly": { name: "Enterprise Annual (32,000 optimizations)", price: 30566.40, interval: "ANNUAL" },
-  "enterprise-64000-yearly": { name: "Enterprise Annual (64,000 optimizations)", price: 61132.80, interval: "ANNUAL" },
-  "enterprise-128000-yearly": { name: "Enterprise Annual (128,000 optimizations)", price: 122265.60, interval: "ANNUAL" },
-  "enterprise-200000-yearly": { name: "Enterprise Annual (200,000 optimizations)", price: 191040.00, interval: "ANNUAL" },
+  // Enterprise - $199/month or $1,910/year
+  "enterprise-monthly": { name: "ENTREPRISE", price: 199, interval: "EVERY_30_DAYS" },
+  "enterprise-yearly": { name: "ENTREPRISE", price: 1910, interval: "ANNUAL" },
 };
 
 const logStep = (step: string, details?: any) => {
