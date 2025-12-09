@@ -15,9 +15,9 @@ const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EV
   // Trial
   "trial": { name: "14-Day Free Trial", price: 0, interval: "EVERY_30_DAYS", trialDays: 14 },
   
-  // Starter - Monthly & Yearly (TEMPORARY: $0 for testing)
-  "starter-monthly": { name: "Starter (100 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7 },
-  "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 0, interval: "ANNUAL", trialDays: 7 },
+  // Starter - Monthly & Yearly
+  "starter-monthly": { name: "Starter (100 optimizations)", price: 9.99, interval: "EVERY_30_DAYS", trialDays: 7 },
+  "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 95.90, interval: "ANNUAL", trialDays: 7 },
   
   // Pro tiers - Monthly
   "pro-500-monthly": { name: "Pro (500 optimizations)", price: 49.00, interval: "EVERY_30_DAYS" },
@@ -129,8 +129,6 @@ serve(async (req) => {
 
     // Determine plan key
     const planKey = planId === "trial" ? "trial" : `${planId}-${billingCycle}`;
-    
-    
     const plan = SHOPIFY_PLANS[planKey];
 
     if (!plan) {
