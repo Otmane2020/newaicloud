@@ -194,79 +194,11 @@ serve(async (req) => {
 
     console.log("[SHOPIFY-AUTO-AUTH] ✅ Connexion Shopify claimed");
 
-    // 7.5 Vérifier si l'utilisateur a des produits ET des collections
-    const { count: existingProductsCount, error: countError } = await supabase
-      .from("shopify_products")
-      .select("*", { count: "exact", head: true })
-      .eq("seller_id", userId);
-
-    // 🔥 CRITICAL FIX: Also check for collections
-    const { count: existingCollectionsCount, error: collectionsCountError } = await supabase
-      .from("shopify_collections")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId);
-
-    // Log détaillé pour debug
-    console.log("[SHOPIFY-AUTO-AUTH] 📊 Vérification données existantes:", {
-      userId,
-      existingProductsCount,
-      existingCollectionsCount,
-      countError: countError?.message || null,
-      collectionsCountError: collectionsCountError?.message || null,
-      isNewUser: !existingUser,
-    });
-
-    // Déclencher l'import si:
-    // - Nouvel utilisateur
-    // - OU pas de produits
-    // - OU pas de collections (même si produits existent!)
-    const isNewUser = !existingUser;
-    const hasNoProducts = countError || existingProductsCount === null || existingProductsCount === 0;
-    const hasNoCollections = collectionsCountError || existingCollectionsCount === null || existingCollectionsCount === 0;
-    let importTriggered = false;
-
-    if (isNewUser || hasNoProducts || hasNoCollections) {
-      const reason = isNewUser 
-        ? "nouvel utilisateur" 
-        : hasNoProducts 
-          ? "aucun produit existant"
-          : "aucune collection existante";
-          
-      console.log("[SHOPIFY-AUTO-AUTH] 🚀 Déclenchement import automatique complet:", {
-        reason,
-        isNewUser,
-        hasNoProducts,
-        hasNoCollections,
-        productCount: existingProductsCount,
-        collectionCount: existingCollectionsCount,
-      });
-      
-      // 🚀 FIRE-AND-FORGET: Ne pas attendre la réponse pour accélérer l'affichage des plans
-      // L'import continuera en arrière-plan
-      fetch(`${SUPABASE_URL}/functions/v1/trigger-auto-sync`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        body: JSON.stringify({
-          user_id: userId,
-        }),
-      }).then(response => {
-        if (response.ok) {
-          console.log("[SHOPIFY-AUTO-AUTH] ✅ Import automatique déclenché avec succès (async)");
-        } else {
-          console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Erreur déclenchement import (async):", response.status);
-        }
-      }).catch(err => {
-        console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Import automatique échoué (async):", err);
-      });
-
-      console.log("[SHOPIFY-AUTO-AUTH] 🚀 Import automatique déclenché (non-bloquant)");
-      importTriggered = true;
-    } else {
-      console.log("[SHOPIFY-AUTO-AUTH] ⏭️ Utilisateur existant avec", existingProductsCount, "produits et", existingCollectionsCount, "collections - Skip import automatique");
-    }
+    // ⚠️ IMPORTANT: Ne PAS déclencher l'import ici!
+    // L'import sera fait APRÈS que l'utilisateur ait choisi et payé un abonnement
+    // dans shopify-billing-callback pour éviter d'importer des données pour des utilisateurs
+    // qui partent sans s'abonner
+    console.log("[SHOPIFY-AUTO-AUTH] ⏭️ Import différé - sera déclenché après paiement Shopify");
 
     // 8. Créer un client Supabase pour générer une session utilisateur
     // Utiliser signInWithPassword avec les credentials créés
@@ -303,7 +235,7 @@ serve(async (req) => {
         access_token: authData.session.access_token,
         refresh_token: authData.session.refresh_token,
         shop: shop,
-        import_triggered: importTriggered, // Indique si un import a été déclenché
+        import_triggered: false, // Import différé après paiement Shopify
         is_returning_user: !!existingUser, // Indique si c'est un utilisateur existant
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
