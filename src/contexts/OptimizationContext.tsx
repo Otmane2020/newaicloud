@@ -343,14 +343,6 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
                 ...currentOp,
                 isRunning: false,
               });
-              
-              setTimeout(() => {
-                setState(s => {
-                  const ops = new Map(s.operations);
-                  ops.delete(type);
-                  return createFullState(ops, s.showDialog, s.activeDialogType, s.showCompletedDialog);
-                });
-              }, 5000);
             }
             
             // Don't auto-show completed dialog - let the component handle it manually
