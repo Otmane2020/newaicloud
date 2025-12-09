@@ -27,7 +27,24 @@ export function useShopifyBilling() {
 
     const checkShopifyConnection = async () => {
       try {
-        // Check if user has a Shopify connection (indicating they came from Shopify App Store)
+        // 🔧 CRITICAL FIX: Detect Shopify user by email pattern FIRST (fastest check)
+        // shopify-auto-auth creates users with email format: {shop_handle}@shopify.newai.sale
+        const isShopifyEmailPattern = user.email?.endsWith('@shopify.newai.sale') || false;
+        
+        if (isShopifyEmailPattern) {
+          console.log("[useShopifyBilling] Detected Shopify user via email pattern:", user.email);
+          // Extract shop domain from email: store-name@shopify.newai.sale → store-name.myshopify.com
+          const shopHandle = user.email?.split('@')[0] || '';
+          setState({
+            isShopifyUser: true,
+            shopDomain: `${shopHandle}.myshopify.com`,
+            billingProvider: 'shopify',
+            loading: false,
+          });
+          return;
+        }
+
+        // Fallback: Check if user has a Shopify connection in database
         const { data: connections, error: connError } = await supabase
           .from("shopify_connections")
           .select("store_url, connection_type")
