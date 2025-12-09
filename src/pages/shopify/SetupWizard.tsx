@@ -23,30 +23,6 @@ interface Plan {
 
 const plans: Plan[] = [
   {
-    id: "free-trial",
-    name: "Essai Gratuit",
-    nameEn: "Free Trial",
-    price: 0,
-    priceYearly: 0,
-    trial: 14,
-    icon: Gift,
-    isFree: true,
-    features: [
-      "14 jours gratuits",
-      "10 optimisations SEO",
-      "Synchronisation Shopify",
-      "Textes alternatifs IA",
-      "Accès limité aux fonctionnalités",
-    ],
-    featuresEn: [
-      "14 days free",
-      "10 SEO optimizations",
-      "Shopify sync",
-      "AI alt texts",
-      "Limited feature access",
-    ],
-  },
-  {
     id: "starter",
     name: "Starter",
     nameEn: "Starter",
@@ -55,13 +31,13 @@ const plans: Plan[] = [
     trial: 7,
     icon: Zap,
     features: [
-      "30 optimisations SEO/mois",
+      "100 optimisations SEO/mois",
       "Synchronisation Shopify",
       "Textes alternatifs IA",
       "Support email",
     ],
     featuresEn: [
-      "30 SEO optimizations/month",
+      "100 SEO optimizations/month",
       "Shopify sync",
       "AI alt texts",
       "Email support",
@@ -296,7 +272,7 @@ export default function SetupWizard() {
         </div>
 
         {/* Plans grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((plan) => {
             const Icon = plan.icon;
             const price = plan.isFree ? 0 : (billingCycle === "yearly" ? plan.priceYearly : plan.price);
