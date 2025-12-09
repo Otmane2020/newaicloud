@@ -127,14 +127,15 @@ serve(async (req) => {
     const activeSubscriptions = shopifyData.data?.currentAppInstallation?.activeSubscriptions || [];
     
     if (activeSubscriptions.length === 0) {
-      logStep("No active subscription found - user may have declined");
+      logStep("No active subscription found - user cancelled or declined");
       // Update pending status
       await supabase
         .from("shopify_pending_subscriptions")
-        .update({ status: "declined" })
+        .update({ status: "cancelled" })
         .eq("id", pending.id);
       
-      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?error=subscription_declined`, 302);
+      // Redirect back to plan selection without error - user just cancelled
+      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard`, 302);
     }
 
     const subscription = activeSubscriptions[0];
