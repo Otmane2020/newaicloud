@@ -145,13 +145,17 @@ export function EmailInbox() {
 
       if (error) throw error;
 
+      // Un email incoming est dans "inbox" seulement s'il n'a pas de folder spécifique (trash, spam, drafts)
+      const isInInbox = (e: { direction: string | null; folder: string | null }) => 
+        e.direction === "incoming" && (!e.folder || e.folder === "inbox");
+      
       const stats = {
-        inbox: data?.filter((e) => e.direction === "incoming").length || 0,
+        inbox: data?.filter(isInInbox).length || 0,
         sent: data?.filter((e) => e.direction === "outgoing").length || 0,
         drafts: data?.filter((e) => e.folder === "drafts").length || 0,
         trash: data?.filter((e) => e.folder === "trash").length || 0,
         spam: data?.filter((e) => e.folder === "spam").length || 0,
-        unreadInbox: data?.filter((e) => e.direction === "incoming" && !e.is_read).length || 0,
+        unreadInbox: data?.filter((e) => isInInbox(e) && !e.is_read).length || 0,
         unreadSent: 0, // Les emails envoyés n'ont pas de statut "non lu"
         unreadDrafts: data?.filter((e) => e.folder === "drafts" && !e.is_read).length || 0,
         unreadTrash: data?.filter((e) => e.folder === "trash" && !e.is_read).length || 0,
@@ -171,7 +175,8 @@ export function EmailInbox() {
     return emails.filter((e) => {
       let inFolder = false;
       if (folder === "inbox") {
-        inFolder = e.direction === "incoming";
+        // Inbox = incoming sans folder spécifique
+        inFolder = e.direction === "incoming" && (!e.folder || e.folder === "inbox");
       } else {
         inFolder = e.folder === folder;
       }
@@ -435,7 +440,8 @@ export function EmailInbox() {
 
   const filteredEmails = emails.filter((e) => {
     if (activeFolder === "inbox") {
-      return e.direction === "incoming";
+      // Inbox = incoming emails sans folder spécifique (pas trash, spam, drafts)
+      return e.direction === "incoming" && (!e.folder || e.folder === "inbox");
     }
     if (activeFolder === "sent") {
       return e.direction === "outgoing";
