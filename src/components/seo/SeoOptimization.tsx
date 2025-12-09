@@ -653,17 +653,28 @@ export function SeoOptimization() {
       },
       'optimizing',
       async (results) => {
-        // This callback runs when bulk operation completes
-        if (results.error > 0 && results.success > 0) {
-          toast.warning(tf('seo.optimization.partialSuccess', { success: results.success, errors: results.error }) || `${results.success} optimisés, ${results.error} erreurs`);
-        } else if (results.success > 0) {
-          toast.success(t.seo.optimization.productOptimized);
+        // Refresh products to get updated SEO data
+        await fetchProducts();
+        await refreshLimits();
+        
+        if (results.success > 0) {
+          // Fetch updated products to show in ResultsDialog
+          const { data: updatedProducts } = await supabase
+            .from("shopify_products")
+            .select("id, title, seo_title, seo_description, image_url, handle, enrichment_status")
+            .in("id", productsToGenerate.map(p => p.id))
+            .eq("enrichment_status", "enriched");
+          
+          if (updatedProducts && updatedProducts.length > 0) {
+            setOptimizedProducts(updatedProducts as unknown as Product[]);
+            setShowResultsDialog(true);
+          } else {
+            toast.success(t.seo.optimization.productOptimized);
+          }
         } else if (results.error > 0) {
           toast.error(t.seo.optimization.optimizationError);
         }
         
-        await fetchProducts();
-        await refreshLimits();
         setSelectedProducts(new Set());
       }
     );
@@ -732,36 +743,36 @@ export function SeoOptimization() {
       },
       'optimizing',
       async (results) => {
-        if (results.success > 0) {
-          toast.success(t.seo.optimization.productOptimized);
-        }
-        
         await fetchProducts();
         await refreshLimits();
         
-        // Check if auto-sync is enabled
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: syncSettings } = await supabase
-            .from('shopify_sync_settings')
-            .select('export_after_optimization')
-            .eq('user_id', user.id)
-            .maybeSingle();
+        if (results.success > 0) {
+          // Fetch updated products to show in ResultsDialog
+          const { data: updatedProducts } = await supabase
+            .from("shopify_products")
+            .select("id, title, seo_title, seo_description, image_url, handle, enrichment_status")
+            .in("id", productsToGenerate.map(p => p.id))
+            .eq("enrichment_status", "enriched");
+          
+          if (updatedProducts && updatedProducts.length > 0) {
+            setOptimizedProducts(updatedProducts as unknown as Product[]);
+            setShowResultsDialog(true);
+          } else {
+            toast.success(t.seo.optimization.productOptimized);
+          }
+          
+          // Check if auto-sync is enabled
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: syncSettings } = await supabase
+              .from('shopify_sync_settings')
+              .select('export_after_optimization')
+              .eq('user_id', user.id)
+              .maybeSingle();
 
-          if (syncSettings?.export_after_optimization) {
-            // Auto-sync enabled - synchronize automatically
-            console.log('🔄 Auto-sync enabled, syncing products automatically...');
-            const { data: updatedProducts } = await supabase
-              .from("shopify_products")
-              .select("id, enrichment_status, seo_synced_to_shopify")
-              .in("id", productsToGenerate.map(p => p.id));
-            
-            const toSync = (updatedProducts || [])
-              .filter((p) => p.enrichment_status === "enriched" && !p.seo_synced_to_shopify)
-              .map((p) => p.id);
-            
-            if (toSync.length > 0) {
-              setTimeout(() => handleSyncProducts(toSync), 1000);
+            if (syncSettings?.export_after_optimization) {
+              // Auto-sync enabled - synchronize automatically after showing results
+              console.log('🔄 Auto-sync enabled, will sync after user confirms');
             }
           }
         }
@@ -836,13 +847,15 @@ export function SeoOptimization() {
     setShowResultsDialog(false);
     setShowSyncDialog(false);
 
+    const syncedProductsList: Array<{ id: string; title: string; shopifyUrl: string; resourceType: "product" }> = [];
+
     // Use global context processor for sync - continues even if user changes tabs
     processBulkOperation(
       'products',
       productIds,
       async (productId) => {
         try {
-          const { error } = await supabase.functions.invoke("sync-seo-to-shopify", {
+          const { data, error } = await supabase.functions.invoke("sync-seo-to-shopify", {
             body: {
               productId,
               syncTags: true,
@@ -850,7 +863,21 @@ export function SeoOptimization() {
               force: true,
             },
           });
-          return !error;
+          
+          if (!error && data?.success) {
+            // Get product title for success dialog
+            const product = products.find(p => p.id === productId);
+            if (product) {
+              syncedProductsList.push({
+                id: productId,
+                title: product.title,
+                shopifyUrl: data.shopifyUrl || '',
+                resourceType: "product",
+              });
+            }
+            return true;
+          }
+          return false;
         } catch (error) {
           console.error("Error syncing:", error);
           return false;
@@ -858,13 +885,13 @@ export function SeoOptimization() {
       },
       'syncing',
       async (results) => {
-        if (results.success > 0) {
-          toast.success(t.seo.optimization.syncCompleted, {
-            description: tf("seo.optimization.productsSynced", { count: results.success }),
-          });
-        }
         await fetchProducts();
         await refreshLimits();
+        
+        if (results.success > 0) {
+          // Show ShopifySyncSuccessDialog with synced items
+          setSyncedItems(syncedProductsList);
+        }
       }
     );
   };
