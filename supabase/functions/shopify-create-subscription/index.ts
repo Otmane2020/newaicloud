@@ -163,7 +163,8 @@ serve(async (req) => {
       }
     `;
 
-    const returnUrl = `${APP_URL}/shopify/billing-callback?shop=${encodeURIComponent(shopDomain)}&plan=${encodeURIComponent(planId)}&cycle=${billingCycle}`;
+    // Return URL goes to the edge function which handles verification and redirects to dashboard
+    const returnUrl = `${SUPABASE_URL}/functions/v1/shopify-billing-callback?shop=${encodeURIComponent(shopDomain)}&plan=${encodeURIComponent(planId)}&cycle=${billingCycle}`;
 
     const variables: any = {
       name: plan.name,
