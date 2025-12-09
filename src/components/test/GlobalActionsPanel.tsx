@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Download, RefreshCw, Activity, TestTube, Loader2, Trash2, Play } from 'lucide-react';
+import { Download, RefreshCw, Activity, TestTube, Loader2, Trash2 } from 'lucide-react';
 
 interface GlobalActionsPanelProps {
   storeId: string;
@@ -75,24 +75,6 @@ export function GlobalActionsPanel({ storeId }: GlobalActionsPanelProps) {
     }
   };
 
-  const handleTestAutoSync = async () => {
-    setLoading('autosync');
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Non connecté');
-      
-      const { error } = await supabase.functions.invoke('trigger-auto-sync', {
-        body: { user_id: user.id }
-      });
-      if (error) throw error;
-      toast.success('Import automatique lancé');
-    } catch (error) {
-      toast.error('Erreur lors de l\'import');
-      console.error(error);
-    } finally {
-      setLoading(null);
-    }
-  };
 
   return (
     <Card className="p-6">
@@ -145,19 +127,6 @@ export function GlobalActionsPanel({ storeId }: GlobalActionsPanelProps) {
             <TestTube className="w-4 h-4 mr-2" />
           )}
           Test Vision AI
-        </Button>
-        <Button
-          variant="outline"
-          onClick={handleTestAutoSync}
-          disabled={!!loading}
-          className="bg-green-500/10 border-green-500/30 hover:bg-green-500/20"
-        >
-          {loading === 'autosync' ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Play className="w-4 h-4 mr-2" />
-          )}
-          Test Import (Dev)
         </Button>
       </div>
     </Card>

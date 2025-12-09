@@ -220,12 +220,8 @@ Deno.serve(async (req) => {
             await handleShopRedact(supabase, shopDomain, payload);
             break;
 
-          case 'app/uninstalled':
-            await handleAppUninstalled(supabase, shopDomain, payload);
-            break;
-
           default:
-            console.log('⚠️ Unhandled webhook topic:', topic);
+            console.log('⚠️ Unhandled GDPR webhook topic:', topic);
         }
 
         console.log(JSON.stringify({
@@ -389,72 +385,6 @@ async function handleShopRedact(supabase: any, shopDomain: string, payload: any)
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error(String(error));
     console.error('❌ Error during shop redaction:', err);
-    throw err;
-  }
-}
-
-/**
- * Handle app/uninstalled webhook
- * Called when merchant uninstalls the app
- */
-async function handleAppUninstalled(supabase: any, shopDomain: string, payload: any) {
-  console.log(JSON.stringify({
-    event: 'app_uninstalled',
-    shop: shopDomain,
-    shop_id: payload.id,
-    timestamp: new Date().toISOString()
-  }));
-
-  try {
-    // Mark the shop connection as inactive
-    const { data: connection, error: fetchError } = await supabase
-      .from('shopify_connections')
-      .select('id, user_id')
-      .eq('store_url', shopDomain)
-      .single();
-
-    if (fetchError || !connection) {
-      console.log('⚠️ Shop connection not found for uninstall:', shopDomain);
-      return;
-    }
-
-    // Mark connection as inactive instead of deleting immediately
-    // (GDPR shop/redact will delete after 48h)
-    await supabase
-      .from('shopify_connections')
-      .update({ 
-        is_active: false, 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', connection.id);
-
-    // Update user profile billing status
-    await supabase
-      .from('profiles')
-      .update({ 
-        subscription_status: 'cancelled',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', connection.user_id);
-
-    console.log('✅ App uninstall processed for shop:', shopDomain);
-
-    // Log for audit trail
-    await supabase.from('system_logs').insert({
-      type: 'shopify_webhook',
-      function_name: 'shopify-gdpr-webhook',
-      message: `App uninstalled for shop ${shopDomain}`,
-      metadata: {
-        shop: shopDomain,
-        shop_id: payload.id,
-        connection_id: connection.id,
-        user_id: connection.user_id
-      }
-    });
-
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    console.error('❌ Error handling app uninstall:', err);
     throw err;
   }
 }

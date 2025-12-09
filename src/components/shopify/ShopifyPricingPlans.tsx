@@ -16,7 +16,7 @@ const PLANS = [
     nameEn: "Starter",
     description: "Pour démarrer votre optimisation SEO",
     descriptionEn: "Start your SEO optimization journey",
-    priceMonthly: 0, // Temporairement gratuit pour tests
+    priceMonthly: 9.99,
     priceYearly: 7.99, // /mois facturé annuellement (95.90€/an)
     trialDays: 7,
     icon: Zap,
@@ -72,8 +72,8 @@ const PLANS = [
     nameEn: "Enterprise",
     description: "Pour les grandes boutiques",
     descriptionEn: "For large stores",
-    priceMonthly: 199,
-    priceYearly: 159.20, // /mois facturé annuellement (1910.40€/an)
+    priceMonthly: 98,
+    priceYearly: 78.40, // /mois facturé annuellement (940.80€/an)
     icon: Rocket,
     color: "from-amber-500 to-orange-500",
     features: {
