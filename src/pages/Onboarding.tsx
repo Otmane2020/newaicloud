@@ -821,136 +821,48 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      console.log("🚀 Creating checkout for plan:", planId, "billing:", billingCycle, "trial:", isTrial);
-      console.log("📋 Billing provider:", billingProvider, "isShopifyUser:", isShopifyUser);
-      console.log(
-        "📋 Available plans:",
-        plans.map((p) => ({ id: p.id, name: p.name })),
-      );
+      console.log("🚀 [SHOPIFY-BILLING] Creating subscription for plan:", planId, "billing:", billingCycle);
 
       // Vérifier que le plan existe
       const selectedPlan = plans.find((p) => p.id === planId);
       if (!selectedPlan) {
         console.error("❌ Plan not found:", planId);
-        console.error(
-          "Available plan IDs:",
-          plans.map((p) => p.id),
-        );
         toast.error(`Plan "${planId}" not found. Please try again or contact support.`);
         return;
       }
 
       console.log("✅ Selected plan found:", { id: selectedPlan.id, name: selectedPlan.name });
 
-      // Check if user has active subscription
-      const { data: subscription } = await supabase
-        .from("subscriptions")
-        .select("stripe_subscription_id, status")
-        .eq("seller_id", user.id)
-        .in("status", ["active", "trialing"])
-        .maybeSingle();
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("subscription_status, trial_ends_at, billing_provider")
-        .eq("id", user.id)
-        .single();
-
-      const hasActiveSubscription = !!subscription?.stripe_subscription_id;
-      const hasActiveTrial = Boolean(
-        profile?.subscription_status === "trialing" ||
-          (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date()),
+      toast.loading(
+        language === "fr" ? "Création de l'abonnement Shopify..." : "Creating Shopify subscription...", 
+        { id: "shopify-checkout" }
       );
-
-      // Determine billing provider: profile value > hook detection > default to stripe
-      const effectiveBillingProvider = profile?.billing_provider || billingProvider || (isShopifyUser ? "shopify" : "stripe");
-
-      console.log("💳 User subscription status:", {
-        hasActiveSubscription,
-        hasActiveTrial,
-        subscriptionStatus: profile?.subscription_status,
-        effectiveBillingProvider,
-      });
-
-      // ✅ SHOPIFY BILLING: If user came from Shopify App Store, use Shopify Billing API
-      if (effectiveBillingProvider === "shopify" || isShopifyUser) {
-        console.log("🛍️ [SHOPIFY-BILLING] Using Shopify Billing API for plan:", planId);
-        
-        toast.loading(language === "fr" ? "Création de l'abonnement Shopify..." : "Creating Shopify subscription...", { id: "shopify-checkout" });
-        
-        const result = await createShopifySubscription(planId, billingCycle);
-        
-        if (result?.confirmationUrl) {
-          console.log("✅ [SHOPIFY-BILLING] Redirecting to Shopify for payment approval");
-          toast.dismiss("shopify-checkout");
-          // Shopify will redirect back after payment approval
-          window.location.href = result.confirmationUrl;
-          return;
-        } else {
-          toast.dismiss("shopify-checkout");
-          toast.error(language === "fr" ? "Échec de la création de l'abonnement Shopify" : "Failed to create Shopify subscription");
-          return;
-        }
-      }
-
-      // ✅ STRIPE BILLING: Default path for non-Shopify users
-      // If user has active subscription, use update-subscription for proration
-      if (hasActiveSubscription) {
-        const priceId =
-          billingCycle === "yearly"
-            ? (selectedPlan as any).stripe_price_id_yearly
-            : (selectedPlan as any).stripe_price_id_monthly;
-
-        const { data, error } = await supabase.functions.invoke("update-subscription", {
-          body: {
-            new_price_id: priceId,
-            new_plan_id: planId,
-          },
-        });
-
-        if (error) throw error;
-
-        toast.success(t.onboarding.verification.success);
-        setTimeout(() => navigate("/dashboard"), 1500);
+      
+      // ✅ SHOPIFY BILLING ONLY - No Stripe fallback
+      const result = await createShopifySubscription(planId, billingCycle);
+      
+      if (result?.confirmationUrl) {
+        console.log("✅ [SHOPIFY-BILLING] Redirecting to Shopify for payment approval:", result.confirmationUrl);
+        toast.dismiss("shopify-checkout");
+        // Shopify will redirect back after payment approval
+        window.location.href = result.confirmationUrl;
         return;
-      }
-
-      // Otherwise, create new checkout session
-      const shopifyPending = searchParams.get("shopify_pending");
-      const successUrl = shopifyPending
-        ? `${window.location.origin}/onboarding?checkout=success&shopify_pending=${shopifyPending}`
-        : `${window.location.origin}/onboarding?checkout=success`;
-
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: {
-          plan_id: planId,
-          billing_period: billingCycle,
-          currency: language === "fr" ? "EUR" : "USD",
-          success_url: successUrl,
-          cancel_url: `${window.location.origin}/onboarding?checkout=cancelled`,
-          force_immediate_payment: hasActiveTrial,
-          use_manual_promo: useManualPromo,
-        },
-      });
-
-      console.log("📦 Checkout response:", { data, error });
-
-      if (error) {
-        console.error("❌ Checkout error:", error);
-        throw error;
-      }
-
-      if (data?.url) {
-        console.log("✅ Redirecting to:", data.url);
-        // Redirection dans le même onglet pour éviter les popups bloqués
-        window.location.href = data.url;
       } else {
-        console.error("❌ No URL in response:", data);
-        throw new Error("No checkout URL returned");
+        toast.dismiss("shopify-checkout");
+        toast.error(
+          language === "fr" 
+            ? "Échec de la création de l'abonnement Shopify" 
+            : "Failed to create Shopify subscription"
+        );
       }
     } catch (error) {
-      console.error("💥 Error creating checkout:", error);
-      toast.error(t.onboarding.errors.paymentError);
+      console.error("💥 [SHOPIFY-BILLING] Error creating subscription:", error);
+      toast.dismiss("shopify-checkout");
+      toast.error(
+        language === "fr" 
+          ? "Erreur lors de la création de l'abonnement" 
+          : "Error creating subscription"
+      );
     } finally {
       setLoading(false);
     }
