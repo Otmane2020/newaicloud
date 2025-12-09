@@ -1404,30 +1404,17 @@ export default function Onboarding() {
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl font-bold text-primary">
                         {formatPrice(
-                          (billingCycle === "yearly"
-                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
-                            : getPriceByLanguage(selectedPlan, language, billingCycle)) * 0.8,
-                          language,
-                        )}
-                      </span>
-                      <span className="text-muted-foreground text-base">{t.onboarding.planFeatures.perMonth}</span>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-semibold text-muted-foreground line-through">
-                        {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
                             : getPriceByLanguage(selectedPlan, language, billingCycle),
                           language,
                         )}
                       </span>
-                      <Badge variant="destructive" className="text-xs">
-                        -20%
-                      </Badge>
+                      <span className="text-muted-foreground text-base">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
                     {billingCycle === "yearly" && (
                       <span className="text-xs text-muted-foreground text-center mt-1">
-                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.8, language)}{" "}
+                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)}{" "}
                         {t.onboarding.billedAnnually}
                       </span>
                     )}
@@ -1562,30 +1549,17 @@ export default function Onboarding() {
                     <div className="flex items-baseline gap-2">
                       <span className="text-4xl font-bold text-primary">
                         {formatPrice(
-                          (billingCycle === "yearly"
-                            ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
-                            : getPriceByLanguage(selectedPlan, language, billingCycle)) * 0.7,
-                          language,
-                        )}
-                      </span>
-                      <span className="text-muted-foreground text-base">{t.onboarding.planFeatures.perMonth}</span>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-4xl font-semibold text-muted-foreground line-through">
-                        {formatPrice(
                           billingCycle === "yearly"
                             ? getPriceByLanguage(selectedPlan, language, billingCycle) / 12
                             : getPriceByLanguage(selectedPlan, language, billingCycle),
                           language,
                         )}
                       </span>
-                      <Badge variant="destructive" className="text-xs">
-                        -30%
-                      </Badge>
+                      <span className="text-muted-foreground text-base">{t.onboarding.planFeatures.perMonth}</span>
                     </div>
                     {billingCycle === "yearly" && (
                       <span className="text-xs text-muted-foreground text-center mt-1">
-                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle) * 0.7, language)}{" "}
+                        {formatPrice(getPriceByLanguage(selectedPlan, language, billingCycle), language)}{" "}
                         {t.onboarding.billedAnnually}
                       </span>
                     )}
