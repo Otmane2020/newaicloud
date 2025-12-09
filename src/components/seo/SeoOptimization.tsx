@@ -984,8 +984,8 @@ export function SeoOptimization() {
       {/* Controls Section */}
       <Card className="p-4 bg-background/50">
         <div className="flex flex-col gap-4">
-          {/* Search Bars Row */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
+          {/* Search + Filter Icon Row */}
+          <div className="flex flex-col sm:flex-row gap-3 w-full items-center">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
               <Input
@@ -996,108 +996,102 @@ export function SeoOptimization() {
               />
             </div>
 
-            <div className="relative flex-1 sm:flex-initial sm:w-[200px]">
-              <Input
-                placeholder="Filtrer par SKU..."
-                value={skuFilter}
-                onChange={(e) => setSkuFilter(e.target.value)}
-                className="h-12 text-base relative z-20"
-              />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className="flex items-center gap-2 h-12 px-4"
+            >
+              <Filter className="w-4 h-4" />
+              <span className="hidden sm:inline">{t.seo.optimization.filters}</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+              className="flex items-center gap-2 h-12"
+            >
+              {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
+            </Button>
+          </div>
+
+          {/* Collapsible Filters */}
+          {showMobileFilters && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-muted/30 rounded-lg border">
+              <div className="relative">
+                <Input
+                  placeholder="Filtrer par SKU..."
+                  value={skuFilter}
+                  onChange={(e) => setSkuFilter(e.target.value)}
+                  className="h-10 text-sm"
+                />
+              </div>
+              
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="h-10 px-3 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+              >
+                <option value="all">{t.seo.optimization.allCategories}</option>
+                {uniqueCategories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+              
+              <select
+                value={selectedCollection}
+                onChange={(e) => setSelectedCollection(e.target.value)}
+                className="h-10 px-3 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+              >
+                <option value="all">Toutes les collections</option>
+                {uniqueCollections.map((collection) => (
+                  <option key={collection} value={collection}>
+                    {collection}
+                  </option>
+                ))}
+              </select>
+              
+              <select
+                value={productStatusFilter}
+                onChange={(e) => setProductStatusFilter(e.target.value)}
+                className="h-10 px-3 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+              >
+                <option value="all">Tous les statuts</option>
+                <option value="active">Publié</option>
+                <option value="draft">Brouillon</option>
+              </select>
+
+              <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
+                <SelectTrigger className="h-10 text-sm">
+                  <SelectValue placeholder={t.seo.optimization.status} />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border z-50">
+                  <SelectItem value="all">{t.seo.optimization.allStatus}</SelectItem>
+                  <SelectItem value="optimized">{t.seo.optimization.optimizedTab}</SelectItem>
+                  <SelectItem value="not-optimized">{t.seo.optimization.toOptimize}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
+                <SelectTrigger className="h-10 text-sm">
+                  <SelectValue placeholder={t.seo.optimization.seoQuality} />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border z-50">
+                  <SelectItem value="all">{t.seo.optimization.allQualities}</SelectItem>
+                  <SelectItem value="excellent">{t.seo.optimization.excellent}</SelectItem>
+                  <SelectItem value="good">{t.seo.optimization.good}</SelectItem>
+                  <SelectItem value="medium">{t.seo.optimization.medium}</SelectItem>
+                  <SelectItem value="poor">{t.seo.optimization.poor}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-
-          {/* Filters Row 1: Category, Collection, Product Status */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
-            >
-              <option value="all">{t.seo.optimization.allCategories}</option>
-              {uniqueCategories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-            
-            <select
-              value={selectedCollection}
-              onChange={(e) => setSelectedCollection(e.target.value)}
-              className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
-            >
-              <option value="all">Toutes les collections</option>
-              {uniqueCollections.map((collection) => (
-                <option key={collection} value={collection}>
-                  {collection}
-                </option>
-              ))}
-            </select>
-            
-            <select
-              value={productStatusFilter}
-              onChange={(e) => setProductStatusFilter(e.target.value)}
-              className="h-10 px-4 rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring flex-1 sm:min-w-[180px]"
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="active">Publié</option>
-              <option value="draft">Brouillon</option>
-            </select>
-          </div>
-
-          {/* Filters Row 2: SEO Status + Quality */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full">
-            <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
-              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
-                <SelectValue placeholder={t.seo.optimization.status} />
-              </SelectTrigger>
-              <SelectContent className="bg-background border border-border z-50">
-                <SelectItem value="all">{t.seo.optimization.allStatus}</SelectItem>
-                <SelectItem value="optimized">{t.seo.optimization.optimizedTab}</SelectItem>
-                <SelectItem value="not-optimized">{t.seo.optimization.toOptimize}</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
-              <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
-                <SelectValue placeholder={t.seo.optimization.seoQuality} />
-              </SelectTrigger>
-              <SelectContent className="bg-background border border-border z-50">
-                <SelectItem value="all">{t.seo.optimization.allQualities}</SelectItem>
-                <SelectItem value="excellent">{t.seo.optimization.excellent}</SelectItem>
-                <SelectItem value="good">{t.seo.optimization.good}</SelectItem>
-                <SelectItem value="medium">{t.seo.optimization.medium}</SelectItem>
-                <SelectItem value="poor">{t.seo.optimization.poor}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          )}
 
           {/* Action Buttons Row */}
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-                className="flex items-center gap-2"
-              >
-                {viewMode === "grid" ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
-                <span className="hidden sm:inline">
-                  {viewMode === "grid" ? t.seo.optimization.list : t.seo.optimization.grid}
-                </span>
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMobileFilters(!showMobileFilters)}
-                className="lg:hidden flex items-center gap-2"
-              >
-                <Filter className="w-4 h-4" />
-                <span>{t.seo.optimization.filters}</span>
-              </Button>
-            </div>
-
             {/* Bulk Actions */}
             <div className="flex flex-wrap gap-2">
               <Button
@@ -1128,28 +1122,6 @@ export function SeoOptimization() {
             </div>
           </div>
         </div>
-
-        {/* Mobile Filters */}
-        {showMobileFilters && (
-          <div className="lg:hidden mt-4 p-4 bg-muted/50 rounded-lg">
-            <div className="grid grid-cols-2 gap-2">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center justify-between p-3 rounded-md text-sm font-medium transition ${
-                    activeTab === tab.id
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "bg-background text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  {tab.label}
-                  <Badge variant={activeTab === tab.id ? "secondary" : "outline"}>{tab.count}</Badge>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </Card>
 
       {/* Desktop Filters */}

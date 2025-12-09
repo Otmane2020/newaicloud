@@ -15,8 +15,7 @@ import { useOptimization } from '@/contexts/OptimizationContext';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
 import { 
   ProgressDialog, 
-  ResultsDialog, 
-  SyncConfirmationDialog 
+  ResultsDialog 
 } from './SeoWorkflowDialogs';
 import {
   Search,
@@ -949,34 +948,6 @@ export function PageOptimization() {
                     </span>
                   </Button>
                   <Button
-                    onClick={handleSyncSelected}
-                    disabled={selectedPages.size === 0 || syncing}
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                  >
-                    {syncing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-4 h-4" />
-                    )}
-                    <span>Synchroniser</span>
-                  </Button>
-                  <Button
-                    onClick={handleSyncAll}
-                    disabled={syncing || pages.filter(p => p.optimized).length === 0}
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                  >
-                    {syncing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-4 h-4" />
-                    )}
-                    <span>Synchroniser tout</span>
-                  </Button>
-                  <Button
                     onClick={fetchPages}
                     disabled={loading}
                     variant="ghost"
@@ -1031,16 +1002,6 @@ export function PageOptimization() {
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
                   Optimiser ({selectedPages.size})
-                </Button>
-                <Button
-                  onClick={handleSyncSelected}
-                  disabled={syncing || selectedPages.size === 0}
-                  variant="outline"
-                  size="sm"
-                  className="border-2 border-green-200 text-green-700 hover:bg-green-50"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Synchroniser
                 </Button>
               </div>
             </div>

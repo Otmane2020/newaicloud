@@ -198,15 +198,6 @@ export default function SEO() {
             {t.seo.description}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleClearCache}
-          className="gap-2 flex-shrink-0 w-full sm:w-auto"
-        >
-          <RefreshCw className="w-4 h-4" />
-          <span className="truncate">{t.seo.clearCache}</span>
-        </Button>
       </div>
 
       {/* Tab Content - Navigation via sidebar uniquement */}
