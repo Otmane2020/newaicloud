@@ -226,45 +226,44 @@ serve(async (req) => {
     let importTriggered = false;
 
     if (isNewUser || hasNoProducts || hasNoCollections) {
-      try {
-        const reason = isNewUser 
-          ? "nouvel utilisateur" 
-          : hasNoProducts 
-            ? "aucun produit existant"
-            : "aucune collection existante";
-            
-        console.log("[SHOPIFY-AUTO-AUTH] 🚀 Déclenchement import automatique complet:", {
-          reason,
-          isNewUser,
-          hasNoProducts,
-          hasNoCollections,
-          productCount: existingProductsCount,
-          collectionCount: existingCollectionsCount,
-        });
-        
-        // Appeler trigger-auto-sync pour importer tous les types de contenu
-        const importResponse = await fetch(`${SUPABASE_URL}/functions/v1/trigger-auto-sync`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          },
-          body: JSON.stringify({
-            user_id: userId,
-          }),
-        });
-
-        if (importResponse.ok) {
-          const importResult = await importResponse.json();
-          console.log("[SHOPIFY-AUTO-AUTH] ✅ Import automatique déclenché:", importResult);
-          importTriggered = true;
+      const reason = isNewUser 
+        ? "nouvel utilisateur" 
+        : hasNoProducts 
+          ? "aucun produit existant"
+          : "aucune collection existante";
+          
+      console.log("[SHOPIFY-AUTO-AUTH] 🚀 Déclenchement import automatique complet:", {
+        reason,
+        isNewUser,
+        hasNoProducts,
+        hasNoCollections,
+        productCount: existingProductsCount,
+        collectionCount: existingCollectionsCount,
+      });
+      
+      // 🚀 FIRE-AND-FORGET: Ne pas attendre la réponse pour accélérer l'affichage des plans
+      // L'import continuera en arrière-plan
+      fetch(`${SUPABASE_URL}/functions/v1/trigger-auto-sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          user_id: userId,
+        }),
+      }).then(response => {
+        if (response.ok) {
+          console.log("[SHOPIFY-AUTO-AUTH] ✅ Import automatique déclenché avec succès (async)");
         } else {
-          console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Erreur déclenchement import:", await importResponse.text());
+          console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Erreur déclenchement import (async):", response.status);
         }
-      } catch (importError) {
-        // Ne pas bloquer l'auth si l'import échoue
-        console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Import automatique échoué (non-bloquant):", importError);
-      }
+      }).catch(err => {
+        console.error("[SHOPIFY-AUTO-AUTH] ⚠️ Import automatique échoué (async):", err);
+      });
+
+      console.log("[SHOPIFY-AUTO-AUTH] 🚀 Import automatique déclenché (non-bloquant)");
+      importTriggered = true;
     } else {
       console.log("[SHOPIFY-AUTO-AUTH] ⏭️ Utilisateur existant avec", existingProductsCount, "produits et", existingCollectionsCount, "collections - Skip import automatique");
     }
