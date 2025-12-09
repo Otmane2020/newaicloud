@@ -73,17 +73,28 @@ export default function Onboarding() {
   const [hasCheckedAfterCheckout, setHasCheckedAfterCheckout] = useState(false);
   const [useManualPromo, setUseManualPromo] = useState(false);
   const { syncShopifyStore } = useShopifySync();
-  const { isShopifyUser, billingProvider, createShopifySubscription, loading: shopifyBillingLoading } = useShopifyBilling();
+  const { isShopifyUser, shopDomain, billingProvider, createShopifySubscription, loading: shopifyBillingLoading } = useShopifyBilling();
+
+  // 🚫 CRITICAL: Block Stripe display until Shopify check completes
+  // Show loading screen to prevent race condition where Stripe UI appears before redirect
+  const [shopifyCheckComplete, setShopifyCheckComplete] = useState(false);
 
   // 🚫 CRITICAL: Redirect Shopify users to SetupWizard (Shopify Billing) instead of Stripe onboarding
   useEffect(() => {
+    if (shopifyBillingLoading) return; // Wait for check to complete
+    
     if (isShopifyUser && billingProvider === 'shopify') {
       console.log('🔄 [ONBOARDING] Shopify user detected, redirecting to SetupWizard for Shopify Billing');
-      const shop = searchParams.get('shop') || '';
+      // Use shopDomain from database (useShopifyBilling hook), NOT from URL params (may be empty)
+      const shopToUse = shopDomain || searchParams.get('shop') || '';
       const host = searchParams.get('host') || '';
-      navigate(`/app/setup-wizard?shop=${encodeURIComponent(shop)}&host=${encodeURIComponent(host)}&embedded=1`, { replace: true });
+      navigate(`/app/setup-wizard?shop=${encodeURIComponent(shopToUse)}&host=${encodeURIComponent(host)}&embedded=1`, { replace: true });
+      return;
     }
-  }, [isShopifyUser, billingProvider, navigate, searchParams]);
+    
+    // Mark check as complete only if NOT a Shopify user (so Stripe can show)
+    setShopifyCheckComplete(true);
+  }, [isShopifyUser, billingProvider, shopDomain, shopifyBillingLoading, navigate, searchParams]);
 
   // ✅ Auto-detect and claim Shopify - DÉSACTIVÉ si checkout=success (handleCheckSubscription gère tout)
   useEffect(() => {
@@ -968,6 +979,21 @@ export default function Onboarding() {
     const yearlyTotal = plan.price_yearly;
     return Math.round(((monthlyTotal - yearlyTotal) / monthlyTotal) * 100);
   };
+
+  // 🚫 CRITICAL: Block Stripe display while checking Shopify billing status
+  // This prevents the race condition where Stripe UI shows before redirect happens
+  if (shopifyBillingLoading || !shopifyCheckComplete) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">
+            {language === "fr" ? "Vérification de votre compte..." : "Verifying your account..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loadingPlans) {
     return (
