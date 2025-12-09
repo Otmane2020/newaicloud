@@ -9,15 +9,20 @@ import { useSearchParams } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { useTranslation } from "@/lib/language";
+import { useShopifyBilling } from "@/hooks/useShopifyBilling";
 
 const ShopifyConnectionsList = lazy(() => import("@/components/dashboard/ShopifyConnectionsList"));
 
 export function ShopifyIntegrationTabs() {
   const { isDemoMode } = useDemoMode();
+  const { isShopifyUser, loading: shopifyLoading } = useShopifyBilling();
   const { t, tf } = useTranslation();
   const [showDialog, setShowDialog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Users connected via Shopify OAuth cannot add stores (they already have one)
+  const canAddStore = !isDemoMode && !isShopifyUser;
 
   // Handle OAuth callback messages
   useEffect(() => {
@@ -96,21 +101,16 @@ export function ShopifyIntegrationTabs() {
                 <RefreshCw className="w-4 h-4 mr-2" />
                 {t.integration.sync.refresh || 'Refresh'}
               </Button>
-              <Button 
-                onClick={() => {
-                  if (isDemoMode) {
-                    toast.error(t.demo.restrictions.cannotAddStore);
-                    return;
-                  }
-                  setShowDialog(true);
-                }} 
-                size="lg" 
-                className="w-full sm:w-auto"
-                variant={isDemoMode ? "outline" : "default"}
-              >
-                {isDemoMode ? <Lock className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                {t.integration?.shopify?.addStore || 'Add Store'}
-              </Button>
+              {canAddStore && (
+                <Button 
+                  onClick={() => setShowDialog(true)} 
+                  size="lg" 
+                  className="w-full sm:w-auto"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t.integration?.shopify?.addStore || 'Add Store'}
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
