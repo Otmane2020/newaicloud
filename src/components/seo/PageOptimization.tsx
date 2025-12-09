@@ -961,7 +961,6 @@ export function PageOptimization() {
                 <TableHead className="min-w-[400px]">Aperçu Google</TableHead>
                 <TableHead className="w-32">SEO Score</TableHead>
                 <TableHead className="w-32">Status</TableHead>
-                <TableHead className="w-40">Sync Status</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -1063,24 +1062,6 @@ export function PageOptimization() {
                             </>
                           )}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {page.last_synced_at ? (
-                          <Badge variant="default" className="bg-green-600 text-white">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Synced
-                          </Badge>
-                        ) : page.optimized ? (
-                          <Badge variant="secondary" className="bg-yellow-600 text-white">
-                            <Clock className="w-3 h-3 mr-1" />
-                            Pending
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">
-                            <Clock className="w-3 h-3 mr-1" />
-                            Not synced
-                          </Badge>
-                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">

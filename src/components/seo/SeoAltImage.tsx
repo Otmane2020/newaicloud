@@ -803,7 +803,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       </Card>
 
       {/* Clickable Filter Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card
           className="p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
@@ -849,27 +849,6 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         </Card>
 
 
-        <Card
-          className="p-4 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 border-teal-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setActiveTab('all');
-            toast.info(tf('seo.altImage.toasts.displaySynced', { count: imagesSynced }));
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-teal-700 dark:text-teal-300">
-                {t.seo.altImage.cards.synced}
-              </p>
-              <p className="text-2xl font-bold text-teal-900 dark:text-teal-100">{imagesSynced}</p>
-              <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">
-                {t.seo.altImage.cards.onShopify}
-              </p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-teal-600" />
-          </div>
-          <p className="text-xs text-teal-700 dark:text-teal-300 mt-2">{t.seo.altImage.cards.clickToView}</p>
-        </Card>
       </div>
 
       {/* Tabs */}
