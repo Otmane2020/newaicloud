@@ -161,10 +161,10 @@ export function Navigation() {
   const menuItems = allMenuItems.map(filterMenuItem).filter(Boolean);
 
   const allBottomMenuItems = [
-    { path: '/dashboard', label: t.navigation.account, icon: User },
+    { path: '/dashboard', label: t.navigation.account, icon: User, restricted: true },
     { path: '/notification-settings', label: t.navigation.notifications, icon: Bell },
     { path: '/subscription', label: t.navigation.subscription, icon: CreditCard, restricted: true },
-    { path: '/integration', label: t.navigation.shopify, icon: Settings },
+    { path: '/integration', label: t.navigation.shopify, icon: Settings, restricted: true },
   ];
 
   const bottomMenuItems = allBottomMenuItems.filter(item => !item.restricted || hasFullAccess);
