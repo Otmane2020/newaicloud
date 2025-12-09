@@ -575,16 +575,13 @@ const Index = () => {
               </button>
               <button
                 onClick={() => setBillingCycle("yearly")}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors relative ${
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                   billingCycle === "yearly"
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {t.landing.pricing.yearly}
-                <Badge className="absolute -top-2 -right-2 bg-success text-[10px] px-1.5">
-                  {t.landing.pricing.yearlyDiscount}
-                </Badge>
               </button>
             </div>
           </div>
@@ -612,32 +609,25 @@ const Index = () => {
               },
               {
                 key: "pro",
-                priceMonthly: 39,
-                priceYearly: 31.2,
-                originalMonthly: 49,
-                originalYearly: 39,
-                yearlyTotal: 374.4,
+                priceMonthly: 49,
+                priceYearly: 39,
+                yearlyTotal: 468,
                 icon: "🟠",
                 featured: true,
-                hasPromo: true,
-                discount: 20,
+                hasPromo: false,
               },
               {
                 key: "enterprise",
-                priceMonthly: 139,
-                priceYearly: 111.2,
-                originalMonthly: 199,
-                originalYearly: 159,
-                yearlyTotal: 1334.4,
+                priceMonthly: 199,
+                priceYearly: 159,
+                yearlyTotal: 1908,
                 icon: "🔵",
                 featured: false,
-                hasPromo: true,
-                discount: 30,
+                hasPromo: false,
               },
             ].map((planConfig, index) => {
               const plan = t.landing.pricing.plans[planConfig.key as "trial" | "starter" | "pro" | "enterprise"];
               const price = billingCycle === "monthly" ? planConfig.priceMonthly : planConfig.priceYearly;
-              const originalPrice = billingCycle === "monthly" ? planConfig.originalMonthly : planConfig.originalYearly;
 
               return (
                 <Card
@@ -660,27 +650,10 @@ const Index = () => {
                     </div>
 
                     <div>
-                      {planConfig.hasPromo && originalPrice ? (
-                        <div>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-lg text-muted-foreground line-through">
-                              {formatPrice(originalPrice, language, true)}
-                            </span>
-                            <Badge variant="destructive" className="text-[10px]">
-                              -{planConfig.discount}%
-                            </Badge>
-                          </div>
-                          <div className="flex items-baseline gap-1 mt-1">
-                            <span className="text-3xl font-bold text-primary">{formatPrice(price, language)}</span>
-                            <span className="text-xs text-muted-foreground">{t.landing.pricing.perMonth}</span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-bold">{formatPrice(price, language)}</span>
-                          <span className="text-xs text-muted-foreground">{t.landing.pricing.perMonth}</span>
-                        </div>
-                      )}
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-bold">{formatPrice(price, language)}</span>
+                        <span className="text-xs text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                      </div>
                       {!planConfig.isTrial && billingCycle === "yearly" && (
                         <p className="text-xs text-success mt-1">
                           {t.landing.pricing.billedAnnually
