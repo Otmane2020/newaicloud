@@ -56,10 +56,10 @@ export function ProgressDialog({
   const isComplete = current === total && total > 0;
   const isProcessing = current > 0 && !isComplete;
   
-  // Calculate real percentage based on actual progress
+  // Calculate real percentage based on actual progress - starts at 0%
   const realPercentage = total > 0 ? Math.round((current / total) * 100) : 0;
-  // Ensure minimum 5% when processing starts to show activity
-  const displayPercentage = current > 0 || isComplete ? realPercentage : 5;
+  // Show real percentage always - 0% at start, actual progress during, 100% when complete
+  const displayPercentage = realPercentage;
 
   const { t, tf } = useTranslation();
   
