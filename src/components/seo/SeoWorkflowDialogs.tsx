@@ -240,8 +240,12 @@ export function ResultsDialog({
                       {type === 'seo' && (
                         <SeoConfidenceBadge 
                           seoTitle={item.seo_title} 
-                          seoDescription={item.seo_description}
+                          seoDescription={item.seo_description || item.meta_description}
                           showLabel={false}
+                          hasImage={!!item.image_url || !!item.featured_image}
+                          tags={item.tags}
+                          optimizationCount={1}
+                          itemId={item.id}
                         />
                       )}
                     </div>
