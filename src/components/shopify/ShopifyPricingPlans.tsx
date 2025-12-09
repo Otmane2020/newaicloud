@@ -101,12 +101,14 @@ interface ShopifyPricingPlansProps {
   shopDomain: string;
   language?: "fr" | "en";
   onSubscriptionCreated?: (confirmationUrl: string) => void;
+  isAuthenticating?: boolean;
 }
 
 export default function ShopifyPricingPlans({ 
   shopDomain, 
   language = "fr",
-  onSubscriptionCreated 
+  onSubscriptionCreated,
+  isAuthenticating = false
 }: ShopifyPricingPlansProps) {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
