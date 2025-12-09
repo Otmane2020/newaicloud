@@ -29,9 +29,10 @@ export default function ShopifyApp() {
           return;
         }
         
-        // Si pas de session, rediriger vers l'auth
-        console.log('⚠️ [ShopifyApp] No session, redirecting to auth');
-        navigate("/auth", { replace: true });
+        // Si pas de session, rediriger vers SetupWizard (pas /auth pour Shopify users)
+        console.log('⚠️ [ShopifyApp] No session, redirecting to setup-wizard');
+        const redirectParams = new URLSearchParams({ shop: shop || '', host, embedded: '1' });
+        navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
         return;
       }
 
@@ -86,18 +87,32 @@ export default function ShopifyApp() {
           sessionStorage.setItem('pending_sync', shop);
         }
 
-        // Nouvel utilisateur → SetupWizard pour choix de plan Shopify Billing
-        // Utilisateur existant → dashboard
+        // 🔧 CRITICAL FIX: TOUJOURS rediriger vers SetupWizard pour Shopify Billing
+        // Même les utilisateurs existants doivent passer par SetupWizard s'ils n'ont pas de subscription active
+        const redirectParams = new URLSearchParams({
+          shop,
+          host: params.get("host") || "",
+          embedded: "1",
+        });
+        
         if (data.is_returning_user) {
-          navigate("/dashboard", { replace: true });
+          // Vérifier si l'utilisateur a déjà un abonnement actif
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("subscription_status, billing_provider")
+            .eq("id", data.user_id)
+            .single();
+          
+          if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
+            console.log('✅ [ShopifyApp] Returning user with active subscription, redirecting to dashboard');
+            navigate("/dashboard", { replace: true });
+          } else {
+            console.log('🔄 [ShopifyApp] Returning user without subscription, redirecting to SetupWizard');
+            navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
+          }
         } else {
-          // Redirection vers SetupWizard pour Shopify Billing (pas Stripe)
-          // On conserve shop + host + embedded pour App Bridge v4
-          const redirectParams = new URLSearchParams({
-            shop,
-            host: params.get("host") || "",
-            embedded: "1",
-          });
+          // Nouvel utilisateur → toujours SetupWizard pour Shopify Billing
+          console.log('🆕 [ShopifyApp] New user, redirecting to SetupWizard for Shopify Billing');
           navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
         }
       } catch (err) {

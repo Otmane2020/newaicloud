@@ -79,12 +79,30 @@ export default function Onboarding() {
   // Show loading screen to prevent race condition where Stripe UI appears before redirect
   const [shopifyCheckComplete, setShopifyCheckComplete] = useState(false);
 
+  // 🔧 IMMEDIATE URL-BASED CHECK: Redirect Shopify users BEFORE hook finishes loading
+  useEffect(() => {
+    const shopFromUrl = searchParams.get('shop');
+    const hostFromUrl = searchParams.get('host');
+    
+    // If URL contains shop= parameter, this is definitely a Shopify user - redirect immediately
+    if (shopFromUrl) {
+      console.log('🔄 [ONBOARDING] Shopify shop detected in URL, immediate redirect to SetupWizard');
+      const redirectParams = new URLSearchParams({
+        shop: shopFromUrl,
+        host: hostFromUrl || '',
+        embedded: '1',
+      });
+      navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
+      return;
+    }
+  }, [searchParams, navigate]);
+
   // 🚫 CRITICAL: Redirect Shopify users to SetupWizard (Shopify Billing) instead of Stripe onboarding
   useEffect(() => {
     if (shopifyBillingLoading) return; // Wait for check to complete
     
     if (isShopifyUser && billingProvider === 'shopify') {
-      console.log('🔄 [ONBOARDING] Shopify user detected, redirecting to SetupWizard for Shopify Billing');
+      console.log('🔄 [ONBOARDING] Shopify user detected via hook, redirecting to SetupWizard for Shopify Billing');
       // Use shopDomain from database (useShopifyBilling hook), NOT from URL params (may be empty)
       const shopToUse = shopDomain || searchParams.get('shop') || '';
       const host = searchParams.get('host') || '';
