@@ -92,7 +92,7 @@ export function AppSidebar() {
   console.log('🔐 [AppSidebar] userEmail:', user?.email, '| hasFullAccess:', hasFullAccess);
 
   const seoSubItems = [
-    { title: t.seo.submenu.products, url: "/seo?tab=products", icon: ShoppingBag, key: "products", restricted: true },
+    { title: t.seo.submenu.products, url: "/seo?tab=products", icon: ShoppingBag, key: "products" },
     { title: t.seo.submenu.collections, url: "/seo?tab=collections", icon: Package, key: "collections" },
     { title: t.seo.submenu.pages, url: "/seo?tab=pages", icon: FileText, key: "pages" },
     { title: t.seo.submenu.articles, url: "/seo?tab=articles", icon: FileText, key: "articles" },
