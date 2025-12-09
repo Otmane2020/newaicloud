@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { GoogleSearchPreview } from './GoogleSearchPreview';
 import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArticlePreviewDialog } from '../blog/ArticlePreviewDialog';
 import { useStore } from '@/contexts/StoreContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,13 +53,37 @@ export function ProgressDialog({
   current, 
   total 
 }: ProgressDialogProps) {
+  const [simulatedProgress, setSimulatedProgress] = useState(0);
   const isComplete = current === total && total > 0;
   const isProcessing = total > 0 && !isComplete;
   
-  // Calculate real percentage - show progress during processing
-  // When current is 0 but total > 0, show a small initial progress to indicate activity
+  // Simulate smooth progress animation from 1% to 95%
+  useEffect(() => {
+    if (!open || !isProcessing) {
+      setSimulatedProgress(0);
+      return;
+    }
+    
+    // Start at 1%
+    setSimulatedProgress(1);
+    
+    const interval = setInterval(() => {
+      setSimulatedProgress(prev => {
+        // Slow down as we approach 95%
+        const increment = prev < 30 ? 3 : prev < 60 ? 2 : prev < 80 ? 1 : 0.5;
+        const next = prev + increment;
+        return next >= 95 ? 95 : next;
+      });
+    }, 150);
+    
+    return () => clearInterval(interval);
+  }, [open, isProcessing]);
+  
+  // Calculate real percentage based on actual progress
   const realPercentage = total > 0 ? Math.round((current / total) * 100) : 0;
-  const displayPercentage = isProcessing && current === 0 ? 5 : realPercentage;
+  
+  // Use simulated progress during processing, real percentage when complete
+  const displayPercentage = isComplete ? 100 : Math.max(simulatedProgress, realPercentage);
 
   const { t, tf } = useTranslation();
   
