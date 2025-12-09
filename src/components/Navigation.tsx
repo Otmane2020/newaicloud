@@ -48,13 +48,31 @@ export function Navigation() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [userPlan, setUserPlan] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Email avec accès complet à toutes les fonctionnalités
+  const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
+  const hasFullAccess = userEmail === FULL_ACCESS_EMAIL;
+
+  // Sections restreintes (visibles uniquement pour FULL_ACCESS_EMAIL)
+  const restrictedPaths = [
+    '/seo?tab=products',      // Product Optimization > Products
+    '/seo?tab=homepage',      // SEO > Homepage
+    '/seo?tab=audit',         // SEO Audit
+    '/blog?tab=netlinking',   // Netlinking
+    '/blog?tab=settings',     // Blog Settings
+    '/social-media',          // Social Media (tout)
+    '/shopping',              // Google Shopping
+    '/merchant',              // Google Merchant
+    '/subscription',          // Billing
+  ];
 
   // Menu principal - Social Media est un onglet séparé après SEO Blog
-  const menuItems = [
+  const allMenuItems = [
     { path: '/', label: t.navigation.dashboard, icon: LayoutDashboard },
     { path: '/products', label: t.navigation.catalog, icon: ShoppingBag },
-    { path: '/merchant', label: t.navigation.googleMerchant, icon: BarChart3 },
-    { path: '/shopping', label: t.navigation.googleShopping, icon: ShoppingBag },
+    { path: '/merchant', label: t.navigation.googleMerchant, icon: BarChart3, restricted: true },
+    { path: '/shopping', label: t.navigation.googleShopping, icon: ShoppingBag, restricted: true },
     { path: '/search-products', label: t.navigation.aiSearch, icon: MessageSquare },
     // SEO Optimisation
     { 
@@ -62,15 +80,15 @@ export function Navigation() {
       label: t.navigation.seo, 
       icon: Sparkles,
       subItems: [
-        { path: '/seo?tab=products', label: t.navigation.seoSubmenu.products, icon: ShoppingBag },
+        { path: '/seo?tab=products', label: t.navigation.seoSubmenu.products, icon: ShoppingBag, restricted: true },
         { path: '/seo?tab=collections', label: t.navigation.seoSubmenu.collections, icon: FileText },
         { path: '/seo?tab=pages', label: t.navigation.seoSubmenu.pages, icon: FileText },
         { path: '/seo?tab=articles', label: t.navigation.seoSubmenu.articles, icon: PenSquare },
         { path: '/seo?tab=alt', label: t.navigation.seoSubmenu.altImage, icon: ImageIcon },
-        { path: '/seo?tab=homepage', label: t.navigation.seoSubmenu.homepage, icon: FileText },
+        { path: '/seo?tab=homepage', label: t.navigation.seoSubmenu.homepage, icon: FileText, restricted: true },
         { path: '/seo?tab=tags', label: t.navigation.seoSubmenu.tags, icon: Tag },
         { path: '/seo?tab=automation', label: t.navigation.seoSubmenu.automation, icon: Sparkles },
-        { path: '/seo?tab=audit', label: t.navigation.seoSubmenu.audit, icon: BarChart3 },
+        { path: '/seo?tab=audit', label: t.navigation.seoSubmenu.audit, icon: BarChart3, restricted: true },
       ]
     },
     // SEO Blog (sans Social Media)
@@ -82,8 +100,8 @@ export function Navigation() {
         { path: '/blog?tab=articles', label: t.navigation.blogSubmenu.articles, icon: PenSquare },
         { path: '/blog?tab=campaigns', label: t.navigation.blogSubmenu.campaigns, icon: CalendarClock },
         { path: '/blog?tab=opportunities', label: t.navigation.blogSubmenu.opportunities, icon: Lightbulb },
-        { path: '/blog?tab=netlinking', label: t.navigation.blogSubmenu.netlinking, icon: LinkIcon },
-        { path: '/blog?tab=settings', label: t.navigation.blogSubmenu.settings, icon: Settings }
+        { path: '/blog?tab=netlinking', label: t.navigation.blogSubmenu.netlinking, icon: LinkIcon, restricted: true },
+        { path: '/blog?tab=settings', label: t.navigation.blogSubmenu.settings, icon: Settings, restricted: true }
       ]
     },
     // Social Media - Onglet principal séparé avec sous-menus
@@ -91,6 +109,7 @@ export function Navigation() {
       path: '/social-media', 
       label: t.navigation.socialMedia, 
       icon: Share2,
+      restricted: true,
       subItems: [
         // 1. Creative avec sous-sous-menus (Studio, Historique)
         { 
@@ -123,17 +142,39 @@ export function Navigation() {
     },
   ];
 
-  const bottomMenuItems = [
+  // Filtrer les items en fonction de l'accès
+  const filterMenuItem = (item: any): any => {
+    if (item.restricted && !hasFullAccess) return null;
+    if (item.subItems) {
+      const filteredSubItems = item.subItems
+        .map((sub: any) => filterMenuItem(sub))
+        .filter(Boolean);
+      if (filteredSubItems.length === 0 && item.subItems.length > 0) {
+        // Si tous les sous-items sont filtrés, masquer le parent aussi
+        return item.restricted ? null : { ...item, subItems: filteredSubItems };
+      }
+      return { ...item, subItems: filteredSubItems };
+    }
+    return item;
+  };
+
+  const menuItems = allMenuItems.map(filterMenuItem).filter(Boolean);
+
+  const allBottomMenuItems = [
     { path: '/dashboard', label: t.navigation.account, icon: User },
     { path: '/notification-settings', label: t.navigation.notifications, icon: Bell },
-    { path: '/subscription', label: t.navigation.subscription, icon: CreditCard },
+    { path: '/subscription', label: t.navigation.subscription, icon: CreditCard, restricted: true },
     { path: '/integration', label: t.navigation.shopify, icon: Settings },
   ];
+
+  const bottomMenuItems = allBottomMenuItems.filter(item => !item.restricted || hasFullAccess);
 
   useEffect(() => {
     const checkAdminAndPlan = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        setUserEmail(user.email || null);
+        
         const { data } = await supabase.rpc('has_role', {
           _user_id: user.id,
           _role: 'admin'
