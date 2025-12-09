@@ -353,8 +353,9 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
               }, 5000);
             }
             
-            const shouldShowCompleted = operation === 'optimizing' && successCount > 0;
-            return createFullState(newOperations, prev.showDialog, prev.activeDialogType, shouldShowCompleted);
+            // Don't auto-show completed dialog - let the component handle it manually
+            // This prevents race condition where dialog opens before data is ready
+            return createFullState(newOperations, prev.showDialog, prev.activeDialogType, prev.showCompletedDialog);
           });
         }
 

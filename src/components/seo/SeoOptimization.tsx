@@ -627,10 +627,30 @@ export function SeoOptimization() {
         await refreshLimits();
         
         if (results.success > 0) {
-          // Auto-sync to Shopify after optimization (silent, no UI update during)
-          const productIdsToSync = productsToGenerate.map(p => p.id);
+          // Fetch fresh optimized products FIRST before showing dialog
+          const { data: freshProducts } = await supabase
+            .from('shopify_products')
+            .select('*')
+            .in('id', productsToGenerate.map(p => p.id));
           
-          // Sync each product silently
+          if (freshProducts && freshProducts.length > 0) {
+            // Set optimized products BEFORE showing dialog
+            setOptimizedProducts(freshProducts as Product[]);
+            
+            // Update only the optimized products in the local state (no full refresh)
+            setProducts(prev => prev.map(p => {
+              const updated = freshProducts.find((fp: any) => fp.id === p.id);
+              return updated ? { ...p, ...updated } : p;
+            }));
+            
+            // Manually show dialog AFTER data is ready (small delay to ensure state is set)
+            setTimeout(() => {
+              setShowCompletedDialog(true);
+            }, 100);
+          }
+          
+          // Auto-sync to Shopify after optimization (silent, in background)
+          const productIdsToSync = productsToGenerate.map(p => p.id);
           for (const productId of productIdsToSync) {
             try {
               await supabase.functions.invoke("sync-seo-to-shopify", {
@@ -644,22 +664,6 @@ export function SeoOptimization() {
             } catch (error) {
               console.error("Error syncing:", error);
             }
-          }
-          
-          // Fetch fresh optimized products for ResultsDialog ONLY (no full refresh)
-          const { data: freshProducts } = await supabase
-            .from('shopify_products')
-            .select('*')
-            .in('id', productsToGenerate.map(p => p.id));
-          
-          if (freshProducts && freshProducts.length > 0) {
-            setOptimizedProducts(freshProducts as Product[]);
-            
-            // Update only the optimized products in the local state (no full refresh)
-            setProducts(prev => prev.map(p => {
-              const updated = freshProducts.find((fp: any) => fp.id === p.id);
-              return updated ? { ...p, ...updated } : p;
-            }));
           }
         } else if (results.error > 0) {
           toast.error(t.seo.optimization.optimizationError);
@@ -737,10 +741,30 @@ export function SeoOptimization() {
         await refreshLimits();
         
         if (results.success > 0) {
-          // Auto-sync to Shopify after optimization (silent)
-          const productIdsToSync = productsToGenerate.map(p => p.id);
+          // Fetch fresh optimized products FIRST before showing dialog
+          const { data: freshProducts } = await supabase
+            .from('shopify_products')
+            .select('*')
+            .in('id', productsToGenerate.map(p => p.id));
           
-          // Sync each product silently
+          if (freshProducts && freshProducts.length > 0) {
+            // Set optimized products BEFORE showing dialog
+            setOptimizedProducts(freshProducts as Product[]);
+            
+            // Update only the optimized products in the local state (no full refresh)
+            setProducts(prev => prev.map(p => {
+              const updated = freshProducts.find((fp: any) => fp.id === p.id);
+              return updated ? { ...p, ...updated } : p;
+            }));
+            
+            // Manually show dialog AFTER data is ready
+            setTimeout(() => {
+              setShowCompletedDialog(true);
+            }, 100);
+          }
+          
+          // Auto-sync to Shopify after optimization (silent, in background)
+          const productIdsToSync = productsToGenerate.map(p => p.id);
           for (const productId of productIdsToSync) {
             try {
               await supabase.functions.invoke("sync-seo-to-shopify", {
@@ -754,22 +778,6 @@ export function SeoOptimization() {
             } catch (error) {
               console.error("Error syncing:", error);
             }
-          }
-          
-          // Fetch fresh optimized products for ResultsDialog ONLY (no full refresh)
-          const { data: freshProducts } = await supabase
-            .from('shopify_products')
-            .select('*')
-            .in('id', productsToGenerate.map(p => p.id));
-          
-          if (freshProducts && freshProducts.length > 0) {
-            setOptimizedProducts(freshProducts as Product[]);
-            
-            // Update only the optimized products in the local state (no full refresh)
-            setProducts(prev => prev.map(p => {
-              const updated = freshProducts.find((fp: any) => fp.id === p.id);
-              return updated ? { ...p, ...updated } : p;
-            }));
           }
         }
       }
