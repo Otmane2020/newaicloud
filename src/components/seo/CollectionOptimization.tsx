@@ -21,7 +21,7 @@ import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CollectionImageDialog } from './CollectionImageDialog';
-import { ReoptimizeConfirmDialog } from './ReoptimizeConfirmDialog';
+
 import { VisionAIBanner } from './VisionAIBanner';
 import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
@@ -120,9 +120,6 @@ export function CollectionOptimization() {
   );
   const [syncing, setSyncing] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [showProgressDialog, setShowProgressDialog] = useState(false);
-  const [isOptimizationComplete, setIsOptimizationComplete] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedCollections, setOptimizedCollections] = useState<Collection[]>([]);
@@ -132,8 +129,6 @@ export function CollectionOptimization() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [selectedCollectionForImage, setSelectedCollectionForImage] = useState<Collection | null>(null);
-  const [showReoptimizeDialog, setShowReoptimizeDialog] = useState(false);
-  const [pendingOptimizationCollections, setPendingOptimizationCollections] = useState<Collection[]>([]);
   const [previewCollectionId, setPreviewCollectionId] = useState<string | null>(null);
   const [showGenerateDescriptionDialog, setShowGenerateDescriptionDialog] = useState(false);
   const [selectedCollectionForDescription, setSelectedCollectionForDescription] = useState<Collection | null>(null);
@@ -468,17 +463,7 @@ export function CollectionOptimization() {
       return;
     }
 
-    // Check if any collections have already been optimized
-    const alreadyOptimized = collectionsToOptimize.filter(c => (c.optimization_count || 0) > 0);
-    
-    if (alreadyOptimized.length > 0) {
-      // Show confirmation dialog for re-optimization
-      setPendingOptimizationCollections(collectionsToOptimize);
-      setShowReoptimizeDialog(true);
-      return;
-    }
-
-    // If none are optimized, proceed directly
+    // Proceed directly without confirmation dialog
     await executeOptimization(collectionsToOptimize);
   };
 
@@ -667,11 +652,6 @@ export function CollectionOptimization() {
     } finally {
       setSyncing(false);
     }
-  };
-
-  const handleCloseProgressDialog = () => {
-    setShowProgressDialog(false);
-    setIsOptimizationComplete(false);
   };
 
   const handleCloseResultsDialog = () => {
@@ -1422,12 +1402,12 @@ export function CollectionOptimization() {
 
       {/* Dialogs */}
       <ProgressDialog
-        open={showProgressDialog}
-        onOpenChange={setShowProgressDialog}
+        open={optimizationState.isRunning && optimizationState.type === 'collections'}
+        onOpenChange={() => {}}
         type="seo"
-        operation={optimizing ? 'optimizing' : 'syncing'}
-        current={progress.current}
-        total={progress.total}
+        operation="optimizing"
+        current={optimizationState.current}
+        total={optimizationState.total}
       />
 
       <ResultsDialog
@@ -1455,12 +1435,6 @@ export function CollectionOptimization() {
         limit={limits?.limits.max_optimizations}
       />
 
-      <ReoptimizeConfirmDialog
-        open={showReoptimizeDialog}
-        onOpenChange={setShowReoptimizeDialog}
-        collections={pendingOptimizationCollections}
-        onConfirm={() => executeOptimization(pendingOptimizationCollections)}
-      />
 
       {selectedCollectionForDescription && (
         <GenerateDescriptionDialog
