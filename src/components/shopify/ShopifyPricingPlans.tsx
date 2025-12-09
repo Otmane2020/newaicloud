@@ -70,28 +70,30 @@ const PLANS = [
     id: "pro-1000",
     name: "Enterprise",
     nameEn: "Enterprise",
-    description: "Pour les grandes boutiques",
-    descriptionEn: "For large stores",
-    priceMonthly: 98,
-    priceYearly: 78.40, // /mois facturé annuellement (940.80€/an)
+    description: "Pour les grandes boutiques et agences",
+    descriptionEn: "For large stores and agencies",
+    priceMonthly: 139, // $199 avec -30% = $139
+    priceYearly: 111.20, // /mois facturé annuellement (1334.40€/an)
+    originalPrice: 199, // Prix barré original
+    discount: 30, // Pourcentage de réduction
     icon: Rocket,
     color: "from-amber-500 to-orange-500",
     features: {
       fr: [
-        "1000 optimisations SEO/mois",
-        "Import jusqu'à 1000 produits",
-        "Toutes les fonctionnalités Pro",
-        "API access",
+        "Produits illimités",
+        "2 000 optimisations SEO IA/mois",
+        "20 articles IA/mois",
+        "10 campagnes IA auto/mois (30 articles/campagne)",
+        "2 000 recherches IA Shopify/mois",
         "Support dédié",
-        "Formations personnalisées",
       ],
       en: [
-        "1000 SEO optimizations/month",
-        "Import up to 1000 products",
-        "All Pro features",
-        "API access",
+        "Unlimited products",
+        "2,000 AI SEO optimizations/month",
+        "20 AI articles/month",
+        "10 automatic AI campaigns/month (30 articles/campaign)",
+        "2,000 Shopify AI searches/month",
         "Dedicated support",
-        "Custom training",
       ],
     },
   },
@@ -269,6 +271,14 @@ export default function ShopifyPricingPlans({
               <CardContent className="space-y-6">
                 {/* Price */}
                 <div className="text-center">
+                  {plan.originalPrice && plan.discount && (
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <span className="text-lg text-muted-foreground line-through">${plan.originalPrice}</span>
+                      <Badge variant="destructive" className="bg-red-500">
+                        -{plan.discount}%
+                      </Badge>
+                    </div>
+                  )}
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-bold">${price.toFixed(2)}</span>
                     <span className="text-muted-foreground">{t.perMonth}</span>
