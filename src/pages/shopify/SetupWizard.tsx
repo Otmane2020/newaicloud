@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Check, Zap, Crown, Rocket, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useShopifyBilling } from "@/hooks/useShopifyBilling";
 
 interface Plan {
   id: string;
@@ -101,13 +102,18 @@ export default function SetupWizard() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get shopDomain from hook (database) as fallback if not in URL
+  const { shopDomain: hookShopDomain, loading: shopifyLoading } = useShopifyBilling();
 
   // Detect language from browser
   const browserLang = navigator.language?.startsWith("fr") ? "fr" : "en";
   const language = browserLang;
 
   const pendingToken = searchParams.get("pending_token");
-  const shop = searchParams.get("shop");
+  const shopFromUrl = searchParams.get("shop");
+  // Use shop from URL first, then fallback to hook (from database)
+  const shop = shopFromUrl || hookShopDomain;
 
   const t = {
     title: language === "fr" ? "Choisissez votre plan" : "Choose your plan",
@@ -135,8 +141,16 @@ export default function SetupWizard() {
   // Process pending token on mount
   useEffect(() => {
     const processToken = async () => {
-      // Need both pending_token AND shop for authentication
-      if (!pendingToken || !shop) {
+      // If no pending token, wait for shopifyLoading to get shop from database
+      if (!pendingToken) {
+        if (shopifyLoading) return; // Wait for hook to load
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Need shop for authentication (either from URL or hook)
+      if (!shop) {
+        if (shopifyLoading) return; // Wait for hook to load
         setIsProcessing(false);
         return;
       }
@@ -173,7 +187,7 @@ export default function SetupWizard() {
     };
 
     processToken();
-  }, [pendingToken, shop]);
+  }, [pendingToken, shop, shopifyLoading]);
 
   const handleSelectPlan = async (planId: string) => {
     setLoading(true);
