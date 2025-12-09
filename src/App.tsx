@@ -18,6 +18,7 @@ import { NotificationPermissionPrompt } from "@/components/NotificationPermissio
 import { BulkOptimizationIndicator } from "@/components/BulkOptimizationIndicator";
 import { useQuotaMonitoring } from "@/hooks/useQuotaMonitoring";
 import { useAutoSync } from "@/hooks/useAutoSync";
+import { useAdminEmailNotifications } from "@/hooks/useAdminEmailNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { ProtectedLayout } from "./components/ProtectedLayout";
@@ -118,6 +119,11 @@ function AppQuotaMonitor() {
   return null;
 }
 
+function AdminEmailNotificationsMonitor() {
+  useAdminEmailNotifications();
+  return null;
+}
+
 function AutoSyncMonitor() {
   const [userId, setUserId] = useState<string>();
   const { endSync } = useAutoSyncProgress();
@@ -163,6 +169,7 @@ const App = () => (
                 <OptimizationProvider>
                   <AppQuotaMonitor />
                   <AutoSyncMonitor />
+                  <AdminEmailNotificationsMonitor />
                   <AutoTranslator />
                   <BulkOptimizationIndicator />
                 <div className="overflow-x-hidden max-w-full">
