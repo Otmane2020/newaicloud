@@ -646,7 +646,7 @@ export function SeoOptimization() {
             }
           }
           
-          // Fetch fresh optimized products for ResultsDialog (single query, no page refresh)
+          // Fetch fresh optimized products for ResultsDialog ONLY (no full refresh)
           const { data: freshProducts } = await supabase
             .from('shopify_products')
             .select('*')
@@ -654,10 +654,13 @@ export function SeoOptimization() {
           
           if (freshProducts && freshProducts.length > 0) {
             setOptimizedProducts(freshProducts as Product[]);
+            
+            // Update only the optimized products in the local state (no full refresh)
+            setProducts(prev => prev.map(p => {
+              const updated = freshProducts.find((fp: any) => fp.id === p.id);
+              return updated ? { ...p, ...updated } : p;
+            }));
           }
-          
-          // Refresh products list ONCE at the end (silently update state)
-          fetchProducts();
         } else if (results.error > 0) {
           toast.error(t.seo.optimization.optimizationError);
         }
@@ -730,7 +733,7 @@ export function SeoOptimization() {
       },
       'optimizing',
       async (results) => {
-        // Refresh limits only (not products to avoid page refresh during operation)
+        // Refresh limits only (not products to avoid page refresh)
         await refreshLimits();
         
         if (results.success > 0) {
@@ -753,7 +756,7 @@ export function SeoOptimization() {
             }
           }
           
-          // Fetch fresh optimized products for ResultsDialog (single query)
+          // Fetch fresh optimized products for ResultsDialog ONLY (no full refresh)
           const { data: freshProducts } = await supabase
             .from('shopify_products')
             .select('*')
@@ -761,10 +764,13 @@ export function SeoOptimization() {
           
           if (freshProducts && freshProducts.length > 0) {
             setOptimizedProducts(freshProducts as Product[]);
+            
+            // Update only the optimized products in the local state (no full refresh)
+            setProducts(prev => prev.map(p => {
+              const updated = freshProducts.find((fp: any) => fp.id === p.id);
+              return updated ? { ...p, ...updated } : p;
+            }));
           }
-          
-          // Refresh products list ONCE at the end
-          fetchProducts();
         }
       }
     );
