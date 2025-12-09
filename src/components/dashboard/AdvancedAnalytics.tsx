@@ -107,7 +107,7 @@ export function AdvancedAnalytics() {
       // Fetch real SEO audits
       const { data: audits } = await supabase
         .from('seo_audit_reports')
-        .select('overall_score, created_at')
+        .select('global_score, created_at')
         .eq('user_id', user.id)
         .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: true });
