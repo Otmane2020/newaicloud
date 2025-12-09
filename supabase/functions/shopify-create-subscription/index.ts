@@ -12,17 +12,19 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Mapping des plans vers Shopify Billing - All tiers from database
 const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number }> = {
-  // Starter - $9.99/month or $7.99/year (7-day trial)
+  // Starter - $9.99/month or $95.88/year (7-day trial)
   "starter-monthly": { name: "Starter", price: 9.99, interval: "EVERY_30_DAYS", trialDays: 7 },
-  "starter-yearly": { name: "Starter", price: 95.88, interval: "ANNUAL", trialDays: 7 }, // $7.99/month billed annually
+  "starter-yearly": { name: "Starter", price: 95.88, interval: "ANNUAL", trialDays: 7 },
   
   // Pro - $49/month or $470/year
   "pro-500-monthly": { name: "PRO", price: 49, interval: "EVERY_30_DAYS" },
   "pro-500-yearly": { name: "PRO", price: 470, interval: "ANNUAL" },
   
-  // Enterprise - $199/month or $1,910/year
+  // Enterprise - $199/month or $1,910/year (support both spellings)
   "enterprise-monthly": { name: "ENTREPRISE", price: 199, interval: "EVERY_30_DAYS" },
   "enterprise-yearly": { name: "ENTREPRISE", price: 1910, interval: "ANNUAL" },
+  "entreprise-monthly": { name: "ENTREPRISE", price: 199, interval: "EVERY_30_DAYS" },
+  "entreprise-yearly": { name: "ENTREPRISE", price: 1910, interval: "ANNUAL" },
 };
 
 const logStep = (step: string, details?: any) => {
