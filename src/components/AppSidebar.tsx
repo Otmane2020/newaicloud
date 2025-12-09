@@ -179,8 +179,8 @@ export function AppSidebar() {
     // Profile and Integrations - restricted
     ...(hasFullAccess ? [{ title: t.account.submenu.profile, url: "/account?tab=profile", icon: User, key: "profile" }] : []),
     ...(hasFullAccess ? [{ title: t.account.submenu.integrations, url: "/account?tab=integrations", icon: Package, key: "integrations" }] : []),
-    // Subscription - restricted (Billing)
-    ...(hasFullAccess ? [{ title: t.account.submenu.subscription, url: "/account?tab=subscription", icon: CreditCard, key: "subscription" }] : []),
+    // Subscription - visible to all users
+    { title: t.account.submenu.subscription, url: "/subscription", icon: CreditCard, key: "subscription" },
     { title: t.usageLimits, url: "/account?tab=usage", icon: BarChart3, key: "usage" },
     // Billing - restricted
     ...(hasFullAccess ? [{ title: t.account.submenu.billing, url: "/account?tab=billing", icon: Receipt, key: "billing" }] : []),
