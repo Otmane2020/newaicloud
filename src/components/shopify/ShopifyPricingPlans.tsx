@@ -163,8 +163,15 @@ export default function ShopifyPricingPlans({
         if (onSubscriptionCreated) {
           onSubscriptionCreated(data.confirmationUrl);
         }
-        // Redirection vers Shopify Billing
-        window.location.href = data.confirmationUrl;
+        // Redirection vers Shopify Billing - MUST use top window for embedded apps
+        console.log("[ShopifyPricingPlans] Redirecting to:", data.confirmationUrl);
+        if (window.top && window.top !== window) {
+          // Inside iframe - redirect the entire Shopify Admin page
+          window.top.location.href = data.confirmationUrl;
+        } else {
+          // Standalone mode
+          window.location.href = data.confirmationUrl;
+        }
       } else {
         throw new Error("No confirmation URL received");
       }
