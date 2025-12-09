@@ -159,36 +159,45 @@ export default function SetupWizard() {
   // Process pending token on mount
   useEffect(() => {
     const processToken = async () => {
-      if (!pendingToken) {
+      // Need both pending_token AND shop for authentication
+      if (!pendingToken || !shop) {
         setIsProcessing(false);
         return;
       }
 
       try {
-        // Call shopify-auto-auth to authenticate
+        console.log("[SetupWizard] Calling shopify-auto-auth with:", { shop, pending_token: pendingToken });
+        
+        // Call shopify-auto-auth to authenticate - MUST send both shop and pending_token
         const { data, error } = await supabase.functions.invoke("shopify-auto-auth", {
-          body: { pending_token: pendingToken },
+          body: { 
+            shop: shop,
+            pending_token: pendingToken 
+          },
         });
 
         if (error) throw error;
+
+        console.log("[SetupWizard] shopify-auto-auth response:", data);
 
         if (data?.access_token && data?.refresh_token) {
           await supabase.auth.setSession({
             access_token: data.access_token,
             refresh_token: data.refresh_token,
           });
+          console.log("[SetupWizard] Session set successfully");
         }
 
         setIsProcessing(false);
       } catch (err) {
-        console.error("Error processing token:", err);
+        console.error("[SetupWizard] Error processing token:", err);
         setError(err instanceof Error ? err.message : "Unknown error");
         setIsProcessing(false);
       }
     };
 
     processToken();
-  }, [pendingToken]);
+  }, [pendingToken, shop]);
 
   const handleSelectPlan = async (planId: string) => {
     setLoading(true);
