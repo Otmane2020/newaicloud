@@ -980,55 +980,6 @@ export function SeoOptimization() {
         </Alert>
       )}
 
-      {/* Sticky Action Bar */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Checkbox
-              checked={selectedProducts.size === paginatedProducts.length && paginatedProducts.length > 0}
-              onCheckedChange={handleSelectAll}
-            />
-            <span className="text-sm font-medium">
-              {selectedProducts.size > 0 ? (
-                <span className="text-primary">{selectedProducts.size} produit(s) sélectionné(s)</span>
-              ) : (
-                <span className="text-muted-foreground">Sélectionner tout</span>
-              )}
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button onClick={() => handleGenerateForSelected()} disabled={selectedProducts.size === 0 || optimizationState.isRunning} size="sm">
-              <Sparkles className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Optimiser</span>
-            </Button>
-            <Button
-              onClick={() => {
-                // Check usage limits first
-                if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
-                  toast.error(t.seo.optimization.trialLimitReached);
-                  setShowUpgradeDialog(true);
-                  return;
-                }
-                // Call directly without confirmation dialog
-                setActiveTab("not-enriched");
-                setTimeout(() => {
-                  handleGenerateAllSeo();
-                }, 100);
-              }}
-              disabled={optimizationState.isRunning || loading || notEnrichedCount === 0}
-              variant="outline"
-              size="sm"
-            >
-              <Sparkles className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Optimiser tout</span>
-            </Button>
-            <Button onClick={fetchProducts} disabled={loading} variant="ghost" size="sm">
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
-        </div>
-      </div>
 
       {/* Controls Section */}
       <Card className="p-4 bg-background/50">
@@ -1094,25 +1045,24 @@ export function SeoOptimization() {
             </select>
           </div>
 
-          {/* Filters Row 2: SEO Status, Sync Status, Quality */}
+          {/* Filters Row 2: SEO Status + Quality */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
               <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
                 <SelectValue placeholder={t.seo.optimization.status} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border border-border z-50">
                 <SelectItem value="all">{t.seo.optimization.allStatus}</SelectItem>
                 <SelectItem value="optimized">{t.seo.optimization.optimizedTab}</SelectItem>
                 <SelectItem value="not-optimized">{t.seo.optimization.toOptimize}</SelectItem>
               </SelectContent>
             </Select>
 
-
             <Select value={qualityFilter} onValueChange={(value: any) => setQualityFilter(value as QualityFilter)}>
               <SelectTrigger className="h-10 flex-1 sm:min-w-[180px]">
                 <SelectValue placeholder={t.seo.optimization.seoQuality} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background border border-border z-50">
                 <SelectItem value="all">{t.seo.optimization.allQualities}</SelectItem>
                 <SelectItem value="excellent">{t.seo.optimization.excellent}</SelectItem>
                 <SelectItem value="good">{t.seo.optimization.good}</SelectItem>
@@ -1263,7 +1213,6 @@ export function SeoOptimization() {
                     </button>
                   </TableHead>
                   <TableHead className="w-32">{t.seo.optimization.status}</TableHead>
-                  <TableHead className="w-32">{t.seo.optimization.synced}</TableHead>
                   <TableHead className="w-24">{t.seo.optimization.actions}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1352,19 +1301,6 @@ export function SeoOptimization() {
                             </>
                           )}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {product.seo_synced_to_shopify ? (
-                          <Badge variant="default" className="bg-green-600 text-white text-xs">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            {t.seo.optimization.yes}
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {t.seo.optimization.no}
-                          </Badge>
-                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
