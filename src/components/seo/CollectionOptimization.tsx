@@ -14,8 +14,7 @@ import { ProgressBanner } from './ProgressBanner';
 import { useOptimization } from '@/contexts/OptimizationContext';
 import { 
   ProgressDialog, 
-  ResultsDialog, 
-  SyncConfirmationDialog 
+  ResultsDialog 
 } from './SeoWorkflowDialogs';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
@@ -990,25 +989,6 @@ export function CollectionOptimization() {
               </span>
             </Button>
             <Button
-              onClick={() => {
-                const collectionsToSync = collections.filter(c => 
-                  selectedCollections.has(c.id) && c.optimization_count && c.optimization_count > 0
-                );
-                if (collectionsToSync.length > 0) {
-                  setCollectionsToSync(collectionsToSync);
-                  setShowSyncDialog(true);
-                } else {
-                  toast.info("Aucune collection à synchroniser");
-                }
-              }}
-              disabled={selectedCollections.size === 0 || syncing}
-              variant="outline"
-              size="sm"
-            >
-              <Upload className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Synchroniser</span>
-            </Button>
-            <Button
               onClick={fetchCollections}
               disabled={loading}
               variant="ghost"
@@ -1035,7 +1015,6 @@ export function CollectionOptimization() {
               />
             </div>
           </div>
-
           {/* Filters Row */}
           <div className="flex flex-col sm:flex-row gap-3 w-full">
             <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>

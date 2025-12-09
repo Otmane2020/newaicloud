@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { ProgressDialog, ResultsDialog, SyncConfirmationDialog, SuccessDialog } from './SeoWorkflowDialogs';
+import { ProgressDialog, ResultsDialog, SuccessDialog } from './SeoWorkflowDialogs';
 import { TrialLimitDialog } from '@/components/TrialLimitDialog';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -982,15 +982,6 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
             >
               <Eye className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">{t.seo.altImage.actions.visionAI}</span>
-            </Button>
-            <Button
-              onClick={handleSyncSelected}
-              disabled={selectedImages.size === 0 || optimizationState.isRunning}
-              variant="outline"
-              size="sm"
-            >
-              <Upload className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t.seo.altImage.actions.synchronize}</span>
             </Button>
             <Button
               onClick={handleImportContentImages}

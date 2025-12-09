@@ -17,7 +17,6 @@ import { useOptimization } from '@/contexts/OptimizationContext';
 import { 
   ProgressDialog, 
   ResultsDialog, 
-  SyncConfirmationDialog, 
   SuccessDialog,
   WorkflowItem 
 } from './SeoWorkflowDialogs';
