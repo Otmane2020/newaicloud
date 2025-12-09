@@ -145,24 +145,25 @@ export function Navigation() {
     },
   ];
 
-  // Filtrer les items en fonction de l'accès
-  const filterMenuItem = (item: any): any => {
-    if (item.restricted && !hasFullAccess) return null;
-    if (item.subItems) {
-      const filteredSubItems = item.subItems
-        .map((sub: any) => filterMenuItem(sub))
-        .filter(Boolean);
-      if (filteredSubItems.length === 0 && item.subItems.length > 0) {
-        // Si tous les sous-items sont filtrés, masquer le parent aussi
-        return item.restricted ? null : { ...item, subItems: filteredSubItems };
-      }
-      return { ...item, subItems: filteredSubItems };
-    }
-    return item;
-  };
-
   // Utiliser useMemo pour recalculer les menus quand hasFullAccess change
   const menuItems = useMemo(() => {
+    // Définir filterMenuItem à l'intérieur du useMemo pour capturer hasFullAccess correctement
+    const filterMenuItem = (item: any): any => {
+      if (item.restricted && !hasFullAccess) return null;
+      if (item.subItems) {
+        const filteredSubItems = item.subItems
+          .map((sub: any) => filterMenuItem(sub))
+          .filter(Boolean);
+        if (filteredSubItems.length === 0 && item.subItems.length > 0) {
+          // Si tous les sous-items sont filtrés, masquer le parent aussi
+          return item.restricted ? null : { ...item, subItems: filteredSubItems };
+        }
+        return { ...item, subItems: filteredSubItems };
+      }
+      return item;
+    };
+    
+    console.log('🔐 [Navigation] Recalculating menuItems with hasFullAccess:', hasFullAccess);
     return allMenuItems.map(filterMenuItem).filter(Boolean);
   }, [hasFullAccess, t]);
 
