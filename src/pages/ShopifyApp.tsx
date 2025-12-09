@@ -89,11 +89,14 @@ export default function ShopifyApp() {
 
         // 🔧 CRITICAL FIX: TOUJOURS rediriger vers SetupWizard pour Shopify Billing
         // Même les utilisateurs existants doivent passer par SetupWizard s'ils n'ont pas de subscription active
+        // ⚠️ Important: On ne passe PAS le pending_token car l'auth est déjà faite ci-dessus
         const redirectParams = new URLSearchParams({
           shop,
           host: params.get("host") || "",
           embedded: "1",
         });
+        
+        console.log('🎯 [ShopifyApp] Auth complete, user_id:', data.user_id, 'is_returning:', data.is_returning_user);
         
         if (data.is_returning_user) {
           // Vérifier si l'utilisateur a déjà un abonnement actif

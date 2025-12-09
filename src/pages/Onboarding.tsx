@@ -95,7 +95,22 @@ export default function Onboarding() {
       navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
       return;
     }
-  }, [searchParams, navigate]);
+    
+    // 🔧 IMMEDIATE EMAIL-BASED CHECK: Detect Shopify user by email pattern
+    // shopify-auto-auth creates users with email: {shop_handle}@shopify.newai.sale
+    if (user?.email?.endsWith('@shopify.newai.sale')) {
+      console.log('🔄 [ONBOARDING] Shopify user detected via email pattern, immediate redirect to SetupWizard');
+      const shopHandle = user.email.split('@')[0] || '';
+      const shopDomainFromEmail = `${shopHandle}.myshopify.com`;
+      const redirectParams = new URLSearchParams({
+        shop: shopDomainFromEmail,
+        host: hostFromUrl || '',
+        embedded: '1',
+      });
+      navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
+      return;
+    }
+  }, [searchParams, navigate, user?.email]);
 
   // 🚫 CRITICAL: Redirect Shopify users to SetupWizard (Shopify Billing) instead of Stripe onboarding
   useEffect(() => {
