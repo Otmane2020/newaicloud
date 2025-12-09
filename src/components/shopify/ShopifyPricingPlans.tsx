@@ -1,0 +1,313 @@
+import React, { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Check, Zap, Crown, Rocket, Loader2, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+// Plans définis côté frontend - synchronisés avec shopify-create-subscription
+const PLANS = [
+  {
+    id: "starter",
+    name: "Starter",
+    nameEn: "Starter",
+    description: "Pour démarrer votre optimisation SEO",
+    descriptionEn: "Start your SEO optimization journey",
+    priceMonthly: 9.99,
+    priceYearly: 7.99, // /mois facturé annuellement (95.90€/an)
+    trialDays: 7,
+    icon: Zap,
+    color: "from-blue-500 to-cyan-500",
+    features: {
+      fr: [
+        "100 optimisations SEO/mois",
+        "Synchronisation Shopify",
+        "Textes alternatifs IA",
+        "Support email",
+      ],
+      en: [
+        "100 SEO optimizations/month",
+        "Shopify sync",
+        "AI alt texts",
+        "Email support",
+      ],
+    },
+  },
+  {
+    id: "pro-500",
+    name: "Pro",
+    nameEn: "Pro",
+    description: "Pour les boutiques en croissance",
+    descriptionEn: "For growing stores",
+    priceMonthly: 49,
+    priceYearly: 39.20, // /mois facturé annuellement (470.40€/an)
+    icon: Crown,
+    color: "from-purple-500 to-pink-500",
+    popular: true,
+    features: {
+      fr: [
+        "500 optimisations SEO/mois",
+        "Import jusqu'à 500 produits",
+        "Landing pages IA",
+        "Blog automatique",
+        "Google Shopping",
+        "Support prioritaire",
+      ],
+      en: [
+        "500 SEO optimizations/month",
+        "Import up to 500 products",
+        "AI landing pages",
+        "Automatic blog",
+        "Google Shopping",
+        "Priority support",
+      ],
+    },
+  },
+  {
+    id: "pro-1000",
+    name: "Enterprise",
+    nameEn: "Enterprise",
+    description: "Pour les grandes boutiques",
+    descriptionEn: "For large stores",
+    priceMonthly: 98,
+    priceYearly: 78.40, // /mois facturé annuellement (940.80€/an)
+    icon: Rocket,
+    color: "from-amber-500 to-orange-500",
+    features: {
+      fr: [
+        "1000 optimisations SEO/mois",
+        "Import jusqu'à 1000 produits",
+        "Toutes les fonctionnalités Pro",
+        "API access",
+        "Support dédié",
+        "Formations personnalisées",
+      ],
+      en: [
+        "1000 SEO optimizations/month",
+        "Import up to 1000 products",
+        "All Pro features",
+        "API access",
+        "Dedicated support",
+        "Custom training",
+      ],
+    },
+  },
+];
+
+interface ShopifyPricingPlansProps {
+  shopDomain: string;
+  language?: "fr" | "en";
+  onSubscriptionCreated?: (confirmationUrl: string) => void;
+}
+
+export default function ShopifyPricingPlans({ 
+  shopDomain, 
+  language = "fr",
+  onSubscriptionCreated 
+}: ShopifyPricingPlansProps) {
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [loading, setLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
+  const t = {
+    title: language === "fr" ? "Choisissez votre plan" : "Choose your plan",
+    subtitle: language === "fr" 
+      ? "Sélectionnez le plan qui correspond à vos besoins" 
+      : "Select the plan that fits your needs",
+    monthly: language === "fr" ? "Mensuel" : "Monthly",
+    yearly: language === "fr" ? "Annuel" : "Yearly",
+    save: language === "fr" ? "Économisez 20%" : "Save 20%",
+    selectPlan: language === "fr" ? "Sélectionner" : "Select",
+    startTrial: language === "fr" ? "Commencer l'essai" : "Start Trial",
+    processing: language === "fr" ? "Traitement..." : "Processing...",
+    popular: language === "fr" ? "Populaire" : "Popular",
+    perMonth: language === "fr" ? "/mois" : "/month",
+    days: language === "fr" ? "jours" : "days",
+    freeTrial: language === "fr" ? "Essai gratuit" : "Free trial",
+    billedYearly: language === "fr" ? "facturé annuellement" : "billed yearly",
+    error: language === "fr" ? "Erreur" : "Error",
+    errorDesc: language === "fr" 
+      ? "Impossible de créer l'abonnement" 
+      : "Could not create subscription",
+  };
+
+  const handleSelectPlan = async (planId: string) => {
+    if (!shopDomain) {
+      toast.error(t.error, { description: "Shop domain missing" });
+      return;
+    }
+
+    setLoading(true);
+    setSelectedPlan(planId);
+
+    try {
+      console.log("[ShopifyPricingPlans] Creating subscription:", { planId, billingCycle, shopDomain });
+
+      const { data, error } = await supabase.functions.invoke("shopify-create-subscription", {
+        body: {
+          planId,
+          billingCycle,
+          shopDomain,
+        },
+      });
+
+      if (error) throw error;
+
+      console.log("[ShopifyPricingPlans] Subscription response:", data);
+
+      if (data?.confirmationUrl) {
+        // Callback optionnel
+        if (onSubscriptionCreated) {
+          onSubscriptionCreated(data.confirmationUrl);
+        }
+        // Redirection vers Shopify Billing
+        window.location.href = data.confirmationUrl;
+      } else {
+        throw new Error("No confirmation URL received");
+      }
+    } catch (err) {
+      console.error("[ShopifyPricingPlans] Error:", err);
+      toast.error(t.error, {
+        description: err instanceof Error ? err.message : t.errorDesc,
+      });
+      setLoading(false);
+      setSelectedPlan(null);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-6xl mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold tracking-tight mb-2">
+          {t.title}
+        </h2>
+        <p className="text-muted-foreground text-lg">
+          {t.subtitle}
+        </p>
+      </div>
+
+      {/* Billing Toggle */}
+      <div className="flex items-center justify-center gap-4 mb-8">
+        <Label 
+          htmlFor="billing-toggle" 
+          className={`cursor-pointer transition-colors ${billingCycle === "monthly" ? "text-foreground font-medium" : "text-muted-foreground"}`}
+        >
+          {t.monthly}
+        </Label>
+        <Switch
+          id="billing-toggle"
+          checked={billingCycle === "yearly"}
+          onCheckedChange={(checked) => setBillingCycle(checked ? "yearly" : "monthly")}
+        />
+        <Label 
+          htmlFor="billing-toggle" 
+          className={`cursor-pointer transition-colors flex items-center gap-2 ${billingCycle === "yearly" ? "text-foreground font-medium" : "text-muted-foreground"}`}
+        >
+          {t.yearly}
+          <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+            {t.save}
+          </Badge>
+        </Label>
+      </div>
+
+      {/* Plans Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {PLANS.map((plan) => {
+          const Icon = plan.icon;
+          const price = billingCycle === "monthly" ? plan.priceMonthly : plan.priceYearly;
+          const features = plan.features[language];
+          const isSelected = selectedPlan === plan.id;
+          const isLoading = loading && isSelected;
+
+          return (
+            <Card 
+              key={plan.id}
+              className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
+                plan.popular 
+                  ? "border-2 border-primary shadow-lg scale-105 z-10" 
+                  : "border hover:border-primary/50"
+              }`}
+            >
+              {/* Popular Badge */}
+              {plan.popular && (
+                <div className="absolute top-0 right-0">
+                  <Badge className="rounded-none rounded-bl-lg bg-primary text-primary-foreground">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    {t.popular}
+                  </Badge>
+                </div>
+              )}
+
+              {/* Gradient Header */}
+              <div className={`h-2 bg-gradient-to-r ${plan.color}`} />
+
+              <CardHeader className="text-center pb-2">
+                <div className={`mx-auto w-14 h-14 rounded-full bg-gradient-to-r ${plan.color} flex items-center justify-center mb-4`}>
+                  <Icon className="h-7 w-7 text-white" />
+                </div>
+                <CardTitle className="text-2xl">
+                  {language === "fr" ? plan.name : plan.nameEn}
+                </CardTitle>
+                <CardDescription>
+                  {language === "fr" ? plan.description : plan.descriptionEn}
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                {/* Price */}
+                <div className="text-center">
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-4xl font-bold">${price.toFixed(2)}</span>
+                    <span className="text-muted-foreground">{t.perMonth}</span>
+                  </div>
+                  {billingCycle === "yearly" && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {t.billedYearly}
+                    </p>
+                  )}
+                  {plan.trialDays && (
+                    <Badge variant="outline" className="mt-2 text-green-600 border-green-300">
+                      {plan.trialDays} {t.days} {t.freeTrial}
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Features */}
+                <ul className="space-y-3">
+                  {features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA Button */}
+                <Button
+                  className={`w-full ${plan.popular ? "bg-gradient-to-r " + plan.color + " hover:opacity-90" : ""}`}
+                  variant={plan.popular ? "default" : "outline"}
+                  size="lg"
+                  onClick={() => handleSelectPlan(plan.id)}
+                  disabled={loading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {t.processing}
+                    </>
+                  ) : (
+                    plan.trialDays ? t.startTrial : t.selectPlan
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
