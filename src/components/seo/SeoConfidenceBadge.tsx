@@ -1,21 +1,39 @@
 import { Badge } from '@/components/ui/badge';
 import { Shield, TrendingUp, AlertTriangle } from 'lucide-react';
-import { calculateSeoConfidence, getConfidenceBadgeColor, getConfidenceLabel } from '@/lib/seoQuality';
+import { calculateDetailedSeoScore, getConfidenceBadgeColor, getConfidenceLabel } from '@/lib/seoQuality';
 
 interface SeoConfidenceBadgeProps {
   seoTitle: string | null | undefined;
   seoDescription: string | null | undefined;
   showLabel?: boolean;
   className?: string;
+  hasImage?: boolean;
+  tags?: string | null;
+  optimizationCount?: number;
+  itemId?: string;
 }
 
 export function SeoConfidenceBadge({ 
   seoTitle, 
   seoDescription, 
   showLabel = true,
-  className = '' 
+  className = '',
+  hasImage = true,
+  tags,
+  optimizationCount = 1,
+  itemId
 }: SeoConfidenceBadgeProps) {
-  const confidence = calculateSeoConfidence(seoTitle, seoDescription);
+  // Use the complete SEO score calculation
+  const scoreDetails = calculateDetailedSeoScore(
+    seoTitle, 
+    seoDescription, 
+    hasImage, 
+    true, // hasUrl
+    tags,
+    optimizationCount,
+    itemId
+  );
+  const confidence = scoreDetails.score;
   const badgeColor = getConfidenceBadgeColor(confidence);
   const label = getConfidenceLabel(confidence);
 
