@@ -36,6 +36,7 @@ import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import DashboardLight from "./pages/DashboardLight";
 import Products from "./pages/Products";
 import ProductTitleDescription from "./pages/ProductTitleDescription";
 import MediaHistory from "./pages/MediaHistory";
@@ -225,6 +226,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Dashboard />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/dashboard-light"
+              element={
+                <ProtectedLayout>
+                  <DashboardLight />
                 </ProtectedLayout>
               }
             />
