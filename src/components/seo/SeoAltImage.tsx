@@ -465,55 +465,60 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       return;
     }
 
-    try {
-      setGenerating(true);
-      const toastId = toast.loading('Optimisation de l\'image en cours...');
-
-      const image = images.find(img => img.id === imageId);
-      if (!image) {
-        toast.error('Image introuvable', { id: toastId });
-        return;
-      }
-
-      const imageType = image.image_type || 'product';
-      
-      const { data, error } = await supabase.functions.invoke('smart-alt-text', {
-        body: { 
-          image_id: image.id
-        }
-      });
-
-      // Gérer erreur 403 limite atteinte
-      if (error && (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403'))) {
-        toast.error('Limite d\'optimisations atteinte', { id: toastId });
-        setShowUpgradeDialog(true);
-        await refreshLimits();
-        return;
-      }
-
-      if (error) throw error;
-
-      toast.success('ALT text généré avec succès', { id: toastId });
-      await fetchImages();
-      await refreshLimits();
-      
-      // Afficher le résultat
-      const { data: updatedImage } = await supabase
-        .from(imageType === 'product' ? 'product_images' : 'content_images')
-        .select('*')
-        .eq('id', imageId)
-        .single();
-      
-      if (updatedImage) {
-        setOptimizedImages([{ ...updatedImage, image_url: updatedImage.src, product: image.product }] as any);
-        setShowResultsDialog(true);
-      }
-    } catch (error: any) {
-      console.error('Error optimizing image:', error);
-      toast.error(error.message || 'Erreur lors de l\'optimisation');
-    } finally {
-      setGenerating(false);
+    const image = images.find(img => img.id === imageId);
+    if (!image) {
+      toast.error('Image introuvable');
+      return;
     }
+
+    // Set processing items for progress dialog with product info
+    setProcessingItems([{ 
+      id: image.id, 
+      title: image.product?.title || 'Image', 
+      image_url: image.src 
+    }]);
+
+    // Use global context processor - shows progress dialog even for single item
+    processBulkOperation(
+      'alt',
+      [image],
+      async (img) => {
+        const { data, error } = await supabase.functions.invoke('smart-alt-text', {
+          body: { image_id: img.id }
+        });
+
+        // Gérer erreur 403 limite atteinte
+        if (error && (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403'))) {
+          setShowUpgradeDialog(true);
+          return { generated: false };
+        }
+
+        return {
+          generated: !error,
+          shopifySynced: data?.shopifySynced ?? false,
+          syncError: data?.syncError
+        };
+      },
+      'optimizing',
+      async (results) => {
+        await fetchImages();
+        await refreshLimits();
+
+        if (results.success > 0) {
+          const imageType = image.image_type || 'product';
+          const { data: updatedImage } = await supabase
+            .from(imageType === 'product' ? 'product_images' : 'content_images')
+            .select('*')
+            .eq('id', imageId)
+            .single();
+
+          if (updatedImage) {
+            setOptimizedImages([{ ...updatedImage, image_url: updatedImage.src, product: image.product }] as any);
+            setShowResultsDialog(true);
+          }
+        }
+      }
+    );
   };
 
   // Get the global optimization processor
