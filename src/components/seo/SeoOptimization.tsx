@@ -23,6 +23,16 @@ import { TrialLimitDialog } from "@/components/TrialLimitDialog";
 import { TrialLimitBanner } from "@/components/TrialLimitBanner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { SeoConfidenceBadge } from "./SeoConfidenceBadge";
 import { calculateDetailedSeoScore, getSeoScoreBadge, passesQualityFilter } from "@/lib/seoQuality";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -45,6 +55,7 @@ import {
   ArrowUp,
   ArrowDown,
   TrendingUp,
+  Coins,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -132,6 +143,7 @@ export function SeoOptimization() {
     (searchParams.get("filter") as QualityFilter) || "all"
   );
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showReoptimizeDialog, setShowReoptimizeDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -669,45 +681,8 @@ export function SeoOptimization() {
     );
   };
 
-  const handleGenerateAllSeo = async () => {
-    // Check usage limits first (only check optimization-specific limits)
-    if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
-      toast.error(t.seo.optimization.trialLimitReached);
-      setShowUpgradeDialog(true);
-      return;
-    }
-
-    // Determine if we're re-optimizing (all products already optimized) or optimizing new ones
-    const isReoptimization = notEnrichedCount === 0 && products.length > 0;
-    const productsToGenerate = isReoptimization 
-      ? products // Re-optimize ALL products
-      : products.filter((p) => p.enrichment_status !== "enriched"); // Only optimize non-enriched
-
-    console.log('🔍 [GENERATE_ALL_DEBUG]', {
-      totalProducts: products.length,
-      notEnrichedCount,
-      isReoptimization,
-      productsToGenerate: productsToGenerate.length,
-      sampleProducts: productsToGenerate.slice(0, 3).map(p => ({
-        id: p.id,
-        title: p.title?.substring(0, 30),
-        enrichment_status: p.enrichment_status,
-        seo_title: p.seo_title?.substring(0, 30)
-      }))
-    });
-
-    if (productsToGenerate.length === 0) {
-      toast.info(t.seo.optimization.allProductsOptimized);
-      return;
-    }
-
-    // Show confirmation for re-optimization
-    if (isReoptimization) {
-      const confirmed = confirm(`Ré-optimiser tous les ${products.length} produits ? Cela utilisera vos crédits d'optimisation.`);
-      if (!confirmed) return;
-    }
-
-    // Use global context processor - continues even if user changes tabs
+  // Extracted bulk optimization logic
+  const startBulkOptimization = (productsToGenerate: Product[]) => {
     processBulkOperation(
       'products',
       productsToGenerate,
@@ -732,14 +707,10 @@ export function SeoOptimization() {
       },
       'optimizing',
       async (results) => {
-        // Refresh limits
         await refreshLimits();
-        
-        // ALWAYS refresh products list to update the preview
         await fetchProducts();
         
         if (results.success > 0) {
-          // Fetch fresh optimized products for the dialog
           const { data: freshProducts } = await supabase
             .from('shopify_products')
             .select('*')
@@ -753,7 +724,6 @@ export function SeoOptimization() {
             }, 100);
           }
           
-          // Auto-sync to Shopify after optimization (silent, in background)
           const productIdsToSync = productsToGenerate.map(p => p.id);
           for (const productId of productIdsToSync) {
             try {
@@ -772,6 +742,43 @@ export function SeoOptimization() {
         }
       }
     );
+  };
+
+  const handleConfirmReoptimize = () => {
+    setShowReoptimizeDialog(false);
+    startBulkOptimization(products);
+  };
+
+  const handleGenerateAllSeo = async () => {
+    if (!limits?.canUseOptimizations || limits?.limitReached?.optimizations) {
+      toast.error(t.seo.optimization.trialLimitReached);
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    const isReoptimization = notEnrichedCount === 0 && products.length > 0;
+    const productsToGenerate = isReoptimization 
+      ? products 
+      : products.filter((p) => p.enrichment_status !== "enriched");
+
+    console.log('🔍 [GENERATE_ALL_DEBUG]', {
+      totalProducts: products.length,
+      notEnrichedCount,
+      isReoptimization,
+      productsToGenerate: productsToGenerate.length,
+    });
+
+    if (productsToGenerate.length === 0) {
+      toast.info(t.seo.optimization.allProductsOptimized);
+      return;
+    }
+
+    if (isReoptimization) {
+      setShowReoptimizeDialog(true);
+      return;
+    }
+
+    startBulkOptimization(productsToGenerate);
   };
 
 
@@ -830,7 +837,7 @@ export function SeoOptimization() {
               />
             ) : (
               <>
-                <div className="text-center">
+                <div className="text-center space-y-3">
                   <div
                     className={`text-3xl md:text-4xl font-bold ${
                       globalSeoScore >= 80
@@ -843,8 +850,16 @@ export function SeoOptimization() {
                     {globalSeoScore}/100
                   </div>
                   <div className="text-sm text-muted-foreground">{t.seo.optimization.globalScore}</div>
-                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  <div className="text-xs text-blue-600 dark:text-blue-400">
                     {optimizationRate}% {t.seo.optimization.optimized}
+                  </div>
+                  
+                  {/* Stylish remaining credits badge */}
+                  <div className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                    <Coins className="w-4 h-4 text-emerald-600" />
+                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                      {(limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0)} crédits restants
+                    </span>
                   </div>
                 </div>
                 <Button
@@ -1446,8 +1461,43 @@ export function SeoOptimization() {
         }}
       />
 
-      {/* Shopify Sync confirmation is now shown in ResultsDialog */}
-
+      {/* Re-optimization confirmation dialog */}
+      <AlertDialog open={showReoptimizeDialog} onOpenChange={setShowReoptimizeDialog}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Ré-optimiser tous les produits
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                Vous êtes sur le point de ré-optimiser <strong>{products.length} produits</strong>.
+              </p>
+              <div className="flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                  <Coins className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Crédits restants</p>
+                  <p className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    {(limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0)} / {limits?.limits.max_optimizations || 0}
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Cette action utilisera vos crédits d'optimisation.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmReoptimize} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {limits?.shouldForcePayment ? (
         <TrialLimitDialog
