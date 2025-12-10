@@ -21,7 +21,7 @@ const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
 
 export default function Account() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'usage';
+  const activeTab = searchParams.get('tab') || 'profile';
   const { user } = useAuth();
   const { t } = useTranslation();
   const [planName, setPlanName] = useState<string | null>(null);
@@ -59,7 +59,7 @@ export default function Account() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['profile', 'integrations', 'subscription', 'billing', 'usage'].includes(tab)) {
+    if (tab && ['profile', 'integrations', 'subscription', 'billing'].includes(tab)) {
       // Valid tab from URL
     }
   }, [searchParams]);
