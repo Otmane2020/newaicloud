@@ -96,22 +96,7 @@ export function ShopifyIntegrationTabs() {
                 {t.integration?.shopify?.description || 'Connect and manage your Shopify stores'}
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setRefreshKey(prev => prev + 1)} variant="outline" size="lg">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                {t.integration.sync.refresh || 'Refresh'}
-              </Button>
-              {canAddStore && (
-                <Button 
-                  onClick={() => setShowDialog(true)} 
-                  size="lg" 
-                  className="w-full sm:w-auto"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {t.integration?.shopify?.addStore || 'Add Store'}
-                </Button>
-              )}
-            </div>
+            {/* Refresh and Add Store buttons hidden */}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

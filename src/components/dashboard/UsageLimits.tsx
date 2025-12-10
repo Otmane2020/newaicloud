@@ -4,7 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Package, FileText, Sparkles, MessageSquare } from "lucide-react";
+import { useStore } from "@/contexts/StoreContext";
+import { Package, FileText, Sparkles, MessageSquare, Image } from "lucide-react";
 import { formatLimit } from "@/lib/formatUtils";
 import { useTranslation } from "@/lib/language";
 
@@ -18,31 +19,64 @@ interface UsageLimit {
 
 export function UsageLimits() {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const { selectedStore } = useStore();
 
-  const { data: usage } = useQuery({
-    queryKey: ['usage-tracking', user?.id],
+  // Fetch real usage data from actual tables
+  const { data: realUsage } = useQuery({
+    queryKey: ['real-usage-stats', user?.id, selectedStore?.id],
     queryFn: async () => {
-      const currentMonth = new Date().toISOString().substring(0, 7) + '-01';
-      const { data, error } = await supabase
-        .from('usage_tracking')
-        .select('*')
-        .eq('seller_id', user?.id)
-        .eq('month', currentMonth)
-        .maybeSingle();
+      if (!user?.id || !selectedStore?.id) return null;
 
-      if (error) throw error;
-      return data || {
-        products_count: 0,
-        optimizations_count: 0,
-        articles_count: 0,
-        chat_responses_count: 0,
-        campaigns_count: 0,
-        shopify_requests_count: 0,
-        shopify_stores_count: 0
+      // Count products with enrichment_status = 'enriched'
+      const { count: productsOptimized } = await supabase
+        .from('shopify_products')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id)
+        .eq('enrichment_status', 'enriched');
+
+      // Count total products
+      const { count: productsTotal } = await supabase
+        .from('shopify_products')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
+      // Count collections with optimization_count > 0
+      const { count: collectionsOptimized } = await supabase
+        .from('shopify_collections')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id)
+        .gt('optimization_count', 0);
+
+      // Count total collections
+      const { count: collectionsTotal } = await supabase
+        .from('shopify_collections')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
+      // Count articles
+      const { count: articlesCount } = await supabase
+        .from('blog_articles')
+        .select('id', { count: 'exact', head: true })
+        .eq('store_id', selectedStore.id);
+
+      // Count stores
+      const { count: storesCount } = await supabase
+        .from('shopify_connections')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      return {
+        products_optimized: productsOptimized || 0,
+        products_total: productsTotal || 0,
+        collections_optimized: collectionsOptimized || 0,
+        collections_total: collectionsTotal || 0,
+        articles_count: articlesCount || 0,
+        stores_count: storesCount || 0
       };
     },
-    enabled: !!user?.id
+    enabled: !!user?.id && !!selectedStore?.id
   });
 
   const { data: profile } = useQuery({
@@ -83,52 +117,31 @@ export function UsageLimits() {
   const limits: UsageLimit[] = [
     {
       label: t.dashboard.usage.labels.products,
-      current: usage?.products_count || 0,
-      limit: plan?.max_products || 0,
+      current: realUsage?.products_optimized || 0,
+      limit: realUsage?.products_total || 0,
       icon: <Package className="h-4 w-4" />,
       color: "hsl(var(--primary))"
     },
     {
       label: t.dashboard.usage.labels.stores,
-      current: usage?.shopify_stores_count || 0,
-      limit: plan?.max_shopify_stores || 0,
+      current: realUsage?.stores_count || 0,
+      limit: plan?.max_shopify_stores || 1,
       icon: <Package className="h-4 w-4" />,
       color: "hsl(var(--chart-6))"
     },
     {
-      label: t.dashboard.usage.labels.optimizations,
-      current: usage?.optimizations_count || 0,
-      limit: plan?.max_optimizations_monthly || 0,
+      label: language === 'fr' ? 'Collections optimisées' : 'Collections Optimized',
+      current: realUsage?.collections_optimized || 0,
+      limit: realUsage?.collections_total || 0,
       icon: <Sparkles className="h-4 w-4" />,
       color: "hsl(var(--chart-2))"
     },
     {
       label: t.dashboard.usage.labels.articles,
-      current: usage?.articles_count || 0,
+      current: realUsage?.articles_count || 0,
       limit: plan?.max_articles_monthly || 0,
       icon: <FileText className="h-4 w-4" />,
       color: "hsl(var(--chart-3))"
-    },
-    {
-      label: t.dashboard.usage.labels.shopifySearch,
-      current: usage?.shopify_requests_count || 0,
-      limit: plan?.max_shopify_requests_monthly || 0,
-      icon: <Package className="h-4 w-4" />,
-      color: "hsl(var(--chart-1))"
-    },
-    {
-      label: t.dashboard.usage.labels.chatResponses,
-      current: usage?.chat_responses_count || 0,
-      limit: plan?.max_chat_responses_monthly || 0,
-      icon: <MessageSquare className="h-4 w-4" />,
-      color: "hsl(var(--chart-4))"
-    },
-    {
-      label: t.dashboard.usage.labels.campaigns,
-      current: usage?.campaigns_count || 0,
-      limit: plan?.max_campaigns || 0,
-      icon: <Sparkles className="h-4 w-4" />,
-      color: "hsl(var(--chart-5))"
     }
   ];
 
@@ -137,7 +150,7 @@ export function UsageLimits() {
     return Math.min((current / limit) * 100, 100);
   };
 
-  const optimizationsLeft = (plan?.max_optimizations_monthly || 0) - (usage?.optimizations_count || 0);
+  const optimizationsLeft = (realUsage?.products_total || 0) - (realUsage?.products_optimized || 0);
   const isTrialPlan = profile?.subscription_status !== 'active';
 
   return (

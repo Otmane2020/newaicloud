@@ -35,10 +35,10 @@ interface LightStats {
 }
 
 async function fetchDashboardData(userId: string, storeId: string) {
-  // Fetch products using Supabase client - include optimization_count for accurate scoring
+  // Fetch products using Supabase client - include enrichment_status for accurate scoring (matches SeoOptimization.tsx)
   const { data: products, error: productsError } = await supabase
     .from('shopify_products')
-    .select('id, seo_title, seo_description, tags, optimization_count')
+    .select('id, seo_title, seo_description, tags, optimization_count, enrichment_status')
     .eq('seller_id', userId)
     .eq('store_id', storeId);
 
@@ -111,10 +111,10 @@ export default function DashboardLight() {
         const collectionsArr = Array.isArray(collections) ? collections : [];
         const imagesArr = Array.isArray(images) ? images : [];
 
-        // Use optimization_count > 0 as the criteria (same as SEO tabs)
+        // Use enrichment_status === 'enriched' as the criteria (same as SeoOptimization.tsx)
         const productsTotal = productsArr.length;
         const productsOptimized = productsArr.filter((p: any) => 
-          p.optimization_count && p.optimization_count > 0
+          p.enrichment_status === 'enriched'
         ).length;
         const productsScore = productsTotal > 0 
           ? Math.round((productsOptimized / productsTotal) * 100) 
