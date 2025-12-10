@@ -40,12 +40,11 @@ export default function ShopifyApp() {
       // Vérifier si l'utilisateur a une connexion et subscription active via le shop domain
       if (host && !pendingToken && shop) {
         console.log('🔄 [ShopifyApp] Open app detected (host without pending_token)');
-        setStatus("processed");
         
         // 🎯 DEMO STORE: Bypass direct vers dashboard
         const isDemoStore = shop === DEMO_STORE_DOMAIN;
         if (isDemoStore) {
-          console.log('🎭 [ShopifyApp] Demo store detected, bypassing to dashboard');
+          console.log('🎭 [ShopifyApp] Demo store detected');
         }
         
         // D'abord vérifier la session locale
@@ -53,6 +52,7 @@ export default function ShopifyApp() {
         
         if (session?.user) {
           console.log('✅ [ShopifyApp] User already authenticated, redirecting to dashboard');
+          setStatus("processed");
           navigate("/dashboard", { replace: true });
           return;
         }
@@ -74,34 +74,44 @@ export default function ShopifyApp() {
             .eq("id", connection.user_id)
             .single();
           
-          // Demo store OU subscription active → auto-login direct
+          console.log('📋 [ShopifyApp] Profile check:', { 
+            user_id: connection.user_id, 
+            status: profile?.subscription_status,
+            isDemoStore 
+          });
+          
+          // Demo store OU subscription active → essayer auto-login
           if (isDemoStore || profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
-            console.log('✅ [ShopifyApp] User has active subscription or is demo, auto-login via shopify-auto-auth');
-            // Réauthentifier l'utilisateur via shopify-auto-auth sans pending_token
-            const { data: authData, error: authError } = await supabase.functions.invoke("shopify-auto-auth", {
-              body: { shop, reauth: true },
-            });
+            console.log('✅ [ShopifyApp] User has active subscription or is demo, trying auto-login');
             
-            if (!authError && authData?.access_token) {
-              await supabase.auth.setSession({
-                access_token: authData.access_token,
-                refresh_token: authData.refresh_token,
+            try {
+              const { data: authData, error: authError } = await supabase.functions.invoke("shopify-auto-auth", {
+                body: { shop, reauth: true },
               });
-              navigate("/dashboard", { replace: true });
-              return;
+              
+              console.log('🔑 [ShopifyApp] Auto-auth result:', { 
+                hasToken: !!authData?.access_token, 
+                error: authError?.message 
+              });
+              
+              if (!authError && authData?.access_token) {
+                await supabase.auth.setSession({
+                  access_token: authData.access_token,
+                  refresh_token: authData.refresh_token,
+                });
+                setStatus("processed");
+                navigate("/dashboard", { replace: true });
+                return;
+              }
+            } catch (err) {
+              console.log('⚠️ [ShopifyApp] Auto-auth failed, will redirect to setup-wizard');
             }
           }
         }
         
-        // Demo store sans connexion → quand même essayer d'aller au dashboard
-        if (isDemoStore) {
-          console.log('🎭 [ShopifyApp] Demo store - redirect to dashboard anyway');
-          navigate("/dashboard", { replace: true });
-          return;
-        }
-        
-        // Sinon, rediriger vers SetupWizard
-        console.log('⚠️ [ShopifyApp] No active subscription found, redirecting to setup-wizard');
+        // Demo store sans session valide → aller au setup-wizard avec le shop
+        setStatus("processed");
+        console.log('⚠️ [ShopifyApp] Redirecting to setup-wizard');
         const redirectParams = new URLSearchParams({ shop, host, embedded: '1' });
         navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
         return;
@@ -148,6 +158,9 @@ export default function ShopifyApp() {
           toast.error(t.shopifyApp?.loginFailed || "Login failed", { description: sessionError.message });
           return;
         }
+        
+        // Attendre que la session soit propagée dans le contexte React
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // Message différent selon si c'est un nouvel utilisateur ou un utilisateur existant
         if (data.is_returning_user) {
