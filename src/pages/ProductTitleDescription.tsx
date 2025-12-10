@@ -39,6 +39,7 @@ import {
   Edit2,
   Save,
   X,
+  Copy,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -2996,14 +2997,30 @@ export default function ProductTitleDescription() {
                              />
                            </div>
                          ) : (
-                           <div 
-                             className="group flex items-center gap-2 cursor-pointer hover:bg-accent/50 rounded p-1 -m-1"
-                             onClick={() => startEditing(product.id, "sku", (product as any).sku || (product as any).variants?.[0]?.sku || "")}
-                           >
-                             <p className="text-xs text-muted-foreground font-mono">
-                               SKU: {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
-                             </p>
-                             <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                           <div className="flex items-center gap-1">
+                             <div 
+                               className="group flex items-center gap-1 cursor-pointer hover:bg-accent/50 rounded p-1 -m-1"
+                               onClick={() => startEditing(product.id, "sku", (product as any).sku || (product as any).variants?.[0]?.sku || "")}
+                             >
+                               <p className="text-xs text-muted-foreground font-mono">
+                                 SKU: {(product as any).sku || (product as any).variants?.[0]?.sku || '—'}
+                               </p>
+                               <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                             </div>
+                             {((product as any).sku || (product as any).variants?.[0]?.sku) && (
+                               <button
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   const skuToCopy = (product as any).sku || (product as any).variants?.[0]?.sku;
+                                   navigator.clipboard.writeText(skuToCopy);
+                                   toast.success("SKU copié !", { description: skuToCopy });
+                                 }}
+                                 className="p-1 rounded hover:bg-gradient-to-r hover:from-violet-500/20 hover:to-fuchsia-500/20 text-violet-600 dark:text-violet-400 transition-all"
+                                 title="Copier le SKU"
+                               >
+                                 <Copy className="h-3 w-3" />
+                               </button>
+                             )}
                            </div>
                          )}
                          
