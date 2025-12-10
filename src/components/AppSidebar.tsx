@@ -94,13 +94,15 @@ export function AppSidebar() {
   const seoSubItems = [
     { title: t.seo.submenu.products, url: "/seo?tab=products", icon: ShoppingBag, key: "products" },
     { title: t.seo.submenu.collections, url: "/seo?tab=collections", icon: Package, key: "collections" },
-    { title: t.seo.submenu.pages, url: "/seo?tab=pages", icon: FileText, key: "pages" },
-    { title: t.seo.submenu.articles, url: "/seo?tab=articles", icon: FileText, key: "articles" },
+    // Pages - restricted to oben.rockman only
+    ...(hasFullAccess ? [{ title: t.seo.submenu.pages, url: "/seo?tab=pages", icon: FileText, key: "pages" }] : []),
+    // Articles - restricted to oben.rockman only
+    ...(hasFullAccess ? [{ title: t.seo.submenu.articles, url: "/seo?tab=articles", icon: FileText, key: "articles" }] : []),
     { title: t.seo.submenu.altimage, url: "/seo?tab=alt", icon: Image, key: "altimage" },
-    { title: t.seo.submenu.homepage, url: "/seo?tab=homepage", icon: Home, key: "homepage", restricted: true },
+    ...(hasFullAccess ? [{ title: t.seo.submenu.homepage, url: "/seo?tab=homepage", icon: Home, key: "homepage" }] : []),
     { title: t.seo.submenu.tags, url: "/seo?tab=tags", icon: Tags, key: "tags" },
-    { title: t.seo.submenu.automation, url: "/seo?tab=automation", icon: Settings, key: "automation" },
-  ].filter(item => !item.restricted || hasFullAccess);
+    ...(hasFullAccess ? [{ title: t.seo.submenu.automation, url: "/seo?tab=automation", icon: Settings, key: "automation" }] : []),
+  ];
 
 
   const auditSubItems = [
@@ -111,9 +113,10 @@ export function AppSidebar() {
     { title: t.seo.audit.subtabs.reports, url: "/seo?tab=audit", icon: List, translationKey: "reports" },
   ];
 
-  const mainMenuItems = [
-    { title: t.navigation.dashboard, url: "/dashboard", icon: LayoutDashboard, key: "dashboard" },
-  ];
+  // Main menu items - Dashboard only for hasFullAccess, otherwise show DashboardLight
+  const mainMenuItems = hasFullAccess 
+    ? [{ title: t.navigation.dashboard, url: "/dashboard", icon: LayoutDashboard, key: "dashboard" }]
+    : [{ title: t.navigation.dashboard, url: "/dashboard-light", icon: LayoutDashboard, key: "dashboard" }];
 
   const productOptimizationSubItems = [
     { title: t.navigation.products, url: "/products", icon: ShoppingBag, key: "products" },
@@ -121,13 +124,14 @@ export function AppSidebar() {
     { title: t.mediaHistory, url: "/products/media-history", icon: History, key: "mediaHistory" },
   ];
 
-  const blogSubItems = [
+  // Blog sub items - all restricted to oben.rockman only
+  const blogSubItems = hasFullAccess ? [
     { title: t.blog.submenu.aiArticles, url: "/blog?subtab=create-article", icon: Sparkles, key: "aiArticles" },
     { title: t.blog.submenu.campaigns, url: "/blog?subtab=campaigns", icon: CalendarClock, key: "campaigns" },
     { title: t.blog.submenu.opportunities, url: "/blog?subtab=opportunities", icon: Lightbulb, key: "opportunities" },
-    { title: t.blog.submenu.netlinking, url: "/blog?subtab=netlinking", icon: Link, key: "netlinking", restricted: true },
-    { title: t.blog.submenu.settings, url: "/blog?subtab=settings", icon: Settings, key: "settings", restricted: true },
-  ].filter(item => !item.restricted || hasFullAccess);
+    { title: t.blog.submenu.netlinking, url: "/blog?subtab=netlinking", icon: Link, key: "netlinking" },
+    { title: t.blog.submenu.settings, url: "/blog?subtab=settings", icon: Settings, key: "settings" },
+  ] : [];
 
   // Social Media - Onglet principal séparé (restricted)
   const socialMediaSubItems = [
