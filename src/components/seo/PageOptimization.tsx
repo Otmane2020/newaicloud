@@ -376,12 +376,21 @@ export function PageOptimization() {
       async (page) => {
         try {
           const { data, error } = await supabase.functions.invoke('generate-page-seo', {
-            body: { pageId: page.id, storeId: selectedStore.id, force: true }
+            body: { pageId: page.id, storeId: selectedStore?.id, force: true }
           });
           
-          const generated = !error;
-          const shopifySynced = data?.shopifySynced || false;
+          console.log(`[PageOptimization] Page ${page.id} result:`, { data, error });
+          
+          if (error) {
+            console.error(`[PageOptimization] Error for page ${page.id}:`, error);
+            return { generated: false, syncError: error.message };
+          }
+          
+          const generated = data?.success === true;
+          const shopifySynced = data?.shopifySynced === true;
           const syncError = data?.syncError;
+          
+          console.log(`[PageOptimization] Page ${page.id}: generated=${generated}, shopifySynced=${shopifySynced}, syncError=${syncError}`);
           
           return { generated, shopifySynced, syncError };
         } catch (error: any) {
@@ -389,7 +398,7 @@ export function PageOptimization() {
           if (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
             setShowUpgradeDialog(true);
           }
-          return { generated: false };
+          return { generated: false, syncError: error.message };
         }
       },
       'optimizing',
