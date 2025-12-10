@@ -221,8 +221,9 @@ export default function DashboardLight() {
     }
   ];
 
-  // Calculate overall score
-  const overallScore = stats 
+  // Calculate overall score - only if we have actual data
+  const hasData = stats && (stats.productsTotal > 0 || stats.collectionsTotal > 0 || stats.tagsTotal > 0 || stats.altTotal > 0);
+  const overallScore = hasData 
     ? Math.round((stats.productsScore + stats.collectionsScore + stats.tagsScore + stats.altScore) / 4)
     : 0;
 
