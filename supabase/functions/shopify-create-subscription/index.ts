@@ -11,14 +11,15 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Mapping des plans vers Shopify Billing - All tiers from database
-const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number; isFree?: boolean }> = {
-  // Free Plan
-  "free": { name: "Free Plan (20 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7, isFree: true },
-  "free-monthly": { name: "Free Plan (20 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7, isFree: true },
-  "free-yearly": { name: "Free Plan (20 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7, isFree: true },
+// Note: Free plan uses the "free" plan created in Shopify Partner Dashboard
+const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number }> = {
+  // Free Plan - uses the plan created in Shopify Partner Dashboard
+  "free": { name: "Free Plan (20 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7 },
+  "free-monthly": { name: "Free Plan (20 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7 },
+  "free-yearly": { name: "Free Plan (20 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7 },
   
   // Trial
-  "trial": { name: "14-Day Free Trial", price: 0, interval: "EVERY_30_DAYS", trialDays: 14, isFree: true },
+  "trial": { name: "14-Day Free Trial", price: 0, interval: "EVERY_30_DAYS", trialDays: 14 },
   
   // Starter - Monthly & Yearly (aligned with ShopifyPricingPlans.tsx)
   "starter-monthly": { name: "Starter (100 optimizations)", price: 9.99, interval: "EVERY_30_DAYS", trialDays: 7 },
@@ -113,66 +114,8 @@ serve(async (req) => {
 
     logStep("Plan selected", { planKey, plan });
 
-    // FREE plans cannot use Shopify Billing (price must be > 0)
-    // Activate directly and redirect to dashboard
-    if (plan.isFree) {
-      logStep("Free plan detected - activating directly (Shopify requires price > 0)");
-      
-      // Update user profile with free plan
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          current_plan_id: 'free',
-          subscription_status: 'active',
-          billing_provider: 'shopify',
-          trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (profileError) {
-        logStep("Error updating profile for free plan", { error: profileError });
-        throw new Error(`Failed to activate free plan: ${profileError.message}`);
-      }
-
-      logStep("Free plan activated successfully");
-
-      // Trigger auto-sync (fire-and-forget)
-      try {
-        logStep("Triggering auto-sync for free plan");
-        fetch(`${SUPABASE_URL}/functions/v1/trigger-auto-sync`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          },
-          body: JSON.stringify({ user_id: user.id }),
-        }).then(response => {
-          if (response.ok) {
-            console.log("[SHOPIFY-BILLING] ✅ Auto-sync triggered for free plan");
-          }
-        }).catch(err => {
-          console.error("[SHOPIFY-BILLING] ⚠️ Auto-sync failed:", err);
-        });
-      } catch (importError) {
-        logStep("Auto-sync trigger error (non-blocking)", { error: String(importError) });
-      }
-
-      // Build redirect URL for Shopify Admin embedded app
-      const shopHandle = shopDomain.replace('.myshopify.com', '');
-      const dashboardUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard?plan=free&activated=true`;
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          isFree: true,
-          confirmationUrl: dashboardUrl
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // PAID plans go through Shopify Billing
+    // ALL plans (including free) go through Shopify Billing
+    // Free plan uses the "free" plan created in Shopify Partner Dashboard
 
     // Build Shopify GraphQL mutation for subscription
     const mutation = `
