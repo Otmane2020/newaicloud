@@ -172,6 +172,11 @@ interface ResultsDialogProps {
   type: WorkflowType;
   items: WorkflowItem[];
   onClose: () => void;
+  syncStatus?: {
+    synced: number;
+    failed: number;
+    errors?: string[];
+  };
 }
 
 export function ResultsDialog({
@@ -180,6 +185,7 @@ export function ResultsDialog({
   type,
   items,
   onClose,
+  syncStatus,
 }: ResultsDialogProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<WorkflowItem | null>(null);
@@ -314,13 +320,45 @@ export function ResultsDialog({
         </ScrollArea>
 
         <div className="flex flex-col gap-3 pt-4 border-t flex-shrink-0">
-          {/* Auto-sync confirmation message */}
-          <div className="flex items-center justify-center gap-2 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-            <span className="text-sm font-medium text-green-700 dark:text-green-300">
-              {"Synchronisé automatiquement avec Shopify"}
-            </span>
-          </div>
+          {/* Auto-sync status message - show real status */}
+          {syncStatus ? (
+            syncStatus.failed === 0 && syncStatus.synced > 0 ? (
+              <div className="flex items-center justify-center gap-2 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                  {`${syncStatus.synced} synchronisé(s) avec Shopify`}
+                </span>
+              </div>
+            ) : syncStatus.failed > 0 ? (
+              <div className="flex flex-col gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                    {`${syncStatus.synced} synchronisé(s), ${syncStatus.failed} échec(s)`}
+                  </span>
+                </div>
+                {syncStatus.errors && syncStatus.errors.length > 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 pl-7">
+                    {syncStatus.errors[0]}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2 p-3 bg-muted rounded-lg border">
+                <AlertCircle className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">
+                  Aucune synchronisation Shopify effectuée
+                </span>
+              </div>
+            )
+          ) : (
+            <div className="flex items-center justify-center gap-2 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                Optimisation terminée
+              </span>
+            </div>
+          )}
           <Button
             onClick={onClose}
             className="w-full h-11"
