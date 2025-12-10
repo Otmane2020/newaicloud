@@ -145,6 +145,7 @@ export function SeoOptimization() {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showReoptimizeDialog, setShowReoptimizeDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
+  const [showLocalResultsDialog, setShowLocalResultsDialog] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   // syncedItems removed - unified into ResultsDialog
@@ -652,7 +653,7 @@ export function SeoOptimization() {
             setOptimizedProducts(freshProducts as Product[]);
             
             setTimeout(() => {
-              setShowCompletedDialog(true);
+              setShowLocalResultsDialog(true);
             }, 100);
           }
           
@@ -720,7 +721,7 @@ export function SeoOptimization() {
             setOptimizedProducts(freshProducts as Product[]);
             
             setTimeout(() => {
-              setShowCompletedDialog(true);
+              setShowLocalResultsDialog(true);
             }, 100);
           }
           
@@ -1450,12 +1451,12 @@ export function SeoOptimization() {
       />
 
       <ResultsDialog
-        open={optimizationState.showCompletedDialog && optimizationState.type === 'products'}
-        onOpenChange={(open) => setShowCompletedDialog(open)}
+        open={showLocalResultsDialog}
+        onOpenChange={(open) => setShowLocalResultsDialog(open)}
         type="seo"
         items={optimizedProducts}
         onClose={() => {
-          setShowCompletedDialog(false);
+          setShowLocalResultsDialog(false);
           setOptimizedProducts([]);
           setSelectedProducts(new Set());
         }}
