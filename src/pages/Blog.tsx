@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb, Link, Settings, Zap, Share2 } from 'lucide-react';
+import { Plus, Sparkles, FileText, CalendarClock, PenSquare, Lightbulb, Link, Settings, Zap, Share2, Clock } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { NetlinkingTable } from '@/components/blog/NetlinkingTable';
 import { OpportunitiesSettings } from '@/components/blog/OpportunitiesSettings';
@@ -23,11 +23,14 @@ import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import { useNavigate } from 'react-router-dom';
 
+// Full access email
+const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
+
 export default function Blog() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [activeSubtab, setActiveSubtab] = useState(searchParams.get('subtab') || 'articles');
   const [articles, setArticles] = useState<any[]>([]);
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -44,6 +47,28 @@ export default function Blog() {
   const [indexingArticle, setIndexingArticle] = useState<string | null>(null);
   const [previewArticle, setPreviewArticle] = useState<any | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  
+  // Check if user has full access
+  const hasFullAccess = user?.email === FULL_ACCESS_EMAIL;
+  
+  // If user doesn't have full access, show Coming Soon
+  if (!hasFullAccess) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <Card className="p-8 text-center max-w-md">
+          <Clock className="w-16 h-16 mx-auto text-primary mb-4" />
+          <h2 className="text-2xl font-bold mb-2">
+            {language === 'fr' ? 'Bientôt disponible' : 'Coming Soon'}
+          </h2>
+          <p className="text-muted-foreground">
+            {language === 'fr' 
+              ? 'Cette fonctionnalité sera disponible prochainement. Restez à l\'écoute !'
+              : 'This feature will be available soon. Stay tuned!'}
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const subtab = searchParams.get('subtab');

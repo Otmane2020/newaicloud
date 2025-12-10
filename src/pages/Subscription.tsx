@@ -40,6 +40,9 @@ interface Plan {
   popular?: boolean;
 }
 
+// Full access email
+const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
+
 const Subscription = () => {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
@@ -56,6 +59,9 @@ const Subscription = () => {
   const [loadingProration, setLoadingProration] = useState(false);
   const [useManualPromo, setUseManualPromo] = useState(false);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  
+  // Check if user has full access
+  const hasFullAccess = user?.email === FULL_ACCESS_EMAIL;
   
   // Shopify billing hook
   const { isShopifyUser, billingProvider, createShopifySubscription, loading: shopifyLoading } = useShopifyBilling();
@@ -927,7 +933,7 @@ const Subscription = () => {
         )}
       </div>
 
-      {!isUpgradeFlow && (
+      {!isUpgradeFlow && hasFullAccess && (
         <>
           <div className="mt-8 sm:mt-12 md:mt-16">
             <div className="text-center mb-6 sm:mb-8">
