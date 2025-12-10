@@ -127,6 +127,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
   const [optimizedImages, setOptimizedImages] = useState<ImageWithProduct[]>([]);
   const [showOptimizeDialog, setShowOptimizeDialog] = useState(false);
   const [selectedImageForOptimize, setSelectedImageForOptimize] = useState<ImageWithProduct | null>(null);
+  const [processingItems, setProcessingItems] = useState<Array<{ id: string; title: string; image_url?: string }>>([]);
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { t, tf, language } = useTranslation();
 
@@ -516,7 +517,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
   };
 
   // Get the global optimization processor
-  const { processBulkOperation, state: optimizationState } = useOptimization();
+  const { processBulkOperation, state: optimizationState, setShowDialog } = useOptimization();
 
   const handleGenerateForSelected = async (useVision = false) => {
     const imagesToGenerate = images.filter(
@@ -540,6 +541,13 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     }
 
     const functionName = useVision ? 'smart-alt-text' : 'generate-alt-texts';
+
+    // Set processing items for progress dialog with product info
+    setProcessingItems(imagesToGenerate.map(img => ({ 
+      id: img.id, 
+      title: img.product?.title || 'Image', 
+      image_url: img.src 
+    })));
 
     // Use global context processor - continues even if user changes tabs
     processBulkOperation(
@@ -613,6 +621,13 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       return;
     }
 
+    // Set processing items for progress dialog with product info
+    setProcessingItems(finalImagesToProcess.map(img => ({ 
+      id: img.id, 
+      title: img.product?.title || 'Image', 
+      image_url: img.src 
+    })));
+
     // Use global context processor - continues even if user changes tabs
     processBulkOperation(
       'alt',
@@ -670,6 +685,13 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       setShowUpgradeDialog(true);
       return;
     }
+
+    // Set processing items for progress dialog with product info
+    setProcessingItems(images.map(img => ({ 
+      id: img.id, 
+      title: img.product?.title || 'Image', 
+      image_url: img.src 
+    })));
 
     // Use global context processor - continues even if user changes tabs
     processBulkOperation(
@@ -1358,14 +1380,15 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         </DialogContent>
       </Dialog>
 
-      {/* Optimization Progress Dialog */}
+      {/* Optimization Progress Dialog - Connected to OptimizationContext */}
       <ProgressDialog
-        open={showProgressDialog}
-        onOpenChange={setShowProgressDialog}
+        open={optimizationState.showDialog && optimizationState.isRunning && optimizationState.type === 'alt'}
+        onOpenChange={(open) => setShowDialog(open)}
         type="alt"
-        operation={generating ? 'optimizing' : 'syncing'}
-        current={progress.current}
-        total={progress.total}
+        operation={optimizationState.operation}
+        current={optimizationState.current}
+        total={optimizationState.total}
+        items={processingItems}
       />
 
       {/* Results Dialog */}
