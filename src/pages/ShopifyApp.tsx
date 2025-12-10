@@ -31,12 +31,9 @@ export default function ShopifyApp() {
 
       console.log('🔍 [ShopifyApp] Params:', { rawShop, shop, pendingToken: !!pendingToken, host: !!host });
 
-      // BYPASS COMPLET pour le demo store - évite toute logique d'auth
+      // Log demo store detection (but don't bypass - let normal flow handle it)
       if (shop === DEMO_STORE_DOMAIN || rawShop === 'store-demo-20240334') {
-        console.log('🎭 [ShopifyApp] DEMO STORE DETECTED - Complete bypass to dashboard');
-        setStatus("processed");
-        navigate("/dashboard", { replace: true });
-        return;
+        console.log('🎭 [ShopifyApp] Demo store detected, proceeding with normal flow');
       }
 
       // Si "Open app" depuis Shopify (host présent mais pas de pending_token)
