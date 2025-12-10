@@ -136,8 +136,34 @@ serve(async (req) => {
 
       logStep("Free plan activated successfully");
 
-      // Redirect to dashboard
-      const dashboardUrl = `${APP_URL}/app/dashboard?shop=${encodeURIComponent(shopDomain)}&plan=free&activated=true`;
+      // 🚀 TRIGGER AUTO-SYNC FOR FREE PLAN (fire-and-forget)
+      try {
+        logStep("Triggering auto-sync for free plan");
+        fetch(`${SUPABASE_URL}/functions/v1/trigger-auto-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+          }),
+        }).then(response => {
+          if (response.ok) {
+            console.log("[SHOPIFY-BILLING] ✅ Auto-sync triggered for free plan");
+          } else {
+            console.error("[SHOPIFY-BILLING] ⚠️ Auto-sync error:", response.status);
+          }
+        }).catch(err => {
+          console.error("[SHOPIFY-BILLING] ⚠️ Auto-sync failed:", err);
+        });
+      } catch (importError) {
+        logStep("Auto-sync trigger error (non-blocking)", { error: String(importError) });
+      }
+
+      // Redirect to embedded Shopify Admin dashboard
+      const shopHandle = shopDomain.replace(".myshopify.com", "");
+      const dashboardUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard?plan=free&activated=true`;
       
       return new Response(
         JSON.stringify({ 
