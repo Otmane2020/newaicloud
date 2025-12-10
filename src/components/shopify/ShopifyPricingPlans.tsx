@@ -12,31 +12,6 @@ import { toast } from "sonner";
 // Plans définis côté frontend - synchronisés avec shopify-create-subscription
 const PLANS = [
   {
-    id: 'free',
-    name: 'Free',
-    description: {
-      en: 'Try NewAI for free',
-      fr: 'Essayez NewAI gratuitement'
-    },
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    features: {
-      en: [
-        '20 analyzed products',
-        '20 AI SEO optimizations / month',
-        '0 AI articles'
-      ],
-      fr: [
-        '20 produits analysés',
-        '20 optimisations SEO IA / mois',
-        '0 articles IA'
-      ]
-    },
-    icon: Sparkles,
-    color: 'from-gray-400 to-gray-500',
-    trialDays: 7
-  },
-  {
     id: 'starter',
     name: 'Starter',
     description: {
