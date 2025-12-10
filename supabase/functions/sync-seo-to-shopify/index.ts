@@ -21,6 +21,10 @@ interface SyncRequest {
   price?: number;
   cost?: number;
   variant_id?: number; // Shopify variant ID for SKU/price/cost updates
+  // Service mode for internal calls (from edge functions)
+  serviceMode?: boolean;
+  userId?: string;
+  imageType?: 'product' | 'content';
 }
 
 // Helper function to make GraphQL requests to Shopify
@@ -96,39 +100,56 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    // Authenticate user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
-    const token = authHeader.replace('Bearer ', '');
+    // Check for service mode (internal calls from other edge functions)
+    const { serviceMode, userId: serviceModeUserId, imageType: serviceModeImageType } = bodyCheck;
     
-    // Create admin client to verify user
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    // Verify the JWT token
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !user) {
-      console.error('Authentication failed:', authError);
-      throw new Error('User not authenticated');
-    }
-
-    console.log(`[SYNC] User authenticated: ${user.id}`);
-
-    // Create client with user context for RLS-protected queries
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: authHeader }
-        }
+    let user: any;
+    let supabaseClient: any;
+    
+    if (serviceMode && serviceModeUserId) {
+      // Service mode: use service role key and provided userId
+      console.log(`[SYNC] Service mode enabled for user: ${serviceModeUserId}`);
+      user = { id: serviceModeUserId };
+      supabaseClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+    } else {
+      // Normal mode: authenticate user via JWT
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        throw new Error('No authorization header');
       }
-    );
+
+      const token = authHeader.replace('Bearer ', '');
+      
+      // Create admin client to verify user
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+
+      // Verify the JWT token
+      const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(token);
+      if (authError || !userData?.user) {
+        console.error('Authentication failed:', authError);
+        throw new Error('User not authenticated');
+      }
+      
+      user = userData.user;
+      console.log(`[SYNC] User authenticated: ${user.id}`);
+
+      // Create client with user context for RLS-protected queries
+      supabaseClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        {
+          global: {
+            headers: { Authorization: authHeader }
+          }
+        }
+      );
+    }
 
     const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, force, title, vendor, sku, price, cost, variant_id }: SyncRequest = bodyCheck;
 

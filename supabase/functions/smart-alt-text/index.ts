@@ -386,6 +386,47 @@ serve(async (req) => {
       p_increment: 3,
     });
 
+    // ---- 7. Auto-sync ALT text to Shopify
+    // Get shopify_image_id from product_images for sync
+    const { data: imageWithShopifyId } = await supabase
+      .from("product_images")
+      .select("shopify_image_id")
+      .eq("id", image_id)
+      .single();
+    
+    if (imageWithShopifyId?.shopify_image_id) {
+      console.log(`[smart-alt-text] 🔄 Auto-syncing ALT text to Shopify for image ${image_id}`);
+      try {
+        const syncResponse = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-seo-to-shopify`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              imageId: image_id,
+              imageType: 'product',
+              serviceMode: true,
+              userId: product.seller_id,
+            }),
+          }
+        );
+        
+        if (syncResponse.ok) {
+          console.log(`[smart-alt-text] ✅ ALT text synced to Shopify successfully`);
+        } else {
+          const errorText = await syncResponse.text();
+          console.error(`[smart-alt-text] ⚠️ Failed to sync ALT to Shopify:`, errorText);
+        }
+      } catch (syncError) {
+        console.error(`[smart-alt-text] ⚠️ Error during auto-sync:`, syncError);
+      }
+    } else {
+      console.log(`[smart-alt-text] Image ${image_id} has no Shopify ID, skipping sync`);
+    }
+
     return new Response(JSON.stringify({ success: true, alt: geminiText }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
