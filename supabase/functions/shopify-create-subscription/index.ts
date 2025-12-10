@@ -113,8 +113,66 @@ serve(async (req) => {
 
     logStep("Plan selected", { planKey, plan });
 
-    // ALL plans go through Shopify Billing (including free plans at $0)
-    // This ensures consistent UX and proper tracking
+    // FREE plans cannot use Shopify Billing (price must be > 0)
+    // Activate directly and redirect to dashboard
+    if (plan.isFree) {
+      logStep("Free plan detected - activating directly (Shopify requires price > 0)");
+      
+      // Update user profile with free plan
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          current_plan_id: 'free',
+          subscription_status: 'active',
+          billing_provider: 'shopify',
+          trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (profileError) {
+        logStep("Error updating profile for free plan", { error: profileError });
+        throw new Error(`Failed to activate free plan: ${profileError.message}`);
+      }
+
+      logStep("Free plan activated successfully");
+
+      // Trigger auto-sync (fire-and-forget)
+      try {
+        logStep("Triggering auto-sync for free plan");
+        fetch(`${SUPABASE_URL}/functions/v1/trigger-auto-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: JSON.stringify({ user_id: user.id }),
+        }).then(response => {
+          if (response.ok) {
+            console.log("[SHOPIFY-BILLING] ✅ Auto-sync triggered for free plan");
+          }
+        }).catch(err => {
+          console.error("[SHOPIFY-BILLING] ⚠️ Auto-sync failed:", err);
+        });
+      } catch (importError) {
+        logStep("Auto-sync trigger error (non-blocking)", { error: String(importError) });
+      }
+
+      // Build redirect URL for Shopify Admin embedded app
+      const shopHandle = shopDomain.replace('.myshopify.com', '');
+      const dashboardUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard?plan=free&activated=true`;
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          isFree: true,
+          confirmationUrl: dashboardUrl
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // PAID plans go through Shopify Billing
 
     // Build Shopify GraphQL mutation for subscription
     const mutation = `
