@@ -41,6 +41,7 @@ import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
 import { useStoreDomain } from '@/hooks/useStoreDomain';
 import { useOptimization } from '@/contexts/OptimizationContext';
 import { ProgressBanner } from '@/components/seo/ProgressBanner';
+import { useTranslation } from '@/lib/language';
 
 interface Article {
   id: string;
@@ -73,6 +74,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
   const { user } = useAuth();
   const { selectedStore } = useStore();
   const { domain } = useStoreDomain();
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,8 +249,8 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
       (sourceFilter === 'shopify' && article.source === 'shopify_import');
     
     const matchesSync = syncFilter === 'all' || 
-      (syncFilter === 'synced' && article.shopify_blog_id) ||
-      (syncFilter === 'not_synced' && !article.shopify_blog_id);
+      (syncFilter === 'synced' && article.shopify_article_id) ||
+      (syncFilter === 'not_synced' && !article.shopify_article_id);
     
     // Collection filter (placeholder for future implementation)
     const matchesCollection = collectionFilter === 'all';
@@ -276,7 +278,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
     ai: articles.filter(a => a.source === 'ai_generated').length,
     shopify: articles.filter(a => a.source === 'shopify_import').length,
     published: articles.filter(a => a.status === 'published').length,
-    synced: articles.filter(a => a.shopify_blog_id).length,
+    synced: articles.filter(a => a.shopify_article_id).length,
     seoOptimized: articles.filter(a => a.meta_description).length,
   };
 
@@ -570,12 +572,12 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Articles SEO Management</h1>
-            <p className="text-muted-foreground mt-1">Optimize SEO title and meta description for your articles</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">{t.blog.articleSeoManagement.title}</h1>
+            <p className="text-muted-foreground mt-1">{t.blog.articleSeoManagement.description}</p>
           </div>
           <Button onClick={() => setShowWizard(true)} size="lg" className="w-full sm:w-auto">
             <Plus className="w-5 h-5 mr-2" />
-            Create Article
+            {t.blog.articleSeoManagement.createArticle}
           </Button>
         </div>
       </div>
@@ -589,20 +591,20 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
             setStatusFilter('all');
             setSyncFilter('all');
             setSearchQuery('');
-            toast.info(`${stats.total - stats.seoOptimized} articles à optimiser`);
+            toast.info(`${stats.total - stats.seoOptimized} ${t.blog.articleSeoManagement.stats.toOptimize}`);
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-600 dark:text-orange-300">To Optimize</p>
+              <p className="text-sm font-medium text-orange-600 dark:text-orange-300">{t.blog.articleSeoManagement.stats.toOptimize}</p>
               <p className="text-2xl font-bold text-orange-600 dark:text-orange-100">{stats.total - stats.seoOptimized}</p>
               <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                Not AI-optimized yet
+                {t.blog.articleSeoManagement.stats.notOptimizedYet}
               </p>
             </div>
             <Clock className="w-8 h-8 text-orange-600" />
           </div>
-          <p className="text-xs text-orange-600 dark:text-orange-300 mt-2">Click to filter</p>
+          <p className="text-xs text-orange-600 dark:text-orange-300 mt-2">{t.blog.articleSeoManagement.stats.clickToFilter}</p>
         </Card>
         
         <Card 
@@ -612,20 +614,20 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
             setStatusFilter('all');
             setSyncFilter('all');
             setSearchQuery('');
-            toast.info(`${stats.seoOptimized} articles AI-optimisés`);
+            toast.info(`${stats.seoOptimized} ${t.blog.articleSeoManagement.stats.aiOptimized}`);
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">AI-Optimized</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-300">{t.blog.articleSeoManagement.stats.aiOptimized}</p>
               <p className="text-2xl font-bold text-green-900 dark:text-green-100">{stats.seoOptimized}</p>
               <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                AI-enhanced SEO
+                {t.blog.articleSeoManagement.stats.aiEnhancedSeo}
               </p>
             </div>
             <Sparkles className="w-8 h-8 text-green-600" />
           </div>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-2">Click to filter</p>
+          <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.blog.articleSeoManagement.stats.clickToFilter}</p>
         </Card>
         
         <Card 
@@ -634,22 +636,22 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
             setSyncFilter('not-synced');
             setQualityFilter('all');
             setStatusFilter('all');
-            toast.info(`${articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id).length} articles à synchroniser`);
+            toast.info(`${articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id).length} ${t.blog.articleSeoManagement.stats.toSync}`);
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">To Synchronize</p>
+              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">{t.blog.articleSeoManagement.stats.toSync}</p>
               <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
                 {articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id).length}
               </p>
               <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                AI-optimized only
+                {t.blog.articleSeoManagement.stats.aiOptimizedOnly}
               </p>
             </div>
             <Clock className="w-8 h-8 text-purple-600" />
           </div>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">Click to filter</p>
+          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">{t.blog.articleSeoManagement.stats.clickToFilter}</p>
         </Card>
         
         <Card 
@@ -658,20 +660,20 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
             setSyncFilter('synced');
             setQualityFilter('all');
             setStatusFilter('all');
-            toast.info(`${stats.synced} articles synchronisés`);
+            toast.info(`${stats.synced} ${t.blog.articleSeoManagement.stats.synchronized}`);
           }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Synchronized</p>
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{t.blog.articleSeoManagement.stats.synchronized}</p>
               <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.synced}</p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                Synced to Shopify
+                {t.blog.articleSeoManagement.stats.syncedToShopify}
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-blue-600" />
           </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">Click to filter</p>
+          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">{t.blog.articleSeoManagement.stats.clickToFilter}</p>
         </Card>
       </div>
 
@@ -1025,7 +1027,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
                         </Badge>
                       </td>
                       <td className="p-3 hidden md:table-cell">
-                        {article.shopify_blog_id ? (
+                        {article.shopify_article_id ? (
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                             <Check className="w-3 h-3 mr-1" />
                             Yes
@@ -1068,7 +1070,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
                               <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                             </Button>
                           )}
-                          {(article.optimization_count || 0) > 0 && !article.shopify_blog_id && (
+                          {(article.optimization_count || 0) > 0 && !article.shopify_article_id && (
                             <Button
                               size="sm"
                               variant="outline"

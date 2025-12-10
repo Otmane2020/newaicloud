@@ -4102,6 +4102,22 @@ export const translations = {
         syncedToShopify: "Sync Shopify",
       },
     },
+    articleSeoManagement: {
+      title: "Gestion SEO des Articles",
+      description: "Optimisez le titre SEO et la meta description de vos articles",
+      createArticle: "Créer un Article",
+      stats: {
+        toOptimize: "À Optimiser",
+        notOptimizedYet: "Non optimisé par l'IA",
+        clickToFilter: "Cliquer pour filtrer",
+        aiOptimized: "Optimisé IA",
+        aiEnhancedSeo: "SEO amélioré par l'IA",
+        toSync: "À Synchroniser",
+        aiOptimizedOnly: "Optimisés IA uniquement",
+        synchronized: "Synchronisé",
+        syncedToShopify: "Sync vers Shopify",
+      },
+    },
     hero: {
       articles: {
         description:
