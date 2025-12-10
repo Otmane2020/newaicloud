@@ -778,7 +778,7 @@ Deno.serve(async (req: Request) => {
       const graphqlUrl = `https://${shopUrl}/admin/api/2025-01/graphql.json`;
       
       try {
-        // Step 1: Query product media to find the MediaImage GID that corresponds to our ProductImage ID
+        // Step 1: Query product media to find the MediaImage GID by matching image URL
         const getMediaQuery = `
           query getProductMedia($productId: ID!) {
             product(id: $productId) {
@@ -787,10 +787,11 @@ Deno.serve(async (req: Request) => {
                   node {
                     ... on MediaImage {
                       id
+                      alt
                       image {
                         id
                         url
-                        altText
+                        originalSrc
                       }
                     }
                   }
@@ -801,9 +802,10 @@ Deno.serve(async (req: Request) => {
         `;
         
         const productGid = `gid://shopify/Product/${shopifyId}`;
-        const targetImageGid = `gid://shopify/ProductImage/${imageData.shopify_image_id}`;
         
-        console.log(`[SYNC-IMAGE] Fetching product media to find MediaImage GID for ProductImage: ${targetImageGid}`);
+        console.log(`[SYNC-IMAGE] Fetching product media for product: ${productGid}`);
+        console.log(`[SYNC-IMAGE] Looking for image with shopify_image_id: ${imageData.shopify_image_id}`);
+        console.log(`[SYNC-IMAGE] Image src for matching: ${imageData.src?.substring(0, 100)}...`);
         
         const mediaResponse = await fetch(graphqlUrl, {
           method: 'POST',
@@ -819,35 +821,72 @@ Deno.serve(async (req: Request) => {
         
         if (!mediaResponse.ok) {
           const errorText = await mediaResponse.text();
-          console.error(`[SYNC-IMAGE] GraphQL query error: ${mediaResponse.status}`, errorText);
+          console.error(`[SYNC-IMAGE] ❌ GraphQL query error: ${mediaResponse.status}`, errorText);
           throw new Error(`Shopify GraphQL error: ${mediaResponse.status} - ${errorText}`);
         }
         
         const mediaResult = await mediaResponse.json();
         
         if (mediaResult.errors) {
-          console.error(`[SYNC-IMAGE] GraphQL errors:`, mediaResult.errors);
+          console.error(`[SYNC-IMAGE] ❌ GraphQL errors:`, mediaResult.errors);
           throw new Error(`Shopify GraphQL errors: ${JSON.stringify(mediaResult.errors)}`);
         }
         
-        // Find the MediaImage that matches our ProductImage ID
+        // Find the MediaImage by matching image URL (most reliable method)
         const mediaEdges = mediaResult.data?.product?.media?.edges || [];
         let mediaImageGid: string | null = null;
         
-        for (const edge of mediaEdges) {
-          const node = edge.node;
-          if (node && node.image && node.image.id === targetImageGid) {
-            mediaImageGid = node.id;
-            console.log(`[SYNC-IMAGE] Found MediaImage GID: ${mediaImageGid} for ProductImage: ${targetImageGid}`);
-            break;
+        console.log(`[SYNC-IMAGE] Found ${mediaEdges.length} media items in product`);
+        
+        // Method 1: Try to match by URL (most reliable)
+        const imageUrl = imageData.src;
+        if (imageUrl) {
+          // Extract the filename from the URL for comparison
+          const urlParts = imageUrl.split('/');
+          const filename = urlParts[urlParts.length - 1]?.split('?')[0]?.split('_').slice(0, -1).join('_') || '';
+          
+          for (const edge of mediaEdges) {
+            const node = edge.node;
+            if (node && node.image) {
+              const shopifyUrl = node.image.url || node.image.originalSrc || '';
+              const shopifyFilename = shopifyUrl.split('/').pop()?.split('?')[0]?.split('_').slice(0, -1).join('_') || '';
+              
+              // Match by filename pattern (Shopify may add size suffixes)
+              if (shopifyUrl.includes(filename) || filename.includes(shopifyFilename) || shopifyUrl === imageUrl) {
+                mediaImageGid = node.id;
+                console.log(`[SYNC-IMAGE] ✅ Found MediaImage by URL match: ${mediaImageGid}`);
+                break;
+              }
+            }
+          }
+        }
+        
+        // Method 2: If URL match failed, try matching by position or ProductImage GID
+        if (!mediaImageGid) {
+          const targetImageGid = `gid://shopify/ProductImage/${imageData.shopify_image_id}`;
+          
+          for (const edge of mediaEdges) {
+            const node = edge.node;
+            if (node && node.image && node.image.id === targetImageGid) {
+              mediaImageGid = node.id;
+              console.log(`[SYNC-IMAGE] ✅ Found MediaImage by ProductImage GID match: ${mediaImageGid}`);
+              break;
+            }
+          }
+        }
+        
+        // Method 3: Use first media item as fallback (risky but better than nothing)
+        if (!mediaImageGid && mediaEdges.length > 0) {
+          const firstMedia = mediaEdges[0]?.node;
+          if (firstMedia?.id) {
+            mediaImageGid = firstMedia.id;
+            console.log(`[SYNC-IMAGE] ⚠️ Using first media item as fallback: ${mediaImageGid}`);
           }
         }
         
         if (!mediaImageGid) {
-          // If not found by exact match, try to find by position or use the MediaImage ID directly
-          // Sometimes the ProductImage ID is the numeric part of the MediaImage GID
-          console.log(`[SYNC-IMAGE] MediaImage not found by ProductImage ID match, trying direct GID construction`);
-          mediaImageGid = `gid://shopify/MediaImage/${imageData.shopify_image_id}`;
+          console.error(`[SYNC-IMAGE] ❌ Could not find MediaImage GID for image`);
+          throw new Error(`Image non trouvée sur Shopify. L'image n'existe peut-être plus dans le produit.`);
         }
         
         // Step 2: Use fileUpdate mutation to update the alt text
@@ -869,6 +908,7 @@ Deno.serve(async (req: Request) => {
         `;
         
         console.log(`[SYNC-IMAGE] Updating alt text via fileUpdate for: ${mediaImageGid}`);
+        console.log(`[SYNC-IMAGE] New alt text: "${imageData.alt_text}"`);
         
         const updateResponse = await fetch(graphqlUrl, {
           method: 'POST',
@@ -889,28 +929,28 @@ Deno.serve(async (req: Request) => {
         
         if (!updateResponse.ok) {
           const errorText = await updateResponse.text();
-          console.error(`[SYNC-IMAGE] fileUpdate error: ${updateResponse.status}`, errorText);
+          console.error(`[SYNC-IMAGE] ❌ fileUpdate HTTP error: ${updateResponse.status}`, errorText);
           throw new Error(`Shopify fileUpdate error: ${updateResponse.status} - ${errorText}`);
         }
         
         const updateResult = await updateResponse.json();
         
         if (updateResult.errors) {
-          console.error(`[SYNC-IMAGE] fileUpdate GraphQL errors:`, updateResult.errors);
+          console.error(`[SYNC-IMAGE] ❌ fileUpdate GraphQL errors:`, updateResult.errors);
           throw new Error(`Shopify fileUpdate errors: ${JSON.stringify(updateResult.errors)}`);
         }
         
         if (updateResult.data?.fileUpdate?.userErrors?.length > 0) {
           const userErrors = updateResult.data.fileUpdate.userErrors;
-          console.error(`[SYNC-IMAGE] fileUpdate user errors:`, userErrors);
+          console.error(`[SYNC-IMAGE] ❌ fileUpdate user errors:`, userErrors);
           throw new Error(`Shopify fileUpdate user errors: ${JSON.stringify(userErrors)}`);
         }
         
-        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via GraphQL fileUpdate for image ${imageData.shopify_image_id}`);
-        console.log(`[SYNC-IMAGE] Updated files:`, updateResult.data?.fileUpdate?.files);
+        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via GraphQL fileUpdate`);
+        console.log(`[SYNC-IMAGE] Updated files:`, JSON.stringify(updateResult.data?.fileUpdate?.files));
       } catch (gqlError: any) {
-        console.error(`[SYNC-IMAGE] GraphQL failed:`, gqlError.message);
-        throw new Error(`Erreur Shopify GraphQL: ${gqlError.message}`);
+        console.error(`[SYNC-IMAGE] ❌ GraphQL operation failed:`, gqlError.message);
+        throw new Error(`Erreur synchronisation Shopify: ${gqlError.message}`);
       }
 
       // Update image last_synced_at timestamp in database

@@ -342,6 +342,9 @@ serve(async (req) => {
       .eq("id", image_id)
       .single();
     
+    let shopifySynced = false;
+    let syncError = '';
+    
     if (imageWithShopifyId?.shopify_image_id) {
       console.log(`[generate-alt-texts-vision] 🔄 Auto-syncing ALT text to Shopify for image ${image_id}`);
       try {
@@ -363,19 +366,36 @@ serve(async (req) => {
         );
         
         if (syncResponse.ok) {
-          console.log(`[generate-alt-texts-vision] ✅ ALT text synced to Shopify successfully`);
+          const syncResult = await syncResponse.json();
+          if (syncResult.success) {
+            shopifySynced = true;
+            console.log(`[generate-alt-texts-vision] ✅ ALT text synced to Shopify successfully`);
+          } else {
+            syncError = syncResult.error || syncResult.message || 'Sync returned failure';
+            console.error(`[generate-alt-texts-vision] ❌ Sync returned failure:`, syncError);
+          }
         } else {
           const errorText = await syncResponse.text();
-          console.error(`[generate-alt-texts-vision] ⚠️ Failed to sync ALT to Shopify:`, errorText);
+          syncError = `HTTP ${syncResponse.status}: ${errorText}`;
+          console.error(`[generate-alt-texts-vision] ❌ Failed to sync ALT to Shopify:`, syncError);
         }
-      } catch (syncError) {
-        console.error(`[generate-alt-texts-vision] ⚠️ Error during auto-sync:`, syncError);
+      } catch (err) {
+        syncError = err instanceof Error ? err.message : 'Unknown sync error';
+        console.error(`[generate-alt-texts-vision] ❌ Error during auto-sync:`, syncError);
       }
     } else {
       console.log(`[generate-alt-texts-vision] Image ${image_id} has no Shopify ID, skipping sync`);
+      syncError = 'Image has no Shopify ID';
     }
 
-    return new Response(JSON.stringify({ success: true, alt: geminiText, language: lang }), {
+    // Return response with sync status - DO NOT say success if sync failed
+    return new Response(JSON.stringify({ 
+      success: true, 
+      alt: geminiText, 
+      language: lang,
+      shopifySynced: shopifySynced,
+      syncError: syncError || undefined
+    }), {
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (err) {

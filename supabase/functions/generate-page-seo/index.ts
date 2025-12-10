@@ -522,6 +522,10 @@ ${baseContent}
 
     console.log('Generated SEO:', seoData);
 
+    // Sync status variables (declared here for scope)
+    let shopifySynced = false;
+    let syncErrorMsg = '';
+    
     // Update page with generated SEO
     if (!isHomepage) {
       console.log('[UPDATE] Starting page update for pageId:', pageId);
@@ -576,7 +580,6 @@ ${baseContent}
       console.log('[USAGE] Usage incremented successfully');
 
       // 🔄 AUTO-SYNC: Sync page SEO to Shopify automatically after generation
-      let syncResult = { success: false, message: '' };
       if (currentPage?.shopify_page_id) {
         try {
           console.log(`[PAGE-SEO] Auto-syncing to Shopify for page ${pageId}...`);
@@ -596,17 +599,26 @@ ${baseContent}
           );
           
           if (syncResponse.ok) {
-            syncResult = await syncResponse.json();
-            console.log(`[PAGE-SEO] ✅ Page synced to Shopify:`, syncResult);
+            const syncResult = await syncResponse.json();
+            if (syncResult.success) {
+              shopifySynced = true;
+              console.log(`[PAGE-SEO] ✅ Page synced to Shopify:`, syncResult);
+            } else {
+              syncErrorMsg = syncResult.error || syncResult.message || 'Sync returned failure';
+              console.error(`[PAGE-SEO] ❌ Sync returned failure:`, syncErrorMsg);
+            }
           } else {
             const errorText = await syncResponse.text();
-            console.error(`[PAGE-SEO] ⚠️ Failed to sync to Shopify:`, errorText);
+            syncErrorMsg = `HTTP ${syncResponse.status}: ${errorText}`;
+            console.error(`[PAGE-SEO] ❌ Failed to sync to Shopify:`, syncErrorMsg);
           }
         } catch (syncError) {
-          console.error(`[PAGE-SEO] ⚠️ Error during auto-sync:`, syncError);
+          syncErrorMsg = syncError instanceof Error ? syncError.message : 'Unknown sync error';
+          console.error(`[PAGE-SEO] ❌ Error during auto-sync:`, syncErrorMsg);
         }
       } else {
         console.log(`[PAGE-SEO] Page ${pageId} has no Shopify ID, skipping sync`);
+        syncErrorMsg = 'Page has no Shopify ID';
       }
     } else if (isHomepage && connection) {
       // Save homepage SEO to database
@@ -638,12 +650,23 @@ ${baseContent}
       console.log('[HOMEPAGE] Homepage SEO saved successfully');
     }
 
+    // Return response with sync status
+    const responseData: any = { 
+      success: true, 
+      seo_title: seoData.seo_title,
+      seo_description: seoData.seo_description
+    };
+    
+    // Add sync status only for non-homepage pages (variables are defined in the non-homepage block)
+    if (!isHomepage && typeof shopifySynced !== 'undefined') {
+      responseData.shopifySynced = shopifySynced;
+      if (typeof syncErrorMsg !== 'undefined' && syncErrorMsg) {
+        responseData.syncError = syncErrorMsg;
+      }
+    }
+    
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        seo_title: seoData.seo_title,
-        seo_description: seoData.seo_description
-      }),
+      JSON.stringify(responseData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

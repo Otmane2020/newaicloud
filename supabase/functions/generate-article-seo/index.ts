@@ -354,7 +354,9 @@ ${labels.instruction}`;
         console.log(`✅ Successfully optimized article: ${article_id}`);
 
         // 🔄 AUTO-SYNC: Sync article to Shopify automatically after SEO generation
-        let syncResult = { success: false, message: '' };
+        let shopifySynced = false;
+        let syncErrorMsg = '';
+        
         if (article.shopify_article_id) {
           try {
             console.log(`[ARTICLE-SEO] Auto-syncing to Shopify for article ${article_id}...`);
@@ -374,23 +376,36 @@ ${labels.instruction}`;
             );
             
             if (syncResponse.ok) {
-              syncResult = await syncResponse.json();
-              console.log(`[ARTICLE-SEO] ✅ Article synced to Shopify:`, syncResult);
+              const syncResult = await syncResponse.json();
+              if (syncResult.success) {
+                shopifySynced = true;
+                console.log(`[ARTICLE-SEO] ✅ Article synced to Shopify:`, syncResult);
+              } else {
+                syncErrorMsg = syncResult.error || syncResult.message || 'Sync returned failure';
+                console.error(`[ARTICLE-SEO] ❌ Sync returned failure:`, syncErrorMsg);
+              }
             } else {
               const errorText = await syncResponse.text();
-              console.error(`[ARTICLE-SEO] ⚠️ Failed to sync to Shopify:`, errorText);
-              syncResult = { success: false, message: errorText };
+              syncErrorMsg = `HTTP ${syncResponse.status}: ${errorText}`;
+              console.error(`[ARTICLE-SEO] ❌ Failed to sync to Shopify:`, syncErrorMsg);
             }
           } catch (syncError) {
-            console.error(`[ARTICLE-SEO] ⚠️ Error during auto-sync:`, syncError);
-            syncResult = { success: false, message: syncError instanceof Error ? syncError.message : 'Unknown error' };
+            syncErrorMsg = syncError instanceof Error ? syncError.message : 'Unknown sync error';
+            console.error(`[ARTICLE-SEO] ❌ Error during auto-sync:`, syncErrorMsg);
           }
         } else {
           console.log(`[ARTICLE-SEO] Article ${article_id} has no Shopify ID, skipping sync`);
+          syncErrorMsg = 'Article has no Shopify ID';
         }
 
         successCount++;
-        results.push({ article_id, success: true, seo_data: seoData, shopifySync: syncResult });
+        results.push({ 
+          article_id, 
+          success: true, 
+          seo_data: seoData, 
+          shopifySynced: shopifySynced,
+          syncError: syncErrorMsg || undefined
+        });
 
       } catch (error) {
         console.error(`❌ Error processing article ${article_id}:`, error);
