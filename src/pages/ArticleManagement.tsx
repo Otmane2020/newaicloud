@@ -21,7 +21,8 @@ import {
   RefreshCw,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  SlidersHorizontal
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -783,11 +784,17 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
       <Card className="mb-6 bg-background/50">
         <CardContent className="p-4">
           <div className="flex flex-col gap-4">
+            {/* Header with Smart Filter Icon */}
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <SlidersHorizontal className="w-5 h-5 text-primary" />
+              <span className="font-medium text-sm">Filtres intelligents</span>
+            </div>
+            
             {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
               <Input
-                placeholder="Search by title or description..."
+                placeholder="Rechercher par titre ou description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-12 text-base relative z-20"
@@ -859,40 +866,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
             </div>
           </div>
 
-          {/* Bulk Actions */}
-          {selectedArticles.length > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2 pt-2 border-t">
-              <span className="text-sm text-muted-foreground mb-2 sm:mb-0">
-                {selectedArticles.length} selected
-              </span>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => optimizeArticles(selectedArticles)}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Optimize SEO
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => syncToShopify(selectedArticles)}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Sync
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={bulkDelete}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 

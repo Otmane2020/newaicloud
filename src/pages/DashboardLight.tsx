@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/language';
 import { useNavigate } from 'react-router-dom';
+import { useStore } from '@/contexts/StoreContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -32,7 +33,7 @@ interface LightStats {
   altOptimized: number;
 }
 
-async function fetchDashboardData(userId: string) {
+async function fetchDashboardData(userId: string, storeId: string) {
   // Use direct fetch to avoid TypeScript issues with Supabase client
   const supabaseUrl = (supabase as any).supabaseUrl;
   const supabaseKey = (supabase as any).supabaseKey;
@@ -44,9 +45,9 @@ async function fetchDashboardData(userId: string) {
   };
 
   const [productsRes, collectionsRes, imagesRes] = await Promise.all([
-    fetch(`${supabaseUrl}/rest/v1/shopify_products?user_id=eq.${userId}&select=id,seo_title,seo_description,tags`, { headers }),
-    fetch(`${supabaseUrl}/rest/v1/shopify_collections?user_id=eq.${userId}&select=id,seo_title,seo_description`, { headers }),
-    fetch(`${supabaseUrl}/rest/v1/product_images?user_id=eq.${userId}&select=id,alt_text`, { headers })
+    fetch(`${supabaseUrl}/rest/v1/shopify_products?seller_id=eq.${userId}&store_id=eq.${storeId}&select=id,seo_title,seo_description,tags`, { headers }),
+    fetch(`${supabaseUrl}/rest/v1/shopify_collections?user_id=eq.${userId}&store_id=eq.${storeId}&select=id,seo_title,seo_description`, { headers }),
+    fetch(`${supabaseUrl}/rest/v1/product_images?user_id=eq.${userId}&store_id=eq.${storeId}&select=id,alt_text`, { headers })
   ]);
 
   const products = await productsRes.json();
@@ -62,14 +63,19 @@ export default function DashboardLight() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<LightStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const { selectedStore } = useStore();
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!user?.id) return;
+      if (!user?.id || !selectedStore?.id) {
+        setStats(null);
+        setLoading(false);
+        return;
+      }
       
       setLoading(true);
       try {
-        const { products, collections, images } = await fetchDashboardData(user.id);
+        const { products, collections, images } = await fetchDashboardData(user.id, selectedStore.id);
 
         // Calculate scores
         const productsArr = Array.isArray(products) ? products : [];
@@ -130,7 +136,7 @@ export default function DashboardLight() {
     };
 
     fetchStats();
-  }, [user?.id]);
+  }, [user?.id, selectedStore?.id]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
