@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     const shopifyGraphqlUrl = `https://${connection.store_url}/admin/api/2025-01/graphql.json`;
     
     // Construire la mutation GraphQL pour mettre à jour la page
-    const pageGid = `gid://shopify/OnlineStorePage/${page.shopify_page_id}`;
+    const pageGid = `gid://shopify/Page/${page.shopify_page_id}`;
     
     const graphqlMutation = `
       mutation pageUpdate($id: ID!, $page: PageUpdateInput!) {

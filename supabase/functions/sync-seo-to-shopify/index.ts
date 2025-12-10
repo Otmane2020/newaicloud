@@ -747,48 +747,46 @@ Deno.serve(async (req: Request) => {
       shopUrl = storeConnection.store_url;
       shopifyAccessToken = storeConnection.access_token;
       
-      console.log(`[SYNC-IMAGE] Syncing ALT text to Shopify via GraphQL:`, {
+      console.log(`[SYNC-IMAGE] Syncing ALT text to Shopify:`, {
         shopUrl,
         contentId: shopifyId,
         imageId: imageData.shopify_image_id,
         altText: imageData.alt_text?.substring(0, 50) + '...'
       });
       
-      // Use GraphQL to update product media ALT text (product images endpoint is deprecated)
-      const updateMediaMutation = `
-        mutation productUpdateMedia($productId: ID!, $media: [UpdateMediaInput!]!) {
-          productUpdateMedia(productId: $productId, media: $media) {
-            media {
-              ... on MediaImage {
-                id
-                alt
-              }
-            }
-            mediaUserErrors {
-              field
-              message
-            }
-          }
-        }
-      `;
-
+      // Use REST API to update product image ALT text (more reliable than GraphQL MediaImage)
+      // Shopify product images are stored as ProductImage, not MediaImage in GraphQL
+      const restUrl = `https://${shopUrl}/admin/api/2025-01/products/${shopifyId}/images/${imageData.shopify_image_id}.json`;
+      
       try {
-        const productGid = `gid://shopify/Product/${shopifyId}`;
-        const mediaGid = `gid://shopify/MediaImage/${imageData.shopify_image_id}`;
+        console.log(`[SYNC-IMAGE] Calling REST API: PUT ${restUrl}`);
         
-        const mediaResponse = await shopifyGraphQL(shopUrl, shopifyAccessToken, updateMediaMutation, {
-          productId: productGid,
-          media: [{
-            id: mediaGid,
-            alt: imageData.alt_text
-          }]
+        const restResponse = await fetch(restUrl, {
+          method: 'PUT',
+          headers: {
+            'X-Shopify-Access-Token': shopifyAccessToken,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: {
+              id: imageData.shopify_image_id,
+              alt: imageData.alt_text
+            }
+          })
         });
-        
-        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via GraphQL for image ${imageData.shopify_image_id}`);
-      } catch (gqlError: any) {
-        // No REST fallback - GraphQL is required for compliance
-        console.error(`[SYNC-IMAGE] GraphQL failed:`, gqlError.message);
-        throw new Error(`Erreur Shopify GraphQL: ${gqlError.message}`);
+
+        if (!restResponse.ok) {
+          const errorText = await restResponse.text();
+          console.error(`[SYNC-IMAGE] REST API error: ${restResponse.status}`, errorText);
+          throw new Error(`Shopify REST API error: ${restResponse.status} - ${errorText}`);
+        }
+
+        const restResult = await restResponse.json();
+        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via REST API for image ${imageData.shopify_image_id}`);
+        console.log(`[SYNC-IMAGE] Updated image alt:`, restResult.image?.alt);
+      } catch (restError: any) {
+        console.error(`[SYNC-IMAGE] REST API failed:`, restError.message);
+        throw new Error(`Erreur Shopify REST API: ${restError.message}`);
       }
 
       // Update image last_synced_at timestamp in database
