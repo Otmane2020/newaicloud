@@ -18,9 +18,11 @@ export default function ShopifyApp() {
       const host = params.get("host");
 
       // Si "Open app" depuis Shopify (host présent mais pas de pending_token)
-      // Vérifier si l'utilisateur est déjà connecté et le rediriger vers le dashboard
-      if (host && !pendingToken) {
+      // Vérifier si l'utilisateur a une connexion et subscription active via le shop domain
+      if (host && !pendingToken && shop) {
         console.log('🔄 [ShopifyApp] Open app detected (host without pending_token)');
+        
+        // D'abord vérifier la session locale
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
@@ -29,9 +31,44 @@ export default function ShopifyApp() {
           return;
         }
         
-        // Si pas de session, rediriger vers SetupWizard (pas /auth pour Shopify users)
-        console.log('⚠️ [ShopifyApp] No session, redirecting to setup-wizard');
-        const redirectParams = new URLSearchParams({ shop: shop || '', host, embedded: '1' });
+        // Pas de session locale - vérifier via shop domain si l'utilisateur existe avec subscription active
+        console.log('🔍 [ShopifyApp] No local session, checking shop connection...');
+        const { data: connection } = await supabase
+          .from("shopify_connections")
+          .select("user_id")
+          .eq("store_url", shop)
+          .eq("is_active", true)
+          .single();
+        
+        if (connection?.user_id) {
+          // Vérifier si cet utilisateur a un abonnement actif
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("subscription_status, email")
+            .eq("id", connection.user_id)
+            .single();
+          
+          if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
+            console.log('✅ [ShopifyApp] User has active subscription, auto-login via shopify-auto-auth');
+            // Réauthentifier l'utilisateur via shopify-auto-auth sans pending_token
+            const { data: authData, error: authError } = await supabase.functions.invoke("shopify-auto-auth", {
+              body: { shop, reauth: true },
+            });
+            
+            if (!authError && authData?.access_token) {
+              await supabase.auth.setSession({
+                access_token: authData.access_token,
+                refresh_token: authData.refresh_token,
+              });
+              navigate("/dashboard", { replace: true });
+              return;
+            }
+          }
+        }
+        
+        // Sinon, rediriger vers SetupWizard
+        console.log('⚠️ [ShopifyApp] No active subscription found, redirecting to setup-wizard');
+        const redirectParams = new URLSearchParams({ shop, host, embedded: '1' });
         navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
         return;
       }
