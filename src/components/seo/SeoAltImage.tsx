@@ -547,7 +547,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       async (img) => {
         const imageType = img.image_type || 'product';
         
-        const { error } = await supabase.functions.invoke(functionName, {
+        const { data, error } = await supabase.functions.invoke(functionName, {
           body: { 
             image_id: img.id,
             imageType: useVision ? imageType : undefined
@@ -557,18 +557,28 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         // Check for 403 error (limit reached)
         if (error && (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403'))) {
           setShowUpgradeDialog(true);
-          return false;
+          return { generated: false };
         }
         
-        return !error;
+        // Return detailed sync info
+        return {
+          generated: !error,
+          shopifySynced: data?.shopifySynced ?? false,
+          syncError: data?.syncError
+        };
       },
       'optimizing',
       async (results) => {
         // This callback runs when bulk operation completes
-        if (results.error > 0) {
-          toast.warning(tf('seo.altImage.generatedWithErrors', { success: results.success, errors: results.error }));
+        if (results.syncError > 0) {
+          toast.warning(`${results.success} images générées, mais ${results.syncError} erreurs de sync Shopify`);
+          console.log('[SeoAltImage] Sync errors:', results.syncErrors);
+        } else if (results.success > 0 && results.syncSuccess > 0) {
+          toast.success(`${results.success} images optimisées et ${results.syncSuccess} synchronisées avec Shopify!`);
         } else if (results.success > 0) {
           toast.success(tf('seo.altImage.allGenerated', { count: results.success }));
+        } else if (results.error > 0) {
+          toast.error(tf('seo.altImage.generatedWithErrors', { success: 0, errors: results.error }));
         }
         
         await fetchImages();
@@ -609,7 +619,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       async (img) => {
         const imageType = img.image_type || 'product';
         
-        const { error } = await supabase.functions.invoke('smart-alt-text', {
+        const { data, error } = await supabase.functions.invoke('smart-alt-text', {
           body: { 
             image_id: img.id,
             imageType: imageType,
@@ -617,17 +627,29 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           }
         });
         
-        return !error;
+        return {
+          generated: !error,
+          shopifySynced: data?.shopifySynced ?? false,
+          syncError: data?.syncError
+        };
       },
       'optimizing',
       async (results) => {
-        if (results.error > 0) {
-          toast.warning(tf('seo.altImage.generatedWithErrors', { success: results.success, errors: results.error }));
+        if (results.syncError > 0) {
+          toast.warning(`${results.success} images générées, mais ${results.syncError} erreurs de sync Shopify`);
+          console.log('[SeoAltImage] Sync errors:', results.syncErrors);
+        } else if (results.success > 0 && results.syncSuccess > 0) {
+          toast.success(isReoptimization 
+            ? `${results.success} images ré-optimisées et ${results.syncSuccess} synchronisées!`
+            : `${results.success} images optimisées et ${results.syncSuccess} synchronisées!`
+          );
         } else if (results.success > 0) {
           toast.success(isReoptimization 
             ? `${results.success} images ré-optimisées avec succès!`
             : tf('seo.altImage.allGenerated', { count: results.success })
           );
+        } else if (results.error > 0) {
+          toast.error(`${results.error} erreurs lors de l'optimisation`);
         }
         
         await fetchImages();
@@ -655,7 +677,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       async (img) => {
         const imageType = img.image_type || 'product';
         
-        const { error } = await supabase.functions.invoke('smart-alt-text', {
+        const { data, error } = await supabase.functions.invoke('smart-alt-text', {
           body: { 
             image_id: img.id,
             imageType: imageType,
@@ -663,14 +685,23 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           }
         });
         
-        return !error;
+        return {
+          generated: !error,
+          shopifySynced: data?.shopifySynced ?? false,
+          syncError: data?.syncError
+        };
       },
       'optimizing',
       async (results) => {
-        if (results.error > 0) {
-          toast.warning(`${results.success}/${images.length} images ré-optimisées avec succès`);
+        if (results.syncError > 0) {
+          toast.warning(`${results.success}/${images.length} images ré-optimisées, ${results.syncError} erreurs de sync`);
+          console.log('[SeoAltImage] Sync errors:', results.syncErrors);
+        } else if (results.success > 0 && results.syncSuccess > 0) {
+          toast.success(`${results.success} images ré-optimisées et ${results.syncSuccess} synchronisées!`);
         } else if (results.success > 0) {
           toast.success(`${results.success} images ré-optimisées avec succès!`);
+        } else if (results.error > 0) {
+          toast.error(`${results.error} erreurs lors de la ré-optimisation`);
         }
         
         await fetchImages();

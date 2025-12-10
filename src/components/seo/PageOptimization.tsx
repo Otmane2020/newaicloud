@@ -375,16 +375,21 @@ export function PageOptimization() {
       pagesToOptimize,
       async (page) => {
         try {
-          const { error } = await supabase.functions.invoke('generate-page-seo', {
+          const { data, error } = await supabase.functions.invoke('generate-page-seo', {
             body: { pageId: page.id, storeId: selectedStore.id, force: true }
           });
-          return !error;
+          
+          const generated = !error;
+          const shopifySynced = data?.shopifySynced || false;
+          const syncError = data?.syncError;
+          
+          return { generated, shopifySynced, syncError };
         } catch (error: any) {
           console.error('Error optimizing page:', error);
           if (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403')) {
             setShowUpgradeDialog(true);
           }
-          return false;
+          return { generated: false };
         }
       },
       'optimizing',
@@ -414,12 +419,23 @@ export function PageOptimization() {
           
           if (mappedFreshPages.length > 0) {
             setOptimizedPages(mappedFreshPages);
-            toast.success(`✅ ${results.success} page(s) optimisée(s)`);
+            
+            // Show sync status in toast
+            if (results.syncError > 0) {
+              toast.warning(`${results.success} page(s) optimisée(s), mais ${results.syncError} erreurs de sync Shopify`);
+              console.log('[PageOptimization] Sync errors:', results.syncErrors);
+            } else if (results.syncSuccess > 0) {
+              toast.success(`✅ ${results.success} page(s) optimisée(s) et ${results.syncSuccess} synchronisée(s)!`);
+            } else {
+              toast.success(`✅ ${results.success} page(s) optimisée(s)`);
+            }
             
             setTimeout(() => {
               setShowResultsDialog(true);
             }, 800);
           }
+        } else if (results.error > 0) {
+          toast.error(`${results.error} erreurs lors de l'optimisation`);
         }
       }
     );
@@ -483,13 +499,18 @@ export function PageOptimization() {
       pagesToOptimize,
       async (page) => {
         try {
-          const { error } = await supabase.functions.invoke('generate-page-seo', {
+          const { data, error } = await supabase.functions.invoke('generate-page-seo', {
             body: { pageId: page.id, storeId: selectedStore.id, force: true }
           });
-          return !error;
+          
+          const generated = !error;
+          const shopifySynced = data?.shopifySynced || false;
+          const syncError = data?.syncError;
+          
+          return { generated, shopifySynced, syncError };
         } catch (error) {
           console.error('Error:', error);
-          return false;
+          return { generated: false };
         }
       },
       'optimizing',
@@ -518,12 +539,23 @@ export function PageOptimization() {
           
           if (mappedFreshPages.length > 0) {
             setOptimizedPages(mappedFreshPages);
-            toast.success(`✅ ${results.success}/${pagesToOptimize.length} page(s) optimisée(s)`);
+            
+            // Show sync status in toast
+            if (results.syncError > 0) {
+              toast.warning(`${results.success}/${pagesToOptimize.length} page(s) optimisée(s), mais ${results.syncError} erreurs de sync`);
+              console.log('[PageOptimization] Sync errors:', results.syncErrors);
+            } else if (results.syncSuccess > 0) {
+              toast.success(`✅ ${results.success}/${pagesToOptimize.length} page(s) optimisée(s) et synchronisée(s)!`);
+            } else {
+              toast.success(`✅ ${results.success}/${pagesToOptimize.length} page(s) optimisée(s)`);
+            }
             
             setTimeout(() => {
               setShowResultsDialog(true);
             }, 800);
           }
+        } else if (results.error > 0) {
+          toast.error(`${results.error} erreurs lors de l'optimisation`);
         }
       }
     );
