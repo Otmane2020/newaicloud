@@ -34,27 +34,55 @@ interface LightStats {
 }
 
 async function fetchDashboardData(userId: string, storeId: string) {
-  // Use direct fetch to avoid TypeScript issues with Supabase client
-  const supabaseUrl = (supabase as any).supabaseUrl;
-  const supabaseKey = (supabase as any).supabaseKey;
+  // Fetch products using Supabase client
+  const { data: products, error: productsError } = await supabase
+    .from('shopify_products')
+    .select('id, seo_title, seo_description, tags')
+    .eq('seller_id', userId)
+    .eq('store_id', storeId);
+
+  if (productsError) {
+    console.error('Error fetching products:', productsError);
+  }
+
+  // Fetch collections using Supabase client
+  const { data: collections, error: collectionsError } = await supabase
+    .from('shopify_collections')
+    .select('id, seo_title, seo_description')
+    .eq('user_id', userId)
+    .eq('store_id', storeId);
+
+  if (collectionsError) {
+    console.error('Error fetching collections:', collectionsError);
+  }
+
+  // Fetch images via product_id join (product_images has no store_id column)
+  const productIds = (products || []).map(p => p.id);
+  let images: { id: string; alt_text: string | null }[] = [];
   
-  const headers = {
-    'apikey': supabaseKey,
-    'Authorization': `Bearer ${supabaseKey}`,
-    'Content-Type': 'application/json'
+  if (productIds.length > 0) {
+    // Batch fetch in chunks of 100 to avoid query limits
+    const chunkSize = 100;
+    for (let i = 0; i < productIds.length; i += chunkSize) {
+      const chunk = productIds.slice(i, i + chunkSize);
+      const { data: imgData, error: imgError } = await supabase
+        .from('product_images')
+        .select('id, alt_text')
+        .in('product_id', chunk);
+      
+      if (imgError) {
+        console.error('Error fetching images:', imgError);
+      } else if (imgData) {
+        images = [...images, ...imgData];
+      }
+    }
+  }
+
+  return { 
+    products: products || [], 
+    collections: collections || [], 
+    images 
   };
-
-  const [productsRes, collectionsRes, imagesRes] = await Promise.all([
-    fetch(`${supabaseUrl}/rest/v1/shopify_products?seller_id=eq.${userId}&store_id=eq.${storeId}&select=id,seo_title,seo_description,tags`, { headers }),
-    fetch(`${supabaseUrl}/rest/v1/shopify_collections?user_id=eq.${userId}&store_id=eq.${storeId}&select=id,seo_title,seo_description`, { headers }),
-    fetch(`${supabaseUrl}/rest/v1/product_images?user_id=eq.${userId}&store_id=eq.${storeId}&select=id,alt_text`, { headers })
-  ]);
-
-  const products = await productsRes.json();
-  const collections = await collectionsRes.json();
-  const images = await imagesRes.json();
-
-  return { products, collections, images };
 }
 
 export default function DashboardLight() {
