@@ -11,19 +11,20 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Mapping des plans vers Shopify Billing - All tiers from database
+// IMPORTANT: Prices must match EXACTLY with ShopifyPricingPlans.tsx
 const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number }> = {
   // Trial
   "trial": { name: "14-Day Free Trial", price: 0.01, interval: "EVERY_30_DAYS", trialDays: 14 },
   
-  // Starter - Monthly & Yearly (aligned with ShopifyPricingPlans.tsx)
+  // Starter - Monthly & Yearly (7.99 x 12 = 95.88)
   "starter-monthly": { name: "Starter (100 optimizations)", price: 9.99, interval: "EVERY_30_DAYS", trialDays: 7 },
-  "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 95.90, interval: "ANNUAL", trialDays: 7 },
+  "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 95.88, interval: "ANNUAL", trialDays: 7 },
   
-  // Pro (pro-500) - Monthly & Yearly (aligned with ShopifyPricingPlans.tsx)
+  // Pro (pro-500) - Monthly & Yearly (39 x 12 = 468)
   "pro-500-monthly": { name: "Pro (500 optimizations)", price: 49.00, interval: "EVERY_30_DAYS" },
   "pro-500-yearly": { name: "Pro Annual (500 optimizations)", price: 468.00, interval: "ANNUAL" },
   
-  // Enterprise (pro-1000) - Monthly & Yearly (aligned with ShopifyPricingPlans.tsx)
+  // Enterprise (pro-1000) - Monthly & Yearly (159 x 12 = 1908)
   "pro-1000-monthly": { name: "Enterprise (2,000 optimizations)", price: 199.00, interval: "EVERY_30_DAYS" },
   "pro-1000-yearly": { name: "Enterprise Annual (2,000 optimizations)", price: 1908.00, interval: "ANNUAL" },
 };
@@ -111,14 +112,22 @@ serve(async (req) => {
     // ALL plans (including free) go through Shopify Billing
     // Free plan uses the "free" plan created in Shopify Partner Dashboard
 
-    // Detect if this is a dev store (for test mode)
+    // Detect if this is a dev/partner store (for test mode)
+    // Shopify partner test stores and development stores should use test mode
+    // Check multiple patterns: dev stores, partner stores, stores with plan_name containing 'partner' or 'development'
     const isDevStore = shopDomain.includes(".myshopify.com") && 
-      (shopDomain.includes("-dev") || shopDomain.includes("dev-") || connection.shop_name?.includes("dev"));
+      (shopDomain.includes("-dev") || 
+       shopDomain.includes("dev-") || 
+       connection.shop_name?.toLowerCase().includes("dev") ||
+       connection.shop_name?.toLowerCase().includes("test") ||
+       connection.shop_name?.toLowerCase().includes("partner"));
     
-    // Use test mode for dev stores to allow subscription without real payment
+    // IMPORTANT: For App Store review, we should enable test mode by default
+    // Shopify reviewers use partner/staff accounts that can't process real payments
+    // Set SHOPIFY_TEST_MODE=true in production during review, then disable after approval
     const testMode = isDevStore || Deno.env.get("SHOPIFY_TEST_MODE") === "true";
     
-    logStep("Test mode detection", { isDevStore, testMode, shopDomain });
+    logStep("Test mode detection", { isDevStore, testMode, shopDomain, shopName: connection.shop_name });
 
     // Build Shopify GraphQL mutation for subscription
     const mutation = `
