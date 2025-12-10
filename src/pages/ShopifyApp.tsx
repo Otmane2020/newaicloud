@@ -8,19 +8,25 @@ import { useTranslation } from "@/lib/language";
 export default function ShopifyApp() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<"loading" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "error" | "processed">("loading");
   const { t, language } = useTranslation();
 
   useEffect(() => {
+    // Éviter les exécutions multiples
+    if (status === "processed") return;
+
     const processPendingToken = async () => {
       const shop = params.get("shop");
       const pendingToken = params.get("pending_token");
       const host = params.get("host");
 
+      console.log('🔍 [ShopifyApp] Params:', { shop, pendingToken: !!pendingToken, host: !!host });
+
       // Si "Open app" depuis Shopify (host présent mais pas de pending_token)
       // Vérifier si l'utilisateur a une connexion et subscription active via le shop domain
       if (host && !pendingToken && shop) {
         console.log('🔄 [ShopifyApp] Open app detected (host without pending_token)');
+        setStatus("processed");
         
         // D'abord vérifier la session locale
         const { data: { session } } = await supabase.auth.getSession();
@@ -73,13 +79,23 @@ export default function ShopifyApp() {
         return;
       }
 
+      // Mode installation avec pending_token
       if (!shop || !pendingToken) {
+        // Si pas de shop mais pas de pending_token, c'est probablement un accès direct - rediriger
+        if (!pendingToken && !shop) {
+          console.log('⚠️ [ShopifyApp] No shop or pending_token, redirecting to home');
+          setStatus("processed");
+          navigate("/", { replace: true });
+          return;
+        }
         setStatus("error");
         toast.error(t.shopifyApp?.installationError || "Installation error", {
           description: t.shopifyApp?.missingParams || "Missing Shopify connection parameters.",
         });
         return;
       }
+      
+      setStatus("processed");
 
       try {
         // Call the edge function to claim the pending token
@@ -162,7 +178,7 @@ export default function ShopifyApp() {
     };
 
     processPendingToken();
-  }, [params, navigate, t]);
+  }, [params, navigate, t, status]);
 
   if (status === "error") {
     return (
