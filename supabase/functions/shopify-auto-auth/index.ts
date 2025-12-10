@@ -17,8 +17,87 @@ serve(async (req) => {
   }
 
   try {
-    const { shop, pending_token } = await req.json();
+    const { shop, pending_token, reauth } = await req.json();
 
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // MODE REAUTH: Réauthentifier un utilisateur existant sans pending_token
+    if (reauth && shop) {
+      console.log("[SHOPIFY-AUTO-AUTH] Mode REAUTH pour:", shop);
+      
+      // Trouver la connexion active pour ce shop
+      const { data: connection, error: connError } = await supabase
+        .from("shopify_connections")
+        .select("user_id")
+        .eq("store_url", shop)
+        .eq("is_active", true)
+        .single();
+      
+      if (connError || !connection) {
+        console.error("[SHOPIFY-AUTO-AUTH] No active connection for shop:", shop);
+        return new Response(
+          JSON.stringify({ error: "No active connection found for this shop" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      const userId = connection.user_id;
+      const shopHandle = shop.replace(".myshopify.com", "");
+      const email = `${shopHandle}@shopify.newai.sale`;
+      const password = crypto.randomUUID();
+      
+      // Mettre à jour le mot de passe pour permettre la connexion
+      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+        password
+      });
+      
+      if (updateError) {
+        console.error("[SHOPIFY-AUTO-AUTH] Error updating password for reauth:", updateError);
+        return new Response(
+          JSON.stringify({ error: "Failed to update credentials" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Créer une session
+      const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+      if (!SUPABASE_ANON_KEY) {
+        return new Response(
+          JSON.stringify({ error: "Server configuration error" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data: authData, error: authError } = await authClient.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (authError || !authData.session) {
+        console.error("[SHOPIFY-AUTO-AUTH] Error creating session for reauth:", authError);
+        return new Response(
+          JSON.stringify({ error: "Failed to create session" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      console.log("[SHOPIFY-AUTO-AUTH] ✅ REAUTH successful for user:", userId);
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          user_id: userId,
+          access_token: authData.session.access_token,
+          refresh_token: authData.session.refresh_token,
+          shop: shop,
+          is_returning_user: true,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // MODE NORMAL: Avec pending_token
     if (!shop || !pending_token) {
       return new Response(
         JSON.stringify({ error: "Missing shop or pending_token" }),
@@ -27,8 +106,6 @@ serve(async (req) => {
     }
 
     console.log("[SHOPIFY-AUTO-AUTH] Auto-authentication pour:", shop);
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // 1. Vérifier que le pending_token est valide
     const { data: pendingConnection, error: pendingError } = await supabase
