@@ -39,6 +39,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   Select,
@@ -127,7 +128,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
   const [showOptimizeDialog, setShowOptimizeDialog] = useState(false);
   const [selectedImageForOptimize, setSelectedImageForOptimize] = useState<ImageWithProduct | null>(null);
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
 
   // Expose progress state via ref
   React.useImperativeHandle(ref, () => ({
@@ -1107,14 +1108,21 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                         {img.alt_text ? (
                           <>
                             <div className="text-xs text-muted-foreground line-clamp-2">{img.alt_text}</div>
-                            <Badge variant="secondary" className="gap-1 text-xs">
-                              <CheckCircle className="w-3 h-3" />
-                              {t.seo.altImage.table.altOk}
-                            </Badge>
+                            {img.optimization_count && img.optimization_count > 0 ? (
+                              <Badge variant="default" className="gap-1 text-xs bg-green-600 hover:bg-green-700">
+                                <CheckCircle className="w-3 h-3" />
+                                {language === 'fr' ? 'Optimisé IA' : 'AI Optimized'}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="gap-1 text-xs">
+                                <Clock className="w-3 h-3" />
+                                {language === 'fr' ? 'Non optimisé' : 'Not optimized'}
+                              </Badge>
+                            )}
                           </>
                         ) : (
-                          <Badge variant="outline" className="gap-1 text-xs">
-                            <Clock className="w-3 h-3" />
+                          <Badge variant="destructive" className="gap-1 text-xs">
+                            <AlertTriangle className="w-3 h-3" />
                             {t.seo.altImage.table.noAlt}
                           </Badge>
                         )}
@@ -1193,13 +1201,20 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                   </td>
                   <td className="px-4 py-3">
                     {img.alt_text ? (
-                      <Badge variant="secondary" className="gap-1">
-                        <CheckCircle className="w-3 h-3" />
-                        {t.seo.altImage.table.altOk}
-                      </Badge>
+                      img.optimization_count && img.optimization_count > 0 ? (
+                        <Badge variant="default" className="gap-1 bg-green-600 hover:bg-green-700">
+                          <CheckCircle className="w-3 h-3" />
+                          {language === 'fr' ? 'Optimisé IA' : 'AI Optimized'}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1">
+                          <Clock className="w-3 h-3" />
+                          {language === 'fr' ? 'Non optimisé' : 'Not optimized'}
+                        </Badge>
+                      )
                     ) : (
-                      <Badge variant="outline" className="gap-1">
-                        <Clock className="w-3 h-3" />
+                      <Badge variant="destructive" className="gap-1">
+                        <AlertTriangle className="w-3 h-3" />
                         {t.seo.altImage.table.noAlt}
                       </Badge>
                     )}
