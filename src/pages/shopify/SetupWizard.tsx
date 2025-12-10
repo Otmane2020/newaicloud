@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ShopifyPricingPlans from "@/components/shopify/ShopifyPricingPlans";
-
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
+import { toast } from "sonner";
 // Demo store domain - bypass payment for this store
 const DEMO_STORE_DOMAIN = "store-demo-20240334.myshopify.com";
 
@@ -85,6 +87,18 @@ export default function SetupWizard() {
   const t = {
     errorTitle: language === "fr" ? "Erreur" : "Error",
     retry: language === "fr" ? "Réessayer" : "Retry",
+    logout: language === "fr" ? "Déconnexion" : "Logout",
+    logoutSuccess: language === "fr" ? "Déconnexion réussie" : "Logged out successfully",
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success(t.logoutSuccess);
+      navigate("/auth", { replace: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   // Process pending token ONLY if present (background auth, non-blocking)
@@ -153,6 +167,19 @@ export default function SetupWizard() {
   // INSTANT display of pricing plans - no loading screen!
   return (
     <div className="min-h-screen bg-background py-12">
+      {/* Logout button in top-right corner */}
+      <div className="fixed top-4 right-4 z-50">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleLogout}
+          className="gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          {t.logout}
+        </Button>
+      </div>
+      
       <ShopifyPricingPlans
         shopDomain={shopFromUrl || ""} 
         language={language as "fr" | "en"}
