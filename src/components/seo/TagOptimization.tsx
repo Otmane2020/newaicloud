@@ -110,6 +110,7 @@ export function TagOptimization() {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [optimizedItems, setOptimizedItems] = useState<WorkflowItem[]>([]);
   const [itemsToSync, setItemsToSync] = useState<WorkflowItem[]>([]);
+  const [processingItems, setProcessingItems] = useState<Array<{ id: string; title: string; image_url?: string }>>([]);
   
   const fetchProducts = async () => {
     if (!selectedStore?.id) {
@@ -537,14 +538,15 @@ export function TagOptimization() {
   };
 
   const handleBulkGenerate = async (productIds: string[], force = false) => {
-    setShowProgressDialog(true);
-    setCurrentOperation('optimizing');
-    setProgress({ current: 0, total: productIds.length });
-
     const productsToProcess = productIds.map(id => {
       const product = products.find(p => p.id === id);
       return { id, title: product?.title || '', tags: product?.tags || '', image_url: product?.image_url };
     });
+    
+    setProcessingItems(productsToProcess.map(p => ({ id: p.id, title: p.title, image_url: p.image_url })));
+    setShowProgressDialog(true);
+    setCurrentOperation('optimizing');
+    setProgress({ current: 0, total: productIds.length });
 
     await processBulkOperation(
       'tags',
@@ -1364,6 +1366,7 @@ export function TagOptimization() {
         operation={currentOperation}
         current={progress.current}
         total={progress.total}
+        items={processingItems}
       />
 
       <ResultsDialog

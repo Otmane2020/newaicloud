@@ -148,6 +148,7 @@ export function SeoOptimization() {
   const [showLocalResultsDialog, setShowLocalResultsDialog] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [processingItems, setProcessingItems] = useState<Array<{ id: string; title: string; image_url?: string }>>([]);
   // syncedItems removed - unified into ResultsDialog
   
 
@@ -611,6 +612,9 @@ export function SeoOptimization() {
       return;
     }
 
+    // Set processing items for progress dialog
+    setProcessingItems(productsToGenerate.map(p => ({ id: p.id, title: p.title, image_url: p.image_url })));
+
     // Use global context processor - continues even if user changes tabs
     processBulkOperation(
       'products',
@@ -684,6 +688,9 @@ export function SeoOptimization() {
 
   // Extracted bulk optimization logic
   const startBulkOptimization = (productsToGenerate: Product[]) => {
+    // Set processing items for progress dialog
+    setProcessingItems(productsToGenerate.map(p => ({ id: p.id, title: p.title, image_url: p.image_url })));
+    
     processBulkOperation(
       'products',
       productsToGenerate,
@@ -1448,6 +1455,7 @@ export function SeoOptimization() {
         operation={optimizationState.operation}
         current={optimizationState.current}
         total={optimizationState.total}
+        items={processingItems}
       />
 
       <ResultsDialog
