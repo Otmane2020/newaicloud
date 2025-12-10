@@ -180,9 +180,10 @@ export function AppSidebar() {
 
   // Build account items dynamically based on user plan and access
   const accountSubItems = [
-    // Profile and Integrations - restricted
+    // Profile - restricted
     ...(hasFullAccess ? [{ title: t.account.submenu.profile, url: "/account?tab=profile", icon: User, key: "profile" }] : []),
-    ...(hasFullAccess ? [{ title: t.account.submenu.integrations, url: "/account?tab=integrations", icon: Package, key: "integrations" }] : []),
+    // Integrations - visible to all users
+    { title: t.account.submenu.integrations, url: "/account?tab=integrations", icon: Package, key: "integrations" },
     // Subscription - visible to all users
     { title: t.account.submenu.subscription, url: "/subscription", icon: CreditCard, key: "subscription" },
     { title: t.usageLimits, url: "/account?tab=usage", icon: BarChart3, key: "usage" },
