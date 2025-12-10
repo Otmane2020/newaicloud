@@ -86,53 +86,87 @@ Deno.serve(async (req) => {
 
     console.log(`[SYNC-PAGE] Using store: ${connection.store_url}`);
 
-    // Préparer les données de la page pour Shopify
-    const shopifyPageData = {
-      page: {
-        id: page.shopify_page_id,
-        title: page.title,
-        body_html: page.body_html,
-        metafields: [
-          {
-            namespace: "global",
-            key: "title_tag",
-            value: page.seo_title || page.title,
-            type: "single_line_text_field"
-          },
-          {
-            namespace: "global",
-            key: "description_tag",
-            value: page.seo_description || "",
-            type: "single_line_text_field"
+    // Utiliser GraphQL API pour la mise à jour des pages (plus fiable pour SEO)
+    const shopifyGraphqlUrl = `https://${connection.store_url}/admin/api/2025-01/graphql.json`;
+    
+    // Construire la mutation GraphQL pour mettre à jour la page
+    const pageGid = `gid://shopify/OnlineStorePage/${page.shopify_page_id}`;
+    
+    const graphqlMutation = `
+      mutation pageUpdate($id: ID!, $page: PageUpdateInput!) {
+        pageUpdate(id: $id, page: $page) {
+          page {
+            id
+            title
+            body
+            seo {
+              title
+              description
+            }
           }
-        ]
+          userErrors {
+            field
+            message
+          }
+        }
       }
+    `;
+
+    const pageInput: any = {
+      title: page.title,
+      body: page.body_html || '',
     };
 
-    // Mettre à jour la page sur Shopify
-    const shopifyUrl = `https://${connection.store_url}/admin/api/2025-01/pages/${page.shopify_page_id}.json`;
-    const shopifyResponse = await fetch(shopifyUrl, {
-      method: 'PUT',
+    // Ajouter les champs SEO si disponibles
+    if (page.seo_title || page.seo_description) {
+      pageInput.seo = {
+        title: page.seo_title || page.title,
+        description: page.seo_description || ''
+      };
+    }
+
+    console.log(`[SYNC-PAGE] Sending GraphQL mutation for page ${page.shopify_page_id}`);
+    console.log(`[SYNC-PAGE] SEO Title: ${page.seo_title}, SEO Desc: ${page.seo_description?.substring(0, 50)}...`);
+
+    const graphqlResponse = await fetch(shopifyGraphqlUrl, {
+      method: 'POST',
       headers: {
         'X-Shopify-Access-Token': connection.access_token,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(shopifyPageData),
+      body: JSON.stringify({
+        query: graphqlMutation,
+        variables: {
+          id: pageGid,
+          page: pageInput
+        }
+      }),
     });
 
-    if (!shopifyResponse.ok) {
-      const errorText = await shopifyResponse.text();
-      console.error('[SYNC-PAGE] Shopify API error:', errorText);
+    if (!graphqlResponse.ok) {
+      const errorText = await graphqlResponse.text();
+      console.error('[SYNC-PAGE] Shopify GraphQL error:', errorText);
       
-      if (shopifyResponse.status === 403) {
-        throw new Error('Permission denied. Your Shopify token needs read_content and write_content scopes.');
+      if (graphqlResponse.status === 403) {
+        throw new Error('Permission denied. Your Shopify token needs write_content scope.');
       }
       
-      throw new Error(`Shopify API error: ${shopifyResponse.status} - ${errorText}`);
+      throw new Error(`Shopify GraphQL error: ${graphqlResponse.status} - ${errorText}`);
     }
 
-    const result = await shopifyResponse.json();
-    console.log('[SYNC-PAGE] Successfully synced to Shopify');
+    const graphqlResult = await graphqlResponse.json();
+    
+    if (graphqlResult.errors) {
+      console.error('[SYNC-PAGE] GraphQL errors:', graphqlResult.errors);
+      throw new Error(`GraphQL errors: ${JSON.stringify(graphqlResult.errors)}`);
+    }
+
+    if (graphqlResult.data?.pageUpdate?.userErrors?.length > 0) {
+      console.error('[SYNC-PAGE] User errors:', graphqlResult.data.pageUpdate.userErrors);
+      throw new Error(`Page update errors: ${JSON.stringify(graphqlResult.data.pageUpdate.userErrors)}`);
+    }
+
+    console.log('[SYNC-PAGE] ✅ Successfully synced page SEO to Shopify via GraphQL');
 
     // Mettre à jour last_synced_at
     const { error: updateError } = await supabaseClient
@@ -156,7 +190,7 @@ Deno.serve(async (req) => {
         message: 'Page synced to Shopify successfully',
         shopifyUrl: shopifyAdminUrl,
         resourceType: 'page',
-        page: result.page
+        page: graphqlResult.data?.pageUpdate?.page
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
