@@ -339,13 +339,58 @@ ${elements.bodyText}
               p_increment: 2
             });
 
+            // 🔄 AUTO-SYNC: Sync contact page SEO to Shopify
+            let shopifySynced = false;
+            let syncErrorMsg: string | undefined;
+            
+            if (page?.shopify_page_id) {
+              try {
+                console.log(`[CONTACT-PAGE] Auto-syncing to Shopify for page ${pageId}...`);
+                
+                const syncResponse = await fetch(
+                  `${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-page-to-shopify`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': authHeader || '',
+                    },
+                    body: JSON.stringify({ pageId }),
+                  }
+                );
+                
+                if (syncResponse.ok) {
+                  const syncResult = await syncResponse.json();
+                  if (syncResult.success) {
+                    shopifySynced = true;
+                    console.log(`[CONTACT-PAGE] ✅ Contact page synced to Shopify:`, syncResult);
+                  } else {
+                    syncErrorMsg = syncResult.error || syncResult.message || 'Sync returned failure';
+                    console.error(`[CONTACT-PAGE] ❌ Sync returned failure:`, syncErrorMsg);
+                  }
+                } else {
+                  const errorText = await syncResponse.text();
+                  syncErrorMsg = `HTTP ${syncResponse.status}: ${errorText}`;
+                  console.error(`[CONTACT-PAGE] ❌ Failed to sync to Shopify:`, syncErrorMsg);
+                }
+              } catch (syncError) {
+                syncErrorMsg = syncError instanceof Error ? syncError.message : 'Unknown sync error';
+                console.error(`[CONTACT-PAGE] ❌ Error during auto-sync:`, syncErrorMsg);
+              }
+            } else {
+              console.log(`[CONTACT-PAGE] Page ${pageId} has no Shopify ID, skipping sync`);
+              syncErrorMsg = 'Page has no Shopify ID';
+            }
+
             return new Response(
               JSON.stringify({ 
                 success: true, 
                 seo_title: seoTitle,
                 seo_description: seoDescription,
                 contact_shortcut: true,
-                language: storeLanguage
+                language: storeLanguage,
+                shopifySynced,
+                syncError: syncErrorMsg
               }),
               { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
