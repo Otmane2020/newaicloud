@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -128,6 +129,7 @@ export default function ShopifyPricingPlans({
   onSubscriptionCreated,
   isAuthenticating = false
 }: ShopifyPricingPlansProps) {
+  const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -178,6 +180,20 @@ export default function ShopifyPricingPlans({
 
       console.log("[ShopifyPricingPlans] Subscription response:", data);
 
+      // Handle FREE plan - navigate internally instead of external redirect
+      if (data?.isFree) {
+        console.log("[ShopifyPricingPlans] Free plan activated - navigating internally");
+        toast.success(
+          language === "fr" ? "Plan gratuit activé !" : "Free plan activated!",
+          { description: language === "fr" ? "Redirection vers le dashboard..." : "Redirecting to dashboard..." }
+        );
+        setLoading(false);
+        setSelectedPlan(null);
+        navigate("/dashboard?plan=free&activated=true");
+        return;
+      }
+
+      // Handle PAID plans - redirect to Shopify Billing
       if (data?.confirmationUrl) {
         // Callback optionnel
         if (onSubscriptionCreated) {

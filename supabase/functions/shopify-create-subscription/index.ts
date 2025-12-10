@@ -161,14 +161,10 @@ serve(async (req) => {
         logStep("Auto-sync trigger error (non-blocking)", { error: String(importError) });
       }
 
-      // Redirect to embedded Shopify Admin dashboard
-      const shopHandle = shopDomain.replace(".myshopify.com", "");
-      const dashboardUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard?plan=free&activated=true`;
-      
+      // Return isFree flag - frontend will handle internal navigation
       return new Response(
         JSON.stringify({ 
           success: true, 
-          confirmationUrl: dashboardUrl,
           isFree: true,
           message: "Free plan activated"
         }),
