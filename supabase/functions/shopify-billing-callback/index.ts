@@ -246,8 +246,8 @@ serve(async (req) => {
       logStep("Import trigger error (non-blocking)", { error: String(importError) });
     }
 
-    // Redirect to embedded Shopify dashboard with success
-    return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard?subscription=active&plan=${pending.plan_id}`, 302);
+    // Redirect to embedded Shopify dashboard-light with success
+    return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard-light?subscription=active&plan=${pending.plan_id}`, 302);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
