@@ -826,7 +826,7 @@ Deno.serve(async (req: Request) => {
       
       const { data: collection, error: collectionError } = await supabaseClient
         .from("shopify_collections")
-        .select("shopify_collection_id, seo_title, seo_description, store_id, user_id")
+        .select("shopify_collection_id, seo_title, seo_description, body_html, image_url, image_alt, store_id, user_id")
         .eq("id", collectionId)
         .eq("user_id", user.id)
         .maybeSingle();
@@ -859,13 +859,14 @@ Deno.serve(async (req: Request) => {
 
       console.log(`[SYNC-COLLECTION] Syncing to Shopify collection ${collection.shopify_collection_id}`);
 
-      // Use GraphQL to update collection SEO (metafields approach via REST is deprecated)
+      // Use GraphQL to update collection SEO + description
       const collectionUpdateMutation = `
         mutation collectionUpdate($input: CollectionInput!) {
           collectionUpdate(input: $input) {
             collection {
               id
               title
+              descriptionHtml
               seo {
                 title
                 description
@@ -879,7 +880,7 @@ Deno.serve(async (req: Request) => {
         }
       `;
 
-      const collectionInput = {
+      const collectionInput: Record<string, unknown> = {
         id: `gid://shopify/Collection/${collection.shopify_collection_id}`,
         seo: {
           title: collection.seo_title || "",
@@ -887,19 +888,92 @@ Deno.serve(async (req: Request) => {
         }
       };
 
+      // Add body_html (description) if present
+      if (collection.body_html) {
+        collectionInput.descriptionHtml = collection.body_html;
+      }
+
       console.log(`[SYNC-COLLECTION] Updating via GraphQL:`, {
         collectionId: collection.shopify_collection_id,
         seoTitle: collection.seo_title?.substring(0, 50),
-        seoDescLength: collection.seo_description?.length
+        seoDescLength: collection.seo_description?.length,
+        bodyHtmlLength: collection.body_html?.length
       });
 
       try {
         const graphqlResponse = await shopifyGraphQL(shopUrl, shopifyAccessToken, collectionUpdateMutation, { input: collectionInput });
-        console.log("[SYNC-COLLECTION] ✅ Collection SEO updated successfully via GraphQL");
-        console.log("[SYNC-COLLECTION] Updated collection SEO:", JSON.stringify(graphqlResponse.data?.collectionUpdate?.collection?.seo, null, 2));
+        console.log("[SYNC-COLLECTION] ✅ Collection SEO + description updated successfully via GraphQL");
+        console.log("[SYNC-COLLECTION] Updated collection:", JSON.stringify(graphqlResponse.data?.collectionUpdate?.collection, null, 2));
       } catch (error: any) {
-        console.error("[SYNC-COLLECTION] ❌ GraphQL SEO update failed:", error);
+        console.error("[SYNC-COLLECTION] ❌ GraphQL update failed:", error);
         throw new Error(`Échec synchronisation collection: ${error.message}`);
+      }
+
+      // Sync image if present and not already on Shopify CDN
+      if (collection.image_url && !collection.image_url.includes('cdn.shopify.com')) {
+        console.log(`[SYNC-COLLECTION] 📸 Syncing collection image...`);
+        try {
+          // Download image and convert to base64
+          const imageResponse = await fetch(collection.image_url);
+          if (imageResponse.ok) {
+            const imageBuffer = await imageResponse.arrayBuffer();
+            const base64Image = btoa(
+              new Uint8Array(imageBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+            );
+            
+            // Try custom collection first
+            let shopifyImageResponse = await fetch(
+              `https://${shopUrl}/admin/api/2025-01/custom_collections/${collection.shopify_collection_id}.json`,
+              {
+                method: 'PUT',
+                headers: {
+                  'X-Shopify-Access-Token': shopifyAccessToken,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  custom_collection: {
+                    id: collection.shopify_collection_id,
+                    image: {
+                      attachment: base64Image,
+                      alt: collection.image_alt || ''
+                    }
+                  }
+                })
+              }
+            );
+
+            // If 404, try smart collection
+            if (shopifyImageResponse.status === 404) {
+              shopifyImageResponse = await fetch(
+                `https://${shopUrl}/admin/api/2025-01/smart_collections/${collection.shopify_collection_id}.json`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    'X-Shopify-Access-Token': shopifyAccessToken,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    smart_collection: {
+                      id: collection.shopify_collection_id,
+                      image: {
+                        attachment: base64Image,
+                        alt: collection.image_alt || ''
+                      }
+                    }
+                  })
+                }
+              );
+            }
+
+            if (shopifyImageResponse.ok) {
+              console.log("[SYNC-COLLECTION] ✅ Collection image synced successfully");
+            } else {
+              console.error("[SYNC-COLLECTION] ⚠️ Image sync failed:", await shopifyImageResponse.text());
+            }
+          }
+        } catch (imgError) {
+          console.error("[SYNC-COLLECTION] ⚠️ Image sync error (non-blocking):", imgError);
+        }
       }
 
       // Update last_synced_at timestamp
