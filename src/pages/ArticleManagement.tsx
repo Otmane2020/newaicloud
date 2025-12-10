@@ -22,8 +22,11 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Filter,
+  ChevronDown
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -445,6 +448,42 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
       setOptimizedArticles(articles || []);
       setShowOptimizationResults(true);
       
+      // Auto-sync to Shopify after optimization
+      const articlesToSync = (articles || []).filter(a => a.shopify_article_id);
+      if (articlesToSync.length > 0) {
+        const syncToast = toast.loading('📤 Synchronisation automatique Shopify...', {
+          description: `Envoi de ${articlesToSync.length} article(s) optimisé(s)`
+        });
+        
+        let syncSuccess = 0;
+        let syncErrors = 0;
+        
+        for (const article of articlesToSync) {
+          try {
+            const { error } = await supabase.functions.invoke('sync-blog-to-shopify', {
+              body: { articleId: article.id }
+            });
+            if (error) {
+              syncErrors++;
+            } else {
+              syncSuccess++;
+            }
+          } catch (e) {
+            syncErrors++;
+          }
+        }
+        
+        toast.dismiss(syncToast);
+        if (syncSuccess > 0) {
+          toast.success(`✅ ${syncSuccess} article(s) synchronisé(s)`, {
+            description: syncErrors > 0 ? `${syncErrors} erreur(s)` : 'Shopify mis à jour'
+          });
+        }
+        if (syncErrors > 0 && syncSuccess === 0) {
+          toast.error('❌ Erreur de synchronisation Shopify');
+        }
+      }
+      
       // Force refresh to update SEO scores
       console.log('🔄 [SEO-SCORE] Refreshing article after individual optimization...');
       setArticles([]); // Clear cache
@@ -780,92 +819,125 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
         </div>
       </div>
 
-      {/* Filters & Actions */}
+      {/* Search & Filters */}
       <Card className="mb-6 bg-background/50">
         <CardContent className="p-4">
-          <div className="flex flex-col gap-4">
-            {/* Header with Smart Filter Icon */}
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <SlidersHorizontal className="w-5 h-5 text-primary" />
-              <span className="font-medium text-sm">Filtres intelligents</span>
-            </div>
-            
+          <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
-            <div className="flex-1 relative">
+            <div className="flex-1 min-w-[200px] relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none z-10" />
               <Input
-                placeholder="Rechercher par titre ou description..."
+                placeholder="Rechercher..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 text-base relative z-20"
+                className="pl-10 h-10"
               />
             </div>
 
-            {/* Filters Row 1 */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
-                  <SelectValue placeholder="Source" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-background">
-                  <SelectItem value="all">Toutes sources</SelectItem>
-                  <SelectItem value="ai">IA Généré</SelectItem>
-                  <SelectItem value="shopify">Shopify</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-background">
-                  <SelectItem value="all">Tous statuts</SelectItem>
-                  <SelectItem value="draft">Brouillon</SelectItem>
-                  <SelectItem value="published">Publié</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={syncFilter} onValueChange={setSyncFilter}>
-                <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
-                  <SelectValue placeholder="Synchronisation" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-background">
-                  <SelectItem value="all">Tous</SelectItem>
-                  <SelectItem value="synced">Synchronisé</SelectItem>
-                  <SelectItem value="not_synced">Non synchronisé</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Filters Row 2 */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Select value={collectionFilter} onValueChange={setCollectionFilter}>
-                <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
-                  <SelectValue placeholder="Collection" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-background">
-                  <SelectItem value="all">Toutes collections</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select 
-                value={qualityFilter} 
-                onValueChange={(value) => setQualityFilter(value as 'all' | 'excellent' | 'good' | 'medium' | 'poor')}
-              >
-                <SelectTrigger className="h-10 flex-1 sm:min-w-[150px]">
-                  <SelectValue placeholder="Score SEO" />
-                </SelectTrigger>
-                <SelectContent className="z-50 bg-background">
-                  <SelectItem value="all">Tous scores</SelectItem>
-                  <SelectItem value="excellent">Excellent (≥80%)</SelectItem>
-                  <SelectItem value="good">Bon (55-79%)</SelectItem>
-                  <SelectItem value="medium">Moyen (40-54%)</SelectItem>
-                  <SelectItem value="poor">Faible (&lt;40%)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Filter Popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-10 gap-2">
+                  <Filter className="w-4 h-4" />
+                  <span className="hidden sm:inline">Filtres</span>
+                  {(sourceFilter !== 'all' || statusFilter !== 'all' || syncFilter !== 'all' || qualityFilter !== 'all') && (
+                    <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                      {[sourceFilter, statusFilter, syncFilter, qualityFilter].filter(f => f !== 'all').length}
+                    </Badge>
+                  )}
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-4" align="end">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <SlidersHorizontal className="w-4 h-4 text-primary" />
+                    <span className="font-medium text-sm">Filtres intelligents</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Source</label>
+                      <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Toutes sources</SelectItem>
+                          <SelectItem value="ai">IA Généré</SelectItem>
+                          <SelectItem value="shopify">Shopify</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Statut</label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous statuts</SelectItem>
+                          <SelectItem value="draft">Brouillon</SelectItem>
+                          <SelectItem value="published">Publié</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Synchronisation</label>
+                      <Select value={syncFilter} onValueChange={setSyncFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous</SelectItem>
+                          <SelectItem value="synced">Synchronisé</SelectItem>
+                          <SelectItem value="not_synced">Non synchronisé</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Score SEO</label>
+                      <Select 
+                        value={qualityFilter} 
+                        onValueChange={(value) => setQualityFilter(value as 'all' | 'excellent' | 'good' | 'medium' | 'poor')}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous scores</SelectItem>
+                          <SelectItem value="excellent">Excellent (≥80%)</SelectItem>
+                          <SelectItem value="good">Bon (55-79%)</SelectItem>
+                          <SelectItem value="medium">Moyen (40-54%)</SelectItem>
+                          <SelectItem value="poor">Faible (&lt;40%)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  {(sourceFilter !== 'all' || statusFilter !== 'all' || syncFilter !== 'all' || qualityFilter !== 'all') && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full mt-2"
+                      onClick={() => {
+                        setSourceFilter('all');
+                        setStatusFilter('all');
+                        setSyncFilter('all');
+                        setQualityFilter('all');
+                      }}
+                    >
+                      <X className="w-3 h-3 mr-2" />
+                      Réinitialiser les filtres
+                    </Button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
-
         </CardContent>
       </Card>
 
