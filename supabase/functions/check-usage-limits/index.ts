@@ -355,6 +355,12 @@ serve(async (req) => {
     
     console.log(`[LIMITS] Using plan: ${plan.id} - isTrialing: ${isTrialing}, isPaid: ${isPaid}`);
 
+    // Check if user is on FREE plan (7 days trial, 20 optimizations)
+    const isFreePlan = plan.id === 'free' && 
+                       profile.subscription_status === 'trialing' && 
+                       profile.trial_ends_at && 
+                       new Date(profile.trial_ends_at) > new Date();
+    
     // Check if user is on Starter plan TRIAL period (7 days with reduced limits)
     // Starter trial: 30 optimizations, 1 article, 20 products
     const isStarterTrial = plan.id === 'starter' && 
@@ -362,26 +368,43 @@ serve(async (req) => {
                            profile.trial_ends_at && 
                            new Date(profile.trial_ends_at) > new Date();
     
-    // Use reduced trial limits for Starter trial, otherwise full plan limits
-    const limits = {
-      max_optimizations: isStarterTrial && plan.trial_max_optimizations 
-        ? plan.trial_max_optimizations 
-        : (plan.max_optimizations_monthly || 0),
-      max_articles: isStarterTrial && plan.trial_max_articles 
-        ? plan.trial_max_articles 
-        : (plan.max_articles_monthly || 0),
-      max_products: isStarterTrial && plan.trial_max_products 
-        ? plan.trial_max_products 
-        : (plan.max_products || 0),
-      max_chat_responses: plan.max_chat_responses_monthly || 0,
-      max_shopify_requests: plan.max_shopify_requests_monthly || 0,
-      max_shopify_stores: plan.max_shopify_stores || 1,
-      max_campaigns: plan.max_campaigns || 0,
+    // FREE PLAN LIMITS: 7 days, 20 optimizations, 0 articles, 20 products
+    const FREE_PLAN_LIMITS = {
+      max_optimizations: 20,
+      max_articles: 0,
+      max_products: 20,
+      max_chat_responses: 20,
+      max_shopify_requests: 50,
+      max_shopify_stores: 1,
+      max_campaigns: 0,
     };
     
-    if (isStarterTrial) {
+    // Use FREE plan limits, Starter trial limits, or full plan limits
+    let limits;
+    if (isFreePlan) {
+      limits = FREE_PLAN_LIMITS;
+      console.log(`[LIMITS] 🆓 FREE PLAN MODE - 7 days trial limits (trial ends: ${profile.trial_ends_at}):`, limits);
+    } else if (isStarterTrial && plan.trial_max_optimizations) {
+      limits = {
+        max_optimizations: plan.trial_max_optimizations,
+        max_articles: plan.trial_max_articles || 1,
+        max_products: plan.trial_max_products || 20,
+        max_chat_responses: plan.max_chat_responses_monthly || 50,
+        max_shopify_requests: plan.max_shopify_requests_monthly || 50,
+        max_shopify_stores: plan.max_shopify_stores || 1,
+        max_campaigns: plan.max_campaigns || 0,
+      };
       console.log(`[LIMITS] 🔶 STARTER TRIAL MODE - Reduced limits applied (trial ends: ${profile.trial_ends_at}):`, limits);
     } else {
+      limits = {
+        max_optimizations: plan.max_optimizations_monthly || 0,
+        max_articles: plan.max_articles_monthly || 0,
+        max_products: plan.max_products || 0,
+        max_chat_responses: plan.max_chat_responses_monthly || 0,
+        max_shopify_requests: plan.max_shopify_requests_monthly || 0,
+        max_shopify_stores: plan.max_shopify_stores || 1,
+        max_campaigns: plan.max_campaigns || 0,
+      };
       console.log(`[LIMITS] ${isTrialing ? '🔴 TRIAL MODE' : '🟢 PAID MODE'} - Applied limits:`, limits);
     }
 
