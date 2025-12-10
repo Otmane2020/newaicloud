@@ -1123,20 +1123,7 @@ export function SeoOptimization() {
         ))}
       </div>
 
-      {/* Progress Indicator */}
-      {optimizationState.isRunning && optimizationState.type === 'products' && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium">
-              {t.seo.optimization.generatingSeo}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {optimizationState.current} / {optimizationState.total}
-            </span>
-          </div>
-          <Progress value={(optimizationState.current / optimizationState.total) * 100} className="h-2" />
-        </Card>
-      )}
+      {/* Progress Indicator - removed, using ProgressDialog instead */}
 
       {/* Products Table */}
       {viewMode === "list" ? (
