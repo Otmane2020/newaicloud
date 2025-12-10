@@ -4077,6 +4077,22 @@ export const translations = {
         syncedToShopify: "Synced to Shopify",
       },
     },
+    articleSeoManagement: {
+      title: "Articles SEO Management",
+      description: "Optimize SEO title and meta description for your articles",
+      createArticle: "Create Article",
+      stats: {
+        toOptimize: "To Optimize",
+        notOptimizedYet: "Not AI-optimized yet",
+        clickToFilter: "Click to filter",
+        aiOptimized: "AI-Optimized",
+        aiEnhancedSeo: "AI-enhanced SEO",
+        toSync: "To Synchronize",
+        aiOptimizedOnly: "AI-optimized only",
+        synchronized: "Synchronized",
+        syncedToShopify: "Synced to Shopify",
+      },
+    },
     hero: {
       articles: {
         description:
