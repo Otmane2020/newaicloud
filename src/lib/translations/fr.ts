@@ -5830,6 +5830,7 @@ export const translations = {
         syncReminder: "N'oubliez pas de synchroniser vos modifications avec Shopify",
         previewArticles: "Prévisualiser les articles",
         close: "Fermer",
+        syncSuccess: "Optimisation et synchronisation Shopify réussies",
         seoAnalysis: "Analyse SEO",
         generatedTags: "Tags générés",
         altText: "Texte ALT",
@@ -8465,6 +8466,7 @@ export const translations = {
         altText: "Texte alternatif",
         syncWithShopify: "Synchroniser avec Shopify",
         close: "Fermer",
+        syncSuccess: "Optimisation et synchronisation Shopify réussies",
       },
       confirmation: {
         syncSeoTitle: "Synchroniser le SEO",
