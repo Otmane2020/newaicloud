@@ -34,10 +34,10 @@ interface LightStats {
 }
 
 async function fetchDashboardData(userId: string, storeId: string) {
-  // Fetch products using Supabase client
+  // Fetch products using Supabase client - include optimization_count for accurate scoring
   const { data: products, error: productsError } = await supabase
     .from('shopify_products')
-    .select('id, seo_title, seo_description, tags')
+    .select('id, seo_title, seo_description, tags, optimization_count')
     .eq('seller_id', userId)
     .eq('store_id', storeId);
 
@@ -45,10 +45,10 @@ async function fetchDashboardData(userId: string, storeId: string) {
     console.error('Error fetching products:', productsError);
   }
 
-  // Fetch collections using Supabase client
+  // Fetch collections using Supabase client - include optimization_count
   const { data: collections, error: collectionsError } = await supabase
     .from('shopify_collections')
-    .select('id, seo_title, seo_description')
+    .select('id, seo_title, seo_description, optimization_count')
     .eq('user_id', userId)
     .eq('store_id', storeId);
 
@@ -56,9 +56,9 @@ async function fetchDashboardData(userId: string, storeId: string) {
     console.error('Error fetching collections:', collectionsError);
   }
 
-  // Fetch images via product_id join (product_images has no store_id column)
+  // Fetch images via product_id join (product_images has no store_id column) - include optimization_count
   const productIds = (products || []).map(p => p.id);
-  let images: { id: string; alt_text: string | null }[] = [];
+  let images: { id: string; alt_text: string | null; optimization_count: number | null }[] = [];
   
   if (productIds.length > 0) {
     // Batch fetch in chunks of 100 to avoid query limits
@@ -67,7 +67,7 @@ async function fetchDashboardData(userId: string, storeId: string) {
       const chunk = productIds.slice(i, i + chunkSize);
       const { data: imgData, error: imgError } = await supabase
         .from('product_images')
-        .select('id, alt_text')
+        .select('id, alt_text, optimization_count')
         .in('product_id', chunk);
       
       if (imgError) {
@@ -110,11 +110,10 @@ export default function DashboardLight() {
         const collectionsArr = Array.isArray(collections) ? collections : [];
         const imagesArr = Array.isArray(images) ? images : [];
 
+        // Use optimization_count > 0 as the criteria (same as SEO tabs)
         const productsTotal = productsArr.length;
         const productsOptimized = productsArr.filter((p: any) => 
-          p.seo_title && p.seo_description && 
-          String(p.seo_title || '').length > 10 && 
-          String(p.seo_description || '').length > 50
+          p.optimization_count && p.optimization_count > 0
         ).length;
         const productsScore = productsTotal > 0 
           ? Math.round((productsOptimized / productsTotal) * 100) 
@@ -122,22 +121,24 @@ export default function DashboardLight() {
 
         const collectionsTotal = collectionsArr.length;
         const collectionsOptimized = collectionsArr.filter((c: any) => 
-          c.seo_title && c.seo_description && 
-          String(c.seo_title || '').length > 10 && 
-          String(c.seo_description || '').length > 50
+          c.optimization_count && c.optimization_count > 0
         ).length;
         const collectionsScore = collectionsTotal > 0 
           ? Math.round((collectionsOptimized / collectionsTotal) * 100) 
           : 0;
 
+        // Tags: count products with tags that have been optimized (optimization_count > 0 OR tags length > 10)
         const tagsTotal = productsArr.length;
         const tagsOptimized = productsArr.filter((p: any) => p.tags && String(p.tags || '').length > 10).length;
         const tagsScore = tagsTotal > 0 
           ? Math.round((tagsOptimized / tagsTotal) * 100) 
           : 0;
 
+        // Alt images: use optimization_count > 0 as the criteria
         const altTotal = imagesArr.length;
-        const altOptimized = imagesArr.filter((i: any) => i.alt_text && String(i.alt_text || '').length > 10).length;
+        const altOptimized = imagesArr.filter((i: any) => 
+          i.optimization_count && i.optimization_count > 0
+        ).length;
         const altScore = altTotal > 0 
           ? Math.round((altOptimized / altTotal) * 100) 
           : 0;
