@@ -107,6 +107,7 @@ export function PageOptimization() {
   const [showSyncDialog, setShowSyncDialog] = useState(false);
   const [optimizedPages, setOptimizedPages] = useState<ShopifyPage[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [lastSyncStatus, setLastSyncStatus] = useState<{ synced: number; failed: number; errors?: string[] } | undefined>(undefined);
   
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { processBulkOperation, state: optimizationState } = useOptimization();
@@ -428,6 +429,13 @@ export function PageOptimization() {
           
           if (mappedFreshPages.length > 0) {
             setOptimizedPages(mappedFreshPages);
+            
+            // Save sync status for dialog
+            setLastSyncStatus({
+              synced: results.syncSuccess || 0,
+              failed: results.syncError || 0,
+              errors: results.syncErrors || []
+            });
             
             // Show sync status in toast
             if (results.syncError > 0) {
@@ -1210,6 +1218,7 @@ export function PageOptimization() {
           body_html: p.body_html
         }))}
         onClose={() => setShowResultsDialog(false)}
+        syncStatus={lastSyncStatus}
       />
 
 

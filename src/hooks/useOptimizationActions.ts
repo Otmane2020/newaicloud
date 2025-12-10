@@ -17,6 +17,11 @@ export interface OptimizationResult {
   action: OptimizationAction;
   processedCount: number;
   errorMessage?: string;
+  syncStatus?: {
+    synced: number;
+    failed: number;
+    errors?: string[];
+  };
 }
 
 export const useOptimizationActions = () => {
@@ -313,6 +318,11 @@ export const useOptimizationActions = () => {
       let processedCount = 0;
       const optimizedArticleIds: string[] = [];
       
+      // Track sync status
+      let syncedCount = 0;
+      let syncFailedCount = 0;
+      const syncErrors: string[] = [];
+      
       for (const article of articles) {
         try {
           console.log('[OptimizeArticles] Optimizing article:', article.id, article.title);
@@ -329,14 +339,29 @@ export const useOptimizationActions = () => {
           }
           processedCount++;
           optimizedArticleIds.push(article.id);
+          
+          // Track sync status from results array
+          if (data?.results && data.results.length > 0) {
+            const result = data.results[0];
+            if (result.shopifySynced === true) {
+              syncedCount++;
+            } else if (result.syncError) {
+              syncFailedCount++;
+              if (syncErrors.length < 3) {
+                syncErrors.push(`${article.title}: ${result.syncError}`);
+              }
+            } else {
+              syncFailedCount++;
+            }
+          }
+          
           setProgress({ current: processedCount, total: articles.length, action: 'articles' });
         } catch (err) {
           console.error('[OptimizeArticles] Error optimizing article:', article.id, err);
         }
       }
 
-      // Note: Auto-sync to Shopify is now handled automatically by the generate-article-seo edge function
-      console.log(`✅ ${optimizedArticleIds.length} articles optimized - auto-sync handled by edge function`);
+      console.log(`✅ ${optimizedArticleIds.length} articles optimized - Sync: ${syncedCount} success, ${syncFailedCount} failed`);
 
       await refreshLimits();
       
@@ -345,7 +370,16 @@ export const useOptimizationActions = () => {
         await sendOptimizationNotification(processedCount);
       }
       
-      return { success: true, action: 'articles', processedCount };
+      return { 
+        success: true, 
+        action: 'articles', 
+        processedCount,
+        syncStatus: {
+          synced: syncedCount,
+          failed: syncFailedCount,
+          errors: syncErrors
+        }
+      };
     } catch (error) {
       console.error('Error optimizing articles:', error);
       return {
@@ -391,6 +425,11 @@ export const useOptimizationActions = () => {
       let processedCount = 0;
       const optimizedPageIds: string[] = [];
       
+      // Track sync status
+      let syncedCount = 0;
+      let syncFailedCount = 0;
+      const syncErrors: string[] = [];
+      
       for (const page of pages) {
         try {
           console.log('[OptimizePages] Optimizing page:', page.id, page.title);
@@ -406,14 +445,27 @@ export const useOptimizationActions = () => {
           if (error) throw error;
           processedCount++;
           optimizedPageIds.push(page.id);
+          
+          // Track sync status from response
+          if (data?.shopifySynced === true) {
+            syncedCount++;
+          } else if (data?.syncError) {
+            syncFailedCount++;
+            if (syncErrors.length < 3) {
+              syncErrors.push(`${page.title}: ${data.syncError}`);
+            }
+          } else {
+            // No shopify_page_id or sync not attempted
+            syncFailedCount++;
+          }
+          
           setProgress({ current: processedCount, total: pages.length, action: 'pages' });
         } catch (err) {
           console.error('[OptimizePages] Error optimizing page:', page.id, err);
         }
       }
 
-      // Note: Auto-sync to Shopify is now handled automatically by the generate-page-seo edge function
-      console.log(`✅ ${optimizedPageIds.length} pages optimized - auto-sync handled by edge function`);
+      console.log(`✅ ${optimizedPageIds.length} pages optimized - Sync: ${syncedCount} success, ${syncFailedCount} failed`);
 
       await refreshLimits();
       
@@ -422,7 +474,16 @@ export const useOptimizationActions = () => {
         await sendOptimizationNotification(processedCount);
       }
       
-      return { success: true, action: 'pages', processedCount };
+      return { 
+        success: true, 
+        action: 'pages', 
+        processedCount,
+        syncStatus: {
+          synced: syncedCount,
+          failed: syncFailedCount,
+          errors: syncErrors
+        }
+      };
     } catch (error) {
       console.error('Error optimizing pages:', error);
       return {
