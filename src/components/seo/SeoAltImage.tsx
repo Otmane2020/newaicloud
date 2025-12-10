@@ -453,6 +453,9 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     }
   };
 
+  // Get the global optimization processor
+  const { processBulkOperation } = useOptimization();
+
   const handleOptimizeImage = async (imageId: string, useVision = true) => {
     // Check limits BEFORE optimizing
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
@@ -471,21 +474,26 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       return;
     }
 
-    // Set processing items for progress dialog with product info
+    // Set processing items and show dialog (like TagOptimization)
     setProcessingItems([{ 
       id: image.id, 
       title: image.product?.title || 'Image', 
       image_url: image.src 
     }]);
+    setShowProgressDialog(true);
+    setProgress({ current: 0, total: 1 });
 
     // Use global context processor - shows progress dialog even for single item
-    processBulkOperation(
+    await processBulkOperation(
       'alt',
       [image],
       async (img) => {
         const { data, error } = await supabase.functions.invoke('smart-alt-text', {
           body: { image_id: img.id }
         });
+
+        // Update local progress
+        setProgress(prev => ({ ...prev, current: prev.current + 1 }));
 
         // Gérer erreur 403 limite atteinte
         if (error && (error.message?.includes('limite_optimisations_atteinte') || error.message?.includes('403'))) {
@@ -501,6 +509,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       },
       'optimizing',
       async (results) => {
+        setShowProgressDialog(false);
         await fetchImages();
         await refreshLimits();
 
@@ -520,9 +529,6 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       }
     );
   };
-
-  // Get the global optimization processor
-  const { processBulkOperation, state: optimizationState, setShowDialog } = useOptimization();
 
   const handleGenerateForSelected = async (useVision = false) => {
     const imagesToGenerate = images.filter(
@@ -817,16 +823,16 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
             </div>
           </div>
           <div className="flex flex-col gap-3 items-center">
-            {optimizationState.isRunning && optimizationState.type === 'alt' ? (
+            {showProgressDialog ? (
               <div className="text-center space-y-3 w-full max-w-md">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   <span className="font-semibold text-lg">{t.seo.altImage.progress.optimizing}</span>
                 </div>
-                <Progress value={(optimizationState.current / optimizationState.total) * 100} className="h-3" />
+                <Progress value={progress.total > 0 ? (progress.current / progress.total) * 100 : 0} className="h-3" />
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>{optimizationState.current} / {optimizationState.total}</span>
-                  <span className="font-bold text-primary">{Math.round((progress.current / progress.total) * 100)}%</span>
+                  <span>{progress.current} / {progress.total}</span>
+                  <span className="font-bold text-primary">{progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0}%</span>
                 </div>
                 <p className="text-xs text-muted-foreground">💡 {t.seo.altImage.progress.backgroundProcessing}</p>
               </div>
@@ -845,7 +851,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                 <Button
                   size="lg"
                   onClick={handleOptimizeAllImages}
-                  disabled={optimizationState.isRunning || limitsLoading || images.length === 0}
+                  disabled={showProgressDialog || limitsLoading || images.length === 0}
                   className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                 >
                   <Eye className="w-5 h-5" />
@@ -953,7 +959,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={() => handleGenerateForSelected(false)}
-              disabled={selectedImages.size === 0 || optimizationState.isRunning}
+              disabled={selectedImages.size === 0 || showProgressDialog}
               size="sm"
             >
               <Sparkles className="w-4 h-4 sm:mr-2" />
@@ -961,7 +967,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
             </Button>
             <Button
               onClick={() => handleGenerateForSelected(true)}
-              disabled={selectedImages.size === 0 || optimizationState.isRunning}
+              disabled={selectedImages.size === 0 || showProgressDialog}
               variant="outline"
               size="sm"
             >
@@ -1385,14 +1391,14 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         </DialogContent>
       </Dialog>
 
-      {/* Optimization Progress Dialog - Connected to OptimizationContext */}
+      {/* Optimization Progress Dialog - Using local state like TagOptimization */}
       <ProgressDialog
-        open={optimizationState.isRunning && optimizationState.type === 'alt'}
-        onOpenChange={(open) => setShowDialog(open)}
+        open={showProgressDialog}
+        onOpenChange={setShowProgressDialog}
         type="alt"
-        operation={optimizationState.operation || 'optimizing'}
-        current={optimizationState.current}
-        total={optimizationState.total}
+        operation="optimizing"
+        current={progress.current}
+        total={progress.total}
         items={processingItems}
       />
 
