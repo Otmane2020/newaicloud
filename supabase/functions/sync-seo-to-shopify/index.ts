@@ -74,16 +74,28 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  // Safe HealthCheck handler
-  const bodyCheck = await req.json().catch(() => ({}));
-  if (bodyCheck?.healthCheck === true) {
-    return new Response(JSON.stringify({ ok: true }), { 
-      status: 200, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  }
-
   try {
+    // Read body once and store it for reuse
+    const rawBody = await req.text();
+    let bodyCheck: any = {};
+    
+    try {
+      bodyCheck = JSON.parse(rawBody);
+    } catch (e) {
+      console.error('[SYNC-SEO] Failed to parse request body:', e);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Safe HealthCheck handler
+    if (bodyCheck?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), { 
+        status: 200, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     // Authenticate user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {

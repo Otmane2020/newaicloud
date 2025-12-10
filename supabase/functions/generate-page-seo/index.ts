@@ -529,7 +529,7 @@ ${baseContent}
       // Get current page data
       const { data: currentPage, error: fetchError } = await supabaseClient
         .from('shopify_pages')
-        .select('optimization_count')
+        .select('optimization_count, shopify_page_id')
         .eq('id', pageId)
         .single();
 
@@ -574,6 +574,40 @@ ${baseContent}
       }
 
       console.log('[USAGE] Usage incremented successfully');
+
+      // 🔄 AUTO-SYNC: Sync page SEO to Shopify automatically after generation
+      let syncResult = { success: false, message: '' };
+      if (currentPage?.shopify_page_id) {
+        try {
+          console.log(`[PAGE-SEO] Auto-syncing to Shopify for page ${pageId}...`);
+          
+          const syncResponse = await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-page-to-shopify`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': authHeader || '',
+              },
+              body: JSON.stringify({
+                pageId: pageId
+              }),
+            }
+          );
+          
+          if (syncResponse.ok) {
+            syncResult = await syncResponse.json();
+            console.log(`[PAGE-SEO] ✅ Page synced to Shopify:`, syncResult);
+          } else {
+            const errorText = await syncResponse.text();
+            console.error(`[PAGE-SEO] ⚠️ Failed to sync to Shopify:`, errorText);
+          }
+        } catch (syncError) {
+          console.error(`[PAGE-SEO] ⚠️ Error during auto-sync:`, syncError);
+        }
+      } else {
+        console.log(`[PAGE-SEO] Page ${pageId} has no Shopify ID, skipping sync`);
+      }
     } else if (isHomepage && connection) {
       // Save homepage SEO to database
       console.log('[HOMEPAGE] Saving homepage SEO to database');
