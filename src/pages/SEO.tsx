@@ -38,7 +38,7 @@ export default function SEO() {
 
   const handleSyncShopify = async () => {
     try {
-      toast.loading('Synchronisation en cours...', { id: 'sync' });
+      toast.loading(t.sync.syncing, { id: 'sync' });
       
       // Reload articles and recalculate score
       if (activeTab === 'articles') {
@@ -47,14 +47,14 @@ export default function SEO() {
         await calculatePagesSeoScore();
       }
       
-      toast.success('✅ Synchronisé avec succès', { id: 'sync' });
+      toast.success(t.toasts.success.syncSuccess, { id: 'sync' });
       
       // Reload page to see changes
       setTimeout(() => {
         window.location.reload();
       }, 1500);
     } catch (error) {
-      toast.error('❌ Erreur de synchronisation', { id: 'sync' });
+      toast.error(t.toasts.smartAI.syncError, { id: 'sync' });
     }
   };
 
