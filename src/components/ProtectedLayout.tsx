@@ -7,16 +7,20 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NoStoreConnectedPrompt } from "@/components/NoStoreConnectedPrompt";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Coins } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStore } from "@/contexts/StoreContext";
 import { useAutoSyncProgress } from "@/contexts/AutoSyncContext";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const { stores, loading: storesLoading } = useStore();
   const { isSyncing } = useAutoSyncProgress();
   const isMobile = useIsMobile();
+  const { limits } = useUsageLimits();
+  
+  const remainingCredits = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
   // Removed demo store bypass - authentication is required for all stores
 
   if (loading) {
@@ -48,6 +52,12 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 dark:from-violet-500/20 dark:to-fuchsia-500/20 rounded-full border border-violet-300/50 dark:border-violet-500/30">
+                    <Coins className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+                    <span className="text-xs font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                      {remainingCredits}
+                    </span>
+                  </div>
                   <LanguageSwitcher />
                   <NotificationCenter />
                 </div>

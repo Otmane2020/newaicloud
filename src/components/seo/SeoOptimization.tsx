@@ -808,15 +808,6 @@ export function SeoOptimization() {
           limit={limits.limits.max_optimizations}
         />
       )}
-      {/* Top bar with credits */}
-      <div className="flex justify-end">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 rounded-full border border-emerald-200 dark:border-emerald-800">
-          <Coins className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-            {(limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0)}
-          </span>
-        </div>
-      </div>
 
       {/* Hero Banner */}
       <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-6 md:p-8">
