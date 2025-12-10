@@ -136,7 +136,23 @@ export default function Dashboard() {
         loadStats();
         
         const checkoutStatus = searchParams.get('checkout');
-        if (checkoutStatus === 'success') {
+        const planActivated = searchParams.get('activated');
+        const planId = searchParams.get('plan');
+        
+        // Handle free plan activation from Shopify
+        if (planActivated === 'true' && planId === 'free') {
+          toast({
+            title: language === 'fr' ? 'Plan gratuit activé !' : 'Free plan activated!',
+            description: language === 'fr' 
+              ? 'Votre plan gratuit est maintenant actif. Vous avez 20 optimisations par mois.'
+              : 'Your free plan is now active. You have 20 optimizations per month.',
+          });
+          
+          searchParams.delete('activated');
+          searchParams.delete('plan');
+          searchParams.delete('shop');
+          setSearchParams(searchParams);
+        } else if (checkoutStatus === 'success') {
           toast({
             title: t.toasts.success.subscriptionActivated,
             description: t.toasts.success.subscriptionActivatedMessage,
