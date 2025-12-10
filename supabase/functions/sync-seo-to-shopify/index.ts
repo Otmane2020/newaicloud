@@ -847,62 +847,47 @@ Deno.serve(async (req: Request) => {
 
       console.log(`[SYNC-COLLECTION] Syncing to Shopify collection ${collection.shopify_collection_id}`);
 
-      // Shopify collections use metafields for SEO data
-      // We need to create/update metafields individually
-      const metafieldsToSync: Array<{key: string, value: string, type: string}> = [];
-
-      if (collection.seo_title) {
-        metafieldsToSync.push({
-          key: "title_tag",
-          value: collection.seo_title,
-          type: "single_line_text_field"
-        });
-      }
-
-      if (collection.seo_description) {
-        metafieldsToSync.push({
-          key: "description_tag",
-          value: collection.seo_description,
-          type: "multi_line_text_field"
-        });
-      }
-
-      // Sync each metafield using the correct Shopify REST API endpoint
-      for (const metafield of metafieldsToSync) {
-        const metafieldData = {
-          metafield: {
-            namespace: "global",
-            key: metafield.key,
-            value: metafield.value,
-            type: metafield.type,
-            owner_id: collection.shopify_collection_id,
-            owner_resource: "collection"
+      // Use GraphQL to update collection SEO (metafields approach via REST is deprecated)
+      const collectionUpdateMutation = `
+        mutation collectionUpdate($input: CollectionInput!) {
+          collectionUpdate(input: $input) {
+            collection {
+              id
+              title
+              seo {
+                title
+                description
+              }
+            }
+            userErrors {
+              field
+              message
+            }
           }
-        };
-
-        console.log(`[SYNC-COLLECTION] Creating/updating metafield ${metafield.key}`);
-
-        const metafieldResponse = await fetch(
-          `https://${shopUrl}/admin/api/2024-01/metafields.json`,
-          {
-            method: "POST",
-            headers: {
-              "X-Shopify-Access-Token": shopifyAccessToken,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(metafieldData),
-          }
-        );
-
-        if (!metafieldResponse.ok) {
-          const errorText = await metafieldResponse.text();
-          console.error(`[SYNC-COLLECTION] ❌ Metafield ${metafield.key} sync error:`, errorText);
-          
-          // ⚠️ CRITICAL FIX: Throw error instead of continuing silently
-          throw new Error(`Échec synchronisation ${metafield.key}: ${errorText}`);
-        } else {
-          console.log(`[SYNC-COLLECTION] ✅ Metafield ${metafield.key} synced successfully`);
         }
+      `;
+
+      const collectionInput = {
+        id: `gid://shopify/Collection/${collection.shopify_collection_id}`,
+        seo: {
+          title: collection.seo_title || "",
+          description: collection.seo_description || ""
+        }
+      };
+
+      console.log(`[SYNC-COLLECTION] Updating via GraphQL:`, {
+        collectionId: collection.shopify_collection_id,
+        seoTitle: collection.seo_title?.substring(0, 50),
+        seoDescLength: collection.seo_description?.length
+      });
+
+      try {
+        const graphqlResponse = await shopifyGraphQL(shopUrl, shopifyAccessToken, collectionUpdateMutation, { input: collectionInput });
+        console.log("[SYNC-COLLECTION] ✅ Collection SEO updated successfully via GraphQL");
+        console.log("[SYNC-COLLECTION] Updated collection SEO:", JSON.stringify(graphqlResponse.data?.collectionUpdate?.collection?.seo, null, 2));
+      } catch (error: any) {
+        console.error("[SYNC-COLLECTION] ❌ GraphQL SEO update failed:", error);
+        throw new Error(`Échec synchronisation collection: ${error.message}`);
       }
 
       // Update last_synced_at timestamp
