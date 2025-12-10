@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { calculateTagsScore } from '@/lib/seoQuality';
 import {
   ShoppingBag,
   Package,
@@ -127,9 +128,13 @@ export default function DashboardLight() {
           ? Math.round((collectionsOptimized / collectionsTotal) * 100) 
           : 0;
 
-        // Tags: count products with tags that have been optimized (optimization_count > 0 OR tags length > 10)
+        // Tags: match TagOptimization.tsx logic - optimization_count > 0 AND has tags AND tagsScore >= 8
         const tagsTotal = productsArr.length;
-        const tagsOptimized = productsArr.filter((p: any) => p.tags && String(p.tags || '').length > 10).length;
+        const tagsOptimized = productsArr.filter((p: any) => {
+          const hasTags = p.tags && String(p.tags || '').trim().length > 0;
+          const tagScore = calculateTagsScore(p.tags);
+          return p.optimization_count && p.optimization_count > 0 && hasTags && tagScore >= 8;
+        }).length;
         const tagsScore = tagsTotal > 0 
           ? Math.round((tagsOptimized / tagsTotal) * 100) 
           : 0;
