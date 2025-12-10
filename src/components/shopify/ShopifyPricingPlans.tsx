@@ -180,26 +180,7 @@ export default function ShopifyPricingPlans({
 
       console.log("[ShopifyPricingPlans] Subscription response:", data);
 
-      // Handle FREE plan - redirect to dashboard within Shopify embedded context
-      if (data?.isFree) {
-        console.log("[ShopifyPricingPlans] Free plan activated - redirecting to dashboard");
-        toast.success(
-          language === "fr" ? "Plan gratuit activé !" : "Free plan activated!",
-          { description: language === "fr" ? "Redirection vers le dashboard..." : "Redirecting to dashboard..." }
-        );
-        
-        // Build the dashboard URL - use Shopify Admin URL for embedded apps
-        const shopHandle = shopDomain.replace('.myshopify.com', '');
-        const dashboardUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard?plan=free&activated=true`;
-        
-        // Redirect the entire page (top window for embedded, current for standalone)
-        if (window.top && window.top !== window) {
-          window.top.location.href = dashboardUrl;
-        } else {
-          window.location.href = dashboardUrl;
-        }
-        return;
-      }
+      // ALL plans (including free) go through Shopify Billing checkout
 
       // Handle PAID plans - redirect to Shopify Billing
       if (data?.confirmationUrl) {
