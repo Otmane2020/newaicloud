@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
-import { resolveLanguage } from "../_shared/language-detector.ts";
+import { getGenerationLanguage } from "../_shared/language-detector.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,48 +91,44 @@ Deno.serve(async (req: Request) => {
         console.log(`📊 Current optimization count: ${collection.optimization_count || 0}`);
         console.log(`📅 Last optimization: ${collection.last_optimization_at || 'never'}`);
 
-        // 🛡️ LANGUAGE GUARD - Detect language from content
+        // Get products from this collection FIRST (needed for language detection)
+        const { data: products } = await supabase
+          .from('shopify_products')
+          .select('title, body_html')
+          .contains('collection_ids', [collection_id])
+          .limit(10);
+
+        const productTitles = products?.map(p => p.title).join(', ') || '';
+        const productDescriptions = products?.map(p => p.body_html?.replace(/<[^>]*>/g, '').substring(0, 100)).filter(Boolean).join(' ') || '';
+
+        // 🛡️ LANGUAGE GUARD - Detect language from product titles + collection content
         let rawStoreLanguage = 'fr';
+        let storeCountry = 'FR';
         if (collection.store_id) {
           const { data: storeData } = await supabase
             .from('shopify_connections')
-            .select('store_language')
+            .select('store_language, country_code, primary_locale')
             .eq('id', collection.store_id)
             .single();
           
           if (storeData?.store_language) {
             rawStoreLanguage = storeData.store_language;
           }
-        }
-
-        const storeLanguage = resolveLanguage({
-          contentText: `${collection.title || ""} ${collection.body_html || ""}`,
-          storeLanguage: rawStoreLanguage
-        });
-        console.log(`🛡️ LANGUAGE GUARD: collection - detected=${storeLanguage}, store=${rawStoreLanguage}, title="${collection.title?.substring(0,30)}..."`);
-
-        // Get store localization for SERP analysis
-        let storeCountry = 'FR';
-        if (collection.store_id) {
-          const { data: storeData } = await supabase
-            .from('shopify_connections')
-            .select('country_code, primary_locale')
-            .eq('id', collection.store_id)
-            .single();
-          
           if (storeData?.country_code) {
             storeCountry = storeData.country_code.toUpperCase();
           }
         }
 
-        // Get products from this collection
-        const { data: products } = await supabase
-          .from('shopify_products')
-          .select('title')
-          .contains('collection_ids', [collection_id])
-          .limit(10);
-
-        const productTitles = products?.map(p => p.title).join(', ') || '';
+        // Use getGenerationLanguage with product titles for better detection
+        const languageGuard = getGenerationLanguage({
+          collectionTitle: collection.title,
+          productTitle: productTitles, // Include product titles for language detection
+          productDescription: productDescriptions, // Include product descriptions
+          storeLanguage: rawStoreLanguage
+        });
+        
+        const storeLanguage = languageGuard.language;
+        console.log(`🛡️ LANGUAGE GUARD: collection - detected=${storeLanguage} (${languageGuard.languageName}), store=${rawStoreLanguage}, contentDetected=${languageGuard.isContentDetected}, source="${languageGuard.sourceText}"`);
 
         // Analyze SERP competitors for the collection
         let serpInsights = '';
