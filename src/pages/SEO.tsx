@@ -13,7 +13,7 @@ import { CollectionOptimization } from '@/components/seo/CollectionOptimization'
 import ArticleManagement, { ArticleManagementRef } from '@/pages/ArticleManagement';
 import { SeoAuditDashboard } from '@/components/seo/SeoAuditDashboard';
 import { GoogleSearchConsole } from '@/components/seo/GoogleSearchConsole';
-import { Sparkles, Tags, Image, Settings, FileText, PenSquare, TrendingUp, Package, RefreshCw } from 'lucide-react';
+import { Sparkles, Tags, Image, Settings, FileText, PenSquare, TrendingUp, Package, RefreshCw, Clock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -24,9 +24,14 @@ import { useTranslation } from '@/lib/language';
 import { useStore } from '@/contexts/StoreContext';
 import { ProgressBanner } from '@/components/seo/ProgressBanner';
 import { useOptimization } from '@/contexts/OptimizationContext';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Full access email
+const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
 
 export default function SEO() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const { user } = useAuth();
   const { selectedStore } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
@@ -35,6 +40,28 @@ export default function SEO() {
   const [loadingScores, setLoadingScores] = useState(false);
   const articleManagementRef = useRef<ArticleManagementRef>(null);
   const { state: optimizationState, setShowCompletedDialog, cancelOptimization } = useOptimization();
+  
+  // Check if user has full access
+  const hasFullAccess = user?.email === FULL_ACCESS_EMAIL;
+  
+  // If user doesn't have full access, show Coming Soon
+  if (!hasFullAccess) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <Card className="p-8 text-center max-w-md">
+          <Clock className="w-16 h-16 mx-auto text-primary mb-4" />
+          <h2 className="text-2xl font-bold mb-2">
+            {language === 'fr' ? 'Bientôt disponible' : 'Coming Soon'}
+          </h2>
+          <p className="text-muted-foreground">
+            {language === 'fr' 
+              ? 'Cette fonctionnalité sera disponible prochainement. Restez à l\'écoute !'
+              : 'This feature will be available soon. Stay tuned!'}
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   const handleSyncShopify = async () => {
     try {

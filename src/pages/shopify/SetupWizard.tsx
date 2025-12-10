@@ -167,19 +167,6 @@ export default function SetupWizard() {
   // INSTANT display of pricing plans - no loading screen!
   return (
     <div className="min-h-screen bg-background py-12">
-      {/* Logout button in top-right corner */}
-      <div className="fixed top-4 right-4 z-50">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleLogout}
-          className="gap-2"
-        >
-          <LogOut className="h-4 w-4" />
-          {t.logout}
-        </Button>
-      </div>
-      
       <ShopifyPricingPlans
         shopDomain={shopFromUrl || ""} 
         language={language as "fr" | "en"}

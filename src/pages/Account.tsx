@@ -109,12 +109,17 @@ export default function Account() {
             <div className="bg-white rounded-lg border p-4 md:p-6">
               <SubscriptionPlans />
             </div>
-            <div className="bg-white rounded-lg border p-4 md:p-6">
-              <UsageLimits />
-            </div>
-            
-            {/* Referral System */}
-            <ReferralSystem />
+            {/* UsageLimits and ReferralSystem hidden for non-full-access users */}
+            {hasFullAccess && (
+              <>
+                <div className="bg-white rounded-lg border p-4 md:p-6">
+                  <UsageLimits />
+                </div>
+                
+                {/* Referral System */}
+                <ReferralSystem />
+              </>
+            )}
           </div>
         </TabsContent>
 
