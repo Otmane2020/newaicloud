@@ -186,7 +186,7 @@ export function AppSidebar() {
     { title: t.account.submenu.integrations, url: "/account?tab=integrations", icon: Package, key: "integrations" },
     // Subscription - visible to all users
     { title: t.account.submenu.subscription, url: "/subscription", icon: CreditCard, key: "subscription" },
-    { title: t.usageLimits, url: "/account?tab=usage", icon: BarChart3, key: "usage" },
+    ...(hasFullAccess ? [{ title: t.usageLimits, url: "/account?tab=usage", icon: BarChart3, key: "usage" }] : []),
     // Billing - restricted
     ...(hasFullAccess ? [{ title: t.account.submenu.billing, url: "/account?tab=billing", icon: Receipt, key: "billing" }] : []),
     // Developer tools - Test account only
