@@ -315,19 +315,23 @@ export const useOptimizationActions = () => {
       
       for (const article of articles) {
         try {
-          const { error } = await supabase.functions.invoke('generate-article-seo', {
+          console.log('[OptimizeArticles] Optimizing article:', article.id, article.title);
+          // NOTE: generate-article-seo expects article_ids array, not articleId
+          const { data, error } = await supabase.functions.invoke('generate-article-seo', {
             body: {
-              articleId: article.id,
-              title: article.title,
-              content: article.content
+              article_ids: [article.id]
             }
           });
+          console.log('[OptimizeArticles] Result for', article.id, ':', { data, error });
           if (error) throw error;
+          if (data?.error_count > 0) {
+            console.warn('[OptimizeArticles] Article had errors:', data.results);
+          }
           processedCount++;
           optimizedArticleIds.push(article.id);
           setProgress({ current: processedCount, total: articles.length, action: 'articles' });
         } catch (err) {
-          console.error('Error optimizing article:', article.id, err);
+          console.error('[OptimizeArticles] Error optimizing article:', article.id, err);
         }
       }
 
@@ -389,7 +393,8 @@ export const useOptimizationActions = () => {
       
       for (const page of pages) {
         try {
-          const { error } = await supabase.functions.invoke('generate-page-seo', {
+          console.log('[OptimizePages] Optimizing page:', page.id, page.title);
+          const { data, error } = await supabase.functions.invoke('generate-page-seo', {
             body: {
               pageId: page.id,
               title: page.title,
@@ -397,12 +402,13 @@ export const useOptimizationActions = () => {
               handle: page.handle
             }
           });
+          console.log('[OptimizePages] Result for', page.id, ':', { data, error });
           if (error) throw error;
           processedCount++;
           optimizedPageIds.push(page.id);
           setProgress({ current: processedCount, total: pages.length, action: 'pages' });
         } catch (err) {
-          console.error('Error optimizing page:', page.id, err);
+          console.error('[OptimizePages] Error optimizing page:', page.id, err);
         }
       }
 
