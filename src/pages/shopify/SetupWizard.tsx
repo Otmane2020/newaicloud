@@ -20,6 +20,11 @@ export default function SetupWizard() {
 
   const pendingToken = searchParams.get("pending_token");
   const shopFromUrl = searchParams.get("shop");
+  
+  // Normalize shop domain to always have .myshopify.com
+  const normalizedShop = shopFromUrl 
+    ? (shopFromUrl.includes('.myshopify.com') ? shopFromUrl : `${shopFromUrl}.myshopify.com`)
+    : null;
 
   // Check if user already has an active subscription → redirect to dashboard
   useEffect(() => {
@@ -28,32 +33,40 @@ export default function SetupWizard() {
 
     const checkExistingSubscription = async () => {
       try {
+        console.log('[SetupWizard] Checking subscription for shop:', { shopFromUrl, normalizedShop });
+        
         // Demo store bypass direct
-        if (shopFromUrl === DEMO_STORE_DOMAIN) {
+        if (normalizedShop === DEMO_STORE_DOMAIN || shopFromUrl === 'store-demo-20240334') {
           console.log('🎭 [SetupWizard] Demo store detected, bypassing to dashboard');
           navigate("/dashboard", { replace: true });
           return;
         }
 
-        if (!shopFromUrl) {
+        if (!normalizedShop) {
+          console.log('[SetupWizard] No shop in URL, showing pricing');
           setCheckingSubscription(false);
           return;
         }
 
         // Check if shop has an active connection with subscription
-        const { data: connection } = await supabase
+        // Try both with and without .myshopify.com suffix
+        const { data: connection, error: connError } = await supabase
           .from("shopify_connections")
-          .select("user_id")
-          .eq("store_url", shopFromUrl)
+          .select("user_id, store_url")
+          .eq("store_url", normalizedShop)
           .eq("is_active", true)
           .single();
 
+        console.log('[SetupWizard] Connection lookup result:', { connection, error: connError?.message });
+
         if (connection?.user_id) {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from("profiles")
-            .select("subscription_status")
+            .select("subscription_status, current_plan_id")
             .eq("id", connection.user_id)
             .single();
+
+          console.log('[SetupWizard] Profile lookup result:', { profile, error: profileError?.message });
 
           if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
             console.log('✅ [SetupWizard] User already has active subscription, redirecting to dashboard');
@@ -69,7 +82,7 @@ export default function SetupWizard() {
     };
 
     checkExistingSubscription();
-  }, [shopFromUrl, navigate]);
+  }, [shopFromUrl, normalizedShop, navigate]);
 
   const t = {
     errorTitle: language === "fr" ? "Erreur" : "Error",
