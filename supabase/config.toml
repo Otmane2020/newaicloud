@@ -345,6 +345,9 @@ verify_jwt = true
 [functions.shopify-auto-auth]
 verify_jwt = false
 
+[functions.shopify-quick-login]
+verify_jwt = false
+
 [functions.shopify-oauth]
 verify_jwt = false
 
