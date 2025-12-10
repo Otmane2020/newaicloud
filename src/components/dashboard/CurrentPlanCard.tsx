@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Loader2, CreditCard, Calendar, Package, TrendingUp } from 'lucide-react';
+import { Loader2, CreditCard, Calendar, Package, TrendingUp, Zap } from 'lucide-react';
 import { PlanUpgradeDialog } from './PlanUpgradeDialog';
 import { useTranslation } from '@/lib/language';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
@@ -24,7 +24,7 @@ interface Plan {
 
 export function CurrentPlanCard() {
   const { user } = useAuth();
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const { limits: limitsData } = useUsageLimits();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -222,6 +222,19 @@ export function CurrentPlanCard() {
                 : t.account.subscription.renewalDate}: {new Date(subscriptionEnd).toLocaleDateString()}
             </div>
           )}
+
+          {/* Remaining optimizations */}
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium">
+                {language === 'fr' ? 'Optimisations restantes' : 'Remaining optimizations'}
+              </span>
+            </div>
+            <Badge variant="secondary" className="text-base font-bold">
+              {optimizationsLimit - optimizationsUsed} / {optimizationsLimit}
+            </Badge>
+          </div>
 
           {(currentPlan as Plan & { isTrial?: boolean }).isTrial && (
             <Button 

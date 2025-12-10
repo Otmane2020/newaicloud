@@ -403,17 +403,7 @@ export function SubscriptionPlans() {
           </Tabs>
         </div>
 
-        <div className="flex items-center justify-center gap-2 mt-4 p-4 bg-muted/50 rounded-lg max-w-md mx-auto">
-          <Tag className="w-4 h-4 text-muted-foreground" />
-          <Label htmlFor="manual-promo" className="text-sm cursor-pointer">
-            {t.subscription.useManualPromoDiscount}
-          </Label>
-          <Switch
-            id="manual-promo"
-            checked={useManualPromo}
-            onCheckedChange={setUseManualPromo}
-          />
-        </div>
+        {/* Promo switch hidden */}
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
