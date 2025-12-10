@@ -117,15 +117,24 @@ serve(async (req) => {
     // ALL plans (including free) go through Shopify Billing
     // Free plan uses the "free" plan created in Shopify Partner Dashboard
 
+    // Detect if this is a dev store (for test mode)
+    const isDevStore = shopDomain.includes(".myshopify.com") && 
+      (shopDomain.includes("-dev") || shopDomain.includes("dev-") || connection.shop_name?.includes("dev"));
+    
+    // Use test mode for dev stores to allow subscription without real payment
+    const testMode = isDevStore || Deno.env.get("SHOPIFY_TEST_MODE") === "true";
+    
+    logStep("Test mode detection", { isDevStore, testMode, shopDomain });
+
     // Build Shopify GraphQL mutation for subscription
     const mutation = `
-      mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int) {
+      mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int, $test: Boolean) {
         appSubscriptionCreate(
           name: $name
           returnUrl: $returnUrl
           trialDays: $trialDays
           lineItems: $lineItems
-          test: false
+          test: $test
         ) {
           userErrors {
             field
@@ -147,6 +156,7 @@ serve(async (req) => {
     const variables: any = {
       name: plan.name,
       returnUrl,
+      test: testMode,
       lineItems: [{
         plan: {
           appRecurringPricingDetails: {
