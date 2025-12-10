@@ -1382,10 +1382,10 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
 
       {/* Optimization Progress Dialog - Connected to OptimizationContext */}
       <ProgressDialog
-        open={optimizationState.showDialog && optimizationState.isRunning && optimizationState.type === 'alt'}
+        open={optimizationState.isRunning && optimizationState.type === 'alt'}
         onOpenChange={(open) => setShowDialog(open)}
         type="alt"
-        operation={optimizationState.operation}
+        operation={optimizationState.operation || 'optimizing'}
         current={optimizationState.current}
         total={optimizationState.total}
         items={processingItems}
