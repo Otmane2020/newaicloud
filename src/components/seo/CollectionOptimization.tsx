@@ -500,17 +500,22 @@ export function CollectionOptimization() {
           
           if (error) {
             console.error(`❌ Error optimizing collection ${collection.id}:`, error);
-            return false;
+            return { generated: false };
           }
           
-          return data?.results?.[0]?.success || false;
+          const result = data?.results?.[0];
+          const generated = result?.success || false;
+          const shopifySynced = result?.shopifySync?.success || false;
+          const syncError = result?.shopifySync?.message || (result?.shopifySync?.success === false ? 'Sync failed' : undefined);
+          
+          return { generated, shopifySynced, syncError };
         } catch (error: any) {
           console.error('❌ Error optimizing collection:', error);
           
           if (error.message?.includes('trial_limit_reached') || error.message?.includes('monthly_limit_reached') || error.message?.includes('403')) {
             setShowUpgradeDialog(true);
           }
-          return false;
+          return { generated: false };
         }
       },
       'optimizing',
@@ -525,11 +530,22 @@ export function CollectionOptimization() {
             .in('id', collectionsToOptimize.map(c => c.id));
           
           setOptimizedCollections((freshCollections || []) as Collection[]);
-          toast.success(t.collections.optimization.messages.optimizationSuccess.replace('{{count}}', String(results.success)));
+          
+          // Show sync status in toast
+          if (results.syncError > 0) {
+            toast.warning(`${results.success} collections optimisées, mais ${results.syncError} erreurs de sync Shopify`);
+            console.log('[CollectionOptimization] Sync errors:', results.syncErrors);
+          } else if (results.syncSuccess > 0) {
+            toast.success(`${results.success} collections optimisées et ${results.syncSuccess} synchronisées!`);
+          } else {
+            toast.success(t.collections.optimization.messages.optimizationSuccess.replace('{{count}}', String(results.success)));
+          }
           
           setTimeout(() => {
             setShowResultsDialog(true);
           }, 800);
+        } else if (results.error > 0) {
+          toast.error(`${results.error} erreurs lors de l'optimisation`);
         }
       }
     );
@@ -564,16 +580,21 @@ export function CollectionOptimization() {
           
           if (error) {
             console.error(`❌ Error optimizing collection ${collection.id}:`, error);
-            return false;
+            return { generated: false };
           }
           
-          return data?.results?.[0]?.success || false;
+          const result = data?.results?.[0];
+          const generated = result?.success || false;
+          const shopifySynced = result?.shopifySync?.success || false;
+          const syncError = result?.shopifySync?.message || (result?.shopifySync?.success === false ? 'Sync failed' : undefined);
+          
+          return { generated, shopifySynced, syncError };
         } catch (error: any) {
           console.error('❌ Error:', error);
           if (error.message?.includes('trial_limit_reached') || error.message?.includes('403')) {
             setShowUpgradeDialog(true);
           }
-          return false;
+          return { generated: false };
         }
       },
       'optimizing',
@@ -588,11 +609,22 @@ export function CollectionOptimization() {
             .in('id', collectionsToOptimize.map(c => c.id));
           
           setOptimizedCollections((freshCollections || []) as Collection[]);
-          toast.success(tf('collections.optimization.messages.collectionsOptimizedCount', { count: results.success }));
+          
+          // Show sync status in toast
+          if (results.syncError > 0) {
+            toast.warning(`${results.success} collections optimisées, mais ${results.syncError} erreurs de sync Shopify`);
+            console.log('[CollectionOptimization] Sync errors:', results.syncErrors);
+          } else if (results.syncSuccess > 0) {
+            toast.success(`${results.success} collections optimisées et ${results.syncSuccess} synchronisées!`);
+          } else {
+            toast.success(tf('collections.optimization.messages.collectionsOptimizedCount', { count: results.success }));
+          }
           
           setTimeout(() => {
             setShowResultsDialog(true);
           }, 800);
+        } else if (results.error > 0) {
+          toast.error(`${results.error} erreurs lors de l'optimisation`);
         }
       }
     );

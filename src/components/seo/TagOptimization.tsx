@@ -569,13 +569,17 @@ export function TagOptimization() {
           if (response.status === 403 || result.error === 'limite_optimisations_atteinte') {
             toast.error('Limite d\'optimisations atteinte');
             setShowUpgradeDialog(true);
-            return false;
+            return { generated: false };
           }
           
-          return response.ok && result.success;
+          const generated = response.ok && result.success;
+          const shopifySynced = result.shopifySync?.success || false;
+          const syncError = result.shopifySync?.message || (result.shopifySync?.success === false ? 'Sync failed' : undefined);
+          
+          return { generated, shopifySynced, syncError };
         } catch (error) {
           console.error('Error generating tags:', error);
-          return false;
+          return { generated: false };
         }
       },
       'optimizing',
@@ -601,7 +605,18 @@ export function TagOptimization() {
         })));
         setShowProgressDialog(false);
         setShowResultsDialog(true);
-        toast.success(`${results.success}/${productIds.length} tags generated`);
+        
+        // Show sync status in toast
+        if (results.syncError > 0) {
+          toast.warning(`${results.success}/${productIds.length} tags générés, mais ${results.syncError} erreurs de sync Shopify`);
+          console.log('[TagOptimization] Sync errors:', results.syncErrors);
+        } else if (results.syncSuccess > 0) {
+          toast.success(`${results.success} tags générés et ${results.syncSuccess} synchronisés avec Shopify!`);
+        } else if (results.success > 0) {
+          toast.success(`${results.success}/${productIds.length} tags générés avec succès`);
+        } else if (results.error > 0) {
+          toast.error(`${results.error} erreurs lors de la génération de tags`);
+        }
       }
     );
   };

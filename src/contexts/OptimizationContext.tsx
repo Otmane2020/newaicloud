@@ -30,10 +30,21 @@ interface OptimizationState {
   cancelRequested: boolean;
 }
 
+// Extended result from processItem for sync tracking
+export interface ProcessItemResult {
+  generated: boolean;
+  shopifySynced?: boolean;
+  syncError?: string;
+}
+
 interface BulkOperationResult {
   success: number;
   error: number;
   cancelled: boolean;
+  // Sync tracking
+  syncSuccess: number;
+  syncError: number;
+  syncErrors: string[];
 }
 
 interface OptimizationContextType {
@@ -49,7 +60,7 @@ interface OptimizationContextType {
   processBulkOperation: <T>(
     type: OptimizationType,
     items: T[],
-    processItem: (item: T, index: number) => Promise<boolean>,
+    processItem: (item: T, index: number) => Promise<boolean | ProcessItemResult>,
     operation?: 'optimizing' | 'syncing',
     onComplete?: (results: BulkOperationResult) => void
   ) => Promise<BulkOperationResult>;
@@ -266,14 +277,14 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
   const processBulkOperation = useCallback(<T,>(
     type: OptimizationType,
     items: T[],
-    processItem: (item: T, index: number) => Promise<boolean>,
+    processItem: (item: T, index: number) => Promise<boolean | ProcessItemResult>,
     operation: 'optimizing' | 'syncing' = 'optimizing',
     onComplete?: (results: BulkOperationResult) => void
   ): Promise<BulkOperationResult> => {
     if (isProcessingRefs.current.get(type)) {
       console.warn(`[OptimizationContext] ${type} operation already in progress`);
       toast.warning(`Une opération ${type} est déjà en cours. Veuillez patienter.`);
-      return Promise.resolve({ success: 0, error: 0, cancelled: true });
+      return Promise.resolve({ success: 0, error: 0, cancelled: true, syncSuccess: 0, syncError: 0, syncErrors: [] });
     }
 
     cancelledRefs.current.set(type, false);
@@ -297,6 +308,9 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
       (async () => {
         let successCount = 0;
         let errorCount = 0;
+        let syncSuccessCount = 0;
+        let syncErrorCount = 0;
+        const syncErrorMessages: string[] = [];
 
         console.log(`[OptimizationContext] Starting ${operation} for ${items.length} ${type}`);
 
@@ -308,11 +322,35 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
             }
 
             try {
-              const success = await processItem(items[i], i);
-              if (success) {
-                successCount++;
+              const result = await processItem(items[i], i);
+              
+              // Handle both boolean and ProcessItemResult
+              if (typeof result === 'boolean') {
+                if (result) {
+                  successCount++;
+                } else {
+                  errorCount++;
+                }
               } else {
-                errorCount++;
+                // ProcessItemResult object
+                if (result.generated) {
+                  successCount++;
+                  // Track sync status
+                  if (result.shopifySynced === true) {
+                    syncSuccessCount++;
+                    console.log(`[OptimizationContext] Item ${i + 1}: generated ✅, synced ✅`);
+                  } else if (result.syncError) {
+                    syncErrorCount++;
+                    syncErrorMessages.push(result.syncError);
+                    console.log(`[OptimizationContext] Item ${i + 1}: generated ✅, sync ❌ (${result.syncError})`);
+                  } else {
+                    // Generated but no sync info
+                    console.log(`[OptimizationContext] Item ${i + 1}: generated ✅, sync status unknown`);
+                  }
+                } else {
+                  errorCount++;
+                  console.log(`[OptimizationContext] Item ${i + 1}: generated ❌`);
+                }
               }
             } catch (error) {
               console.error(`[OptimizationContext] Error processing ${type} item ${i}:`, error);
@@ -364,9 +402,12 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
           success: successCount,
           error: errorCount,
           cancelled: cancelledRefs.current.get(type) || false,
+          syncSuccess: syncSuccessCount,
+          syncError: syncErrorCount,
+          syncErrors: syncErrorMessages,
         };
 
-        console.log(`[OptimizationContext] ${type} completed: ${successCount} success, ${errorCount} errors, cancelled: ${result.cancelled}`);
+        console.log(`[OptimizationContext] ${type} completed: ${successCount} success, ${errorCount} errors, syncSuccess: ${syncSuccessCount}, syncError: ${syncErrorCount}, cancelled: ${result.cancelled}`);
 
         onComplete?.(result);
         resolve(result);
