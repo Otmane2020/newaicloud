@@ -349,6 +349,15 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
             // This prevents race condition where dialog opens before data is ready
             return createFullState(newOperations, prev.showDialog, prev.activeDialogType, prev.showCompletedDialog);
           });
+          
+          // Auto-cleanup: remove the operation from state after 3 seconds
+          setTimeout(() => {
+            setState(prev => {
+              const newOperations = new Map(prev.operations);
+              newOperations.delete(type);
+              return createFullState(newOperations, prev.showDialog, prev.activeDialogType, prev.showCompletedDialog);
+            });
+          }, 3000);
         }
 
         const result: BulkOperationResult = {

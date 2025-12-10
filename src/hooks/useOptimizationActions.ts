@@ -153,23 +153,8 @@ export const useOptimizationActions = () => {
         }
       }
 
-      // Auto-sync to Shopify after optimization (uses sync-seo-to-shopify with collectionId)
-      if (optimizedCollectionIds.length > 0) {
-        for (const collectionId of optimizedCollectionIds) {
-          try {
-            const { data, error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-              body: { collectionId, force: true }
-            });
-            if (error) {
-              console.error('❌ Error syncing collection:', collectionId, error);
-            } else {
-              console.log('✅ Collection synced to Shopify:', collectionId, data);
-            }
-          } catch (err) {
-            console.error('Error syncing collection:', collectionId, err);
-          }
-        }
-      }
+      // Note: Auto-sync to Shopify is now handled automatically by the generate-collection-seo edge function
+      console.log(`✅ ${optimizedCollectionIds.length} collections optimized - auto-sync handled by edge function`);
 
       await refreshLimits();
       
@@ -273,24 +258,8 @@ export const useOptimizationActions = () => {
         );
       }
 
-      // Auto-sync ALT texts to Shopify after optimization (uses sync-seo-to-shopify with imageId)
-      if (processedCount > 0) {
-        const processedImages = images.slice(0, processedCount);
-        for (const img of processedImages) {
-          try {
-            const { data, error } = await supabase.functions.invoke('sync-seo-to-shopify', {
-              body: { imageId: img.id, syncAltText: true, force: true }
-            });
-            if (error) {
-              console.error('❌ Error syncing ALT text:', img.id, error);
-            } else {
-              console.log('✅ ALT text synced to Shopify:', img.id, data);
-            }
-          } catch (err) {
-            console.error('Error syncing ALT text:', img.id, err);
-          }
-        }
-      }
+      // Note: Auto-sync to Shopify is now handled automatically by the generate-alt-texts edge function
+      console.log(`✅ ${processedCount} ALT texts generated - auto-sync handled by edge function`);
 
       await refreshLimits();
 
@@ -362,23 +331,8 @@ export const useOptimizationActions = () => {
         }
       }
 
-      // Auto-sync to Shopify after optimization (uses sync-blog-to-shopify)
-      if (optimizedArticleIds.length > 0) {
-        for (const articleId of optimizedArticleIds) {
-          try {
-            const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
-              body: { articleId }
-            });
-            if (error) {
-              console.error('❌ Error syncing article:', articleId, error);
-            } else {
-              console.log('✅ Article synced to Shopify:', articleId, data);
-            }
-          } catch (err) {
-            console.error('Error syncing article:', articleId, err);
-          }
-        }
-      }
+      // Note: Auto-sync to Shopify is now handled automatically by the generate-article-seo edge function
+      console.log(`✅ ${optimizedArticleIds.length} articles optimized - auto-sync handled by edge function`);
 
       await refreshLimits();
       
@@ -452,23 +406,8 @@ export const useOptimizationActions = () => {
         }
       }
 
-      // Auto-sync to Shopify after optimization (uses sync-page-to-shopify)
-      if (optimizedPageIds.length > 0) {
-        for (const pageId of optimizedPageIds) {
-          try {
-            const { data, error } = await supabase.functions.invoke('sync-page-to-shopify', {
-              body: { pageId }
-            });
-            if (error) {
-              console.error('❌ Error syncing page:', pageId, error);
-            } else {
-              console.log('✅ Page synced to Shopify:', pageId, data);
-            }
-          } catch (err) {
-            console.error('Error syncing page:', pageId, err);
-          }
-        }
-      }
+      // Note: Auto-sync to Shopify is now handled automatically by the generate-page-seo edge function
+      console.log(`✅ ${optimizedPageIds.length} pages optimized - auto-sync handled by edge function`);
 
       await refreshLimits();
       
