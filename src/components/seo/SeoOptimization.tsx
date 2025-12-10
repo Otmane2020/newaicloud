@@ -623,27 +623,22 @@ export function SeoOptimization() {
       },
       'optimizing',
       async (results) => {
-        // Refresh limits only (not products to avoid page refresh)
+        // Refresh limits
         await refreshLimits();
         
+        // ALWAYS refresh products list to update the preview
+        await fetchProducts();
+        
         if (results.success > 0) {
-          // Fetch fresh optimized products FIRST before showing dialog
+          // Fetch fresh optimized products for the dialog
           const { data: freshProducts } = await supabase
             .from('shopify_products')
             .select('*')
             .in('id', productsToGenerate.map(p => p.id));
           
           if (freshProducts && freshProducts.length > 0) {
-            // Set optimized products BEFORE showing dialog
             setOptimizedProducts(freshProducts as Product[]);
             
-            // Update only the optimized products in the local state (no full refresh)
-            setProducts(prev => prev.map(p => {
-              const updated = freshProducts.find((fp: any) => fp.id === p.id);
-              return updated ? { ...p, ...updated } : p;
-            }));
-            
-            // Manually show dialog AFTER data is ready (small delay to ensure state is set)
             setTimeout(() => {
               setShowCompletedDialog(true);
             }, 100);
@@ -737,27 +732,22 @@ export function SeoOptimization() {
       },
       'optimizing',
       async (results) => {
-        // Refresh limits only (not products to avoid page refresh)
+        // Refresh limits
         await refreshLimits();
         
+        // ALWAYS refresh products list to update the preview
+        await fetchProducts();
+        
         if (results.success > 0) {
-          // Fetch fresh optimized products FIRST before showing dialog
+          // Fetch fresh optimized products for the dialog
           const { data: freshProducts } = await supabase
             .from('shopify_products')
             .select('*')
             .in('id', productsToGenerate.map(p => p.id));
           
           if (freshProducts && freshProducts.length > 0) {
-            // Set optimized products BEFORE showing dialog
             setOptimizedProducts(freshProducts as Product[]);
             
-            // Update only the optimized products in the local state (no full refresh)
-            setProducts(prev => prev.map(p => {
-              const updated = freshProducts.find((fp: any) => fp.id === p.id);
-              return updated ? { ...p, ...updated } : p;
-            }));
-            
-            // Manually show dialog AFTER data is ready
             setTimeout(() => {
               setShowCompletedDialog(true);
             }, 100);
