@@ -180,7 +180,7 @@ serve(async (req) => {
       try {
         const res = await supabaseAdmin
           .from('profiles')
-          .select('subscription_status, current_plan_id, trial_ends_at')
+          .select('subscription_status, current_plan_id, trial_ends_at, billing_provider')
           .eq('id', user.id)
           .single();
         return { data: res.data, error: res.error };
@@ -486,6 +486,7 @@ serve(async (req) => {
         isTrialing,
         isPaid,
         planId: profile.current_plan_id,
+        billingProvider: profile.billing_provider || 'stripe',
         shouldForcePayment,
         forcePaymentReason,
       }),
