@@ -352,8 +352,45 @@ ${labels.instruction}`;
         });
 
         console.log(`✅ Successfully optimized article: ${article_id}`);
+
+        // 🔄 AUTO-SYNC: Sync article to Shopify automatically after SEO generation
+        let syncResult = { success: false, message: '' };
+        if (article.shopify_article_id) {
+          try {
+            console.log(`[ARTICLE-SEO] Auto-syncing to Shopify for article ${article_id}...`);
+            
+            const syncResponse = await fetch(
+              `${supabaseUrl}/functions/v1/sync-blog-to-shopify`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': authHeader || '',
+                },
+                body: JSON.stringify({
+                  articleId: article_id
+                }),
+              }
+            );
+            
+            if (syncResponse.ok) {
+              syncResult = await syncResponse.json();
+              console.log(`[ARTICLE-SEO] ✅ Article synced to Shopify:`, syncResult);
+            } else {
+              const errorText = await syncResponse.text();
+              console.error(`[ARTICLE-SEO] ⚠️ Failed to sync to Shopify:`, errorText);
+              syncResult = { success: false, message: errorText };
+            }
+          } catch (syncError) {
+            console.error(`[ARTICLE-SEO] ⚠️ Error during auto-sync:`, syncError);
+            syncResult = { success: false, message: syncError instanceof Error ? syncError.message : 'Unknown error' };
+          }
+        } else {
+          console.log(`[ARTICLE-SEO] Article ${article_id} has no Shopify ID, skipping sync`);
+        }
+
         successCount++;
-        results.push({ article_id, success: true, seo_data: seoData });
+        results.push({ article_id, success: true, seo_data: seoData, shopifySync: syncResult });
 
       } catch (error) {
         console.error(`❌ Error processing article ${article_id}:`, error);

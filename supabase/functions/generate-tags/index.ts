@@ -239,6 +239,41 @@ Deno.serve(async (req: Request) => {
       p_increment: 1
     });
 
+    // 🔄 AUTO-SYNC: Sync tags to Shopify automatically after generation
+    let syncResult = { success: false, message: '' };
+    try {
+      console.log(`[TAGS] Auto-syncing tags to Shopify for product ${productId}...`);
+      
+      // Call sync-seo-to-shopify with syncTags flag
+      const syncResponse = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-seo-to-shopify`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || '',
+          },
+          body: JSON.stringify({
+            productId: productId,
+            syncTags: true,
+            force: true
+          }),
+        }
+      );
+      
+      if (syncResponse.ok) {
+        syncResult = await syncResponse.json();
+        console.log(`[TAGS] ✅ Tags synced to Shopify successfully:`, syncResult);
+      } else {
+        const errorText = await syncResponse.text();
+        console.error(`[TAGS] ⚠️ Failed to sync tags to Shopify:`, errorText);
+        syncResult = { success: false, message: errorText };
+      }
+    } catch (syncError) {
+      console.error(`[TAGS] ⚠️ Error during auto-sync:`, syncError);
+      syncResult = { success: false, message: syncError instanceof Error ? syncError.message : 'Unknown error' };
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -247,6 +282,7 @@ Deno.serve(async (req: Request) => {
           product_id: productId,
           tags: tags,
         },
+        shopifySync: syncResult
       }),
       {
         status: 200,

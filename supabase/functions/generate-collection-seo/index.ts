@@ -303,8 +303,42 @@ Deno.serve(async (req: Request) => {
         });
 
         console.log(`✅ Successfully optimized collection: ${collection_id}`);
+
+        // 🔄 AUTO-SYNC: Sync collection SEO to Shopify automatically after generation
+        let syncResult = { success: false, message: '' };
+        try {
+          console.log(`[COLLECTION-SEO] Auto-syncing to Shopify for collection ${collection_id}...`);
+          
+          const syncResponse = await fetch(
+            `${supabaseUrl}/functions/v1/sync-seo-to-shopify`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': authHeader || '',
+              },
+              body: JSON.stringify({
+                collectionId: collection_id,
+                force: true
+              }),
+            }
+          );
+          
+          if (syncResponse.ok) {
+            syncResult = await syncResponse.json();
+            console.log(`[COLLECTION-SEO] ✅ Collection synced to Shopify:`, syncResult);
+          } else {
+            const errorText = await syncResponse.text();
+            console.error(`[COLLECTION-SEO] ⚠️ Failed to sync to Shopify:`, errorText);
+            syncResult = { success: false, message: errorText };
+          }
+        } catch (syncError) {
+          console.error(`[COLLECTION-SEO] ⚠️ Error during auto-sync:`, syncError);
+          syncResult = { success: false, message: syncError instanceof Error ? syncError.message : 'Unknown error' };
+        }
+
         successCount++;
-        results.push({ collection_id, success: true, seo_data: seoData });
+        results.push({ collection_id, success: true, seo_data: seoData, shopifySync: syncResult });
 
       } catch (error) {
         console.error(`❌ Error processing collection ${collection_id}:`, error);
