@@ -325,7 +325,7 @@ export function ArticleFeaturedImageDialog({
       setProcessingAlt(true);
       
       console.log('🔄 [ARTICLE-IMAGE] Syncing article image to Shopify:', article.id);
-      toast.loading('Synchronisation de l\'image avec Shopify...', { id: 'article-sync' });
+      toast.loading(t.blog.dialogs.featuredImage.syncingToShopify, { id: 'article-sync' });
       
       // Use dedicated image sync function instead of full article sync
       const { data: syncResult, error: syncError } = await supabase.functions.invoke("sync-article-image-to-shopify", {
@@ -617,20 +617,20 @@ export function ArticleFeaturedImageDialog({
                 <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shrink-0">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold">Optimisez maintenant avec Vision AI!</h3>
+                <h3 className="text-xl font-bold">{t.blog.dialogs.featuredImage.optimizeNowTitle}</h3>
               </div>
               <div className="space-y-2 text-base">
                 <p className="flex items-center gap-2">
                   <Eye className="w-5 h-5 text-indigo-600" />
-                  <span><strong>Texte ALT optimisé</strong> généré par intelligence artificielle</span>
+                  <span>{t.blog.dialogs.featuredImage.optimizedAltText}</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-600" />
-                  <span><strong>Synchronisation automatique</strong> avec votre boutique Shopify</span>
+                  <span>{t.blog.dialogs.featuredImage.autoSync}</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-pink-600" />
-                  <span><strong>SEO amélioré</strong> pour un meilleur référencement</span>
+                  <span>{t.blog.dialogs.featuredImage.improvedSeo}</span>
                 </p>
               </div>
             </div>
@@ -647,12 +647,12 @@ export function ArticleFeaturedImageDialog({
               {processingAlt ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Génération ALT...
+                  {t.blog.dialogs.featuredImage.generatingAlt}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 mr-2" />
-                  Optimiser le texte ALT
+                  {t.blog.dialogs.featuredImage.optimizeAlt}
                 </>
               )}
             </Button>
@@ -665,12 +665,12 @@ export function ArticleFeaturedImageDialog({
               {processingAlt ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Synchronisation...
+                  {t.blog.dialogs.featuredImage.syncing}
                 </>
               ) : (
                 <>
                   <Upload className="w-5 h-5 mr-2" />
-                  Publier sur Shopify
+                  {t.blog.dialogs.featuredImage.publishToShopify}
                 </>
               )}
             </Button>
@@ -679,7 +679,7 @@ export function ArticleFeaturedImageDialog({
               variant="ghost"
               className="w-full h-10"
             >
-              Plus tard
+              {t.blog.dialogs.featuredImage.close}
             </Button>
           </div>
         </DialogContent>

@@ -18,13 +18,21 @@ interface WebhookRegistrationRequest {
 }
 
 const WEBHOOK_TOPICS = [
+  // Products
   'products/create',
   'products/update', 
   'products/delete',
+  // Collections
   'collections/create',
   'collections/update',
   'collections/delete',
+  // Pages (no built-in Shopify webhook, handled differently)
+  // Articles/Blogs - Shopify doesn't have direct webhooks for articles
+  // Use CRON sync for these content types
+  // Orders
   'orders/create',
+  // Themes and content changes
+  'themes/publish',  // Useful to know when theme changes
 ];
 
 async function createWebhook(
