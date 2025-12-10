@@ -180,7 +180,7 @@ export default function ShopifyPricingPlans({
 
       console.log("[ShopifyPricingPlans] Subscription response:", data);
 
-      // ALL plans (including free) go through Shopify Billing checkout
+      // Handle both FREE and PAID plans - all return confirmationUrl now
 
       // Handle PAID plans - redirect to Shopify Billing
       if (data?.confirmationUrl) {
