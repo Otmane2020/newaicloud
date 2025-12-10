@@ -104,10 +104,11 @@ Deno.serve(async (req: Request) => {
         // 🛡️ LANGUAGE GUARD - Detect language from product titles + collection content
         let rawStoreLanguage = 'fr';
         let storeCountry = 'FR';
+        let storeName = '';
         if (collection.store_id) {
           const { data: storeData } = await supabase
             .from('shopify_connections')
-            .select('store_language, country_code, primary_locale')
+            .select('store_language, country_code, primary_locale, store_name, store_url')
             .eq('id', collection.store_id)
             .single();
           
@@ -117,7 +118,15 @@ Deno.serve(async (req: Request) => {
           if (storeData?.country_code) {
             storeCountry = storeData.country_code.toUpperCase();
           }
+          // Get real store name (prefer store_name, fallback to cleaned store_url)
+          if (storeData?.store_name) {
+            storeName = storeData.store_name;
+          } else if (storeData?.store_url) {
+            storeName = storeData.store_url.replace('.myshopify.com', '').replace(/-/g, ' ');
+          }
         }
+        
+        console.log(`🏪 Store info: name="${storeName}", language=${rawStoreLanguage}, country=${storeCountry}`);
 
         // Use getGenerationLanguage with product titles for better detection
         const languageGuard = getGenerationLanguage({
@@ -161,15 +170,24 @@ Deno.serve(async (req: Request) => {
           console.log('⚠️ SERP analysis failed, continuing without it:', serpError);
         }
 
-        // Generate SEO with Lovable AI
+        // Generate SEO with Lovable AI - include store name to avoid placeholder
+        const storeNameInstruction = storeName 
+          ? (storeLanguage === 'en' 
+              ? `\n\n⚠️ CRITICAL: The store name is "${storeName}". Use THIS EXACT store name in your SEO content. NEVER use placeholders like "Your Store Name" or "[Store Name]".`
+              : `\n\n⚠️ CRITIQUE: Le nom de la boutique est "${storeName}". Utilisez CE NOM EXACT dans votre contenu SEO. N'UTILISEZ JAMAIS de texte générique comme "Votre Boutique" ou "[Nom de la Boutique]".`)
+          : '';
+        
         const prompt = getSeoPrompt(storeLanguage, 'collection', {
           title: collection.title,
           handle: collection.handle,
           body_html: collection.body_html,
           productTitles: productTitles
-        }) + serpInsights;
+        }) + serpInsights + storeNameInstruction;
 
         const systemRole = getSystemRole(storeLanguage, 'collection');
+        
+        console.log(`📝 Prompt includes store name: "${storeName || 'NOT SET'}"`);
+        console.log(`📝 Language for generation: ${storeLanguage}`);
 
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
