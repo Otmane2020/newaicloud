@@ -32,15 +32,15 @@ export default function SetupWizard() {
     checkedRef.current = true;
 
     const checkExistingSubscription = async () => {
+      // BYPASS COMPLET pour le demo store - AVANT toute logique
+      if (normalizedShop === DEMO_STORE_DOMAIN || shopFromUrl === 'store-demo-20240334') {
+        console.log('🎭 [SetupWizard] DEMO STORE - Complete bypass to dashboard');
+        navigate("/dashboard", { replace: true });
+        return;
+      }
+
       try {
         console.log('[SetupWizard] Checking subscription for shop:', { shopFromUrl, normalizedShop });
-        
-        // Demo store bypass direct
-        if (normalizedShop === DEMO_STORE_DOMAIN || shopFromUrl === 'store-demo-20240334') {
-          console.log('🎭 [SetupWizard] Demo store detected, bypassing to dashboard');
-          navigate("/dashboard", { replace: true });
-          return;
-        }
 
         if (!normalizedShop) {
           console.log('[SetupWizard] No shop in URL, showing pricing');
