@@ -4,6 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
+import { DEMO_CONFIG } from "@/lib/demoConfig";
+
+// Demo store domain - bypass payment for this store
+const DEMO_STORE_DOMAIN = "store-demo-20240334.myshopify.com";
 
 export default function ShopifyApp() {
   const [params] = useSearchParams();
@@ -28,6 +32,12 @@ export default function ShopifyApp() {
         console.log('🔄 [ShopifyApp] Open app detected (host without pending_token)');
         setStatus("processed");
         
+        // 🎯 DEMO STORE: Bypass direct vers dashboard
+        const isDemoStore = shop === DEMO_STORE_DOMAIN;
+        if (isDemoStore) {
+          console.log('🎭 [ShopifyApp] Demo store detected, bypassing to dashboard');
+        }
+        
         // D'abord vérifier la session locale
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -47,15 +57,16 @@ export default function ShopifyApp() {
           .single();
         
         if (connection?.user_id) {
-          // Vérifier si cet utilisateur a un abonnement actif
+          // Vérifier si cet utilisateur a un abonnement actif OU si c'est le demo store
           const { data: profile } = await supabase
             .from("profiles")
             .select("subscription_status, email")
             .eq("id", connection.user_id)
             .single();
           
-          if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
-            console.log('✅ [ShopifyApp] User has active subscription, auto-login via shopify-auto-auth');
+          // Demo store OU subscription active → auto-login direct
+          if (isDemoStore || profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
+            console.log('✅ [ShopifyApp] User has active subscription or is demo, auto-login via shopify-auto-auth');
             // Réauthentifier l'utilisateur via shopify-auto-auth sans pending_token
             const { data: authData, error: authError } = await supabase.functions.invoke("shopify-auto-auth", {
               body: { shop, reauth: true },
@@ -70,6 +81,13 @@ export default function ShopifyApp() {
               return;
             }
           }
+        }
+        
+        // Demo store sans connexion → quand même essayer d'aller au dashboard
+        if (isDemoStore) {
+          console.log('🎭 [ShopifyApp] Demo store - redirect to dashboard anyway');
+          navigate("/dashboard", { replace: true });
+          return;
         }
         
         // Sinon, rediriger vers SetupWizard
