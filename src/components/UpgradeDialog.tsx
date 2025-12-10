@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { CreditCard, Tag } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 import { getCurrencySymbol } from '@/lib/formatUtils';
+import { useShopifyBilling } from '@/hooks/useShopifyBilling';
+import { ShopifyUpgradeDialog } from '@/components/shopify/ShopifyUpgradeDialog';
 
 interface UpgradeDialogProps {
   open: boolean;
@@ -19,6 +21,7 @@ interface UpgradeDialogProps {
   usage?: number;
   limit?: number;
   currentPlan?: string;
+  currentPlanId?: string;
   onUpgradeComplete?: () => void;
 }
 
@@ -35,7 +38,7 @@ interface Plan {
   max_shopify_stores: number;
 }
 
-export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, currentPlan = "Trial", onUpgradeComplete }: UpgradeDialogProps) {
+export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, currentPlan = "Trial", currentPlanId, onUpgradeComplete }: UpgradeDialogProps) {
   const [loading, setLoading] = useState(false);
   const [currentPlanData, setCurrentPlanData] = useState<Plan | null>(null);
   const [availablePlans, setAvailablePlans] = useState<Plan[]>([]);
@@ -44,6 +47,25 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
   const [planTier, setPlanTier] = useState<'pro' | 'enterprise'>('pro');
   const [useManualPromo, setUseManualPromo] = useState(false);
   const { t, tf, language } = useTranslation();
+  
+  // Check if user is Shopify billing user
+  const { isShopifyUser, billingProvider, shopDomain, loading: shopifyLoading } = useShopifyBilling();
+
+  // If Shopify user, render ShopifyUpgradeDialog instead
+  if (billingProvider === 'shopify' && isShopifyUser && shopDomain) {
+    return (
+      <ShopifyUpgradeDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        shopDomain={shopDomain}
+        currentPlanId={currentPlanId}
+        limitType={limitType}
+        usage={usage}
+        limit={limit}
+        onUpgradeComplete={onUpgradeComplete}
+      />
+    );
+  }
 
   const limitTitle = t.dialogs.limit.limitTypes[limitType];
   

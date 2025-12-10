@@ -42,6 +42,7 @@ interface UsageLimits {
   trialEndsAt: string | null;
   currentPlanId: string | null;
   subscriptionStatus: string | null;
+  billingProvider: 'shopify' | 'stripe' | null;
   shouldForcePayment: boolean;
 }
 
@@ -82,10 +83,10 @@ const fetchUsageLimits = async (): Promise<UsageLimits> => {
     throw error;
   }
   
-  // Récupérer les infos du profil pour le trial
+  // Récupérer les infos du profil pour le trial et billing provider
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('current_plan_id, subscription_status, trial_ends_at')
+    .select('current_plan_id, subscription_status, trial_ends_at, billing_provider')
     .eq('id', user.id)
     .single();
   
@@ -94,6 +95,7 @@ const fetchUsageLimits = async (): Promise<UsageLimits> => {
     trialEndsAt: profileData?.trial_ends_at || null,
     currentPlanId: profileData?.current_plan_id || null,
     subscriptionStatus: profileData?.subscription_status || null,
+    billingProvider: (profileData?.billing_provider as 'shopify' | 'stripe' | null) || data.billingProvider || null,
   };
 
   // Update cache
