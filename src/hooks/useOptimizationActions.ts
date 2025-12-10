@@ -153,13 +153,14 @@ export const useOptimizationActions = () => {
         }
       }
 
-      // Auto-sync to Shopify after optimization
+      // Auto-sync to Shopify after optimization (uses sync-seo-to-shopify with collectionId)
       if (optimizedCollectionIds.length > 0) {
         for (const collectionId of optimizedCollectionIds) {
           try {
-            await supabase.functions.invoke('sync-collection-seo-to-shopify', {
+            await supabase.functions.invoke('sync-seo-to-shopify', {
               body: { collectionId }
             });
+            console.log('✅ Collection synced to Shopify:', collectionId);
           } catch (err) {
             console.error('Error syncing collection:', collectionId, err);
           }
@@ -268,14 +269,15 @@ export const useOptimizationActions = () => {
         );
       }
 
-      // Auto-sync ALT texts to Shopify after optimization
+      // Auto-sync ALT texts to Shopify after optimization (uses sync-seo-to-shopify with imageId)
       if (processedCount > 0) {
         const processedImages = images.slice(0, processedCount);
         for (const img of processedImages) {
           try {
-            await supabase.functions.invoke('sync-alt-text-to-shopify', {
+            await supabase.functions.invoke('sync-seo-to-shopify', {
               body: { imageId: img.id }
             });
+            console.log('✅ ALT text synced to Shopify:', img.id);
           } catch (err) {
             console.error('Error syncing ALT text:', img.id, err);
           }
@@ -352,13 +354,14 @@ export const useOptimizationActions = () => {
         }
       }
 
-      // Auto-sync to Shopify after optimization
+      // Auto-sync to Shopify after optimization (uses sync-blog-to-shopify)
       if (optimizedArticleIds.length > 0) {
         for (const articleId of optimizedArticleIds) {
           try {
-            await supabase.functions.invoke('sync-article-seo-to-shopify', {
+            await supabase.functions.invoke('sync-blog-to-shopify', {
               body: { articleId }
             });
+            console.log('✅ Article synced to Shopify:', articleId);
           } catch (err) {
             console.error('Error syncing article:', articleId, err);
           }
@@ -437,13 +440,14 @@ export const useOptimizationActions = () => {
         }
       }
 
-      // Auto-sync to Shopify after optimization
+      // Auto-sync to Shopify after optimization (uses sync-page-to-shopify)
       if (optimizedPageIds.length > 0) {
         for (const pageId of optimizedPageIds) {
           try {
-            await supabase.functions.invoke('sync-page-seo-to-shopify', {
+            await supabase.functions.invoke('sync-page-to-shopify', {
               body: { pageId }
             });
+            console.log('✅ Page synced to Shopify:', pageId);
           } catch (err) {
             console.error('Error syncing page:', pageId, err);
           }
