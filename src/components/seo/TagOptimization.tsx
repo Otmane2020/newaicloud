@@ -768,7 +768,10 @@ export function TagOptimization() {
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
-              onClick={() => handleGenerateSelected()}
+              onClick={() => {
+                const ids = Array.from(selectedProducts);
+                handleBulkGenerate(ids, true);
+              }}
               disabled={selectedProducts.size === 0 || optimizationState.isRunning}
               size="sm"
               className="flex-1 sm:flex-none"
@@ -1113,8 +1116,8 @@ export function TagOptimization() {
                                  setShowUpgradeDialog(true);
                                  return;
                                }
-                               // Optimiser directement ce produit
-                               handleGenerateSelected(false, [product.id]);
+                               // Optimiser directement ce produit sans confirmation
+                               handleBulkGenerate([product.id], true);
                              }}
                             disabled={optimizationState.isRunning}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
@@ -1249,12 +1252,40 @@ export function TagOptimization() {
                 ) : (
                   <Badge variant="outline">No tags</Badge>
                 )}
-                {product.seo_synced_to_shopify && (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 w-full justify-center">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Synced
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => {
+                            if (!canDoAction('optimizations')) {
+                              toast.error("Limite d'optimisations atteinte");
+                              setShowUpgradeDialog(true);
+                              return;
+                            }
+                            handleBulkGenerate([product.id], true);
+                          }}
+                          disabled={optimizationState.isRunning}
+                          className="flex-1 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg"
+                        >
+                          <Sparkles className="w-4 h-4 mr-1" />
+                          Optimiser
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Optimiser les tags</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  {product.seo_synced_to_shopify && (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Synced
+                    </Badge>
+                  )}
+                </div>
               </div>
             </Card>
           ))}
