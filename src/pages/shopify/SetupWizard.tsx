@@ -32,11 +32,9 @@ export default function SetupWizard() {
     checkedRef.current = true;
 
     const checkExistingSubscription = async () => {
-      // BYPASS COMPLET pour le demo store - AVANT toute logique
+      // Log demo store detection (but don't bypass - let normal subscription check handle it)
       if (normalizedShop === DEMO_STORE_DOMAIN || shopFromUrl === 'store-demo-20240334') {
-        console.log('🎭 [SetupWizard] DEMO STORE - Complete bypass to dashboard');
-        navigate("/dashboard", { replace: true });
-        return;
+        console.log('🎭 [SetupWizard] Demo store detected, checking subscription normally');
       }
 
       try {

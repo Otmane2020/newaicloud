@@ -1,4 +1,4 @@
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
@@ -12,21 +12,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useStore } from "@/contexts/StoreContext";
 import { useAutoSyncProgress } from "@/contexts/AutoSyncContext";
 
-// Demo store domain - bypass auth for this store
-const DEMO_STORE_DOMAIN = "store-demo-20240334.myshopify.com";
-
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const { stores, loading: storesLoading } = useStore();
   const { isSyncing } = useAutoSyncProgress();
   const isMobile = useIsMobile();
-  const [searchParams] = useSearchParams();
-  
-  // Check if this is a demo store access
-  const shopFromUrl = searchParams.get("shop");
-  const isDemoStore = shopFromUrl === DEMO_STORE_DOMAIN || 
-                      shopFromUrl === 'store-demo-20240334' ||
-                      window.location.href.includes('store-demo-20240334');
+  // Removed demo store bypass - authentication is required for all stores
 
   if (loading) {
     return (
@@ -36,8 +27,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Allow demo store access without authentication
-  if (!user && !isDemoStore) {
+  if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
