@@ -56,6 +56,7 @@ import {
   ArrowDown,
   TrendingUp,
   Coins,
+  Copy,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -1310,8 +1311,26 @@ export function SeoOptimization() {
                 <div className="p-4 space-y-3">
                   <div>
                     <h3 className="font-semibold line-clamp-2 mb-1">{product.title}</h3>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                       {product.vendor && <span>{product.vendor}</span>}
+                      {(() => {
+                        const productSku = (product as any).product_variants?.[0]?.sku;
+                        if (!productSku) return null;
+                        return (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(productSku);
+                              toast.success("SKU copié !", { description: productSku });
+                            }}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 hover:from-violet-500/20 hover:to-fuchsia-500/20 text-violet-600 dark:text-violet-400 transition-all cursor-pointer group"
+                            title="Cliquez pour copier le SKU"
+                          >
+                            <span className="font-mono text-[10px]">{productSku}</span>
+                            <Copy className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
+                          </button>
+                        );
+                      })()}
                     </div>
                   </div>
 
