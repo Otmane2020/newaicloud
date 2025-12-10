@@ -278,10 +278,14 @@ export const useOptimizationActions = () => {
         const processedImages = images.slice(0, processedCount);
         for (const img of processedImages) {
           try {
-            await supabase.functions.invoke('sync-seo-to-shopify', {
-              body: { imageId: img.id }
+            const { data, error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+              body: { imageId: img.id, syncAltText: true, force: true }
             });
-            console.log('✅ ALT text synced to Shopify:', img.id);
+            if (error) {
+              console.error('❌ Error syncing ALT text:', img.id, error);
+            } else {
+              console.log('✅ ALT text synced to Shopify:', img.id, data);
+            }
           } catch (err) {
             console.error('Error syncing ALT text:', img.id, err);
           }
@@ -362,10 +366,14 @@ export const useOptimizationActions = () => {
       if (optimizedArticleIds.length > 0) {
         for (const articleId of optimizedArticleIds) {
           try {
-            await supabase.functions.invoke('sync-blog-to-shopify', {
+            const { data, error } = await supabase.functions.invoke('sync-blog-to-shopify', {
               body: { articleId }
             });
-            console.log('✅ Article synced to Shopify:', articleId);
+            if (error) {
+              console.error('❌ Error syncing article:', articleId, error);
+            } else {
+              console.log('✅ Article synced to Shopify:', articleId, data);
+            }
           } catch (err) {
             console.error('Error syncing article:', articleId, err);
           }
@@ -448,10 +456,14 @@ export const useOptimizationActions = () => {
       if (optimizedPageIds.length > 0) {
         for (const pageId of optimizedPageIds) {
           try {
-            await supabase.functions.invoke('sync-page-to-shopify', {
+            const { data, error } = await supabase.functions.invoke('sync-page-to-shopify', {
               body: { pageId }
             });
-            console.log('✅ Page synced to Shopify:', pageId);
+            if (error) {
+              console.error('❌ Error syncing page:', pageId, error);
+            } else {
+              console.log('✅ Page synced to Shopify:', pageId, data);
+            }
           } catch (err) {
             console.error('Error syncing page:', pageId, err);
           }
