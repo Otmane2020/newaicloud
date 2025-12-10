@@ -420,6 +420,7 @@ export function AppSidebar() {
                     <SidebarMenuButton isActive={isBlogActive}>
                       <FileText className="h-4 w-4" />
                       <span>{t.navigation.blog}</span>
+                      <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">Coming Soon</Badge>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
