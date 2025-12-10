@@ -99,7 +99,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
-  const [syncFilter, setSyncFilter] = useState('all');
   const [collectionFilter, setCollectionFilter] = useState('all');
   const [qualityFilter, setQualityFilter] = useState<'all' | 'excellent' | 'good' | 'medium' | 'poor'>(
     (searchParams.get("filter") as 'all' | 'excellent' | 'good' | 'medium' | 'poor') || 'all'
@@ -252,10 +251,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
       (sourceFilter === 'ai' && article.source === 'ai_generated') ||
       (sourceFilter === 'shopify' && article.source === 'shopify_import');
     
-    const matchesSync = syncFilter === 'all' || 
-      (syncFilter === 'synced' && article.shopify_article_id) ||
-      (syncFilter === 'not_synced' && !article.shopify_article_id);
-    
     // Collection filter (placeholder for future implementation)
     const matchesCollection = collectionFilter === 'all';
     
@@ -274,7 +269,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
       return passesQualityFilter(seoScore.score, qualityFilter);
     })();
     
-    return matchesSearch && matchesStatus && matchesSource && matchesSync && matchesQuality && matchesCollection;
+    return matchesSearch && matchesStatus && matchesSource && matchesQuality && matchesCollection;
   });
 
   const stats = {
@@ -425,74 +420,87 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
       return;
     }
     
+    // Show progress dialog for multiple articles
+    if (articleIds.length > 1) {
+      setProgress({ current: 0, total: articleIds.length });
+      setShowProgressDialog(true);
+      setOptimizing(true);
+    }
+    
     try {
-      const loadingToast = toast.loading('🤖 Optimisation SEO en cours...', {
-        description: `Analyse de ${articleIds.length} article(s) par l'IA`
-      });
+      let successCount = 0;
+      let errorCount = 0;
+      const optimizedResults: any[] = [];
       
-      const { data, error } = await supabase.functions.invoke('generate-article-seo', {
-        body: { article_ids: articleIds }
-      });
-
-      if (error) throw error;
-      
-      const { data: articles, error: articlesError } = await supabase
-        .from('blog_articles')
-        .select('id, title, meta_description, keywords, featured_image, shopify_article_id, optimization_count')
-        .in('id', articleIds);
-
-      if (articlesError) throw articlesError;
-
-      toast.dismiss(loadingToast);
-      
-      setOptimizedArticles(articles || []);
-      setShowOptimizationResults(true);
-      
-      // Auto-sync ALL optimized articles to Shopify (create new or update existing)
-      const articlesToSync = articles || [];
-      if (articlesToSync.length > 0) {
-        const syncToast = toast.loading('📤 Synchronisation automatique Shopify...', {
-          description: `Envoi de ${articlesToSync.length} article(s) optimisé(s)`
-        });
+      for (let i = 0; i < articleIds.length; i++) {
+        const articleId = articleIds[i];
         
-        let syncSuccess = 0;
-        let syncErrors = 0;
-        
-        for (const article of articlesToSync) {
-          try {
-            const { error } = await supabase.functions.invoke('sync-blog-to-shopify', {
-              body: { articleId: article.id }
-            });
-            if (error) {
-              syncErrors++;
-            } else {
-              syncSuccess++;
-            }
-          } catch (e) {
-            syncErrors++;
-          }
+        if (articleIds.length > 1) {
+          setProgress({ current: i + 1, total: articleIds.length });
         }
         
-        toast.dismiss(syncToast);
-        if (syncSuccess > 0) {
-          toast.success(`✅ ${syncSuccess} article(s) synchronisé(s)`, {
-            description: syncErrors > 0 ? `${syncErrors} erreur(s)` : 'Publié sur Shopify'
+        try {
+          const { error } = await supabase.functions.invoke('generate-article-seo', {
+            body: { article_ids: [articleId] }
           });
-        }
-        if (syncErrors > 0 && syncSuccess === 0) {
-          toast.error('❌ Erreur de synchronisation Shopify');
+
+          if (error) {
+            errorCount++;
+            continue;
+          }
+          
+          // Fetch optimized article data
+          const { data: articleData } = await supabase
+            .from('blog_articles')
+            .select('id, title, meta_description, keywords, featured_image, shopify_article_id, optimization_count')
+            .eq('id', articleId)
+            .single();
+          
+          if (articleData) {
+            optimizedResults.push(articleData);
+            
+            // Auto-sync to Shopify
+            try {
+              await supabase.functions.invoke('sync-blog-to-shopify', {
+                body: { articleId }
+              });
+              successCount++;
+            } catch (syncError) {
+              console.error('Sync error:', syncError);
+              successCount++; // Still count as success for optimization
+            }
+          }
+        } catch (err) {
+          console.error(`Error optimizing article ${articleId}:`, err);
+          errorCount++;
         }
       }
       
+      setShowProgressDialog(false);
+      setOptimizing(false);
+      
+      if (optimizedResults.length > 0) {
+        setOptimizedArticles(optimizedResults);
+        setShowOptimizationResults(true);
+        
+        toast.success(`✅ ${successCount} article(s) optimisé(s) et synchronisé(s)`, {
+          description: errorCount > 0 ? `${errorCount} erreur(s)` : 'Publié sur Shopify'
+        });
+      } else {
+        toast.error('❌ Erreur lors de l\'optimisation');
+      }
+      
       // Force refresh to update SEO scores
-      console.log('🔄 [SEO-SCORE] Refreshing article after individual optimization...');
-      setArticles([]); // Clear cache
+      console.log('🔄 [SEO-SCORE] Refreshing article after optimization...');
+      setArticles([]);
       await loadArticles();
       await new Promise(resolve => setTimeout(resolve, 300));
-      await loadArticles(); // Second refresh
+      await loadArticles();
       await refreshLimits();
     } catch (error) {
       console.error('Error optimizing:', error);
+      setShowProgressDialog(false);
+      setOptimizing(false);
       toast.error('❌ Erreur lors de l\'optimisation', {
         description: 'Veuillez réessayer'
       });
@@ -557,14 +565,13 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
         </div>
       </div>
 
-      {/* Interactive Dashboard Cards - 4 filters */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* Interactive Dashboard Cards - 2 filters */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card 
           className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
           onClick={() => {
             setQualityFilter('all');
             setStatusFilter('all');
-            setSyncFilter('all');
             setSearchQuery('');
             toast.info(`${stats.total - stats.seoOptimized} ${t.blog.articleSeoManagement.stats.toOptimize}`);
           }}
@@ -587,7 +594,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
           onClick={() => {
             setQualityFilter('all');
             setStatusFilter('all');
-            setSyncFilter('all');
             setSearchQuery('');
             toast.info(`${stats.seoOptimized} ${t.blog.articleSeoManagement.stats.aiOptimized}`);
           }}
@@ -603,52 +609,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
             <Sparkles className="w-8 h-8 text-green-600" />
           </div>
           <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.blog.articleSeoManagement.stats.clickToFilter}</p>
-        </Card>
-        
-        <Card 
-          className="p-4 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 border-purple-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setSyncFilter('not-synced');
-            setQualityFilter('all');
-            setStatusFilter('all');
-            toast.info(`${articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id).length} ${t.blog.articleSeoManagement.stats.toSync}`);
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-purple-700 dark:text-purple-300">{t.blog.articleSeoManagement.stats.toSync}</p>
-              <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                {articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id).length}
-              </p>
-              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                {t.blog.articleSeoManagement.stats.aiOptimizedOnly}
-              </p>
-            </div>
-            <Clock className="w-8 h-8 text-purple-600" />
-          </div>
-          <p className="text-xs text-purple-700 dark:text-purple-300 mt-2">{t.blog.articleSeoManagement.stats.clickToFilter}</p>
-        </Card>
-        
-        <Card 
-          className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setSyncFilter('synced');
-            setQualityFilter('all');
-            setStatusFilter('all');
-            toast.info(`${stats.synced} ${t.blog.articleSeoManagement.stats.synchronized}`);
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">{t.blog.articleSeoManagement.stats.synchronized}</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{stats.synced}</p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                {t.blog.articleSeoManagement.stats.syncedToShopify}
-              </p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-blue-600" />
-          </div>
-          <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">{t.blog.articleSeoManagement.stats.clickToFilter}</p>
         </Card>
       </div>
 
@@ -748,9 +708,9 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
                 <Button variant="outline" size="sm" className="h-10 gap-2">
                   <Filter className="w-4 h-4" />
                   <span className="hidden sm:inline">Filtres</span>
-                  {(sourceFilter !== 'all' || statusFilter !== 'all' || syncFilter !== 'all' || qualityFilter !== 'all') && (
+                  {(sourceFilter !== 'all' || statusFilter !== 'all' || qualityFilter !== 'all') && (
                     <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                      {[sourceFilter, statusFilter, syncFilter, qualityFilter].filter(f => f !== 'all').length}
+                      {[sourceFilter, statusFilter, qualityFilter].filter(f => f !== 'all').length}
                     </Badge>
                   )}
                   <ChevronDown className="w-3 h-3" />
@@ -793,20 +753,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
                     </div>
                     
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Synchronisation</label>
-                      <Select value={syncFilter} onValueChange={setSyncFilter}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Tous</SelectItem>
-                          <SelectItem value="synced">Synchronisé</SelectItem>
-                          <SelectItem value="not_synced">Non synchronisé</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Score SEO</label>
                       <Select 
                         value={qualityFilter} 
@@ -826,7 +772,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
                     </div>
                   </div>
                   
-                  {(sourceFilter !== 'all' || statusFilter !== 'all' || syncFilter !== 'all' || qualityFilter !== 'all') && (
+                  {(sourceFilter !== 'all' || statusFilter !== 'all' || qualityFilter !== 'all') && (
                     <Button 
                       variant="ghost" 
                       size="sm" 
@@ -834,7 +780,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
                       onClick={() => {
                         setSourceFilter('all');
                         setStatusFilter('all');
-                        setSyncFilter('all');
                         setQualityFilter('all');
                       }}
                     >
