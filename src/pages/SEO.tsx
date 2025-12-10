@@ -41,27 +41,11 @@ export default function SEO() {
   const articleManagementRef = useRef<ArticleManagementRef>(null);
   const { state: optimizationState, setShowCompletedDialog, cancelOptimization } = useOptimization();
   
-  // Check if user has full access
+  // Check if user has full access (for Blog tabs only)
   const hasFullAccess = user?.email === FULL_ACCESS_EMAIL;
   
-  // If user doesn't have full access, show Coming Soon
-  if (!hasFullAccess) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center">
-        <Card className="p-8 text-center max-w-md">
-          <Clock className="w-16 h-16 mx-auto text-primary mb-4" />
-          <h2 className="text-2xl font-bold mb-2">
-            {language === 'fr' ? 'Bientôt disponible' : 'Coming Soon'}
-          </h2>
-          <p className="text-muted-foreground">
-            {language === 'fr' 
-              ? 'Cette fonctionnalité sera disponible prochainement. Restez à l\'écoute !'
-              : 'This feature will be available soon. Stay tuned!'}
-          </p>
-        </Card>
-      </div>
-    );
-  }
+  // Blog tabs restricted to full access users
+  const isBlogTab = activeTab === 'pages' || activeTab === 'articles';
 
   const handleSyncShopify = async () => {
     try {
@@ -230,7 +214,27 @@ export default function SEO() {
       <div className="mt-6">
         {(activeTab === 'products' || activeTab === 'optimization') && <ProductOptimizationTabs />}
         {activeTab === 'tags' && <TagOptimization />}
-        {activeTab === 'pages' && (
+        {activeTab === 'collections' && <CollectionOptimization />}
+        {activeTab === 'alt' && <SeoAltImage />}
+        
+        {/* Blog tabs - restricted to full access users */}
+        {isBlogTab && !hasFullAccess && (
+          <div className="min-h-[40vh] flex flex-col items-center justify-center">
+            <Card className="p-8 text-center max-w-md">
+              <Clock className="w-16 h-16 mx-auto text-primary mb-4" />
+              <h2 className="text-2xl font-bold mb-2">
+                {language === 'fr' ? 'Bientôt disponible' : 'Coming Soon'}
+              </h2>
+              <p className="text-muted-foreground">
+                {language === 'fr' 
+                  ? 'Cette fonctionnalité sera disponible prochainement. Restez à l\'écoute !'
+                  : 'This feature will be available soon. Stay tuned!'}
+              </p>
+            </Card>
+          </div>
+        )}
+        
+        {activeTab === 'pages' && hasFullAccess && (
           <>
             {/* Banner for Pages */}
             <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
@@ -299,7 +303,7 @@ export default function SEO() {
             <PageOptimization />
           </>
         )}
-        {activeTab === 'articles' && (
+        {activeTab === 'articles' && hasFullAccess && (
           <>
             {/* Banner for Articles */}
             <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
@@ -371,16 +375,12 @@ export default function SEO() {
             />
           </>
         )}
-        {activeTab === 'collections' && <CollectionOptimization />}
         {activeTab === 'homepage' && <HomePageSeoAudit />}
         {activeTab === 'audit' && <SeoAuditReports />}
         {activeTab === 'audit-dashboard' && <SeoAuditDashboard />}
-        {activeTab === 'alt' && <SeoAltImage />}
         {activeTab === 'smart-title' && <SmartTitle />}
         {activeTab === 'automation' && <SeoAutomation />}
-        {activeTab === 'google-console' && (
-          <GoogleSearchConsole />
-        )}
+        {activeTab === 'google-console' && <GoogleSearchConsole />}
       </div>
 
       {/* OptimizationCompletedDialog removed - handled by SeoOptimization.tsx ResultsDialog */}
