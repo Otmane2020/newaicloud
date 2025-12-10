@@ -20,11 +20,16 @@ export default function ShopifyApp() {
     if (status === "processed") return;
 
     const processPendingToken = async () => {
-      const shop = params.get("shop");
+      const rawShop = params.get("shop");
       const pendingToken = params.get("pending_token");
       const host = params.get("host");
 
-      console.log('🔍 [ShopifyApp] Params:', { shop, pendingToken: !!pendingToken, host: !!host });
+      // Normaliser le shop domain (ajouter .myshopify.com si absent)
+      const shop = rawShop 
+        ? (rawShop.includes('.myshopify.com') ? rawShop : `${rawShop}.myshopify.com`)
+        : null;
+
+      console.log('🔍 [ShopifyApp] Params:', { rawShop, shop, pendingToken: !!pendingToken, host: !!host });
 
       // Si "Open app" depuis Shopify (host présent mais pas de pending_token)
       // Vérifier si l'utilisateur a une connexion et subscription active via le shop domain
