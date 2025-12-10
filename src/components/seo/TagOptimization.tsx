@@ -987,20 +987,7 @@ export function TagOptimization() {
         ))}
       </div>
 
-      {/* Progress Indicator */}
-      {showProgressDialog && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium">
-              {currentOperation === 'optimizing' ? 'Generating tags...' : 'Synchronizing...'}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {progress.current} / {progress.total}
-            </span>
-          </div>
-          <Progress value={(progress.current / progress.total) * 100} className="h-2" />
-        </Card>
-      )}
+      {/* Progress Indicator - removed, using ProgressDialog instead */}
 
       {/* Products Display */}
       {viewMode === 'list' ? (
