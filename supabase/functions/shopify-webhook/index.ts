@@ -85,11 +85,11 @@ Deno.serve(async (req) => {
     // Parse payload for async processing
     const payload = JSON.parse(rawBody);
 
-    // Find the Shopify connection for this domain
+    // Find the Shopify connection for this domain (try store_url first, then shop_domain)
     const { data: connection, error: connError } = await supabase
       .from('shopify_connections')
       .select('id, user_id')
-      .eq('shop_domain', shopDomain)
+      .eq('store_url', shopDomain)
       .single();
 
     if (connError || !connection) {

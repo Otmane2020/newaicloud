@@ -196,6 +196,19 @@ serve(async (req) => {
           );
         }
 
+        // ✅ Register sync webhooks for real-time updates (products, collections, orders)
+        try {
+          const webhookResponse = await fetch(`${SUPABASE_URL}/functions/v1/register-sync-webhooks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shopDomain: shop, accessToken }),
+          });
+          const webhookResult = await webhookResponse.json();
+          console.log("[SHOPIFY-OAUTH] ✅ Sync webhooks registration (pre-auth):", webhookResult);
+        } catch (webhookErr) {
+          console.warn("[SHOPIFY-OAUTH] ⚠️ Could not register sync webhooks (non-blocking):", webhookErr);
+        }
+
         // Nettoyer le state token
         await supabase.from("oauth_states").delete().eq("state_token", state);
 
@@ -235,6 +248,19 @@ serve(async (req) => {
         }).eq("id", oauthState.user_id);
 
         console.log("[SHOPIFY-OAUTH] ✅ Set billing_provider to 'shopify' for user:", oauthState.user_id);
+
+        // ✅ Register sync webhooks for real-time updates (products, collections, orders)
+        try {
+          const webhookResponse = await fetch(`${SUPABASE_URL}/functions/v1/register-sync-webhooks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shopDomain: shop, accessToken }),
+          });
+          const webhookResult = await webhookResponse.json();
+          console.log("[SHOPIFY-OAUTH] ✅ Sync webhooks registration:", webhookResult);
+        } catch (webhookErr) {
+          console.warn("[SHOPIFY-OAUTH] ⚠️ Could not register sync webhooks (non-blocking):", webhookErr);
+        }
         
         console.log(JSON.stringify({
           event: 'oauth_callback_success',
