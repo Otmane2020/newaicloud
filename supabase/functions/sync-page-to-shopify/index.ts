@@ -99,10 +99,6 @@ Deno.serve(async (req) => {
             id
             title
             body
-            seo {
-              title
-              description
-            }
           }
           userErrors {
             field
