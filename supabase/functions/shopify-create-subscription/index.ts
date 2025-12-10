@@ -11,12 +11,12 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Mapping des plans vers Shopify Billing - All tiers from database
-// Note: Free plan uses the "free" plan created in Shopify Partner Dashboard
+// Note: Shopify Billing requires price > 0, so free plan uses $0.01 with 365-day trial
 const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number }> = {
-  // Free Plan - uses the plan created in Shopify Partner Dashboard
-  "free": { name: "Free Plan (20 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7 },
-  "free-monthly": { name: "Free Plan (20 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7 },
-  "free-yearly": { name: "Free Plan (20 optimizations)", price: 0, interval: "EVERY_30_DAYS", trialDays: 7 },
+  // Free Plan - $0.01 with 365-day trial (effectively free for 1 year)
+  "free": { name: "Free Plan (20 optimizations)", price: 0.01, interval: "EVERY_30_DAYS", trialDays: 365 },
+  "free-monthly": { name: "Free Plan (20 optimizations)", price: 0.01, interval: "EVERY_30_DAYS", trialDays: 365 },
+  "free-yearly": { name: "Free Plan (20 optimizations)", price: 0.01, interval: "EVERY_30_DAYS", trialDays: 365 },
   
   // Trial
   "trial": { name: "14-Day Free Trial", price: 0, interval: "EVERY_30_DAYS", trialDays: 14 },
