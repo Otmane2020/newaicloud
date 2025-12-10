@@ -562,8 +562,22 @@ ${baseContent}
     const content = aiData.choices[0].message.content;
     
     // Nettoyer les balises markdown si présentes
-    const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
-    const seoData = JSON.parse(cleanContent);
+    let cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+    
+    // Extract JSON from response even if there's text around it
+    const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('[PARSE] No JSON found in AI response:', content);
+      throw new Error('No valid JSON found in AI response');
+    }
+    
+    let seoData;
+    try {
+      seoData = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error('[PARSE] JSON parse error:', parseError, 'Content:', jsonMatch[0]);
+      throw new Error(`Failed to parse AI response as JSON: ${parseError}`);
+    }
 
     console.log('Generated SEO:', seoData);
 
