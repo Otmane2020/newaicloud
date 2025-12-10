@@ -157,10 +157,14 @@ export const useOptimizationActions = () => {
       if (optimizedCollectionIds.length > 0) {
         for (const collectionId of optimizedCollectionIds) {
           try {
-            await supabase.functions.invoke('sync-seo-to-shopify', {
-              body: { collectionId }
+            const { data, error } = await supabase.functions.invoke('sync-seo-to-shopify', {
+              body: { collectionId, force: true }
             });
-            console.log('✅ Collection synced to Shopify:', collectionId);
+            if (error) {
+              console.error('❌ Error syncing collection:', collectionId, error);
+            } else {
+              console.log('✅ Collection synced to Shopify:', collectionId, data);
+            }
           } catch (err) {
             console.error('Error syncing collection:', collectionId, err);
           }
