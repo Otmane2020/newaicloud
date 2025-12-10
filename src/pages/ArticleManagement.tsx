@@ -93,7 +93,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [optimizing, setOptimizing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -448,8 +448,8 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
       setOptimizedArticles(articles || []);
       setShowOptimizationResults(true);
       
-      // Auto-sync to Shopify after optimization
-      const articlesToSync = (articles || []).filter(a => a.shopify_article_id);
+      // Auto-sync ALL optimized articles to Shopify (create new or update existing)
+      const articlesToSync = articles || [];
       if (articlesToSync.length > 0) {
         const syncToast = toast.loading('📤 Synchronisation automatique Shopify...', {
           description: `Envoi de ${articlesToSync.length} article(s) optimisé(s)`
@@ -476,7 +476,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
         toast.dismiss(syncToast);
         if (syncSuccess > 0) {
           toast.success(`✅ ${syncSuccess} article(s) synchronisé(s)`, {
-            description: syncErrors > 0 ? `${syncErrors} erreur(s)` : 'Shopify mis à jour'
+            description: syncErrors > 0 ? `${syncErrors} erreur(s)` : 'Publié sur Shopify'
           });
         }
         if (syncErrors > 0 && syncSuccess === 0) {
@@ -503,72 +503,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
     optimizeAllArticles
   }));
 
-  const syncToShopify = async (articleIds: string[]) => {
-    // Filter only AI-optimized articles
-    const articlesToSync = articles.filter(a => 
-      articleIds.includes(a.id) && (a.optimization_count || 0) > 0
-    );
-    
-    if (articlesToSync.length === 0) {
-      toast.error('❌ Aucun article AI-optimisé sélectionné', {
-        description: 'Les articles doivent être optimisés par l\'IA avant synchronisation'
-      });
-      return;
-    }
-    
-    setSyncing(true);
-    
-    const loadingToast = toast.loading('📤 Synchronisation Shopify', {
-      description: `Publication de ${articlesToSync.length} article(s) AI-optimisé(s)...`
-    });
-    
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
-    
-    for (const article of articlesToSync) {
-      try {
-        const { error } = await supabase.functions.invoke('sync-blog-to-shopify', {
-          body: { articleId: article.id }
-        });
 
-        if (error) {
-          errorCount++;
-          errors.push(`${article.title}: ${error.message}`);
-        } else {
-          successCount++;
-        }
-      } catch (error) {
-        console.error('Error syncing:', error);
-        errorCount++;
-        errors.push(`${article.title}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    }
-    
-    toast.dismiss(loadingToast);
-    
-    if (successCount > 0) {
-      toast.success(`✅ ${successCount} article(s) publié(s)`, {
-        description: errorCount > 0 ? `${errorCount} erreur(s)` : 'Synchronisation réussie'
-      });
-    }
-    
-    if (errorCount > 0 && errors.length > 0) {
-      console.error('Sync errors:', errors);
-      toast.error(`❌ ${errorCount} erreur(s) de synchronisation`, {
-        description: errors[0] // Show first error
-      });
-    }
-    
-    if (errorCount > 0 && successCount === 0) {
-      toast.error('❌ Échec de la synchronisation', {
-        description: 'Vérifiez votre connexion Shopify'
-      });
-    }
-    
-    loadArticles();
-    setSelectedArticles([]);
-  };
 
   const bulkDelete = async () => {
     if (!confirm(`Are you sure you want to delete ${selectedArticles.length} articles?`)) return;
@@ -759,33 +694,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
                   ? `Optimiser tout (${articles.filter(a => (a.optimization_count || 0) === 0).length})` 
                   : `Ré-optimiser tout (${articles.length})`}
               </span>
-            </Button>
-            <Button
-              onClick={() => syncToShopify(selectedArticles)}
-              disabled={selectedArticles.length === 0}
-              variant="outline"
-              size="sm"
-              className="gap-2 flex-1 sm:flex-none"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">Synchroniser sélectionnés</span>
-            </Button>
-            <Button
-              onClick={async () => {
-                const articlesToSync = articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id);
-                if (articlesToSync.length === 0) {
-                  toast.error('Aucun article AI-optimisé à synchroniser');
-                  return;
-                }
-                await syncToShopify(articlesToSync.map(a => a.id));
-              }}
-              disabled={loading || articles.filter(a => (a.optimization_count || 0) > 0 && !a.shopify_article_id).length === 0}
-              variant="outline"
-              size="sm"
-              className="gap-2 flex-1 sm:flex-none"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">Synchroniser tout</span>
             </Button>
             <Button
               onClick={bulkDelete}
@@ -1113,17 +1021,6 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
                               title="Re-optimiser"
                             >
                               <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-                            </Button>
-                          )}
-                          {(article.optimization_count || 0) > 0 && !article.shopify_article_id && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => syncToShopify([article.id])}
-                              className="h-8 gap-1 px-2"
-                            >
-                              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
-                              <span className="hidden sm:inline text-xs">Sync</span>
                             </Button>
                           )}
                           <Button
