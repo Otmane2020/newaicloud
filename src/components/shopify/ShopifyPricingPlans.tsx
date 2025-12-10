@@ -208,9 +208,11 @@ export default function ShopifyPricingPlans({
           // Standalone mode
           window.location.href = data.confirmationUrl;
         }
-      } else {
-        throw new Error("No confirmation URL received");
+        return;
       }
+      
+      // If we get here without isFree or confirmationUrl, something went wrong
+      throw new Error("No confirmation URL received");
     } catch (err) {
       console.error("[ShopifyPricingPlans] Error:", err);
       toast.error(t.error, {
