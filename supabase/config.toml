@@ -576,3 +576,6 @@ verify_jwt = true
 
 [functions.register-sync-webhooks]
 verify_jwt = false
+
+[functions.generate-ai-collections]
+verify_jwt = true

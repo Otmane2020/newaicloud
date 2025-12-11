@@ -4443,6 +4443,13 @@ export const translations = {
       handle: "Handle",
     },
     loadError: "Error loading collections",
+    generate: {
+      button: "Generate AI Collections",
+      generating: "Analyzing products and creating collections...",
+      success: "{{count}} collection(s) created successfully",
+      noCollections: "No new collections suggested",
+      error: "Error generating collections",
+    },
     loading: "Loading collections...",
     importComplete: "Import Complete",
     importCollections: "Import Collections",

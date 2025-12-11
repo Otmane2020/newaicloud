@@ -18,7 +18,8 @@ import {
   Image as ImageIcon,
   Package,
   Upload,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 
 interface Collection {
@@ -42,9 +43,11 @@ export default function Collections() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [importing, setImporting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [generatingCollections, setGeneratingCollections] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 50;
   const { t, tf } = useTranslation();
+  const { language } = useTranslation();
   const { selectedStore } = useStore();
 
   const fetchCollections = async () => {
@@ -376,6 +379,48 @@ export default function Collections() {
     }
   };
 
+  const handleGenerateAICollections = async () => {
+    if (!selectedStore?.id) {
+      toast.error(t.toasts.collections.noStore);
+      return;
+    }
+
+    setGeneratingCollections(true);
+    const toastId = toast.loading(t.collections.generate.generating);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error(t.sync.notAuthenticated);
+
+      const { data, error } = await supabase.functions.invoke('generate-ai-collections', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        },
+        body: { 
+          storeId: selectedStore.id,
+          language: language || 'fr'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.collections?.length > 0) {
+        toast.success(
+          tf('collections.generate.success', { count: data.collections.length }),
+          { id: toastId }
+        );
+        await fetchCollections();
+      } else {
+        toast.info(t.collections.generate.noCollections, { id: toastId });
+      }
+    } catch (error: any) {
+      console.error('Error generating AI collections:', error);
+      toast.error(error.message || t.collections.generate.error, { id: toastId });
+    } finally {
+      setGeneratingCollections(false);
+    }
+  };
+
   useEffect(() => {
     fetchCollections();
   }, []);
@@ -476,6 +521,23 @@ export default function Collections() {
               <>
                 <FileText className="w-4 h-4 mr-2" />
                 {t.sync.fullImportButton}
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={handleGenerateAICollections}
+            disabled={importing || syncing || generatingCollections}
+            className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white"
+          >
+            {generatingCollections ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {t.collections.generate.generating}
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                {t.collections.generate.button}
               </>
             )}
           </Button>
