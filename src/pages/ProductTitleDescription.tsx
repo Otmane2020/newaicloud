@@ -3665,6 +3665,7 @@ export default function ProductTitleDescription() {
           onOpenChange={setShowBulkLandingDialog}
           products={filteredProducts
             .filter(p => !bulkLandingConfig.activeOnly || p.status === 'active')
+            .filter(p => bulkLandingConfig.redoExisting || !p.landing_page)
             .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor }))}
           config={bulkLandingConfig}
           storeId={selectedStore.id}
