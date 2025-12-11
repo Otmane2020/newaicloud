@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Sparkles, Check } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 
@@ -34,6 +35,7 @@ export interface LandingConfig {
   designStyle: "minimalist" | "modern" | "premium";
   theme: "light" | "dark";
   regenerateTitle?: boolean;
+  activeOnly?: boolean;
 }
 
 interface LandingConfigDialogProps {
@@ -159,6 +161,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
     designStyle: "modern",
     theme: "light",
     regenerateTitle: true,
+    activeOnly: true,
   });
 
   const [selectedPalette, setSelectedPalette] = useState<string | null>("modern");
@@ -698,6 +701,22 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
                   </div>
                 </div>
               </button>
+            </div>
+          </div>
+
+          {/* Option produits actifs uniquement */}
+          <div className="space-y-3 border-t pt-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="text-base font-semibold">📦 {t.landingConfig.activeOnly.title}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t.landingConfig.activeOnly.description}
+                </p>
+              </div>
+              <Switch
+                checked={config.activeOnly ?? true}
+                onCheckedChange={(checked) => setConfig({ ...config, activeOnly: checked })}
+              />
             </div>
           </div>
 
