@@ -120,6 +120,7 @@ export function CollectionOptimization() {
   );
   const [syncing, setSyncing] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
+  const [generatingCollections, setGeneratingCollections] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [optimizedCollections, setOptimizedCollections] = useState<Collection[]>([]);
@@ -132,6 +133,7 @@ export function CollectionOptimization() {
   const [previewCollectionId, setPreviewCollectionId] = useState<string | null>(null);
   const [showGenerateDescriptionDialog, setShowGenerateDescriptionDialog] = useState(false);
   const [selectedCollectionForDescription, setSelectedCollectionForDescription] = useState<Collection | null>(null);
+  const { language } = useTranslation();
 
   // Get store domain with automatic fetching and caching
   const { domain: storeDomain } = useStoreDomain();
@@ -423,6 +425,48 @@ export function CollectionOptimization() {
   const handleReoptimizeAllCollections = async () => {
     const allCollectionIds = collections.map(c => c.id);
     await handleOptimizeSelected(allCollectionIds);
+  };
+
+  const handleGenerateAICollections = async () => {
+    if (!selectedStore?.id) {
+      toast.error(t.toasts.collections.noStore);
+      return;
+    }
+
+    setGeneratingCollections(true);
+    const toastId = toast.loading(t.collections.generate.generating);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error(t.sync.notAuthenticated);
+
+      const { data, error } = await supabase.functions.invoke('generate-ai-collections', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        },
+        body: { 
+          storeId: selectedStore.id,
+          language: language || 'fr'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.collections?.length > 0) {
+        toast.success(
+          tf('collections.generate.success', { count: data.collections.length }),
+          { id: toastId }
+        );
+        await fetchCollections();
+      } else {
+        toast.info(t.collections.generate.noCollections, { id: toastId });
+      }
+    } catch (error: any) {
+      console.error('Error generating AI collections:', error);
+      toast.error(error.message || t.collections.generate.error, { id: toastId });
+    } finally {
+      setGeneratingCollections(false);
+    }
   };
 
   const handleSelectAll = () => {
@@ -1022,7 +1066,24 @@ export function CollectionOptimization() {
                 Optimiser tout
               </Button>
 
-
+              <Button
+                onClick={handleGenerateAICollections}
+                disabled={generatingCollections || optimizationState.isRunning}
+                size="sm"
+                className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white border-0 font-semibold transition-all duration-300"
+              >
+                {generatingCollections ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="hidden sm:inline">{t.collections.generate.generating}</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t.collections.generate.button}</span>
+                  </>
+                )}
+              </Button>
               
               <Button
                 variant="outline" 
