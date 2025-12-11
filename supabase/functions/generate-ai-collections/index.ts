@@ -263,7 +263,6 @@ serve(async (req) => {
           user_id: user.id,
           store_id: storeId,
           shopify_collection_id: Math.floor(Math.random() * 1000000000), // Temporary ID for non-synced collections
-          source: 'ai_generated'
         })
         .select()
         .single();

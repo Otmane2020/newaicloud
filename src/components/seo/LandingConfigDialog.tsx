@@ -262,13 +262,35 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
     },
   ];
 
+  // Default config values
+  const defaultConfig: LandingConfig = {
+    layout: "2 colonnes",
+    colorScheme: {
+      paletteId: "modern",
+      primary: "#000000",
+      secondary: "#333333",
+      background: "#FFFFFF",
+      surface: "#F5F5F5",
+      text: "#000000",
+      textMuted: "#666666",
+    },
+    contentLength: "moyenne (800 mots)",
+    vendorSource: "shopify",
+    customHighlights: "",
+    designStyle: "modern",
+    theme: "light",
+    regenerateTitle: true,
+    activeOnly: true,
+  };
+
   // Load saved preferences from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        setConfig(parsed.config);
+        // Merge with default config to ensure new properties have default values
+        setConfig({ ...defaultConfig, ...parsed.config });
         setSelectedPalette(parsed.selectedPalette);
         setUseCustomColor(parsed.useCustomColor);
       }
