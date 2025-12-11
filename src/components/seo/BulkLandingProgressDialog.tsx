@@ -150,6 +150,8 @@ export function BulkLandingProgressDialog({
   const [previewProductTitle, setPreviewProductTitle] = useState<string>('');
   const [currentBatch, setCurrentBatch] = useState(0);
   const [totalBatches, setTotalBatches] = useState(0);
+  const [processedCount, setProcessedCount] = useState(0); // Real-time counter
+  const [currentProductIndex, setCurrentProductIndex] = useState(0); // Currently processing index
   const cancelledRef = useRef(false);
   const generationStartedRef = useRef(false);
   const generatedVendorsCache = useRef<Map<string, string>>(new Map());
@@ -212,24 +214,35 @@ export function BulkLandingProgressDialog({
       generationStartedRef.current = true;
       cancelledRef.current = false; // Reset cancellation on open
       generatedVendorsCache.current.clear(); // Clear vendor cache
-      setPreviews(products.map(p => ({
+      
+      // Initialize previews with all products as pending
+      const initialPreviews = products.map(p => ({
         productId: p.id,
         productTitle: p.title,
         imageUrl: p.image_url,
-        status: 'pending',
-      })));
-      startGeneration();
+        status: 'pending' as const,
+      }));
+      setPreviews(initialPreviews);
+      
+      // Start generation after a small delay to ensure state is set
+      setTimeout(() => {
+        startGeneration();
+      }, 100);
     }
     
     // Reset ref when dialog closes
     if (!open) {
       generationStartedRef.current = false;
+      setPreviews([]); // Clear previews when closing
     }
   }, [open, products]);
 
   const startGeneration = async () => {
     setIsProcessing(true);
+    setProcessedCount(0);
+    setCurrentProductIndex(0);
     let localSuccessCount = 0; // Local counter to avoid stale state
+    let totalProcessed = 0; // Track total processed for real-time updates
 
     // Split products into batches of BATCH_SIZE
     const batches: typeof products[] = [];
@@ -250,6 +263,10 @@ export function BulkLandingProgressDialog({
       for (let i = 0; i < batch.length; i++) {
         // Check ref for cancellation (not stale state)
         if (cancelledRef.current) break;
+
+        // Calculate global index for display
+        const globalIndex = batchIndex * BATCH_SIZE + i;
+        setCurrentProductIndex(globalIndex + 1);
 
         // Add shorter delay between requests within batch (2 seconds)
         if (i > 0) {
@@ -352,6 +369,8 @@ export function BulkLandingProgressDialog({
 
         // Increment local counter
         localSuccessCount++;
+        totalProcessed++;
+        setProcessedCount(totalProcessed);
 
         // Update status to success
         setPreviews(prev => prev.map(p => 
@@ -367,6 +386,10 @@ export function BulkLandingProgressDialog({
             ? error 
             : 'Erreur lors de la génération';
         console.error(`Error generating landing for ${product.title}:`, errorMessage, error);
+        
+        totalProcessed++;
+        setProcessedCount(totalProcessed);
+        
         setPreviews(prev => prev.map(p => 
           p.productId === product.id 
             ? { ...p, status: 'error', error: errorMessage } 
@@ -384,6 +407,7 @@ export function BulkLandingProgressDialog({
 
     setIsProcessing(false);
     setCurrentBatch(0);
+    setCurrentProductIndex(0);
     
     // Use local counter instead of stale previews state
     if (localSuccessCount > 0) {
@@ -461,9 +485,11 @@ export function BulkLandingProgressDialog({
     setPreviewProductTitle(title);
   };
 
+  // Use processedCount for real-time updates during processing, completedCount otherwise
   const completedCount = previews.filter(p => p.status === 'success' || p.status === 'error').length;
+  const displayCount = isProcessing ? processedCount : completedCount;
   const successCount = previews.filter(p => p.status === 'success').length;
-  const progressPercent = products.length > 0 ? (completedCount / products.length) * 100 : 0;
+  const progressPercent = products.length > 0 ? (displayCount / products.length) * 100 : 0;
 
   return (
     <>
@@ -478,7 +504,7 @@ export function BulkLandingProgressDialog({
                 <DialogTitle>{t.dialogs.bulkLanding.title}</DialogTitle>
                 <DialogDescription>
                   {isProcessing 
-                    ? `${totalBatches > 1 ? `Batch ${currentBatch}/${totalBatches} - ` : ''}${t.dialogs.bulkLanding.generating.replace('{{current}}', String(completedCount)).replace('{{total}}', String(products.length))}`
+                    ? `${totalBatches > 1 ? `Batch ${currentBatch}/${totalBatches} - ` : ''}${t.dialogs.bulkLanding.generating.replace('{{current}}', String(currentProductIndex)).replace('{{total}}', String(products.length))}`
                     : t.dialogs.bulkLanding.generated.replace('{{success}}', String(successCount)).replace('{{total}}', String(products.length))
                   }
                 </DialogDescription>
@@ -490,7 +516,7 @@ export function BulkLandingProgressDialog({
           <div className="space-y-2">
             <Progress value={progressPercent} className="h-2" />
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>{completedCount} / {products.length} {t.dialogs.bulkLanding.processed}</span>
+              <span>{displayCount} / {products.length} {t.dialogs.bulkLanding.processed}</span>
               <span className="font-medium text-primary">{Math.round(progressPercent)}%</span>
             </div>
           </div>
