@@ -2270,11 +2270,11 @@ export default function ProductTitleDescription() {
                     setShowUpgradeDialog(true);
                     return;
                   }
-                  // Select all products then open config
-                  setSelectedProducts(new Set(paginatedProducts.map(p => p.id)));
+                  // Select ALL filtered products then open config
+                  setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
                   setShowBulkLandingConfigDialog(true);
                 }}
-                disabled={generatingBulkLanding || paginatedProducts.length === 0}
+                disabled={generatingBulkLanding || filteredProducts.length === 0}
                 className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white border-0"
               >
                 {generatingBulkLanding ? (
@@ -2282,7 +2282,7 @@ export default function ProductTitleDescription() {
                 ) : (
                   <FileText className="h-4 w-4 mr-2" />
                 )}
-                Bulk Landing ({paginatedProducts.length})
+                Bulk Landing ({filteredProducts.length})
               </Button>
           </div>
         </Card>
