@@ -321,6 +321,7 @@ export function BulkLandingProgressDialog({
               colorScheme: config.colorScheme,
               theme: config.theme,
               language: 'fr',
+              customHighlights: config.customHighlights, // ✅ Pass custom highlights from dialog
             },
           }),
           3, // 3 retries
