@@ -198,20 +198,26 @@ serve(async (req) => {
     try {
       // Clean the response - remove markdown code blocks if present
       let cleanedResponse = aiResponse.trim();
-      if (cleanedResponse.startsWith("```json")) {
-        cleanedResponse = cleanedResponse.slice(7);
-      }
-      if (cleanedResponse.startsWith("```")) {
-        cleanedResponse = cleanedResponse.slice(3);
-      }
-      if (cleanedResponse.endsWith("```")) {
-        cleanedResponse = cleanedResponse.slice(0, -3);
-      }
+      
+      // Remove markdown code blocks more robustly
+      cleanedResponse = cleanedResponse.replace(/^```json\s*/i, '');
+      cleanedResponse = cleanedResponse.replace(/^```\s*/i, '');
+      cleanedResponse = cleanedResponse.replace(/\s*```$/i, '');
       cleanedResponse = cleanedResponse.trim();
       
+      // Try to find JSON object if still not clean
+      if (!cleanedResponse.startsWith('{')) {
+        const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          cleanedResponse = jsonMatch[0];
+        }
+      }
+      
+      console.log("Cleaned response preview:", cleanedResponse.substring(0, 200));
       collectionsSuggestions = JSON.parse(cleanedResponse);
     } catch (parseError) {
       console.error("Failed to parse AI response:", aiResponse);
+      console.error("Parse error:", parseError);
       return new Response(
         JSON.stringify({ error: "Failed to parse AI suggestions" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
