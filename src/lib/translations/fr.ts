@@ -623,6 +623,11 @@ export const translations = {
       description: "Génère un titre SEO optimisé basé sur l'analyse visuelle du produit",
     },
 
+    activeOnly: {
+      title: "Produits actifs uniquement",
+      description: "Ne génère pas de landing page pour les produits en brouillon (draft)",
+    },
+
     customHighlights: {
       title: "Points forts personnalisés",
       description: "Ajoutez des informations spécifiques à mettre en avant (max 500 caractères)",

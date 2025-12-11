@@ -616,6 +616,11 @@ export const translations = {
       description: "Generates an SEO-optimized title based on visual analysis of the product",
     },
 
+    activeOnly: {
+      title: "Active products only",
+      description: "Skip landing page generation for draft products",
+    },
+
     customHighlights: {
       title: "Custom highlights",
       description: "Add specific information to highlight (max 500 characters)",
