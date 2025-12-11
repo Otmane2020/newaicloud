@@ -131,6 +131,52 @@ async function deepseekText(prompt: string, apiKey: string) {
   return data.choices?.[0]?.message?.content || "";
 }
 
+// -----------------------------
+// 🔄 DEEPSEEK TEXT WITH RETRY (exponential backoff)
+// -----------------------------
+async function deepseekTextWithRetry(prompt: string, apiKey: string, maxRetries = 3): Promise<string> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const result = await deepseekText(prompt, apiKey);
+      return result;
+    } catch (e) {
+      lastError = e as Error;
+      console.log(`⚠ DeepSeek attempt ${attempt + 1}/${maxRetries} failed:`, e);
+      
+      if (attempt < maxRetries - 1) {
+        const waitTime = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
+        console.log(`⏱ Waiting ${waitTime/1000}s before retry...`);
+        await new Promise(r => setTimeout(r, waitTime));
+      }
+    }
+  }
+  
+  throw lastError || new Error("DeepSeek failed after retries");
+}
+
+// -----------------------------
+// 🏷️ SIMPLE LOCAL FALLBACK (no AI)
+// -----------------------------
+function generateSimpleTitle(product: any, language: string): string {
+  const type = product.product_type || '';
+  const title = product.title || '';
+  
+  // Extract main keywords from title (words > 3 chars)
+  const keywords = title.split(' ')
+    .filter((w: string) => w.length > 3 && !/^[0-9]+$/.test(w))
+    .slice(0, 4)
+    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+  
+  if (language === 'fr') {
+    return type ? `${type} ${keywords}`.trim() : keywords;
+  } else {
+    return type ? `${keywords} ${type}`.trim() : keywords;
+  }
+}
+
 // Language-specific vision prompts
 function getVisionPrompt(lang: string): string {
   const prompts: Record<string, string> = {
@@ -374,13 +420,36 @@ Return:
     };
 
     const analysisPrompt = analysisPrompts[language] || analysisPrompts.fr;
-    const analysis = await deepseekText(analysisPrompt, DEEPSEEK_KEY);
-    const parsed = JSON.parse(cleanJSON(analysis));
+    
+    let parsed;
+    let title;
+    
+    try {
+      // Try DeepSeek with retry for analysis
+      const analysis = await deepseekTextWithRetry(analysisPrompt, DEEPSEEK_KEY, 3);
+      parsed = JSON.parse(cleanJSON(analysis));
+      console.log("✅ DeepSeek analysis successful");
+    } catch (analysisError) {
+      console.log("⚠ DeepSeek analysis failed, using simple fallback:", analysisError);
+      parsed = {
+        category: product.product_type || '',
+        materials: [],
+        style: '',
+        features: [],
+        selling_points: []
+      };
+    }
 
     // TITLE - Language-specific
-    const titlePrompt = getTitlePrompt(language, visionAnalysis, parsed);
-    let title = (await deepseekText(titlePrompt, DEEPSEEK_KEY)).trim();
-    title = title.replace(/^["']|["']$/g, "");
+    try {
+      const titlePrompt = getTitlePrompt(language, visionAnalysis, parsed);
+      title = (await deepseekTextWithRetry(titlePrompt, DEEPSEEK_KEY, 3)).trim();
+      title = title.replace(/^["']|["']$/g, "");
+      console.log("✅ DeepSeek title generation successful");
+    } catch (titleError) {
+      console.log("⚠ DeepSeek title failed, using simple local fallback:", titleError);
+      title = generateSimpleTitle(product, language);
+    }
 
     if (title.length > 80) {
       title = title.slice(0, title.lastIndexOf(" "));

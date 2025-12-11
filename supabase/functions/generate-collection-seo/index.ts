@@ -127,6 +127,8 @@ Deno.serve(async (req: Request) => {
         }
         
         console.log(`🏪 Store info: name="${storeName}", language=${rawStoreLanguage}, country=${storeCountry}`);
+        console.log(`📝 Product titles for language detection: "${productTitles.substring(0, 100)}..."`);
+        console.log(`📝 Product descriptions for language detection: "${productDescriptions.substring(0, 100)}..."`);
 
         // Use getGenerationLanguage with product titles for better detection
         const languageGuard = getGenerationLanguage({
@@ -137,7 +139,10 @@ Deno.serve(async (req: Request) => {
         });
         
         const storeLanguage = languageGuard.language;
-        console.log(`🛡️ LANGUAGE GUARD: collection - detected=${storeLanguage} (${languageGuard.languageName}), store=${rawStoreLanguage}, contentDetected=${languageGuard.isContentDetected}, source="${languageGuard.sourceText}"`);
+        console.log(`🛡️ LANGUAGE GUARD: collection - detected=${storeLanguage} (${languageGuard.languageName}), store=${rawStoreLanguage}, contentDetected=${languageGuard.isContentDetected}`);
+        console.log(`🛡️ LANGUAGE GUARD: sourceText="${languageGuard.sourceText?.substring(0, 100)}..."`);
+        console.log(`🛡️ LANGUAGE GUARD: seoPrompt preview="${languageGuard.seoPrompt?.substring(0, 80)}..."`);
+        console.log(`📝 FINAL LANGUAGE FOR GENERATION: ${storeLanguage}`);
 
         // Analyze SERP competitors for the collection
         let serpInsights = '';
@@ -187,7 +192,10 @@ Deno.serve(async (req: Request) => {
         const systemRole = getSystemRole(storeLanguage, 'collection');
         
         console.log(`📝 Prompt includes store name: "${storeName || 'NOT SET'}"`);
-        console.log(`📝 Language for generation: ${storeLanguage}`);
+        console.log(`📝 Language for AI generation: ${storeLanguage}`);
+        console.log(`📝 System role language check: getSystemRole('${storeLanguage}', 'collection')`);
+        console.log(`📝 SEO prompt language check: getSeoPrompt('${storeLanguage}', 'collection', ...)`);
+        console.log(`📝 System role preview: "${systemRole.substring(0, 100)}..."`);
 
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",

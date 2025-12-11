@@ -148,9 +148,15 @@ export function BulkLandingProgressDialog({
   const [syncingToShopify, setSyncingToShopify] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewProductTitle, setPreviewProductTitle] = useState<string>('');
+  const [currentBatch, setCurrentBatch] = useState(0);
+  const [totalBatches, setTotalBatches] = useState(0);
   const cancelledRef = useRef(false);
   const generationStartedRef = useRef(false);
   const generatedVendorsCache = useRef<Map<string, string>>(new Map());
+
+  // Batching constants
+  const BATCH_SIZE = 50;
+  const BATCH_DELAY_MS = 10000; // 10 seconds between batches
 
   // 🏷️ Resolve Vendor based on config (similar to RegenerateLanding)
   const resolveVendorForProduct = async (
@@ -225,16 +231,32 @@ export function BulkLandingProgressDialog({
     setIsProcessing(true);
     let localSuccessCount = 0; // Local counter to avoid stale state
 
-    for (let i = 0; i < products.length; i++) {
-      // Check ref for cancellation (not stale state)
+    // Split products into batches of BATCH_SIZE
+    const batches: typeof products[] = [];
+    for (let i = 0; i < products.length; i += BATCH_SIZE) {
+      batches.push(products.slice(i, i + BATCH_SIZE));
+    }
+    
+    setTotalBatches(batches.length);
+    console.log(`[Bulk Landing] 📦 Processing ${products.length} products in ${batches.length} batches of ${BATCH_SIZE}`);
+
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       if (cancelledRef.current) break;
+      
+      const batch = batches[batchIndex];
+      setCurrentBatch(batchIndex + 1);
+      console.log(`[Bulk Landing] 📦 Starting batch ${batchIndex + 1}/${batches.length} (${batch.length} products)`);
 
-      // Add shorter delay between requests for bulk function (2 seconds)
-      if (i > 0) {
-        await delay(2000);
-      }
+      for (let i = 0; i < batch.length; i++) {
+        // Check ref for cancellation (not stale state)
+        if (cancelledRef.current) break;
 
-      const product = products[i];
+        // Add shorter delay between requests within batch (2 seconds)
+        if (i > 0) {
+          await delay(2000);
+        }
+
+        const product = batch[i];
       
       // Update status to generating
       setPreviews(prev => prev.map(p => 
@@ -351,9 +373,17 @@ export function BulkLandingProgressDialog({
             : p
         ));
       }
-    }
+    } // end batch loop
+
+      // ⏱ Pause between batches (10s) to avoid rate limits - except for last batch
+      if (batchIndex < batches.length - 1 && !cancelledRef.current) {
+        console.log(`[Bulk Landing] ✅ Batch ${batchIndex + 1}/${batches.length} complete, waiting ${BATCH_DELAY_MS/1000}s before next batch...`);
+        await delay(BATCH_DELAY_MS);
+      }
+    } // end batches loop
 
     setIsProcessing(false);
+    setCurrentBatch(0);
     
     // Use local counter instead of stale previews state
     if (localSuccessCount > 0) {
@@ -448,7 +478,7 @@ export function BulkLandingProgressDialog({
                 <DialogTitle>{t.dialogs.bulkLanding.title}</DialogTitle>
                 <DialogDescription>
                   {isProcessing 
-                    ? t.dialogs.bulkLanding.generating.replace('{{current}}', String(completedCount)).replace('{{total}}', String(products.length))
+                    ? `${totalBatches > 1 ? `Batch ${currentBatch}/${totalBatches} - ` : ''}${t.dialogs.bulkLanding.generating.replace('{{current}}', String(completedCount)).replace('{{total}}', String(products.length))}`
                     : t.dialogs.bulkLanding.generated.replace('{{success}}', String(successCount)).replace('{{total}}', String(products.length))
                   }
                 </DialogDescription>
