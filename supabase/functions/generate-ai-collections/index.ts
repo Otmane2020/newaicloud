@@ -62,13 +62,12 @@ serve(async (req) => {
       );
     }
 
-    // Fetch all products for the store
+    // Fetch ALL products for the store (no limit)
     const { data: products, error: productsError } = await supabase
       .from("shopify_products")
       .select("id, title, product_type, vendor, tags, image_url")
       .eq("store_id", storeId)
-      .eq("seller_id", user.id)
-      .limit(500);
+      .eq("seller_id", user.id);
 
     if (productsError) {
       console.error("Error fetching products:", productsError);
@@ -85,47 +84,91 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Analyzing ${products.length} products for collection grouping`);
+    console.log(`📦 Analyzing ${products.length} products for collection grouping`);
 
-    // Prepare product list for AI analysis
+    // Prepare product list for AI analysis - simplified for token efficiency
     const productList = products.map((p: Product) => ({
       id: p.id,
       title: p.title,
-      type: p.product_type,
-      vendor: p.vendor,
-      tags: p.tags
+      type: p.product_type || '',
+      vendor: p.vendor || '',
+      tags: p.tags || ''
     }));
 
-    // Limit products to avoid token overflow - take first 100 products max
-    const limitedProducts = productList.slice(0, 100);
+    // Calculate how many collections we need (target ~50-100 products per collection)
+    const targetProductsPerCollection = 80;
+    const estimatedCollections = Math.min(20, Math.max(5, Math.ceil(products.length / targetProductsPerCollection)));
+    
+    console.log(`📊 Target: ${estimatedCollections} collections for ${products.length} products`);
+
+    // For large catalogs, send product summary instead of full list to avoid token overflow
+    let productDataForAI: string;
+    
+    if (products.length > 200) {
+      // Group products by type/vendor for summary
+      const typeGroups: Record<string, { count: number; sample_ids: string[]; vendors: Set<string> }> = {};
+      
+      for (const p of productList) {
+        const key = p.type || 'Non catégorisé';
+        if (!typeGroups[key]) {
+          typeGroups[key] = { count: 0, sample_ids: [], vendors: new Set() };
+        }
+        typeGroups[key].count++;
+        if (typeGroups[key].sample_ids.length < 10) {
+          typeGroups[key].sample_ids.push(p.id);
+        }
+        if (p.vendor) typeGroups[key].vendors.add(p.vendor);
+      }
+      
+      const summary = Object.entries(typeGroups).map(([type, data]) => ({
+        type,
+        count: data.count,
+        sample_ids: data.sample_ids,
+        vendors: Array.from(data.vendors).slice(0, 5)
+      }));
+      
+      productDataForAI = JSON.stringify({
+        total_products: products.length,
+        groups: summary,
+        all_product_ids: productList.map(p => ({ id: p.id, type: p.type }))
+      });
+      
+      console.log(`📝 Using summary mode: ${summary.length} product groups`);
+    } else {
+      productDataForAI = JSON.stringify(productList);
+    }
     
     const systemPrompt = language === 'fr'
       ? `Tu es un expert en e-commerce et merchandising. Analyse les produits et regroupe-les en collections logiques.
          
          RÈGLES STRICTES:
-         - Crée entre 3 et 6 collections MAXIMUM
-         - Maximum 20 produits par collection
+         - Crée entre ${Math.max(5, estimatedCollections - 2)} et ${estimatedCollections + 2} collections
+         - TOUS les produits doivent être assignés à au moins une collection
+         - Chaque collection peut avoir jusqu'à 150 produits
          - Chaque collection doit avoir un nom court et accrocheur (max 30 caractères)
          - Description courte: 1 phrase SEO max 150 caractères
          - Réponds UNIQUEMENT en JSON valide, SANS markdown, SANS \`\`\`
+         - IMPORTANT: Utilise les IDs de produits fournis EXACTEMENT comme dans les données
          
          FORMAT JSON STRICT:
-         {"collections":[{"name":"Nom","description":"Description courte","product_ids":["id1","id2"]}]}`
+         {"collections":[{"name":"Nom","description":"Description courte","product_ids":["id1","id2",...]}]}`
       : `You are an e-commerce and merchandising expert. Analyze products and group them into logical collections.
          
          STRICT RULES:
-         - Create between 3 and 6 collections MAXIMUM
-         - Maximum 20 products per collection
+         - Create between ${Math.max(5, estimatedCollections - 2)} and ${estimatedCollections + 2} collections
+         - ALL products must be assigned to at least one collection
+         - Each collection can have up to 150 products
          - Each collection should have a short catchy name (max 30 chars)
          - Short description: 1 SEO sentence max 150 chars
          - Respond ONLY with valid JSON, NO markdown, NO \`\`\`
+         - IMPORTANT: Use product IDs EXACTLY as provided in the data
          
          STRICT JSON FORMAT:
-         {"collections":[{"name":"Name","description":"Short description","product_ids":["id1","id2"]}]}`;
+         {"collections":[{"name":"Name","description":"Short description","product_ids":["id1","id2",...]}]}`;
 
     const userPrompt = language === 'fr' 
-      ? `Analyse ces ${limitedProducts.length} produits et crée des collections:\n${JSON.stringify(limitedProducts)}`
-      : `Analyze these ${limitedProducts.length} products and create collections:\n${JSON.stringify(limitedProducts)}`;
+      ? `Analyse ces ${products.length} produits et crée des collections qui couvrent TOUS les produits:\n${productDataForAI}`
+      : `Analyze these ${products.length} products and create collections that cover ALL products:\n${productDataForAI}`;
 
     // Call DeepSeek or Lovable AI
     let aiResponse: string;
