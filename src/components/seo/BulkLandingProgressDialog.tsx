@@ -527,73 +527,67 @@ export function BulkLandingProgressDialog({
               {previews.map((preview) => (
                 <div
                   key={preview.productId}
-                  className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-colors ${
+                  className={`p-2 sm:p-3 rounded-lg border transition-colors ${
                     preview.status === 'generating' ? 'bg-primary/5 border-primary/30' :
                     preview.status === 'success' ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' :
                     preview.status === 'error' ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800' :
                     'bg-muted/30 border-border'
                   }`}
                 >
-                  {/* Top row: Image + Title */}
-                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    {/* Image */}
+                  {/* Row 1: Image + Title */}
+                  <div className="flex items-center gap-2 mb-2">
                     {preview.imageUrl ? (
                       <img
                         src={preview.imageUrl}
                         alt={preview.productTitle}
-                        className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded flex-shrink-0"
+                        className="w-10 h-10 object-cover rounded flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
-                        <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                      <div className="w-10 h-10 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
                       </div>
                     )}
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-xs sm:text-sm truncate">{preview.productTitle}</p>
-                      {preview.error && (
-                        <p className="text-xs text-red-600 dark:text-red-400 truncate">{preview.error}</p>
-                      )}
-                    </div>
+                    <p className="font-medium text-xs sm:text-sm line-clamp-2 flex-1">{preview.productTitle}</p>
                   </div>
 
-                  {/* Status - always visible */}
-                  <div className="flex items-center gap-2 justify-end sm:justify-start flex-shrink-0">
+                  {/* Row 2: Status + Actions */}
+                  <div className="flex items-center gap-2 pl-12">
                     {preview.status === 'pending' && (
                       <Badge variant="outline" className="text-xs">{t.dialogs.bulkLanding.pending}</Badge>
                     )}
                     {preview.status === 'generating' && (
-                      <Badge variant="outline" className="text-xs gap-1">
+                      <Badge variant="outline" className="text-xs gap-1 bg-primary/10">
                         <Loader2 className="w-3 h-3 animate-spin" />
-                        <span className="hidden xs:inline">{t.dialogs.bulkLanding.generatingStatus}</span>
-                        <span className="xs:hidden">...</span>
+                        {t.dialogs.bulkLanding.generatingStatus}
                       </Badge>
                     )}
                     {preview.status === 'success' && (
-                      <div className="flex items-center gap-1.5">
+                      <>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handlePreview(preview.landingHtml!, preview.productTitle)}
-                          className="h-9 w-9 p-0 flex-shrink-0 bg-primary/10 hover:bg-primary/20 border-primary/30"
-                          title="Voir la landing page"
+                          className="h-8 px-3 gap-1.5 bg-primary/10 hover:bg-primary/20 border-primary/30"
                         >
-                          <Eye className="w-5 h-5 text-primary" />
+                          <Eye className="w-4 h-4 text-primary" />
+                          <span className="text-xs text-primary font-medium">Voir</span>
                         </Button>
                         <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs gap-1">
                           <Check className="w-3 h-3" />
-                          <span className="hidden sm:inline">{t.dialogs.bulkLanding.generatedStatus}</span>
-                          <span className="sm:hidden">✓</span>
+                          {t.dialogs.bulkLanding.generatedStatus}
                         </Badge>
-                      </div>
+                      </>
                     )}
                     {preview.status === 'error' && (
-                      <Badge variant="outline" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs gap-1">
-                        <X className="w-3 h-3" />
-                        <span className="hidden sm:inline">{t.dialogs.bulkLanding.errorStatus}</span>
-                        <span className="sm:hidden">Err</span>
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant="outline" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs gap-1">
+                          <X className="w-3 h-3" />
+                          {t.dialogs.bulkLanding.errorStatus}
+                        </Badge>
+                        {preview.error && (
+                          <p className="text-xs text-red-600 dark:text-red-400">{preview.error}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
