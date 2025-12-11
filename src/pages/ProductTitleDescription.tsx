@@ -2260,6 +2260,30 @@ export default function ProductTitleDescription() {
                 )}
                 Landing Pages ({selectedProducts.size})
               </Button>
+
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  if (!canDoAction("optimizations")) {
+                    toast.error(t.contentOptimization.toasts.limitReached);
+                    setShowUpgradeDialog(true);
+                    return;
+                  }
+                  // Select all products then open config
+                  setSelectedProducts(new Set(paginatedProducts.map(p => p.id)));
+                  setShowBulkLandingConfigDialog(true);
+                }}
+                disabled={generatingBulkLanding || paginatedProducts.length === 0}
+                className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white border-0"
+              >
+                {generatingBulkLanding ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="h-4 w-4 mr-2" />
+                )}
+                Bulk Landing ({paginatedProducts.length})
+              </Button>
           </div>
         </Card>
 
