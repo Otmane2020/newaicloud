@@ -96,47 +96,36 @@ serve(async (req) => {
       tags: p.tags
     }));
 
-    const systemPrompt = language === 'fr' 
+    // Limit products to avoid token overflow - take first 100 products max
+    const limitedProducts = productList.slice(0, 100);
+    
+    const systemPrompt = language === 'fr'
       ? `Tu es un expert en e-commerce et merchandising. Analyse les produits et regroupe-les en collections logiques.
          
-         RÈGLES:
-         - Crée entre 3 et 10 collections maximum
-         - Chaque collection doit avoir un nom accrocheur et commercial
-         - Un produit peut appartenir à plusieurs collections
-         - Génère une description SEO de 2-3 phrases pour chaque collection
-         - Réponds UNIQUEMENT en JSON valide, sans texte avant ou après
+         RÈGLES STRICTES:
+         - Crée entre 3 et 6 collections MAXIMUM
+         - Maximum 20 produits par collection
+         - Chaque collection doit avoir un nom court et accrocheur (max 30 caractères)
+         - Description courte: 1 phrase SEO max 150 caractères
+         - Réponds UNIQUEMENT en JSON valide, SANS markdown, SANS \`\`\`
          
-         FORMAT DE RÉPONSE (JSON strict):
-         {
-           "collections": [
-             {
-               "name": "Nom de la collection",
-               "description": "Description SEO de la collection",
-               "product_ids": ["id1", "id2", "id3"]
-             }
-           ]
-         }`
+         FORMAT JSON STRICT:
+         {"collections":[{"name":"Nom","description":"Description courte","product_ids":["id1","id2"]}]}`
       : `You are an e-commerce and merchandising expert. Analyze products and group them into logical collections.
          
-         RULES:
-         - Create between 3 and 10 collections maximum
-         - Each collection should have a catchy, commercial name
-         - A product can belong to multiple collections
-         - Generate a 2-3 sentence SEO description for each collection
-         - Respond ONLY with valid JSON, no text before or after
+         STRICT RULES:
+         - Create between 3 and 6 collections MAXIMUM
+         - Maximum 20 products per collection
+         - Each collection should have a short catchy name (max 30 chars)
+         - Short description: 1 SEO sentence max 150 chars
+         - Respond ONLY with valid JSON, NO markdown, NO \`\`\`
          
-         RESPONSE FORMAT (strict JSON):
-         {
-           "collections": [
-             {
-               "name": "Collection name",
-               "description": "SEO description of the collection",
-               "product_ids": ["id1", "id2", "id3"]
-             }
-           ]
-         }`;
+         STRICT JSON FORMAT:
+         {"collections":[{"name":"Name","description":"Short description","product_ids":["id1","id2"]}]}`;
 
-    const userPrompt = `Analyse ces ${products.length} produits et crée des collections intelligentes:\n\n${JSON.stringify(productList, null, 2)}`;
+    const userPrompt = language === 'fr' 
+      ? `Analyse ces ${limitedProducts.length} produits et crée des collections:\n${JSON.stringify(limitedProducts)}`
+      : `Analyze these ${limitedProducts.length} products and create collections:\n${JSON.stringify(limitedProducts)}`;
 
     // Call DeepSeek or Lovable AI
     let aiResponse: string;
@@ -155,7 +144,7 @@ serve(async (req) => {
             { role: "user", content: userPrompt }
           ],
           temperature: 0.3,
-          max_tokens: 4000,
+          max_tokens: 8000,
         }),
       });
 
