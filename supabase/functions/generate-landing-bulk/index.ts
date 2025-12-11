@@ -136,114 +136,165 @@ serve(async (req) => {
       ? `\n\n⭐ POINTS FORTS À METTRE EN AVANT (OBLIGATOIRE - intégrer dans la description et les avantages):\n${customHighlights.trim()}\n`
       : "";
 
-    // Professional prompt for high-quality generation
-    const prompt = `Génère une landing page HTML PROFESSIONNELLE et PREMIUM pour ce produit e-commerce:
+    // Professional prompt for high-quality generation - MOBILE FIRST like DeepSeek
+    const prompt = `Tu es un EXPERT en création de landing pages e-commerce HAUTE CONVERSION. Génère une page HTML EXCEPTIONNELLE, RICHE EN CONTENU, et 100% MOBILE-FIRST.
 
-PRODUIT: ${productTitle}
-DESCRIPTION: ${productDescription || "Produit de qualité premium"}
-MARQUE: ${vendor || ""}
+═══════════════════════════════════════════════════════
+📦 INFORMATIONS PRODUIT
+═══════════════════════════════════════════════════════
+TITRE: ${productTitle}
+DESCRIPTION: ${productDescription || "Produit de qualité supérieure, conçu avec soin pour répondre aux exigences les plus élevées."}
+MARQUE: ${vendor || "Marque Premium"}
 ${highlightsSection}
 
-IMAGES PRODUIT (URLs EXACTES à utiliser - JAMAIS de placeholder):
-- Image principale HERO: ${mainImage}
+IMAGES (URLs EXACTES - JAMAIS de placeholder):
+- HERO: ${mainImage}
 ${additionalImagesStr}
 
-STYLE: ${designStyle} - DESIGN PROFESSIONNEL ÉPURÉ
+═══════════════════════════════════════════════════════
+🎨 STYLE & COULEURS (HSL OBLIGATOIRE)
+═══════════════════════════════════════════════════════
+DESIGN: ${designStyle} - Élégant, professionnel
 THÈME: ${theme}
-LANGUE: ${language === "en" ? "Anglais" : "Français"}
+LANGUE: ${language === "en" ? "English" : "Français"}
 
-TOKENS CSS HSL OBLIGATOIRES (UTILISER EXACTEMENT):
---primary: ${primaryColor}
---secondary: ${secondaryColor}
---text: ${textColor}
---background: ${bgColor}
---surface: ${surfaceColor}
-
-⚠️ IMPORTANT: Utilise ces couleurs HSL EXACTES dans tout le CSS:
-- Fond principal: background-color: hsl(${bgColor})
-- Texte principal: color: hsl(${textColor})
-- Boutons/Accents: background-color: hsl(${primaryColor})
-- Sections alternées: background-color: hsl(${surfaceColor})
+CSS VARIABLES HSL:
+--primary: hsl(${primaryColor})
+--secondary: hsl(${secondaryColor})  
+--text: hsl(${textColor})
+--bg: hsl(${bgColor})
+--surface: hsl(${surfaceColor})
 
 ═══════════════════════════════════════════════════════
-RÈGLES DE DESIGN STRICTES:
+📱 RÈGLES MOBILE-FIRST CRITIQUES
 ═══════════════════════════════════════════════════════
 
-⚠️⚠️⚠️ INTERDITS ABSOLUS - VIOLATION = ÉCHEC TOTAL:
-- https://via.placeholder.com (JAMAIS JAMAIS JAMAIS!)
-- Toute URL contenant "placeholder" 
-- Emoji comme icônes (❌🎉⭐ = INTERDIT)
-- Icônes externes (Font Awesome, Material Icons, etc.)
-- data:image URLs pour les images produit
+⚠️ OBLIGATOIRE - Chaque section DOIT avoir ces styles de base:
+- padding: 2rem 1rem (pas plus de 1rem horizontal!)
+- max-width: 100%; box-sizing: border-box
+- Textes: font-size clamp(1rem, 4vw, 1.125rem)
+- Titres: font-size clamp(1.5rem, 6vw, 2.5rem)
+- Images: width: 100%; height: auto; display: block
+- Grilles: display: flex; flex-direction: column; gap: 1rem
+- Boutons: width: 100%; padding: 1rem; font-size: 1.1rem
 
-✅ ICÔNES SVG INLINE OBLIGATOIRES (EXEMPLES EXACTS):
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-</svg>
-Chaque icône DOIT avoir: viewBox="0 0 24 24", fill="none", stroke="currentColor", stroke-width="1.5"
-
-✅ IMAGES PRODUIT - UTILISER LES URLs EXACTES FOURNIES:
-- Image HERO: UTILISER "${mainImage}" DIRECTEMENT
-- Autres images: UTILISER les URLs ${additionalImagesStr} DIRECTEMENT
-- min-height: 400px, object-fit: cover, border-radius: 12px
-
-✅ TYPOGRAPHIE:
-- Titres: font-weight: 700
-- Corps: font-weight: 400, line-height: 1.6
+POUR DESKTOP (min-width: 768px) via @media:
+- Container: max-width: 1200px; margin: 0 auto; padding: 3rem 2rem
+- Grilles: flex-direction: row; flex-wrap: wrap
+- Cartes: flex: 1 1 300px
 
 ═══════════════════════════════════════════════════════
-STRUCTURE HTML REQUISE:
+🚫 INTERDICTIONS ABSOLUES
+═══════════════════════════════════════════════════════
+❌ via.placeholder.com ou toute URL "placeholder"
+❌ Emoji comme icônes (✅❌⭐🎉 = INTERDIT)
+❌ Font Awesome, Material Icons, CDN externes
+❌ Boutons d'achat, prix, panier, menu, footer
+❌ width: 50%, 33% sans media queries (casse le mobile!)
+❌ font-size en px fixes (utiliser clamp ou rem)
+
+✅ Utiliser UNIQUEMENT des SVG inline:
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="..."/></svg>
+
+═══════════════════════════════════════════════════════
+📋 STRUCTURE OBLIGATOIRE (7 SECTIONS RICHES)
 ═══════════════════════════════════════════════════════
 
-1. HERO: image + titre + description
+1️⃣ HERO SECTION (plein écran mobile)
+<section style="min-height: 100vh; padding: 2rem 1rem; background: linear-gradient(180deg, hsl(${bgColor}), hsl(${surfaceColor})); display: flex; flex-direction: column; justify-content: center;">
+  <img src="${mainImage}" alt="${productTitle}" style="width: 100%; max-height: 50vh; object-fit: contain; border-radius: 16px; margin-bottom: 1.5rem;">
+  <h1 style="font-size: clamp(1.75rem, 7vw, 3rem); font-weight: 800; line-height: 1.2; margin-bottom: 1rem; color: hsl(${textColor});">${productTitle}</h1>
+  <p style="font-size: clamp(1rem, 4vw, 1.25rem); line-height: 1.6; color: hsl(${textColor} / 0.8); margin-bottom: 1.5rem;">
+    [DESCRIPTION RICHE ET ENGAGEANTE - 3-4 phrases minimum sur les bénéfices]
+  </p>
+  <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem;">
+    <span style="padding: 0.5rem 1rem; background: hsl(${primaryColor} / 0.1); border-radius: 20px; font-size: 0.9rem; color: hsl(${primaryColor});">✓ Qualité Premium</span>
+    <span style="padding: 0.5rem 1rem; background: hsl(${primaryColor} / 0.1); border-radius: 20px; font-size: 0.9rem; color: hsl(${primaryColor});">✓ Livraison Rapide</span>
+  </div>
+</section>
 
-2. CARACTÉRISTIQUES: tableau élégant (Dimensions, Matériaux, Poids)
+2️⃣ BÉNÉFICES CLÉS (4 cartes avec SVG)
+<section style="padding: 3rem 1rem; background: hsl(${surfaceColor});">
+  <h2 style="text-align: center; font-size: clamp(1.5rem, 5vw, 2rem); margin-bottom: 2rem; color: hsl(${textColor});">Pourquoi Choisir Ce Produit ?</h2>
+  <div style="display: flex; flex-direction: column; gap: 1rem;">
+    <!-- 4 cartes avec icône SVG, titre, description 2-3 phrases -->
+    <div style="padding: 1.5rem; background: hsl(${bgColor}); border-radius: 12px; box-shadow: 0 2px 8px hsl(${textColor} / 0.05);">
+      <svg width="40" height="40" style="margin-bottom: 1rem; color: hsl(${primaryColor});">...</svg>
+      <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: hsl(${textColor});">Titre Bénéfice</h3>
+      <p style="font-size: 0.95rem; line-height: 1.5; color: hsl(${textColor} / 0.7);">Description détaillée du bénéfice...</p>
+    </div>
+  </div>
+</section>
 
-3. AVANTAGES: 3-4 cartes avec SVG
+3️⃣ CARACTÉRISTIQUES TECHNIQUES (tableau élégant)
+<section style="padding: 3rem 1rem; background: hsl(${bgColor});">
+  <h2>Caractéristiques Détaillées</h2>
+  <div style="background: hsl(${surfaceColor}); border-radius: 12px; overflow: hidden;">
+    <div style="display: flex; justify-content: space-between; padding: 1rem; border-bottom: 1px solid hsl(${textColor} / 0.1);">
+      <span style="font-weight: 600;">Dimensions</span>
+      <span>[Valeur estimée]</span>
+    </div>
+    <!-- Minimum 5 lignes: Dimensions, Matériaux, Poids, Couleur, Style -->
+  </div>
+</section>
 
-4. GALERIE IMAGES (si disponibles)
+4️⃣ GALERIE IMAGES (grille responsive)
+<section style="padding: 3rem 1rem;">
+  <h2>Découvrez en Détail</h2>
+  <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+    <!-- Images avec coins arrondis, 100% width sur mobile -->
+    <img src="[URL exacte]" style="width: 100%; border-radius: 12px;">
+  </div>
+</section>
+@media (min-width: 768px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); } }
 
-5. ⚠️ FAQ SECTION - ABSOLUMENT OBLIGATOIRE (3 questions minimum):
-   CODE EXACT À UTILISER:
-   <section style="padding: 3rem 1rem; background: hsl(${surfaceColor});">
-     <h2 style="text-align: center; font-size: 1.75rem; margin-bottom: 2rem; color: hsl(${textColor});">Questions Fréquentes</h2>
-     <div style="max-width: 800px; margin: 0 auto;">
-       <div class="faq-item" onclick="this.classList.toggle('open')" style="margin-bottom: 1rem; border-radius: 8px; overflow: hidden; border: 1px solid hsl(${primaryColor} / 0.2);">
-         <div style="padding: 1rem; background: hsl(${bgColor}); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-           <span style="font-weight: 600; color: hsl(${textColor});">Comment entretenir ce produit ?</span>
-           <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-         </div>
-         <div class="faq-answer" style="padding: 1rem; background: hsl(${bgColor}); border-top: 1px solid hsl(${primaryColor} / 0.1); color: hsl(${textColor});">
-           Réponse détaillée avec conseils d'entretien spécifiques au produit...
-         </div>
-       </div>
-       <div class="faq-item" onclick="this.classList.toggle('open')" style="margin-bottom: 1rem; border-radius: 8px; overflow: hidden; border: 1px solid hsl(${primaryColor} / 0.2);">
-         <div style="padding: 1rem; background: hsl(${bgColor}); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-           <span style="font-weight: 600; color: hsl(${textColor});">Quels sont les délais de livraison ?</span>
-           <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-         </div>
-         <div class="faq-answer" style="padding: 1rem; background: hsl(${bgColor}); border-top: 1px solid hsl(${primaryColor} / 0.1); color: hsl(${textColor});">
-           Informations sur la livraison...
-         </div>
-       </div>
-       <div class="faq-item" onclick="this.classList.toggle('open')" style="margin-bottom: 1rem; border-radius: 8px; overflow: hidden; border: 1px solid hsl(${primaryColor} / 0.2);">
-         <div style="padding: 1rem; background: hsl(${bgColor}); cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-           <span style="font-weight: 600; color: hsl(${textColor});">Quelle garantie est incluse ?</span>
-           <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-         </div>
-         <div class="faq-answer" style="padding: 1rem; background: hsl(${bgColor}); border-top: 1px solid hsl(${primaryColor} / 0.1); color: hsl(${textColor});">
-           Détails sur la garantie...
-         </div>
-       </div>
-     </div>
-   </section>
-   <style>.faq-item .faq-answer { display: none; } .faq-item.open .faq-answer { display: block; } .faq-icon { transition: transform 0.3s; } .faq-item.open .faq-icon { transform: rotate(180deg); }</style>
+5️⃣ TÉMOIGNAGES / CONFIANCE
+<section style="padding: 3rem 1rem; background: hsl(${surfaceColor});">
+  <h2>Ils Ont Adopté Ce Produit</h2>
+  <div style="display: flex; flex-direction: column; gap: 1rem;">
+    <div style="padding: 1.5rem; background: hsl(${bgColor}); border-radius: 12px; border-left: 4px solid hsl(${primaryColor});">
+      <p style="font-style: italic; margin-bottom: 0.5rem;">"Témoignage fictif mais réaliste..."</p>
+      <span style="font-weight: 600;">- Marie D.</span>
+    </div>
+    <!-- 2-3 témoignages -->
+  </div>
+</section>
 
-INTERDIT: Emoji, placeholders, boutons d'achat, menu/footer
+6️⃣ FAQ INTERACTIVE (3-5 questions)
+<section style="padding: 3rem 1rem; background: hsl(${bgColor});">
+  <h2 style="text-align: center; margin-bottom: 2rem;">Questions Fréquentes</h2>
+  <div style="max-width: 800px; margin: 0 auto;">
+    <div class="faq-item" onclick="this.classList.toggle('open')" style="margin-bottom: 1rem; border-radius: 8px; overflow: hidden; border: 1px solid hsl(${primaryColor} / 0.2); cursor: pointer;">
+      <div style="padding: 1rem; background: hsl(${surfaceColor}); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 600; color: hsl(${textColor});">[Question pertinente 1]</span>
+        <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="faq-answer" style="padding: 1rem; border-top: 1px solid hsl(${primaryColor} / 0.1); color: hsl(${textColor} / 0.8);">
+        [Réponse détaillée et utile - 2-3 phrases]
+      </div>
+    </div>
+  </div>
+</section>
+<style>.faq-item .faq-answer { display: none; } .faq-item.open .faq-answer { display: block; } .faq-icon { transition: transform 0.3s; } .faq-item.open .faq-icon { transform: rotate(180deg); }</style>
 
-Génère le HTML complet avec FAQ COMPLÈTE et couleurs HSL exactes.`;
+7️⃣ CALL TO ACTION FINAL
+<section style="padding: 4rem 1rem; background: linear-gradient(135deg, hsl(${primaryColor}), hsl(${secondaryColor})); text-align: center;">
+  <h2 style="font-size: clamp(1.5rem, 6vw, 2.5rem); color: white; margin-bottom: 1rem;">Prêt à Découvrir ${productTitle} ?</h2>
+  <p style="color: white; opacity: 0.9; margin-bottom: 1.5rem;">Faites le choix de la qualité aujourd'hui.</p>
+</section>
 
-    // Call OpenRouter AI with Qwen 2.5 14B (fast, cheap, great for HTML/SEO)
+═══════════════════════════════════════════════════════
+⚡ CONSIGNES FINALES
+═══════════════════════════════════════════════════════
+- CONTENU RICHE: Chaque section doit avoir du VRAI contenu, pas juste des titres
+- MOBILE-FIRST: Tout doit être parfait sur mobile AVANT desktop
+- IMAGES: Utiliser UNIQUEMENT les URLs fournies, JAMAIS de placeholder
+- LONGUEUR: Minimum 4000 caractères de HTML
+- STYLE: Inline CSS uniquement, HSL pour toutes les couleurs
+
+Génère maintenant le HTML COMPLET avec tout le contenu riche.`;
+
+    // Call OpenRouter AI with Qwen 2.5 72B for rich content
     const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -258,13 +309,13 @@ Génère le HTML complet avec FAQ COMPLÈTE et couleurs HSL exactes.`;
           {
             role: "system",
             content: language === "en"
-              ? "You are a fast HTML generator for product landing pages. Generate clean, modern HTML. Be concise."
-              : "Tu es un générateur HTML rapide pour landing pages produit. Génère du HTML propre et moderne. Sois concis.",
+              ? "You are an EXPERT e-commerce landing page designer. Generate RICH, PROFESSIONAL, MOBILE-FIRST HTML with detailed content in each section. Every section must have real, valuable content - not just headings. Use inline CSS with HSL colors. Output at least 4000 characters of high-quality HTML."
+              : "Tu es un EXPERT en design de landing pages e-commerce. Génère du HTML RICHE, PROFESSIONNEL et MOBILE-FIRST avec du contenu détaillé dans chaque section. Chaque section doit avoir du vrai contenu de valeur - pas juste des titres. Utilise du CSS inline avec des couleurs HSL. Produis au moins 4000 caractères de HTML de haute qualité.",
           },
           { role: "user", content: prompt },
         ],
-        max_tokens: 8000,
-        temperature: 0.3,
+        max_tokens: 12000,
+        temperature: 0.5,
       }),
     });
 
