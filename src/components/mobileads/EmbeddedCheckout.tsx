@@ -282,7 +282,9 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
   // Capture email as potential customer lead
   const captureEmailLead = async (emailToCapture: string, name?: string) => {
     try {
-      await supabase.from('potential_customers').upsert({
+      // Use INSERT instead of UPSERT - ignore duplicates silently
+      // (anon users don't have UPDATE permission, only INSERT)
+      const { error } = await supabase.from('potential_customers').insert({
         email: emailToCapture,
         full_name: name || null,
         country: country,
@@ -290,7 +292,12 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
         billing_period: billingPeriod,
         source: 'mobileads',
         status: 'lead'
-      }, { onConflict: 'email' });
+      });
+      
+      // Ignore duplicate key errors (23505 = unique_violation)
+      if (error && !error.code?.includes('23505')) {
+        console.error("Lead capture error:", error);
+      }
     } catch (err) {
       console.error("Lead capture error:", err);
     }
