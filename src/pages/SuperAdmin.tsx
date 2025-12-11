@@ -30,6 +30,7 @@ import VideoAdsStudio from '@/components/admin/VideoAdsStudio';
 import AdminGoogleSearchConsole from '@/components/admin/AdminGoogleSearchConsole';
 import AdminSocialMedia from '@/components/admin/AdminSocialMedia';
 import AdminGoogleMerchant from '@/components/admin/AdminGoogleMerchant';
+import { PotentialCustomers } from '@/components/admin/PotentialCustomers';
 import { useTranslation } from '@/lib/language';
 import { BrowserNotificationService } from '@/lib/notificationService';
 
@@ -508,6 +509,16 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                 <CardDescription>Statistiques et rapports détaillés</CardDescription>
               </CardHeader>
             </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-105" onClick={() => setActiveTab('prospects')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-violet-500" />
+                  Prospects Mobile Ads
+                </CardTitle>
+                <CardDescription>Leads capturés depuis le checkout</CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </>
       )}
@@ -897,6 +908,10 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'google-merchant' && (
         <AdminGoogleMerchant />
+      )}
+
+      {activeTab === 'prospects' && (
+        <PotentialCustomers />
       )}
     </div>
   );

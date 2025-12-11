@@ -279,10 +279,30 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
     });
   }, [stripe, finalPrice, selectedPlan, billingPeriod, priceId, email, password, fullName, appliedCoupon, onClose]);
 
+  // Capture email as potential customer lead
+  const captureEmailLead = async (emailToCapture: string, name?: string) => {
+    try {
+      await supabase.from('potential_customers').upsert({
+        email: emailToCapture,
+        full_name: name || null,
+        country: country,
+        plan_interest: selectedPlan.name,
+        billing_period: billingPeriod,
+        source: 'mobileads',
+        status: 'lead'
+      }, { onConflict: 'email' });
+    } catch (err) {
+      console.error("Lead capture error:", err);
+    }
+  };
+
   const checkEmailExists = async (emailToCheck: string): Promise<boolean> => {
     try {
       setCheckingEmail(true);
       setEmailError(null);
+      
+      // Capture email as lead regardless of existence
+      await captureEmailLead(emailToCheck);
       
       const { data, error } = await supabase.functions.invoke("create-mobile-checkout", {
         body: { checkEmailOnly: true, email: emailToCheck }
@@ -761,6 +781,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
                 placeholder="Full name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                onBlur={(e) => { if (e.target.value && email) captureEmailLead(email, e.target.value); }}
                 className="pl-10 h-11 bg-gray-50 border-gray-200"
               />
             </div>
