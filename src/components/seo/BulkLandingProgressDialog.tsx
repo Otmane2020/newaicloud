@@ -571,22 +571,22 @@ export function BulkLandingProgressDialog({
                       </Badge>
                     )}
                     {preview.status === 'success' && (
-                      <>
+                      <div className="flex items-center gap-1.5">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handlePreview(preview.landingHtml!, preview.productTitle)}
-                          className="h-8 w-8 sm:h-7 sm:w-auto sm:px-2 p-0 flex-shrink-0"
+                          className="h-9 w-9 p-0 flex-shrink-0 bg-primary/10 hover:bg-primary/20 border-primary/30"
                           title="Voir la landing page"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-5 h-5 text-primary" />
                         </Button>
                         <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs gap-1">
                           <Check className="w-3 h-3" />
                           <span className="hidden sm:inline">{t.dialogs.bulkLanding.generatedStatus}</span>
-                          <span className="sm:hidden">OK</span>
+                          <span className="sm:hidden">✓</span>
                         </Badge>
-                      </>
+                      </div>
                     )}
                     {preview.status === 'error' && (
                       <Badge variant="outline" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs gap-1">
