@@ -3154,6 +3154,48 @@ export type Database = {
         }
         Relationships: []
       }
+      potential_customers: {
+        Row: {
+          billing_period: string | null
+          converted_at: string | null
+          country: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          plan_interest: string | null
+          source: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_period?: string | null
+          converted_at?: string | null
+          country?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          plan_interest?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_period?: string | null
+          converted_at?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          plan_interest?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       price_scan_results: {
         Row: {
           confidence: number | null
