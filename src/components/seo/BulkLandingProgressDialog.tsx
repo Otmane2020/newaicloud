@@ -494,7 +494,7 @@ export function BulkLandingProgressDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(val) => !isProcessing && onOpenChange(val)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col w-[95vw] sm:w-auto">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
@@ -523,69 +523,76 @@ export function BulkLandingProgressDialog({
 
           {/* Products List */}
           <ScrollArea className="flex-1 max-h-[400px]">
-            <div className="space-y-2 pr-4">
+            <div className="space-y-2 pr-2 sm:pr-4">
               {previews.map((preview) => (
                 <div
                   key={preview.productId}
-                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                  className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-colors ${
                     preview.status === 'generating' ? 'bg-primary/5 border-primary/30' :
                     preview.status === 'success' ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' :
                     preview.status === 'error' ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800' :
                     'bg-muted/30 border-border'
                   }`}
                 >
-                  {/* Image */}
-                  {preview.imageUrl ? (
-                    <img
-                      src={preview.imageUrl}
-                      alt={preview.productTitle}
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  )}
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{preview.productTitle}</p>
-                    {preview.error && (
-                      <p className="text-xs text-red-600 dark:text-red-400 truncate">{preview.error}</p>
+                  {/* Top row: Image + Title */}
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    {/* Image */}
+                    {preview.imageUrl ? (
+                      <img
+                        src={preview.imageUrl}
+                        alt={preview.productTitle}
+                        className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                        <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                      </div>
                     )}
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-xs sm:text-sm truncate">{preview.productTitle}</p>
+                      {preview.error && (
+                        <p className="text-xs text-red-600 dark:text-red-400 truncate">{preview.error}</p>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Status */}
-                  <div className="flex items-center gap-2">
+                  {/* Status - always visible */}
+                  <div className="flex items-center gap-2 justify-end sm:justify-start flex-shrink-0">
                     {preview.status === 'pending' && (
                       <Badge variant="outline" className="text-xs">{t.dialogs.bulkLanding.pending}</Badge>
                     )}
                     {preview.status === 'generating' && (
                       <Badge variant="outline" className="text-xs gap-1">
                         <Loader2 className="w-3 h-3 animate-spin" />
-                        {t.dialogs.bulkLanding.generatingStatus}
+                        <span className="hidden xs:inline">{t.dialogs.bulkLanding.generatingStatus}</span>
+                        <span className="xs:hidden">...</span>
                       </Badge>
                     )}
                     {preview.status === 'success' && (
                       <>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handlePreview(preview.landingHtml!, preview.productTitle)}
-                          className="h-7 px-2"
+                          className="h-8 w-8 sm:h-7 sm:w-auto sm:px-2 p-0 flex-shrink-0"
+                          title="Voir la landing page"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
                         <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs gap-1">
                           <Check className="w-3 h-3" />
-                          {t.dialogs.bulkLanding.generatedStatus}
+                          <span className="hidden sm:inline">{t.dialogs.bulkLanding.generatedStatus}</span>
+                          <span className="sm:hidden">OK</span>
                         </Badge>
                       </>
                     )}
                     {preview.status === 'error' && (
                       <Badge variant="outline" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs gap-1">
                         <X className="w-3 h-3" />
-                        {t.dialogs.bulkLanding.errorStatus}
+                        <span className="hidden sm:inline">{t.dialogs.bulkLanding.errorStatus}</span>
+                        <span className="sm:hidden">Err</span>
                       </Badge>
                     )}
                   </div>
@@ -594,15 +601,15 @@ export function BulkLandingProgressDialog({
             </div>
           </ScrollArea>
 
-          <DialogFooter className="flex-row justify-between gap-2 sm:gap-0">
-            <div className="flex gap-2">
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               {isProcessing ? (
-                <Button variant="outline" onClick={handleCancel}>
+                <Button variant="outline" onClick={handleCancel} className="flex-1 sm:flex-none">
                   <X className="w-4 h-4 mr-2" />
                   {t.dialogs.bulkLanding.cancel}
                 </Button>
               ) : (
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
                   {t.dialogs.bulkLanding.close}
                 </Button>
               )}
@@ -612,7 +619,7 @@ export function BulkLandingProgressDialog({
               <Button
                 onClick={handleSyncToShopify}
                 disabled={syncingToShopify}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 w-full sm:w-auto"
               >
                 {syncingToShopify ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -628,7 +635,7 @@ export function BulkLandingProgressDialog({
 
       {/* Preview Dialog */}
       <Dialog open={!!previewHtml} onOpenChange={() => setPreviewHtml(null)}>
-        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col w-[95vw] sm:w-auto">
           <DialogHeader>
             <DialogTitle>{t.dialogs.bulkLanding.previewTitle.replace('{{title}}', previewProductTitle)}</DialogTitle>
           </DialogHeader>
