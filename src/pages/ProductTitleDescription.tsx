@@ -3655,7 +3655,7 @@ export default function ProductTitleDescription() {
           setShowBulkLandingConfigDialog(false);
           setShowBulkLandingDialog(true);
         }}
-        productTitle={`${selectedProducts.size} produit(s) sélectionné(s)`}
+        productTitle={`${filteredProducts.length} produit(s) sélectionné(s)`}
       />
 
       {/* Bulk Landing Progress Dialog */}
@@ -3663,8 +3663,7 @@ export default function ProductTitleDescription() {
         <BulkLandingProgressDialog
           open={showBulkLandingDialog}
           onOpenChange={setShowBulkLandingDialog}
-          products={products
-            .filter(p => selectedProducts.has(p.id))
+          products={filteredProducts
             .filter(p => !bulkLandingConfig.activeOnly || p.status === 'active')
             .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor }))}
           config={bulkLandingConfig}
