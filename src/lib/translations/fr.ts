@@ -4488,6 +4488,13 @@ export const translations = {
     },
     loading: "Chargement des collections...",
     loadError: "Erreur lors du chargement des collections",
+    generate: {
+      button: "Générer Collections IA",
+      generating: "Analyse des produits et création des collections...",
+      success: "{{count}} collection(s) créée(s) avec succès",
+      noCollections: "Aucune nouvelle collection suggérée",
+      error: "Erreur lors de la génération des collections",
+    },
     importComplete: "Import Complet",
     importCollections: "Importer Collections",
     importImages: "Importer Collections + Images",
