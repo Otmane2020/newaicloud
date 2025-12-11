@@ -621,6 +621,11 @@ export const translations = {
       description: "Skip landing page generation for draft products",
     },
 
+    redoExisting: {
+      title: "Regenerate existing",
+      description: "Also regenerate landing pages for products that already have one",
+    },
+
     customHighlights: {
       title: "Custom highlights",
       description: "Add specific information to highlight (max 500 characters)",

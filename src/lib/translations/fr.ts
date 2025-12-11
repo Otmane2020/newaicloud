@@ -628,6 +628,11 @@ export const translations = {
       description: "Ne génère pas de landing page pour les produits en brouillon (draft)",
     },
 
+    redoExisting: {
+      title: "Régénérer existantes",
+      description: "Régénère aussi les landing pages des produits qui en ont déjà une",
+    },
+
     customHighlights: {
       title: "Points forts personnalisés",
       description: "Ajoutez des informations spécifiques à mettre en avant (max 500 caractères)",

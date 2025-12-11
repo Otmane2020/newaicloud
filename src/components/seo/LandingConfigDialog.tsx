@@ -36,6 +36,7 @@ export interface LandingConfig {
   theme: "light" | "dark";
   regenerateTitle?: boolean;
   activeOnly?: boolean;
+  redoExisting?: boolean;
 }
 
 interface LandingConfigDialogProps {
@@ -162,6 +163,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
     theme: "light",
     regenerateTitle: true,
     activeOnly: true,
+    redoExisting: false,
   });
 
   const [selectedPalette, setSelectedPalette] = useState<string | null>("modern");
@@ -281,6 +283,7 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
     theme: "light",
     regenerateTitle: true,
     activeOnly: true,
+    redoExisting: false,
   };
 
   // Load saved preferences from localStorage on mount
@@ -738,6 +741,22 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
               <Switch
                 checked={config.activeOnly ?? true}
                 onCheckedChange={(checked) => setConfig({ ...config, activeOnly: checked })}
+              />
+            </div>
+          </div>
+
+          {/* Option régénérer les landing pages existantes */}
+          <div className="space-y-3 border-t pt-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label className="text-base font-semibold">🔄 {t.landingConfig.redoExisting?.title || "Régénérer existantes"}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t.landingConfig.redoExisting?.description || "Régénère aussi les landing pages des produits qui en ont déjà une"}
+                </p>
+              </div>
+              <Switch
+                checked={config.redoExisting ?? false}
+                onCheckedChange={(checked) => setConfig({ ...config, redoExisting: checked })}
               />
             </div>
           </div>
