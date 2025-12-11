@@ -253,7 +253,7 @@ Génère le HTML complet avec FAQ COMPLÈTE et couleurs HSL exactes.`;
         "X-Title": "NewAI Landing Generator",
       },
       body: JSON.stringify({
-        model: "qwen/qwen-2.5-14b-instruct",
+        model: "qwen/qwen-2.5-72b-instruct",
         messages: [
           {
             role: "system",
