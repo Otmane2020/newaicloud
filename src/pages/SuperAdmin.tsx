@@ -31,6 +31,7 @@ import AdminGoogleSearchConsole from '@/components/admin/AdminGoogleSearchConsol
 import AdminSocialMedia from '@/components/admin/AdminSocialMedia';
 import AdminGoogleMerchant from '@/components/admin/AdminGoogleMerchant';
 import { PotentialCustomers } from '@/components/admin/PotentialCustomers';
+import { SiteAnalytics } from '@/components/admin/SiteAnalytics';
 import { useTranslation } from '@/lib/language';
 import { BrowserNotificationService } from '@/lib/notificationService';
 
@@ -519,6 +520,16 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                 <CardDescription>Leads capturés depuis le checkout</CardDescription>
               </CardHeader>
             </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-105" onClick={() => setActiveTab('site-analytics')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-cyan-500" />
+                  Trafic & Conversions
+                </CardTitle>
+                <CardDescription>Pages vues, sources, paniers abandonnés</CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </>
       )}
@@ -912,6 +923,10 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'prospects' && (
         <PotentialCustomers />
+      )}
+
+      {activeTab === 'site-analytics' && (
+        <SiteAnalytics />
       )}
     </div>
   );

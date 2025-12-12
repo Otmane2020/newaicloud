@@ -16,6 +16,7 @@ import { AutoSyncProgressDialog } from "@/components/AutoSyncProgressDialog";
 import { AutoTranslator } from "@/components/AutoTranslator";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { BulkOptimizationIndicator } from "@/components/BulkOptimizationIndicator";
+import { PageTracker } from "@/components/PageTracker";
 import { useQuotaMonitoring } from "@/hooks/useQuotaMonitoring";
 import { useAutoSync } from "@/hooks/useAutoSync";
 import { useAdminEmailNotifications } from "@/hooks/useAdminEmailNotifications";
@@ -175,6 +176,7 @@ const App = () => (
                   <AdminEmailNotificationsMonitor />
                   <AutoTranslator />
                   <BulkOptimizationIndicator />
+                  <PageTracker />
                 <div className="overflow-x-hidden max-w-full">
               <Routes>
             <Route path="/" element={<Index />} />

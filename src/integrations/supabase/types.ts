@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      abandoned_carts: {
+        Row: {
+          billing_period: string | null
+          cart_value: number | null
+          converted: boolean | null
+          converted_at: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          last_action: string | null
+          plan_id: string | null
+          plan_name: string | null
+          recovery_email_sent: boolean | null
+          recovery_email_sent_at: string | null
+          session_id: string | null
+          step_reached: string | null
+          updated_at: string
+          user_id: string | null
+          utm_campaign: string | null
+          utm_source: string | null
+          visitor_id: string
+        }
+        Insert: {
+          billing_period?: string | null
+          cart_value?: number | null
+          converted?: boolean | null
+          converted_at?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          last_action?: string | null
+          plan_id?: string | null
+          plan_name?: string | null
+          recovery_email_sent?: boolean | null
+          recovery_email_sent_at?: string | null
+          session_id?: string | null
+          step_reached?: string | null
+          updated_at?: string
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_source?: string | null
+          visitor_id: string
+        }
+        Update: {
+          billing_period?: string | null
+          cart_value?: number | null
+          converted?: boolean | null
+          converted_at?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          last_action?: string | null
+          plan_id?: string | null
+          plan_name?: string | null
+          recovery_email_sent?: boolean | null
+          recovery_email_sent_at?: string | null
+          session_id?: string | null
+          step_reached?: string | null
+          updated_at?: string
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_source?: string | null
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       admin_emails: {
         Row: {
           body: string
@@ -3061,6 +3130,75 @@ export type Database = {
           shop_name?: string
           state_token?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      page_visits: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          device_type: string | null
+          duration_seconds: number | null
+          id: string
+          is_bounce: boolean | null
+          page_path: string
+          page_title: string | null
+          referrer: string | null
+          session_id: string | null
+          traffic_source: string | null
+          user_agent: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+          visitor_id: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_bounce?: boolean | null
+          page_path: string
+          page_title?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          traffic_source?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          duration_seconds?: number | null
+          id?: string
+          is_bounce?: boolean | null
+          page_path?: string
+          page_title?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          traffic_source?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+          visitor_id?: string
         }
         Relationships: []
       }
