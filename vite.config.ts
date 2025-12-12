@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        maximumFileSizeToCacheInBytes: 5000000, // 5MB limit for ML models
+        maximumFileSizeToCacheInBytes: 6000000, // 6MB limit for large bundles
         // Exclude very large WASM files from precaching
         globIgnores: ['**/*.wasm'],
         runtimeCaching: [
