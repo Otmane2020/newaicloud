@@ -33,6 +33,9 @@ import AdminGoogleMerchant from '@/components/admin/AdminGoogleMerchant';
 import { PotentialCustomers } from '@/components/admin/PotentialCustomers';
 import { SiteAnalytics } from '@/components/admin/SiteAnalytics';
 import { AutomationsPanel } from '@/components/admin/AutomationsPanel';
+import { AutomationWorkflowsTab } from '@/components/admin/automations/AutomationWorkflowsTab';
+import { AutomationEmailsTab } from '@/components/admin/automations/AutomationEmailsTab';
+import { AutomationTemplatesTab } from '@/components/admin/automations/AutomationTemplatesTab';
 import { useTranslation } from '@/lib/language';
 import { BrowserNotificationService } from '@/lib/notificationService';
 
@@ -942,6 +945,18 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'automations' && (
         <AutomationsPanel />
+      )}
+
+      {activeTab === 'automation-workflows' && (
+        <AutomationWorkflowsTab />
+      )}
+
+      {activeTab === 'automation-emails' && (
+        <AutomationEmailsTab />
+      )}
+
+      {activeTab === 'automation-templates' && (
+        <AutomationTemplatesTab />
       )}
     </div>
   );

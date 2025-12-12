@@ -1,4 +1,4 @@
-import { Shield, Users, Mail, LogOut, BarChart3, Home, FileText, TrendingUp, Activity, Brain, FileWarning, Wrench, Search, Target, Globe, Languages, ScanSearch, Video, Share2, ShoppingBag, ChevronDown, ChevronRight } from "lucide-react";
+import { Shield, Users, Mail, LogOut, BarChart3, Home, FileText, TrendingUp, Activity, Brain, FileWarning, Wrench, Search, Target, Globe, Languages, ScanSearch, Video, Share2, ShoppingBag, ChevronDown, ChevronRight, Zap, Settings, MailCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +67,10 @@ export function SuperAdminNavigation({ activeTab, onTabChange, isMobile = false 
         { icon: Home, label: t.superAdmin.navigation.dashboard, id: "dashboard" },
         { icon: Users, label: t.superAdmin.navigation.users, id: "users" },
         { icon: Brain, label: t.superAdmin.navigation.insights, id: "insights" },
+        { icon: Zap, label: "Automatisations", id: "automations" },
+        { icon: Settings, label: "Workflows", id: "automation-workflows" },
+        { icon: MailCheck, label: "Emails envoyés", id: "automation-emails" },
+        { icon: FileText, label: "Templates emails", id: "automation-templates" },
       ]
     },
     {
