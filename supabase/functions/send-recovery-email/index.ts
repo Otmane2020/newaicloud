@@ -78,6 +78,61 @@ const templates = {
     `
   },
   
+  cart_abandoned: {
+    subject: "🛒 Votre panier vous attend - NewAI",
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; padding: 20px 0; }
+    .logo { font-size: 28px; font-weight: bold; color: #6366f1; }
+    .content { background: #f8fafc; border-radius: 12px; padding: 30px; margin: 20px 0; }
+    .cta { display: inline-block; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 20px 0; }
+    .cart-summary { background: white; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .footer { text-align: center; color: #64748b; font-size: 12px; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">NewAI</div>
+    </div>
+    
+    <div class="content">
+      <h1>Vous avez oublié quelque chose ! 🛒</h1>
+      
+      <p>Nous avons remarqué que vous n'avez pas finalisé votre inscription.</p>
+      
+      <div class="cart-summary">
+        <h3>Votre sélection vous attend :</h3>
+        <p>Finalisez votre inscription et commencez à optimiser votre boutique dès maintenant !</p>
+      </div>
+      
+      <center>
+        <a href="https://newai.sale/onboarding" class="cta">
+          Finaliser mon inscription →
+        </a>
+      </center>
+      
+      <p style="color: #64748b; font-size: 14px;">
+        Besoin d'aide ? Répondez à cet email, nous sommes là pour vous !
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p>NewAI - L'IA au service de votre e-commerce</p>
+      <p><a href="https://newai.sale">newai.sale</a></p>
+    </div>
+  </div>
+</body>
+</html>
+    `
+  },
+  
   reminder_24h: {
     subject: "⏰ Plus que 24h pour profiter de -50% - NewAI",
     html: `

@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3, Store, RefreshCw, LogIn } from 'lucide-react';
+import { Shield, Users, TrendingUp, Mail, Inbox, Clock, Activity, BarChart3, Store, RefreshCw, LogIn, Zap } from 'lucide-react';
 import { EmailInbox } from '@/components/admin/EmailInbox';
 import { UserActivityHistory } from '@/components/admin/UserActivityHistory';
 import { AdvancedAnalytics } from '@/components/admin/AdvancedAnalytics';
@@ -32,6 +32,7 @@ import AdminSocialMedia from '@/components/admin/AdminSocialMedia';
 import AdminGoogleMerchant from '@/components/admin/AdminGoogleMerchant';
 import { PotentialCustomers } from '@/components/admin/PotentialCustomers';
 import { SiteAnalytics } from '@/components/admin/SiteAnalytics';
+import { AutomationsPanel } from '@/components/admin/AutomationsPanel';
 import { useTranslation } from '@/lib/language';
 import { BrowserNotificationService } from '@/lib/notificationService';
 
@@ -530,6 +531,16 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
                 <CardDescription>Pages vues, sources, paniers abandonnés</CardDescription>
               </CardHeader>
             </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-all hover:scale-105" onClick={() => setActiveTab('automations')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-500" />
+                  Automatisations
+                </CardTitle>
+                <CardDescription>Emails de récupération automatiques</CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </>
       )}
@@ -927,6 +938,10 @@ export default function SuperAdmin({ activeTab, setActiveTab }: SuperAdminProps)
 
       {activeTab === 'site-analytics' && (
         <SiteAnalytics />
+      )}
+
+      {activeTab === 'automations' && (
+        <AutomationsPanel />
       )}
     </div>
   );
