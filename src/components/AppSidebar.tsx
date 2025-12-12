@@ -659,10 +659,6 @@ export function AppSidebar() {
                       ({t.common.upgrade})
                     </span>
                   </NavLink>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <User className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{user?.email}</span>
-                  </div>
                 </>
               ) : (
                 <div className="flex items-center justify-center relative">
