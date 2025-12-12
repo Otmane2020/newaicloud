@@ -47,7 +47,7 @@ export const GooglePhoneMockups = () => {
                 <div className="bg-muted/30 rounded-lg p-2 sm:p-3 lg:p-4">
                   <img 
                     src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=300&fit=crop" 
-                    alt="Canapé velours vert"
+                    alt="Modern emerald green velvet sofa with gold legs displayed in Google search results"
                     className="w-full h-16 sm:h-24 lg:h-32 object-cover rounded-md mb-2"
                   />
                   <div className="space-y-1">
@@ -68,7 +68,7 @@ export const GooglePhoneMockups = () => {
                 <div className="flex gap-2 items-center bg-muted/20 rounded-lg p-2">
                   <img 
                     src="https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=100&h=100&fit=crop" 
-                    alt="Fauteuil"
+                    alt="Scandinavian style armchair with wooden legs in beige fabric"
                     className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 object-cover rounded-md flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
@@ -112,7 +112,7 @@ export const GooglePhoneMockups = () => {
                 <div className="bg-muted/30 rounded-lg p-2 sm:p-3 lg:p-4 mb-3">
                   <img 
                     src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop" 
-                    alt="Sneakers Nike"
+                    alt="Nike Air Max 90 red and white sneakers displayed in Google Shopping"
                     className="w-full h-20 sm:h-28 lg:h-36 object-cover rounded-md mb-2"
                   />
                   <div className="flex justify-between items-start">
@@ -142,7 +142,7 @@ export const GooglePhoneMockups = () => {
                   <div className="bg-muted/20 rounded-lg p-1.5 sm:p-2">
                     <img 
                       src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200&h=200&fit=crop" 
-                      alt="Sneakers"
+                      alt="Running sneakers in grey and orange color scheme for athletes"
                       className="w-full h-12 sm:h-16 lg:h-20 object-cover rounded mb-1"
                     />
                     <p className="text-[8px] sm:text-[10px] lg:text-xs font-semibold text-success">€89,00</p>
@@ -150,7 +150,7 @@ export const GooglePhoneMockups = () => {
                   <div className="bg-muted/20 rounded-lg p-1.5 sm:p-2">
                     <img 
                       src="https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=200&h=200&fit=crop" 
-                      alt="Sneakers"
+                      alt="White and blue lifestyle sneakers for casual everyday wear"
                       className="w-full h-12 sm:h-16 lg:h-20 object-cover rounded mb-1"
                     />
                     <p className="text-[8px] sm:text-[10px] lg:text-xs font-semibold text-success">€129,00</p>
@@ -187,7 +187,7 @@ export const GooglePhoneMockups = () => {
                 <div className="rounded-lg overflow-hidden shadow-sm">
                   <img 
                     src="https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400&h=250&fit=crop" 
-                    alt="Montre luxe"
+                    alt="Luxury rose gold watch with leather strap trending in 2024 fashion"
                     className="w-full h-20 sm:h-28 lg:h-36 object-cover"
                   />
                   <div className="bg-muted/30 p-2 sm:p-3">
@@ -203,7 +203,7 @@ export const GooglePhoneMockups = () => {
                   <div className="rounded-lg overflow-hidden">
                     <img 
                       src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=200&h=150&fit=crop" 
-                      alt="Décoration"
+                      alt="Scandinavian interior design with wooden furniture and minimalist decor"
                       className="w-full h-14 sm:h-18 lg:h-24 object-cover"
                     />
                     <div className="bg-muted/20 p-1.5">
@@ -213,7 +213,7 @@ export const GooglePhoneMockups = () => {
                   <div className="rounded-lg overflow-hidden">
                     <img 
                       src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=200&h=150&fit=crop" 
-                      alt="Intérieur"
+                      alt="Modern living room interior with contemporary design elements"
                       className="w-full h-14 sm:h-18 lg:h-24 object-cover"
                     />
                     <div className="bg-muted/20 p-1.5">
