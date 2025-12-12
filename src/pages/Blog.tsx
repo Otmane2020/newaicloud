@@ -22,6 +22,7 @@ import { useTranslation } from '@/lib/language';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { TrialLimitBanner } from '@/components/TrialLimitBanner';
 import { useNavigate } from 'react-router-dom';
+import { useUpgradeNavigation } from '@/hooks/useUpgradeNavigation';
 
 // Full access email
 const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
@@ -29,6 +30,7 @@ const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
 export default function Blog() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { navigateToUpgrade } = useUpgradeNavigation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t, language } = useTranslation();
   const [activeSubtab, setActiveSubtab] = useState(searchParams.get('subtab') || 'articles');
@@ -372,7 +374,7 @@ export default function Blog() {
           resourceType="articles"
           usage={limits.usage.articles_count || 0}
           limit={limits.limits.max_articles || 0}
-          onActivate={() => navigate('/subscription')}
+          onActivate={navigateToUpgrade}
         />
       )}
 

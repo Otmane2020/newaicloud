@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, TrendingUp, Info } from 'lucide-react';
+import { AlertTriangle, TrendingUp, Info, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/lib/language';
+import { useUpgradeNavigation } from '@/hooks/useUpgradeNavigation';
 
 interface QuotaAlert {
   type: 'warning' | 'critical' | 'info';
@@ -18,7 +18,7 @@ interface QuotaAlert {
 export function QuotaAlerts() {
   const { user } = useAuth();
   const { t, tf } = useTranslation();
-  const navigate = useNavigate();
+  const { navigateToUpgrade, loading: upgradeLoading } = useUpgradeNavigation();
   const [alerts, setAlerts] = useState<QuotaAlert[]>([]);
 
   useEffect(() => {
@@ -138,8 +138,10 @@ export function QuotaAlerts() {
             <Button 
               size="sm" 
               variant={alert.type === 'critical' ? 'default' : 'outline'}
-              onClick={() => navigate('/subscription')}
+              onClick={navigateToUpgrade}
+              disabled={upgradeLoading}
             >
+              {upgradeLoading && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
               {t.quotaAlerts.viewPlans}
             </Button>
           </AlertDescription>

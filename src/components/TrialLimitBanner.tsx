@@ -1,7 +1,7 @@
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/language";
+import { useUpgradeNavigation } from "@/hooks/useUpgradeNavigation";
 
 interface TrialLimitBannerProps {
   resourceType: string;
@@ -11,14 +11,14 @@ interface TrialLimitBannerProps {
 }
 
 export function TrialLimitBanner({ resourceType, usage, limit, onActivate }: TrialLimitBannerProps) {
-  const navigate = useNavigate();
   const { t, tf } = useTranslation();
+  const { navigateToUpgrade, loading } = useUpgradeNavigation();
 
   const handleActivate = () => {
     if (onActivate) {
       onActivate();
     } else {
-      navigate("/subscription");
+      navigateToUpgrade();
     }
   };
 
@@ -41,8 +41,10 @@ export function TrialLimitBanner({ resourceType, usage, limit, onActivate }: Tri
       onClick={handleActivate}
       variant="default"
       size="sm"
+      disabled={loading}
       className="bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 text-white shadow-lg whitespace-nowrap w-full sm:w-auto"
     >
+      {loading && <Loader2 className="w-3 h-3 mr-2 animate-spin" />}
       {t.trial.activateMyPlan}
     </Button>
         </div>

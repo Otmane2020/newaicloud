@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ExternalLink, Loader2, CreditCard, AlertCircle, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/language";
-import { useNavigate } from "react-router-dom";
+import { useUpgradeNavigation } from "@/hooks/useUpgradeNavigation";
 
 interface SubscriptionStatus {
   hasStripeSubscription: boolean;
@@ -19,7 +19,7 @@ interface SubscriptionStatus {
 export function BillingPortal() {
   const { toast } = useToast();
   const { t, tf, language } = useTranslation();
-  const navigate = useNavigate();
+  const { navigateToUpgrade, loading: upgradeLoading } = useUpgradeNavigation();
   const [loading, setLoading] = useState(false);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({
@@ -106,7 +106,7 @@ export function BillingPortal() {
   };
 
   const handleActivatePlan = () => {
-    navigate('/subscription');
+    navigateToUpgrade();
   };
 
   if (checkingSubscription) {
