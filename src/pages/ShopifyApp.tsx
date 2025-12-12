@@ -133,7 +133,7 @@ export default function ShopifyApp() {
         // Pas de connexion ou quick-login échoué → aller au setup-wizard
         setStatus("processed");
         console.log('⚠️ [ShopifyApp] Redirecting to setup-wizard');
-        const redirectParams = new URLSearchParams({ shop, host, embedded: '1' });
+        const redirectParams = new URLSearchParams({ shop });
         navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
         return;
       }
@@ -205,11 +205,7 @@ export default function ShopifyApp() {
         // 🔧 CRITICAL FIX: TOUJOURS rediriger vers SetupWizard pour Shopify Billing
         // Même les utilisateurs existants doivent passer par SetupWizard s'ils n'ont pas de subscription active
         // ⚠️ Important: On ne passe PAS le pending_token car l'auth est déjà faite ci-dessus
-        const redirectParams = new URLSearchParams({
-          shop,
-          host: params.get("host") || "",
-          embedded: "1",
-        });
+        const redirectParams = new URLSearchParams({ shop });
         
         console.log('🎯 [ShopifyApp] Auth complete, user_id:', data.user_id, 'is_returning:', data.is_returning_user);
         

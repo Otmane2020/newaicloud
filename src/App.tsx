@@ -210,11 +210,9 @@ const App = () => (
           <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />
           <Route path="/shopify/success" element={<ShopifySuccess />} />
           <Route path="/shopify/billing-callback" element={<ShopifyBillingCallback />} />
-          {/* Shopify Embedded Routes */}
-          <Route element={<ShopifyEmbeddedLayout />}>
-            <Route path="/app/setup-wizard" element={<SetupWizardPage />} />
-            <Route path="/app" element={<ShopifyApp />} />
-          </Route>
+          {/* Shopify App Routes (non-embedded) */}
+          <Route path="/app/setup-wizard" element={<SetupWizardPage />} />
+          <Route path="/app" element={<ShopifyApp />} />
             <Route
               path="/onboarding"
               element={
