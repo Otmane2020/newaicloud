@@ -319,20 +319,35 @@ export function BulkLandingProgressDialog({
           console.log(`[Bulk Landing] Vendor "${resolvedVendor}" saved for product ${product.id}`);
         }
 
-        // 🏷️ Handle title regeneration if enabled
+        // 🏷️ Handle title regeneration if enabled (with 10s timeout to avoid blocking)
         let productTitle = productData.seo_title || productData.title;
         if (config.regenerateTitle) {
           try {
             console.log(`[Bulk Landing] Regenerating title with smart-title for "${productData.title}"`);
-            const { data: smartData, error: smartError } = await supabase.functions.invoke("smart-title", {
+            
+            // Create AbortController for 10s timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            const smartTitlePromise = supabase.functions.invoke("smart-title", {
               body: {
                 productId: product.id,
                 language: 'fr',
               },
             });
             
+            // Race between smart-title call and timeout
+            const { data: smartData, error: smartError } = await Promise.race([
+              smartTitlePromise,
+              new Promise<{ data: null; error: Error }>((_, reject) => 
+                setTimeout(() => reject({ data: null, error: new Error('Timeout') }), 10000)
+              )
+            ]).catch(() => ({ data: null, error: new Error('Timeout') }));
+            
+            clearTimeout(timeoutId);
+            
             if (smartError) {
-              console.error(`[Bulk Landing] smart-title error:`, smartError);
+              console.warn(`[Bulk Landing] smart-title timeout/error, using existing title:`, smartError);
             } else if (smartData?.optimizedTitle) {
               productTitle = smartData.optimizedTitle;
               // Update in database
@@ -343,8 +358,8 @@ export function BulkLandingProgressDialog({
               console.log(`[Bulk Landing] New SERP-optimized title "${smartData.optimizedTitle}" saved for product ${product.id}`);
             }
           } catch (err) {
-            console.error(`[Bulk Landing] Title regeneration failed for ${product.id}:`, err);
-            // Continue with existing title
+            console.warn(`[Bulk Landing] Title regeneration failed for ${product.id}, using existing:`, err);
+            // Continue with existing title - don't block generation
           }
         }
         const result = await callWithRetry<{ html: string }>(
@@ -359,6 +374,8 @@ export function BulkLandingProgressDialog({
               designStyle: config.designStyle,
               colorScheme: config.colorScheme,
               theme: config.theme,
+              layout: config.layout, // ✅ Pass layout option from dialog
+              contentLength: config.contentLength, // ✅ Pass content length from dialog
               language: 'fr',
               customHighlights: config.customHighlights, // ✅ Pass custom highlights from dialog
             },
