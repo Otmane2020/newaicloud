@@ -210,6 +210,32 @@ export default function Onboarding() {
     autoClaimIfNeeded();
   }, [user, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 📊 Track onboarding page view for conversion analytics
+  useEffect(() => {
+    const trackOnboardingView = async () => {
+      if (!user?.email) return;
+      
+      try {
+        // Capture user as potential customer when they view onboarding
+        await supabase.from('potential_customers').upsert({
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+          source: 'onboarding_view',
+          status: 'viewing_plans',
+          plan_interest: null,
+          billing_period: null,
+          country: null,
+        }, { onConflict: 'email' });
+        
+        console.log('📊 [ONBOARDING] Tracked user viewing plans:', user.email);
+      } catch (error) {
+        console.error('❌ [ONBOARDING] Failed to track view:', error);
+      }
+    };
+    
+    trackOnboardingView();
+  }, [user?.email]);
+
   useEffect(() => {
     // ✅ IMPORTANT: Si retour de checkout Stripe sans user, rediriger vers login
     const checkoutSuccess = searchParams.get("checkout") === "success";
