@@ -25,8 +25,14 @@ export class ErrorBoundary extends Component<Props, State> {
       error.name === 'NotFoundError' && 
       error.message.includes('removeChild');
     
-    if (isBenignError) {
-      console.warn('[ErrorBoundary] Ignoring benign DOM cleanup error:', error.message);
+    // Ignore App Bridge context errors (happens when not in Shopify Admin)
+    const isAppBridgeError = 
+      error.message.includes('useAppBridge') || 
+      error.message.includes('AppBridge') ||
+      error.message.includes('shopify');
+    
+    if (isBenignError || isAppBridgeError) {
+      console.warn('[ErrorBoundary] Ignoring benign error:', error.message);
       return { hasError: false, error: null };
     }
     
@@ -39,7 +45,12 @@ export class ErrorBoundary extends Component<Props, State> {
       error.name === 'NotFoundError' && 
       error.message.includes('removeChild');
     
-    if (!isBenignError) {
+    const isAppBridgeError = 
+      error.message.includes('useAppBridge') || 
+      error.message.includes('AppBridge') ||
+      error.message.includes('shopify');
+    
+    if (!isBenignError && !isAppBridgeError) {
       console.error('[ErrorBoundary] Uncaught error:', error);
       console.error('[ErrorBoundary] Error info:', errorInfo);
     }
@@ -61,15 +72,15 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-md w-full">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Une erreur est survenue</AlertTitle>
+              <AlertTitle>An error has occurred</AlertTitle>
               <AlertDescription className="mt-2 space-y-4">
                 <p className="text-sm">
-                  L'application a rencontré une erreur inattendue.
+                  The application encountered an unexpected error.
                 </p>
                 {this.state.error && (
                   <details className="text-xs bg-muted p-2 rounded">
                     <summary className="cursor-pointer font-medium">
-                      Détails de l'erreur
+                      Error details
                     </summary>
                     <pre className="mt-2 whitespace-pre-wrap break-words">
                       {this.state.error.message}
@@ -81,7 +92,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   variant="outline"
                   className="w-full"
                 >
-                  Recharger l'application
+                  Reload the application
                 </Button>
               </AlertDescription>
             </Alert>
