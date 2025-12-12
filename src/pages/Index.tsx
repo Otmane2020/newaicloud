@@ -168,7 +168,7 @@ const Index = () => {
               </Badge>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
                 <span className="text-xs text-white/80">Built for</span>
-                <img src="/shopify-logo.svg" alt="Shopify" className="h-5 brightness-0 invert" />
+                <img src="/shopify-logo.svg" alt="Shopify e-commerce platform logo" className="h-5 brightness-0 invert" />
               </div>
             </div>
 
