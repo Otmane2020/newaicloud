@@ -35,6 +35,8 @@ serve(async (req) => {
       designStyle = "modern",
       colorScheme,
       theme = "light",
+      layout = "2 colonnes", // ✅ Added layout support
+      contentLength = "moyenne (800 mots)", // ✅ Added content length support
       language = "fr",
       customHighlights = "",
     } = body;
@@ -136,6 +138,23 @@ serve(async (req) => {
       ? `\n\n⭐ POINTS FORTS À METTRE EN AVANT (OBLIGATOIRE - intégrer dans la description et les avantages):\n${customHighlights.trim()}\n`
       : "";
 
+    // Determine layout instructions
+    const layoutMap: Record<string, string> = {
+      "1 colonne": "LAYOUT: Une seule colonne centrée, parfait pour mobile. Toutes les sections empilées verticalement avec max-width: 800px au centre.",
+      "2 colonnes": "LAYOUT: Deux colonnes sur desktop (image à gauche, texte à droite dans le hero), une colonne sur mobile.",
+      "hero à gauche": "LAYOUT: Image hero grande à gauche (60%), contenu texte à droite (40%) sur desktop. Mobile: empilé verticalement.",
+      "hero à droite": "LAYOUT: Contenu texte à gauche (40%), image hero grande à droite (60%) sur desktop. Mobile: empilé verticalement.",
+    };
+    const layoutInstructions = layoutMap[layout] || "LAYOUT: Deux colonnes responsive.";
+
+    // Determine content length instructions
+    const contentMap: Record<string, string> = {
+      "courte (400 mots)": "LONGUEUR: Version COURTE (~400 mots). Sections concises, 2-3 bénéfices, 2 témoignages, 3 FAQ.",
+      "moyenne (800 mots)": "LONGUEUR: Version MOYENNE (~800 mots). Sections détaillées, 4 bénéfices, 3 témoignages, 4-5 FAQ.",
+      "longue (1200+ mots)": "LONGUEUR: Version LONGUE (1200+ mots). Sections très détaillées, 6 bénéfices, 4+ témoignages, 6+ FAQ, descriptions enrichies.",
+    };
+    const contentInstructions = contentMap[contentLength] || "LONGUEUR: Version moyenne (~800 mots).";
+
     // Professional prompt for high-quality generation - MOBILE FIRST like DeepSeek
     const prompt = `Tu es un EXPERT en création de landing pages e-commerce HAUTE CONVERSION. Génère une page HTML EXCEPTIONNELLE, RICHE EN CONTENU, et 100% MOBILE-FIRST.
 
@@ -152,10 +171,12 @@ IMAGES (URLs EXACTES - JAMAIS de placeholder):
 ${additionalImagesStr}
 
 ═══════════════════════════════════════════════════════
-🎨 STYLE & COULEURS (HSL OBLIGATOIRE)
+🎨 STYLE, LAYOUT & CONTENU
 ═══════════════════════════════════════════════════════
 DESIGN: ${designStyle} - Élégant, professionnel
 THÈME: ${theme}
+${layoutInstructions}
+${contentInstructions}
 LANGUE: ${language === "en" ? "English" : "Français"}
 
 CSS VARIABLES HSL:
@@ -193,8 +214,22 @@ POUR DESKTOP (min-width: 768px) via @media:
 ❌ width: 50%, 33% sans media queries (casse le mobile!)
 ❌ font-size en px fixes (utiliser clamp ou rem)
 
-✅ Utiliser UNIQUEMENT des SVG inline:
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="..."/></svg>
+✅ Utiliser UNIQUEMENT des SVG inline. Voici des exemples concrets:
+
+QUALITÉ/PREMIUM:
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+
+LIVRAISON/EXPÉDITION:
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+
+GARANTIE/SÉCURITÉ:
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+
+SUPPORT/AIDE:
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+
+ÉCOLOGIQUE/NATURE:
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22c4-4 8-7.5 8-12a8 8 0 1 0-16 0c0 4.5 4 8 8 12z"/><path d="M12 14a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg>
 
 ═══════════════════════════════════════════════════════
 📋 STRUCTURE OBLIGATOIRE (7 SECTIONS RICHES)
