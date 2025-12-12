@@ -21,36 +21,68 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public static getDerivedStateFromError(error: Error): State {
     // Ignore benign DOM cleanup errors that happen during rapid navigation
-    const isBenignError = 
-      error.name === 'NotFoundError' && 
+    const isBenignDomError =
+      error.name === 'NotFoundError' &&
       error.message.includes('removeChild');
-    
-    // Ignore App Bridge context errors (happens when not in Shopify Admin)
-    const isAppBridgeError = 
-      error.message.includes('useAppBridge') || 
+
+    // Ignore App Bridge context errors (happen when not in Shopify Admin)
+    const isAppBridgeError =
+      error.message.includes('useAppBridge') ||
       error.message.includes('AppBridge') ||
       error.message.includes('shopify');
-    
-    if (isBenignError || isAppBridgeError) {
+
+    // Some merchants see a transient "Minified React error #380" only
+    // inside the Shopify embedded iframe. In that case we try a single
+    // silent reload and avoid showing a scary error screen.
+    const isReact380Error = error.message.includes('Minified React error #380');
+
+    const isInShopifyAdmin =
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('host');
+
+    if (isReact380Error && isInShopifyAdmin && typeof window !== 'undefined') {
+      try {
+        const storage = window.sessionStorage;
+        const hasReloaded = storage.getItem('react_380_reloaded') === '1';
+        if (!hasReloaded) {
+          storage.setItem('react_380_reloaded', '1');
+          console.warn('[ErrorBoundary] React #380 in Shopify context, reloading once');
+          window.location.reload();
+        }
+      } catch (e) {
+        console.warn('[ErrorBoundary] Failed to use sessionStorage for React #380 handling', e);
+      }
+
+      // Do not switch to error UI for this transient issue
+      return { hasError: false, error: null };
+    }
+
+    if (isBenignDomError || isAppBridgeError) {
       console.warn('[ErrorBoundary] Ignoring benign error:', error.message);
       return { hasError: false, error: null };
     }
-    
+
     return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Only log non-benign errors
-    const isBenignError = 
-      error.name === 'NotFoundError' && 
+    const isBenignDomError =
+      error.name === 'NotFoundError' &&
       error.message.includes('removeChild');
-    
-    const isAppBridgeError = 
-      error.message.includes('useAppBridge') || 
+
+    const isAppBridgeError =
+      error.message.includes('useAppBridge') ||
       error.message.includes('AppBridge') ||
       error.message.includes('shopify');
-    
-    if (!isBenignError && !isAppBridgeError) {
+
+    const isReact380Error = error.message.includes('Minified React error #380');
+
+    const isInShopifyAdmin =
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('host');
+
+    if (!isBenignDomError && !isAppBridgeError && !(isReact380Error && isInShopifyAdmin)) {
       console.error('[ErrorBoundary] Uncaught error:', error);
       console.error('[ErrorBoundary] Error info:', errorInfo);
     }
