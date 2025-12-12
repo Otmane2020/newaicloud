@@ -1,18 +1,14 @@
-import { AlertCircle, TrendingUp } from "lucide-react";
+import { AlertCircle, TrendingUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { formatLimit } from "@/lib/formatUtils";
 import { useTranslation } from "@/lib/language";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useState } from "react";
+import { useUpgradeNavigation } from "@/hooks/useUpgradeNavigation";
 
 export function LimitWarningBanner() {
-  const navigate = useNavigate();
   const { limits, loading } = useUsageLimits();
   const { t, tf } = useTranslation();
-  const [upgrading, setUpgrading] = useState(false);
+  const { navigateToUpgrade, loading: upgrading } = useUpgradeNavigation();
 
   if (loading || !limits) return null;
 
@@ -37,27 +33,6 @@ export function LimitWarningBanner() {
 
   // If not trial and not paid, don't show
   if (!limits.isTrialing && !limits.isPaid) return null;
-
-  const handleUpgrade = async () => {
-    try {
-      setUpgrading(true);
-
-      // For trial users, navigate to account subscription tab
-      if (limits.isTrialing) {
-        navigate("/account?tab=subscription");
-        return;
-      }
-
-      // For paid users who reached limits, navigate to account subscription tab to choose upgrade
-      // This is safer than auto-selecting the next plan
-      navigate("/account?tab=subscription");
-    } catch (error) {
-      console.error("Upgrade error:", error);
-      toast.error(t.toasts.seo.redirectError);
-    } finally {
-      setUpgrading(false);
-    }
-  };
 
   const getWarningMessage = () => {
     if (limitReached) {
@@ -127,7 +102,7 @@ export function LimitWarningBanner() {
 
           {/* Button Section */}
           <Button
-            onClick={handleUpgrade}
+            onClick={navigateToUpgrade}
             disabled={upgrading}
             size="sm"
             className={`${
@@ -137,7 +112,10 @@ export function LimitWarningBanner() {
             } text-white gap-2 w-full sm:w-auto text-xs sm:text-sm ml-6 sm:ml-0`}
           >
             {upgrading ? (
-              t.banners.limitWarning.loading
+              <>
+                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 animate-spin" />
+                <span>{t.banners.limitWarning.loading}</span>
+              </>
             ) : (
               <>
                 <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />

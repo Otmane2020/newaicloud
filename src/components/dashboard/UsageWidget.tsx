@@ -3,14 +3,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import { AlertCircle, TrendingUp, CheckCircle, Sparkles, Infinity } from 'lucide-react';
+import { AlertCircle, TrendingUp, CheckCircle, Sparkles, Infinity, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
+import { useUpgradeNavigation } from '@/hooks/useUpgradeNavigation';
 
 export function UsageWidget() {
   const { limits, loading } = useUsageLimits();
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { navigateToUpgrade, loading: upgradeLoading } = useUpgradeNavigation();
 
   if (loading || !limits) return null;
 
@@ -143,19 +143,26 @@ export function UsageWidget() {
             {(limits.isTrialing || !limits.planId) ? (
               <Button 
                 size="sm" 
-                onClick={() => navigate('/subscription')}
+                onClick={navigateToUpgrade}
+                disabled={upgradeLoading}
                 className="w-full gap-2"
               >
-                <Sparkles className="w-4 h-4" />
+                {upgradeLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
                 {t.account.usage.buttons.activatePlan}
               </Button>
             ) : (
               <Button 
                 size="sm" 
                 variant="outline"
-                onClick={() => navigate('/subscription')}
+                onClick={navigateToUpgrade}
+                disabled={upgradeLoading}
                 className="w-full"
               >
+                {upgradeLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t.account.usage.buttons.upgradePlan}
               </Button>
             )}

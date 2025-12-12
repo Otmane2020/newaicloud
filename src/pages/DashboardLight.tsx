@@ -35,55 +35,61 @@ interface LightStats {
 }
 
 async function fetchDashboardData(userId: string, storeId: string) {
-  // Fetch products using Supabase client - include enrichment_status for accurate scoring (matches SeoOptimization.tsx)
-  const { data: products, error: productsError } = await supabase
-    .from('shopify_products')
-    .select('id, seo_title, seo_description, tags, optimization_count, enrichment_status')
-    .eq('seller_id', userId)
-    .eq('store_id', storeId);
+  // Fetch products and collections in parallel for better performance
+  const [productsResult, collectionsResult] = await Promise.all([
+    supabase
+      .from('shopify_products')
+      .select('id, seo_title, seo_description, tags, optimization_count, enrichment_status')
+      .eq('seller_id', userId)
+      .eq('store_id', storeId),
+    supabase
+      .from('shopify_collections')
+      .select('id, seo_title, seo_description, optimization_count')
+      .eq('user_id', userId)
+      .eq('store_id', storeId)
+  ]);
 
-  if (productsError) {
-    console.error('Error fetching products:', productsError);
+  const products = productsResult.data || [];
+  const collections = collectionsResult.data || [];
+
+  if (productsResult.error) {
+    console.error('Error fetching products:', productsResult.error);
+  }
+  if (collectionsResult.error) {
+    console.error('Error fetching collections:', collectionsResult.error);
   }
 
-  // Fetch collections using Supabase client - include optimization_count
-  const { data: collections, error: collectionsError } = await supabase
-    .from('shopify_collections')
-    .select('id, seo_title, seo_description, optimization_count')
-    .eq('user_id', userId)
-    .eq('store_id', storeId);
-
-  if (collectionsError) {
-    console.error('Error fetching collections:', collectionsError);
-  }
-
-  // Fetch images via product_id join (product_images has no store_id column) - include optimization_count
-  const productIds = (products || []).map(p => p.id);
+  // Fetch images only if we have products
+  const productIds = products.map(p => p.id);
   let images: { id: string; alt_text: string | null; optimization_count: number | null }[] = [];
   
   if (productIds.length > 0) {
-    // Batch fetch in chunks of 100 to avoid query limits
+    // Batch fetch in chunks of 100 - parallel
     const chunkSize = 100;
+    const chunks: string[][] = [];
     for (let i = 0; i < productIds.length; i += chunkSize) {
-      const chunk = productIds.slice(i, i + chunkSize);
-      const { data: imgData, error: imgError } = await supabase
-        .from('product_images')
-        .select('id, alt_text, optimization_count')
-        .in('product_id', chunk);
-      
-      if (imgError) {
-        console.error('Error fetching images:', imgError);
-      } else if (imgData) {
-        images = [...images, ...imgData];
-      }
+      chunks.push(productIds.slice(i, i + chunkSize));
     }
+    
+    const imageResults = await Promise.all(
+      chunks.map(chunk =>
+        supabase
+          .from('product_images')
+          .select('id, alt_text, optimization_count')
+          .in('product_id', chunk)
+      )
+    );
+    
+    imageResults.forEach(result => {
+      if (result.error) {
+        console.error('Error fetching images:', result.error);
+      } else if (result.data) {
+        images = [...images, ...result.data];
+      }
+    });
   }
 
-  return { 
-    products: products || [], 
-    collections: collections || [], 
-    images 
-  };
+  return { products, collections, images };
 }
 
 export default function DashboardLight() {
