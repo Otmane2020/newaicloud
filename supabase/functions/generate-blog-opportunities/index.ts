@@ -5,13 +5,122 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Fetch People Also Ask questions from SerpAPI (like AnswerThePublic)
+async function fetchPeopleAlsoAsk(keyword: string, language: string = 'fr'): Promise<{
+  questions: string[];
+  relatedSearches: string[];
+}> {
+  const SERPAPI_KEY = Deno.env.get('SERPAPI_KEY');
+  if (!SERPAPI_KEY) {
+    console.log('[OPPS] SERPAPI_KEY not configured, skipping PAA fetch');
+    return { questions: [], relatedSearches: [] };
+  }
+
+  try {
+    const params = new URLSearchParams({
+      api_key: SERPAPI_KEY,
+      q: keyword,
+      engine: 'google',
+      gl: language === 'fr' ? 'fr' : 'us',
+      hl: language,
+      num: '10'
+    });
+
+    console.log(`[OPPS] Fetching PAA for keyword: "${keyword}"`);
+    
+    const response = await fetch(`https://serpapi.com/search?${params}`);
+    
+    if (!response.ok) {
+      console.error('[OPPS] SerpAPI error:', response.status);
+      return { questions: [], relatedSearches: [] };
+    }
+
+    const data = await response.json();
+    
+    // Extract People Also Ask questions
+    const questions: string[] = [];
+    if (data.related_questions) {
+      data.related_questions.forEach((q: any) => {
+        if (q.question) {
+          questions.push(q.question);
+        }
+      });
+    }
+
+    // Extract related searches
+    const relatedSearches: string[] = [];
+    if (data.related_searches) {
+      data.related_searches.forEach((s: any) => {
+        if (s.query) {
+          relatedSearches.push(s.query);
+        }
+      });
+    }
+
+    console.log(`[OPPS] Found ${questions.length} PAA questions, ${relatedSearches.length} related searches`);
+    
+    return { questions, relatedSearches };
+  } catch (error) {
+    console.error('[OPPS] Error fetching PAA:', error);
+    return { questions: [], relatedSearches: [] };
+  }
+}
+
+// Fetch AnswerThePublic-style data using SerpAPI autocomplete
+async function fetchAutocompleteQuestions(keyword: string, language: string = 'fr'): Promise<string[]> {
+  const SERPAPI_KEY = Deno.env.get('SERPAPI_KEY');
+  if (!SERPAPI_KEY) {
+    return [];
+  }
+
+  const questionPrefixes = language === 'fr' 
+    ? ['comment', 'pourquoi', 'quel', 'quelle', 'quand', 'où', 'est-ce que']
+    : ['how', 'why', 'what', 'when', 'where', 'which', 'can', 'do'];
+
+  const allSuggestions: string[] = [];
+
+  // Fetch autocomplete for each question prefix
+  for (const prefix of questionPrefixes.slice(0, 4)) { // Limit to 4 to avoid rate limits
+    try {
+      const params = new URLSearchParams({
+        api_key: SERPAPI_KEY,
+        q: `${prefix} ${keyword}`,
+        engine: 'google_autocomplete',
+        gl: language === 'fr' ? 'fr' : 'us',
+        hl: language
+      });
+
+      const response = await fetch(`https://serpapi.com/search?${params}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.suggestions) {
+          data.suggestions.forEach((s: any) => {
+            if (s.value && !allSuggestions.includes(s.value)) {
+              allSuggestions.push(s.value);
+            }
+          });
+        }
+      }
+      
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error) {
+      console.error(`[OPPS] Error fetching autocomplete for "${prefix}":`, error);
+    }
+  }
+
+  console.log(`[OPPS] Found ${allSuggestions.length} autocomplete suggestions`);
+  return allSuggestions;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('[OPPS] Starting blog opportunities generation');
+    console.log('[OPPS] Starting blog opportunities generation with SerpAPI (AnswerThePublic style)');
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -37,20 +146,19 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[OPPS] User authenticated: ${user.id}`);
 
-    // Parse request body for store_id
     const body = await req.json().catch(() => ({}));
     const storeId = body.store_id;
-    console.log(`[OPPS] Store ID: ${storeId || 'all stores'}`);
+    const language = body.language || 'fr';
+    console.log(`[OPPS] Store ID: ${storeId || 'all stores'}, Language: ${language}`);
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // 1. GET COMPREHENSIVE DATA
-    console.log('[OPPS] Fetching comprehensive catalog data...');
+    // 1. GET PRODUCTS DATA
+    console.log('[OPPS] Fetching catalog data...');
 
-    // Products with full details - filter by store_id if provided
     const productsQuery = supabaseAdmin
       .from('shopify_products')
       .select('id, title, category, sub_category, product_type, price, vendor, tags, description, handle, image_url')
@@ -68,7 +176,6 @@ Deno.serve(async (req: Request) => {
       throw productsError;
     }
 
-    // Collections - filter by store_id if provided
     const collectionsQuery = supabaseAdmin
       .from('shopify_collections')
       .select('id, title, handle, body_html')
@@ -78,27 +185,7 @@ Deno.serve(async (req: Request) => {
       collectionsQuery.eq('store_id', storeId);
     }
     
-    const { data: collections, error: collectionsError } = await collectionsQuery;
-
-    if (collectionsError) {
-      console.error('[OPPS] Error fetching collections:', collectionsError);
-    }
-
-    // Shop info - filter by store_id if provided
-    const shopQuery = supabaseAdmin
-      .from('shopify_connections')
-      .select('store_name, store_url')
-      .eq('user_id', user.id);
-    
-    if (storeId) {
-      shopQuery.eq('id', storeId);
-    }
-    
-    const { data: shopInfo, error: shopError } = await shopQuery.maybeSingle();
-
-    if (shopError) {
-      console.error('[OPPS] Error fetching shop info:', shopError);
-    }
+    const { data: collections } = await collectionsQuery;
 
     if (!products || products.length === 0) {
       console.log('[OPPS] No products found');
@@ -106,7 +193,9 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ 
           success: true, 
           opportunities: [],
-          message: 'Aucun produit trouvé. Importez des produits d\'abord.' 
+          message: language === 'fr' 
+            ? 'Aucun produit trouvé. Importez des produits d\'abord.'
+            : 'No products found. Import products first.'
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -114,14 +203,12 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[OPPS] Data loaded: ${products.length} products, ${collections?.length || 0} collections`);
 
-    // 2. ANALYZE CATALOG IN DEPTH
+    // 2. ANALYZE CATALOG - Extract top categories and keywords
     const categoryMap = new Map<string, { count: number; products: any[] }>();
     const vendorMap = new Map<string, number>();
     const tagsMap = new Map<string, number>();
-    const priceRanges = { low: 0, medium: 0, high: 0, premium: 0 };
     
     products.forEach(product => {
-      // Categories
       const category = product.category || product.product_type || 'Général';
       if (!categoryMap.has(category)) {
         categoryMap.set(category, { count: 0, products: [] });
@@ -130,19 +217,10 @@ Deno.serve(async (req: Request) => {
       catData.count++;
       catData.products.push(product);
       
-      // Price ranges
-      const price = parseFloat(product.price) || 0;
-      if (price < 50) priceRanges.low++;
-      else if (price < 200) priceRanges.medium++;
-      else if (price < 500) priceRanges.high++;
-      else priceRanges.premium++;
-
-      // Vendors
       if (product.vendor) {
         vendorMap.set(product.vendor, (vendorMap.get(product.vendor) || 0) + 1);
       }
 
-      // Tags
       if (product.tags) {
         const tags = product.tags.split(',').map((t: string) => t.trim());
         tags.forEach((tag: string) => {
@@ -153,331 +231,187 @@ Deno.serve(async (req: Request) => {
 
     const topCategories = Array.from(categoryMap.entries())
       .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 10);
-
-    const topVendors = Array.from(vendorMap.entries())
-      .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
     const topTags = Array.from(tagsMap.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 15);
+      .slice(0, 10);
 
-    const topProducts = products.slice(0, 10);
+    // 3. FETCH SERPAPI DATA (People Also Ask + Autocomplete) for top keywords
+    console.log('[OPPS] Fetching SerpAPI data (AnswerThePublic style)...');
+    
+    const keywordsToSearch = [
+      ...topCategories.slice(0, 3).map(([cat]) => cat),
+      ...topTags.slice(0, 2).map(([tag]) => tag)
+    ].filter(k => k && k.length > 2);
 
-    // 3. BUILD RICH CONTEXT PROMPT
-    const prompt = `Tu es un expert en marketing de contenu et SEO e-commerce. Analyse ce catalogue en profondeur et génère EXACTEMENT 8 opportunités d'articles de blog stratégiques (MINIMUM 5, IDÉALEMENT 8).
+    console.log(`[OPPS] Keywords to search: ${keywordsToSearch.join(', ')}`);
 
-🏪 INFORMATIONS BOUTIQUE :
-${shopInfo ? `- Nom : ${shopInfo.store_name}
-- URL : ${shopInfo.store_url}` : '- Boutique non connectée'}
+    const allPAAQuestions: string[] = [];
+    const allRelatedSearches: string[] = [];
+    const allAutocompleteSuggestions: string[] = [];
 
-📊 STATISTIQUES CATALOGUE :
-- Total produits : ${products.length}
-- Collections : ${collections?.length || 0}
-- Prix bas (<50€) : ${priceRanges.low} produits
-- Prix moyen (50-200€) : ${priceRanges.medium} produits
-- Prix haut (200-500€) : ${priceRanges.high} produits
-- Premium (>500€) : ${priceRanges.premium} produits
-
-📁 TOP CATÉGORIES (avec exemples produits) :
-${topCategories.map(([cat, data]) => {
-  const examples = data.products.slice(0, 3).map((p: any) => p.title).join(', ');
-  return `- ${cat} : ${data.count} produits\n  Exemples : ${examples}`;
-}).join('\n')}
-
-${collections && collections.length > 0 ? `🗂️ COLLECTIONS :
-${collections.map(c => `- ${c.title}`).join('\n')}` : ''}
-
-🏷️ MARQUES / VENDORS :
-${topVendors.map(([vendor, count]) => `- ${vendor} : ${count} produits`).join('\n')}
-
-🔖 TAGS POPULAIRES :
-${topTags.map(([tag, count]) => `- ${tag} (${count})`).join('\n')}
-
-💎 TOP 10 PRODUITS LES PLUS CHERS :
-${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).join('\n')}
-
-🎯 TYPES D'ARTICLES À GÉNÉRER (obligatoire) :
-
-1. **COMPARATIFS** : Compare 3-5 produits similaires d'une même catégorie
-   Exemple : "Comparatif 2025 : Les 5 meilleures chaises de bureau ergonomiques"
-
-2. **GUIDES D'ACHAT** : Aide à choisir le bon produit selon critères
-   Exemple : "Guide complet : Comment choisir sa table à manger ?"
-
-3. **NICHES / TENDANCES** : Articles sur micro-segments ou nouveautés
-   Exemple : "Mobilier minimaliste scandinave : Notre sélection 2025"
-
-4. **TUTORIELS** : Comment utiliser, entretenir, installer
-   Exemple : "Comment entretenir son canapé en cuir : 7 conseils d'expert"
-
-5. **SÉLECTIONS THÉMATIQUES** : Top X produits pour un usage/style
-   Exemple : "Top 10 des meubles pour petit appartement"
-
-📋 FORMAT JSON REQUIS (STRICT) :
-
-{
-  "opportunities": [
-    {
-      "title": "Titre accrocheur avec mots-clés SEO",
-      "description": "Description engageante de 2-3 phrases expliquant l'angle et la valeur de l'article",
-      "category": "Catégorie principale du catalogue",
-      "subCategory": "Sous-catégorie si pertinent",
-      "type": "comparison|guide|niche|tutorial|selection",
-      "angle": "L'angle unique de l'article",
-      "targetAudience": "Audience cible précise",
-      "primaryKeywords": ["mot-clé principal 1", "mot-clé 2"],
-      "secondaryKeywords": ["mot-clé 3", "mot-clé 4", "mot-clé 5"],
-      "relatedCollectionTitles": ["Collection 1", "Collection 2"],
-      "suggestedProductTitles": ["Produit 1", "Produit 2", "Produit 3"],
-      "seoScore": 75-95,
-      "difficulty": "easy|medium|hard",
-      "estimatedWordCount": 1500-3000
-    }
-  ]
-}
-
-⚠️ RÈGLES CRITIQUES :
-- Retourne UNIQUEMENT du JSON valide (ZÉRO markdown, ZÉRO backticks)
-- Génère EXACTEMENT 8 opportunités variées (MINIMUM 5, IDÉALEMENT 8)
-- Utilise les VRAIS noms de produits et collections du catalogue
-- Chaque opportunité DOIT avoir AU MOINS 5 produits associés dans "suggestedProductTitles"
-- Chaque opportunité doit être CONCRÈTE et ACTIONNABLE
-- Mélange les 5 types d'articles
-- Les titres doivent être SEO-optimisés et accrocheurs
-- Les keywords doivent être pertinents et recherchés
-- Suggère 5-8 produits réels par opportunité (OBLIGATOIRE)`;
-
-    console.log('[OPPS] Calling Lovable AI with rich context...');
-    console.log('[OPPS] Prompt length:', prompt.length);
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
-    }
-
-    // Utiliser tool calling pour garantir JSON valide
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'Tu es un expert en marketing de contenu et SEO e-commerce. Tu analyses des catalogues produits et génères des opportunités d\'articles de blog stratégiques et pertinents.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 3000,
-        tools: [{
-          type: "function",
-          function: {
-            name: "generate_opportunities",
-            description: "Génère une liste d'opportunités d'articles blog",
-            parameters: {
-              type: "object",
-              properties: {
-                opportunities: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      title: { type: "string" },
-                      category: { type: "string" },
-                      type: { type: "string" },
-                      keywords: { type: "array", items: { type: "string" } },
-                      suggestedProductTitles: { type: "array", items: { type: "string" } },
-                      estimatedTraffic: { type: "string" },
-                      difficulty: { type: "string" },
-                      searchVolume: { type: "string" }
-                    },
-                    required: ["title", "category", "type", "keywords", "suggestedProductTitles"],
-                    additionalProperties: false
-                  }
-                }
-              },
-              required: ["opportunities"],
-              additionalProperties: false
-            }
-          }
-        }],
-        tool_choice: { type: "function", function: { name: "generate_opportunities" } }
-      })
-    });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('[OPPS] AI API error:', aiResponse.status, errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
-
-    const aiData = await aiResponse.json();
-    console.log('[OPPS] AI response received');
-
-    // Extract opportunities from tool call
-    const toolCall = aiData.choices[0].message.tool_calls?.[0];
-    if (!toolCall || toolCall.function.name !== 'generate_opportunities') {
-      throw new Error('AI did not return expected tool call');
-    }
-
-    const parsed = JSON.parse(toolCall.function.arguments);
-
-    // Handle both formats: direct array or object with opportunities property
-    let opportunitiesArray: any[];
-    if (Array.isArray(parsed)) {
-      console.log('[OPPS] AI returned direct array format');
-      opportunitiesArray = parsed;
-    } else if (parsed.opportunities && Array.isArray(parsed.opportunities)) {
-      console.log('[OPPS] AI returned object with opportunities property');
-      opportunitiesArray = parsed.opportunities;
-    } else {
-      console.error('[OPPS] Invalid format. Parsed:', JSON.stringify(parsed).substring(0, 200));
-      throw new Error('Invalid AI response format: expected array or object with opportunities array');
-    }
-
-    if (opportunitiesArray.length === 0) {
-      throw new Error('No opportunities generated by AI');
-    }
-
-    console.log(`[OPPS] Successfully generated ${opportunitiesArray.length} opportunities`);
-
-    // 4. SMART PRODUCT MATCHING
-    const opportunitiesWithProducts = opportunitiesArray.map((opp: any) => {
-      console.log(`[OPPS] Matching products for: ${opp.title}`);
+    for (const keyword of keywordsToSearch) {
+      // Fetch People Also Ask
+      const paaData = await fetchPeopleAlsoAsk(keyword, language);
+      allPAAQuestions.push(...paaData.questions);
+      allRelatedSearches.push(...paaData.relatedSearches);
       
-      // Build a relevance score for each product
-      const scoredProducts = products.map(product => {
-        let score = 0;
-        const productText = `${product.title} ${product.description || ''} ${product.tags || ''} ${product.category || ''} ${product.sub_category || ''}`.toLowerCase();
-        
-        // Match by suggested product titles (exact or partial)
-        if (opp.suggestedProductTitles) {
-          opp.suggestedProductTitles.forEach((suggestedTitle: string) => {
-            if (product.title.toLowerCase().includes(suggestedTitle.toLowerCase()) ||
-                suggestedTitle.toLowerCase().includes(product.title.toLowerCase())) {
-              score += 100; // Very high score for direct matches
-            }
-          });
-        }
-
-        // Match by category
-        const oppCategory = (opp.category || '').toLowerCase();
-        const oppSubCategory = (opp.subCategory || '').toLowerCase();
-        const prodCategory = (product.category || product.product_type || '').toLowerCase();
-        const prodSubCategory = (product.sub_category || '').toLowerCase();
-        
-        if (prodCategory && oppCategory && prodCategory.includes(oppCategory)) score += 50;
-        if (prodSubCategory && oppSubCategory && prodSubCategory.includes(oppSubCategory)) score += 40;
-        
-        // Match by keywords
-        if (opp.primaryKeywords) {
-          opp.primaryKeywords.forEach((keyword: string) => {
-            if (productText.includes(keyword.toLowerCase())) score += 30;
-          });
-        }
-        
-        if (opp.secondaryKeywords) {
-          opp.secondaryKeywords.forEach((keyword: string) => {
-            if (productText.includes(keyword.toLowerCase())) score += 15;
-          });
-        }
-
-        // Match by tags
-        if (product.tags && opp.primaryKeywords) {
-          const productTags = product.tags.toLowerCase().split(',').map((t: string) => t.trim());
-          opp.primaryKeywords.forEach((keyword: string) => {
-            if (productTags.some((tag: string) => tag.includes(keyword.toLowerCase()))) {
-              score += 20;
-            }
-          });
-        }
-
-        return { product, score };
-      });
-
-      // Sort by score and take top 8, but ensure minimum of 5 products
-      const matchedProducts = scoredProducts
-        .filter(sp => sp.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 8);
+      // Fetch Autocomplete questions (AnswerThePublic style)
+      const autocomplete = await fetchAutocompleteQuestions(keyword, language);
+      allAutocompleteSuggestions.push(...autocomplete);
       
-      // If less than 5 products matched, add more from the same category
-      if (matchedProducts.length < 5 && opp.category) {
-        const categoryProducts = scoredProducts
-          .filter(sp => {
-            const prodCategory = (sp.product.category || sp.product.product_type || '').toLowerCase();
-            return prodCategory.includes(opp.category.toLowerCase()) && 
-                   !matchedProducts.some(mp => mp.product.id === sp.product.id);
-          })
-          .slice(0, 5 - matchedProducts.length);
-        matchedProducts.push(...categoryProducts);
-      }
+      // Small delay between keywords
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    // Deduplicate
+    const uniquePAAQuestions = [...new Set(allPAAQuestions)];
+    const uniqueRelatedSearches = [...new Set(allRelatedSearches)];
+    const uniqueAutocomplete = [...new Set(allAutocompleteSuggestions)];
+
+    console.log(`[OPPS] Total unique data: ${uniquePAAQuestions.length} PAA, ${uniqueRelatedSearches.length} related, ${uniqueAutocomplete.length} autocomplete`);
+
+    // 4. GENERATE OPPORTUNITIES from SerpAPI data
+    const opportunities: any[] = [];
+    const articleTypes = ['comparison', 'guide', 'tutorial', 'selection', 'niche'];
+    
+    // Create opportunities from People Also Ask questions
+    uniquePAAQuestions.slice(0, 5).forEach((question, index) => {
+      const matchingCategory = topCategories[index % topCategories.length];
+      const categoryProducts = matchingCategory ? matchingCategory[1].products.slice(0, 8) : [];
       
-      // If still less than 5, add any products
-      if (matchedProducts.length < 5) {
-        const additionalProducts = scoredProducts
-          .filter(sp => !matchedProducts.some(mp => mp.product.id === sp.product.id))
-          .slice(0, 5 - matchedProducts.length);
-        matchedProducts.push(...additionalProducts);
-      }
-      
-      const productIds = matchedProducts.map(sp => {
-        console.log(`[OPPS] Matched: ${sp.product.title} (score: ${sp.score})`);
-        return sp.product.id;
-      });
-
-      // Map collection titles to IDs
-      let collectionIds: string[] = [];
-      if (opp.relatedCollectionTitles && collections) {
-        collectionIds = collections
-          .filter(c => opp.relatedCollectionTitles.some((title: string) => 
-            c.title.toLowerCase().includes(title.toLowerCase()) ||
-            title.toLowerCase().includes(c.title.toLowerCase())
-          ))
-          .map(c => c.id);
-      }
-
-      console.log(`[OPPS] Matched ${productIds.length} products and ${collectionIds.length} collections`);
-
-      return {
+      opportunities.push({
         id: crypto.randomUUID(),
-        title: opp.title,
-        description: opp.description,
-        category: opp.category,
-        subCategory: opp.subCategory,
-        type: opp.type,
-        angle: opp.angle,
-        targetAudience: opp.targetAudience,
-        primaryKeywords: opp.primaryKeywords || [],
-        secondaryKeywords: opp.secondaryKeywords || [],
-        productIds: productIds,
-        productsCount: productIds.length,
-        collectionIds: collectionIds,
-        metaDescription: opp.description,
-        estimatedWordCount: opp.estimatedWordCount || 2000,
-        seoScore: opp.seoScore || 80,
-        difficulty: opp.difficulty || 'medium'
-      };
+        title: question,
+        description: language === 'fr'
+          ? `Article basé sur une vraie question posée par les internautes sur Google. Répondez à cette interrogation pour attirer du trafic qualifié.`
+          : `Article based on a real question asked by users on Google. Answer this query to attract qualified traffic.`,
+        category: matchingCategory ? matchingCategory[0] : 'Général',
+        type: 'guide',
+        source: 'people_also_ask',
+        primaryKeywords: [question.split(' ').slice(0, 4).join(' ')],
+        secondaryKeywords: uniqueRelatedSearches.slice(0, 3),
+        productIds: categoryProducts.map((p: any) => p.id),
+        productsCount: categoryProducts.length,
+        seoScore: 85 + Math.floor(Math.random() * 10),
+        difficulty: 'medium',
+        estimatedWordCount: 1500,
+        searchData: {
+          originalQuestion: question,
+          source: 'SerpAPI - People Also Ask'
+        }
+      });
     });
 
-    console.log('[OPPS] Opportunities enriched with matched products and collections');
+    // Create opportunities from Autocomplete suggestions (AnswerThePublic style)
+    uniqueAutocomplete
+      .filter(s => s.includes('?') || s.toLowerCase().startsWith('comment') || s.toLowerCase().startsWith('how'))
+      .slice(0, 3)
+      .forEach((suggestion, index) => {
+        const matchingCategory = topCategories[(index + 2) % topCategories.length];
+        const categoryProducts = matchingCategory ? matchingCategory[1].products.slice(0, 8) : [];
+        
+        opportunities.push({
+          id: crypto.randomUUID(),
+          title: suggestion.charAt(0).toUpperCase() + suggestion.slice(1),
+          description: language === 'fr'
+            ? `Suggestion de recherche populaire identifiée via l'autocomplétion Google. Fort potentiel SEO.`
+            : `Popular search suggestion identified via Google autocomplete. High SEO potential.`,
+          category: matchingCategory ? matchingCategory[0] : 'Général',
+          type: 'tutorial',
+          source: 'google_autocomplete',
+          primaryKeywords: [suggestion],
+          secondaryKeywords: [],
+          productIds: categoryProducts.map((p: any) => p.id),
+          productsCount: categoryProducts.length,
+          seoScore: 80 + Math.floor(Math.random() * 15),
+          difficulty: 'easy',
+          estimatedWordCount: 1200,
+          searchData: {
+            originalSuggestion: suggestion,
+            source: 'SerpAPI - Google Autocomplete'
+          }
+        });
+      });
 
-    // 5. SAVE TO DATABASE WITH CACHE (24h expiration)
+    // Create opportunities from Related Searches
+    uniqueRelatedSearches.slice(0, 2).forEach((search, index) => {
+      const matchingCategory = topCategories[(index + 1) % topCategories.length];
+      const categoryProducts = matchingCategory ? matchingCategory[1].products.slice(0, 8) : [];
+      
+      const titlePrefix = language === 'fr' ? 'Guide complet :' : 'Complete Guide:';
+      
+      opportunities.push({
+        id: crypto.randomUUID(),
+        title: `${titlePrefix} ${search.charAt(0).toUpperCase() + search.slice(1)}`,
+        description: language === 'fr'
+          ? `Recherche associée populaire sur Google. Ciblez cette requête pour capturer du trafic organique.`
+          : `Popular related search on Google. Target this query to capture organic traffic.`,
+        category: matchingCategory ? matchingCategory[0] : 'Général',
+        type: 'guide',
+        source: 'related_searches',
+        primaryKeywords: [search],
+        secondaryKeywords: [],
+        productIds: categoryProducts.map((p: any) => p.id),
+        productsCount: categoryProducts.length,
+        seoScore: 75 + Math.floor(Math.random() * 15),
+        difficulty: 'medium',
+        estimatedWordCount: 2000,
+        searchData: {
+          originalSearch: search,
+          source: 'SerpAPI - Related Searches'
+        }
+      });
+    });
+
+    // If no SerpAPI data, fallback to category-based opportunities
+    if (opportunities.length === 0) {
+      console.log('[OPPS] No SerpAPI data, generating category-based opportunities');
+      
+      topCategories.forEach(([category, data], index) => {
+        const titleTemplates = language === 'fr' ? [
+          `Guide d'achat : Comment choisir ${category.toLowerCase()}`,
+          `Top 10 ${category.toLowerCase()} en 2025`,
+          `Comparatif : Les meilleurs ${category.toLowerCase()}`,
+          `Tout savoir sur ${category.toLowerCase()}`
+        ] : [
+          `Buying Guide: How to Choose ${category}`,
+          `Top 10 ${category} in 2025`,
+          `Comparison: Best ${category}`,
+          `Everything About ${category}`
+        ];
+        
+        opportunities.push({
+          id: crypto.randomUUID(),
+          title: titleTemplates[index % titleTemplates.length],
+          description: language === 'fr'
+            ? `Article généré à partir de votre catégorie ${category} (${data.count} produits).`
+            : `Article generated from your ${category} category (${data.count} products).`,
+          category: category,
+          type: articleTypes[index % articleTypes.length],
+          source: 'catalog_analysis',
+          primaryKeywords: [category.toLowerCase()],
+          secondaryKeywords: topTags.slice(0, 3).map(([tag]) => tag),
+          productIds: data.products.slice(0, 8).map((p: any) => p.id),
+          productsCount: Math.min(data.products.length, 8),
+          seoScore: 70 + Math.floor(Math.random() * 20),
+          difficulty: 'medium',
+          estimatedWordCount: 1800,
+          searchData: {
+            source: 'Catalog Analysis'
+          }
+        });
+      });
+    }
+
+    console.log(`[OPPS] Generated ${opportunities.length} opportunities`);
+
+    // 5. SAVE TO DATABASE
     const cacheExpiresAt = new Date();
     cacheExpiresAt.setHours(cacheExpiresAt.getHours() + 24);
     
-    console.log('[OPPS] Saving opportunities to database with cache...');
-    
-    // First, clear old cached opportunities for this store
+    // Clear old cached opportunities
     if (storeId) {
       await supabaseAdmin
         .from('blog_opportunities')
@@ -487,13 +421,12 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
         .eq('is_cached', true);
     }
     
-    // Insert new opportunities
-    const opportunitiesToInsert = opportunitiesWithProducts.map((opp: any) => ({
+    const opportunitiesToInsert = opportunities.map((opp: any) => ({
       user_id: user.id,
       store_id: storeId || null,
       article_title: opp.title,
       intro_excerpt: opp.description,
-      meta_description: opp.metaDescription,
+      meta_description: opp.description,
       type: opp.type,
       difficulty: opp.difficulty,
       estimated_word_count: opp.estimatedWordCount,
@@ -505,6 +438,7 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
       cache_expires_at: cacheExpiresAt.toISOString(),
       last_refreshed_at: new Date().toISOString(),
       generated_at: new Date().toISOString(),
+      structure: opp.searchData // Store SerpAPI source info
     }));
     
     const { error: insertError } = await supabaseAdmin
@@ -513,16 +447,20 @@ ${topProducts.map(p => `- ${p.title} - ${parseFloat(p.price).toFixed(2)}€`).jo
     
     if (insertError) {
       console.error('[OPPS] Error saving opportunities:', insertError);
-      // Continue anyway, return opportunities even if save failed
     } else {
-      console.log(`[OPPS] Successfully saved ${opportunitiesToInsert.length} opportunities to cache`);
+      console.log(`[OPPS] Saved ${opportunitiesToInsert.length} opportunities`);
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        opportunities: opportunitiesWithProducts,
+        opportunities: opportunities,
         cached: true,
+        serpApiData: {
+          paaQuestions: uniquePAAQuestions.length,
+          relatedSearches: uniqueRelatedSearches.length,
+          autocompleteSuggestions: uniqueAutocomplete.length
+        },
         stats: {
           totalProducts: products.length,
           totalCollections: collections?.length || 0,
