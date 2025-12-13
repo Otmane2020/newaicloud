@@ -98,6 +98,7 @@ import LandingTest from "./pages/LandingTest";
 import SearchImage from "./pages/SearchImage";
 import LandingDebug from "./pages/LandingDebug";
 import ApiKeys from "./pages/ApiKeys";
+import HomepageLiquid from "./pages/HomepageLiquid";
 import ApiDocs from "./pages/ApiDocs";
 import ApiAnalytics from "./pages/ApiAnalytics";
 import UsageTable from "./pages/UsageTable";
@@ -258,6 +259,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <MediaHistory />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/products/homepage"
+              element={
+                <ProtectedLayout>
+                  <HomepageLiquid />
                 </ProtectedLayout>
               }
             />

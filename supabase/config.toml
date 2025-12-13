@@ -586,3 +586,6 @@ verify_jwt = false
 
 [functions.generate-ai-collections]
 verify_jwt = true
+
+[functions.generate-homepage-liquid]
+verify_jwt = true
