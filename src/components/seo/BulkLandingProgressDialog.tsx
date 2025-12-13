@@ -52,7 +52,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 async function callWithRetry<T>(
   fn: () => Promise<{ data: T | null; error: any }>,
   maxRetries = 3,
-  baseDelay = 8000
+  baseDelay = 3000 // Reduced from 8000ms to 3000ms
 ): Promise<T> {
   let lastError: Error | null = null;
   
@@ -156,9 +156,9 @@ export function BulkLandingProgressDialog({
   const generationStartedRef = useRef(false);
   const generatedVendorsCache = useRef<Map<string, string>>(new Map());
 
-  // Batching constants
+  // Batching constants - Optimized for speed
   const BATCH_SIZE = 50;
-  const BATCH_DELAY_MS = 10000; // 10 seconds between batches
+  const BATCH_DELAY_MS = 3000; // Reduced from 10s to 3s between batches
 
   // 🏷️ Resolve Vendor based on config (similar to RegenerateLanding)
   const resolveVendorForProduct = async (
@@ -268,9 +268,9 @@ export function BulkLandingProgressDialog({
         const globalIndex = batchIndex * BATCH_SIZE + i;
         setCurrentProductIndex(globalIndex + 1);
 
-        // Add shorter delay between requests within batch (2 seconds)
+        // Add short delay between requests within batch (500ms instead of 2s)
         if (i > 0) {
-          await delay(2000);
+          await delay(500);
         }
 
         const product = batch[i];
@@ -381,7 +381,7 @@ export function BulkLandingProgressDialog({
             },
           }),
           3, // 3 retries
-          5000 // 5s base delay (faster for bulk)
+          2000 // 2s base delay (faster for bulk)
         );
 
         // Increment local counter
