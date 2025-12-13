@@ -153,7 +153,7 @@ const Index = () => {
       <AnnouncementBar />
       <PublicHeader />
 
-      {/* Hero Section - Cleaner Design */}
+      {/* Hero Section - Impact First */}
       <section id="hero" className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
@@ -172,7 +172,7 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Main Title */}
+            {/* Main Title - Stronger Message */}
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
               {t.landing.hero.title}{" "}
               <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
@@ -181,10 +181,10 @@ const Index = () => {
               {t.landing.hero.titleEnd}
             </h1>
 
-            {/* Subtitle */}
+            {/* Subtitle - More Direct */}
             <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto">{t.landing.hero.subtitle}</p>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons - Result-Oriented */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
               <Button
                 size="lg"
@@ -226,31 +226,45 @@ const Index = () => {
         <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/15 rounded-full blur-3xl pointer-events-none" />
       </section>
 
-      {/* Stats Section - Clean Grid */}
+      {/* Issues Detected Section - Problem Showing */}
       <section className="py-10 bg-gradient-to-b from-slate-900 to-background">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {[
-              { value: "3x", label: language === "fr" ? "Plus rapide" : "Faster", icon: Zap },
-              { value: "50%", label: language === "fr" ? "Plus de trafic" : "More Traffic", icon: TrendingUp },
-              { value: "10h+", label: language === "fr" ? "Économisées/sem" : "Saved Weekly", icon: Clock },
-              { value: "Top 10", label: "Google", icon: BarChart3 },
-            ].map((stat, i) => (
-              <div
-                key={i}
-                className="text-center p-6 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg hover:shadow-xl hover:border-primary/30 transition-all"
-              >
-                <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <stat.icon className="w-5 h-5 text-primary" />
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <p className="text-sm text-muted-foreground mb-2">
+                {language === "fr" ? "La plupart des boutiques Shopify souffrent de :" : "Most Shopify stores suffer from:"}
+              </p>
+            </div>
+            
+            <div className="grid sm:grid-cols-2 gap-3 mb-8">
+              {[
+                language === "fr" ? "Titres et descriptions manquants" : "Missing meta titles & descriptions",
+                language === "fr" ? "Images sans texte ALT" : "Images without ALT text",
+                language === "fr" ? "Produits non éligibles Google Shopping" : "Products not eligible for Google Shopping",
+                language === "fr" ? "Structure SEO interne défaillante" : "Poor internal SEO structure",
+              ].map((issue, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <span className="text-destructive text-lg">✗</span>
+                  <span className="text-sm text-foreground">{issue}</span>
                 </div>
-                <div className="text-3xl sm:text-4xl font-black text-foreground">{stat.value}</div>
-                <div className="text-sm text-muted-foreground mt-1 font-medium">{stat.label}</div>
-              </div>
-            ))}
+              ))}
+            </div>
+            
+            <div className="text-center">
+              <p className="text-lg font-semibold text-primary">
+                {language === "fr" ? "NewAI corrige tout ça automatiquement." : "NewAI fixes all of this automatically."}
+              </p>
+            </div>
           </div>
-
-          {/* Mini Stats Row */}
-          <div className="flex items-center justify-center gap-6 sm:gap-10 mt-8 flex-wrap">
+          
+          {/* Social Proof - Compact */}
+          <div className="flex items-center justify-center gap-6 sm:gap-10 mt-10 flex-wrap">
+            <div className="text-center">
+              <div className="text-lg font-bold text-foreground">+180%</div>
+              <div className="text-[10px] text-muted-foreground">
+                {language === "fr" ? "Trafic organique" : "Organic Traffic"}
+              </div>
+            </div>
             <div className="text-center">
               <div className="text-lg font-bold text-foreground">10K+</div>
               <div className="text-[10px] text-muted-foreground">
@@ -260,18 +274,8 @@ const Index = () => {
             <div className="text-center">
               <div className="text-lg font-bold text-foreground">500+</div>
               <div className="text-[10px] text-muted-foreground">
-                {language === "fr" ? "Vendeurs actifs" : "Active Sellers"}
+                {language === "fr" ? "Boutiques actives" : "Active Stores"}
               </div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-foreground">95%</div>
-              <div className="text-[10px] text-muted-foreground">
-                {language === "fr" ? "Satisfaction" : "Satisfaction"}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-foreground">24/7</div>
-              <div className="text-[10px] text-muted-foreground">{language === "fr" ? "Support IA" : "AI Support"}</div>
             </div>
           </div>
         </div>
@@ -483,7 +487,7 @@ const Index = () => {
       </section>
 
       {/* Integrations Bar */}
-      <section className="py-8 border-y border-border/50 bg-muted/30">
+      <section className="py-8 border-y border-border/50">
         <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
             <span className="text-sm font-medium">{language === "fr" ? "Intégrations" : "Integrations"}:</span>
@@ -494,57 +498,6 @@ const Index = () => {
                   <span className="text-sm font-medium hidden sm:inline">{int.name}</span>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section - Side by Side */}
-      <section id="benefits" className="py-16 sm:py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-10 items-center max-w-6xl mx-auto">
-            <div className="space-y-5">
-              <Badge variant="outline" className="border-success text-success">
-                {t.landing.benefits.badge}
-              </Badge>
-              <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.benefits.title}</h2>
-              <p className="text-muted-foreground">{t.landing.benefits.subtitle}</p>
-
-              <div className="space-y-3 pt-2">
-                {t.landing.benefits.items.map((benefit: any, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-background transition-colors"
-                  >
-                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-sm">{benefit.title}</p>
-                      <p className="text-xs text-muted-foreground">{benefit.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Button size="lg" className="mt-4" onClick={() => navigate("/auth?mode=signup")}>
-                {t.landing.benefits.cta}
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-3xl blur-2xl" />
-              <Card className="relative p-6 border-2 border-primary/20">
-                <div className="grid grid-cols-2 gap-6">
-                  {t.landing.benefits.stats.map((stat: any, index: number) => (
-                    <div key={index} className="text-center p-4 rounded-xl bg-muted/50">
-                      <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
-                        {stat.value}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
             </div>
           </div>
         </div>

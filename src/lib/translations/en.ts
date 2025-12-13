@@ -7005,12 +7005,12 @@ export const translations = {
     },
     hero: {
       badge: "🔥 Your store is invisible on Google. We fix it.",
-      title: "Get Visible on Google in",
-      titleHighlight: "Minutes",
-      titleEnd: ", Not Months",
+      title: "Get indexed, ranked & visible",
+      titleHighlight: "on Google",
+      titleEnd: "— automatically",
       subtitle:
-        "NewAI automatically optimizes your Shopify store so Google can rank you faster — without SEO knowledge.",
-      ctaPrimary: "Start Ranking Now",
+        "No SEO skills. No agencies. Just install & rank.",
+      ctaPrimary: "Fix my SEO now",
       ctaSecondary: "See How It Works",
       setupTime: "Free • 5-min setup",
       noCommitment: "No credit card required",
@@ -7103,7 +7103,7 @@ export const translations = {
       badge: "Results",
       title: "Proven results for Shopify stores",
       subtitle: "Join hundreds of sellers who have transformed their store with AI optimization",
-      cta: "Start now",
+      cta: "Fix my SEO now",
       items: [
         {
           title: "3x Faster",
@@ -7274,9 +7274,9 @@ export const translations = {
       subtitle: "Get answers to common questions",
     },
     cta: {
-      title: "Ready to transform your store?",
-      subtitle: "Start your free trial today.",
-      button: "Start Free Trial",
+      title: "Ready to get visible on Google?",
+      subtitle: "Fix your Shopify SEO in 5 minutes. For free.",
+      button: "Fix my SEO now",
     },
     contact: {
       badge: "Get in Touch",
