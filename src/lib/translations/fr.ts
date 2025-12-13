@@ -7338,12 +7338,12 @@ export const translations = {
     },
     hero: {
       badge: "🔥 Votre boutique est invisible sur Google. On corrige ça.",
-      title: "Soyez visible sur Google en",
-      titleHighlight: "minutes",
-      titleEnd: ", pas en mois",
+      title: "Indexé, classé & visible",
+      titleHighlight: "sur Google",
+      titleEnd: "— automatiquement",
       subtitle:
-        "NewAI optimise automatiquement votre boutique Shopify pour que Google vous référence plus vite — sans connaissances SEO.",
-      ctaPrimary: "Commencer à ranker",
+        "Pas de compétences SEO. Pas d'agence. Installez & rankez.",
+      ctaPrimary: "Corriger mon SEO",
       ctaSecondary: "Voir comment ça marche",
       setupTime: "Gratuit • 5 min d'installation",
       noCommitment: "Sans carte bancaire",
@@ -7439,7 +7439,7 @@ export const translations = {
       badge: "Résultats",
       title: "Résultats prouvés pour les boutiques Shopify",
       subtitle: "Rejoignez des centaines de vendeurs qui ont transformé leur boutique avec l'optimisation IA",
-      cta: "Commencer maintenant",
+      cta: "Corriger mon SEO",
       items: [
         {
           title: "3x plus rapide",
@@ -7611,9 +7611,9 @@ export const translations = {
       subtitle: "Obtenez des réponses aux questions courantes",
     },
     cta: {
-      title: "Prêt à transformer votre boutique ?",
-      subtitle: "Commencez votre essai gratuit dès aujourd'hui.",
-      button: "Commencer l'essai gratuit",
+      title: "Prêt à être visible sur Google ?",
+      subtitle: "Corrigez le SEO de votre boutique Shopify en 5 minutes. Gratuitement.",
+      button: "Corriger mon SEO",
     },
     contact: {
       badge: "Contactez-nous",
