@@ -62,6 +62,45 @@ const EVENT_OPTIONS: { value: EventType; label: string; labelFr: string; icon: R
   { value: 'new_arrivals', label: 'New Arrivals', labelFr: 'Nouveautés', icon: <Sparkles className="w-4 h-4" /> },
 ];
 
+// Language detection from product titles
+const detectLanguageFromProducts = (products: Product[]): 'fr' | 'en' => {
+  if (!products || products.length === 0) return 'fr';
+  
+  const frenchIndicators = [
+    'le ', 'la ', 'les ', 'de ', 'du ', 'des ', 'un ', 'une ', 
+    'pour ', 'avec ', 'dans ', 'sur ', 'en ', 'et ', 'ou ',
+    'noir', 'blanc', 'rouge', 'bleu', 'vert', 'jaune',
+    'petit', 'grand', 'beau', 'nouveau', 'moderne',
+    'maison', 'table', 'chaise', 'lampe', 'canapé', 'lit',
+    'cuisine', 'salon', 'chambre', 'jardin', 'bureau',
+    'tapis', 'miroir', 'vase', 'cadre', 'horloge', 'coussin'
+  ];
+  
+  const englishIndicators = [
+    'the ', 'a ', 'an ', 'of ', 'for ', 'with ', 'in ', 'on ', 'and ', 'or ',
+    'black', 'white', 'red', 'blue', 'green', 'yellow',
+    'small', 'large', 'beautiful', 'new', 'modern',
+    'home', 'table', 'chair', 'lamp', 'sofa', 'bed',
+    'kitchen', 'living', 'bedroom', 'garden', 'office',
+    'rug', 'mirror', 'vase', 'frame', 'clock', 'pillow', 'cushion'
+  ];
+  
+  const allTitles = products.map(p => p.title.toLowerCase()).join(' ');
+  
+  let frCount = 0;
+  let enCount = 0;
+  
+  frenchIndicators.forEach(indicator => {
+    if (allTitles.includes(indicator)) frCount++;
+  });
+  
+  englishIndicators.forEach(indicator => {
+    if (allTitles.includes(indicator)) enCount++;
+  });
+  
+  return frCount >= enCount ? 'fr' : 'en';
+};
+
 export function HomepageGenerator() {
   const { user } = useAuth();
   const { selectedStore } = useStore();
@@ -80,6 +119,9 @@ export function HomepageGenerator() {
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Detected language from products
+  const [detectedLanguage, setDetectedLanguage] = useState<'fr' | 'en'>('fr');
   
   // Generation
   const [generating, setGenerating] = useState(false);
@@ -117,6 +159,13 @@ export function HomepageGenerator() {
 
       setProducts(productsData || []);
       setCollections(collectionsData || []);
+      
+      // Detect language from product titles
+      if (productsData && productsData.length > 0) {
+        const detected = detectLanguageFromProducts(productsData);
+        setDetectedLanguage(detected);
+        console.log(`[HomepageGenerator] Detected language from products: ${detected}`);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -193,7 +242,7 @@ export function HomepageGenerator() {
           } : null,
           customTitle,
           customSubtitle,
-          language
+          language: detectedLanguage // Use detected language from product titles
         }
       });
 
@@ -254,10 +303,13 @@ export function HomepageGenerator() {
               <CardTitle className="text-xl">
                 {language === 'fr' ? 'Générateur de Page d\'Accueil' : 'Homepage Generator'}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="flex items-center gap-2">
                 {language === 'fr' 
                   ? 'Générez du code Liquid Shopify prêt à coller dans votre thème'
                   : 'Generate Shopify Liquid code ready to paste into your theme'}
+                <Badge variant="outline" className="ml-2">
+                  {detectedLanguage === 'fr' ? '🇫🇷 FR' : '🇬🇧 EN'}
+                </Badge>
               </CardDescription>
             </div>
           </div>
