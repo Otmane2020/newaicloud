@@ -31,110 +31,63 @@ export default function ShopifyApp() {
 
       console.log('🔍 [ShopifyApp] Params:', { rawShop, shop, pendingToken: !!pendingToken, host: !!host });
 
-      // Log demo store detection (but don't bypass - let normal flow handle it)
-      if (shop === DEMO_STORE_DOMAIN || rawShop === 'store-demo-20240334') {
-        console.log('🎭 [ShopifyApp] Demo store detected, proceeding with normal flow');
-      }
+      const isDemoStore = shop === DEMO_STORE_DOMAIN;
 
       // Si "Open app" depuis Shopify (host présent mais pas de pending_token)
-      // Vérifier si l'utilisateur a une connexion et subscription active via le shop domain
       if (host && !pendingToken && shop) {
-        console.log('🔄 [ShopifyApp] Open app detected (host without pending_token)');
+        console.log('🔄 [ShopifyApp] Open app detected');
         
-        // 🎯 DEMO STORE: Bypass direct vers dashboard
-        const isDemoStore = shop === DEMO_STORE_DOMAIN;
-        if (isDemoStore) {
-          console.log('🎭 [ShopifyApp] Demo store detected');
-        }
+        // 🚀 OPTIMIZATION: Vérifier session ET connection en parallèle
+        const [sessionResult, connectionResult] = await Promise.all([
+          supabase.auth.getSession(),
+          supabase
+            .from("shopify_connections")
+            .select("user_id, profiles!inner(subscription_status)")
+            .eq("store_url", shop)
+            .eq("is_active", true)
+            .single()
+        ]);
         
-        // D'abord vérifier la session locale
-        const { data: { session } } = await supabase.auth.getSession();
+        const session = sessionResult.data?.session;
+        const connection = connectionResult.data;
         
+        // Si session active → dashboard immédiat
         if (session?.user) {
-          console.log('✅ [ShopifyApp] User already authenticated, redirecting to dashboard');
+          console.log('✅ [ShopifyApp] User authenticated, redirecting to dashboard');
           setStatus("processed");
           navigate("/dashboard", { replace: true });
           return;
         }
         
-        // Pas de session locale - vérifier via shop domain si l'utilisateur existe avec subscription active
-        console.log('🔍 [ShopifyApp] No local session, checking shop connection...');
-        const { data: connection, error: connError } = await supabase
-          .from("shopify_connections")
-          .select("user_id")
-          .eq("store_url", shop)
-          .eq("is_active", true)
-          .single();
-        
-        console.log('📋 [ShopifyApp] Connection lookup:', { 
-          found: !!connection, 
-          user_id: connection?.user_id,
-          error: connError?.message 
-        });
-        
-        if (connection?.user_id) {
-          // Vérifier si cet utilisateur a un abonnement actif OU si c'est le demo store
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("subscription_status, email")
-            .eq("id", connection.user_id)
-            .single();
+        // Si connection avec subscription active → quick-login
+        const subscriptionStatus = (connection?.profiles as any)?.subscription_status;
+        if (connection?.user_id && (isDemoStore || subscriptionStatus === 'active' || subscriptionStatus === 'trialing')) {
+          console.log('🔑 [ShopifyApp] Quick-login for active user');
           
-          console.log('📋 [ShopifyApp] Profile check:', { 
-            user_id: connection.user_id, 
-            status: profile?.subscription_status,
-            email: profile?.email,
-            isDemoStore,
-            error: profileError?.message
-          });
-          
-          // Demo store OU subscription active → quick-login direct (bypass shopify-auto-auth)
-          if (isDemoStore || profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
-            console.log('✅ [ShopifyApp] User has active subscription or is demo, trying QUICK-LOGIN (bypassing auto-auth)');
+          try {
+            const { data: authData, error: authError } = await supabase.functions.invoke("shopify-quick-login", {
+              body: { shop, user_id: connection.user_id },
+            });
             
-            try {
-              // Utiliser shopify-quick-login au lieu de shopify-auto-auth (plus fiable)
-              const { data: authData, error: authError } = await supabase.functions.invoke("shopify-quick-login", {
-                body: { shop, user_id: connection.user_id },
+            if (!authError && authData?.access_token) {
+              await supabase.auth.setSession({
+                access_token: authData.access_token,
+                refresh_token: authData.refresh_token,
               });
-              
-              console.log('🔑 [ShopifyApp] Quick-login result:', { 
-                hasToken: !!authData?.access_token, 
-                error: authError?.message,
-                errorDetails: authError
-              });
-              
-              if (!authError && authData?.access_token) {
-                console.log('🔓 [ShopifyApp] Setting session with tokens...');
-                const { error: sessionError } = await supabase.auth.setSession({
-                  access_token: authData.access_token,
-                  refresh_token: authData.refresh_token,
-                });
-                
-                if (sessionError) {
-                  console.error('❌ [ShopifyApp] Session set failed:', sessionError);
-                } else {
-                  console.log('✅ [ShopifyApp] Session set successfully, waiting for propagation...');
-                  // Attendre que la session soit propagée
-                  await new Promise(resolve => setTimeout(resolve, 500));
-                  setStatus("processed");
-                  navigate("/dashboard", { replace: true });
-                  return;
-                }
-              } else {
-                console.error('❌ [ShopifyApp] Quick-login failed:', authError);
-              }
-            } catch (err) {
-              console.error('⚠️ [ShopifyApp] Quick-login exception:', err);
+              // Réduire le délai de propagation
+              await new Promise(resolve => setTimeout(resolve, 200));
+              setStatus("processed");
+              navigate("/dashboard", { replace: true });
+              return;
             }
+          } catch (err) {
+            console.error('⚠️ [ShopifyApp] Quick-login failed:', err);
           }
         }
         
-        // Pas de connexion ou quick-login échoué → aller au setup-wizard
+        // Pas de connexion ou quick-login échoué → setup-wizard
         setStatus("processed");
-        console.log('⚠️ [ShopifyApp] Redirecting to setup-wizard');
-        const redirectParams = new URLSearchParams({ shop });
-        navigate(`/app/setup-wizard?${redirectParams.toString()}`, { replace: true });
+        navigate(`/app/setup-wizard?shop=${shop}`, { replace: true });
         return;
       }
 
