@@ -10,19 +10,24 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { useTranslation } from "@/lib/language";
 import { useShopifyBilling } from "@/hooks/useShopifyBilling";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ShopifyConnectionsList = lazy(() => import("@/components/dashboard/ShopifyConnectionsList"));
+
+// Only this email can add stores
+const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
 
 export function ShopifyIntegrationTabs() {
   const { isDemoMode } = useDemoMode();
   const { isShopifyUser, loading: shopifyLoading } = useShopifyBilling();
   const { t, tf } = useTranslation();
+  const { user } = useAuth();
   const [showDialog, setShowDialog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Users connected via Shopify OAuth cannot add stores (they already have one)
-  const canAddStore = !isDemoMode && !isShopifyUser;
+  // Only oben.rockman@gmail.com can add stores
+  const canAddStore = !isDemoMode && user?.email === FULL_ACCESS_EMAIL;
 
   // Handle OAuth callback messages
   useEffect(() => {
@@ -96,7 +101,26 @@ export function ShopifyIntegrationTabs() {
                 {t.integration?.shopify?.description || 'Connect and manage your Shopify stores'}
               </CardDescription>
             </div>
-            {/* Refresh and Add Store buttons hidden */}
+            {/* Add Store button - only for oben.rockman@gmail.com */}
+            {canAddStore && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRefreshKey(prev => prev + 1)}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  {t.common?.refresh || 'Refresh'}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setShowDialog(true)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {t.integration?.shopify?.addStore || 'Add Store'}
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

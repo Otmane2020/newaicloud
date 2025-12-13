@@ -80,11 +80,12 @@ export default function Account() {
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })} className="mt-6">
         {/* Hide horizontal tabs for non-full-access users */}
         {hasFullAccess && (
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile">{t.account.tabs.profile}</TabsTrigger>
             <TabsTrigger value="integrations">{t.account.tabs.integrations}</TabsTrigger>
             <TabsTrigger value="subscription">{t.account.tabs.subscription}</TabsTrigger>
             <TabsTrigger value="billing">{t.account.tabs.billing}</TabsTrigger>
+            <TabsTrigger value="usage">{t.dashboard?.usage?.title || 'Usage'}</TabsTrigger>
           </TabsList>
         )}
 
@@ -128,7 +129,16 @@ export default function Account() {
           </div>
         </TabsContent>
 
-        {/* Usage tab hidden */}
+        <TabsContent value="usage" className="mt-6">
+          <div className="space-y-4 md:space-y-6">
+            <div className="bg-white rounded-lg border p-4 md:p-6">
+              <UsageWidget />
+            </div>
+            <div className="bg-white rounded-lg border p-4 md:p-6">
+              <UsageLimits />
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
