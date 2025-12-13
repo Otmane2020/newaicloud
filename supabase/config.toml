@@ -48,6 +48,13 @@ function = "send-monthly-report"
 schedule = "0 * * * *"
 function = "process-social-campaigns"
 
+[cron.process-recovery-automations]
+schedule = "0 * * * *"
+function = "process-recovery-automations"
+
+[functions.process-recovery-automations]
+verify_jwt = false
+
 [functions.trigger-hourly-sync]
 verify_jwt = false
 

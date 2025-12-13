@@ -3299,9 +3299,11 @@ export type Database = {
           country: string | null
           created_at: string
           email: string
+          first_email_sent_at: string | null
           full_name: string | null
           id: string
           plan_interest: string | null
+          second_email_sent_at: string | null
           source: string | null
           status: string | null
           updated_at: string
@@ -3312,9 +3314,11 @@ export type Database = {
           country?: string | null
           created_at?: string
           email: string
+          first_email_sent_at?: string | null
           full_name?: string | null
           id?: string
           plan_interest?: string | null
+          second_email_sent_at?: string | null
           source?: string | null
           status?: string | null
           updated_at?: string
@@ -3325,9 +3329,11 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string
+          first_email_sent_at?: string | null
           full_name?: string | null
           id?: string
           plan_interest?: string | null
+          second_email_sent_at?: string | null
           source?: string | null
           status?: string | null
           updated_at?: string
