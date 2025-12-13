@@ -63,33 +63,18 @@ const PLAN_META: Record<string, { name: string; popular?: boolean }> = {
 const FEATURES = [
   {
     icon: Search,
-    title: "AI SEO Optimization",
-    desc: "Boost rankings with AI-generated titles, descriptions & meta tags optimized for Google",
+    title: "Titles, Meta, Images",
+    desc: "All your SEO is fixed automatically — no expertise needed",
   },
   {
     icon: Image,
-    title: "Smart Backgrounds",
-    desc: "Transform product photos with professional AI-generated backgrounds in seconds",
+    title: "Google Shopping Feed",
+    desc: "Auto-generated XML feed syncs with Google Merchant Center",
   },
   {
     icon: FileText,
-    title: "Landing Pages",
-    desc: "Auto-generate high-converting product landing pages that drive sales",
-  },
-  {
-    icon: Tags,
-    title: "Smart Tags & Categories",
-    desc: "AI-powered product tagging and categorization for better organization",
-  },
-  {
-    icon: BarChart3,
-    title: "Analytics Dashboard",
-    desc: "Track your store performance with detailed SEO and conversion analytics",
-  },
-  {
-    icon: MessageSquare,
-    title: "AI Chat Assistant",
-    desc: "24/7 customer support automation that answers questions and sells",
+    title: "Content & Blog",
+    desc: "AI writes SEO-optimized product descriptions and blog articles",
   },
 ];
 
@@ -302,50 +287,61 @@ export default function MobileAds() {
         </div>
       </header>
 
-      {/* AI-Powered E-commerce Header Section */}
+      {/* Hero Section - Result-focused messaging */}
       <section className="py-10 px-4 text-center bg-gradient-to-b from-violet-50 to-white">
-        <Badge className="bg-violet-100 border-violet-200 text-violet-700 mb-4">
+        <Badge className="bg-red-100 border-red-200 text-red-700 mb-4">
           <Sparkles className="w-3 h-3 mr-1.5" />
-          AI-Powered E-commerce
+          Your store is invisible on Google. We fix it.
         </Badge>
 
         <h1 className="text-4xl sm:text-5xl font-black leading-[1.1] mb-4 text-gray-900">
-          Automate Your{" "}
+          Get Visible on Google in{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-500">
-            Store Success
+            Minutes
           </span>
+          , Not Months
         </h1>
 
         <p className="text-gray-600 text-base max-w-md mx-auto">
-          AI SEO, smart backgrounds, landing pages & automated marketing. All in one powerful platform.
+          NewAI automatically optimizes your Shopify store so Google can rank you faster — without SEO knowledge.
         </p>
       </section>
 
-      {/* Stats Section - Traffic Machine */}
+      {/* Social Proof Section */}
       <section className="py-8 px-4 bg-gradient-to-b from-violet-50/50 to-transparent">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-6">
+            <p className="text-gray-600 text-sm mb-4">
+              Stores using NewAI see traffic increases in weeks, not months.
+            </p>
             <h2 className="text-2xl sm:text-3xl font-black mb-2 text-gray-900">
-              Traffic Machine{" "}
+              Proven{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500">
-                With AI
+                Results
               </span>
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {STATS.map((stat, i) => (
-              <div
-                key={i}
-                className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:border-violet-300 transition-colors shadow-sm"
-              >
-                <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500 mb-1">
-                  {stat.value}
-                </div>
-                <div className="text-sm font-bold text-gray-900 mb-0.5">{stat.label}</div>
-                <div className="text-[10px] text-gray-500 leading-tight">{stat.sublabel}</div>
+          {/* Key Stats - Only 3 */}
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:border-violet-300 transition-colors shadow-sm">
+              <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500 mb-1">
+                +180%
               </div>
-            ))}
+              <div className="text-xs font-bold text-gray-900">Organic Traffic</div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:border-violet-300 transition-colors shadow-sm">
+              <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500 mb-1">
+                10K+
+              </div>
+              <div className="text-xs font-bold text-gray-900">Products Optimized</div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 text-center hover:border-violet-300 transition-colors shadow-sm">
+              <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-500 mb-1">
+                500+
+              </div>
+              <div className="text-xs font-bold text-gray-900">Active Stores</div>
+            </div>
           </div>
 
           <div className="text-center mt-6">
@@ -354,28 +350,9 @@ export default function MobileAds() {
               className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-bold text-white"
             >
               <Zap className="w-4 h-4 mr-2" />
-              Start Now
+              Fix My SEO Now
             </Button>
-          </div>
-
-          {/* Mini Stats */}
-          <div className="flex items-center justify-center gap-6 mt-6 flex-wrap">
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-900">10K+</div>
-              <div className="text-[10px] text-gray-500">Products Optimized</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-900">500+</div>
-              <div className="text-[10px] text-gray-500">Active Sellers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-900">95%</div>
-              <div className="text-[10px] text-gray-500">Satisfaction Rate</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-900">24/7</div>
-              <div className="text-[10px] text-gray-500">AI Support</div>
-            </div>
+            <p className="text-xs text-gray-500 mt-2">Free • 5-minute setup</p>
           </div>
         </div>
       </section>
