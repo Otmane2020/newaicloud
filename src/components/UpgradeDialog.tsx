@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CreditCard, Tag } from 'lucide-react';
+import { CreditCard, Tag, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 import { getCurrencySymbol } from '@/lib/formatUtils';
 import { useShopifyBilling } from '@/hooks/useShopifyBilling';
@@ -50,6 +50,23 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
   
   // Check if user is Shopify billing user
   const { isShopifyUser, billingProvider, shopDomain, loading: shopifyLoading } = useShopifyBilling();
+
+  // ⚡ CRITICAL: Show loader while detecting Shopify user to prevent race condition
+  // This prevents showing Stripe dialog briefly before Shopify detection completes
+  if (open && shopifyLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground text-sm">
+              {language === 'fr' ? 'Chargement...' : 'Loading...'}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   // If Shopify user, render ShopifyUpgradeDialog instead
   if (billingProvider === 'shopify' && isShopifyUser && shopDomain) {
