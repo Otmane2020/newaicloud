@@ -242,7 +242,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    console.error('[Auth] useAuth called outside of AuthProvider');
+    // Provide a safe fallback instead of throwing to avoid breaking the whole app
+    return {
+      user: null,
+      session: null,
+      loading: true,
+      signUp: async () => ({ error: new Error('Auth not initialized') }),
+      signIn: async () => ({ error: new Error('Auth not initialized') }),
+      signInWithGoogle: async () => ({ error: new Error('Auth not initialized') }),
+      signInWithFacebook: async () => ({ error: new Error('Auth not initialized') }),
+      signOut: async () => {
+        console.warn('[Auth] signOut called while AuthProvider is not mounted');
+      },
+    } satisfies AuthContextType;
   }
   return context;
 }
