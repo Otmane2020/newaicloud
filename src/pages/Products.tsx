@@ -721,15 +721,17 @@ export default function Products() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              size="sm" 
-              onClick={() => navigate("/products/homepage")} 
-              variant="outline" 
-              className="h-9 px-3"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Homepage
-            </Button>
+            {user?.email === 'oben.rockman@gmail.com' && (
+              <Button 
+                size="sm" 
+                onClick={() => navigate("/products/homepage")} 
+                variant="outline" 
+                className="h-9 px-3"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Homepage
+              </Button>
+            )}
             <Button 
               size="sm" 
               onClick={async () => {
