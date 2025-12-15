@@ -362,26 +362,50 @@ export function BulkLandingProgressDialog({
             // Continue with existing title - don't block generation
           }
         }
+        // Use AbortController with longer timeout for AI generation (5 minutes)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
+
         const result = await callWithRetry<{ html: string }>(
-          () => supabase.functions.invoke('generate-landing-bulk', {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-            body: {
-              product_id: product.id,
-              productTitle: productTitle,
-              productDescription: productData.seo_description || productData.body_html,
-              productImages: images.slice(0, 4), // Max 4 for bulk
-              vendor: resolvedVendor, // ✅ Use resolved vendor instead of raw Shopify vendor
-              designStyle: config.designStyle,
-              colorScheme: config.colorScheme,
-              theme: config.theme,
-              layout: config.layout, // ✅ Pass layout option from dialog
-              contentLength: config.contentLength, // ✅ Pass content length from dialog
-              language: 'fr',
-              customHighlights: config.customHighlights, // ✅ Pass custom highlights from dialog
-            },
-          }),
-          3, // 3 retries
-          2000 // 2s base delay (faster for bulk)
+          async () => {
+            const response = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-landing-bulk`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`,
+                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                },
+                body: JSON.stringify({
+                  product_id: product.id,
+                  productTitle: productTitle,
+                  productDescription: productData.seo_description || productData.body_html,
+                  productImages: images.slice(0, 4),
+                  vendor: resolvedVendor,
+                  designStyle: config.designStyle,
+                  colorScheme: config.colorScheme,
+                  theme: config.theme,
+                  layout: config.layout,
+                  contentLength: config.contentLength,
+                  language: 'fr',
+                  customHighlights: config.customHighlights,
+                }),
+                signal: controller.signal,
+              }
+            );
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+              const errorText = await response.text();
+              return { data: null, error: `HTTP ${response.status}: ${errorText}` };
+            }
+            
+            const data = await response.json();
+            return { data, error: null };
+          },
+          3,
+          2000
         );
 
         // Increment local counter
