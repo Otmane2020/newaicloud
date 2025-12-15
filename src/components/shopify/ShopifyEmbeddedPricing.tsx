@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -6,7 +6,7 @@ import { toast } from "sonner";
 /**
  * Shopify-style embedded pricing page
  * Clean black & white design matching Shopify Admin aesthetic
- * No aggressive branding, simple and trustworthy
+ * Uses App Bridge for redirects in embedded context
  */
 
 const PLANS = [
@@ -56,6 +56,15 @@ export default function ShopifyEmbeddedPricing({
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [shopifyApp, setShopifyApp] = useState<any>(null);
+
+  // Initialize App Bridge from global shopify object (v4 auto-init)
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).shopify) {
+      setShopifyApp((window as any).shopify);
+      console.log("[ShopifyEmbeddedPricing] App Bridge detected");
+    }
+  }, []);
 
   const t = {
     title: language === "fr" ? "Choisissez votre plan" : "Choose your plan",
@@ -69,7 +78,7 @@ export default function ShopifyEmbeddedPricing({
     startTrial: language === "fr" ? "Commencer l'essai" : "Start trial",
     processing: language === "fr" ? "Traitement..." : "Processing...",
     recommended: language === "fr" ? "Recommandé" : "Recommended",
-    perMonth: language === "fr" ? "/mois" : "/mo",
+    perMonth: "/month",
     freeTrial: language === "fr" ? "Essai gratuit de" : "Free trial",
     days: language === "fr" ? "jours" : "days",
   };
@@ -90,13 +99,24 @@ export default function ShopifyEmbeddedPricing({
 
       if (error) throw error;
 
-      if (data?.confirmationUrl) {
-        // Redirect to Shopify Billing (works in embedded iframe)
-        window.location.href = data.confirmationUrl;
-        return;
+      if (!data?.confirmationUrl) {
+        throw new Error("No confirmation URL received");
       }
-      
-      throw new Error("No confirmation URL received");
+
+      console.log("[ShopifyEmbeddedPricing] Redirecting to:", data.confirmationUrl);
+
+      // Use App Bridge Redirect for embedded apps (required by Shopify)
+      if (shopifyApp) {
+        // App Bridge v4: use open() for external URLs
+        window.open(data.confirmationUrl, "_top");
+      } else {
+        // Fallback: redirect parent frame
+        if (window.top) {
+          window.top.location.href = data.confirmationUrl;
+        } else {
+          window.location.href = data.confirmationUrl;
+        }
+      }
     } catch (err) {
       console.error("[ShopifyEmbeddedPricing] Error:", err);
       toast.error(err instanceof Error ? err.message : "Error creating subscription");
@@ -216,7 +236,7 @@ export default function ShopifyEmbeddedPricing({
                   className="text-3xl font-bold"
                   style={{ color: '#111111' }}
                 >
-                  ${price.toFixed(2)}
+                  {price.toFixed(2)}€
                 </span>
                 <span 
                   className="text-sm ml-1"
