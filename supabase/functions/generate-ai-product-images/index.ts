@@ -18,16 +18,16 @@ interface RequestBody {
 
 const IMAGE_TYPE_PROMPTS: Record<string, { fr: string; en: string }> = {
   front: {
-    fr: "Vue de face du produit, angle frontal direct, fond blanc pur",
-    en: "Front view of the product, direct frontal angle, pure white background"
+    fr: "Vue de face du produit, angle frontal direct, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping), ombre légère diffuse vers le bas",
+    en: "Front view of the product, direct frontal angle, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style), light diffuse shadow downward"
   },
   profile: {
-    fr: "Vue de profil du produit (côté gauche ou droit), angle 90 degrés, fond blanc pur",
-    en: "Profile view of the product (left or right side), 90 degree angle, pure white background"
+    fr: "Vue de profil du produit (côté gauche ou droit), angle 90 degrés, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping), ombre légère diffuse",
+    en: "Profile view of the product (left or right side), 90 degree angle, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style), light diffuse shadow"
   },
   back: {
-    fr: "Vue arrière du produit, montrant le dos/arrière, fond blanc pur",
-    en: "Back view of the product, showing the rear, pure white background"
+    fr: "Vue arrière du produit, montrant le dos/arrière, fond blanc pur avec ombre portée légère",
+    en: "Back view of the product, showing the rear, pure white background with light drop shadow"
   },
   zoom_fabric: {
     fr: "Gros plan macro sur le tissu/matière du produit, montrant la texture détaillée, fond blanc",
@@ -170,31 +170,39 @@ CRITICAL INSTRUCTIONS:
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    // Generate decor image
-    if (includeDecor) {
-      console.log(`🏠 Generating decor image (${decorType})...`);
+    // Generate decor image FROM the first generated white background image (not duplicating source)
+    if (includeDecor && generatedImages.length > 0) {
+      console.log(`🏠 Generating decor image (${decorType}) from generated white background image...`);
 
+      // Use the first generated white background image as source for decor transformation
+      const whiteBackgroundImage = generatedImages[0];
       const decorPrompt = DECOR_PROMPTS[decorType]?.[lang] || DECOR_PROMPTS[decorType]?.en;
       
       const prompt = lang === 'fr'
-        ? `À partir de cette image de produit (${productTitle}), génère une image lifestyle professionnelle montrant le produit ${decorPrompt}.
+        ? `TRANSFORME cette image de produit sur fond blanc en une image lifestyle professionnelle.
 
 INSTRUCTIONS CRITIQUES:
-- Le produit doit être identique à l'image source, même design, même couleur
-- Intégration naturelle et réaliste dans l'environnement
-- Éclairage naturel et ambiance chaleureuse
+- PRENDS ce produit (${productTitle}) EXACTEMENT comme il apparaît dans l'image
+- SUPPRIME le fond blanc et REMPLACE-LE par un environnement réaliste: ${decorPrompt}
+- Le produit doit être IDENTIQUE - même design, même couleur, même orientation
+- Intégration NATURELLE et RÉALISTE dans l'environnement
+- Éclairage naturel correspondant à la pièce, ombres cohérentes
 - Format 16:9 paysage, haute résolution
-- Composition harmonieuse mettant en valeur le produit
-- Pas de texte, pas de watermark`
-        : `From this product image (${productTitle}), generate a professional lifestyle image showing the product ${decorPrompt}.
+- Composition harmonieuse mettant en valeur le produit au centre
+- Pas de texte, pas de watermark
+- Le produit ne doit PAS être dupliqué ou modifié`
+        : `TRANSFORM this white background product image into a professional lifestyle image.
 
 CRITICAL INSTRUCTIONS:
-- The product must be identical to the source image, same design, same color
-- Natural and realistic integration into the environment
-- Natural lighting and warm atmosphere
+- TAKE this product (${productTitle}) EXACTLY as it appears in the image
+- REMOVE the white background and REPLACE it with a realistic environment: ${decorPrompt}
+- The product must be IDENTICAL - same design, same color, same orientation
+- NATURAL and REALISTIC integration into the environment
+- Natural lighting matching the room, coherent shadows
 - 16:9 landscape format, high resolution
-- Harmonious composition highlighting the product
-- No text, no watermark`;
+- Harmonious composition highlighting the product in center
+- No text, no watermark
+- The product must NOT be duplicated or modified`;
 
       try {
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -210,7 +218,7 @@ CRITICAL INSTRUCTIONS:
                 role: "user",
                 content: [
                   { type: "text", text: prompt },
-                  { type: "image_url", image_url: { url: sourceImageUrl } }
+                  { type: "image_url", image_url: { url: whiteBackgroundImage.url } }
                 ]
               }
             ],
@@ -228,12 +236,14 @@ CRITICAL INSTRUCTIONS:
               type: 'decor',
               label: IMAGE_TYPE_LABELS.decor[lang]
             });
-            console.log(`✅ Generated decor image`);
+            console.log(`✅ Generated decor image from white background`);
           }
         }
       } catch (error) {
         console.error(`❌ Error generating decor image:`, error);
       }
+    } else if (includeDecor && generatedImages.length === 0) {
+      console.log(`⚠️ Cannot generate decor - no white background images generated first`);
     }
 
     console.log(`📦 Total images generated: ${generatedImages.length}`);
