@@ -457,7 +457,9 @@ Génère maintenant le HTML COMPLET avec tout le contenu riche.`;
       const { error: updateError } = await supabaseAdmin
         .from("shopify_products")
         .update({
-          landing_page: html,  // Sauvegarde HTML directement (comme generate-landing-ai)
+          landing_page: html,  // Legacy field
+          landing_page_html: html, // New field
+          has_landing_page: true, // ✅ Mark as having landing page
           last_landing_generation_at: new Date().toISOString(),
         })
         .eq("id", product_id)
