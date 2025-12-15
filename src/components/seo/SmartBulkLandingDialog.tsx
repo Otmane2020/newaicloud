@@ -352,6 +352,7 @@ export function SmartBulkLandingDialog({
                 {items.map((item, index) => (
                   <div
                     key={item.productId}
+                    ref={item.status === 'generating' ? (el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : undefined}
                     className={`p-2 sm:p-3 rounded-lg border ${
                       item.status === 'generating' ? 'bg-primary/5 border-primary/30' :
                       item.status === 'success' ? 'bg-green-50 border-green-200 dark:bg-green-950/20' :
