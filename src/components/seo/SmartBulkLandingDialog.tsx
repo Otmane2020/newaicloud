@@ -388,13 +388,27 @@ export function SmartBulkLandingDialog({
                 {items.map((item, index) => (
                   <div
                     key={item.productId}
-                    ref={item.status === 'generating' ? (el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : undefined}
+                    data-generating={item.status === 'generating' ? 'true' : undefined}
                     className={`p-2 sm:p-3 rounded-lg border ${
                       item.status === 'generating' ? 'bg-primary/5 border-primary/30' :
                       item.status === 'success' ? 'bg-green-50 border-green-200 dark:bg-green-950/20' :
                       item.status === 'error' ? 'bg-red-50 border-red-200 dark:bg-red-950/20' :
                       'bg-muted/30'
                     }`}
+                    ref={(el) => {
+                      if (item.status === 'generating' && el) {
+                        // Find the scroll container and scroll to element
+                        setTimeout(() => {
+                          const scrollContainer = el.closest('[data-radix-scroll-area-viewport]');
+                          if (scrollContainer) {
+                            const containerRect = scrollContainer.getBoundingClientRect();
+                            const elementRect = el.getBoundingClientRect();
+                            const scrollTop = scrollContainer.scrollTop + elementRect.top - containerRect.top - containerRect.height / 2 + elementRect.height / 2;
+                            scrollContainer.scrollTo({ top: scrollTop, behavior: 'smooth' });
+                          }
+                        }, 50);
+                      }
+                    }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
