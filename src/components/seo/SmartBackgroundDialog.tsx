@@ -209,12 +209,17 @@ export const SmartBackgroundDialog = ({
       
       // 🆕 Smart pre-selection: auto-select first NON-AI image per product
       const newSelectedImages = new Map<string, { url: string; imageId?: string; position?: number }>();
+      
+      // Helper to detect ALL AI-generated images (white background, AI images, any generation)
+      const isAiGeneratedImage = (img: ProductGalleryImage): boolean => {
+        if (img.optimization_count && img.optimization_count > 0) return true;
+        const aiPatterns = ['ai_generated_', 'white_background', 'generated-images/', '/storage/v1/object/public/generated'];
+        return aiPatterns.some(pattern => img.src.includes(pattern));
+      };
+      
       imagesByProduct.forEach((images, productId) => {
-        // Find first image that is NOT AI-generated
-        const nonAiImage = images.find(img => 
-          !(img.optimization_count && img.optimization_count > 0) &&
-          !img.src.includes('generated-images/ai_generated_')
-        );
+        // Find first image that is NOT AI-generated (from any source)
+        const nonAiImage = images.find(img => !isAiGeneratedImage(img));
         
         if (nonAiImage) {
           newSelectedImages.set(productId, {
@@ -288,9 +293,10 @@ export const SmartBackgroundDialog = ({
     galleryImages.forEach((img, idx) => {
       if (!seenUrls.has(img.src)) {
         seenUrls.add(img.src);
-        // 🆕 Detect AI-generated images
+        // 🆕 Detect ALL AI-generated images (white background, AI images, any generation)
+        const aiPatterns = ['ai_generated_', 'white_background', 'generated-images/', '/storage/v1/object/public/generated'];
         const isAiGenerated = (img.optimization_count && img.optimization_count > 0) || 
-          img.src.includes('generated-images/ai_generated_');
+          aiPatterns.some(pattern => img.src.includes(pattern));
         images.push({
           url: img.src,
           label: idx === 0 ? 'Image principale' : `Photo ${idx + 1}`,
