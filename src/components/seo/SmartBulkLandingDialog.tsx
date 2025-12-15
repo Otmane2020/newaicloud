@@ -265,10 +265,25 @@ export function SmartBulkLandingDialog({
     onOpenChange(false);
   };
 
+  // Reset refs when dialog closes
+  useEffect(() => {
+    if (!open) {
+      startedRef.current = false;
+      cancelledRef.current = false;
+      vendorCache.current.clear();
+    }
+  }, [open]);
+
   // Start on open
   useEffect(() => {
-    if (open && products.length > 0 && !startedRef.current) {
-      startProcessing();
+    if (open && products.length > 0 && !startedRef.current && !isProcessing) {
+      // Small delay to ensure state is ready
+      const timer = setTimeout(() => {
+        if (!startedRef.current) {
+          startProcessing();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [open, products.length]);
 
