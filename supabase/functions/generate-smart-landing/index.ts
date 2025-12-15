@@ -60,8 +60,8 @@ serve(async (req) => {
       border: "#E5E5E5",
     };
 
-    // Premium prompt for high-quality landing pages - USE ORIGINAL TITLE FOR DISPLAY
-    const displayTitle = productTitle; // Always use original product title for display
+    // Use original title for display, optimized title for SEO
+    const displayTitle = productTitle;
     
     const prompt = language === "fr" 
       ? `Crée une landing page HTML PREMIUM pour ce produit de luxe:
@@ -71,37 +71,42 @@ MARQUE: ${brandName}
 ${description ? `DESCRIPTION: ${description.slice(0, 300)}` : ""}
 ${highlights ? `POINTS FORTS: ${highlights}` : ""}
 
-⚠️ IMAGE PRODUIT OBLIGATOIRE - CRITIQUE:
+⚠️ IMAGE PRODUIT - RÈGLES CRITIQUES:
 URL EXACTE: ${imageUrl}
-- Affiche cette image EN GRAND dans le hero (min-height: 400px, object-fit: contain)
-- L'image doit être le point focal de la page
-- Utilise UNIQUEMENT cette URL, jamais de placeholder ou autre URL
+- Affiche cette image EN ENTIER, JAMAIS TRONQUÉE
+- Style image: width:100%; max-width:500px; height:auto; object-fit:contain; display:block; margin:0 auto;
+- L'image DOIT être visible ENTIÈREMENT (pas de overflow:hidden, pas de hauteur fixe qui coupe)
+- Utilise UNIQUEMENT cette URL exacte
+
+⚠️ MARQUE MISE EN AVANT - OBLIGATOIRE:
+- La marque "${brandName}" doit apparaître dans:
+  1. Un badge/label visible dans le hero
+  2. La section description du produit: "Signé ${brandName}, ce produit..."
+  3. Le footer ou section confiance
 
 DESIGN PREMIUM OBLIGATOIRE:
 - Style luxe/haut de gamme, élégant et sophistiqué
 - Thème: ${theme} (fond: ${colors.bg}, texte: ${colors.text}, accent: ${colors.accent})
 - Typographie raffinée: titres en serif élégant, corps sans-serif
 - Espacement généreux, respiration visuelle
-- Effets subtils: ombres douces, hover élégants
 
 STRUCTURE (sections obligatoires):
 1. HERO: 
-   - Image produit GRANDE (min 400px hauteur) avec l'URL exacte fournie
-   - Titre du produit élégant centré
-   - Badge marque
+   - Image produit ENTIÈRE (pas de crop/troncature)
+   - Titre du produit élégant
+   - Badge marque "${brandName}"
    - CTA principal "Acheter maintenant"
-2. PROPOSITION DE VALEUR: 3-4 icônes SVG inline avec avantages clés (livraison, qualité, garantie)
-3. DÉTAILS PRODUIT: Description enrichie avec mise en forme élégante
-4. CONFIANCE: Logos paiement sécurisé, avis clients stylisés
-5. CTA FINAL: Bouton achat proéminent avec urgence subtile
+2. PROPOSITION DE VALEUR: 3 icônes SVG inline (livraison, qualité, garantie)
+3. DESCRIPTION PRODUIT: Texte mentionnant la marque "${brandName}" explicitement
+4. CTA FINAL: Bouton achat
 
-RÈGLES TECHNIQUES:
+RÈGLES TECHNIQUES STRICTES:
 - HTML5 + CSS inline uniquement
-- Mobile-first responsive (max-width media queries)
+- Mobile-first responsive
 - Pas de JavaScript
-- IMAGE: <img src="${imageUrl}" style="width:100%;max-width:600px;height:auto;min-height:400px;object-fit:contain;">
-- Icônes: SVG inline uniquement (truck, shield, star, check, heart)
-- Police: font-family avec fallbacks système
+- IMAGE NON TRONQUÉE: <img src="${imageUrl}" style="width:100%;max-width:500px;height:auto;object-fit:contain;display:block;margin:0 auto;" alt="${displayTitle}">
+- NE PAS utiliser overflow:hidden ou height fixe sur le conteneur d'image
+- Icônes: SVG inline uniquement (simple)
 
 Génère le HTML complet.`
 
@@ -112,37 +117,42 @@ BRAND: ${brandName}
 ${description ? `DESCRIPTION: ${description.slice(0, 300)}` : ""}
 ${highlights ? `HIGHLIGHTS: ${highlights}` : ""}
 
-⚠️ PRODUCT IMAGE MANDATORY - CRITICAL:
+⚠️ PRODUCT IMAGE - CRITICAL RULES:
 EXACT URL: ${imageUrl}
-- Display this image LARGE in the hero (min-height: 400px, object-fit: contain)
-- The image must be the focal point of the page
-- Use ONLY this URL, never placeholders or other URLs
+- Display this image FULLY, NEVER CROPPED
+- Image style: width:100%; max-width:500px; height:auto; object-fit:contain; display:block; margin:0 auto;
+- Image MUST be FULLY visible (no overflow:hidden, no fixed height that crops)
+- Use ONLY this exact URL
+
+⚠️ BRAND HIGHLIGHTING - MANDATORY:
+- The brand "${brandName}" must appear in:
+  1. A visible badge/label in the hero
+  2. Product description section: "By ${brandName}, this product..."
+  3. Footer or trust section
 
 MANDATORY PREMIUM DESIGN:
 - Luxury/high-end style, elegant and sophisticated
 - Theme: ${theme} (bg: ${colors.bg}, text: ${colors.text}, accent: ${colors.accent})
 - Refined typography: elegant serif headings, sans-serif body
 - Generous spacing, visual breathing room
-- Subtle effects: soft shadows, elegant hovers
 
 STRUCTURE (required sections):
 1. HERO:
-   - LARGE product image (min 400px height) with exact provided URL
-   - Elegant centered product title
-   - Brand badge
+   - FULL product image (no cropping)
+   - Elegant product title
+   - Brand badge "${brandName}"
    - Main CTA "Buy Now"
-2. VALUE PROPOSITION: 3-4 inline SVG icons with key benefits (shipping, quality, guarantee)
-3. PRODUCT DETAILS: Enhanced description with elegant formatting
-4. TRUST: Secure payment logos, styled customer reviews
-5. FINAL CTA: Prominent buy button with subtle urgency
+2. VALUE PROPOSITION: 3 inline SVG icons (shipping, quality, guarantee)
+3. PRODUCT DESCRIPTION: Text explicitly mentioning the brand "${brandName}"
+4. FINAL CTA: Buy button
 
-TECHNICAL RULES:
+STRICT TECHNICAL RULES:
 - HTML5 + inline CSS only
-- Mobile-first responsive (max-width media queries)
+- Mobile-first responsive
 - No JavaScript
-- IMAGE: <img src="${imageUrl}" style="width:100%;max-width:600px;height:auto;min-height:400px;object-fit:contain;">
-- Icons: inline SVG only (truck, shield, star, check, heart)
-- Font: font-family with system fallbacks
+- NON-CROPPED IMAGE: <img src="${imageUrl}" style="width:100%;max-width:500px;height:auto;object-fit:contain;display:block;margin:0 auto;" alt="${displayTitle}">
+- DO NOT use overflow:hidden or fixed height on image container
+- Icons: inline SVG only (simple)
 
 Generate the complete HTML.`;
 
