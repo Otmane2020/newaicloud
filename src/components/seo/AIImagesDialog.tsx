@@ -72,6 +72,7 @@ const IMAGE_TYPES = [
 
 const DECOR_TYPES = [
   { id: 'living_room', label: 'Salon', labelEn: 'Living room', icon: Sofa },
+  { id: 'dining_room', label: 'Salle à manger', labelEn: 'Dining room', icon: Home },
   { id: 'bedroom', label: 'Chambre', labelEn: 'Bedroom', icon: BedDouble },
   { id: 'office', label: 'Bureau', labelEn: 'Office', icon: Home },
 ];
@@ -88,7 +89,7 @@ export const AIImagesDialog = ({
   const [generatedImages, setGeneratedImages] = useState<Map<string, GeneratedImage[]>>(new Map());
   const [selectedImageTypes, setSelectedImageTypes] = useState<Set<string>>(new Set(['front', 'profile', 'zoom_detail']));
   const [includeDecor, setIncludeDecor] = useState(true);
-  const [decorType, setDecorType] = useState<'living_room' | 'bedroom' | 'office'>('living_room');
+  const [decorType, setDecorType] = useState<'living_room' | 'dining_room' | 'bedroom' | 'office'>('living_room');
   const [progress, setProgress] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
 

@@ -52,6 +52,10 @@ const DECOR_PROMPTS: Record<string, { fr: string; en: string }> = {
     fr: "dans un salon moderne et lumineux, avec parquet clair, murs blancs, grande baie vitrée, plantes vertes, ambiance cosy et élégante",
     en: "in a modern bright living room, with light wood flooring, white walls, large window, green plants, cozy and elegant atmosphere"
   },
+  dining_room: {
+    fr: "dans une salle à manger élégante et conviviale, avec grande table en bois, chaises design, luminaire suspendu, vaisselle décorative, ambiance chaleureuse",
+    en: "in an elegant and welcoming dining room, with large wooden table, designer chairs, pendant lighting, decorative tableware, warm atmosphere"
+  },
   bedroom: {
     fr: "dans une chambre moderne et apaisante, avec lit confortable, lumière douce, tons neutres, décoration minimaliste",
     en: "in a modern soothing bedroom, with comfortable bed, soft lighting, neutral tones, minimalist decoration"
