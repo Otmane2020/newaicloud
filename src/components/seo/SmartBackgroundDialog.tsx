@@ -48,6 +48,7 @@ interface ProductGalleryImage {
   alt_text: string | null;
   position: number | null;
   shopify_image_id: number | null;
+  optimization_count?: number | null; // 🆕 Track AI-generated images
 }
 
 type BackgroundFormat = '1:1' | '4:3' | '3:4' | '16:9' | '9:16';
@@ -123,6 +124,9 @@ export const SmartBackgroundDialog = ({
     total: number; 
     items: Map<string, { title: string; status: 'pending' | 'syncing' | 'success' | 'error'; error?: string }>;
   }>({ current: 0, total: 0, items: new Map() });
+  // 🆕 Track stuck time for force stop
+  const [stuckTime, setStuckTime] = useState(0);
+  const lastProgressRef = useRef({ success: 0, error: 0 });
 
   const { generateWhiteBackground, applyOptimizedImage } = useImageOptimization();
 
@@ -171,7 +175,7 @@ export const SmartBackgroundDialog = ({
     try {
       const { data, error } = await supabase
         .from('product_images')
-        .select('id, src, alt_text, position, shopify_image_id, product_id')
+        .select('id, src, alt_text, position, shopify_image_id, product_id, optimization_count') // 🆕 Added optimization_count
         .in('product_id', ids)
         .order('position', { ascending: true });
       
@@ -189,7 +193,8 @@ export const SmartBackgroundDialog = ({
           src: img.src,
           alt_text: img.alt_text,
           position: img.position,
-          shopify_image_id: img.shopify_image_id
+          shopify_image_id: img.shopify_image_id,
+          optimization_count: (img as any).optimization_count // 🆕
         });
       });
       
@@ -202,7 +207,27 @@ export const SmartBackgroundDialog = ({
         return merged;
       });
       
-      console.log('[SmartBg] Loaded gallery images for', imagesByProduct.size, 'products');
+      // 🆕 Smart pre-selection: auto-select first NON-AI image per product
+      const newSelectedImages = new Map<string, { url: string; imageId?: string; position?: number }>();
+      imagesByProduct.forEach((images, productId) => {
+        // Find first image that is NOT AI-generated
+        const nonAiImage = images.find(img => 
+          !(img.optimization_count && img.optimization_count > 0) &&
+          !img.src.includes('generated-images/ai_generated_')
+        );
+        
+        if (nonAiImage) {
+          newSelectedImages.set(productId, {
+            url: nonAiImage.src,
+            imageId: nonAiImage.id,
+            position: nonAiImage.position || 1
+          });
+        }
+        // If ALL images are AI-generated, don't pre-select (user must manually check)
+      });
+      setSelectedImages(newSelectedImages);
+      
+      console.log('[SmartBg] Loaded gallery images for', imagesByProduct.size, 'products, pre-selected', newSelectedImages.size, 'non-AI images');
     } catch (error) {
       console.error('[SmartBg] Error loading gallery images:', error);
     } finally {
@@ -253,9 +278,9 @@ export const SmartBackgroundDialog = ({
     }
   };
 
-  // Get all available images for a product (gallery + variants)
-  const getProductImages = (product: Product): { url: string; label: string; imageId?: string; position?: number }[] => {
-    const images: { url: string; label: string; imageId?: string; position?: number }[] = [];
+  // Get all available images for a product (gallery + variants) with AI detection
+  const getProductImages = (product: Product): { url: string; label: string; imageId?: string; position?: number; isAiGenerated?: boolean }[] => {
+    const images: { url: string; label: string; imageId?: string; position?: number; isAiGenerated?: boolean }[] = [];
     const seenUrls = new Set<string>();
     
     // First, add gallery images from database
@@ -263,18 +288,22 @@ export const SmartBackgroundDialog = ({
     galleryImages.forEach((img, idx) => {
       if (!seenUrls.has(img.src)) {
         seenUrls.add(img.src);
+        // 🆕 Detect AI-generated images
+        const isAiGenerated = (img.optimization_count && img.optimization_count > 0) || 
+          img.src.includes('generated-images/ai_generated_');
         images.push({
           url: img.src,
           label: idx === 0 ? 'Image principale' : `Photo ${idx + 1}`,
           imageId: img.id,
-          position: img.position || idx + 1
+          position: img.position || idx + 1,
+          isAiGenerated
         });
       }
     });
     
     // If no gallery images, fallback to product.image_url
     if (images.length === 0 && product.image_url) {
-      images.push({ url: product.image_url, label: 'Image principale' });
+      images.push({ url: product.image_url, label: 'Image principale', isAiGenerated: false });
     }
     
     // Add variant images if different
@@ -282,7 +311,7 @@ export const SmartBackgroundDialog = ({
       product.variants.forEach((v, idx) => {
         if (v.image_url && !seenUrls.has(v.image_url)) {
           seenUrls.add(v.image_url);
-          images.push({ url: v.image_url, label: v.title || `Variante ${idx + 1}` });
+          images.push({ url: v.image_url, label: v.title || `Variante ${idx + 1}`, isAiGenerated: false });
         }
       });
     }
@@ -312,9 +341,38 @@ export const SmartBackgroundDialog = ({
   const [errorCount, setErrorCount] = useState(0);
   const [successCount, setSuccessCount] = useState(0);
 
+  // 🆕 Detect stuck state and reset
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (isGenerating) {
+      interval = setInterval(() => {
+        // Check if progress changed
+        if (lastProgressRef.current.success === successCount && lastProgressRef.current.error === errorCount) {
+          setStuckTime(prev => prev + 1);
+        } else {
+          setStuckTime(0);
+          lastProgressRef.current = { success: successCount, error: errorCount };
+        }
+      }, 1000);
+    } else {
+      setStuckTime(0);
+      lastProgressRef.current = { success: 0, error: 0 };
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isGenerating, successCount, errorCount]);
+
   const handleGenerateAll = async () => {
     if (selectedProducts.length === 0) {
       toast.error(sb.noProductSelected);
+      return;
+    }
+
+    // 🆕 Check if any products have selected images
+    const productsWithSelection = selectedProducts.filter(p => selectedImages.has(p.id));
+    if (productsWithSelection.length === 0) {
+      toast.error(language === 'fr' ? 'Aucune image sélectionnée. Cochez les images à traiter.' : 'No images selected. Check images to process.');
       return;
     }
 
@@ -323,6 +381,7 @@ export const SmartBackgroundDialog = ({
     setCurrentProductIndex(0);
     setErrorCount(0);
     setSuccessCount(0);
+    setStuckTime(0);
     const newPreviews = new Map<string, string>();
 
     // Format map
@@ -335,8 +394,8 @@ export const SmartBackgroundDialog = ({
     };
 
     // Pre-fetch ALL product data in a single batch query for speed
-    console.log(`🚀 [SmartBg] Starting bulk generation for ${selectedProducts.length} products`);
-    const productIds = selectedProducts.map(p => p.id);
+    console.log(`🚀 [SmartBg] Starting bulk generation for ${productsWithSelection.length} products with selection`);
+    const productIds = productsWithSelection.map(p => p.id);
     
     const { data: allProductDetails } = await supabase
       .from('shopify_products')
@@ -347,18 +406,19 @@ export const SmartBackgroundDialog = ({
       (allProductDetails || []).map(p => [p.id, p])
     );
 
-    // Process in parallel batches of 3 for speed
-    const BATCH_SIZE = 3;
+    // 🆕 Reduced batch size and increased delays to prevent rate limiting/stuck
+    const BATCH_SIZE = 2; // Reduced from 3
+    const TIMEOUT_MS = 90000; // 90 second timeout per generation
     
-    for (let batchStart = 0; batchStart < selectedProducts.length; batchStart += BATCH_SIZE) {
+    for (let batchStart = 0; batchStart < productsWithSelection.length; batchStart += BATCH_SIZE) {
       if (cancelledRef.current) {
         console.log('🛑 [SmartBg] Generation cancelled by user');
         break;
       }
 
-      const batch = selectedProducts.slice(batchStart, batchStart + BATCH_SIZE);
+      const batch = productsWithSelection.slice(batchStart, batchStart + BATCH_SIZE);
       
-      // Process batch in parallel
+      // Process batch in parallel with timeout
       const batchResults = await Promise.allSettled(
         batch.map(async (product, batchIndex) => {
           const globalIndex = batchStart + batchIndex;
@@ -376,7 +436,6 @@ export const SmartBackgroundDialog = ({
           const visionAiData = productDetails?.vision_attributes || null;
           const productDescription = productDetails?.body_html || productDetails?.seo_description || null;
 
-          // Generate - skip SERP fetch in bulk mode for speed (use existing data only)
           // Determine format: 3d_shopping forces 1:1
           const effectiveFormat = bgMode === '3d_shopping' ? 'square' : formatMap[bgFormat];
           
@@ -385,7 +444,8 @@ export const SmartBackgroundDialog = ({
             : bgMode === '3d_generate' ? '3d_generate' 
             : 'google_shopping';
           
-          const result = await generateWhiteBackground.mutateAsync({
+          // 🆕 Wrap in timeout promise
+          const generatePromise = generateWhiteBackground.mutateAsync({
             imageUrl: selectedImage.url,
             productTitle: product.title,
             resolution: '2000x2000',
@@ -396,9 +456,14 @@ export const SmartBackgroundDialog = ({
             visionAiData,
             productDescription,
             backgroundStyle: bgMode === 'smart_serp' ? bgStyle : 'shopping',
-            customPrompt: customPrompt.trim() || undefined, // 🆕 Pass custom prompt
+            customPrompt: customPrompt.trim() || undefined,
           });
 
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout: génération trop longue')), TIMEOUT_MS)
+          );
+
+          const result = await Promise.race([generatePromise, timeoutPromise]);
           return { productId: product.id, imageUrl: result.imageUrl, title: product.title };
         })
       );
@@ -415,9 +480,9 @@ export const SmartBackgroundDialog = ({
         }
       }
 
-      // Small delay between batches to avoid rate limits
-      if (batchStart + BATCH_SIZE < selectedProducts.length && !cancelledRef.current) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+      // 🆕 Increased delay between batches to avoid rate limits
+      if (batchStart + BATCH_SIZE < productsWithSelection.length && !cancelledRef.current) {
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Increased from 500ms
       }
     }
 
@@ -896,18 +961,37 @@ export const SmartBackgroundDialog = ({
                                 </p>
                                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5 sm:gap-2">
                                   {productImages.map((img, idx) => {
-                                    const isSelected = (selectedImages.get(product.id)?.url || productImages[0]?.url) === img.url;
+                                    // 🆕 Check if image is selected (not pre-selected by default if AI)
+                                    const isSelected = selectedImages.get(product.id)?.url === img.url;
+                                    const isAiGenerated = img.isAiGenerated;
                                     return (
                                       <button
                                         key={idx}
-                                        onClick={() => setSelectedImages(prev => new Map(prev).set(product.id, {
-                                          url: img.url,
-                                          imageId: img.imageId,
-                                          position: img.position
-                                        }))}
+                                        onClick={() => {
+                                          // Toggle selection: if already selected, deselect; otherwise select
+                                          if (isSelected) {
+                                            setSelectedImages(prev => {
+                                              const newMap = new Map(prev);
+                                              newMap.delete(product.id);
+                                              return newMap;
+                                            });
+                                          } else {
+                                            setSelectedImages(prev => new Map(prev).set(product.id, {
+                                              url: img.url,
+                                              imageId: img.imageId,
+                                              position: img.position
+                                            }));
+                                          }
+                                        }}
                                         className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${isSelected ? 'border-primary ring-2 ring-primary/30' : 'border-border hover:border-primary/50'}`}
                                       >
                                         <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
+                                        {/* 🆕 AI Badge */}
+                                        {isAiGenerated && (
+                                          <Badge variant="secondary" className="absolute top-0.5 left-0.5 text-[8px] px-1 py-0 bg-purple-500/90 text-white border-0">
+                                            AI
+                                          </Badge>
+                                        )}
                                         {isSelected && (
                                           <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                                             <Check className="h-6 w-6 text-primary drop-shadow-md" />
@@ -920,6 +1004,12 @@ export const SmartBackgroundDialog = ({
                                     );
                                   })}
                                 </div>
+                                {/* 🆕 Hint text */}
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {language === 'fr' 
+                                    ? 'Cliquez pour sélectionner/déselectionner. Les images AI ne sont pas pré-sélectionnées.' 
+                                    : 'Click to select/deselect. AI images are not pre-selected.'}
+                                </p>
                               </div>
                             )}
 
@@ -1006,18 +1096,42 @@ export const SmartBackgroundDialog = ({
               <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">
-                    {sb.generating.replace('{{current}}', String(successCount + errorCount)).replace('{{total}}', String(selectedProducts.length))}
+                    {sb.generating.replace('{{current}}', String(successCount + errorCount)).replace('{{total}}', String(selectedImages.size))}
                   </p>
-                  <Button variant="ghost" size="sm" onClick={handleCancelGeneration} className="h-7 px-2 gap-1 text-destructive hover:text-destructive">
-                    <X className="h-3.5 w-3.5" />
-                    {sb.cancel}
-                  </Button>
+                  <div className="flex gap-2">
+                    {/* 🆕 Force Stop button appears after 30 seconds of no progress */}
+                    {stuckTime > 30 && (
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className="h-7 px-2 gap-1"
+                        onClick={() => {
+                          cancelledRef.current = true;
+                          setIsGenerating(false);
+                          toast.error(language === 'fr' ? 'Génération forcée à s\'arrêter' : 'Generation force stopped');
+                        }}
+                      >
+                        {language === 'fr' ? 'Forcer Arrêt' : 'Force Stop'}
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={handleCancelGeneration} className="h-7 px-2 gap-1 text-destructive hover:text-destructive">
+                      <X className="h-3.5 w-3.5" />
+                      {sb.cancel}
+                    </Button>
+                  </div>
                 </div>
-                <Progress value={((successCount + errorCount) / selectedProducts.length) * 100} className="h-2" />
+                <Progress value={selectedImages.size > 0 ? ((successCount + errorCount) / selectedImages.size) * 100 : 0} className="h-2" />
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>{successCount} {sb.generated} {errorCount > 0 && `| ${errorCount} ${sb.failed}`}</span>
-                  <span>{Math.round(((successCount + errorCount) / selectedProducts.length) * 100)}%</span>
+                  <span>{selectedImages.size > 0 ? Math.round(((successCount + errorCount) / selectedImages.size) * 100) : 0}%</span>
                 </div>
+                {stuckTime > 10 && (
+                  <p className="text-xs text-amber-600">
+                    {language === 'fr' 
+                      ? `⏳ Aucun progrès depuis ${stuckTime}s...` 
+                      : `⏳ No progress for ${stuckTime}s...`}
+                  </p>
+                )}
               </div>
             )}
 
