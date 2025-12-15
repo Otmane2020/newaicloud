@@ -215,13 +215,20 @@ serve(async (req) => {
         // 🆕 HYBRID MODE: Rediriger vers la page Plans EMBEDDED dans Shopify Admin
         // L'utilisateur voit les plans DANS Shopify, puis après paiement → app standalone
         const shopHandle = shop.replace('.myshopify.com', '');
-        const embeddedPlanUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/plans-embedded?shop=${shop}&pending_token=${pendingToken}`;
+        
+        // ✅ CRITICAL: Générer le host encodé en base64 pour App Bridge
+        // Le host est requis pour que Shopify puisse charger l'iframe embedded correctement
+        const hostBase64 = btoa(`admin.shopify.com/store/${shopHandle}`);
+        
+        // Construire l'URL embedded avec tous les paramètres requis
+        const embeddedPlanUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/plans-embedded?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}&host=${hostBase64}`;
         
         console.log(JSON.stringify({
           event: 'oauth_callback_success',
           flow: 'pre-auth-embedded',
           shop: shop,
           redirect: embeddedPlanUrl,
+          host: hostBase64,
           expires_in_days: 7,
           timestamp: new Date().toISOString()
         }));
