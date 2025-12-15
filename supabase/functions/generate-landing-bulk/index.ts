@@ -152,9 +152,9 @@ serve(async (req) => {
 
     // Determine content length instructions
     const contentMap: Record<string, string> = {
-      "courte (400 mots)": "LONGUEUR: Version COURTE (~400 mots). Sections concises, 2-3 bénéfices, 2 témoignages, 3 FAQ.",
-      "moyenne (800 mots)": "LONGUEUR: Version MOYENNE (~800 mots). Sections détaillées, 4 bénéfices, 3 témoignages, 4-5 FAQ.",
-      "longue (1200+ mots)": "LONGUEUR: Version LONGUE (1200+ mots). Sections très détaillées, 6 bénéfices, 4+ témoignages, 6+ FAQ, descriptions enrichies.",
+      "courte (400 mots)": "LONGUEUR: Version COURTE (~400 mots). Sections concises, 2-3 bénéfices, 3 FAQ.",
+      "moyenne (800 mots)": "LONGUEUR: Version MOYENNE (~800 mots). Sections détaillées, 4 bénéfices, 4-5 FAQ.",
+      "longue (1200+ mots)": "LONGUEUR: Version LONGUE (1200+ mots). Sections très détaillées, 6 bénéfices, 6+ FAQ, descriptions enrichies.",
     };
     const contentInstructions = contentMap[contentLength] || "LONGUEUR: Version moyenne (~800 mots).";
 
@@ -286,15 +286,18 @@ SUPPORT/AIDE:
 </section>
 @media (min-width: 768px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); } }
 
-5️⃣ TÉMOIGNAGES / CONFIANCE
+5️⃣ GARANTIES ET ENGAGEMENTS (PAS DE FAUX TÉMOIGNAGES!)
 <section style="padding: 3rem 1rem; background: hsl(${surfaceColor});">
-  <h2>Ils Ont Adopté Ce Produit</h2>
+  <h2>Nos Engagements</h2>
   <div style="display: flex; flex-direction: column; gap: 1rem;">
-    <div style="padding: 1.5rem; background: hsl(${bgColor}); border-radius: 12px; border-left: 4px solid hsl(${primaryColor});">
-      <p style="font-style: italic; margin-bottom: 0.5rem;">"Témoignage fictif mais réaliste..."</p>
-      <span style="font-weight: 600;">- Marie D.</span>
+    <div style="padding: 1.5rem; background: hsl(${bgColor}); border-radius: 12px; border-left: 4px solid hsl(${primaryColor}); display: flex; align-items: flex-start; gap: 1rem;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="hsl(${primaryColor})" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+      <div>
+        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem;">Garantie Satisfait ou Remboursé</h3>
+        <p style="font-size: 0.9rem; color: hsl(${textColor} / 0.7);">Retour gratuit sous 30 jours si le produit ne vous convient pas.</p>
+      </div>
     </div>
-    <!-- 2-3 témoignages -->
+    <!-- 2-3 garanties: Livraison, Qualité, Service Client -->
   </div>
 </section>
 
