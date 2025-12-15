@@ -4843,6 +4843,7 @@ export type Database = {
           google_synced_at: string | null
           google_white_background: boolean | null
           handle: string | null
+          has_landing_page: boolean | null
           height: number | null
           height_unit: string | null
           id: string
@@ -4973,6 +4974,7 @@ export type Database = {
           google_synced_at?: string | null
           google_white_background?: boolean | null
           handle?: string | null
+          has_landing_page?: boolean | null
           height?: number | null
           height_unit?: string | null
           id?: string
@@ -5103,6 +5105,7 @@ export type Database = {
           google_synced_at?: string | null
           google_white_background?: boolean | null
           handle?: string | null
+          has_landing_page?: boolean | null
           height?: number | null
           height_unit?: string | null
           id?: string
