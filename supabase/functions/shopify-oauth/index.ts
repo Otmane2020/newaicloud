@@ -83,14 +83,17 @@ serve(async (req) => {
 
     // 🟢 1️⃣ CALLBACK PUBLIC – Shopify redirige ici après installation
     if (req.method === "GET" && code && shop && state) {
-      console.log("[SHOPIFY-OAUTH] Callback public reçu de Shopify", { shop, state });
+      // ✅ Récupérer host depuis la query string (Shopify l'envoie)
+      const hostFromQuery = url.searchParams.get("host");
+      console.log("[SHOPIFY-OAUTH] Callback public reçu de Shopify", { shop, state, hostFromQuery });
 
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
       // Vérifier si c'est un flow avec user (ancien flow) ou sans user (nouveau flow pre-auth)
+      // ✅ Inclure host dans la sélection
       const { data: oauthState, error: stateError } = await supabase
         .from("oauth_states")
-        .select("user_id, expires_at, shop_name, is_pre_auth")
+        .select("user_id, expires_at, shop_name, is_pre_auth, host")
         .eq("state_token", state)
         .single();
 
@@ -102,6 +105,9 @@ serve(async (req) => {
           headers: { Location: errorUrl, ...corsHeaders } 
         });
       }
+      
+      // ✅ Utiliser host de la query ou celui stocké dans oauth_states
+      const host = hostFromQuery || oauthState?.host;
 
       // Vérifier que le state n'a pas expiré
       if (new Date(oauthState.expires_at) < new Date()) {
@@ -212,20 +218,32 @@ serve(async (req) => {
         // Nettoyer le state token
         await supabase.from("oauth_states").delete().eq("state_token", state);
 
-        // 🆕 STANDALONE MODE: Rediriger vers l'app standalone pour sélection de plan
-        // L'app NewAI est en mode non-embedded, donc on redirige vers newai.sale
-        const standalonePlanUrl = `${APP_URL}/app/setup-wizard?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}`;
+        // 🆕 EMBEDDED MODE: Rediriger vers l'app embedded dans Shopify Admin
+        // L'app utilise host pour charger dans l'iframe Shopify
+        let redirectUrl: string;
+        
+        if (host) {
+          // ✅ Rediriger vers Shopify Admin embedded avec host
+          const shopHandle = shop.replace('.myshopify.com', '');
+          redirectUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/plans-embedded?shop=${encodeURIComponent(shop)}&host=${encodeURIComponent(host)}&pending_token=${pendingToken}`;
+          console.log("[SHOPIFY-OAUTH] Redirecting to embedded plans (with host):", redirectUrl);
+        } else {
+          // Fallback: mode standalone si pas de host
+          redirectUrl = `${APP_URL}/app/setup-wizard?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}`;
+          console.log("[SHOPIFY-OAUTH] Redirecting to standalone setup (no host):", redirectUrl);
+        }
         
         console.log(JSON.stringify({
           event: 'oauth_callback_success',
-          flow: 'pre-auth-standalone',
+          flow: host ? 'pre-auth-embedded' : 'pre-auth-standalone',
           shop: shop,
-          redirect: standalonePlanUrl,
+          has_host: !!host,
+          redirect: redirectUrl,
           expires_in_days: 7,
           timestamp: new Date().toISOString()
         }));
         
-        return new Response(null, { status: 302, headers: { Location: standalonePlanUrl, ...corsHeaders } });
+        return new Response(null, { status: 302, headers: { Location: redirectUrl, ...corsHeaders } });
       }
 
       // ANCIEN FLOW : avec user_id (connexion depuis dashboard)
@@ -291,7 +309,7 @@ serve(async (req) => {
     if (req.method === "POST") {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const body = await req.json();
-      const { shopName, commercialName, preAuth } = body;
+      const { shopName, commercialName, preAuth, host } = body; // ✅ Accepter host
 
       if (!shopName) {
         return new Response(JSON.stringify({ error: "Missing shopName" }), {
@@ -338,6 +356,7 @@ serve(async (req) => {
         shop_name: commercialName || shopName,
         expires_at: expiresAt.toISOString(),
         is_pre_auth: preAuth === true,
+        host: host || null, // ✅ Stocker host pour le callback embedded
       });
 
       const redirectUri = `${SUPABASE_URL.replace('/rest/v1', '')}/functions/v1/shopify-oauth`;

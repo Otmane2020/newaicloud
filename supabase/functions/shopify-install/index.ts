@@ -145,6 +145,7 @@ serve(async (req) => {
     const stateToken = crypto.randomUUID();
     
     // Sauvegarder le state token en mode pre-auth (expire dans 15 minutes)
+    // ✅ Inclure host pour supporter l'app embedded après OAuth
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     
     const { error: stateError } = await supabase
@@ -156,6 +157,7 @@ serve(async (req) => {
         is_pre_auth: true,
         expires_at: expiresAt,
         created_at: new Date().toISOString(),
+        host: host || null, // ✅ Stocker host pour le callback
       });
 
     if (stateError) {
