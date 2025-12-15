@@ -57,7 +57,7 @@ serve(async (req) => {
 
     if (pendingError || !pending) {
       logStep("No pending subscription found", { error: pendingError });
-      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?error=no_pending_subscription`, 302);
+      return Response.redirect(`${APP_URL}/app/setup-wizard?error=no_pending_subscription`, 302);
     }
 
     logStep("Pending subscription found", { userId: pending.user_id, planId: pending.plan_id });
@@ -72,7 +72,7 @@ serve(async (req) => {
 
     if (connError || !connection) {
       logStep("No Shopify connection found", { error: connError });
-      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?error=no_connection`, 302);
+      return Response.redirect(`${APP_URL}/app/setup-wizard?error=no_connection`, 302);
     }
 
     // Verify the subscription status with Shopify
@@ -118,7 +118,7 @@ serve(async (req) => {
     if (!shopifyResponse.ok) {
       const errorText = await shopifyResponse.text();
       logStep("Shopify API error", { status: shopifyResponse.status, error: errorText });
-      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?error=shopify_api_error`, 302);
+      return Response.redirect(`${APP_URL}/app/setup-wizard?error=shopify_api_error`, 302);
     }
 
     const shopifyData = await shopifyResponse.json();
@@ -135,7 +135,7 @@ serve(async (req) => {
         .eq("id", pending.id);
       
       // Redirect back to plan selection without error - user just cancelled
-      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard`, 302);
+      return Response.redirect(`${APP_URL}/app/setup-wizard`, 302);
     }
 
     const subscription = activeSubscriptions[0];
@@ -164,11 +164,10 @@ serve(async (req) => {
     }
 
     // Update user profile with subscription
+    // Note: subscription_start/end are in subscriptions table, not profiles
     const profileUpdate: Record<string, any> = {
       subscription_status: subscriptionStatus,
       current_plan_id: pending.plan_id,
-      subscription_start: new Date().toISOString(),
-      subscription_end: subscriptionEnd,
       billing_provider: "shopify",
       shopify_subscription_id: subscription.id,
       updated_at: new Date().toISOString(),
@@ -186,7 +185,7 @@ serve(async (req) => {
 
     if (profileError) {
       logStep("Error updating profile", { error: profileError });
-      return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?error=profile_update_failed`, 302);
+      return Response.redirect(`${APP_URL}/app/setup-wizard?error=profile_update_failed`, 302);
     }
 
     // Update pending subscription status
@@ -246,8 +245,8 @@ serve(async (req) => {
       logStep("Import trigger error (non-blocking)", { error: String(importError) });
     }
 
-    // Redirect to embedded Shopify dashboard-light with success
-    return Response.redirect(`https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard-light?subscription=active&plan=${pending.plan_id}`, 302);
+    // Redirect to standalone app dashboard-light with success
+    return Response.redirect(`${APP_URL}/dashboard-light?subscription=active&plan=${pending.plan_id}`, 302);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
