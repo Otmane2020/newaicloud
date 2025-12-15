@@ -23,7 +23,14 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const remainingCredits = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
   // Removed demo store bypass - authentication is required for all stores
 
-  if (loading) {
+  // Check if Shopify auth redirect is in progress - show loading instead of redirecting to /auth
+  const isShopifyAuthInProgress = sessionStorage.getItem('shopify_auth_redirect') === 'true';
+  
+  if (loading || isShopifyAuthInProgress) {
+    // Clear flag after showing loading (will be set again if needed)
+    if (isShopifyAuthInProgress && !loading) {
+      sessionStorage.removeItem('shopify_auth_redirect');
+    }
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
