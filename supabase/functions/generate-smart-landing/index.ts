@@ -134,10 +134,16 @@ DESIGN PREMIUM OBLIGATOIRE:
 - Espacement généreux, respiration visuelle
 
 STRUCTURE (sections obligatoires):
-1. HERO: Image produit ENTIÈRE + NOUVEAU nom élégant avec marque ${brandName} + Badge marque + CTA
+1. HERO: Image produit ENTIÈRE + NOUVEAU nom élégant avec marque ${brandName} + Badge marque + CTA "Découvrir"
 2. PROPOSITION DE VALEUR: 3 icônes SVG inline (livraison, qualité, garantie)
 3. DESCRIPTION PRODUIT: Texte mentionnant la marque "${brandName}" explicitement
-4. CTA FINAL: Bouton achat
+4. CTA FINAL: Bouton "En savoir plus" ou "Découvrir"
+
+⚠️ EXCLUSIONS - NE JAMAIS INCLURE:
+- PAS de bouton "Ajouter au Panier" ou "Add to Cart"
+- PAS de bouton "Acheter" ou "Buy Now"
+- PAS de fonctionnalités e-commerce (quantité, panier, checkout)
+- Les CTA doivent être informatifs: "Découvrir", "En savoir plus", "Voir les détails"
 
 RÈGLES TECHNIQUES STRICTES:
 - HTML5 + CSS inline uniquement
@@ -181,10 +187,16 @@ MANDATORY PREMIUM DESIGN:
 - Generous spacing, visual breathing room
 
 STRUCTURE (required sections):
-1. HERO: FULL product image + NEW elegant name with brand ${brandName} + Brand badge + CTA
+1. HERO: FULL product image + NEW elegant name with brand ${brandName} + Brand badge + CTA "Discover"
 2. VALUE PROPOSITION: 3 inline SVG icons (shipping, quality, guarantee)
 3. PRODUCT DESCRIPTION: Text explicitly mentioning the brand "${brandName}"
-4. FINAL CTA: Buy button
+4. FINAL CTA: "Learn More" or "Discover" button
+
+⚠️ EXCLUSIONS - NEVER INCLUDE:
+- NO "Add to Cart" or "Ajouter au Panier" button
+- NO "Buy Now" or "Acheter" button
+- NO e-commerce features (quantity, cart, checkout)
+- CTAs must be informative: "Discover", "Learn More", "View Details"
 
 STRICT TECHNICAL RULES:
 - HTML5 + inline CSS only
