@@ -108,10 +108,10 @@ export const AIImagesDialog = ({
     if (newSet.has(typeId)) {
       newSet.delete(typeId);
     } else {
-      if (newSet.size < 4) { // Maximum 4 white background images
+      if (newSet.size < 6) { // Maximum 6 white background images
         newSet.add(typeId);
       } else {
-        toast.warning(language === 'fr' ? 'Maximum 4 images fond blanc' : 'Maximum 4 white background images');
+        toast.warning(language === 'fr' ? 'Maximum 6 images fond blanc' : 'Maximum 6 white background images');
       }
     }
     setSelectedImageTypes(newSet);
@@ -363,7 +363,7 @@ export const AIImagesDialog = ({
               <>
                 <div className="space-y-3">
                   <Label className="text-sm font-medium">
-                    {language === 'fr' ? 'Images fond blanc (2-4 max)' : 'White background images (2-4 max)'}
+                    {language === 'fr' ? 'Images fond blanc (2-6 max)' : 'White background images (2-6 max)'}
                   </Label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {IMAGE_TYPES.map(type => (
