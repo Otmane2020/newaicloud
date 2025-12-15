@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -88,10 +88,10 @@ serve(async (req) => {
         ? cleanTitle(detectAndCleanBrandFromTitle(rawProductTitle), vendor)
         : detectAndCleanBrandFromTitle(rawProductTitle);
 
-    if (!OPENROUTER_API_KEY) {
-      console.error("❌ OPENROUTER_API_KEY not configured");
+    if (!LOVABLE_API_KEY) {
+      console.error("❌ LOVABLE_API_KEY not configured");
       return new Response(
-        JSON.stringify({ error: "API key non configurée" }),
+        JSON.stringify({ error: "LOVABLE_API_KEY non configurée" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -335,17 +335,15 @@ SUPPORT/AIDE:
 
 Génère maintenant le HTML COMPLET avec tout le contenu riche.`;
 
-    // Call OpenRouter AI with Qwen 2.5 72B for rich content
-    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    // Call Lovable AI with Gemini Flash for fast, high-quality generation
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://newai.sale",
-        "X-Title": "NewAI Landing Generator",
       },
       body: JSON.stringify({
-        model: "qwen/qwen-2.5-72b-instruct",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",

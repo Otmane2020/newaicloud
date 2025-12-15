@@ -158,7 +158,7 @@ export function BulkLandingProgressDialog({
 
   // Batching constants - Optimized for speed
   const BATCH_SIZE = 50;
-  const BATCH_DELAY_MS = 3000; // Reduced from 10s to 3s between batches
+  const BATCH_DELAY_MS = 2000; // Optimized: 2s between batches
 
   // 🏷️ Resolve Vendor based on config (similar to RegenerateLanding)
   const resolveVendorForProduct = async (
@@ -347,7 +347,6 @@ export function BulkLandingProgressDialog({
             
             clearTimeout(timeoutId);
             
-            let titleWasRegenerated = false;
             if (smartError) {
               console.warn(`[Bulk Landing] smart-title timeout/error, using existing title:`, smartError);
             } else if (smartData?.optimizedTitle) {
