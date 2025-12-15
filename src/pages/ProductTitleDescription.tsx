@@ -25,6 +25,7 @@ import {
   RefreshCw,
   Square,
   FileText,
+  Zap,
   AlertCircle,
   Upload,
   CheckCircle,
@@ -63,6 +64,7 @@ import { OptimizationConfigDialog, OptimizationConfig } from "@/components/seo/O
 import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConfigDialog";
 import { AiBackgroundDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundDialog";
 import { BulkLandingProgressDialog } from "@/components/seo/BulkLandingProgressDialog";
+import { SmartBulkLandingDialog } from "@/components/seo/SmartBulkLandingDialog";
 
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
 import { ProductGalleryDialog } from "@/components/seo/ProductGalleryDialog";
@@ -229,6 +231,8 @@ export default function ProductTitleDescription() {
   const [showBulkLandingConfigDialog, setShowBulkLandingConfigDialog] = useState(false);
   const [showBulkLandingDialog, setShowBulkLandingDialog] = useState(false);
   const [bulkLandingConfig, setBulkLandingConfig] = useState<LandingConfig | null>(null);
+  const [showSmartBulkLandingDialog, setShowSmartBulkLandingDialog] = useState(false);
+  const [showSmartBulkLandingConfig, setShowSmartBulkLandingConfig] = useState(false);
   const [generatingBulkLanding, setGeneratingBulkLanding] = useState(false);
   // Product gallery dialog
   const [showGalleryDialog, setShowGalleryDialog] = useState(false);
@@ -2270,6 +2274,24 @@ export default function ProductTitleDescription() {
                     setShowUpgradeDialog(true);
                     return;
                   }
+                  setShowSmartBulkLandingConfig(true);
+                }}
+                disabled={selectedProducts.size === 0}
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white border-0"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Smart Bulk Landing ({selectedProducts.size})
+              </Button>
+
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  if (!canDoAction("optimizations")) {
+                    toast.error(t.contentOptimization.toasts.limitReached);
+                    setShowUpgradeDialog(true);
+                    return;
+                  }
                   // Select ALL filtered products then open config
                   setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
                   setShowBulkLandingConfigDialog(true);
@@ -3667,6 +3689,37 @@ export default function ProductTitleDescription() {
             .filter(p => !bulkLandingConfig.activeOnly || p.status === 'active')
             .filter(p => bulkLandingConfig.redoExisting || !p.landing_page)
             .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor }))}
+          config={bulkLandingConfig}
+          storeId={selectedStore.id}
+          onComplete={() => {
+            fetchProducts();
+            setSelectedProducts(new Set());
+          }}
+        />
+      )}
+
+      {/* Smart Bulk Landing Config Dialog */}
+      <LandingConfigDialog
+        open={showSmartBulkLandingConfig}
+        onOpenChange={setShowSmartBulkLandingConfig}
+        onConfirm={(config) => {
+          setBulkLandingConfig(config);
+          setShowSmartBulkLandingConfig(false);
+          setShowSmartBulkLandingDialog(true);
+        }}
+        productTitle={`Smart Bulk: ${selectedProducts.size} produit(s)`}
+      />
+
+      {/* Smart Bulk Landing Progress Dialog */}
+      {showSmartBulkLandingDialog && bulkLandingConfig && selectedStore && (
+        <SmartBulkLandingDialog
+          open={showSmartBulkLandingDialog}
+          onOpenChange={setShowSmartBulkLandingDialog}
+          products={filteredProducts
+            .filter(p => selectedProducts.has(p.id))
+            .filter(p => !bulkLandingConfig.activeOnly || p.status === 'active')
+            .filter(p => bulkLandingConfig.redoExisting || !p.landing_page)
+            .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor, body_html: p.description || undefined }))}
           config={bulkLandingConfig}
           storeId={selectedStore.id}
           onComplete={() => {

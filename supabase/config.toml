@@ -589,3 +589,6 @@ verify_jwt = true
 
 [functions.generate-homepage-liquid]
 verify_jwt = true
+
+[functions.generate-smart-landing]
+verify_jwt = true
