@@ -69,13 +69,8 @@ export default function SetupWizard() {
           console.log('[SetupWizard] Profile lookup result:', { profile, error: profileError?.message });
 
           if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
-            console.log('✅ [SetupWizard] User already has active subscription, redirecting to embedded dashboard');
-            const shopHandle = normalizedShop?.replace('.myshopify.com', '') || '';
-            if (shopHandle) {
-              window.location.href = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard`;
-            } else {
-              navigate("/dashboard", { replace: true });
-            }
+            console.log('✅ [SetupWizard] User already has active subscription, redirecting to dashboard');
+            navigate("/dashboard", { replace: true });
             return;
           }
         }
