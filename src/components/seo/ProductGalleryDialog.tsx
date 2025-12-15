@@ -456,62 +456,75 @@ export function ProductGalleryDialog({
           </div>
         )}
 
-        {/* Lightbox */}
-        {lightboxOpen && images[lightboxIndex] && (
-          <div 
-            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
-            onClick={closeLightbox}
-          >
-            {/* Close button */}
-            <button
-              onClick={closeLightbox}
-              className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
+      </DialogContent>
 
-            {/* Navigation - Previous */}
+      {/* Lightbox - OUTSIDE DialogContent to avoid z-index conflicts */}
+      {lightboxOpen && images[lightboxIndex] && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center cursor-pointer"
+          onClick={closeLightbox}
+          style={{ margin: 0, padding: 0 }}
+        >
+          {/* Close button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-6 right-6 z-10 text-white hover:text-white/80 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+          >
+            <X className="h-8 w-8" />
+          </button>
+
+          {/* Navigation - Previous */}
+          {images.length > 1 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 goToPrevious();
               }}
-              className="absolute left-4 text-white/80 hover:text-white p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              className="absolute left-6 z-10 text-white hover:text-white/80 p-4 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
             >
-              <ChevronLeft className="h-8 w-8" />
+              <ChevronLeft className="h-10 w-10" />
             </button>
+          )}
 
-            {/* Image - adapts to natural aspect ratio */}
-            <div 
-              className="flex items-center justify-center p-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img
-                src={images[lightboxIndex].src}
-                alt={images[lightboxIndex].alt_text || `Image ${lightboxIndex + 1}`}
-                className="max-w-[85vw] max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl"
-                style={{ aspectRatio: 'auto' }}
-              />
-            </div>
+          {/* Image container - dynamic size based on image */}
+          <div 
+            className="relative flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              key={lightboxIndex}
+              src={images[lightboxIndex].src}
+              alt={images[lightboxIndex].alt_text || `Image ${lightboxIndex + 1}`}
+              className="block rounded-lg shadow-2xl"
+              style={{
+                maxWidth: 'calc(100vw - 160px)',
+                maxHeight: 'calc(100vh - 120px)',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+              }}
+            />
+          </div>
 
-            {/* Navigation - Next */}
+          {/* Navigation - Next */}
+          {images.length > 1 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 goToNext();
               }}
-              className="absolute right-4 text-white/80 hover:text-white p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              className="absolute right-6 z-10 text-white hover:text-white/80 p-4 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
             >
-              <ChevronRight className="h-8 w-8" />
+              <ChevronRight className="h-10 w-10" />
             </button>
+          )}
 
-            {/* Image counter */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm bg-black/50 px-4 py-2 rounded-full">
-              {lightboxIndex + 1} / {images.length}
-            </div>
+          {/* Image counter */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white text-base bg-black/60 px-5 py-2.5 rounded-full font-medium">
+            {lightboxIndex + 1} / {images.length}
           </div>
-        )}
-      </DialogContent>
+        </div>
+      )}
     </Dialog>
   );
 }
