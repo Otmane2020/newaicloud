@@ -18,6 +18,7 @@ serve(async (req) => {
       productTitle,
       optimizedTitle,
       vendor,
+      originalVendor, // L'ancien vendor à supprimer du titre
       imageUrl,
       description,
       highlights,
@@ -34,8 +35,20 @@ serve(async (req) => {
       );
     }
 
-    const finalTitle = optimizedTitle || productTitle;
+    // Le nouveau brand/vendor généré (Velvetto, etc.)
     const brandName = vendor || (language === "fr" ? "Marque Premium" : "Premium Brand");
+
+    // Nettoyer le titre pour retirer l'ancien vendor si un nouveau est fourni
+    let cleanTitle = productTitle || "";
+    if (originalVendor && vendor && originalVendor !== vendor) {
+      // Retirer l'ancien vendor du titre (insensible à la casse)
+      const regex = new RegExp(`\\b${originalVendor}\\b`, "gi");
+      cleanTitle = cleanTitle.replace(regex, "").replace(/\s+/g, " ").trim();
+      console.log(`🔄 Titre nettoyé: "${productTitle}" → "${cleanTitle}" (ancien vendor: ${originalVendor})`);
+    }
+
+    // Utiliser le titre nettoyé pour l'affichage
+    const displayTitle = cleanTitle;
 
     // Theme colors - premium palette
     const colors = theme === "dark" ? {
@@ -59,9 +72,6 @@ serve(async (req) => {
       accent: "#D4AF37",
       border: "#E5E5E5",
     };
-
-    // Use original title for display, optimized title for SEO
-    const displayTitle = productTitle;
     
     const prompt = language === "fr" 
       ? `Crée une landing page HTML PREMIUM pour ce produit de luxe:
@@ -156,7 +166,7 @@ STRICT TECHNICAL RULES:
 
 Generate the complete HTML.`;
 
-    console.log(`🚀 [Smart Landing Premium] Generating for: ${finalTitle}`);
+    console.log(`🚀 [Smart Landing Premium] Generating for: ${displayTitle} (brand: ${brandName})`);
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -215,7 +225,7 @@ Generate the complete HTML.`;
       html = html.replace(/\[PRODUCT_IMAGE\]/gi, imageUrl);
     }
 
-    console.log(`✅ [Smart Landing Premium] Generated ${html.length} chars for: ${finalTitle}`);
+    console.log(`✅ [Smart Landing Premium] Generated ${html.length} chars for: ${displayTitle}`);
 
     return new Response(
       JSON.stringify({ html, success: true }),

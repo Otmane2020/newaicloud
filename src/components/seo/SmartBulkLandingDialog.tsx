@@ -172,7 +172,8 @@ export function SmartBulkLandingDialog({
         body: {
           productTitle: product.title,
           optimizedTitle: optimizedTitle,
-          vendor: vendor,
+          vendor: vendor, // Le nouveau vendor (généré ou extrait)
+          originalVendor: product.vendor, // L'ancien vendor Shopify à retirer du titre
           imageUrl: product.image_url,
           description: product.body_html,
           highlights: config.customHighlights,
