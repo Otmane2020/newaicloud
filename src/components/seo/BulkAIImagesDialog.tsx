@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +36,15 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
+
+interface ProductGalleryImage {
+  id: string;
+  src: string;
+  alt_text: string | null;
+  position: number | null;
+  shopify_image_id: number | null;
+  optimization_count?: number | null;
+}
 
 interface Product {
   id: string;
@@ -76,6 +85,13 @@ const DECOR_TYPES = [
   { id: 'office', label: 'Bureau', labelEn: 'Office', icon: Home },
 ];
 
+// Helper to detect AI-generated images (same pattern as SmartBackgroundDialog)
+const isAiGeneratedImage = (imgSrc: string, optimizationCount?: number | null): boolean => {
+  if (optimizationCount && optimizationCount > 0) return true;
+  const aiPatterns = ['ai_generated_', 'white_background', 'generated-images/', '/storage/v1/object/public/generated'];
+  return aiPatterns.some(pattern => imgSrc.includes(pattern));
+};
+
 export const BulkAIImagesDialog = ({
   open,
   onOpenChange,
@@ -93,9 +109,108 @@ export const BulkAIImagesDialog = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const cancelledRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [loadingGallery, setLoadingGallery] = useState(false);
 
-  // Filter products with images
-  const productsWithImages = selectedProducts.filter(p => p.image_url);
+  // Store loaded gallery images per product
+  const [productGalleryImages, setProductGalleryImages] = useState<Map<string, ProductGalleryImage[]>>(new Map());
+  // Track selected images per product (product_id -> { url, imageId })
+  const [selectedImages, setSelectedImages] = useState<Map<string, Set<string>>>(new Map());
+
+  // Memoize product IDs
+  const productIds = useMemo(() => selectedProducts.map(p => p.id).filter(Boolean), [selectedProducts]);
+
+  // Load gallery images on open (same as SmartBackgroundDialog)
+  useEffect(() => {
+    if (open && productIds.length > 0) {
+      loadAllGalleryImages();
+    }
+  }, [open, productIds.join(',')]);
+
+  const loadAllGalleryImages = async () => {
+    if (productIds.length === 0) return;
+    
+    setLoadingGallery(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('product_images')
+        .select('id, src, alt_text, position, shopify_image_id, product_id, optimization_count')
+        .in('product_id', productIds)
+        .order('position', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Group images by product_id
+      const imagesByProduct = new Map<string, ProductGalleryImage[]>();
+      data?.forEach(img => {
+        const productId = (img as any).product_id;
+        if (!imagesByProduct.has(productId)) {
+          imagesByProduct.set(productId, []);
+        }
+        imagesByProduct.get(productId)!.push({
+          id: img.id,
+          src: img.src,
+          alt_text: img.alt_text,
+          position: img.position,
+          shopify_image_id: img.shopify_image_id,
+          optimization_count: (img as any).optimization_count
+        });
+      });
+      
+      // Add fallback for products without gallery images
+      selectedProducts.forEach(p => {
+        if (!imagesByProduct.has(p.id) && p.image_url) {
+          imagesByProduct.set(p.id, [{
+            id: `fallback-${p.id}`,
+            src: p.image_url,
+            alt_text: p.title,
+            position: 1,
+            shopify_image_id: null,
+            optimization_count: null
+          }]);
+        }
+      });
+      
+      setProductGalleryImages(imagesByProduct);
+      
+      // Smart pre-selection: only non-AI images (same as SmartBackgroundDialog)
+      const newSelectedImages = new Map<string, Set<string>>();
+      
+      imagesByProduct.forEach((images, productId) => {
+        const nonAiImages = images.filter(img => !isAiGeneratedImage(img.src, img.optimization_count));
+        if (nonAiImages.length > 0) {
+          // Pre-select all non-AI images
+          newSelectedImages.set(productId, new Set(nonAiImages.map(img => img.id)));
+        }
+      });
+      
+      setSelectedImages(newSelectedImages);
+      
+      // Initialize product statuses
+      const statuses = new Map<string, ProductStatus>();
+      selectedProducts.forEach(p => {
+        const hasSelectedImages = newSelectedImages.has(p.id) && (newSelectedImages.get(p.id)?.size || 0) > 0;
+        statuses.set(p.id, { 
+          id: p.id, 
+          title: p.title, 
+          status: hasSelectedImages ? 'pending' : 'skipped' 
+        });
+      });
+      setProductStatuses(statuses);
+      
+      console.log('[BulkAI] Loaded gallery images for', imagesByProduct.size, 'products, pre-selected', newSelectedImages.size, 'products');
+    } catch (error) {
+      console.error('[BulkAI] Error loading gallery images:', error);
+      // Fallback to product.image_url
+      const fallbackStatuses = new Map<string, ProductStatus>();
+      selectedProducts.filter(p => p.image_url).forEach(p => {
+        fallbackStatuses.set(p.id, { id: p.id, title: p.title, status: 'pending' });
+      });
+      setProductStatuses(fallbackStatuses);
+    } finally {
+      setLoadingGallery(false);
+    }
+  };
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -105,15 +220,8 @@ export const BulkAIImagesDialog = ({
       setSuccessCount(0);
       setErrorCount(0);
       setCurrentIndex(0);
-      
-      // Initialize product statuses
-      const statuses = new Map<string, ProductStatus>();
-      productsWithImages.forEach(p => {
-        statuses.set(p.id, { id: p.id, title: p.title, status: 'pending' });
-      });
-      setProductStatuses(statuses);
     }
-  }, [open, selectedProducts]);
+  }, [open]);
 
   // Auto-scroll to current product
   useEffect(() => {
@@ -151,9 +259,66 @@ export const BulkAIImagesDialog = ({
     });
   };
 
+  // Get products with selected images (replacing productsWithImages)
+  const productsWithSelection = useMemo(() => {
+    return selectedProducts.filter(p => {
+      const selected = selectedImages.get(p.id);
+      return selected && selected.size > 0;
+    });
+  }, [selectedProducts, selectedImages]);
+
+  // Toggle image selection for a product
+  const toggleImageSelection = (productId: string, imageId: string) => {
+    setSelectedImages(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(productId) || new Set<string>();
+      const newSet = new Set(current);
+      
+      if (newSet.has(imageId)) {
+        newSet.delete(imageId);
+      } else {
+        newSet.add(imageId);
+      }
+      
+      if (newSet.size === 0) {
+        newMap.delete(productId);
+      } else {
+        newMap.set(productId, newSet);
+      }
+      
+      return newMap;
+    });
+    
+    // Update status
+    setProductStatuses(prev => {
+      const newMap = new Map(prev);
+      const current = newMap.get(productId);
+      if (current) {
+        const selectedSet = selectedImages.get(productId) || new Set();
+        const willHaveSelection = selectedSet.has(imageId) ? selectedSet.size - 1 > 0 : true;
+        newMap.set(productId, { 
+          ...current, 
+          status: willHaveSelection ? 'pending' : 'skipped' 
+        });
+      }
+      return newMap;
+    });
+  };
+
+  // Get first selected image URL for a product
+  const getFirstSelectedImageUrl = (productId: string): string | null => {
+    const selected = selectedImages.get(productId);
+    if (!selected || selected.size === 0) return null;
+    
+    const gallery = productGalleryImages.get(productId) || [];
+    const firstSelectedId = Array.from(selected)[0];
+    const img = gallery.find(g => g.id === firstSelectedId);
+    return img?.src || null;
+  };
+
   const handleGenerateAll = async () => {
-    if (productsWithImages.length === 0) {
-      toast.error(language === 'fr' ? 'Aucun produit avec image' : 'No products with images');
+    if (productsWithSelection.length === 0) {
+      toast.error(language === 'fr' ? 'Aucune image sélectionnée' : 'No images selected');
       return;
     }
 
@@ -170,10 +335,17 @@ export const BulkAIImagesDialog = ({
     let localSuccess = 0;
     let localError = 0;
 
-    for (let i = 0; i < productsWithImages.length; i++) {
+    for (let i = 0; i < productsWithSelection.length; i++) {
       if (cancelledRef.current) break;
 
-      const product = productsWithImages[i];
+      const product = productsWithSelection[i];
+      const sourceImageUrl = getFirstSelectedImageUrl(product.id);
+      
+      if (!sourceImageUrl) {
+        updateProductStatus(product.id, { status: 'skipped' });
+        continue;
+      }
+      
       setCurrentIndex(i);
       updateProductStatus(product.id, { status: 'generating' });
 
@@ -184,7 +356,7 @@ export const BulkAIImagesDialog = ({
             productId: product.id,
             productTitle: product.title,
             productType: product.product_type || 'furniture',
-            sourceImageUrl: product.image_url,
+            sourceImageUrl: sourceImageUrl,
             imageTypes: Array.from(selectedImageTypes),
             includeDecor,
             decorType,
@@ -268,7 +440,7 @@ export const BulkAIImagesDialog = ({
       }
 
       // Delay between products to avoid rate limits
-      if (i < productsWithImages.length - 1 && !cancelledRef.current) {
+      if (i < productsWithSelection.length - 1 && !cancelledRef.current) {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
@@ -296,8 +468,8 @@ export const BulkAIImagesDialog = ({
     setIsGenerating(false);
   };
 
-  const progress = productsWithImages.length > 0
-    ? Math.round(((successCount + errorCount) / productsWithImages.length) * 100)
+  const progress = productsWithSelection.length > 0
+    ? Math.round(((successCount + errorCount) / productsWithSelection.length) * 100)
     : 0;
 
   const getStatusIcon = (status: ProductStatus['status']) => {
@@ -335,7 +507,7 @@ export const BulkAIImagesDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Layers className="h-5 w-5 text-primary" />
@@ -343,18 +515,26 @@ export const BulkAIImagesDialog = ({
           </DialogTitle>
           <DialogDescription>
             {language === 'fr'
-              ? `Générer des variantes d'images IA pour ${productsWithImages.length} produit(s)`
-              : `Generate AI image variants for ${productsWithImages.length} product(s)`}
+              ? `Générer des variantes d'images IA pour ${productsWithSelection.length} produit(s) sélectionné(s)`
+              : `Generate AI image variants for ${productsWithSelection.length} selected product(s)`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Loading indicator */}
+          {loadingGallery && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {language === 'fr' ? 'Chargement des galeries...' : 'Loading galleries...'}
+            </div>
+          )}
+
           {/* Progress */}
           {isGenerating && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>{language === 'fr' ? 'Progression' : 'Progress'}</span>
-                <span>{successCount + errorCount} / {productsWithImages.length}</span>
+                <span>{successCount + errorCount} / {productsWithSelection.length}</span>
               </div>
               <Progress value={progress} className="h-2" />
             </div>
@@ -432,38 +612,94 @@ export const BulkAIImagesDialog = ({
             </>
           )}
 
-          {/* Product List */}
-          <ScrollArea className="h-[300px] border rounded-lg" ref={scrollRef}>
-            <div className="p-2 space-y-1">
-              {Array.from(productStatuses.values()).map(status => (
-                <div
-                  key={status.id}
-                  id={`bulk-ai-product-${status.id}`}
-                  className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
-                    status.status === 'generating' || status.status === 'saving'
-                      ? 'bg-primary/10'
-                      : status.status === 'success'
-                      ? 'bg-green-500/10'
-                      : status.status === 'error'
-                      ? 'bg-destructive/10'
-                      : 'bg-muted/30'
-                  }`}
-                >
-                  {getStatusIcon(status.status)}
-                  <span className="flex-1 text-sm truncate">{status.title}</span>
-                  {status.imagesGenerated && (
-                    <span className="text-xs text-muted-foreground">
-                      {status.imagesGenerated} img
-                    </span>
-                  )}
-                  {getStatusBadge(status.status)}
-                </div>
-              ))}
+          {/* Product List with Gallery Images (same as SmartBackgroundDialog) */}
+          <ScrollArea className="h-[350px] border rounded-lg" ref={scrollRef}>
+            <div className="p-3 space-y-4">
+              {selectedProducts.map(product => {
+                const status = productStatuses.get(product.id);
+                const galleryImages = productGalleryImages.get(product.id) || [];
+                const productSelectedImages = selectedImages.get(product.id) || new Set();
+                
+                return (
+                  <div
+                    key={product.id}
+                    id={`bulk-ai-product-${product.id}`}
+                    className={`p-3 rounded-lg border transition-colors ${
+                      status?.status === 'generating' || status?.status === 'saving'
+                        ? 'border-primary bg-primary/5'
+                        : status?.status === 'success'
+                        ? 'border-green-500 bg-green-500/5'
+                        : status?.status === 'error'
+                        ? 'border-destructive bg-destructive/5'
+                        : 'border-border'
+                    }`}
+                  >
+                    {/* Product Header */}
+                    <div className="flex items-center gap-3 mb-2">
+                      {status && getStatusIcon(status.status)}
+                      <span className="flex-1 text-sm font-medium truncate">{product.title}</span>
+                      {status?.imagesGenerated && (
+                        <span className="text-xs text-muted-foreground">
+                          {status.imagesGenerated} img
+                        </span>
+                      )}
+                      {status && getStatusBadge(status.status)}
+                    </div>
+                    
+                    {/* Gallery Images Grid (only show before generation) */}
+                    {!isGenerating && successCount === 0 && galleryImages.length > 0 && (
+                      <div className="grid grid-cols-6 gap-2 mt-2">
+                        {galleryImages.map(img => {
+                          const isSelected = productSelectedImages.has(img.id);
+                          const isAi = isAiGeneratedImage(img.src, img.optimization_count);
+                          
+                          return (
+                            <div
+                              key={img.id}
+                              className={`relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all ${
+                                isSelected 
+                                  ? 'border-primary ring-2 ring-primary/30' 
+                                  : 'border-transparent hover:border-muted-foreground/50'
+                              }`}
+                              onClick={() => toggleImageSelection(product.id, img.id)}
+                            >
+                              <img
+                                src={img.src}
+                                alt={img.alt_text || ''}
+                                className="w-full h-full object-cover"
+                              />
+                              {/* Selection checkbox overlay */}
+                              <div className={`absolute top-1 left-1 w-4 h-4 rounded-sm flex items-center justify-center ${
+                                isSelected ? 'bg-primary' : 'bg-black/50'
+                              }`}>
+                                {isSelected && <Check className="h-3 w-3 text-white" />}
+                              </div>
+                              {/* AI badge */}
+                              {isAi && (
+                                <Badge 
+                                  variant="secondary" 
+                                  className="absolute bottom-1 right-1 text-[10px] px-1 py-0"
+                                >
+                                  AI
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </ScrollArea>
 
           {/* Stats */}
           <div className="flex gap-4 text-sm">
+            <span className="flex items-center gap-1">
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              {productsWithSelection.length} {language === 'fr' ? 'produit(s) sélectionné(s)' : 'product(s) selected'}
+            </span>
             <span className="flex items-center gap-1">
               <CheckCircle2 className="h-4 w-4 text-green-500" />
               {successCount} {language === 'fr' ? 'succès' : 'success'}
@@ -493,11 +729,11 @@ export const BulkAIImagesDialog = ({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 {language === 'fr' ? 'Annuler' : 'Cancel'}
               </Button>
-              <Button onClick={handleGenerateAll} disabled={productsWithImages.length === 0}>
+              <Button onClick={handleGenerateAll} disabled={productsWithSelection.length === 0 || loadingGallery}>
                 <Sparkles className="h-4 w-4 mr-2" />
                 {language === 'fr' 
-                  ? `Générer pour ${productsWithImages.length} produit(s)` 
-                  : `Generate for ${productsWithImages.length} product(s)`}
+                  ? `Générer pour ${productsWithSelection.length} produit(s)` 
+                  : `Generate for ${productsWithSelection.length} product(s)`}
               </Button>
             </>
           )}
