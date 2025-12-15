@@ -2679,7 +2679,7 @@ export default function ProductTitleDescription() {
                        }}
                      >
                        {/* Image with action buttons */}
-                       <div className="aspect-square bg-muted/50 relative overflow-hidden">
+                       <div className="aspect-square bg-muted/50 relative">
                          {product.image_url ? (
                            <img
                              src={product.image_url}
