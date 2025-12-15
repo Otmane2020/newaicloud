@@ -51,14 +51,11 @@ export default function ShopifyApp() {
         const session = sessionResult.data?.session;
         const connection = connectionResult.data;
         
-        const shopHandle = shop.replace('.myshopify.com', '');
-        
-        // Si session active → dashboard immédiat (embedded)
+        // Si session active → dashboard immédiat
         if (session?.user) {
-          console.log('✅ [ShopifyApp] User authenticated, redirecting to embedded dashboard');
+          console.log('✅ [ShopifyApp] User authenticated, redirecting to dashboard');
           setStatus("processed");
-          sessionStorage.setItem('shopify_auth_redirect', 'true');
-          window.location.href = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard`;
+          navigate("/dashboard", { replace: true });
           return;
         }
         
@@ -79,8 +76,7 @@ export default function ShopifyApp() {
               });
               await new Promise(resolve => setTimeout(resolve, 200));
               setStatus("processed");
-              sessionStorage.setItem('shopify_auth_redirect', 'true');
-              window.location.href = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard`;
+              navigate("/dashboard", { replace: true });
               return;
             }
           } catch (err) {
@@ -88,10 +84,10 @@ export default function ShopifyApp() {
           }
         }
         
-        // Pas de connexion ou quick-login échoué → setup-wizard (embedded)
+        // Pas de connexion ou quick-login échoué → setup-wizard (standalone)
         setStatus("processed");
         sessionStorage.setItem('shopify_auth_redirect', 'true');
-        window.location.href = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?shop=${shop}`;
+        navigate(`/app/setup-wizard?shop=${shop}`, { replace: true });
         return;
       }
 
@@ -164,7 +160,6 @@ export default function ShopifyApp() {
         // ⚠️ Important: On ne passe PAS le pending_token car l'auth est déjà faite ci-dessus
         const redirectParams = new URLSearchParams({ shop });
         
-        const shopHandle = shop.replace('.myshopify.com', '');
         console.log('🎯 [ShopifyApp] Auth complete, user_id:', data.user_id, 'is_returning:', data.is_returning_user);
         
         // Set flag to prevent ProtectedLayout redirect to /auth
@@ -179,16 +174,16 @@ export default function ShopifyApp() {
             .single();
           
           if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
-            console.log('✅ [ShopifyApp] Returning user with active subscription, redirecting to embedded dashboard');
-            window.location.href = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/dashboard`;
+            console.log('✅ [ShopifyApp] Returning user with active subscription, redirecting to dashboard');
+            navigate("/dashboard", { replace: true });
           } else {
-            console.log('🔄 [ShopifyApp] Returning user without subscription, redirecting to embedded SetupWizard');
-            window.location.href = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?shop=${shop}`;
+            console.log('🔄 [ShopifyApp] Returning user without subscription, redirecting to SetupWizard');
+            navigate(`/app/setup-wizard?shop=${shop}`, { replace: true });
           }
         } else {
-          // Nouvel utilisateur → toujours SetupWizard pour Shopify Billing (embedded)
-          console.log('🆕 [ShopifyApp] New user, redirecting to embedded SetupWizard for Shopify Billing');
-          window.location.href = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/setup-wizard?shop=${shop}`;
+          // Nouvel utilisateur → toujours SetupWizard pour Shopify Billing (standalone)
+          console.log('🆕 [ShopifyApp] New user, redirecting to SetupWizard for Shopify Billing');
+          navigate(`/app/setup-wizard?shop=${shop}`, { replace: true });
         }
       } catch (err) {
         setStatus("error");
