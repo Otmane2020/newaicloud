@@ -337,7 +337,7 @@ export default function ProductTitleDescription() {
         const { data: pageData, error: pageError } = await supabase
           .from("shopify_products")
           .select(
-            "id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id, collection_ids",
+            "id, title, description, landing_page, has_landing_page, last_landing_generation_at, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id, collection_ids",
           )
           .eq("seller_id", user.id)
           .eq("store_id", selectedStore.id)
