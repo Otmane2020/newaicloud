@@ -112,19 +112,24 @@ serve(async (req) => {
     // ALL plans (including free) go through Shopify Billing
     // Free plan uses the "free" plan created in Shopify Partner Dashboard
 
-    // Detect if this is a dev/partner store (for test mode)
+    // Detect if this is a dev/partner/test store (for test mode)
     // Shopify partner test stores and development stores should use test mode
-    // Check multiple patterns: dev stores, partner stores, stores with plan_name containing 'partner' or 'development'
-    const isDevStore = shopDomain.includes(".myshopify.com") && 
-      (shopDomain.includes("-dev") || 
-       shopDomain.includes("dev-") || 
-       connection.shop_name?.toLowerCase().includes("dev") ||
-       connection.shop_name?.toLowerCase().includes("test") ||
-       connection.shop_name?.toLowerCase().includes("partner"));
+    // Check multiple patterns for development/test stores
+    const shopNameLower = (connection.shop_name || shopDomain || "").toLowerCase();
+    const isDevStore = 
+      shopDomain.includes("-dev") || 
+      shopDomain.includes("dev-") || 
+      shopDomain.includes("test-") ||
+      shopDomain.includes("-test") ||
+      shopNameLower.includes("dev") ||
+      shopNameLower.includes("test") ||
+      shopNameLower.includes("partner") ||
+      shopNameLower.includes("demo") ||
+      shopNameLower.includes("sandbox");
     
-    // IMPORTANT: For App Store review, we should enable test mode by default
+    // IMPORTANT: For App Store review and dev stores, enable test mode
     // Shopify reviewers use partner/staff accounts that can't process real payments
-    // Set SHOPIFY_TEST_MODE=true in production during review, then disable after approval
+    // Set SHOPIFY_TEST_MODE=true to force test mode for all stores
     const testMode = isDevStore || Deno.env.get("SHOPIFY_TEST_MODE") === "true";
     
     logStep("Test mode detection", { isDevStore, testMode, shopDomain, shopName: connection.shop_name });
