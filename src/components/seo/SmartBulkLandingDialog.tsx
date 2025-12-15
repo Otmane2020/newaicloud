@@ -360,7 +360,7 @@ export function SmartBulkLandingDialog({
                         <p className="text-[10px] sm:text-xs text-red-500 truncate">{item.error}</p>
                       )}
                     </div>
-                    <div className="ml-1.5 sm:ml-2 flex-shrink-0">
+                    <div className="ml-1.5 sm:ml-2 flex-shrink-0 flex items-center gap-1">
                       {item.status === 'pending' && (
                         <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-muted" />
                       )}
@@ -368,7 +368,26 @@ export function SmartBulkLandingDialog({
                         <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-spin" />
                       )}
                       {item.status === 'success' && (
-                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 sm:h-7 sm:w-7"
+                            onClick={async () => {
+                              const { data } = await supabase
+                                .from('shopify_products')
+                                .select('landing_page_html')
+                                .eq('id', item.productId)
+                                .single();
+                              if (data?.landing_page_html) {
+                                setPreviewHtml(data.landing_page_html);
+                              }
+                            }}
+                          >
+                            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                          </Button>
+                          <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+                        </>
                       )}
                       {item.status === 'error' && (
                         <X className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
