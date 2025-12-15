@@ -132,28 +132,59 @@ async function deepseekText(prompt: string, apiKey: string) {
 }
 
 // -----------------------------
-// 🔄 DEEPSEEK TEXT WITH RETRY (exponential backoff)
+// 🟦 LOVABLE AI TEXT FALLBACK
 // -----------------------------
-async function deepseekTextWithRetry(prompt: string, apiKey: string, maxRetries = 3): Promise<string> {
-  let lastError: Error | null = null;
-  
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const result = await deepseekText(prompt, apiKey);
-      return result;
-    } catch (e) {
-      lastError = e as Error;
-      console.log(`⚠ DeepSeek attempt ${attempt + 1}/${maxRetries} failed:`, e);
-      
-      if (attempt < maxRetries - 1) {
-        const waitTime = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
-        console.log(`⏱ Waiting ${waitTime/1000}s before retry...`);
-        await new Promise(r => setTimeout(r, waitTime));
-      }
-    }
+async function lovableAIText(prompt: string, apiKey: string): Promise<string> {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash-lite",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.log("⚠ Lovable AI Text error:", res.status, text);
+    throw new Error("Lovable AI error");
   }
-  
-  throw lastError || new Error("DeepSeek failed after retries");
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
+// -----------------------------
+// 🔄 AI TEXT WITH FALLBACK (DeepSeek → Lovable AI)
+// -----------------------------
+async function aiTextWithFallback(prompt: string, deepseekKey: string, lovableKey: string): Promise<string> {
+  // Try DeepSeek first
+  try {
+    const result = await deepseekText(prompt, deepseekKey);
+    if (result && result.trim()) {
+      console.log("✅ DeepSeek text success");
+      return result;
+    }
+  } catch (e) {
+    console.log("⚠ DeepSeek failed, trying Lovable AI:", e);
+  }
+
+  // Fallback to Lovable AI
+  try {
+    const result = await lovableAIText(prompt, lovableKey);
+    if (result && result.trim()) {
+      console.log("✅ Lovable AI text success (fallback)");
+      return result;
+    }
+  } catch (e) {
+    console.log("⚠ Lovable AI also failed:", e);
+  }
+
+  throw new Error("All AI providers failed");
 }
 
 // -----------------------------
@@ -425,12 +456,12 @@ Return:
     let title;
     
     try {
-      // Try DeepSeek with retry for analysis
-      const analysis = await deepseekTextWithRetry(analysisPrompt, DEEPSEEK_KEY, 3);
+      // Try AI with fallback (DeepSeek → Lovable AI)
+      const analysis = await aiTextWithFallback(analysisPrompt, DEEPSEEK_KEY, LOVABLE_KEY);
       parsed = JSON.parse(cleanJSON(analysis));
-      console.log("✅ DeepSeek analysis successful");
+      console.log("✅ AI analysis successful");
     } catch (analysisError) {
-      console.log("⚠ DeepSeek analysis failed, using simple fallback:", analysisError);
+      console.log("⚠ AI analysis failed, using simple fallback:", analysisError);
       parsed = {
         category: product.product_type || '',
         materials: [],
@@ -443,11 +474,11 @@ Return:
     // TITLE - Language-specific
     try {
       const titlePrompt = getTitlePrompt(language, visionAnalysis, parsed);
-      title = (await deepseekTextWithRetry(titlePrompt, DEEPSEEK_KEY, 3)).trim();
+      title = (await aiTextWithFallback(titlePrompt, DEEPSEEK_KEY, LOVABLE_KEY)).trim();
       title = title.replace(/^["']|["']$/g, "");
-      console.log("✅ DeepSeek title generation successful");
+      console.log("✅ AI title generation successful");
     } catch (titleError) {
-      console.log("⚠ DeepSeek title failed, using simple local fallback:", titleError);
+      console.log("⚠ AI title failed, using simple local fallback:", titleError);
       title = generateSimpleTitle(product, language);
     }
 
