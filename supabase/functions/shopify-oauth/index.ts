@@ -212,19 +212,21 @@ serve(async (req) => {
         // Nettoyer le state token
         await supabase.from("oauth_states").delete().eq("state_token", state);
 
-        // ✅ NON-EMBEDDED APP: Rediriger vers l'app externe
-        const redirectUrl = `${APP_URL}/app?shop=${shop}&pending_token=${pendingToken}`;
+        // 🆕 HYBRID MODE: Rediriger vers la page Plans EMBEDDED dans Shopify Admin
+        // L'utilisateur voit les plans DANS Shopify, puis après paiement → app standalone
+        const shopHandle = shop.replace('.myshopify.com', '');
+        const embeddedPlanUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/plans-embedded?shop=${shop}&pending_token=${pendingToken}`;
         
         console.log(JSON.stringify({
           event: 'oauth_callback_success',
-          flow: 'pre-auth',
+          flow: 'pre-auth-embedded',
           shop: shop,
-          redirect: redirectUrl,
+          redirect: embeddedPlanUrl,
           expires_in_days: 7,
           timestamp: new Date().toISOString()
         }));
         
-        return new Response(null, { status: 302, headers: { Location: redirectUrl, ...corsHeaders } });
+        return new Response(null, { status: 302, headers: { Location: embeddedPlanUrl, ...corsHeaders } });
       }
 
       // ANCIEN FLOW : avec user_id (connexion depuis dashboard)

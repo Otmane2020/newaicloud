@@ -117,6 +117,7 @@ import AnimationAds from "./pages/AnimationAds";
 import NewAIVideoGenerator from "./components/video/NewAIVideoGenerator";
 import StoreTemplates from "./pages/StoreTemplates";
 import SetupWizardPage from "./pages/shopify/SetupWizard";
+import PlansEmbedded from "./pages/shopify/PlansEmbedded";
 
 const queryClient = new QueryClient();
 
@@ -213,7 +214,10 @@ const App = () => (
           <Route path="/shopify/success" element={<ShopifySuccess />} />
           <Route path="/shopify/billing-callback" element={<ShopifyBillingCallback />} />
           <Route path="/shopify/payment-callback" element={<ShopifyPaymentCallback />} />
-          {/* Shopify App Routes (non-embedded) */}
+          {/* Shopify App Routes */}
+          {/* Page Plans EMBEDDED dans Shopify Admin (affichée après installation) */}
+          <Route path="/app/plans-embedded" element={<PlansEmbedded />} />
+          {/* Routes standalone (non-embedded) */}
           <Route path="/app/setup-wizard" element={<SetupWizardPage />} />
           <Route path="/app" element={<ShopifyApp />} />
             <Route
