@@ -126,6 +126,7 @@ interface ProductImage {
   src: string;
   alt_text: string | null;
   position: number | null;
+  optimization_count?: number | null; // Track AI-generated images
 }
 
 // Check if product has rich HTML description or landing page
@@ -877,7 +878,14 @@ export default function ProductTitleDescription() {
     setTimeout(() => setShowLandingDialog(true), 100);
   };
 
-  const loadGalleryImages = async (productIds: string[]) => {
+  // Helper to detect AI-generated images (same pattern as SmartBackgroundDialog)
+  const isAiGeneratedImage = (imgSrc: string, optimizationCount?: number | null): boolean => {
+    if (optimizationCount && optimizationCount > 0) return true;
+    const aiPatterns = ['ai_generated_', 'white_background', 'generated-images/', '/storage/v1/object/public/generated'];
+    return aiPatterns.some(pattern => imgSrc.includes(pattern));
+  };
+
+  const loadGalleryImages = async (productIds: string[], autoSelectNonAi: boolean = false) => {
     setLoadingGallery(true);
     const imagesMap = new Map<string, ProductImage[]>();
 
@@ -885,7 +893,7 @@ export default function ProductTitleDescription() {
       for (const productId of productIds) {
         const { data, error } = await supabase
           .from("product_images")
-          .select("id, src, alt_text, position")
+          .select("id, src, alt_text, position, optimization_count")
           .eq("product_id", productId)
           .order("position", { ascending: true });
 
@@ -898,6 +906,34 @@ export default function ProductTitleDescription() {
       }
 
       setGalleryImages(imagesMap);
+
+      // Auto-select first non-AI image for each product (Smart Background logic)
+      if (autoSelectNonAi) {
+        const newSelections = new Map<string, string>();
+        
+        for (const productId of productIds) {
+          const product = products.find((p) => p.id === productId);
+          const images = imagesMap.get(productId) || [];
+          
+          // First, check if main image is non-AI
+          if (product?.image_url && !isAiGeneratedImage(product.image_url)) {
+            newSelections.set(productId, product.image_url);
+            continue;
+          }
+          
+          // Then, find first non-AI gallery image
+          const nonAiImage = images.find(img => !isAiGeneratedImage(img.src, img.optimization_count));
+          if (nonAiImage) {
+            newSelections.set(productId, nonAiImage.src);
+            continue;
+          }
+          
+          // Fallback: if ALL images are AI-generated, don't pre-select (user must choose manually)
+          // This is intentional - forces user to consciously select an AI image for re-processing
+        }
+        
+        setSelectedGalleryImages(newSelections);
+      }
     } finally {
       setLoadingGallery(false);
     }
@@ -2197,7 +2233,7 @@ export default function ProductTitleDescription() {
                   });
                   setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
                   setShowWhiteBgConfigDialog(true);
-                  loadGalleryImages(Array.from(selectedProducts)); // Chargement en arrière-plan
+                  loadGalleryImages(Array.from(selectedProducts), true); // Pré-sélection intelligente (non-AI)
                 }}
                 disabled={generatingWhiteBg || selectedProducts.size === 0}
               >
@@ -2532,7 +2568,7 @@ export default function ProductTitleDescription() {
                                       && !(product.variants.length === 1 && product.variants[0].title === "Default Title");
                                     setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
                                     setShowWhiteBgConfigDialog(true);
-                                    loadGalleryImages([product.id]); // Chargement en arrière-plan
+                                    loadGalleryImages([product.id], true); // Pré-sélection intelligente
                                   }}
                                   disabled={generatingWhiteBg}
                                 >
@@ -2803,7 +2839,7 @@ export default function ProductTitleDescription() {
                                     && !(product.variants.length === 1 && product.variants[0].title === "Default Title");
                                   setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
                                   setShowWhiteBgConfigDialog(true);
-                                  loadGalleryImages([product.id]);
+                                  loadGalleryImages([product.id], true); // Pré-sélection intelligente
                                 }}
                                 disabled={generatingWhiteBg}
                               >
@@ -3396,12 +3432,27 @@ export default function ProductTitleDescription() {
                 <Label className="text-base font-semibold">
                   {t.contentOptimization.dialogs.whiteBg.imageSelection}
                 </Label>
+                <p className="text-xs text-muted-foreground">
+                  {language === "fr" 
+                    ? "Les images déjà générées par IA ne sont pas pré-sélectionnées. Vous pouvez les sélectionner manuellement si besoin."
+                    : "AI-generated images are not pre-selected. You can manually select them if needed."}
+                </p>
                 {Array.from(selectedProducts).map((productId) => {
                   const product = products.find((p) => p.id === productId);
                   const images = galleryImages.get(productId) || [];
                   const hasGallery = images.length > 0;
 
                   if (!product) return null;
+
+                  // Helper to detect AI-generated images (same as SmartBackgroundDialog)
+                  const isAiGeneratedImage = (imgSrc: string, optimizationCount?: number | null): boolean => {
+                    if (optimizationCount && optimizationCount > 0) return true;
+                    const aiPatterns = ['ai_generated_', 'white_background', 'generated-images/', '/storage/v1/object/public/generated'];
+                    return aiPatterns.some(pattern => imgSrc.includes(pattern));
+                  };
+
+                  // Check if main image is AI-generated
+                  const mainImageIsAi = product.image_url ? isAiGeneratedImage(product.image_url) : false;
 
                   return (
                     <Card key={productId} className="p-4">
@@ -3410,10 +3461,11 @@ export default function ProductTitleDescription() {
                         {/* Image principale */}
                         <div
                           className={`relative cursor-pointer rounded-lg border-2 transition-all ${
-                            !selectedGalleryImages.get(productId) ||
                             selectedGalleryImages.get(productId) === product.image_url
                               ? "border-primary ring-2 ring-primary"
-                              : "border-muted hover:border-primary/50"
+                              : selectedGalleryImages.has(productId)
+                                ? "border-muted hover:border-primary/50"
+                                : "border-muted hover:border-primary/50"
                           }`}
                           onClick={() => {
                             const newMap = new Map(selectedGalleryImages);
@@ -3429,36 +3481,60 @@ export default function ProductTitleDescription() {
                           <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
                             {t.productTitleDescription.labels.main}
                           </div>
+                          {/* AI Badge for main image */}
+                          {mainImageIsAi && (
+                            <Badge variant="secondary" className="absolute top-1 left-1 text-[8px] px-1 py-0 bg-purple-500/90 text-white border-0">
+                              AI
+                            </Badge>
+                          )}
                         </div>
 
                         {/* Images de galerie */}
-                        {images.map((img, idx) => (
-                          <div
-                            key={img.id}
-                            className={`relative cursor-pointer rounded-lg border-2 transition-all ${
-                              selectedGalleryImages.get(productId) === img.src
-                                ? "border-primary ring-2 ring-primary"
-                                : "border-muted hover:border-primary/50"
-                            }`}
-                            onClick={() => {
-                              const newMap = new Map(selectedGalleryImages);
-                              newMap.set(productId, img.src);
-                              setSelectedGalleryImages(newMap);
-                            }}
-                          >
-                            <img
-                              src={img.src}
-                              alt={img.alt_text || `Galerie ${idx + 1}`}
-                              className="w-full h-24 object-cover rounded"
-                            />
-                            <div className="absolute top-1 right-1 bg-secondary text-secondary-foreground text-xs px-1.5 py-0.5 rounded">
-                              #{idx + 1}
+                        {images.map((img, idx) => {
+                          const imgIsAi = isAiGeneratedImage(img.src, img.optimization_count);
+                          return (
+                            <div
+                              key={img.id}
+                              className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                                selectedGalleryImages.get(productId) === img.src
+                                  ? "border-primary ring-2 ring-primary"
+                                  : "border-muted hover:border-primary/50"
+                              }`}
+                              onClick={() => {
+                                const newMap = new Map(selectedGalleryImages);
+                                newMap.set(productId, img.src);
+                                setSelectedGalleryImages(newMap);
+                              }}
+                            >
+                              <img
+                                src={img.src}
+                                alt={img.alt_text || `Galerie ${idx + 1}`}
+                                className="w-full h-24 object-cover rounded"
+                              />
+                              <div className="absolute top-1 right-1 bg-secondary text-secondary-foreground text-xs px-1.5 py-0.5 rounded">
+                                #{idx + 1}
+                              </div>
+                              {/* AI Badge for gallery images */}
+                              {imgIsAi && (
+                                <Badge variant="secondary" className="absolute top-1 left-1 text-[8px] px-1 py-0 bg-purple-500/90 text-white border-0">
+                                  AI
+                                </Badge>
+                              )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       {!hasGallery && (
                         <p className="text-xs text-muted-foreground mt-2">Aucune image de galerie disponible</p>
+                      )}
+                      {/* Warning when no image is selected (all images are AI) */}
+                      {!selectedGalleryImages.has(productId) && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 flex items-center gap-1">
+                          <span>⚠️</span>
+                          {language === "fr" 
+                            ? "Toutes les images sont déjà générées par IA. Sélectionnez une image pour régénérer."
+                            : "All images are already AI-generated. Select an image to regenerate."}
+                        </p>
                       )}
                     </Card>
                   );
@@ -3631,7 +3707,10 @@ export default function ProductTitleDescription() {
             </Button>
             <Button
               onClick={handleWhiteBackground}
-              disabled={whiteBgApplyTo === "variants" && Array.from(whiteBgSelectedVariants.values()).every(arr => arr.length === 0)}
+              disabled={
+                (whiteBgApplyTo === "variants" && Array.from(whiteBgSelectedVariants.values()).every(arr => arr.length === 0)) ||
+                (whiteBgApplyTo === "simple" && Array.from(selectedProducts).some(pid => !selectedGalleryImages.has(pid)))
+              }
               className="gap-2"
             >
               <Square className="h-4 w-4" />
