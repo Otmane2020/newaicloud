@@ -601,10 +601,108 @@ Please incorporate these specific instructions into the final image generation w
 
     console.log(`[white-bg] 📝 Prompt generated (${photographyPrompt.length} chars)`);
 
-    // Helper function to try Lovable AI
+    // Helper function to convert URL to base64
+    async function imageUrlToBase64(url: string): Promise<string | null> {
+      try {
+        if (url.startsWith('data:')) {
+          const match = url.match(/data:image\/[^;]+;base64,(.+)/);
+          return match ? match[1] : null;
+        }
+        const response = await fetch(url);
+        if (!response.ok) return null;
+        const arrayBuffer = await response.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+      } catch (error) {
+        console.error("❌ Failed to convert image to base64:", error);
+        return null;
+      }
+    }
+
+    // 🆕 Helper function to try Gemini DIRECT (cheaper than Lovable AI)
+    async function tryGeminiDirect(): Promise<{ imageUrl: string; model: string } | null> {
+      const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+      if (!GOOGLE_GEMINI_API_KEY) {
+        console.log("⚠️ GOOGLE_GEMINI_API_KEY not configured, skipping direct Gemini");
+        return null;
+      }
+
+      try {
+        console.log("📝 Trying Gemini Direct (cheaper)...");
+        
+        // Convert image URL to base64
+        const base64Image = await imageUrlToBase64(imageUrl);
+        if (!base64Image) {
+          console.error("❌ Failed to convert image to base64 for Gemini");
+          return null;
+        }
+
+        // Determine mime type
+        const mimeType = imageUrl.includes('.png') ? 'image/png' : 'image/jpeg';
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: photographyPrompt },
+                    { 
+                      inlineData: { 
+                        mimeType: mimeType, 
+                        data: base64Image 
+                      } 
+                    }
+                  ]
+                }
+              ],
+              generationConfig: {
+                responseModalities: ["IMAGE", "TEXT"]
+              }
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Gemini Direct error (${response.status}):`, errorText);
+          return null;
+        }
+
+        const data = await response.json();
+        
+        // Extract base64 image from Gemini response
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        const imagePart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image/'));
+        
+        if (!imagePart?.inlineData?.data) {
+          console.error("⚠️ No image in Gemini Direct response");
+          return null;
+        }
+
+        const generatedImageUrl = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+        
+        console.log("✅ Gemini Direct succeeded (cheaper!)");
+        return { imageUrl: generatedImageUrl, model: "gemini-2.0-flash-exp-image-generation (Direct)" };
+      } catch (error) {
+        console.error("❌ Gemini Direct exception:", error);
+        return null;
+      }
+    }
+
+    // Helper function to try Lovable AI (fallback)
     async function tryLovableAI(): Promise<{ imageUrl: string; model: string } | null> {
       try {
-        console.log("📝 Trying Lovable AI...");
+        console.log("📝 Trying Lovable AI (fallback)...");
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -623,8 +721,6 @@ Please incorporate these specific instructions into the final image generation w
               }
             ],
             modalities: ["image", "text"]
-            // ❌ REMOVED: generationConfig.aspectRatio is NOT supported by Gemini
-            // The aspect ratio is enforced via prompt instructions instead
           }),
         });
 
@@ -743,8 +839,13 @@ Please incorporate these specific instructions into the final image generation w
       }
     }
 
-    // Try providers in order: Lovable AI → OpenAI
-    let result = await tryLovableAI();
+    // Try providers in order: Gemini Direct (cheaper) → Lovable AI → OpenAI
+    let result = await tryGeminiDirect();
+    
+    if (!result) {
+      console.log("🔄 Gemini Direct failed, trying Lovable AI...");
+      result = await tryLovableAI();
+    }
     
     if (!result) {
       console.log("🔄 Lovable AI failed, trying OpenAI...");
