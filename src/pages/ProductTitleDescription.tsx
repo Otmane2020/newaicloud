@@ -41,6 +41,7 @@ import {
   Save,
   X,
   Copy,
+  Layers,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -66,6 +67,7 @@ import { AiBackgroundDialog, AiBackgroundConfig } from "@/components/seo/AiBackg
 import { BulkLandingProgressDialog } from "@/components/seo/BulkLandingProgressDialog";
 import { SmartBulkLandingDialog } from "@/components/seo/SmartBulkLandingDialog";
 import { AIImagesDialog } from "@/components/seo/AIImagesDialog";
+import { BulkAIImagesDialog } from "@/components/seo/BulkAIImagesDialog";
 
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
 import { ProductGalleryDialog } from "@/components/seo/ProductGalleryDialog";
@@ -243,6 +245,7 @@ export default function ProductTitleDescription() {
   const [galleryProduct, setGalleryProduct] = useState<Product | null>(null);
   const [showSmartBgDialog, setShowSmartBgDialog] = useState(false);
   const [showAIImagesDialog, setShowAIImagesDialog] = useState(false);
+  const [showBulkAIImagesDialog, setShowBulkAIImagesDialog] = useState(false);
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
   
   // Inline editing states
@@ -2257,6 +2260,24 @@ export default function ProductTitleDescription() {
                     setShowUpgradeDialog(true);
                     return;
                   }
+                  setShowBulkAIImagesDialog(true);
+                }}
+                disabled={selectedProducts.size === 0}
+                className="bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white border-0"
+              >
+                <Layers className="h-4 w-4 mr-2" />
+                AI Images Bulk ({selectedProducts.size})
+              </Button>
+
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => {
+                  if (!canDoAction("optimizations")) {
+                    toast.error(t.contentOptimization.toasts.limitReached);
+                    setShowUpgradeDialog(true);
+                    return;
+                  }
                   setShowBulkLandingConfigDialog(true);
                 }}
                 disabled={generatingBulkLanding || selectedProducts.size === 0}
@@ -3997,6 +4018,26 @@ export default function ProductTitleDescription() {
             title: p.title, 
             image_url: p.image_url, 
             vendor: p.vendor, 
+            handle: p.handle,
+            product_type: null
+          }))}
+        onComplete={() => {
+          fetchProducts();
+          refreshLimits();
+        }}
+      />
+
+      {/* Bulk AI Images Dialog */}
+      <BulkAIImagesDialog
+        open={showBulkAIImagesDialog}
+        onOpenChange={setShowBulkAIImagesDialog}
+        selectedProducts={products
+          .filter(p => selectedProducts.has(p.id))
+          .map(p => ({
+            id: p.id,
+            title: p.title,
+            image_url: p.image_url,
+            vendor: p.vendor,
             handle: p.handle,
             product_type: null
           }))}
