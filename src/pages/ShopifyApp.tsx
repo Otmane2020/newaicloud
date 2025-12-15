@@ -133,8 +133,8 @@ export default function ShopifyApp() {
           return;
         }
         
-        // Attendre que la session soit propagée dans le contexte React
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Réduire le délai de propagation de 500ms à 100ms
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // Message différent selon si c'est un nouvel utilisateur ou un utilisateur existant
         if (data.is_returning_user) {

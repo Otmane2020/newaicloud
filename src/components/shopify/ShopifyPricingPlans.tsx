@@ -163,15 +163,24 @@ export default function ShopifyPricingPlans({
         if (onSubscriptionCreated) {
           onSubscriptionCreated(data.confirmationUrl);
         }
-        // Redirection vers Shopify Billing - MUST use top window for embedded apps
-        console.log("[ShopifyPricingPlans] Redirecting to:", data.confirmationUrl);
-        if (window.top && window.top !== window) {
-          // Inside iframe - redirect the entire Shopify Admin page
-          window.top.location.href = data.confirmationUrl;
-        } else {
-          // Standalone mode
-          window.location.href = data.confirmationUrl;
-        }
+        
+        // 🆕 ALWAYS open Shopify Billing in a new tab - better UX for standalone mode
+        // User stays on newai.sale while completing payment in Shopify
+        console.log("[ShopifyPricingPlans] Opening Shopify Billing in new tab:", data.confirmationUrl);
+        window.open(data.confirmationUrl, '_blank');
+        
+        // Show toast to guide user
+        toast.success(
+          language === "fr" ? "Page de paiement ouverte" : "Payment page opened",
+          {
+            description: language === "fr" 
+              ? "Complétez votre paiement dans le nouvel onglet Shopify" 
+              : "Complete your payment in the new Shopify tab"
+          }
+        );
+        
+        setLoading(false);
+        setSelectedPlan(null);
         return;
       }
       
