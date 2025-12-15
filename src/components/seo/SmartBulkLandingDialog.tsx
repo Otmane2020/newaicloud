@@ -24,6 +24,7 @@ interface ProductItem {
   vendor?: string | null;
   body_html?: string;
   seo_title?: string;
+  has_landing_page?: boolean | null;
 }
 
 interface ProcessedItem {
@@ -120,6 +121,15 @@ export function SmartBulkLandingDialog({
   // Process single product
   const processProduct = async (product: ProductItem, index: number): Promise<boolean> => {
     if (cancelledRef.current) return false;
+
+    // Si le toggle régénérer est désactivé ET le produit a déjà une landing page → skip
+    if (config.regenerateTitle === false && product.has_landing_page) {
+      console.log(`[SmartBulk] Skipping ${product.title} - already has landing page and regenerate disabled`);
+      setItems(prev => prev.map((item, i) => 
+        i === index ? { ...item, status: 'success' } : item
+      ));
+      return true; // Considéré comme succès (déjà fait)
+    }
 
     // Update status to generating
     setItems(prev => prev.map((item, i) => 
