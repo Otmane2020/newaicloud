@@ -60,15 +60,22 @@ serve(async (req) => {
       border: "#E5E5E5",
     };
 
-    // Premium prompt for high-quality landing pages
+    // Premium prompt for high-quality landing pages - USE ORIGINAL TITLE FOR DISPLAY
+    const displayTitle = productTitle; // Always use original product title for display
+    
     const prompt = language === "fr" 
       ? `Crée une landing page HTML PREMIUM pour ce produit de luxe:
 
-PRODUIT: ${finalTitle}
+PRODUIT: ${displayTitle}
 MARQUE: ${brandName}
-IMAGE: ${imageUrl || "aucune"}
 ${description ? `DESCRIPTION: ${description.slice(0, 300)}` : ""}
 ${highlights ? `POINTS FORTS: ${highlights}` : ""}
+
+⚠️ IMAGE PRODUIT OBLIGATOIRE - CRITIQUE:
+URL EXACTE: ${imageUrl}
+- Affiche cette image EN GRAND dans le hero (min-height: 400px, object-fit: contain)
+- L'image doit être le point focal de la page
+- Utilise UNIQUEMENT cette URL, jamais de placeholder ou autre URL
 
 DESIGN PREMIUM OBLIGATOIRE:
 - Style luxe/haut de gamme, élégant et sophistiqué
@@ -78,7 +85,11 @@ DESIGN PREMIUM OBLIGATOIRE:
 - Effets subtils: ombres douces, hover élégants
 
 STRUCTURE (sections obligatoires):
-1. HERO: Image produit grande qualité + titre élégant + badge marque + CTA principal
+1. HERO: 
+   - Image produit GRANDE (min 400px hauteur) avec l'URL exacte fournie
+   - Titre du produit élégant centré
+   - Badge marque
+   - CTA principal "Acheter maintenant"
 2. PROPOSITION DE VALEUR: 3-4 icônes SVG inline avec avantages clés (livraison, qualité, garantie)
 3. DÉTAILS PRODUIT: Description enrichie avec mise en forme élégante
 4. CONFIANCE: Logos paiement sécurisé, avis clients stylisés
@@ -88,7 +99,7 @@ RÈGLES TECHNIQUES:
 - HTML5 + CSS inline uniquement
 - Mobile-first responsive (max-width media queries)
 - Pas de JavaScript
-- Images: utilise EXACTEMENT l'URL fournie, jamais de placeholder
+- IMAGE: <img src="${imageUrl}" style="width:100%;max-width:600px;height:auto;min-height:400px;object-fit:contain;">
 - Icônes: SVG inline uniquement (truck, shield, star, check, heart)
 - Police: font-family avec fallbacks système
 
@@ -96,11 +107,16 @@ Génère le HTML complet.`
 
       : `Create a PREMIUM HTML landing page for this luxury product:
 
-PRODUCT: ${finalTitle}
+PRODUCT: ${displayTitle}
 BRAND: ${brandName}
-IMAGE: ${imageUrl || "none"}
 ${description ? `DESCRIPTION: ${description.slice(0, 300)}` : ""}
 ${highlights ? `HIGHLIGHTS: ${highlights}` : ""}
+
+⚠️ PRODUCT IMAGE MANDATORY - CRITICAL:
+EXACT URL: ${imageUrl}
+- Display this image LARGE in the hero (min-height: 400px, object-fit: contain)
+- The image must be the focal point of the page
+- Use ONLY this URL, never placeholders or other URLs
 
 MANDATORY PREMIUM DESIGN:
 - Luxury/high-end style, elegant and sophisticated
@@ -110,7 +126,11 @@ MANDATORY PREMIUM DESIGN:
 - Subtle effects: soft shadows, elegant hovers
 
 STRUCTURE (required sections):
-1. HERO: Large product image + elegant title + brand badge + main CTA
+1. HERO:
+   - LARGE product image (min 400px height) with exact provided URL
+   - Elegant centered product title
+   - Brand badge
+   - Main CTA "Buy Now"
 2. VALUE PROPOSITION: 3-4 inline SVG icons with key benefits (shipping, quality, guarantee)
 3. PRODUCT DETAILS: Enhanced description with elegant formatting
 4. TRUST: Secure payment logos, styled customer reviews
@@ -120,7 +140,7 @@ TECHNICAL RULES:
 - HTML5 + inline CSS only
 - Mobile-first responsive (max-width media queries)
 - No JavaScript
-- Images: use EXACTLY the provided URL, never placeholders
+- IMAGE: <img src="${imageUrl}" style="width:100%;max-width:600px;height:auto;min-height:400px;object-fit:contain;">
 - Icons: inline SVG only (truck, shield, star, check, heart)
 - Font: font-family with system fallbacks
 
