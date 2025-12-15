@@ -65,8 +65,56 @@ serve(async (req) => {
       return characteristics.join(" ");
     }
 
+    // Nettoyer la description des anciens noms de produits/vendors
+    function cleanDescription(desc: string, oldVendor?: string): string {
+      if (!desc) return "";
+      
+      let cleaned = desc;
+      
+      // 1. Supprimer l'ancien vendor
+      if (oldVendor) {
+        cleaned = cleaned.replace(new RegExp(oldVendor, 'gi'), '');
+      }
+      
+      // 2. Liste des mots caractéristiques valides à garder (en minuscule)
+      const validCharacteristics = [
+        // Couleurs FR
+        'noir', 'blanc', 'gris', 'beige', 'bleu', 'rouge', 'vert', 'rose', 'gold', 'chrome', 'marron', 'taupe', 'ivoire', 'crème', 'anthracite', 'doré', 'argenté', 'cuivré', 'bronze',
+        // Matériaux FR
+        'velours', 'cuir', 'bois', 'métal', 'tissu', 'verre', 'marbre', 'acier', 'laiton', 'rotin', 'cannage', 'lin', 'coton', 'polyester', 'simili', 'noyer', 'chêne', 'teck', 'bambou',
+        // Styles FR
+        'moderne', 'vintage', 'design', 'chic', 'luxe', 'premium', 'élégant', 'confort', 'scandinave', 'industriel', 'bohème', 'minimaliste', 'contemporain', 'classique', 'art', 'déco',
+        // Types produits FR
+        'chaise', 'fauteuil', 'canapé', 'table', 'bureau', 'lit', 'lampe', 'miroir', 'armoire', 'commode', 'étagère', 'tapis', 'pouf', 'tabouret', 'banc', 'buffet', 'console', 'bibliothèque',
+        // Couleurs EN
+        'black', 'white', 'gray', 'grey', 'blue', 'red', 'green', 'pink', 'brown', 'ivory', 'cream', 'gold', 'silver', 'copper', 'bronze',
+        // Matériaux EN
+        'velvet', 'leather', 'wood', 'metal', 'fabric', 'glass', 'marble', 'steel', 'brass', 'rattan', 'linen', 'cotton', 'oak', 'walnut', 'teak', 'bamboo',
+        // Styles EN
+        'modern', 'luxury', 'elegant', 'comfort', 'scandinavian', 'industrial', 'bohemian', 'minimalist', 'contemporary', 'classic',
+        // Types produits EN
+        'chair', 'armchair', 'sofa', 'table', 'desk', 'bed', 'lamp', 'mirror', 'wardrobe', 'dresser', 'shelf', 'rug', 'ottoman', 'stool', 'bench', 'sideboard', 'bookcase',
+        // Mots communs à garder
+        'de', 'du', 'la', 'le', 'les', 'un', 'une', 'des', 'et', 'ou', 'avec', 'pour', 'en', 'sur', 'the', 'a', 'an', 'and', 'or', 'with', 'for', 'on', 'in'
+      ];
+      
+      // 3. Supprimer les noms propres (mots capitalisés type "Gabrielle", "Sofia", "Emma")
+      // qui ne sont PAS des caractéristiques valides
+      cleaned = cleaned.replace(/\b[A-Z][a-zéèêëàâäùûüïîôöç]+\b/g, (word) => {
+        return validCharacteristics.includes(word.toLowerCase()) ? word : '';
+      });
+      
+      // Nettoyer les espaces multiples et les virgules orphelines
+      cleaned = cleaned.replace(/,\s*,/g, ',').replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ').trim();
+      
+      return cleaned;
+    }
+
     const productType = extractProductType(productTitle || "");
     const characteristics = extractCharacteristics(productTitle || "");
+    
+    // Nettoyer la description des anciens noms
+    const cleanedDescription = cleanDescription(description, originalVendor);
     
     // Créer un displayTitle simplifié SANS anciens noms quand un nouveau brand est fourni
     const displayTitle = hasNewBrand 
@@ -75,7 +123,7 @@ serve(async (req) => {
 
     console.log(`🏷️ Brand: ${brandName}, Type: ${productType}, Characteristics: ${characteristics}`);
     console.log(`📝 Display title: "${displayTitle}" (original: "${productTitle}")`);
-    
+    console.log(`🧹 Cleaned description: "${cleanedDescription?.slice(0, 100)}..." (original had ${description?.length || 0} chars)`);
 
     // Theme colors - premium palette
     const colors = theme === "dark" ? {
@@ -106,7 +154,7 @@ serve(async (req) => {
 TYPE DE PRODUIT: ${productType}
 CARACTÉRISTIQUES: ${characteristics}
 MARQUE: ${brandName}
-${description ? `DESCRIPTION ORIGINALE: ${description.slice(0, 300)}` : ""}
+${cleanedDescription ? `DESCRIPTION (nettoyée des anciens noms): ${cleanedDescription.slice(0, 300)}` : ""}
 ${highlights ? `POINTS FORTS: ${highlights}` : ""}
 
 ⚠️ RÈGLE CRITIQUE - NOUVEAU NOM DE PRODUIT:
@@ -159,7 +207,7 @@ Génère le HTML complet.`
 PRODUCT TYPE: ${productType}
 CHARACTERISTICS: ${characteristics}
 BRAND: ${brandName}
-${description ? `ORIGINAL DESCRIPTION: ${description.slice(0, 300)}` : ""}
+${cleanedDescription ? `DESCRIPTION (cleaned of old names): ${cleanedDescription.slice(0, 300)}` : ""}
 ${highlights ? `HIGHLIGHTS: ${highlights}` : ""}
 
 ⚠️ CRITICAL RULE - NEW PRODUCT NAME:
