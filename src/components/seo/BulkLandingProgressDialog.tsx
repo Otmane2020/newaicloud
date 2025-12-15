@@ -337,7 +337,6 @@ export function BulkLandingProgressDialog({
             const { data: smartData, error: smartError } = await supabase.functions.invoke("smart-title", {
               body: {
                 productId: product.id,
-                language: 'fr',
               },
             });
             
@@ -397,7 +396,7 @@ export function BulkLandingProgressDialog({
                   contentLength: config.contentLength,
                   language: 'fr',
                   customHighlights: config.customHighlights,
-                  isRegeneratedTitle: config.regenerateTitle && titleWasRegenerated, // ✅ Tell server not to clean this title
+                  isRegeneratedTitle: config.regenerateTitle !== false && titleWasRegenerated, // ✅ Tell server not to clean this title
                 }),
                 signal: controller.signal,
               }

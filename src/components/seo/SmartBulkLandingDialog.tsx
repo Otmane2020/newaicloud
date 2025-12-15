@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -101,17 +101,19 @@ export function SmartBulkLandingDialog({
   // Get optimized title via smart-title
   const getOptimizedTitle = async (productId: string): Promise<string | null> => {
     if (config.regenerateTitle === false) return null;
-    
+
     try {
       const { data, error } = await supabase.functions.invoke("smart-title", {
-        body: { productId, language },
+        body: { productId },
       });
-      if (!error && data?.success && data?.optimizedTitle) {
+
+      if (!error && data?.optimizedTitle) {
         return data.optimizedTitle;
       }
     } catch (err) {
       console.warn("[SmartBulk] Smart title failed:", err);
     }
+
     return null;
   };
 
@@ -128,8 +130,32 @@ export function SmartBulkLandingDialog({
       // Step 1: Resolve vendor
       const vendor = await resolveVendor(product);
 
+      // Persist vendor if generated/extracted
+      if (config.vendorSource !== "shopify" && vendor && vendor !== "Marque" && vendor !== product.vendor) {
+        const { error: vendorSaveError } = await supabase
+          .from("shopify_products")
+          .update({ vendor })
+          .eq("id", product.id);
+
+        if (vendorSaveError) {
+          console.warn("[SmartBulk] Failed to save vendor:", vendorSaveError);
+        }
+      }
+
       // Step 2: Get optimized title (if enabled)
       const optimizedTitle = await getOptimizedTitle(product.id);
+
+      // Persist title if regenerated
+      if (optimizedTitle) {
+        const { error: titleSaveError } = await supabase
+          .from("shopify_products")
+          .update({ seo_title: optimizedTitle })
+          .eq("id", product.id);
+
+        if (titleSaveError) {
+          console.warn("[SmartBulk] Failed to save seo_title:", titleSaveError);
+        }
+      }
 
       // Step 3: Generate landing page
       const { data, error } = await supabase.functions.invoke("generate-smart-landing", {
@@ -140,7 +166,8 @@ export function SmartBulkLandingDialog({
           imageUrl: product.image_url,
           description: product.body_html,
           highlights: config.customHighlights,
-          language: language,
+          // Do NOT couple generation language to UI language.
+          // If not provided, the backend defaults to FR.
           theme: config.theme,
           designStyle: config.designStyle,
         },
@@ -163,7 +190,12 @@ export function SmartBulkLandingDialog({
 
       // Update status to success
       setItems(prev => prev.map((item, i) => 
-        i === index ? { ...item, status: 'success', optimizedTitle: optimizedTitle || undefined } : item
+        i === index ? { 
+          ...item, 
+          status: 'success', 
+          productTitle: optimizedTitle || item.productTitle,
+          optimizedTitle: optimizedTitle || undefined,
+        } : item
       ));
 
       return true;
@@ -234,11 +266,11 @@ export function SmartBulkLandingDialog({
   };
 
   // Start on open
-  useState(() => {
+  useEffect(() => {
     if (open && products.length > 0 && !startedRef.current) {
       startProcessing();
     }
-  });
+  }, [open, products.length]);
 
   const progress = products.length > 0 ? Math.round((processedCount / products.length) * 100) : 0;
   const successCount = items.filter(i => i.status === 'success').length;
