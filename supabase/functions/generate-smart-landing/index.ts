@@ -37,18 +37,45 @@ serve(async (req) => {
 
     // Le nouveau brand/vendor généré (Velvetto, etc.)
     const brandName = vendor || (language === "fr" ? "Marque Premium" : "Premium Brand");
+    const hasNewBrand = !!vendor;
 
-    // Nettoyer le titre pour retirer l'ancien vendor si un nouveau est fourni
-    let cleanTitle = productTitle || "";
-    if (originalVendor && vendor && originalVendor !== vendor) {
-      // Retirer l'ancien vendor du titre (insensible à la casse)
-      const regex = new RegExp(`\\b${originalVendor}\\b`, "gi");
-      cleanTitle = cleanTitle.replace(regex, "").replace(/\s+/g, " ").trim();
-      console.log(`🔄 Titre nettoyé: "${productTitle}" → "${cleanTitle}" (ancien vendor: ${originalVendor})`);
+    // Extraire le TYPE de produit du titre (chaise, table, canapé, etc.) sans les anciens noms
+    function extractProductType(title: string): string {
+      const typePatterns = [
+        /\b(chaise|fauteuil|canapé|table|bureau|lit|armoire|commode|étagère|lampe|miroir|tapis|pouf|tabouret|banc|buffet|console|bibliothèque|meuble|siège)\b/i,
+        /\b(chair|armchair|sofa|table|desk|bed|wardrobe|dresser|shelf|lamp|mirror|rug|ottoman|stool|bench|sideboard|console|bookcase|furniture|seat)\b/i,
+      ];
+      
+      for (const pattern of typePatterns) {
+        const match = title.match(pattern);
+        if (match) return match[1];
+      }
+      return language === "fr" ? "produit" : "product";
     }
 
-    // Utiliser le titre nettoyé pour l'affichage
-    const displayTitle = cleanTitle;
+    // Extraire les caractéristiques visuelles (couleur, matière, style) SANS les noms propres
+    function extractCharacteristics(title: string): string {
+      // Enlever les noms propres (mots commençant par majuscule qui ne sont pas des caractéristiques connues)
+      const knownWords = /\b(noir|blanc|gris|beige|bleu|rouge|vert|rose|gold|chrome|velours|cuir|bois|métal|tissu|moderne|vintage|design|chic|luxe|premium|black|white|gray|blue|red|green|pink|gold|chrome|velvet|leather|wood|metal|fabric|modern|vintage|design|chic|luxury|premium)\b/gi;
+      const characteristics: string[] = [];
+      let match;
+      while ((match = knownWords.exec(title)) !== null) {
+        characteristics.push(match[1].toLowerCase());
+      }
+      return characteristics.join(" ");
+    }
+
+    const productType = extractProductType(productTitle || "");
+    const characteristics = extractCharacteristics(productTitle || "");
+    
+    // Créer un displayTitle simplifié SANS anciens noms quand un nouveau brand est fourni
+    const displayTitle = hasNewBrand 
+      ? `${productType} ${characteristics}`.trim() 
+      : productTitle;
+
+    console.log(`🏷️ Brand: ${brandName}, Type: ${productType}, Characteristics: ${characteristics}`);
+    console.log(`📝 Display title: "${displayTitle}" (original: "${productTitle}")`);
+    
 
     // Theme colors - premium palette
     const colors = theme === "dark" ? {
@@ -76,22 +103,28 @@ serve(async (req) => {
     const prompt = language === "fr" 
       ? `Crée une landing page HTML PREMIUM pour ce produit de luxe:
 
-PRODUIT: ${displayTitle}
+TYPE DE PRODUIT: ${productType}
+CARACTÉRISTIQUES: ${characteristics}
 MARQUE: ${brandName}
-${description ? `DESCRIPTION: ${description.slice(0, 300)}` : ""}
+${description ? `DESCRIPTION ORIGINALE: ${description.slice(0, 300)}` : ""}
 ${highlights ? `POINTS FORTS: ${highlights}` : ""}
+
+⚠️ RÈGLE CRITIQUE - NOUVEAU NOM DE PRODUIT:
+- Tu DOIS créer un NOUVEAU nom élégant pour ce produit basé UNIQUEMENT sur la marque "${brandName}"
+- Exemple: "${productType} ${brandName}" ou "Collection ${brandName} - ${productType}"
+- NE JAMAIS utiliser d'anciens noms, modèles ou références présents dans la description originale
+- Le nom doit être court, élégant et mettre en avant la marque ${brandName}
 
 ⚠️ IMAGE PRODUIT - RÈGLES CRITIQUES:
 URL EXACTE: ${imageUrl}
 - Affiche cette image EN ENTIER, JAMAIS TRONQUÉE
 - Style image: width:100%; max-width:500px; height:auto; object-fit:contain; display:block; margin:0 auto;
 - L'image DOIT être visible ENTIÈREMENT (pas de overflow:hidden, pas de hauteur fixe qui coupe)
-- Utilise UNIQUEMENT cette URL exacte
 
 ⚠️ MARQUE MISE EN AVANT - OBLIGATOIRE:
 - La marque "${brandName}" doit apparaître dans:
   1. Un badge/label visible dans le hero
-  2. La section description du produit: "Signé ${brandName}, ce produit..."
+  2. La description: "Signé ${brandName}, ce ${productType}..."
   3. Le footer ou section confiance
 
 DESIGN PREMIUM OBLIGATOIRE:
@@ -101,11 +134,7 @@ DESIGN PREMIUM OBLIGATOIRE:
 - Espacement généreux, respiration visuelle
 
 STRUCTURE (sections obligatoires):
-1. HERO: 
-   - Image produit ENTIÈRE (pas de crop/troncature)
-   - Titre du produit élégant
-   - Badge marque "${brandName}"
-   - CTA principal "Acheter maintenant"
+1. HERO: Image produit ENTIÈRE + NOUVEAU nom élégant avec marque ${brandName} + Badge marque + CTA
 2. PROPOSITION DE VALEUR: 3 icônes SVG inline (livraison, qualité, garantie)
 3. DESCRIPTION PRODUIT: Texte mentionnant la marque "${brandName}" explicitement
 4. CTA FINAL: Bouton achat
@@ -114,30 +143,35 @@ RÈGLES TECHNIQUES STRICTES:
 - HTML5 + CSS inline uniquement
 - Mobile-first responsive
 - Pas de JavaScript
-- IMAGE NON TRONQUÉE: <img src="${imageUrl}" style="width:100%;max-width:500px;height:auto;object-fit:contain;display:block;margin:0 auto;" alt="${displayTitle}">
-- NE PAS utiliser overflow:hidden ou height fixe sur le conteneur d'image
-- Icônes: SVG inline uniquement (simple)
+- IMAGE: <img src="${imageUrl}" style="width:100%;max-width:500px;height:auto;object-fit:contain;display:block;margin:0 auto;" alt="${productType} ${brandName}">
+- Icônes: SVG inline uniquement
 
 Génère le HTML complet.`
 
       : `Create a PREMIUM HTML landing page for this luxury product:
 
-PRODUCT: ${displayTitle}
+PRODUCT TYPE: ${productType}
+CHARACTERISTICS: ${characteristics}
 BRAND: ${brandName}
-${description ? `DESCRIPTION: ${description.slice(0, 300)}` : ""}
+${description ? `ORIGINAL DESCRIPTION: ${description.slice(0, 300)}` : ""}
 ${highlights ? `HIGHLIGHTS: ${highlights}` : ""}
+
+⚠️ CRITICAL RULE - NEW PRODUCT NAME:
+- You MUST create a NEW elegant name for this product based ONLY on the brand "${brandName}"
+- Example: "${brandName} ${productType}" or "${brandName} Collection - ${productType}"
+- NEVER use old names, models or references from the original description
+- The name must be short, elegant and highlight the brand ${brandName}
 
 ⚠️ PRODUCT IMAGE - CRITICAL RULES:
 EXACT URL: ${imageUrl}
 - Display this image FULLY, NEVER CROPPED
 - Image style: width:100%; max-width:500px; height:auto; object-fit:contain; display:block; margin:0 auto;
 - Image MUST be FULLY visible (no overflow:hidden, no fixed height that crops)
-- Use ONLY this exact URL
 
 ⚠️ BRAND HIGHLIGHTING - MANDATORY:
 - The brand "${brandName}" must appear in:
   1. A visible badge/label in the hero
-  2. Product description section: "By ${brandName}, this product..."
+  2. Description: "By ${brandName}, this ${productType}..."
   3. Footer or trust section
 
 MANDATORY PREMIUM DESIGN:
@@ -147,11 +181,7 @@ MANDATORY PREMIUM DESIGN:
 - Generous spacing, visual breathing room
 
 STRUCTURE (required sections):
-1. HERO:
-   - FULL product image (no cropping)
-   - Elegant product title
-   - Brand badge "${brandName}"
-   - Main CTA "Buy Now"
+1. HERO: FULL product image + NEW elegant name with brand ${brandName} + Brand badge + CTA
 2. VALUE PROPOSITION: 3 inline SVG icons (shipping, quality, guarantee)
 3. PRODUCT DESCRIPTION: Text explicitly mentioning the brand "${brandName}"
 4. FINAL CTA: Buy button
@@ -160,9 +190,8 @@ STRICT TECHNICAL RULES:
 - HTML5 + inline CSS only
 - Mobile-first responsive
 - No JavaScript
-- NON-CROPPED IMAGE: <img src="${imageUrl}" style="width:100%;max-width:500px;height:auto;object-fit:contain;display:block;margin:0 auto;" alt="${displayTitle}">
-- DO NOT use overflow:hidden or fixed height on image container
-- Icons: inline SVG only (simple)
+- IMAGE: <img src="${imageUrl}" style="width:100%;max-width:500px;height:auto;object-fit:contain;display:block;margin:0 auto;" alt="${productType} ${brandName}">
+- Icons: inline SVG only
 
 Generate the complete HTML.`;
 
