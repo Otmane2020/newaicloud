@@ -286,21 +286,19 @@ export const BulkAIImagesDialog = ({
         newMap.set(productId, newSet);
       }
       
-      return newMap;
-    });
-    
-    // Update status
-    setProductStatuses(prev => {
-      const newMap = new Map(prev);
-      const current = newMap.get(productId);
-      if (current) {
-        const selectedSet = selectedImages.get(productId) || new Set();
-        const willHaveSelection = selectedSet.has(imageId) ? selectedSet.size - 1 > 0 : true;
-        newMap.set(productId, { 
-          ...current, 
-          status: willHaveSelection ? 'pending' : 'skipped' 
-        });
-      }
+      // Update status with the new selection state (not stale)
+      setProductStatuses(prevStatuses => {
+        const statusMap = new Map(prevStatuses);
+        const currentStatus = statusMap.get(productId);
+        if (currentStatus) {
+          statusMap.set(productId, { 
+            ...currentStatus, 
+            status: newSet.size > 0 ? 'pending' : 'skipped' 
+          });
+        }
+        return statusMap;
+      });
+      
       return newMap;
     });
   };
