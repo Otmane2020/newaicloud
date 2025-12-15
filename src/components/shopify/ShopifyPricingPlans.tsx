@@ -96,13 +96,17 @@ interface ShopifyPricingPlansProps {
   language?: "fr" | "en";
   onSubscriptionCreated?: (confirmationUrl: string) => void;
   isAuthenticating?: boolean;
+  isEmbedded?: boolean;
+  host?: string;
 }
 
 export default function ShopifyPricingPlans({ 
   shopDomain, 
   language = "fr",
   onSubscriptionCreated,
-  isAuthenticating = false
+  isAuthenticating = false,
+  isEmbedded = false,
+  host
 }: ShopifyPricingPlansProps) {
   const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
@@ -164,9 +168,22 @@ export default function ShopifyPricingPlans({
           onSubscriptionCreated(data.confirmationUrl);
         }
         
-        // 🆕 ALWAYS open Shopify Billing in a new tab - better UX for standalone mode
-        // User stays on newai.sale while completing payment in Shopify
-        console.log("[ShopifyPricingPlans] Opening Shopify Billing in new tab:", data.confirmationUrl);
+        // 🆕 Mode EMBEDDED: utiliser App Bridge Redirect
+        if (isEmbedded && (window as any).shopify) {
+          console.log("[ShopifyPricingPlans] EMBEDDED MODE - Using App Bridge redirect");
+          try {
+            // App Bridge v4: use shopify.loading() and redirect
+            const shopify = (window as any).shopify;
+            // Redirect to Shopify Billing page
+            window.location.href = data.confirmationUrl;
+            return;
+          } catch (bridgeErr) {
+            console.warn("[ShopifyPricingPlans] App Bridge redirect failed, falling back:", bridgeErr);
+          }
+        }
+        
+        // Mode STANDALONE: ouvrir dans un nouvel onglet
+        console.log("[ShopifyPricingPlans] STANDALONE MODE - Opening in new tab:", data.confirmationUrl);
         window.open(data.confirmationUrl, '_blank');
         
         // Show toast to guide user
