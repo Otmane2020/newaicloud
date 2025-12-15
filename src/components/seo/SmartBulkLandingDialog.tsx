@@ -46,6 +46,39 @@ interface SmartBulkLandingDialogProps {
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Retry wrapper with exponential backoff for network errors
+const withRetry = async <T,>(
+  fn: () => Promise<T>,
+  maxAttempts = 3,
+  baseDelay = 2000
+): Promise<T> => {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastError = err;
+      const isNetworkError = 
+        err.message?.includes('Network') || 
+        err.message?.includes('network') ||
+        err.message?.includes('timeout') ||
+        err.message?.includes('500') ||
+        err.message?.includes('connection');
+      
+      if (isNetworkError && attempt < maxAttempts) {
+        const waitTime = baseDelay * Math.pow(2, attempt - 1);
+        console.log(`[SmartBulk] Retry ${attempt}/${maxAttempts} after ${waitTime}ms...`);
+        await delay(waitTime);
+        continue;
+      }
+      throw err;
+    }
+  }
+  
+  throw lastError;
+};
+
 export function SmartBulkLandingDialog({
   open,
   onOpenChange,
@@ -167,24 +200,27 @@ export function SmartBulkLandingDialog({
         }
       }
 
-      // Step 3: Generate landing page
-      const { data, error } = await supabase.functions.invoke("generate-smart-landing", {
-        body: {
-          productTitle: product.title,
-          optimizedTitle: optimizedTitle,
-          vendor: vendor, // Le nouveau vendor (généré ou extrait)
-          originalVendor: product.vendor, // L'ancien vendor Shopify à retirer du titre
-          imageUrl: product.image_url,
-          description: product.body_html,
-          highlights: config.customHighlights,
-          // Do NOT couple generation language to UI language.
-          // If not provided, the backend defaults to FR.
-          theme: config.theme,
-          designStyle: config.designStyle,
-        },
-      });
+      // Step 3: Generate landing page with retry for network errors
+      const { data, error } = await withRetry(async () => {
+        const result = await supabase.functions.invoke("generate-smart-landing", {
+          body: {
+            productTitle: product.title,
+            optimizedTitle: optimizedTitle,
+            vendor: vendor, // Le nouveau vendor (généré ou extrait)
+            originalVendor: product.vendor, // L'ancien vendor Shopify à retirer du titre
+            imageUrl: product.image_url,
+            description: product.body_html,
+            highlights: config.customHighlights,
+            // Do NOT couple generation language to UI language.
+            // If not provided, the backend defaults to FR.
+            theme: config.theme,
+            designStyle: config.designStyle,
+          },
+        });
+        if (result.error) throw new Error(result.error.message || "Erreur de génération");
+        return result;
+      }, 3, 2000);
 
-      if (error) throw new Error(error.message || "Erreur de génération");
       if (!data?.html) throw new Error("Pas de HTML généré");
 
       // Step 4: Save to database
