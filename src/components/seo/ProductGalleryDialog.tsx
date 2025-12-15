@@ -17,6 +17,9 @@ import {
   Image as ImageIcon,
   X,
   Trash2,
+  ZoomIn,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 import { useQueryClient } from "@tanstack/react-query";
@@ -72,6 +75,37 @@ export function ProductGalleryDialog({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
+
+  const goToPrevious = () => {
+    setLightboxIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+  };
+
+  const goToNext = () => {
+    setLightboxIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+  };
+
+  // Handle keyboard navigation in lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!lightboxOpen) return;
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") goToPrevious();
+      if (e.key === "ArrowRight") goToNext();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxOpen, images.length]);
 
   useEffect(() => {
     if (open && product?.id) {
@@ -349,6 +383,17 @@ export function ProductGalleryDialog({
                         <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded font-medium">
                           {index + 1}
                         </div>
+                        {/* Zoom button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openLightbox(index);
+                          }}
+                          className="absolute bottom-1 left-1 bg-black/60 text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+                          title="Zoom"
+                        >
+                          <ZoomIn className="h-3 w-3" />
+                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -408,6 +453,61 @@ export function ProductGalleryDialog({
           <div className="flex items-center justify-center gap-2 pt-4 border-t shrink-0 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span className="text-sm">{t.productGallery?.syncing || "Syncing..."}</span>
+          </div>
+        )}
+
+        {/* Lightbox */}
+        {lightboxOpen && images[lightboxIndex] && (
+          <div 
+            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+            onClick={closeLightbox}
+          >
+            {/* Close button */}
+            <button
+              onClick={closeLightbox}
+              className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            {/* Navigation - Previous */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                goToPrevious();
+              }}
+              className="absolute left-4 text-white/80 hover:text-white p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="h-8 w-8" />
+            </button>
+
+            {/* Image */}
+            <div 
+              className="max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={images[lightboxIndex].src}
+                alt={images[lightboxIndex].alt_text || `Image ${lightboxIndex + 1}`}
+                className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              />
+            </div>
+
+            {/* Navigation - Next */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                goToNext();
+              }}
+              className="absolute right-4 text-white/80 hover:text-white p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <ChevronRight className="h-8 w-8" />
+            </button>
+
+            {/* Image counter */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/80 text-sm bg-black/50 px-4 py-2 rounded-full">
+              {lightboxIndex + 1} / {images.length}
+            </div>
           </div>
         )}
       </DialogContent>
