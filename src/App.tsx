@@ -77,6 +77,7 @@ import ShopifyInstallGuide from "./pages/ShopifyInstallGuide";
 import ShopifySuccess from "./pages/ShopifySuccess";
 import ShopifyApp from "./pages/ShopifyApp";
 import ShopifyBillingCallback from "./pages/ShopifyBillingCallback";
+import ShopifyPaymentCallback from "./pages/shopify/PaymentCallback";
 import NotFound from "./pages/NotFound";
 import ChatSettings from "./pages/ChatSettings";
 import ChatRobot from "./pages/ChatRobot";
@@ -211,6 +212,7 @@ const App = () => (
           <Route path="/shopify/guide" element={<ShopifyInstallGuide />} />
           <Route path="/shopify/success" element={<ShopifySuccess />} />
           <Route path="/shopify/billing-callback" element={<ShopifyBillingCallback />} />
+          <Route path="/shopify/payment-callback" element={<ShopifyPaymentCallback />} />
           {/* Shopify App Routes (non-embedded) */}
           <Route path="/app/setup-wizard" element={<SetupWizardPage />} />
           <Route path="/app" element={<ShopifyApp />} />

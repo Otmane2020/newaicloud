@@ -245,8 +245,11 @@ serve(async (req) => {
       logStep("Import trigger error (non-blocking)", { error: String(importError) });
     }
 
-    // Redirect to standalone app dashboard-light with success
-    return Response.redirect(`${APP_URL}/dashboard-light?subscription=active&plan=${pending.plan_id}`, 302);
+    // Redirect to payment callback page which will handle session creation
+    // Pass user_id and shop for quick-login authentication
+    const callbackUrl = `${APP_URL}/shopify/payment-callback?shop=${encodeURIComponent(shop)}&user_id=${pending.user_id}&plan=${pending.plan_id}&subscription=active`;
+    logStep("Redirecting to payment callback", { url: callbackUrl });
+    return Response.redirect(callbackUrl, 302);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
