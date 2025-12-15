@@ -207,7 +207,7 @@ export const SmartBackgroundDialog = ({
         return merged;
       });
       
-      // 🆕 Smart pre-selection: auto-select first NON-AI image per product
+      // 🆕 Smart pre-selection: skip products where main image is already AI-generated
       const newSelectedImages = new Map<string, { url: string; imageId?: string; position?: number }>();
       
       // Helper to detect ALL AI-generated images (white background, AI images, any generation)
@@ -218,8 +218,19 @@ export const SmartBackgroundDialog = ({
       };
       
       imagesByProduct.forEach((images, productId) => {
-        // Find first image that is NOT AI-generated (from any source)
-        const nonAiImage = images.find(img => !isAiGeneratedImage(img));
+        // Sort by position to get main image first
+        const sortedImages = [...images].sort((a, b) => (a.position || 999) - (b.position || 999));
+        const mainImage = sortedImages[0];
+        
+        // 🆕 If main image is already AI-generated, DON'T select this product at all
+        // User must manually select if they want to regenerate
+        if (mainImage && isAiGeneratedImage(mainImage)) {
+          // Product skipped - main image already processed
+          return;
+        }
+        
+        // Find first non-AI image to process
+        const nonAiImage = sortedImages.find(img => !isAiGeneratedImage(img));
         
         if (nonAiImage) {
           newSelectedImages.set(productId, {
@@ -228,7 +239,7 @@ export const SmartBackgroundDialog = ({
             position: nonAiImage.position || 1
           });
         }
-        // If ALL images are AI-generated, don't pre-select (user must manually check)
+        // If no non-AI images at all, product is not pre-selected
       });
       setSelectedImages(newSelectedImages);
       
