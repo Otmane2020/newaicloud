@@ -72,42 +72,24 @@ serve(async (req) => {
       primaryHover: "#1D4ED8",
     };
 
-    const prompt = `Tu es un expert en landing pages e-commerce. Génère une landing page HTML COMPACTE et RESPONSIVE pour:
+    // Ultra-light prompt for fast generation
+    const prompt = language === "fr" 
+      ? `Landing page HTML simple pour: ${finalTitle} (${vendor || "Marque"}).
+Image: ${imageUrl || "none"}
+${description ? `Desc: ${description.slice(0, 150)}` : ""}
+${highlights ? `Points: ${highlights}` : ""}
 
-PRODUIT: ${finalTitle}
-MARQUE: ${vendor || "Marque Premium"}
-DESCRIPTION: ${description?.slice(0, 300) || "Produit de qualité supérieure"}
-IMAGE: ${imageUrl || ""}
-${highlights ? `POINTS FORTS: ${highlights}` : ""}
-LANGUE: ${language === "fr" ? "Français" : "English"}
-THÈME: ${theme}
+HTML inline CSS, thème ${theme} (bg:${colors.bg}, text:${colors.text}, primary:${colors.primary}).
+Sections: Hero (image+titre), 3 avantages icônes SVG, description courte, CTA.
+Max 200 lignes. Pas de JS. Mobile-first.`
+      : `Simple HTML landing for: ${finalTitle} (${vendor || "Brand"}).
+Image: ${imageUrl || "none"}
+${description ? `Desc: ${description.slice(0, 150)}` : ""}
+${highlights ? `Points: ${highlights}` : ""}
 
-RÈGLES STRICTES:
-1. HTML COMPLET avec <!DOCTYPE html>, <html>, <head>, <body>
-2. CSS INLINE uniquement (pas de <style> externe)
-3. RESPONSIVE: mobile-first avec media queries inline
-4. MAXIMUM 400 lignes de code
-5. PAS de JavaScript
-6. PAS de faux témoignages ni faux avis
-7. Utiliser les couleurs du thème ${theme}:
-   - Background: ${colors.bg}
-   - Surface: ${colors.surface}
-   - Text: ${colors.text}
-   - TextMuted: ${colors.textMuted}
-   - Primary: ${colors.primary}
-
-STRUCTURE SIMPLE:
-1. HERO: Image + Titre + Prix + CTA
-2. AVANTAGES: 3 icônes (${langLabels.freeShipping}, ${langLabels.securePayment}, ${langLabels.satisfaction})
-3. DESCRIPTION: Texte court avec highlights
-4. CTA FINAL: Bouton "${langLabels.buyNow}"
-
-STYLE ${designStyle.toUpperCase()}:
-${designStyle === "minimalist" ? "Épuré, beaucoup d'espace blanc, typo simple" : ""}
-${designStyle === "modern" ? "Gradients subtils, ombres douces, coins arrondis" : ""}
-${designStyle === "premium" ? "Élégant, accents dorés, typo serif pour titres" : ""}
-
-Génère UNIQUEMENT le HTML, rien d'autre.`;
+Inline CSS, ${theme} theme (bg:${colors.bg}, text:${colors.text}, primary:${colors.primary}).
+Sections: Hero (image+title), 3 benefits with SVG icons, short description, CTA.
+Max 200 lines. No JS. Mobile-first.`;
 
     console.log(`🚀 [Smart Landing] Generating for: ${finalTitle}`);
 
@@ -118,19 +100,18 @@ Génère UNIQUEMENT le HTML, rien d'autre.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-lite", // Fastest model
         messages: [
           {
             role: "system",
-            content: "Tu génères du HTML pur pour des landing pages e-commerce. Réponds UNIQUEMENT avec du code HTML valide.",
+            content: language === "fr" 
+              ? "Génère du HTML pur compact. Réponds UNIQUEMENT avec du HTML valide."
+              : "Generate compact pure HTML. Reply ONLY with valid HTML.",
           },
-          {
-            role: "user",
-            content: prompt,
-          },
+          { role: "user", content: prompt },
         ],
-        max_tokens: 4000,
-        temperature: 0.7,
+        max_tokens: 2500, // Reduced for speed
+        temperature: 0.5,
       }),
     });
 
