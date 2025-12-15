@@ -212,28 +212,20 @@ serve(async (req) => {
         // Nettoyer le state token
         await supabase.from("oauth_states").delete().eq("state_token", state);
 
-        // 🆕 HYBRID MODE: Rediriger vers la page Plans EMBEDDED dans Shopify Admin
-        // L'utilisateur voit les plans DANS Shopify, puis après paiement → app standalone
-        const shopHandle = shop.replace('.myshopify.com', '');
-        
-        // ✅ CRITICAL: Générer le host encodé en base64 pour App Bridge
-        // Le host est requis pour que Shopify puisse charger l'iframe embedded correctement
-        const hostBase64 = btoa(`admin.shopify.com/store/${shopHandle}`);
-        
-        // Construire l'URL embedded avec tous les paramètres requis
-        const embeddedPlanUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/plans-embedded?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}&host=${hostBase64}`;
+        // 🆕 STANDALONE MODE: Rediriger vers l'app standalone pour sélection de plan
+        // L'app NewAI est en mode non-embedded, donc on redirige vers newai.sale
+        const standalonePlanUrl = `${APP_URL}/app/setup-wizard?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}`;
         
         console.log(JSON.stringify({
           event: 'oauth_callback_success',
-          flow: 'pre-auth-embedded',
+          flow: 'pre-auth-standalone',
           shop: shop,
-          redirect: embeddedPlanUrl,
-          host: hostBase64,
+          redirect: standalonePlanUrl,
           expires_in_days: 7,
           timestamp: new Date().toISOString()
         }));
         
-        return new Response(null, { status: 302, headers: { Location: embeddedPlanUrl, ...corsHeaders } });
+        return new Response(null, { status: 302, headers: { Location: standalonePlanUrl, ...corsHeaders } });
       }
 
       // ANCIEN FLOW : avec user_id (connexion depuis dashboard)
