@@ -321,6 +321,7 @@ export function BulkLandingProgressDialog({
 
         // 🏷️ Handle title regeneration if enabled (with 10s timeout to avoid blocking)
         let productTitle = productData.seo_title || productData.title;
+        let titleWasRegenerated = false; // ✅ Track if title was regenerated
         if (config.regenerateTitle) {
           try {
             console.log(`[Bulk Landing] Regenerating title with smart-title for "${productData.title}"`);
@@ -346,15 +347,24 @@ export function BulkLandingProgressDialog({
             
             clearTimeout(timeoutId);
             
+            let titleWasRegenerated = false;
             if (smartError) {
               console.warn(`[Bulk Landing] smart-title timeout/error, using existing title:`, smartError);
             } else if (smartData?.optimizedTitle) {
               productTitle = smartData.optimizedTitle;
+              titleWasRegenerated = true;
               // Update in database
               await supabase
                 .from("shopify_products")
                 .update({ seo_title: smartData.optimizedTitle })
                 .eq("id", product.id);
+              
+              // ✅ Update title in previews list so UI shows new title
+              setPreviews(prev => prev.map(p => 
+                p.productId === product.id 
+                  ? { ...p, productTitle: smartData.optimizedTitle } 
+                  : p
+              ));
               console.log(`[Bulk Landing] New SERP-optimized title "${smartData.optimizedTitle}" saved for product ${product.id}`);
             }
           } catch (err) {
@@ -390,6 +400,7 @@ export function BulkLandingProgressDialog({
                   contentLength: config.contentLength,
                   language: 'fr',
                   customHighlights: config.customHighlights,
+                  isRegeneratedTitle: config.regenerateTitle && titleWasRegenerated, // ✅ Tell server not to clean this title
                 }),
                 signal: controller.signal,
               }
@@ -412,6 +423,11 @@ export function BulkLandingProgressDialog({
         localSuccessCount++;
         totalProcessed++;
         setProcessedCount(totalProcessed);
+
+        // ✅ Check result has html before marking success
+        if (!result || !result.html) {
+          throw new Error((result as { error?: string })?.error || 'Pas de HTML reçu du serveur');
+        }
 
         // Update status to success
         setPreviews(prev => prev.map(p => 
