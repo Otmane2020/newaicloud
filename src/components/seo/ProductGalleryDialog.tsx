@@ -481,15 +481,16 @@ export function ProductGalleryDialog({
               <ChevronLeft className="h-8 w-8" />
             </button>
 
-            {/* Image */}
+            {/* Image - adapts to natural aspect ratio */}
             <div 
-              className="max-w-[90vw] max-h-[90vh] flex items-center justify-center"
+              className="flex items-center justify-center p-4"
               onClick={(e) => e.stopPropagation()}
             >
               <img
                 src={images[lightboxIndex].src}
                 alt={images[lightboxIndex].alt_text || `Image ${lightboxIndex + 1}`}
-                className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                className="max-w-[85vw] max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl"
+                style={{ aspectRatio: 'auto' }}
               />
             </div>
 
