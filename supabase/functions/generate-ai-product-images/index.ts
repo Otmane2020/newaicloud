@@ -21,6 +21,10 @@ const IMAGE_TYPE_PROMPTS: Record<string, { fr: string; en: string }> = {
     fr: "Vue de face du produit, angle frontal direct, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping), ombre légère diffuse vers le bas",
     en: "Front view of the product, direct frontal angle, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style), light diffuse shadow downward"
   },
+  angle45: {
+    fr: "Vue à 45 degrés du produit (vue trois-quarts), montrant profondeur et dimension, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping)",
+    en: "45 degree angle view of the product (three-quarter view), showing depth and dimension, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style)"
+  },
   profile: {
     fr: "Vue de profil du produit (côté gauche ou droit), angle 90 degrés, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping), ombre légère diffuse",
     en: "Profile view of the product (left or right side), 90 degree angle, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style), light diffuse shadow"
@@ -60,6 +64,7 @@ const DECOR_PROMPTS: Record<string, { fr: string; en: string }> = {
 
 const IMAGE_TYPE_LABELS: Record<string, { fr: string; en: string }> = {
   front: { fr: "Face", en: "Front" },
+  angle45: { fr: "45°", en: "45°" },
   profile: { fr: "Profil", en: "Profile" },
   back: { fr: "Arrière", en: "Back" },
   zoom_fabric: { fr: "Zoom tissu", en: "Fabric zoom" },

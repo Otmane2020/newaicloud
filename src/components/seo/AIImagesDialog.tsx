@@ -62,6 +62,7 @@ interface AIImagesDialogProps {
 
 const IMAGE_TYPES = [
   { id: 'front', label: 'Vue de face', labelEn: 'Front view', icon: Camera },
+  { id: 'angle45', label: 'Vue 45°', labelEn: '45° view', icon: RotateCcw },
   { id: 'profile', label: 'Vue de profil', labelEn: 'Profile view', icon: RotateCcw },
   { id: 'back', label: 'Vue arrière', labelEn: 'Back view', icon: RotateCcw },
   { id: 'zoom_fabric', label: 'Zoom tissu/matière', labelEn: 'Fabric/material zoom', icon: Focus },
