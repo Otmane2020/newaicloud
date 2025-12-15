@@ -88,6 +88,9 @@ interface Product {
   title: string;
   description: string | null;
   landing_page: string | null;
+  landing_page_html: string | null;
+  has_landing_page: boolean | null;
+  last_landing_generation_at: string | null;
   seo_title: string | null;
   seo_description: string | null;
   image_url: string | null;
@@ -337,7 +340,7 @@ export default function ProductTitleDescription() {
         const { data: pageData, error: pageError } = await supabase
           .from("shopify_products")
           .select(
-            "id, title, description, landing_page, has_landing_page, last_landing_generation_at, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id, collection_ids",
+            "id, title, description, landing_page, landing_page_html, has_landing_page, last_landing_generation_at, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id, collection_ids",
           )
           .eq("seller_id", user.id)
           .eq("store_id", selectedStore.id)
@@ -770,7 +773,7 @@ export default function ProductTitleDescription() {
         const { data: updatedProduct } = await supabase
           .from("shopify_products")
           .select(
-            "id, title, description, landing_page, seo_title, seo_description, image_url, shopify_id, vendor, handle, status",
+            "id, title, description, landing_page, landing_page_html, has_landing_page, last_landing_generation_at, seo_title, seo_description, image_url, shopify_id, vendor, handle, status",
           )
           .eq("id", productId)
           .single();
@@ -3687,7 +3690,7 @@ export default function ProductTitleDescription() {
           onOpenChange={setShowBulkLandingDialog}
           products={filteredProducts
             .filter(p => !bulkLandingConfig.activeOnly || p.status === 'active')
-            .filter(p => bulkLandingConfig.redoExisting || !p.landing_page)
+            .filter(p => bulkLandingConfig.redoExisting || !p.has_landing_page)
             .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor }))}
           config={bulkLandingConfig}
           storeId={selectedStore.id}
@@ -3718,7 +3721,7 @@ export default function ProductTitleDescription() {
           products={filteredProducts
             .filter(p => selectedProducts.has(p.id))
             .filter(p => !bulkLandingConfig.activeOnly || p.status === 'active')
-            .filter(p => bulkLandingConfig.redoExisting || !p.landing_page)
+            .filter(p => bulkLandingConfig.redoExisting || !p.has_landing_page)
             .map(p => ({ id: p.id, title: p.title, image_url: p.image_url, vendor: p.vendor, body_html: p.description || undefined }))}
           config={bulkLandingConfig}
           storeId={selectedStore.id}
