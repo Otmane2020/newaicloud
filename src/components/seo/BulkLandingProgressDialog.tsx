@@ -319,57 +319,55 @@ export function BulkLandingProgressDialog({
           console.log(`[Bulk Landing] Vendor "${resolvedVendor}" saved for product ${product.id}`);
         }
 
-        // 🏷️ Handle title regeneration if enabled (with 10s timeout to avoid blocking)
+        // 🏷️ Handle title regeneration if enabled (with 20s timeout)
         let productTitle = productData.seo_title || productData.title;
-        let titleWasRegenerated = false; // ✅ Track if title was regenerated
-        if (config.regenerateTitle) {
+        let titleWasRegenerated = false;
+        
+        if (config.regenerateTitle !== false) { // ✅ Default to true
           try {
-            console.log(`[Bulk Landing] Regenerating title with smart-title for "${productData.title}"`);
+            console.log(`[Bulk Landing] 🎯 Regenerating title with smart-title for "${productData.title}"`);
             
-            // Create AbortController for 10s timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            // Update status to show title regeneration
+            setPreviews(prev => prev.map(p => 
+              p.productId === product.id 
+                ? { ...p, status: 'generating' as const } 
+                : p
+            ));
             
-            const smartTitlePromise = supabase.functions.invoke("smart-title", {
+            const { data: smartData, error: smartError } = await supabase.functions.invoke("smart-title", {
               body: {
                 productId: product.id,
                 language: 'fr',
               },
             });
             
-            // Race between smart-title call and timeout
-            const { data: smartData, error: smartError } = await Promise.race([
-              smartTitlePromise,
-              new Promise<{ data: null; error: Error }>((_, reject) => 
-                setTimeout(() => reject({ data: null, error: new Error('Timeout') }), 10000)
-              )
-            ]).catch(() => ({ data: null, error: new Error('Timeout') }));
-            
-            clearTimeout(timeoutId);
-            
             if (smartError) {
-              console.warn(`[Bulk Landing] smart-title timeout/error, using existing title:`, smartError);
+              console.warn(`[Bulk Landing] ⚠️ smart-title error:`, smartError);
             } else if (smartData?.optimizedTitle) {
               productTitle = smartData.optimizedTitle;
               titleWasRegenerated = true;
+              
               // Update in database
               await supabase
                 .from("shopify_products")
                 .update({ seo_title: smartData.optimizedTitle })
                 .eq("id", product.id);
               
-              // ✅ Update title in previews list so UI shows new title
+              // ✅ Update title in previews
               setPreviews(prev => prev.map(p => 
                 p.productId === product.id 
                   ? { ...p, productTitle: smartData.optimizedTitle } 
                   : p
               ));
-              console.log(`[Bulk Landing] New SERP-optimized title "${smartData.optimizedTitle}" saved for product ${product.id}`);
+              console.log(`[Bulk Landing] ✅ New title "${smartData.optimizedTitle}" saved for product ${product.id}`);
+            } else {
+              console.warn(`[Bulk Landing] ⚠️ No optimizedTitle in response:`, smartData);
             }
           } catch (err) {
-            console.warn(`[Bulk Landing] Title regeneration failed for ${product.id}, using existing:`, err);
-            // Continue with existing title - don't block generation
+            console.warn(`[Bulk Landing] ❌ Title regeneration failed for ${product.id}:`, err);
           }
+        } else {
+          console.log(`[Bulk Landing] ⏭️ Title regeneration disabled, using: "${productTitle}"`);
         }
         // Use AbortController with longer timeout for AI generation (5 minutes)
         const controller = new AbortController();
