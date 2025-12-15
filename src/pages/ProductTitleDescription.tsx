@@ -65,6 +65,7 @@ import { LandingConfigDialog, LandingConfig } from "@/components/seo/LandingConf
 import { AiBackgroundDialog, AiBackgroundConfig } from "@/components/seo/AiBackgroundDialog";
 import { BulkLandingProgressDialog } from "@/components/seo/BulkLandingProgressDialog";
 import { SmartBulkLandingDialog } from "@/components/seo/SmartBulkLandingDialog";
+import { AIImagesDialog } from "@/components/seo/AIImagesDialog";
 
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
 import { ProductGalleryDialog } from "@/components/seo/ProductGalleryDialog";
@@ -241,6 +242,7 @@ export default function ProductTitleDescription() {
   const [showGalleryDialog, setShowGalleryDialog] = useState(false);
   const [galleryProduct, setGalleryProduct] = useState<Product | null>(null);
   const [showSmartBgDialog, setShowSmartBgDialog] = useState(false);
+  const [showAIImagesDialog, setShowAIImagesDialog] = useState(false);
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
   
   // Inline editing states
@@ -2869,6 +2871,32 @@ export default function ProductTitleDescription() {
                             </TooltipContent>
                           </Tooltip>
 
+                          {/* AI Images Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!canDoAction("optimizations")) {
+                                    toast.error(t.contentOptimization.toasts.limitReached);
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  setSelectedProducts(new Set([product.id]));
+                                  setShowAIImagesDialog(true);
+                                }}
+                              >
+                                <Images className="h-4 w-4 text-indigo-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>AI Images</p>
+                            </TooltipContent>
+                          </Tooltip>
+
                           {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -3956,6 +3984,26 @@ export default function ProductTitleDescription() {
           refreshLimits();
         }}
         storeUrl={selectedStore?.store_url || null}
+      />
+
+      {/* AI Images Dialog */}
+      <AIImagesDialog
+        open={showAIImagesDialog}
+        onOpenChange={setShowAIImagesDialog}
+        selectedProducts={products
+          .filter(p => selectedProducts.has(p.id))
+          .map(p => ({ 
+            id: p.id, 
+            title: p.title, 
+            image_url: p.image_url, 
+            vendor: p.vendor, 
+            handle: p.handle,
+            product_type: null
+          }))}
+        onComplete={() => {
+          fetchProducts();
+          refreshLimits();
+        }}
       />
     </div>
   );

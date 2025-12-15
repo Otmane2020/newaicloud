@@ -592,3 +592,6 @@ verify_jwt = true
 
 [functions.generate-smart-landing]
 verify_jwt = true
+
+[functions.generate-ai-product-images]
+verify_jwt = true
