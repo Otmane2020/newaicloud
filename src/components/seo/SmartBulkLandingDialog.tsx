@@ -279,41 +279,41 @@ export function SmartBulkLandingDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-primary" />
+        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] p-4 sm:p-6">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               Smart Bulk Landing
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               Génération rapide avec Smart Title, Brand & Highlights
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Progress */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+            <div className="space-y-1.5 sm:space-y-2">
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span>{processedCount} / {products.length} produits</span>
-                <span>{progress}%</span>
+                <span className="font-medium">{progress}%</span>
               </div>
-              <Progress value={progress} className="h-2" />
+              <Progress value={progress} className="h-1.5 sm:h-2" />
             </div>
 
             {/* Stats */}
-            <div className="flex gap-4 text-sm">
-              <Badge variant="outline" className="gap-1">
+            <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
+              <Badge variant="outline" className="gap-1 px-2 py-0.5 sm:px-3 sm:py-1">
                 <Check className="w-3 h-3 text-green-500" />
                 {successCount} succès
               </Badge>
               {errorCount > 0 && (
-                <Badge variant="outline" className="gap-1">
+                <Badge variant="outline" className="gap-1 px-2 py-0.5 sm:px-3 sm:py-1">
                   <X className="w-3 h-3 text-red-500" />
                   {errorCount} erreurs
                 </Badge>
               )}
               {isProcessing && (
-                <Badge variant="secondary" className="gap-1">
+                <Badge variant="secondary" className="gap-1 px-2 py-0.5 sm:px-3 sm:py-1">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   En cours...
                 </Badge>
@@ -321,12 +321,12 @@ export function SmartBulkLandingDialog({
             </div>
 
             {/* Product list */}
-            <ScrollArea className="h-[300px] border rounded-lg p-2">
-              <div className="space-y-2">
+            <ScrollArea className="h-[40vh] sm:h-[300px] border rounded-lg p-1.5 sm:p-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {items.map((item, index) => (
                   <div
                     key={item.productId}
-                    className={`flex items-center justify-between p-2 rounded-lg border ${
+                    className={`flex items-center justify-between p-1.5 sm:p-2 rounded-lg border ${
                       item.status === 'generating' ? 'bg-primary/5 border-primary/30' :
                       item.status === 'success' ? 'bg-green-50 border-green-200 dark:bg-green-950/20' :
                       item.status === 'error' ? 'bg-red-50 border-red-200 dark:bg-red-950/20' :
@@ -334,29 +334,29 @@ export function SmartBulkLandingDialog({
                     }`}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.productTitle}</p>
+                      <p className="text-xs sm:text-sm font-medium truncate">{item.productTitle}</p>
                       {item.optimizedTitle && (
-                        <p className="text-xs text-primary truncate flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" />
-                          {item.optimizedTitle}
+                        <p className="text-[10px] sm:text-xs text-primary truncate flex items-center gap-1">
+                          <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                          <span className="truncate">{item.optimizedTitle}</span>
                         </p>
                       )}
                       {item.error && (
-                        <p className="text-xs text-red-500 truncate">{item.error}</p>
+                        <p className="text-[10px] sm:text-xs text-red-500 truncate">{item.error}</p>
                       )}
                     </div>
-                    <div className="ml-2">
+                    <div className="ml-1.5 sm:ml-2 flex-shrink-0">
                       {item.status === 'pending' && (
-                        <div className="w-5 h-5 rounded-full bg-muted" />
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-muted" />
                       )}
                       {item.status === 'generating' && (
-                        <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-spin" />
                       )}
                       {item.status === 'success' && (
-                        <Check className="w-5 h-5 text-green-500" />
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
                       )}
                       {item.status === 'error' && (
-                        <X className="w-5 h-5 text-red-500" />
+                        <X className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
                       )}
                     </div>
                   </div>
@@ -365,13 +365,13 @@ export function SmartBulkLandingDialog({
             </ScrollArea>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="mt-3 sm:mt-4">
             {isProcessing ? (
-              <Button variant="destructive" onClick={handleCancel}>
+              <Button variant="destructive" onClick={handleCancel} size="sm" className="w-full sm:w-auto">
                 Annuler
               </Button>
             ) : (
-              <Button onClick={handleClose}>
+              <Button onClick={handleClose} size="sm" className="w-full sm:w-auto">
                 Fermer
               </Button>
             )}
