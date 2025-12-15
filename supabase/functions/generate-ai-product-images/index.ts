@@ -18,16 +18,16 @@ interface RequestBody {
 
 const IMAGE_TYPE_PROMPTS: Record<string, { fr: string; en: string }> = {
   front: {
-    fr: "Vue de face du produit, angle frontal direct, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping), ombre légère diffuse vers le bas",
-    en: "Front view of the product, direct frontal angle, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style), light diffuse shadow downward"
+    fr: "Vue de face du produit, angle frontal direct, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping). IMPORTANT: Image CARRÉE 1:1, produit CENTRÉ au milieu avec une petite marge (10-15%) sur tous les côtés pour que le produit ne touche pas les bords",
+    en: "Front view of the product, direct frontal angle, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style). IMPORTANT: SQUARE 1:1 image, product CENTERED in the middle with small margin (10-15%) on all sides so the product doesn't touch the edges"
   },
   angle45: {
     fr: "Vue à 45 degrés du produit (vue trois-quarts), montrant profondeur et dimension, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping)",
     en: "45 degree angle view of the product (three-quarter view), showing depth and dimension, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style)"
   },
   profile: {
-    fr: "Vue de profil du produit (côté gauche ou droit), angle 90 degrés, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping), ombre légère diffuse",
-    en: "Profile view of the product (left or right side), 90 degree angle, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style), light diffuse shadow"
+    fr: "Vue de profil du produit (côté gauche ou droit), angle 90 degrés, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping). IMPORTANT: Image CARRÉE 1:1, produit CENTRÉ au milieu avec une petite marge (10-15%) sur tous les côtés pour que le produit ne touche pas les bords",
+    en: "Profile view of the product (left or right side), 90 degree angle, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style). IMPORTANT: SQUARE 1:1 image, product CENTERED in the middle with small margin (10-15%) on all sides so the product doesn't touch the edges"
   },
   back: {
     fr: "Vue arrière du produit, montrant le dos/arrière, fond blanc pur avec ombre portée légère",
