@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { createApp } from "@shopify/app-bridge";
+import { Redirect } from "@shopify/app-bridge/actions";
 
 /**
  * Shopify-style embedded pricing page
  * Clean black & white design matching Shopify Admin aesthetic
- * Uses App Bridge for redirects in embedded context
+ * Uses official App Bridge Redirect for Shopify compliance
  */
 
 const PLANS = [
@@ -56,15 +58,29 @@ export default function ShopifyEmbeddedPricing({
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [shopifyApp, setShopifyApp] = useState<any>(null);
 
-  // Initialize App Bridge from global shopify object (v4 auto-init)
-  useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).shopify) {
-      setShopifyApp((window as any).shopify);
-      console.log("[ShopifyEmbeddedPricing] App Bridge detected");
+  // Get host from URL params (required for App Bridge)
+  const host = new URLSearchParams(window.location.search).get("host");
+
+  // Initialize App Bridge (official Shopify method)
+  const app = useMemo(() => {
+    if (!host) {
+      console.error("[ShopifyEmbeddedPricing] Missing host parameter");
+      return null;
     }
-  }, []);
+    
+    const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY;
+    if (!apiKey) {
+      console.error("[ShopifyEmbeddedPricing] Missing VITE_SHOPIFY_API_KEY");
+      return null;
+    }
+
+    return createApp({
+      apiKey,
+      host,
+      forceRedirect: true,
+    });
+  }, [host]);
 
   const t = {
     title: language === "fr" ? "Choisissez votre plan" : "Choose your plan",
@@ -89,6 +105,11 @@ export default function ShopifyEmbeddedPricing({
       return;
     }
 
+    if (!app) {
+      toast.error("App Bridge not initialized");
+      return;
+    }
+
     setLoading(true);
     setSelectedPlan(planId);
 
@@ -103,20 +124,10 @@ export default function ShopifyEmbeddedPricing({
         throw new Error("No confirmation URL received");
       }
 
-      console.log("[ShopifyEmbeddedPricing] Redirecting to:", data.confirmationUrl);
+      console.log("[ShopifyEmbeddedPricing] Redirecting via App Bridge to:", data.confirmationUrl);
 
-      // Use App Bridge Redirect for embedded apps (required by Shopify)
-      if (shopifyApp) {
-        // App Bridge v4: use open() for external URLs
-        window.open(data.confirmationUrl, "_top");
-      } else {
-        // Fallback: redirect parent frame
-        if (window.top) {
-          window.top.location.href = data.confirmationUrl;
-        } else {
-          window.location.href = data.confirmationUrl;
-        }
-      }
+      // Official Shopify App Bridge Redirect (required for App Store compliance)
+      Redirect.create(app).dispatch(Redirect.Action.REMOTE, data.confirmationUrl);
     } catch (err) {
       console.error("[ShopifyEmbeddedPricing] Error:", err);
       toast.error(err instanceof Error ? err.message : "Error creating subscription");
