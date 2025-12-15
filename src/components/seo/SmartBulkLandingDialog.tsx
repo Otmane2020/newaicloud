@@ -341,58 +341,62 @@ export function SmartBulkLandingDialog({
                 {items.map((item, index) => (
                   <div
                     key={item.productId}
-                    className={`flex items-center justify-between p-1.5 sm:p-2 rounded-lg border ${
+                    className={`p-2 sm:p-3 rounded-lg border ${
                       item.status === 'generating' ? 'bg-primary/5 border-primary/30' :
                       item.status === 'success' ? 'bg-green-50 border-green-200 dark:bg-green-950/20' :
                       item.status === 'error' ? 'bg-red-50 border-red-200 dark:bg-red-950/20' :
                       'bg-muted/30'
                     }`}
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium truncate">{item.productTitle}</p>
-                      {item.optimizedTitle && (
-                        <p className="text-[10px] sm:text-xs text-primary truncate flex items-center gap-1">
-                          <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
-                          <span className="truncate">{item.optimizedTitle}</span>
-                        </p>
-                      )}
-                      {item.error && (
-                        <p className="text-[10px] sm:text-xs text-red-500 truncate">{item.error}</p>
-                      )}
-                    </div>
-                    <div className="ml-1.5 sm:ml-2 flex-shrink-0 flex items-center gap-1">
-                      {item.status === 'pending' && (
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-muted" />
-                      )}
-                      {item.status === 'generating' && (
-                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-spin" />
-                      )}
-                      {item.status === 'success' && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 sm:h-7 sm:w-7"
-                            onClick={async () => {
-                              const { data } = await supabase
-                                .from('shopify_products')
-                                .select('landing_page_html')
-                                .eq('id', item.productId)
-                                .single();
-                              if (data?.landing_page_html) {
-                                setPreviewHtml(data.landing_page_html);
-                              }
-                            }}
-                          >
-                            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
-                          </Button>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs sm:text-sm font-medium truncate">{item.productTitle}</p>
+                        {item.optimizedTitle && (
+                          <p className="text-[10px] sm:text-xs text-primary truncate flex items-center gap-1">
+                            <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                            <span className="truncate">{item.optimizedTitle}</span>
+                          </p>
+                        )}
+                        {item.error && (
+                          <p className="text-[10px] sm:text-xs text-red-500 truncate">{item.error}</p>
+                        )}
+                      </div>
+                      <div className="ml-1.5 sm:ml-2 flex-shrink-0">
+                        {item.status === 'pending' && (
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-muted" />
+                        )}
+                        {item.status === 'generating' && (
+                          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-spin" />
+                        )}
+                        {item.status === 'success' && (
                           <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
-                        </>
-                      )}
-                      {item.status === 'error' && (
-                        <X className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
-                      )}
+                        )}
+                        {item.status === 'error' && (
+                          <X className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
+                        )}
+                      </div>
                     </div>
+                    {/* Preview button below title */}
+                    {item.status === 'success' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1.5 h-6 text-xs gap-1 text-primary hover:text-primary/80"
+                        onClick={async () => {
+                          const { data } = await supabase
+                            .from('shopify_products')
+                            .select('landing_page_html')
+                            .eq('id', item.productId)
+                            .single();
+                          if (data?.landing_page_html) {
+                            setPreviewHtml(data.landing_page_html);
+                          }
+                        }}
+                      >
+                        <Eye className="w-3 h-3" />
+                        Aperçu
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>

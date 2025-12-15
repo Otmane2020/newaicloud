@@ -35,63 +35,98 @@ serve(async (req) => {
     }
 
     const finalTitle = optimizedTitle || productTitle;
-    const langLabels = language === "fr" ? {
-      discover: "Découvrir",
-      addToCart: "Ajouter au panier",
-      buyNow: "Acheter maintenant",
-      freeShipping: "Livraison gratuite",
-      securePayment: "Paiement sécurisé",
-      satisfaction: "Satisfaction garantie",
-      benefits: "Avantages",
-      whyChoose: "Pourquoi choisir",
-    } : {
-      discover: "Discover",
-      addToCart: "Add to Cart",
-      buyNow: "Buy Now",
-      freeShipping: "Free Shipping",
-      securePayment: "Secure Payment",
-      satisfaction: "Satisfaction Guaranteed",
-      benefits: "Benefits",
-      whyChoose: "Why Choose",
-    };
+    const brandName = vendor || (language === "fr" ? "Marque Premium" : "Premium Brand");
 
-    // Theme colors
+    // Theme colors - premium palette
     const colors = theme === "dark" ? {
-      bg: "#111827",
-      surface: "#1F2937",
-      text: "#F9FAFB",
-      textMuted: "#9CA3AF",
-      primary: "#3B82F6",
-      primaryHover: "#2563EB",
+      bg: "#0F0F0F",
+      surface: "#1A1A1A",
+      surfaceAlt: "#252525",
+      text: "#FFFFFF",
+      textMuted: "#A0A0A0",
+      primary: "#D4AF37",
+      primaryHover: "#C9A227",
+      accent: "#E8D5B7",
+      border: "#333333",
     } : {
-      bg: "#FFFFFF",
-      surface: "#F3F4F6",
-      text: "#111827",
-      textMuted: "#6B7280",
-      primary: "#2563EB",
-      primaryHover: "#1D4ED8",
+      bg: "#FAFAFA",
+      surface: "#FFFFFF",
+      surfaceAlt: "#F5F5F5",
+      text: "#1A1A1A",
+      textMuted: "#666666",
+      primary: "#1A1A1A",
+      primaryHover: "#333333",
+      accent: "#D4AF37",
+      border: "#E5E5E5",
     };
 
-    // Ultra-light prompt for fast generation
+    // Premium prompt for high-quality landing pages
     const prompt = language === "fr" 
-      ? `Landing page HTML simple pour: ${finalTitle} (${vendor || "Marque"}).
-Image: ${imageUrl || "none"}
-${description ? `Desc: ${description.slice(0, 150)}` : ""}
-${highlights ? `Points: ${highlights}` : ""}
+      ? `Crée une landing page HTML PREMIUM pour ce produit de luxe:
 
-HTML inline CSS, thème ${theme} (bg:${colors.bg}, text:${colors.text}, primary:${colors.primary}).
-Sections: Hero (image+titre), 3 avantages icônes SVG, description courte, CTA.
-Max 200 lignes. Pas de JS. Mobile-first.`
-      : `Simple HTML landing for: ${finalTitle} (${vendor || "Brand"}).
-Image: ${imageUrl || "none"}
-${description ? `Desc: ${description.slice(0, 150)}` : ""}
-${highlights ? `Points: ${highlights}` : ""}
+PRODUIT: ${finalTitle}
+MARQUE: ${brandName}
+IMAGE: ${imageUrl || "aucune"}
+${description ? `DESCRIPTION: ${description.slice(0, 300)}` : ""}
+${highlights ? `POINTS FORTS: ${highlights}` : ""}
 
-Inline CSS, ${theme} theme (bg:${colors.bg}, text:${colors.text}, primary:${colors.primary}).
-Sections: Hero (image+title), 3 benefits with SVG icons, short description, CTA.
-Max 200 lines. No JS. Mobile-first.`;
+DESIGN PREMIUM OBLIGATOIRE:
+- Style luxe/haut de gamme, élégant et sophistiqué
+- Thème: ${theme} (fond: ${colors.bg}, texte: ${colors.text}, accent: ${colors.accent})
+- Typographie raffinée: titres en serif élégant, corps sans-serif
+- Espacement généreux, respiration visuelle
+- Effets subtils: ombres douces, hover élégants
 
-    console.log(`🚀 [Smart Landing] Generating for: ${finalTitle}`);
+STRUCTURE (sections obligatoires):
+1. HERO: Image produit grande qualité + titre élégant + badge marque + CTA principal
+2. PROPOSITION DE VALEUR: 3-4 icônes SVG inline avec avantages clés (livraison, qualité, garantie)
+3. DÉTAILS PRODUIT: Description enrichie avec mise en forme élégante
+4. CONFIANCE: Logos paiement sécurisé, avis clients stylisés
+5. CTA FINAL: Bouton achat proéminent avec urgence subtile
+
+RÈGLES TECHNIQUES:
+- HTML5 + CSS inline uniquement
+- Mobile-first responsive (max-width media queries)
+- Pas de JavaScript
+- Images: utilise EXACTEMENT l'URL fournie, jamais de placeholder
+- Icônes: SVG inline uniquement (truck, shield, star, check, heart)
+- Police: font-family avec fallbacks système
+
+Génère le HTML complet.`
+
+      : `Create a PREMIUM HTML landing page for this luxury product:
+
+PRODUCT: ${finalTitle}
+BRAND: ${brandName}
+IMAGE: ${imageUrl || "none"}
+${description ? `DESCRIPTION: ${description.slice(0, 300)}` : ""}
+${highlights ? `HIGHLIGHTS: ${highlights}` : ""}
+
+MANDATORY PREMIUM DESIGN:
+- Luxury/high-end style, elegant and sophisticated
+- Theme: ${theme} (bg: ${colors.bg}, text: ${colors.text}, accent: ${colors.accent})
+- Refined typography: elegant serif headings, sans-serif body
+- Generous spacing, visual breathing room
+- Subtle effects: soft shadows, elegant hovers
+
+STRUCTURE (required sections):
+1. HERO: Large product image + elegant title + brand badge + main CTA
+2. VALUE PROPOSITION: 3-4 inline SVG icons with key benefits (shipping, quality, guarantee)
+3. PRODUCT DETAILS: Enhanced description with elegant formatting
+4. TRUST: Secure payment logos, styled customer reviews
+5. FINAL CTA: Prominent buy button with subtle urgency
+
+TECHNICAL RULES:
+- HTML5 + inline CSS only
+- Mobile-first responsive (max-width media queries)
+- No JavaScript
+- Images: use EXACTLY the provided URL, never placeholders
+- Icons: inline SVG only (truck, shield, star, check, heart)
+- Font: font-family with system fallbacks
+
+Generate the complete HTML.`;
+
+    console.log(`🚀 [Smart Landing Premium] Generating for: ${finalTitle}`);
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -100,18 +135,18 @@ Max 200 lines. No JS. Mobile-first.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite", // Fastest model
+        model: "google/gemini-2.5-flash", // Better model for premium quality
         messages: [
           {
             role: "system",
             content: language === "fr" 
-              ? "Génère du HTML pur compact. Réponds UNIQUEMENT avec du HTML valide."
-              : "Generate compact pure HTML. Reply ONLY with valid HTML.",
+              ? "Tu es un expert en design de landing pages e-commerce premium. Génère UNIQUEMENT du HTML valide et élégant, sans explications."
+              : "You are an expert in premium e-commerce landing page design. Generate ONLY valid and elegant HTML, no explanations.",
           },
           { role: "user", content: prompt },
         ],
-        max_tokens: 2500, // Reduced for speed
-        temperature: 0.5,
+        max_tokens: 4000,
+        temperature: 0.6,
       }),
     });
 
@@ -140,14 +175,17 @@ Max 200 lines. No JS. Mobile-first.`;
       html = `<!DOCTYPE html>\n${html}`;
     }
 
-    // Replace placeholder images with actual product image
+    // Replace any placeholder images with actual product image
     if (imageUrl) {
       html = html.replace(/https?:\/\/via\.placeholder\.com\/[^\s"'>]+/gi, imageUrl);
       html = html.replace(/https?:\/\/placehold\.co\/[^\s"'>]+/gi, imageUrl);
       html = html.replace(/https?:\/\/picsum\.photos\/[^\s"'>]+/gi, imageUrl);
+      html = html.replace(/https?:\/\/placeholder\.com\/[^\s"'>]+/gi, imageUrl);
+      html = html.replace(/\[IMAGE_URL\]/gi, imageUrl);
+      html = html.replace(/\[PRODUCT_IMAGE\]/gi, imageUrl);
     }
 
-    console.log(`✅ [Smart Landing] Generated ${html.length} chars for: ${finalTitle}`);
+    console.log(`✅ [Smart Landing Premium] Generated ${html.length} chars for: ${finalTitle}`);
 
     return new Response(
       JSON.stringify({ html, success: true }),
@@ -155,7 +193,7 @@ Max 200 lines. No JS. Mobile-first.`;
     );
 
   } catch (error: any) {
-    console.error("❌ [Smart Landing] Error:", error);
+    console.error("❌ [Smart Landing Premium] Error:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Erreur de génération" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
