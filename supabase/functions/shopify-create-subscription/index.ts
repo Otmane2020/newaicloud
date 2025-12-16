@@ -54,12 +54,16 @@ serve(async (req) => {
       .toLowerCase();
 
     // 1️⃣ LOAD SHOP TOKEN (shop-centric, not user-centric)
-    const { data: connection, error: connError } = await supabase
+    // Use exact match first, then order by created_at DESC and limit 1 to handle duplicates gracefully
+    const { data: connections, error: connError } = await supabase
       .from("shopify_connections")
       .select("*")
-      .or(`store_url.eq.${normalizedShop},store_url.ilike.%${normalizedShop}%`)
+      .eq("store_url", normalizedShop)
       .eq("is_active", true)
-      .maybeSingle();
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const connection = connections?.[0];
 
     if (connError || !connection?.access_token) {
       logStep("No active Shopify connection found", { error: connError, shopDomain: normalizedShop });
