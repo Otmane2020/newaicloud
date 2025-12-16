@@ -51,8 +51,112 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
   // Check if user is Shopify billing user
   const { isShopifyUser, billingProvider, shopDomain, loading: shopifyLoading } = useShopifyBilling();
 
+  // ✅ ALL HOOKS MUST BE BEFORE ANY EARLY RETURNS
+  // Cleanup subscription listener when dialog closes
+  useEffect(() => {
+    if (!open && subscriptionChannel) {
+      subscriptionChannel.unsubscribe();
+      setSubscriptionChannel(null);
+    }
+  }, [open, subscriptionChannel]);
+
+  // Load plan data when dialog opens
+  useEffect(() => {
+    const loadPlanData = async () => {
+      // Skip for Shopify users (they use ShopifyUpgradeDialog)
+      if (billingProvider === 'shopify' && isShopifyUser) return;
+      
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData.user) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('current_plan_id')
+          .eq('id', userData.user.id)
+          .single();
+
+        const { data: usageData } = await supabase
+          .from('usage_tracking')
+          .select('products_count')
+          .eq('seller_id', userData.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const productCount = usageData?.products_count || 0;
+        console.log('📊 UpgradeDialog: User has', productCount, 'products');
+
+        const { data: allPlans } = await supabase
+          .from('subscription_plans')
+          .select('id, name, price_monthly, stripe_price_id_monthly, stripe_price_id_yearly, max_products, max_optimizations_monthly, max_articles_monthly, max_chat_responses_monthly, max_shopify_stores')
+          .eq('is_active', true)
+          .order('price_monthly', { ascending: true });
+
+        if (!allPlans || allPlans.length === 0) return;
+
+        const validPlans = allPlans.filter(plan => 
+          plan.max_products === -1 || plan.max_products >= productCount
+        );
+
+        const currentPlanIdValue = profile?.current_plan_id || 'trial';
+        let current = validPlans.find(p => p.id === currentPlanIdValue);
+        
+        if (!current || currentPlanIdValue === 'trial') {
+          current = validPlans[0];
+          setCurrentPlanData({ 
+            id: 'trial',
+            name: 'Trial',
+            price_monthly: 0,
+            max_products: 100,
+            max_optimizations_monthly: 10,
+            max_articles_monthly: 5,
+            max_chat_responses_monthly: 20,
+            max_shopify_stores: 1
+          });
+          setAvailablePlans(validPlans as Plan[]);
+          setSelectedPlanId(validPlans[0].id);
+        } else {
+          setCurrentPlanData(current as Plan);
+          const currentIndex = validPlans.findIndex(p => p.id === currentPlanIdValue);
+          const upgradePlans = validPlans.slice(currentIndex + 1);
+          
+          if (upgradePlans.length > 0) {
+            setAvailablePlans(upgradePlans as Plan[]);
+            setSelectedPlanId(upgradePlans[0].id);
+          } else {
+            setAvailablePlans([current] as Plan[]);
+            setSelectedPlanId(current.id);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading plan data:', error);
+      }
+    };
+
+    if (open && !shopifyLoading) {
+      loadPlanData();
+    }
+  }, [open, shopifyLoading, billingProvider, isShopifyUser]);
+
+  // Filter plans by selected tier
+  const filteredPlans = availablePlans.filter(plan => {
+    const planName = plan.name.toLowerCase();
+    if (planTier === 'pro') {
+      return planName.includes('pro') && !planName.includes('enterprise');
+    } else {
+      return planName.includes('enterprise');
+    }
+  });
+
+  // Auto-select first plan when tier changes
+  useEffect(() => {
+    if (filteredPlans.length > 0 && !filteredPlans.find(p => p.id === selectedPlanId)) {
+      setSelectedPlanId(filteredPlans[0].id);
+    }
+  }, [planTier, filteredPlans, selectedPlanId]);
+
   // ⚡ CRITICAL: Show loader while detecting Shopify user to prevent race condition
-  // This prevents showing Stripe dialog briefly before Shopify detection completes
   if (open && shopifyLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,107 +189,11 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
   }
 
   const limitTitle = t.dialogs.limit.limitTypes[limitType];
-  
-  // Message for CURRENT plan usage (not selected plan)
   const currentLimitMessage = tf('dialogs.limit.usageMessage', { 
     usage: usage || 0, 
     limit: limit || 0, 
     type: limitTitle 
   });
-
-  // Cleanup subscription listener when dialog closes
-  useEffect(() => {
-    if (!open && subscriptionChannel) {
-      subscriptionChannel.unsubscribe();
-      setSubscriptionChannel(null);
-    }
-  }, [open, subscriptionChannel]);
-
-  useEffect(() => {
-    const loadPlanData = async () => {
-      try {
-        // Charger le plan actuel
-        const { data: userData } = await supabase.auth.getUser();
-        if (!userData.user) return;
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('current_plan_id')
-          .eq('id', userData.user.id)
-          .single();
-
-        // Get user's product count to filter appropriate plans
-        const { data: usage } = await supabase
-          .from('usage_tracking')
-          .select('products_count')
-          .eq('seller_id', userData.user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const productCount = usage?.products_count || 0;
-        console.log('📊 UpgradeDialog: User has', productCount, 'products');
-
-        // Charger tous les plans actifs triés par prix
-        const { data: allPlans } = await supabase
-          .from('subscription_plans')
-          .select('id, name, price_monthly, stripe_price_id_monthly, stripe_price_id_yearly, max_products, max_optimizations_monthly, max_articles_monthly, max_chat_responses_monthly, max_shopify_stores')
-          .eq('is_active', true)
-          .order('price_monthly', { ascending: true });
-
-        if (!allPlans || allPlans.length === 0) return;
-
-        // CRITICAL: Filter out plans that can't accommodate user's product count
-        const validPlans = allPlans.filter(plan => 
-          plan.max_products === -1 || plan.max_products >= productCount
-        );
-
-        // Trouver le plan actuel
-        const currentPlanId = profile?.current_plan_id || 'trial';
-        let current = validPlans.find(p => p.id === currentPlanId);
-        
-        // Si trial ou pas de plan, utiliser le premier plan valide
-        if (!current || currentPlanId === 'trial') {
-          current = validPlans[0];
-          setCurrentPlanData({ 
-            id: 'trial',
-            name: 'Trial',
-            price_monthly: 0,
-            max_products: 100,
-            max_optimizations_monthly: 10,
-            max_articles_monthly: 5,
-            max_chat_responses_monthly: 20,
-            max_shopify_stores: 1
-          });
-          
-          // Tous les plans valides sont disponibles pour upgrade depuis trial
-          setAvailablePlans(validPlans as Plan[]);
-          setSelectedPlanId(validPlans[0].id);
-        } else {
-          setCurrentPlanData(current as Plan);
-          
-          // Trouver les plans supérieurs au plan actuel (parmi les plans valides)
-          const currentIndex = validPlans.findIndex(p => p.id === currentPlanId);
-          const upgradePlans = validPlans.slice(currentIndex + 1);
-          
-          if (upgradePlans.length > 0) {
-            setAvailablePlans(upgradePlans as Plan[]);
-            setSelectedPlanId(upgradePlans[0].id);
-          } else {
-            // Si déjà au max, proposer quand même le plan actuel
-            setAvailablePlans([current] as Plan[]);
-            setSelectedPlanId(current.id);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading plan data:', error);
-      }
-    };
-
-    if (open) {
-      loadPlanData();
-    }
-  }, [open]);
 
   const handleActivate = async () => {
     if (!selectedPlanId) {
@@ -352,23 +360,6 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
       setLoading(false);
     }
   };
-
-  // Filter plans by selected tier
-  const filteredPlans = availablePlans.filter(plan => {
-    const planName = plan.name.toLowerCase();
-    if (planTier === 'pro') {
-      return planName.includes('pro') && !planName.includes('enterprise');
-    } else {
-      return planName.includes('enterprise');
-    }
-  });
-
-  // Auto-select first plan when tier changes
-  useEffect(() => {
-    if (filteredPlans.length > 0 && !filteredPlans.find(p => p.id === selectedPlanId)) {
-      setSelectedPlanId(filteredPlans[0].id);
-    }
-  }, [planTier, filteredPlans, selectedPlanId]);
 
   const selectedPlan = filteredPlans.find(p => p.id === selectedPlanId);
   
