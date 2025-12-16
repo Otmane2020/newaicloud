@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
 
@@ -20,9 +20,19 @@ interface Profile {
 const isShopifyProfile = (profile?: Profile | null, email?: string | null) =>
   profile?.billing_provider === 'shopify' || email?.endsWith('@shopify.newai.sale');
 
+// Helper: detect server error
+const isServerError = (error: any): boolean => {
+  const msg = error?.message || String(error) || '';
+  return msg.includes('Failed to fetch') || 
+         msg.includes('timeout') || 
+         msg.includes('NetworkError') ||
+         msg.includes('522') ||
+         msg.includes('503');
+};
+
 export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -30,6 +40,8 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const [invalidTrialState, setInvalidTrialState] = useState(false);
   const [fixingSubscription, setFixingSubscription] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [serverError, setServerError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
@@ -43,6 +55,15 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const checkAdminAndLoadProfile = async () => {
     if (!user) return;
     
+    setServerError(false);
+    
+    // ✅ 8-second timeout
+    const timeoutId = setTimeout(() => {
+      console.error('⏰ [SubscriptionGuard] Timeout reached (8s)');
+      setLoading(false);
+      setServerError(true);
+    }, 8000);
+    
     try {
       console.log('🔍 [SubscriptionGuard] Checking subscription for user:', {
         userId: user.id,
@@ -51,12 +72,20 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       });
 
       // Check if user is admin first
-      const { data: adminCheck } = await supabase.rpc('has_role', {
+      const { data: adminCheck, error: adminError } = await supabase.rpc('has_role', {
         _user_id: user.id,
         _role: 'admin'
       });
 
+      if (adminError && isServerError(adminError)) {
+        clearTimeout(timeoutId);
+        setServerError(true);
+        setLoading(false);
+        return;
+      }
+
       if (adminCheck) {
+        clearTimeout(timeoutId);
         console.log('👑 Admin user detected, bypassing subscription check');
         setIsAdmin(true);
         setLoading(false);
@@ -73,6 +102,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       // 🛒 SHOPIFY USERS: FULL BYPASS - NO STRIPE LOGIC AT ALL
       // Shopify Billing is the source of truth for Shopify users
       if (isShopifyProfile(profileData, user.email)) {
+        clearTimeout(timeoutId);
         console.log('🛒 [SubscriptionGuard] Shopify user detected → FULL bypass, NO Stripe logic');
         setProfile(profileData);
         setLoading(false);
@@ -87,6 +117,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
+        clearTimeout(timeoutId);
         console.log('⚠️ No valid session, skipping Stripe check');
         setProfile(profileData);
         setLoading(false);
@@ -110,6 +141,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
             stripeError.message?.includes('invalid_session') ||
             stripeError.message?.includes('Session not found') ||
             stripeError.message?.includes('401')) {
+          clearTimeout(timeoutId);
           console.warn('⚠️ Session issue detected, marking for re-authentication');
           // ❌ NE PAS faire signOut() automatique
           // ❌ NE PAS faire window.location.href (boucle infinie!)
@@ -123,6 +155,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         
         // Check for invalid trial state on paid plan (STRIPE ONLY)
         if (stripeData?.error === 'invalid_trial_state') {
+          clearTimeout(timeoutId);
           console.error('⚠️ INVALID TRIAL STATE DETECTED:', stripeData);
           setInvalidTrialState(true);
           setLoading(false);
@@ -131,6 +164,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         
         // If user has active subscription in Stripe, bypass the redirect
         if (stripeData?.subscribed) {
+          clearTimeout(timeoutId);
           console.log('✅ Active subscription found in Stripe, allowing access');
           setHasActiveStripeSubscription(true);
           
@@ -166,6 +200,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       
       // Profile already loaded above, handle errors and set state
       if (profileError) {
+        clearTimeout(timeoutId);
         console.error('❌ Error loading profile:', profileError);
         
         // If profile doesn't exist, create it
@@ -200,6 +235,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      clearTimeout(timeoutId);
       console.log('✅ [SubscriptionGuard] Profile loaded:', {
         userId: user.id,
         status: profileData.subscription_status,
@@ -210,8 +246,13 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       });
 
       setProfile(profileData);
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error('❌ Error in loadUserProfile:', error);
+      
+      if (isServerError(error)) {
+        setServerError(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -246,10 +287,59 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    setServerError(false);
+    setLoading(true);
+    await checkAdminAndLoadProfile();
+    setIsRetrying(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // 🚨 Server error - show alert with retry
+  if (serverError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <Alert variant="destructive" className="max-w-lg">
+          <AlertTriangle className="h-5 w-5" />
+          <AlertTitle className="text-xl font-bold mb-2">
+            {language === 'fr' ? 'Serveur indisponible' : 'Server unavailable'}
+          </AlertTitle>
+          <AlertDescription className="space-y-4">
+            <p className="text-base">
+              {language === 'fr' 
+                ? 'Nous rencontrons des difficultés à joindre nos serveurs. Veuillez réessayer dans quelques instants.'
+                : 'We are having trouble reaching our servers. Please try again in a few moments.'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button 
+                onClick={handleRetry} 
+                disabled={isRetrying}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
+                {isRetrying 
+                  ? (language === 'fr' ? 'Nouvelle tentative...' : 'Retrying...')
+                  : (language === 'fr' ? 'Réessayer' : 'Retry')}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => window.open('https://status.supabase.com', '_blank')}
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                {language === 'fr' ? 'Voir le statut' : 'View status'}
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

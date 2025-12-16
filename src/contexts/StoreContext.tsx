@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface ShopifyStore {
   id: string;
@@ -18,16 +19,28 @@ interface StoreContextType {
   setSelectedStore: (store: ShopifyStore | null) => void;
   stores: ShopifyStore[];
   loading: boolean;
+  serverError: boolean;
   refreshStores: () => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
+
+// Helper: detect server error
+const isServerError = (error: any): boolean => {
+  const msg = error?.message || String(error) || '';
+  return msg.includes('Failed to fetch') || 
+         msg.includes('timeout') || 
+         msg.includes('NetworkError') ||
+         msg.includes('522') ||
+         msg.includes('503');
+};
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [selectedStore, setSelectedStore] = useState<ShopifyStore | null>(null);
   const [stores, setStores] = useState<ShopifyStore[]>([]);
   const [loading, setLoading] = useState(true);
+  const [serverError, setServerError] = useState(false);
   
   // ✅ FIX: Track last fetch to prevent rapid consecutive calls
   const lastFetchRef = useRef<number>(0);
@@ -57,6 +70,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return;
     }
     isLoadingRef.current = true;
+    setServerError(false);
+    
+    // ✅ 8-second timeout
+    const timeoutId = setTimeout(() => {
+      if (isLoadingRef.current) {
+        console.error('⏰ [STORE_CONTEXT] Timeout reached (8s)');
+        isLoadingRef.current = false;
+        setLoading(false);
+        setServerError(true);
+        toast.error('Serveur indisponible', {
+          description: 'Impossible de charger vos boutiques. Réessayez dans quelques minutes.'
+        });
+      }
+    }, 8000);
     
     try {
       console.log('🚨🚨🚨 [STORE_CONTEXT] Loading stores for user:', user.id);
@@ -67,7 +94,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         .eq('is_active', true)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      clearTimeout(timeoutId);
+
+      if (error) {
+        if (isServerError(error)) {
+          setServerError(true);
+          toast.error('Serveur indisponible', {
+            description: 'Impossible de charger vos boutiques. Réessayez dans quelques minutes.'
+          });
+        }
+        throw error;
+      }
 
       console.log('🚨🚨🚨 [STORE_CONTEXT] Loaded stores:', data?.length);
       
@@ -104,8 +141,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           return data[0];
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error('❌ [STORE_CONTEXT] Error loading stores:', error);
+      
+      if (isServerError(error)) {
+        setServerError(true);
+      }
+      
       setStores([]);
       setSelectedStore(null);
     } finally {
@@ -176,6 +219,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setSelectedStore, 
         stores, 
         loading,
+        serverError,
         refreshStores: loadStores 
       }}
     >
