@@ -328,9 +328,10 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   }
   
   // STRIPE ONLY: Validate subscription
+  // ✅ FIX: Don't require stripe_customer_id for active subscriptions if hasActiveStripeSubscription is true
   const hasValidSubscription = profile?.subscription_status && 
     (profile.subscription_status === 'active' 
-      ? profile.stripe_customer_id // Stripe users need stripe_customer_id
+      ? (profile.stripe_customer_id || hasActiveStripeSubscription) // Allow if verified via Stripe API
       : true) && 
     (profile.subscription_status === 'active' || 
      (profile.subscription_status === 'trialing' && 

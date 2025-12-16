@@ -104,7 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
-  }, [navigate, loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate]); // ✅ FIX: Removed 'loading' to prevent infinite re-runs
 
   const signUp = async (email: string, password: string, fullName: string, referralCode?: string) => {
     // Préserver les paramètres URL actuels (comme shopify_pending)
