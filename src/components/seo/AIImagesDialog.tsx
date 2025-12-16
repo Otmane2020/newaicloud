@@ -65,6 +65,8 @@ const IMAGE_TYPES = [
   { id: 'angle45', label: 'Vue 45°', labelEn: '45° view', icon: RotateCcw },
   { id: 'profile', label: 'Vue de profil', labelEn: 'Profile view', icon: RotateCcw },
   { id: 'back', label: 'Vue arrière', labelEn: 'Back view', icon: RotateCcw },
+  { id: 'top', label: 'Vue du dessus', labelEn: 'Top view', icon: Eye },
+  { id: 'low_angle', label: 'Vue contre-plongée', labelEn: 'Low angle view', icon: Camera },
   { id: 'zoom_fabric', label: 'Zoom tissu/matière', labelEn: 'Fabric/material zoom', icon: Focus },
   { id: 'zoom_legs', label: 'Zoom pieds/structure', labelEn: 'Legs/structure zoom', icon: Focus },
   { id: 'zoom_detail', label: 'Zoom détail', labelEn: 'Detail zoom', icon: Maximize2 },
@@ -108,12 +110,16 @@ export const AIImagesDialog = ({
   const toggleImageType = (typeId: string) => {
     const newSet = new Set(selectedImageTypes);
     if (newSet.has(typeId)) {
-      newSet.delete(typeId);
+      if (newSet.size > 2) { // Minimum 2 images
+        newSet.delete(typeId);
+      } else {
+        toast.warning(language === 'fr' ? 'Minimum 2 images requises' : 'Minimum 2 images required');
+      }
     } else {
-      if (newSet.size < 6) { // Maximum 6 white background images
+      if (newSet.size < 9) { // Maximum 9 white background images
         newSet.add(typeId);
       } else {
-        toast.warning(language === 'fr' ? 'Maximum 6 images fond blanc' : 'Maximum 6 white background images');
+        toast.warning(language === 'fr' ? 'Maximum 9 images' : 'Maximum 9 images');
       }
     }
     setSelectedImageTypes(newSet);
@@ -364,8 +370,9 @@ export const AIImagesDialog = ({
             {currentGeneratedImages.length === 0 && (
               <>
                 <div className="space-y-3">
-                  <Label className="text-sm font-medium">
-                    {language === 'fr' ? 'Images fond blanc (2-6 max)' : 'White background images (2-6 max)'}
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    {language === 'fr' ? `Images fond blanc (${selectedImageTypes.size}/9)` : `White background images (${selectedImageTypes.size}/9)`}
+                    <Badge variant="outline" className="text-xs">{language === 'fr' ? 'Min 2 - Max 9' : 'Min 2 - Max 9'}</Badge>
                   </Label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {IMAGE_TYPES.map(type => (
