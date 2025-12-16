@@ -202,23 +202,29 @@ serve(async (req) => {
           );
         }
 
-        // ✅ Register sync webhooks FIRE-AND-FORGET (non-blocking for faster redirect)
-        fetch(`${SUPABASE_URL}/functions/v1/register-sync-webhooks`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ shopDomain: shop, accessToken }),
-        }).then(res => res.json()).then(result => {
-          console.log("[SHOPIFY-OAUTH] ✅ Sync webhooks registration (pre-auth):", result);
-        }).catch(err => {
-          console.warn("[SHOPIFY-OAUTH] ⚠️ Could not register sync webhooks (non-blocking):", err);
-        });
+        // ✅ Register sync webhooks for real-time updates (products, collections, orders)
+        try {
+          const webhookResponse = await fetch(`${SUPABASE_URL}/functions/v1/register-sync-webhooks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shopDomain: shop, accessToken }),
+          });
+          const webhookResult = await webhookResponse.json();
+          console.log("[SHOPIFY-OAUTH] ✅ Sync webhooks registration (pre-auth):", webhookResult);
+        } catch (webhookErr) {
+          console.warn("[SHOPIFY-OAUTH] ⚠️ Could not register sync webhooks (non-blocking):", webhookErr);
+        }
 
-        // Nettoyer le state token (fire-and-forget)
-        supabase.from("oauth_states").delete().eq("state_token", state);
+        // Nettoyer le state token
+        await supabase.from("oauth_states").delete().eq("state_token", state);
 
-        // ✅ 100% STANDALONE MODE - Rediriger IMMÉDIATEMENT vers installing page
-        const redirectUrl = `${APP_URL}/app/installing?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}`;
-        console.log("[SHOPIFY-OAUTH] ✅ FAST redirect to installing:", redirectUrl);
+        // ✅ 100% STANDALONE MODE - TOUJOURS rediriger vers newai.sale
+        // Ne JAMAIS utiliser admin.shopify.com/.../apps/... (architecture incompatible)
+        const redirectUrl = `${APP_URL}/app/setup-wizard?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}`;
+        console.log("[SHOPIFY-OAUTH] ✅ Redirecting to STANDALONE setup-wizard:", redirectUrl);
+        
+        // Nettoyer le state token
+        await supabase.from("oauth_states").delete().eq("state_token", state);
         
         console.log(JSON.stringify({
           event: 'oauth_callback_success',
