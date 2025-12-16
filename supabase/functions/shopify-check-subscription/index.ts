@@ -1,218 +1,123 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+const logStep = (step: string, details?: unknown) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[SHOPIFY-CHECK-SUB] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    logStep("Function started");
-    
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    
-    // Get auth user
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    const { shopDomain } = await req.json();
+
+    if (!shopDomain) {
+      logStep("Missing shopDomain");
       return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "shopDomain required", status: "NONE" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    logStep("Checking subscription", { shopDomain });
 
-    logStep("User authenticated", { userId: user.id });
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    // Get user profile to check billing provider
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("billing_provider, current_plan_id, subscription_status, subscription_end, shopify_subscription_id")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return new Response(
-        JSON.stringify({ subscribed: false, error: "Profile not found" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // If not using Shopify billing, return current status
-    if (profile.billing_provider !== "shopify") {
-      logStep("User not on Shopify billing", { billingProvider: profile.billing_provider });
-      return new Response(
-        JSON.stringify({
-          subscribed: profile.subscription_status === "active" || profile.subscription_status === "trialing",
-          subscription_status: profile.subscription_status,
-          plan_id: profile.current_plan_id,
-          subscription_end: profile.subscription_end,
-          billing_provider: profile.billing_provider || "stripe"
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Get Shopify connection to verify with Shopify API
-    const { data: connection, error: connError } = await supabase
+    // 1️⃣ LOAD SHOP TOKEN (shop_domain OR store_url)
+    const { data: connection, error } = await supabase
       .from("shopify_connections")
-      .select("*")
-      .eq("user_id", user.id)
+      .select("access_token, store_url")
+      .or(`store_url.eq.${shopDomain},store_url.ilike.%${shopDomain}%`)
       .eq("is_active", true)
-      .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (connError || !connection) {
-      logStep("No active Shopify connection", { error: connError });
+    if (error || !connection?.access_token) {
+      logStep("No active connection found", { error });
       return new Response(
-        JSON.stringify({
-          subscribed: profile.subscription_status === "active" || profile.subscription_status === "trialing",
-          subscription_status: profile.subscription_status,
-          plan_id: profile.current_plan_id,
-          subscription_end: profile.subscription_end,
-          billing_provider: "shopify"
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ status: "NONE", subscription: null }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Query Shopify for current subscription status
-    const query = `
-      query {
-        currentAppInstallation {
-          activeSubscriptions {
-            id
-            name
-            status
-            currentPeriodEnd
-            trialDays
-            lineItems {
-              plan {
-                pricingDetails {
-                  ... on AppRecurringPricing {
-                    price {
-                      amount
-                      currencyCode
-                    }
-                    interval
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
+    logStep("Connection found", { storeUrl: connection.store_url });
 
-    const shopifyResponse = await fetch(
-      `https://${connection.store_url}/admin/api/2025-01/graphql.json`,
+    // Normalize shop domain for API call
+    const normalizedShop = connection.store_url
+      .replace(/^https?:\/\//, "")
+      .replace(/\/+$/, "")
+      .toLowerCase();
+
+    // 2️⃣ QUERY SHOPIFY BILLING (SOURCE OF TRUTH)
+    const shopifyRes = await fetch(
+      `https://${normalizedShop}/admin/api/2025-01/graphql.json`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Shopify-Access-Token": connection.access_token,
         },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({
+          query: `
+            {
+              currentAppInstallation {
+                activeSubscriptions {
+                  id
+                  name
+                  status
+                  test
+                  currentPeriodEnd
+                  trialDays
+                }
+              }
+            }
+          `,
+        }),
       }
     );
 
-    if (!shopifyResponse.ok) {
-      logStep("Shopify API error, returning cached status");
+    if (!shopifyRes.ok) {
+      logStep("Shopify API error", { status: shopifyRes.status });
       return new Response(
-        JSON.stringify({
-          subscribed: profile.subscription_status === "active" || profile.subscription_status === "trialing",
-          subscription_status: profile.subscription_status,
-          plan_id: profile.current_plan_id,
-          subscription_end: profile.subscription_end,
-          billing_provider: "shopify"
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ status: "ERROR", subscription: null }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const shopifyData = await shopifyResponse.json();
-    const activeSubscriptions = shopifyData.data?.currentAppInstallation?.activeSubscriptions || [];
+    const json = await shopifyRes.json();
+    logStep("Shopify response", json);
 
-    logStep("Shopify subscriptions", { count: activeSubscriptions.length });
+    const subs = json?.data?.currentAppInstallation?.activeSubscriptions || [];
+    const active = subs.find((s: { status: string }) => s.status === "ACTIVE");
 
-    if (activeSubscriptions.length === 0) {
-      // No active subscription on Shopify - update profile
-      await supabase
-        .from("profiles")
-        .update({
-          subscription_status: "inactive",
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", user.id);
+    logStep("Subscription check complete", { 
+      hasActive: !!active, 
+      subsCount: subs.length 
+    });
 
-      return new Response(
-        JSON.stringify({
-          subscribed: false,
-          subscription_status: "inactive",
-          plan_id: profile.current_plan_id,
-          billing_provider: "shopify"
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const subscription = activeSubscriptions[0];
-    const isActive = subscription.status === "ACTIVE";
-    const isTrial = subscription.trialDays > 0;
-
-    // Update profile if status changed
-    const newStatus = isTrial ? "trialing" : (isActive ? "active" : "inactive");
-    if (newStatus !== profile.subscription_status) {
-      await supabase
-        .from("profiles")
-        .update({
-          subscription_status: newStatus,
-          subscription_end: subscription.currentPeriodEnd,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", user.id);
-    }
-
-    logStep("Subscription check complete", { status: newStatus, isActive, isTrial });
-
+    // 3️⃣ RETURN NORMALIZED STATUS
     return new Response(
       JSON.stringify({
-        subscribed: isActive || isTrial,
-        subscription_status: newStatus,
-        plan_id: profile.current_plan_id,
-        subscription_end: subscription.currentPeriodEnd,
-        billing_provider: "shopify",
-        shopify_subscription_id: subscription.id
+        status: active ? "ACTIVE" : "NONE",
+        subscription: active || null,
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
     logStep("ERROR", { message: errorMessage });
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ status: "ERROR", error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
