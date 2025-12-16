@@ -293,6 +293,78 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_opportunities: {
+        Row: {
+          article_id: string | null
+          citation_potential: number | null
+          created_at: string | null
+          difficulty: string | null
+          id: string
+          keywords: string[] | null
+          platform: string
+          product_ids: string[] | null
+          query_type: string
+          question: string
+          status: string | null
+          store_id: string | null
+          suggested_structure: Json | null
+          suggested_title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          citation_potential?: number | null
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          keywords?: string[] | null
+          platform: string
+          product_ids?: string[] | null
+          query_type: string
+          question: string
+          status?: string | null
+          store_id?: string | null
+          suggested_structure?: Json | null
+          suggested_title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          article_id?: string | null
+          citation_potential?: number | null
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          keywords?: string[] | null
+          platform?: string
+          product_ids?: string[] | null
+          query_type?: string
+          question?: string
+          status?: string | null
+          store_id?: string | null
+          suggested_structure?: Json | null
+          suggested_title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_opportunities_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_opportunities_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_usage_logs: {
         Row: {
           api_key_id: string | null
