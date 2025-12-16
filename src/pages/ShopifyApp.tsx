@@ -163,6 +163,58 @@ export default function ShopifyApp() {
         return;
       }
       
+      // 🔧 FIX: Vérifier si l'utilisateur a déjà un abonnement actif AVANT d'appeler shopify-auto-auth
+      // Cela évite de rediriger vers setup-wizard pour les utilisateurs déjà abonnés
+      console.log('🔍 [ShopifyApp] Checking for existing subscription before auth...');
+      const { data: existingConnection } = await supabase
+        .from("shopify_connections")
+        .select("user_id")
+        .eq("store_url", shop)
+        .eq("is_active", true)
+        .single();
+      
+      if (existingConnection?.user_id) {
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("subscription_status")
+          .eq("id", existingConnection.user_id)
+          .single();
+        
+        const hasExistingSubscription = isDemoStore || 
+          existingProfile?.subscription_status === 'active' || 
+          existingProfile?.subscription_status === 'trialing';
+        
+        if (hasExistingSubscription) {
+          console.log('✅ [ShopifyApp] User already has active subscription, attempting quick-login then dashboard');
+          
+          try {
+            const { data: authData, error: authError } = await supabase.functions.invoke("shopify-quick-login", {
+              body: { shop, user_id: existingConnection.user_id },
+            });
+            
+            if (!authError && authData?.access_token) {
+              await supabase.auth.setSession({
+                access_token: authData.access_token,
+                refresh_token: authData.refresh_token,
+              });
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          } catch (err) {
+            console.error('⚠️ [ShopifyApp] Quick-login failed:', err);
+          }
+          
+          toast.success(language === 'fr' ? 'Bon retour!' : 'Welcome back!', {
+            description: language === 'fr' 
+              ? 'Vous êtes connecté à votre boutique.' 
+              : 'You are connected to your store.',
+          });
+          
+          setStatus("processed");
+          navigate("/dashboard-light", { replace: true });
+          return;
+        }
+      }
+      
       setStatus("processed");
 
       try {
