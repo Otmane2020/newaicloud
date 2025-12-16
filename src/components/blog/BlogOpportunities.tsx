@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2, CheckCircle, RefreshCw } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Lightbulb, TrendingUp, FileText, Sparkles, Loader2, CheckCircle, RefreshCw, Search, MessageCircle, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { UpgradeDialog } from "@/components/UpgradeDialog";
@@ -11,6 +12,7 @@ import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
 import { ArticleGenerationProgress } from "@/components/blog/ArticleGenerationProgress";
 import { ArticleWizard } from "@/components/blog/ArticleWizard";
+import { AiOpportunitiesTab } from "@/components/blog/AiOpportunitiesTab";
 
 interface Opportunity {
   id: string;
@@ -497,54 +499,72 @@ export function BlogOpportunities() {
     );
   }
 
+  const handleAiOpportunityGenerate = (opportunity: any) => {
+    // Convert AI opportunity to standard opportunity format
+    setWizardInitialData({
+      title: opportunity.suggested_title,
+      productIds: opportunity.product_ids || [],
+      keywords: opportunity.keywords || [],
+      angle: opportunity.query_type,
+      wordCount: 2000,
+      metaDescription: opportunity.question
+    });
+    setWizardAutoGenerate(true);
+    setWizardOpen(true);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h3 className="text-xl font-semibold">{t.blog.submenu.opportunities}</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            {opportunities.length} {t.blog.submenu.opportunitiesDesc}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button
-            onClick={handleRegenerate}
-            disabled={regenerating}
-            size="lg"
-            variant="outline"
-          >
-            {regenerating ? (
-              <>
-                <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                {t.common.loading}
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-5 h-5 mr-2" />
-                {t.blog.dialogs.opportunities.regenerate}
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={handleRegenerate}
-            disabled={regenerating}
-            size="lg"
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-          >
-            {regenerating ? (
-              <>
-                <Sparkles className="w-5 h-5 mr-2 animate-spin" />
-                {t.common.loading}
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5 mr-2" />
-                {t.blog.createNew}
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
+      <Tabs defaultValue="google" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsTrigger value="google" className="flex items-center gap-2">
+            <Search className="w-4 h-4" />
+            {t.blog.dialogs.aiOpportunities.tabs.googleSeo}
+          </TabsTrigger>
+          <TabsTrigger value="chatgpt" className="flex items-center gap-2">
+            <MessageCircle className="w-4 h-4" style={{ color: '#10a37f' }} />
+            {t.blog.dialogs.aiOpportunities.tabs.chatgpt}
+          </TabsTrigger>
+          <TabsTrigger value="gemini" className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4" style={{ color: '#4285f4' }} />
+            {t.blog.dialogs.aiOpportunities.tabs.gemini}
+          </TabsTrigger>
+          <TabsTrigger value="copilot" className="flex items-center gap-2">
+            <Bot className="w-4 h-4" style={{ color: '#0078d4' }} />
+            {t.blog.dialogs.aiOpportunities.tabs.copilot}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="google">
+          {/* Google SEO - Existing content */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-xl font-semibold">{t.blog.submenu.opportunities}</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {opportunities.length} {t.blog.submenu.opportunitiesDesc}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={handleRegenerate}
+                disabled={regenerating}
+                size="lg"
+                variant="outline"
+              >
+                {regenerating ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                    {t.common.loading}
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-5 h-5 mr-2" />
+                    {t.blog.dialogs.opportunities.regenerate}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {opportunities.map((opp) => {
           const Icon = getIcon(opp.type);
@@ -648,6 +668,38 @@ export function BlogOpportunities() {
           );
         })}
       </div>
+        </TabsContent>
+
+        <TabsContent value="chatgpt">
+          <AiOpportunitiesTab
+            platform="chatgpt"
+            platformName="ChatGPT"
+            platformColor="#10a37f"
+            platformIcon={MessageCircle}
+            onGenerateArticle={handleAiOpportunityGenerate}
+          />
+        </TabsContent>
+
+        <TabsContent value="gemini">
+          <AiOpportunitiesTab
+            platform="gemini"
+            platformName="Gemini"
+            platformColor="#4285f4"
+            platformIcon={Sparkles}
+            onGenerateArticle={handleAiOpportunityGenerate}
+          />
+        </TabsContent>
+
+        <TabsContent value="copilot">
+          <AiOpportunitiesTab
+            platform="copilot"
+            platformName="Copilot"
+            platformColor="#0078d4"
+            platformIcon={Bot}
+            onGenerateArticle={handleAiOpportunityGenerate}
+          />
+        </TabsContent>
+      </Tabs>
       
       <UpgradeDialog 
         open={showUpgradeDialog}

@@ -598,3 +598,6 @@ verify_jwt = true
 
 [functions.installation-status]
 verify_jwt = false
+
+[functions.generate-ai-query-opportunities]
+verify_jwt = true
