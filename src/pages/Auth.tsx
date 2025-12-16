@@ -146,16 +146,49 @@ export default function Auth() {
       } else {
         const result = await signIn(email, password);
         
-        // ❌ SUPPRIMÉ: Double vérification admin (le useEffect s'en charge)
-        // ✅ Garder uniquement la gestion Shopify pending
-        if (result?.error && searchParams.get('shopify_pending')) {
+        // ✅ Gestion des erreurs de connexion
+        if (result?.error) {
           const errorMsg = result.error.message || '';
-          if (errorMsg.includes('Invalid login credentials') || errorMsg.includes('Email not confirmed')) {
-            toast.error("Compte non trouvé", {
-              description: "Ce compte n'existe pas encore. Créez un compte pour associer votre boutique Shopify.",
+          
+          // Erreur serveur (timeout, réseau)
+          if (errorMsg.includes('Failed to fetch') || errorMsg.includes('timeout') || errorMsg.includes('NetworkError') || errorMsg.includes('522')) {
+            setServerOffline(true);
+            toast.error(language === 'fr' ? "Serveur indisponible" : "Server unavailable", {
+              description: language === 'fr' 
+                ? "Le serveur ne répond pas. Veuillez réessayer dans quelques minutes."
+                : "The server is not responding. Please try again in a few minutes."
             });
-            // Auto-switch to signup mode
+          }
+          // Cas Shopify pending - compte inexistant
+          else if (searchParams.get('shopify_pending') && (errorMsg.includes('Invalid login credentials') || errorMsg.includes('Email not confirmed'))) {
+            toast.error(language === 'fr' ? "Compte non trouvé" : "Account not found", {
+              description: language === 'fr' 
+                ? "Ce compte n'existe pas encore. Créez un compte pour associer votre boutique Shopify."
+                : "This account doesn't exist yet. Create an account to link your Shopify store.",
+            });
             setTimeout(() => setMode('signup'), 2000);
+          }
+          // Identifiants invalides
+          else if (errorMsg.includes('Invalid login credentials')) {
+            toast.error(language === 'fr' ? "Identifiants incorrects" : "Invalid credentials", {
+              description: language === 'fr' 
+                ? "Email ou mot de passe incorrect."
+                : "Incorrect email or password."
+            });
+          }
+          // Email non confirmé
+          else if (errorMsg.includes('Email not confirmed')) {
+            toast.error(language === 'fr' ? "Email non confirmé" : "Email not confirmed", {
+              description: language === 'fr' 
+                ? "Veuillez confirmer votre email avant de vous connecter."
+                : "Please confirm your email before logging in."
+            });
+          }
+          // Erreur générique
+          else {
+            toast.error(language === 'fr' ? "Erreur de connexion" : "Login error", {
+              description: errorMsg || (language === 'fr' ? "Une erreur est survenue" : "An error occurred")
+            });
           }
         }
       }
