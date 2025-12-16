@@ -101,9 +101,25 @@ export default function Auth() {
           const destination = redirectPath || '/dashboard';
           navigate(destination);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('[Auth] Redirect check error:', error);
         isRedirectingRef.current = false; // Reset pour permettre retry
+        
+        const errorMsg = error?.message || '';
+        if (errorMsg.includes('Failed to fetch') || errorMsg.includes('timeout') || errorMsg.includes('NetworkError') || errorMsg.includes('522')) {
+          setServerOffline(true);
+          toast.error(language === 'fr' ? "Serveur indisponible" : "Server unavailable", {
+            description: language === 'fr' 
+              ? "Impossible de vérifier votre compte. Réessayez dans quelques minutes."
+              : "Unable to verify your account. Please try again in a few minutes."
+          });
+        } else {
+          toast.error(language === 'fr' ? "Erreur de vérification" : "Verification error", {
+            description: language === 'fr' 
+              ? "Une erreur est survenue lors de la vérification de votre compte."
+              : "An error occurred while verifying your account."
+          });
+        }
       }
     };
     
