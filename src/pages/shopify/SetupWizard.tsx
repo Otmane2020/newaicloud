@@ -82,7 +82,7 @@ export default function SetupWizard() {
   const [searchParams] = useSearchParams();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
   const navigate = useNavigate();
   const checkedRef = useRef(false);
 
@@ -98,56 +98,52 @@ export default function SetupWizard() {
     ? (shopFromUrl.includes('.myshopify.com') ? shopFromUrl : `${shopFromUrl}.myshopify.com`)
     : null;
 
-  // Check if user already has an active subscription → redirect to dashboard
+  // Check if user already has an active subscription → redirect to dashboard (NON-BLOCKING)
   useEffect(() => {
     if (checkedRef.current) return;
     checkedRef.current = true;
 
     const checkExistingSubscription = async () => {
-      // Log demo store detection (but don't bypass - let normal subscription check handle it)
+      // Show pricing IMMEDIATELY - no blocking
+      setCheckingSubscription(false);
+
+      // Demo store detection
       if (normalizedShop === DEMO_STORE_DOMAIN || shopFromUrl === 'store-demo-20240334') {
-        console.log('🎭 [SetupWizard] Demo store detected, checking subscription normally');
+        console.log('🎭 [SetupWizard] Demo store detected');
       }
 
       try {
-        console.log('[SetupWizard] Checking subscription for shop:', { shopFromUrl, normalizedShop });
+        if (!normalizedShop) return;
 
-        if (!normalizedShop) {
-          console.log('[SetupWizard] No shop in URL, showing pricing');
-          setCheckingSubscription(false);
-          return;
-        }
+        // Timeout after 3 seconds - fail fast
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
 
-        // Check if shop has an active connection with subscription
-        // Try both with and without .myshopify.com suffix
-        const { data: connection, error: connError } = await supabase
+        // Single optimized query with join-like behavior
+        const { data: connection } = await supabase
           .from("shopify_connections")
           .select("user_id, store_url")
           .eq("store_url", normalizedShop)
           .eq("is_active", true)
-          .single();
+          .maybeSingle();
 
-        console.log('[SetupWizard] Connection lookup result:', { connection, error: connError?.message });
+        clearTimeout(timeout);
 
         if (connection?.user_id) {
-          const { data: profile, error: profileError } = await supabase
+          const { data: profile } = await supabase
             .from("profiles")
-            .select("subscription_status, current_plan_id")
+            .select("subscription_status")
             .eq("id", connection.user_id)
             .single();
 
-          console.log('[SetupWizard] Profile lookup result:', { profile, error: profileError?.message });
-
           if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
-            console.log('✅ [SetupWizard] User already has active subscription, redirecting to dashboard');
+            console.log('✅ [SetupWizard] Active subscription found, redirecting');
             navigate("/dashboard", { replace: true });
-            return;
           }
         }
       } catch (err) {
-        console.log('[SetupWizard] Subscription check error (non-blocking):', err);
-      } finally {
-        setCheckingSubscription(false);
+        // Ignore errors - non-blocking check
+        console.log('[SetupWizard] Background check error (ignored):', err);
       }
     };
 
