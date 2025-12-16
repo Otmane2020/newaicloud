@@ -338,13 +338,11 @@ export default function ShopifyPricingPlans({
                   ))}
                 </ul>
 
-                {/* CTA Button - Shopify Polaris blue style */}
+                {/* CTA Button - Dark style #1a1a1a */}
                 <Button
                   className="w-full font-medium text-sm h-11 transition-all hover:opacity-90"
                   style={{ 
-                    background: plan.popular 
-                      ? "linear-gradient(180deg, #2c6ecb 0%, #1a5bb8 100%)" 
-                      : "linear-gradient(180deg, #3b82f6 0%, #2563eb 100%)",
+                    background: "#1a1a1a",
                     color: "white",
                     border: "none",
                     borderRadius: "6px",
