@@ -101,80 +101,134 @@ export default function DashboardLight() {
   const [loading, setLoading] = useState(true);
   const { selectedStore } = useStore();
 
+  // Fonction de chargement des stats
+  const fetchStats = async () => {
+    if (!user?.id || !selectedStore?.id) {
+      setStats(null);
+      setLoading(false);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { products, collections, images } = await fetchDashboardData(user.id, selectedStore.id);
+
+      // Calculate scores
+      const productsArr = Array.isArray(products) ? products : [];
+      const collectionsArr = Array.isArray(collections) ? collections : [];
+      const imagesArr = Array.isArray(images) ? images : [];
+
+      // Calculate REAL SEO scores using the same functions as SEO tabs
+      const productsTotal = productsArr.length;
+      const productsOptimized = productsArr.filter((p: any) => 
+        p.enrichment_status === 'enriched'
+      ).length;
+      // Use calculateProductsSeoScore for real SEO quality score
+      const productsScore = calculateProductsSeoScore(productsArr);
+
+      const collectionsTotal = collectionsArr.length;
+      const collectionsOptimized = collectionsArr.filter((c: any) => 
+        c.optimization_count && c.optimization_count > 0
+      ).length;
+      // Use calculateCollectionsSeoScore for real SEO quality score
+      const collectionsScore = calculateCollectionsSeoScore(collectionsArr);
+
+      // Tags: match TagOptimization.tsx logic - optimization_count > 0 AND has tags AND tagsScore >= 8
+      const tagsTotal = productsArr.length;
+      const tagsOptimized = productsArr.filter((p: any) => {
+        const hasTags = p.tags && String(p.tags || '').trim().length > 0;
+        const tagScore = calculateTagsScore(p.tags);
+        return p.optimization_count && p.optimization_count > 0 && hasTags && tagScore >= 8;
+      }).length;
+      const tagsScore = tagsTotal > 0 
+        ? Math.round((tagsOptimized / tagsTotal) * 100) 
+        : 0;
+
+      // Alt images: use optimization_count > 0 as the criteria
+      const altTotal = imagesArr.length;
+      const altOptimized = imagesArr.filter((i: any) => 
+        i.optimization_count && i.optimization_count > 0
+      ).length;
+      const altScore = altTotal > 0 
+        ? Math.round((altOptimized / altTotal) * 100) 
+        : 0;
+
+      setStats({
+        productsScore,
+        productsTotal,
+        productsOptimized,
+        collectionsScore,
+        collectionsTotal,
+        collectionsOptimized,
+        tagsScore,
+        tagsTotal,
+        tagsOptimized,
+        altScore,
+        altTotal,
+        altOptimized
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Chargement initial
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!user?.id || !selectedStore?.id) {
-        setStats(null);
-        setLoading(false);
-        return;
-      }
-      
-      setLoading(true);
-      try {
-        const { products, collections, images } = await fetchDashboardData(user.id, selectedStore.id);
+    fetchStats();
+  }, [user?.id, selectedStore?.id]);
 
-        // Calculate scores
-        const productsArr = Array.isArray(products) ? products : [];
-        const collectionsArr = Array.isArray(collections) ? collections : [];
-        const imagesArr = Array.isArray(images) ? images : [];
+  // 🔄 Real-time subscriptions pour mise à jour automatique après import
+  useEffect(() => {
+    if (!user?.id || !selectedStore?.id) return;
 
-        // Calculate REAL SEO scores using the same functions as SEO tabs
-        const productsTotal = productsArr.length;
-        const productsOptimized = productsArr.filter((p: any) => 
-          p.enrichment_status === 'enriched'
-        ).length;
-        // Use calculateProductsSeoScore for real SEO quality score
-        const productsScore = calculateProductsSeoScore(productsArr);
-
-        const collectionsTotal = collectionsArr.length;
-        const collectionsOptimized = collectionsArr.filter((c: any) => 
-          c.optimization_count && c.optimization_count > 0
-        ).length;
-        // Use calculateCollectionsSeoScore for real SEO quality score
-        const collectionsScore = calculateCollectionsSeoScore(collectionsArr);
-
-        // Tags: match TagOptimization.tsx logic - optimization_count > 0 AND has tags AND tagsScore >= 8
-        const tagsTotal = productsArr.length;
-        const tagsOptimized = productsArr.filter((p: any) => {
-          const hasTags = p.tags && String(p.tags || '').trim().length > 0;
-          const tagScore = calculateTagsScore(p.tags);
-          return p.optimization_count && p.optimization_count > 0 && hasTags && tagScore >= 8;
-        }).length;
-        const tagsScore = tagsTotal > 0 
-          ? Math.round((tagsOptimized / tagsTotal) * 100) 
-          : 0;
-
-        // Alt images: use optimization_count > 0 as the criteria
-        const altTotal = imagesArr.length;
-        const altOptimized = imagesArr.filter((i: any) => 
-          i.optimization_count && i.optimization_count > 0
-        ).length;
-        const altScore = altTotal > 0 
-          ? Math.round((altOptimized / altTotal) * 100) 
-          : 0;
-
-        setStats({
-          productsScore,
-          productsTotal,
-          productsOptimized,
-          collectionsScore,
-          collectionsTotal,
-          collectionsOptimized,
-          tagsScore,
-          tagsTotal,
-          tagsOptimized,
-          altScore,
-          altTotal,
-          altOptimized
-        });
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      } finally {
-        setLoading(false);
-      }
+    // Debounce pour éviter les rafraîchissements trop fréquents
+    let debounceTimer: NodeJS.Timeout | null = null;
+    const debouncedRefresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        console.log('🔄 [DashboardLight] Real-time update detected, refreshing...');
+        fetchStats();
+      }, 1000); // Attendre 1s après le dernier changement
     };
 
-    fetchStats();
+    // Écouter les changements sur shopify_products
+    const productsChannel = supabase
+      .channel('dashboard-products')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shopify_products' },
+        debouncedRefresh
+      )
+      .subscribe();
+
+    // Écouter les changements sur shopify_collections
+    const collectionsChannel = supabase
+      .channel('dashboard-collections')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shopify_collections' },
+        debouncedRefresh
+      )
+      .subscribe();
+
+    // Écouter les changements sur product_images
+    const imagesChannel = supabase
+      .channel('dashboard-images')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'product_images' },
+        debouncedRefresh
+      )
+      .subscribe();
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(productsChannel);
+      supabase.removeChannel(collectionsChannel);
+      supabase.removeChannel(imagesChannel);
+    };
   }, [user?.id, selectedStore?.id]);
 
   const getScoreColor = (score: number) => {
