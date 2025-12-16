@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,27 @@ import { Label } from "@/components/ui/label";
 import { Check, Zap, Crown, Building2, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+// Skeleton loader component
+const PlanSkeleton = () => (
+  <div className="rounded-lg p-6 space-y-4 animate-pulse" style={{ backgroundColor: "white", border: "1px solid #e1e3e5" }}>
+    <div className="flex justify-center">
+      <div className="w-12 h-12 rounded-full" style={{ backgroundColor: "#f4f6f8" }} />
+    </div>
+    <div className="space-y-2 text-center">
+      <div className="h-6 rounded mx-auto w-24" style={{ backgroundColor: "#f4f6f8" }} />
+      <div className="h-4 rounded mx-auto w-32" style={{ backgroundColor: "#f4f6f8" }} />
+    </div>
+    <div className="h-10 rounded mx-auto w-28" style={{ backgroundColor: "#f4f6f8" }} />
+    <div className="space-y-2">
+      {[1, 2, 3].map(i => (
+        <div key={i} className="h-4 rounded w-full" style={{ backgroundColor: "#f4f6f8" }} />
+      ))}
+    </div>
+    <div className="h-11 rounded w-full" style={{ backgroundColor: "#f4f6f8" }} />
+  </div>
+);
+
 // Plans définis côté frontend - synchronisés avec shopify-create-subscription
 const PLANS = [
   {
@@ -111,12 +132,25 @@ export default function ShopifyPricingPlans({
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [plansLoading, setPlansLoading] = useState(true);
+
+  // Simulate plans loading for better UX perception
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPlansLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   const t = {
     title: language === "fr" ? "Choisissez votre plan" : "Choose your plan",
     subtitle: language === "fr" 
       ? "Sélectionnez le plan qui correspond à vos besoins" 
       : "Select the plan that fits your needs",
+    loadingTitle: language === "fr" ? "Préparation de votre espace NewAI…" : "Preparing your NewAI workspace...",
+    loadingSubtitle: language === "fr" 
+      ? "Nous finalisons les plans adaptés à votre boutique" 
+      : "Finalizing plans for your store",
     monthly: language === "fr" ? "Mensuel" : "Monthly",
     yearly: language === "fr" ? "Annuel" : "Yearly",
     save: language === "fr" ? "Économisez 20%" : "Save 20%",
@@ -184,6 +218,31 @@ export default function ShopifyPricingPlans({
       setSelectedPlan(null);
     }
   };
+
+  // Show skeleton loading state
+  if (plansLoading) {
+    return (
+      <div className="w-full max-w-6xl mx-auto px-4 py-8" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" }}>
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Loader2 className="h-6 w-6 animate-spin" style={{ color: "#008060" }} />
+            <h2 className="text-2xl font-semibold" style={{ color: "#202223" }}>
+              {t.loadingTitle}
+            </h2>
+          </div>
+          <p className="text-base" style={{ color: "#6d7175" }}>
+            {t.loadingSubtitle}
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {[1, 2, 3].map(i => (
+            <PlanSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-8" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" }}>
