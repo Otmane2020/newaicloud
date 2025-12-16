@@ -85,11 +85,18 @@ const DECOR_TYPES = [
   { id: 'office', label: 'Bureau', labelEn: 'Office', icon: Home },
 ];
 
-// Helper to detect AI-generated images (same pattern as SmartBackgroundDialog)
+// Helper to detect AI-generated images
+// Only check URL patterns - optimization_count can be set for Shopify images too
 const isAiGeneratedImage = (imgSrc: string, optimizationCount?: number | null): boolean => {
-  if (optimizationCount && optimizationCount > 0) return true;
+  // AI patterns in URL indicate generated images
   const aiPatterns = ['ai_generated_', 'white_background', 'generated-images/', '/storage/v1/object/public/generated'];
-  return aiPatterns.some(pattern => imgSrc.includes(pattern));
+  const hasAiPattern = aiPatterns.some(pattern => imgSrc.includes(pattern));
+  
+  // Only check optimization_count for our storage images, not Shopify CDN
+  const isOurStorage = imgSrc.includes('supabase.co/storage');
+  const isAiByOptimization = isOurStorage && optimizationCount && optimizationCount > 0;
+  
+  return hasAiPattern || isAiByOptimization;
 };
 
 export const BulkAIImagesDialog = ({
