@@ -182,13 +182,17 @@ export default function ShopifyPricingPlans({
     setSelectedPlan(planId);
 
     try {
-      console.log("[ShopifyPricingPlans] Creating subscription:", { planId, billingCycle, shopDomain });
+      // Determine if this is an upgrade (user has existing plan and selecting different one)
+      const isUpgrade = !!currentPlanId && currentPlanId !== planId && currentPlanId !== 'trial';
+      
+      console.log("[ShopifyPricingPlans] Creating subscription:", { planId, billingCycle, shopDomain, isUpgrade, currentPlanId });
 
       const { data, error } = await supabase.functions.invoke("shopify-create-subscription", {
         body: {
           planId,
           billingCycle,
           shopDomain,
+          forceUpgrade: isUpgrade,
         },
       });
 
