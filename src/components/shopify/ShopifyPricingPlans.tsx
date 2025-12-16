@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Check, Zap, Crown, Building2, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
 // Plans définis côté frontend - synchronisés avec shopify-create-subscription
 const PLANS = [
   {
@@ -214,22 +213,23 @@ export default function ShopifyPricingPlans({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8">
-      {/* Header */}
+    <div className="w-full max-w-6xl mx-auto px-4 py-8" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" }}>
+      {/* Header - Shopify Polaris style */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold tracking-tight mb-2">
+        <h2 className="text-3xl font-semibold tracking-tight mb-2" style={{ color: "#202223" }}>
           {t.title}
         </h2>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-lg" style={{ color: "#6d7175" }}>
           {t.subtitle}
         </p>
       </div>
 
-      {/* Billing Toggle */}
-      <div className="flex items-center justify-center gap-4 mb-8">
+      {/* Billing Toggle - Shopify style */}
+      <div className="flex items-center justify-center gap-4 mb-8 p-3 rounded-lg" style={{ backgroundColor: "#f6f6f7" }}>
         <Label 
           htmlFor="billing-toggle" 
-          className={`cursor-pointer transition-colors ${billingCycle === "monthly" ? "text-foreground font-medium" : "text-muted-foreground"}`}
+          className={`cursor-pointer transition-colors text-sm font-medium ${billingCycle === "monthly" ? "" : ""}`}
+          style={{ color: billingCycle === "monthly" ? "#202223" : "#6d7175" }}
         >
           {t.monthly}
         </Label>
@@ -237,20 +237,22 @@ export default function ShopifyPricingPlans({
           id="billing-toggle"
           checked={billingCycle === "yearly"}
           onCheckedChange={(checked) => setBillingCycle(checked ? "yearly" : "monthly")}
+          className="data-[state=checked]:bg-[#008060]"
         />
         <Label 
           htmlFor="billing-toggle" 
-          className={`cursor-pointer transition-colors flex items-center gap-2 ${billingCycle === "yearly" ? "text-foreground font-medium" : "text-muted-foreground"}`}
+          className={`cursor-pointer transition-colors flex items-center gap-2 text-sm font-medium`}
+          style={{ color: billingCycle === "yearly" ? "#202223" : "#6d7175" }}
         >
           {t.yearly}
-          <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+          <Badge className="text-xs font-medium" style={{ backgroundColor: "#008060", color: "white" }}>
             -20%
           </Badge>
         </Label>
       </div>
 
-      {/* Plans Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Plans Grid - Shopify Polaris style cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {PLANS.map((plan) => {
           const Icon = plan.icon;
           const price = billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice;
@@ -261,71 +263,90 @@ export default function ShopifyPricingPlans({
           return (
             <Card 
               key={plan.id}
-              className={`relative overflow-hidden transition-all duration-300 hover:shadow-xl ${
+              className={`relative overflow-hidden transition-all duration-200 ${
                 plan.popular 
-                  ? "border-2 border-primary shadow-lg scale-105 z-10" 
-                  : "border hover:border-primary/50"
+                  ? "shadow-lg scale-[1.02] z-10" 
+                  : "hover:shadow-md"
               }`}
+              style={{ 
+                borderRadius: "8px",
+                border: plan.popular ? "2px solid #008060" : "1px solid #e1e3e5",
+                backgroundColor: "white"
+              }}
             >
-              {/* Popular Badge */}
+              {/* Popular Badge - Shopify style */}
               {plan.popular && (
                 <div className="absolute top-0 right-0">
-                  <Badge className="rounded-none rounded-bl-lg bg-primary text-primary-foreground">
-                    <Sparkles className="h-3 w-3 mr-1" />
+                  <Badge 
+                    className="rounded-none rounded-bl-lg flex items-center gap-1 text-xs font-medium px-3 py-1"
+                    style={{ backgroundColor: "#008060", color: "white" }}
+                  >
+                    <Sparkles className="h-3 w-3" />
                     {t.popular}
                   </Badge>
                 </div>
               )}
 
-              {/* Gradient Header */}
-              <div className={`h-2 bg-gradient-to-r ${plan.color}`} />
+              {/* Top border accent */}
+              <div className="h-1" style={{ backgroundColor: plan.popular ? "#008060" : "#95bf47" }} />
 
-              <CardHeader className="text-center pb-2">
-                <div className={`mx-auto w-14 h-14 rounded-full bg-gradient-to-r ${plan.color} flex items-center justify-center mb-4`}>
-                  <Icon className="h-7 w-7 text-white" />
+              <CardHeader className="text-center pb-2 pt-6">
+                <div 
+                  className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4"
+                  style={{ backgroundColor: plan.popular ? "#008060" : "#f4f6f8" }}
+                >
+                  <Icon className="h-6 w-6" style={{ color: plan.popular ? "white" : "#008060" }} />
                 </div>
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl font-semibold" style={{ color: "#202223" }}>
                   {plan.name}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm" style={{ color: "#6d7175" }}>
                   {plan.description[language]}
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-6">
-                {/* Price */}
+              <CardContent className="space-y-5 pb-6">
+                {/* Price - Shopify style */}
                 <div className="text-center">
                   <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-4xl font-bold">${price.toFixed(2)}</span>
-                    <span className="text-muted-foreground">{t.perMonth}</span>
+                    <span className="text-4xl font-bold" style={{ color: "#202223" }}>${price.toFixed(2)}</span>
+                    <span className="text-sm" style={{ color: "#6d7175" }}>{t.perMonth}</span>
                   </div>
                   {billingCycle === "yearly" && (
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-xs mt-1" style={{ color: "#6d7175" }}>
                       {t.billedYearly}
                     </p>
                   )}
                   {plan.trialDays && (
-                    <Badge variant="outline" className="mt-2 text-green-600 border-green-300">
+                    <Badge 
+                      variant="outline" 
+                      className="mt-3 text-xs font-medium"
+                      style={{ borderColor: "#008060", color: "#008060" }}
+                    >
                       {plan.trialDays} {t.days} {t.freeTrial}
                     </Badge>
                   )}
                 </div>
 
-                {/* Features */}
-                <ul className="space-y-3">
+                {/* Features - Shopify style */}
+                <ul className="space-y-3 pt-2">
                   {features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm">{feature}</span>
+                      <Check className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color: "#008060" }} />
+                      <span className="text-sm" style={{ color: "#202223" }}>{feature}</span>
                     </li>
                   ))}
                 </ul>
 
-                {/* CTA Button */}
+                {/* CTA Button - Shopify Polaris style */}
                 <Button
-                  className={`w-full ${plan.popular ? "bg-gradient-to-r " + plan.color + " hover:opacity-90" : ""}`}
-                  variant={plan.popular ? "default" : "outline"}
-                  size="lg"
+                  className="w-full font-medium text-sm h-10"
+                  style={{ 
+                    backgroundColor: plan.popular ? "#008060" : "white",
+                    color: plan.popular ? "white" : "#202223",
+                    border: plan.popular ? "none" : "1px solid #8c9196",
+                    borderRadius: "4px"
+                  }}
                   onClick={() => handleSelectPlan(plan.id)}
                   disabled={loading}
                 >

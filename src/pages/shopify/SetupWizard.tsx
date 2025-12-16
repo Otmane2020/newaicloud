@@ -164,9 +164,9 @@ export default function SetupWizard() {
     );
   }
 
-  // INSTANT display of pricing plans - no loading screen!
+  // INSTANT display of pricing plans - Shopify Polaris style
   return (
-    <div className="min-h-screen bg-background py-12">
+    <div className="min-h-screen py-12" style={{ backgroundColor: "#f6f6f7", fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" }}>
       <ShopifyPricingPlans
         shopDomain={shopFromUrl || ""} 
         language={language as "fr" | "en"}
