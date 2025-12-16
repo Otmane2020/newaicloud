@@ -16,6 +16,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  serverStatus: 'online' | 'offline' | 'checking';
   signUp: (email: string, password: string, fullName: string, referralCode?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [serverStatus, setServerStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -157,21 +159,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-    if (error) {
-      toast.error(error.message);
-    } else {
-      const lang = localStorage.getItem('app-language') || 'en';
-      const message = lang === 'fr' ? fr.auth.loginSuccess : en.auth.loginSuccess;
-      toast.success(message);
-      // Ne pas rediriger automatiquement - SubscriptionGuard gèrera la redirection
+      setServerStatus('online');
+      
+      if (error) {
+        toast.error(error.message);
+      } else {
+        const lang = localStorage.getItem('app-language') || 'en';
+        const message = lang === 'fr' ? fr.auth.loginSuccess : en.auth.loginSuccess;
+        toast.success(message);
+      }
+
+      return { error };
+    } catch (err: any) {
+      const errorMsg = err?.message || '';
+      if (errorMsg.includes('Failed to fetch') || errorMsg.includes('timeout') || errorMsg.includes('NetworkError')) {
+        setServerStatus('offline');
+        toast.error("Serveur indisponible", {
+          description: "Impossible de joindre le serveur. Réessayez dans quelques minutes."
+        });
+      }
+      return { error: err };
     }
-
-    return { error };
   };
 
   const signInWithGoogle = async () => {
@@ -234,7 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signInWithFacebook, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, serverStatus, signUp, signIn, signInWithGoogle, signInWithFacebook, signOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -249,6 +263,7 @@ export function useAuth() {
       user: null,
       session: null,
       loading: true,
+      serverStatus: 'checking',
       signUp: async () => ({ error: new Error('Auth not initialized') }),
       signIn: async () => ({ error: new Error('Auth not initialized') }),
       signInWithGoogle: async () => ({ error: new Error('Auth not initialized') }),

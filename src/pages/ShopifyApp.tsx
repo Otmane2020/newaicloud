@@ -9,6 +9,35 @@ import { DEMO_CONFIG } from "@/lib/demoConfig";
 // Demo store domain - bypass payment for this store
 const DEMO_STORE_DOMAIN = "store-demo-20240334.myshopify.com";
 
+// Helper: query with retry and exponential backoff
+const queryWithRetry = async <T,>(
+  queryFn: () => Promise<{ data: T | null; error: any }>,
+  maxRetries = 3
+): Promise<{ data: T | null; error: any }> => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const result = await queryFn();
+      if (!result.error) return result;
+      
+      // Si erreur de connexion, retry
+      const errorMsg = result.error?.message || '';
+      if (errorMsg.includes('Failed to fetch') || errorMsg.includes('timeout')) {
+        if (i < maxRetries - 1) {
+          console.log(`[ShopifyApp] Retry ${i + 1}/${maxRetries} after connection error`);
+          await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+          continue;
+        }
+      }
+      return result;
+    } catch (err: any) {
+      if (i === maxRetries - 1) return { data: null, error: err };
+      console.log(`[ShopifyApp] Retry ${i + 1}/${maxRetries} after exception`);
+      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+  return { data: null, error: new Error('Max retries exceeded') };
+};
+
 export default function ShopifyApp() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -37,15 +66,18 @@ export default function ShopifyApp() {
       if (host && !pendingToken && shop) {
         console.log('🔄 [ShopifyApp] Open app detected');
         
-        // 🚀 OPTIMIZATION: Vérifier session ET connection en parallèle
+        // 🚀 OPTIMIZATION: Vérifier session ET connection en parallèle avec retry
         const [sessionResult, connectionResult] = await Promise.all([
           supabase.auth.getSession(),
-          supabase
-            .from("shopify_connections")
-            .select("user_id, profiles!inner(subscription_status)")
-            .eq("store_url", shop)
-            .eq("is_active", true)
-            .single()
+          queryWithRetry<{ user_id: string }>(async () => {
+            const result = await supabase
+              .from("shopify_connections")
+              .select("user_id")
+              .eq("store_url", shop)
+              .eq("is_active", true)
+              .single();
+            return { data: result.data as { user_id: string } | null, error: result.error };
+          })
         ]);
         
         const session = sessionResult.data?.session;
@@ -59,28 +91,36 @@ export default function ShopifyApp() {
           return;
         }
         
-        // Si connection avec subscription active → quick-login
-        const subscriptionStatus = (connection?.profiles as any)?.subscription_status;
-        if (connection?.user_id && (isDemoStore || subscriptionStatus === 'active' || subscriptionStatus === 'trialing')) {
-          console.log('🔑 [ShopifyApp] Quick-login for active user');
+        // Si connection trouvée → vérifier subscription et quick-login
+        if (connection?.user_id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("subscription_status")
+            .eq("id", connection.user_id)
+            .single();
           
-          try {
-            const { data: authData, error: authError } = await supabase.functions.invoke("shopify-quick-login", {
-              body: { shop, user_id: connection.user_id },
-            });
+          const subscriptionStatus = profile?.subscription_status;
+          if (isDemoStore || subscriptionStatus === 'active' || subscriptionStatus === 'trialing') {
+            console.log('🔑 [ShopifyApp] Quick-login for active user');
             
-            if (!authError && authData?.access_token) {
-              await supabase.auth.setSession({
-                access_token: authData.access_token,
-                refresh_token: authData.refresh_token,
+            try {
+              const { data: authData, error: authError } = await supabase.functions.invoke("shopify-quick-login", {
+                body: { shop, user_id: connection.user_id },
               });
-              await new Promise(resolve => setTimeout(resolve, 200));
-              setStatus("processed");
-              navigate("/dashboard", { replace: true });
-              return;
+              
+              if (!authError && authData?.access_token) {
+                await supabase.auth.setSession({
+                  access_token: authData.access_token,
+                  refresh_token: authData.refresh_token,
+                });
+                await new Promise(resolve => setTimeout(resolve, 200));
+                setStatus("processed");
+                navigate("/dashboard", { replace: true });
+                return;
+              }
+            } catch (err) {
+              console.error('⚠️ [ShopifyApp] Quick-login failed:', err);
             }
-          } catch (err) {
-            console.error('⚠️ [ShopifyApp] Quick-login failed:', err);
           }
         }
         

@@ -157,9 +157,17 @@ export default function Auth() {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Auth] handleSubmit error:', error);
-      toast.error("Une erreur est survenue lors de la connexion");
+      
+      const errorMessage = error?.message || '';
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('timeout') || errorMessage.includes('NetworkError')) {
+        toast.error("Serveur indisponible", {
+          description: "Le serveur ne répond pas. Veuillez réessayer dans quelques minutes."
+        });
+      } else {
+        toast.error("Une erreur est survenue lors de la connexion");
+      }
     } finally {
       // ✅ TOUJOURS exécuté - fix "Loading..." bloqué
       setLoading(false);
