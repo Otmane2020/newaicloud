@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { calculateTagsScore } from '@/lib/seoQuality';
 import {
   ShoppingBag,
@@ -248,26 +249,179 @@ export default function DashboardLight() {
         </p>
       </div>
 
-      {/* Overall Score Card */}
-      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className={`text-5xl font-bold ${getScoreColor(overallScore)}`}>
-                {loading ? <Skeleton className="w-20 h-14" /> : `${overallScore}%`}
+      {/* Global Score - Premium Design */}
+      <Card className="border-2 shadow-2xl bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl" />
+        <CardHeader className="relative z-10">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10">
+                <TrendingUp className="w-7 h-7 text-primary" />
               </div>
-              <div>
-                <h3 className="text-lg font-semibold">
-                  {language === 'fr' ? 'Score SEO Global' : 'Overall SEO Score'}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {language === 'fr' 
-                    ? 'Basé sur 4 catégories principales'
-                    : 'Based on 4 main categories'}
-                </p>
+              {language === 'fr' ? 'Score SEO Global' : 'Overall SEO Score'}
+            </CardTitle>
+            <Badge
+              className={`text-lg px-5 py-2 ${
+                overallScore >= 80
+                  ? "bg-[#22c55e] text-white"
+                  : overallScore >= 60
+                    ? "bg-[#FF8000] text-white"
+                    : "bg-[#FF3333] text-white"
+              }`}
+            >
+              {overallScore >= 80
+                ? (language === 'fr' ? 'Excellent' : 'Excellent')
+                : overallScore >= 60
+                  ? (language === 'fr' ? 'Bon' : 'Good')
+                  : (language === 'fr' ? 'À améliorer' : 'Needs Work')}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="relative z-10">
+          <div className="flex items-center justify-between gap-8">
+            <div className="flex-1">
+              <div className="flex items-baseline gap-3 mb-4">
+                {loading ? (
+                  <Skeleton className="w-32 h-20" />
+                ) : (
+                  <>
+                    <span className={`text-8xl font-black ${
+                      overallScore >= 80 ? 'text-[#22c55e]' : overallScore >= 60 ? 'text-[#FF8000]' : 'text-[#FF3333]'
+                    }`}>
+                      {overallScore}
+                    </span>
+                    <span className="text-4xl text-muted-foreground font-bold">/100</span>
+                  </>
+                )}
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2">
+                      {language === 'fr' ? 'PROGRESSION' : 'PROGRESSION'}
+                    </div>
+                    <div className="relative h-4 bg-muted rounded-full overflow-hidden shadow-inner">
+                      <div
+                        className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
+                          overallScore >= 80
+                            ? "bg-gradient-to-r from-[#22c55e] to-[#16a34a]"
+                            : overallScore >= 60
+                              ? "bg-gradient-to-r from-[#FF8000] to-[#FF8000]"
+                              : "bg-gradient-to-r from-[#FF3333] to-[#FF3333]"
+                        }`}
+                        style={{
+                          width: `${overallScore}%`,
+                          boxShadow:
+                            overallScore >= 80
+                              ? "0 0 10px #22c55e"
+                              : overallScore >= 60
+                                ? "0 0 10px #FF8000"
+                                : "0 0 10px #FF3333",
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold text-primary">
+                    {100 - overallScore} {language === 'fr' ? 'pts restants' : 'pts remaining'}
+                  </span>
+                </div>
               </div>
             </div>
-            <TrendingUp className={`h-10 w-10 ${getScoreColor(overallScore)}`} />
+            <div className="hidden md:block">
+              {/* Circular Gauge */}
+              <div className="relative w-48 h-48">
+                <div
+                  className={`absolute inset-0 rounded-full blur-xl ${
+                    overallScore >= 80
+                      ? "bg-[#22c55e]/30"
+                      : overallScore >= 60
+                        ? "bg-[rgb(255,94,23)]/30"
+                        : "bg-[#b91c1c]/30"
+                  } animate-pulse`}
+                />
+                <svg className="w-48 h-48 transform -rotate-90 relative z-10" viewBox="0 0 192 192">
+                  <defs>
+                    <linearGradient id="lightDashboardGaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop
+                        offset="0%"
+                        stopColor={
+                          overallScore >= 80
+                            ? "#22c55e"
+                            : overallScore >= 60
+                              ? "rgb(255,94,23)"
+                              : "#b91c1c"
+                        }
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor={
+                          overallScore >= 80
+                            ? "#16a34a"
+                            : overallScore >= 60
+                              ? "rgb(230,80,20)"
+                              : "#b91c1c"
+                        }
+                      />
+                    </linearGradient>
+                  </defs>
+                  <circle
+                    cx="96"
+                    cy="96"
+                    r="84"
+                    stroke="hsl(var(--muted))"
+                    strokeWidth="12"
+                    fill="none"
+                    opacity="0.3"
+                  />
+                  <circle
+                    cx="96"
+                    cy="96"
+                    r="84"
+                    stroke="url(#lightDashboardGaugeGradient)"
+                    strokeWidth="12"
+                    fill="none"
+                    strokeDasharray={`${(overallScore / 100) * 528} 528`}
+                    strokeLinecap="round"
+                    className="transition-all duration-1500 ease-out"
+                    style={{
+                      filter: "drop-shadow(0 0 8px currentColor)",
+                    }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className={`text-3xl font-black ${
+                    overallScore >= 80 ? 'text-[#22c55e]' : overallScore >= 60 ? 'text-[#FF8000]' : 'text-[#FF3333]'
+                  }`}>
+                    {stats ? [stats.productsScore, stats.collectionsScore, stats.tagsScore, stats.altScore].filter(s => s >= 80).length : 0}
+                  </div>
+                  <div className="text-xs text-muted-foreground font-semibold">
+                    {language === 'fr' ? 'sur 4 catégories' : 'on 4 categories'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {language === 'fr' ? 'optimisées' : 'optimized'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Motivational Message */}
+          <div
+            className={`mt-6 p-4 rounded-xl ${
+              overallScore >= 80
+                ? "bg-[#22c55e]/10 border-2 border-[#22c55e]/20"
+                : overallScore >= 60
+                  ? "bg-[#FF8000]/10 border-2 border-[#FF8000]/20"
+                  : "bg-[#FF3333]/10 border-2 border-[#FF3333]/20"
+            }`}
+          >
+            <p className="text-sm font-semibold">
+              {overallScore >= 80
+                ? (language === 'fr' ? '🎉 Excellent travail ! Votre SEO est bien optimisé.' : '🎉 Excellent work! Your SEO is well optimized.')
+                : overallScore >= 60
+                  ? (language === 'fr' ? '👍 Bon début ! Quelques améliorations possibles.' : '👍 Good start! Some improvements possible.')
+                  : (language === 'fr' ? '🚨 Potentiel d\'amélioration significatif ! Implémentez nos recommandations prioritaires.' : '🚨 Significant improvement potential! Implement our priority recommendations.')}
+            </p>
           </div>
         </CardContent>
       </Card>
