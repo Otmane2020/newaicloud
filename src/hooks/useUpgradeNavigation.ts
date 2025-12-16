@@ -72,14 +72,15 @@ export function useUpgradeNavigation(options: UseUpgradeNavigationOptions = {}):
   }, [shopDomain, language, options.onUpgradeComplete]);
 
   const navigateToUpgrade = useCallback(() => {
-    // If Shopify user, directly open Shopify upgrade (fastest option - starter plan)
-    if (billingProvider === 'shopify' && isShopifyUser && shopDomain) {
-      openShopifyUpgrade('starter');
+    // 🛍️ SHOPIFY GUARD: Shopify users ALWAYS go to Shopify Billing, NEVER Stripe
+    if (billingProvider === 'shopify' || isShopifyUser) {
+      // Redirect to /subscription which now shows ShopifyPricingPlans for Shopify users
+      navigate('/subscription');
     } else {
       // For Stripe users, navigate to subscription page
       navigate('/subscription');
     }
-  }, [billingProvider, isShopifyUser, shopDomain, navigate, openShopifyUpgrade]);
+  }, [billingProvider, isShopifyUser, navigate]);
 
   return {
     navigateToUpgrade,

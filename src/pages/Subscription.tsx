@@ -19,6 +19,7 @@ import PricingComparison from "@/components/PricingComparison";
 import { getCurrencySymbol } from "@/lib/formatUtils";
 import { PricingCard } from "@/components/pricing/PricingCard";
 import { useShopifyBilling } from "@/hooks/useShopifyBilling";
+import ShopifyPricingPlans from "@/components/shopify/ShopifyPricingPlans";
 
 interface Plan {
   id: string;
@@ -59,6 +60,7 @@ const Subscription = () => {
   const [loadingProration, setLoadingProration] = useState(false);
   const [useManualPromo, setUseManualPromo] = useState(false);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [shopDomain, setShopDomain] = useState<string>('');
   
   // Check if user has full access
   const hasFullAccess = user?.email === FULL_ACCESS_EMAIL;
@@ -82,6 +84,21 @@ const Subscription = () => {
   useEffect(() => {
     loadPlansAndCurrentPlan();
   }, [user]);
+
+  // Fetch shop domain for Shopify users
+  useEffect(() => {
+    const fetchShopDomain = async () => {
+      if (!user || (!isShopifyUser && billingProvider !== 'shopify')) return;
+      const { data } = await supabase
+        .from('shopify_connections')
+        .select('store_url')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (data?.store_url) setShopDomain(data.store_url);
+    };
+    fetchShopDomain();
+  }, [user, isShopifyUser, billingProvider]);
 
   const loadPlansAndCurrentPlan = async () => {
     if (!user) return;
@@ -465,6 +482,27 @@ const Subscription = () => {
     );
   }
 
+  // 🛍️ SHOPIFY USERS: Show ShopifyPricingPlans (same as setup-wizard) with blue theme
+  if (isShopifyUser || billingProvider === 'shopify') {
+    return (
+      <div className="container mx-auto px-4 py-6 sm:p-6 md:p-8 space-y-6">
+        <div className="space-y-2 sm:space-y-3 md:space-y-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">{t.seo.subscription.title}</h1>
+          <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
+            {t.seo.subscription.subtitle}
+          </p>
+        </div>
+        
+        <CurrentPlanCard />
+        
+        <ShopifyPricingPlans 
+          shopDomain={shopDomain}
+          language={language as "fr" | "en"}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-6 sm:p-6 md:p-8 space-y-6 sm:space-y-8 md:space-y-12">
       <div className="space-y-2 sm:space-y-3 md:space-y-4">
@@ -481,85 +519,6 @@ const Subscription = () => {
       ) : (
         <>
           <CurrentPlanCard />
-
-          {/* 🛍️ SHOPIFY USERS: Show active subscription message, no upgrade options */}
-          {(isShopifyUser || billingProvider === 'shopify') && currentPlan && (
-            <Card className="p-6 sm:p-8 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-2 border-blue-300 dark:border-blue-700">
-              <div className="text-center space-y-6">
-                {/* Your Plan Badge */}
-                <Badge className="bg-blue-600 text-white px-4 py-1.5 text-sm">
-                  ✓ {language === 'fr' ? 'Votre Plan' : 'Your Plan'}
-                </Badge>
-                
-                {/* Plan Icon */}
-                <div className="flex justify-center">
-                  <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center">
-                    <Rocket className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-                
-                {/* Plan Name */}
-                <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{currentPlan.name}</h2>
-                <p className="text-muted-foreground">{currentPlan.description || (language === 'fr' ? 'Parfait pour démarrer' : 'Perfect for getting started')}</p>
-                
-                {/* Price */}
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl sm:text-5xl font-bold text-blue-600">
-                    {currentPlan.price_monthly}{currency}
-                  </span>
-                  <span className="text-muted-foreground text-lg">/{language === 'fr' ? 'mois' : 'month'}</span>
-                </div>
-                
-                {/* Features */}
-                <div className="space-y-3 text-left max-w-sm mx-auto">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                    <span>{currentPlan.max_optimizations_monthly} {language === 'fr' ? 'optimisations/mois' : 'optimizations/month'}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                    <span>{currentPlan.max_articles_monthly} {language === 'fr' ? 'articles/mois' : 'articles/month'}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                    <span>{currentPlan.max_chat_responses_monthly} {language === 'fr' ? 'réponses chat/mois' : 'chat responses/month'}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                    <span>{currentPlan.max_shopify_stores} {language === 'fr' ? 'boutique(s) Shopify' : 'Shopify store(s)'}</span>
-                  </div>
-                  {currentPlan.max_products && currentPlan.max_products > 0 && (
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                      <span>{currentPlan.max_products === -1 ? '∞' : currentPlan.max_products} {language === 'fr' ? 'produits' : 'products'}</span>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Current Plan Button */}
-                <Button variant="secondary" className="w-full max-w-sm" disabled>
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  {language === 'fr' ? 'Plan actuel' : 'Current Plan'}
-                </Button>
-                
-                {/* Subscription Active Message */}
-                <div className="bg-blue-100 dark:bg-blue-900/40 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                    ✓ {language === 'fr' ? 'Abonnement actif' : 'Subscription already active'}
-                  </p>
-                  <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                    {language === 'fr' 
-                      ? 'Votre abonnement est géré via Shopify. Pour modifier votre plan, visitez votre tableau de bord Shopify.' 
-                      : 'Your subscription is managed through Shopify. To modify your plan, visit your Shopify dashboard.'}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Only show upgrade options for NON-Shopify users */}
-          {!(isShopifyUser || billingProvider === 'shopify') && (
-            <>
 
           {isUpgradeFlow && currentPlan && (
             <Card className="p-4 sm:p-5 md:p-6 mb-6 sm:mb-7 md:mb-8 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 border-2 border-primary/30 dark:border-primary/50">
@@ -993,8 +952,6 @@ const Subscription = () => {
           <BillingPortal />
         </>
       )}
-            </>
-          )}
         </>
       )}
     </div>
