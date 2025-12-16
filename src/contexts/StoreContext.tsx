@@ -32,8 +32,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // ✅ FIX: Track last fetch to prevent rapid consecutive calls
   const lastFetchRef = useRef<number>(0);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isLoadingRef = useRef(false);
 
   const loadStores = useCallback(async () => {
+    // ✅ FIX: Prevent concurrent calls
+    if (isLoadingRef.current) {
+      console.log('🚨🚨🚨 [STORE_CONTEXT] Already loading, skipping');
+      return;
+    }
     // Validate user.id is defined AND is a valid UUID (not "undefined" string)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!user?.id || !uuidRegex.test(user.id)) {
@@ -50,8 +56,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.log('🚨🚨🚨 [STORE_CONTEXT] Debounced - skipping fetch (too soon)');
       return;
     }
-    lastFetchRef.current = now;
-
+    isLoadingRef.current = true;
+    
     try {
       console.log('🚨🚨🚨 [STORE_CONTEXT] Loading stores for user:', user.id);
       const { data, error } = await supabase
@@ -100,10 +106,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('❌ [STORE_CONTEXT] Error loading stores:', error);
-      // Only update state if component is still mounted
       setStores([]);
       setSelectedStore(null);
     } finally {
+      isLoadingRef.current = false;
       setLoading(false);
     }
   }, [user?.id]);
@@ -161,7 +167,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         console.warn('[STORE_CONTEXT] Cleanup warning:', e);
       }
     };
-  }, [user?.id, loadStores]);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <StoreContext.Provider 
