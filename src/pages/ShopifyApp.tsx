@@ -94,11 +94,11 @@ export default function ShopifyApp() {
         const session = sessionResult.data?.session;
         const connection = connectionResult.data;
         
-        // Si session active → dashboard immédiat
+        // Si session active → dashboard-light immédiat
         if (session?.user) {
-          console.log('✅ [ShopifyApp] User authenticated, redirecting to dashboard');
+          console.log('✅ [ShopifyApp] User authenticated, redirecting to dashboard-light');
           setStatus("processed");
-          navigate("/dashboard", { replace: true });
+          navigate("/dashboard-light", { replace: true });
           return;
         }
         
@@ -126,7 +126,7 @@ export default function ShopifyApp() {
                 });
                 await new Promise(resolve => setTimeout(resolve, 200));
                 setStatus("processed");
-                navigate("/dashboard", { replace: true });
+                navigate("/dashboard-light", { replace: true });
                 return;
               }
             } catch (err) {
@@ -225,8 +225,8 @@ export default function ShopifyApp() {
             .single();
           
           if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
-            console.log('✅ [ShopifyApp] Returning user with active subscription, redirecting to dashboard');
-            navigate("/dashboard", { replace: true });
+            console.log('✅ [ShopifyApp] Returning user with active subscription, redirecting to dashboard-light');
+            navigate("/dashboard-light", { replace: true });
           } else {
             console.log('🔄 [ShopifyApp] Returning user without subscription, redirecting to SetupWizard');
             navigate(`/app/setup-wizard?shop=${shop}`, { replace: true });
