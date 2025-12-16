@@ -13,6 +13,7 @@ interface Profile {
   current_plan_id: string | null;
   trial_ends_at: string | null;
   stripe_customer_id: string | null;
+  billing_provider: string | null;
 }
 
 export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
@@ -125,7 +126,8 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
             subscription_status: 'active',
             current_plan_id: null,
             trial_ends_at: null,
-            stripe_customer_id: null
+            stripe_customer_id: null,
+            billing_provider: 'stripe'
           });
           setLoading(false);
           return;
@@ -135,7 +137,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       // Load the profile from database
       const { data, error } = await supabase
         .from('profiles')
-        .select('subscription_status, current_plan_id, trial_ends_at, stripe_customer_id')
+        .select('subscription_status, current_plan_id, trial_ends_at, stripe_customer_id, billing_provider')
         .eq('id', user.id)
         .single();
 
@@ -164,7 +166,8 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
               subscription_status: 'inactive',
               current_plan_id: null,
               trial_ends_at: null,
-              stripe_customer_id: null
+              stripe_customer_id: null,
+              billing_provider: null
             });
           }
         }
@@ -297,10 +300,13 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     return <Navigate to="/onboarding" replace />;
   }
   
+  // Shopify users have billing_provider='shopify' - they don't need stripe_customer_id
+  const isShopifyUser = profile?.billing_provider === 'shopify';
+  
   const hasValidSubscription = profile?.subscription_status && 
     (profile.subscription_status === 'active' 
-      ? profile.stripe_customer_id // stripe_customer_id REQUIS pour les comptes actifs
-      : true) && // Pas de stripe_customer_id nécessaire pour les trials
+      ? (profile.stripe_customer_id || isShopifyUser) // Stripe OR Shopify billing
+      : true) && 
     (profile.subscription_status === 'active' || 
      (profile.subscription_status === 'trialing' && 
       profile.trial_ends_at && 
