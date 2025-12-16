@@ -176,10 +176,10 @@ function generateOpportunities(
     }
   }
   
-  // Sort by citation potential and limit
+  // Sort by citation potential and limit to 3 per day for faster loading
   return opportunities
     .sort((a, b) => b.citation_potential - a.citation_potential)
-    .slice(0, 10);
+    .slice(0, 3);
 }
 
 serve(async (req) => {
@@ -211,10 +211,10 @@ serve(async (req) => {
       });
     }
 
-    const { store_id, platform, refresh = false } = await req.json();
+    const { storeId, platform, refresh = false } = await req.json();
 
-    if (!store_id) {
-      return new Response(JSON.stringify({ error: 'store_id is required' }), {
+    if (!storeId) {
+      return new Response(JSON.stringify({ error: 'storeId is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -230,7 +230,7 @@ serve(async (req) => {
         .from('ai_opportunities')
         .select('*')
         .eq('user_id', user.id)
-        .eq('store_id', store_id)
+        .eq('store_id', storeId)
         .in('platform', platforms)
         .order('citation_potential', { ascending: false });
 
@@ -250,7 +250,7 @@ serve(async (req) => {
         .from('ai_opportunities')
         .delete()
         .eq('user_id', user.id)
-        .eq('store_id', store_id)
+        .eq('store_id', storeId)
         .in('platform', platforms);
     }
 
@@ -259,7 +259,7 @@ serve(async (req) => {
       .from('shopify_products')
       .select('id, title, product_type, vendor, tags')
       .eq('seller_id', user.id)
-      .eq('store_id', store_id)
+      .eq('store_id', storeId)
       .limit(100);
 
     if (productsError) {
@@ -296,7 +296,7 @@ serve(async (req) => {
           .from('ai_opportunities')
           .insert({
             user_id: user.id,
-            store_id,
+            store_id: storeId,
             platform: opp.platform,
             query_type: opp.query_type,
             question: opp.question,

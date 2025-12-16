@@ -51,6 +51,7 @@ import MediaHistory from "./pages/MediaHistory";
 import Collections from "./pages/Collections";
 import TestGlobale from "./pages/TestGlobale";
 import Blog from "./pages/Blog";
+import AEO from "./pages/AEO";
 import ArticleManagement from "./pages/ArticleManagement";
 import BlogNewAI from "./pages/BlogNewAI";
 import BlogSeoManagement from "./pages/BlogSeoManagement";
@@ -318,6 +319,14 @@ const App = () => (
               element={
                 <ProtectedLayout>
                   <Blog />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/aeo"
+              element={
+                <ProtectedLayout>
+                  <AEO />
                 </ProtectedLayout>
               }
             />

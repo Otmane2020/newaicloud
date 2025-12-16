@@ -128,10 +128,16 @@ export function AppSidebar() {
   const blogSubItems = hasFullAccess ? [
     { title: t.blog.submenu.aiArticles, url: "/blog?subtab=create-article", icon: Sparkles, key: "aiArticles" },
     { title: t.blog.submenu.campaigns, url: "/blog?subtab=campaigns", icon: CalendarClock, key: "campaigns" },
-    { title: t.blog.submenu.opportunities, url: "/blog?subtab=opportunities", icon: Lightbulb, key: "opportunities" },
     { title: t.blog.submenu.netlinking, url: "/blog?subtab=netlinking", icon: Link, key: "netlinking" },
     { title: t.blog.submenu.settings, url: "/blog?subtab=settings", icon: Settings, key: "settings" },
   ] : [];
+
+  // AEO (Answer Engine Optimization) sub items - opportunities for AI platforms
+  const aeoSubItems = [
+    { title: "ChatGPT", url: "/aeo?platform=chatgpt", icon: Bot, key: "chatgpt" },
+    { title: "Gemini", url: "/aeo?platform=gemini", icon: Brain, key: "gemini" },
+    { title: "Copilot", url: "/aeo?platform=copilot", icon: Zap, key: "copilot" },
+  ];
 
   // Social Media - Onglet principal séparé (restricted)
   const socialMediaSubItems = [
@@ -277,6 +283,7 @@ export function AppSidebar() {
   const isAuditActive = auditSubItems.some((item) => isActive(item.url));
   const isGoogleConsoleActive = isActive('/seo?tab=google-console');
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
+  const isAeoActive = currentPath === "/aeo" || aeoSubItems.some((item) => isActive(item.url));
   const isSocialMediaActive = currentPath === "/social-media" || socialMediaMainItems.some((item) => isActive(item.url)) || socialMediaSubItems.some((item) => isActive(item.url));
   const isSocialMediaCreativeActive = socialMediaSubItems.some((item) => isActive(item.url)) || isActive("/social-media?tab=creative");
   const isMerchantActive = currentPath === "/merchant" || merchantSubItems.some((item) => isActive(item.url));
@@ -427,6 +434,33 @@ export function AppSidebar() {
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {blogSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url} onClick={handleNavClick}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* AEO (Answer Engine Optimization) Menu with AI platform sub-tabs */}
+              <Collapsible defaultOpen={isAeoActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isAeoActive}>
+                      <Lightbulb className="h-4 w-4" />
+                      <span>{language === 'fr' ? 'Opportunités AEO' : 'AEO Opportunities'}</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {aeoSubItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url} onClick={handleNavClick}>
