@@ -86,17 +86,22 @@ const DECOR_TYPES = [
 ];
 
 // Helper to detect AI-generated images
-// Only check URL patterns - optimization_count can be set for Shopify images too
-const isAiGeneratedImage = (imgSrc: string, optimizationCount?: number | null): boolean => {
-  // AI patterns in URL indicate generated images
-  const aiPatterns = ['ai_generated_', 'white_background', 'generated-images/', '/storage/v1/object/public/generated'];
-  const hasAiPattern = aiPatterns.some(pattern => imgSrc.includes(pattern));
+// STRICT: Only check specific URL patterns that we generate - ignore optimization_count entirely
+// Shopify CDN images are NEVER considered AI-generated regardless of optimization_count
+const isAiGeneratedImage = (imgSrc: string, _optimizationCount?: number | null): boolean => {
+  // Shopify CDN images are NEVER AI-generated
+  if (imgSrc.includes('cdn.shopify.com')) {
+    return false;
+  }
   
-  // Only check optimization_count for our storage images, not Shopify CDN
-  const isOurStorage = imgSrc.includes('supabase.co/storage');
-  const isAiByOptimization = isOurStorage && optimizationCount && optimizationCount > 0;
+  // Only our specific AI generation patterns
+  const aiPatterns = [
+    'ai_generated_',           // Our AI generated images
+    'white_background_',       // White background generations
+    '/generated-images/',      // Supabase generated images bucket
+  ];
   
-  return hasAiPattern || isAiByOptimization;
+  return aiPatterns.some(pattern => imgSrc.includes(pattern));
 };
 
 export const BulkAIImagesDialog = ({
@@ -180,14 +185,20 @@ export const BulkAIImagesDialog = ({
       
       setProductGalleryImages(imagesByProduct);
       
-      // Smart pre-selection: only non-AI images (same as SmartBackgroundDialog)
+      // Smart pre-selection: prefer non-AI images, but fallback to first image if all are AI
       const newSelectedImages = new Map<string, Set<string>>();
       
       imagesByProduct.forEach((images, productId) => {
         const nonAiImages = images.filter(img => !isAiGeneratedImage(img.src, img.optimization_count));
+        
         if (nonAiImages.length > 0) {
           // Pre-select all non-AI images
           newSelectedImages.set(productId, new Set(nonAiImages.map(img => img.id)));
+        } else if (images.length > 0) {
+          // FALLBACK: If ALL images are AI-generated, pre-select the first one anyway
+          // This allows users to regenerate AI images if they want
+          newSelectedImages.set(productId, new Set([images[0].id]));
+          console.log(`[BulkAI] Product ${productId}: all images are AI-generated, pre-selecting first for regeneration`);
         }
       });
       
