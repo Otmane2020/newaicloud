@@ -41,25 +41,29 @@ export class ErrorBoundary extends Component<Props, State> {
       typeof window !== 'undefined' &&
       new URLSearchParams(window.location.search).has('host');
 
-    if (isTransientReactError && typeof window !== 'undefined') {
-      try {
-        const storage = window.sessionStorage;
-        const errorKey = isReact300Error ? 'react_300_reloaded' : 'react_380_reloaded';
-        const hasReloaded = storage.getItem(errorKey) === '1';
-        if (!hasReloaded) {
-          storage.setItem(errorKey, '1');
-          console.warn(`[ErrorBoundary] React error detected, reloading once: ${error.message}`);
-          // Clear any cached data that might be corrupted
-          localStorage.removeItem('usage-limits-cache');
-          window.location.reload();
+      if (isTransientReactError && typeof window !== 'undefined') {
+        try {
+          const storage = window.sessionStorage;
+          const errorKey = isReact300Error ? 'react_300_reloaded' : 'react_380_reloaded';
+          const hasReloaded = storage.getItem(errorKey) === '1';
+          if (!hasReloaded) {
+            storage.setItem(errorKey, '1');
+            console.warn(`[ErrorBoundary] React error detected, reloading once: ${error.message}`);
+            // Clear any cached data that might be corrupted
+            localStorage.removeItem('usage-limits-cache');
+            localStorage.removeItem('store-context');
+            localStorage.removeItem('subscription-cache');
+            // Clear session storage items that might be stale
+            sessionStorage.removeItem('shopify_auth_check');
+            window.location.reload();
+          }
+        } catch (e) {
+          console.warn('[ErrorBoundary] Failed to use sessionStorage for React error handling', e);
         }
-      } catch (e) {
-        console.warn('[ErrorBoundary] Failed to use sessionStorage for React error handling', e);
-      }
 
-      // Do not switch to error UI for this transient issue
-      return { hasError: false, error: null };
-    }
+        // Do not switch to error UI for this transient issue
+        return { hasError: false, error: null };
+      }
 
     if (isBenignDomError || isAppBridgeError) {
       console.warn('[ErrorBoundary] Ignoring benign error:', error.message);
