@@ -36,9 +36,9 @@ serve(async (req) => {
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
-    const { planId, billingCycle, shopDomain } = await req.json();
+    const { planId, billingCycle, shopDomain, forceUpgrade } = await req.json();
     
-    logStep("Request received", { planId, billingCycle, shopDomain });
+    logStep("Request received", { planId, billingCycle, shopDomain, forceUpgrade });
     
     if (!planId || !shopDomain) {
       return new Response(
@@ -116,18 +116,33 @@ serve(async (req) => {
       const activeSubscription = subs.find((s: { status: string }) => s.status === "ACTIVE");
 
       if (activeSubscription) {
-        logStep("ACTIVE subscription already exists - returning early (no double pay)", activeSubscription);
-        return new Response(
-          JSON.stringify({
-            status: "ACTIVE",
-            subscription: activeSubscription,
-            message: "Subscription already active - no payment needed"
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // If forceUpgrade is true, allow creating a new subscription (Shopify will replace the old one)
+        if (forceUpgrade) {
+          logStep("UPGRADE MODE: Active subscription exists, but forceUpgrade=true - proceeding to replace", activeSubscription);
+        } else {
+          // Check if the user is trying to select the same plan
+          const currentPlanName = activeSubscription.name?.toLowerCase() || "";
+          const requestedPlanKey = planId === "trial" ? "trial" : `${planId}-${billingCycle}`;
+          const requestedPlan = SHOPIFY_PLANS[requestedPlanKey];
+          
+          if (requestedPlan && currentPlanName.includes(requestedPlan.name.toLowerCase().split(" ")[0])) {
+            logStep("Same plan already active - returning early (no double pay)", activeSubscription);
+            return new Response(
+              JSON.stringify({
+                status: "ACTIVE",
+                subscription: activeSubscription,
+                message: "Subscription already active - no payment needed"
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          
+          // Different plan requested - allow upgrade
+          logStep("Different plan requested - proceeding to upgrade", { currentPlan: activeSubscription.name, requestedPlan: requestedPlan?.name });
+        }
+      } else {
+        logStep("No active subscription found, proceeding to create one");
       }
-      
-      logStep("No active subscription found, proceeding to create one");
     } else {
       logStep("Warning: Could not check existing subscription, proceeding cautiously");
     }
