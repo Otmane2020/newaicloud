@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { calculateTagsScore } from '@/lib/seoQuality';
+import { calculateTagsScore, calculateProductsSeoScore, calculateCollectionsSeoScore } from '@/lib/seoQuality';
 import {
   ShoppingBag,
   Package,
@@ -21,16 +21,16 @@ import {
 } from 'lucide-react';
 
 interface LightStats {
-  productsScore: number;
+  productsScore: number; // Real SEO score
   productsTotal: number;
   productsOptimized: number;
-  collectionsScore: number;
+  collectionsScore: number; // Real SEO score
   collectionsTotal: number;
   collectionsOptimized: number;
-  tagsScore: number;
+  tagsScore: number; // Progress percentage
   tagsTotal: number;
   tagsOptimized: number;
-  altScore: number;
+  altScore: number; // Progress percentage
   altTotal: number;
   altOptimized: number;
 }
@@ -40,12 +40,12 @@ async function fetchDashboardData(userId: string, storeId: string) {
   const [productsResult, collectionsResult] = await Promise.all([
     supabase
       .from('shopify_products')
-      .select('id, seo_title, seo_description, tags, optimization_count, enrichment_status')
+      .select('id, title, seo_title, seo_description, tags, optimization_count, enrichment_status, image_url, vendor')
       .eq('seller_id', userId)
       .eq('store_id', storeId),
     supabase
       .from('shopify_collections')
-      .select('id, seo_title, seo_description, optimization_count')
+      .select('id, title, seo_title, seo_description, optimization_count, image_url, body_html')
       .eq('user_id', userId)
       .eq('store_id', storeId)
   ]);
@@ -118,22 +118,20 @@ export default function DashboardLight() {
         const collectionsArr = Array.isArray(collections) ? collections : [];
         const imagesArr = Array.isArray(images) ? images : [];
 
-        // Use enrichment_status === 'enriched' as the criteria (same as SeoOptimization.tsx)
+        // Calculate REAL SEO scores using the same functions as SEO tabs
         const productsTotal = productsArr.length;
         const productsOptimized = productsArr.filter((p: any) => 
           p.enrichment_status === 'enriched'
         ).length;
-        const productsScore = productsTotal > 0 
-          ? Math.round((productsOptimized / productsTotal) * 100) 
-          : 0;
+        // Use calculateProductsSeoScore for real SEO quality score
+        const productsScore = calculateProductsSeoScore(productsArr);
 
         const collectionsTotal = collectionsArr.length;
         const collectionsOptimized = collectionsArr.filter((c: any) => 
           c.optimization_count && c.optimization_count > 0
         ).length;
-        const collectionsScore = collectionsTotal > 0 
-          ? Math.round((collectionsOptimized / collectionsTotal) * 100) 
-          : 0;
+        // Use calculateCollectionsSeoScore for real SEO quality score
+        const collectionsScore = calculateCollectionsSeoScore(collectionsArr);
 
         // Tags: match TagOptimization.tsx logic - optimization_count > 0 AND has tags AND tagsScore >= 8
         const tagsTotal = productsArr.length;
