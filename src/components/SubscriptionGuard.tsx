@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,8 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const [hasActiveStripeSubscription, setHasActiveStripeSubscription] = useState(false);
   const [invalidTrialState, setInvalidTrialState] = useState(false);
   const [fixingSubscription, setFixingSubscription] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const hasRedirectedRef = useRef(false);
 
   useEffect(() => {
     if (user) {
@@ -103,14 +105,17 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       if (stripeError) {
         console.error('❌ Error checking Stripe subscription:', stripeError);
         
-        // Handle session expiration - redirect to auth
+        // Handle session expiration - soft fail, let user re-authenticate
         if (stripeError.message?.includes('Session expired') || 
             stripeError.message?.includes('invalid_session') ||
             stripeError.message?.includes('Session not found') ||
             stripeError.message?.includes('401')) {
-          console.log('🔐 Session expired, signing out and redirecting to auth');
-          await supabase.auth.signOut();
-          window.location.href = '/auth';
+          console.warn('⚠️ Session issue detected, marking for re-authentication');
+          // ❌ NE PAS faire signOut() automatique
+          // ❌ NE PAS faire window.location.href (boucle infinie!)
+          // ✅ Soft fail - marquer l'état et laisser le Navigate gérer
+          setSessionExpired(true);
+          setLoading(false);
           return;
         }
       } else {
@@ -247,6 +252,13 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  // 🔐 Session expirée - redirect SAFE avec Navigate (pas window.location!)
+  if (sessionExpired && !hasRedirectedRef.current) {
+    hasRedirectedRef.current = true;
+    console.log('🔐 Session expired, redirecting to auth via Navigate');
+    return <Navigate to="/auth?session_expired=1" replace />;
   }
 
   // 🛒 SHOPIFY USERS: IMMEDIATE ACCESS - Shopify Billing is source of truth

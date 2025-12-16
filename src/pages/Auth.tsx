@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -31,10 +31,17 @@ export default function Auth() {
   const { signIn, signUp, signInWithGoogle, signInWithFacebook, user } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  
+  // ✅ Guard pour empêcher multi-exécution du redirect
+  const isRedirectingRef = useRef(false);
 
   useEffect(() => {
     const checkUserAndRedirect = async () => {
-      if (user) {
+      // ✅ Guard: éviter les exécutions multiples
+      if (!user || isRedirectingRef.current) return;
+      isRedirectingRef.current = true;
+
+      try {
         console.log('✅ User authenticated, checking admin status...');
         
         // Check if user is admin - block them from /auth
@@ -92,6 +99,9 @@ export default function Auth() {
           const destination = redirectPath || '/dashboard';
           navigate(destination);
         }
+      } catch (error) {
+        console.error('[Auth] Redirect check error:', error);
+        isRedirectingRef.current = false; // Reset pour permettre retry
       }
     };
     
@@ -121,54 +131,39 @@ export default function Auth() {
 
     setLoading(true);
 
-    if (mode === 'signup') {
-      const result = await signUp(email, password, fullName, referralCode || undefined);
-      
-      if (!result.error) {
-        if (referralCode) {
-          toast.success("Compte créé ! Vous avez reçu 100 optimisations de bienvenue ! 🎉");
-        }
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
-    } else {
-      const result = await signIn(email, password);
-      
-      if (!result?.error) {
-        // Get current user to check if admin
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
+    try {
+      if (mode === 'signup') {
+        const result = await signUp(email, password, fullName, referralCode || undefined);
         
-        if (currentUser) {
-          // Check if user is admin - block them from /auth
-          const { data: roleData } = await supabase.rpc('has_role', {
-            _user_id: currentUser.id,
-            _role: 'admin'
-          });
-
-          if (roleData) {
-            // Admin detected - sign out and redirect to superadmin login
-            await supabase.auth.signOut();
-            toast.error("Administrateurs : connectez-vous via /superadmin-login");
-            navigate('/superadmin-login');
-            setLoading(false);
-            return;
+        if (!result.error) {
+          if (referralCode) {
+            toast.success("Compte créé ! Vous avez reçu 100 optimisations de bienvenue ! 🎉");
+          }
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+      } else {
+        const result = await signIn(email, password);
+        
+        // ❌ SUPPRIMÉ: Double vérification admin (le useEffect s'en charge)
+        // ✅ Garder uniquement la gestion Shopify pending
+        if (result?.error && searchParams.get('shopify_pending')) {
+          const errorMsg = result.error.message || '';
+          if (errorMsg.includes('Invalid login credentials') || errorMsg.includes('Email not confirmed')) {
+            toast.error("Compte non trouvé", {
+              description: "Ce compte n'existe pas encore. Créez un compte pour associer votre boutique Shopify.",
+            });
+            // Auto-switch to signup mode
+            setTimeout(() => setMode('signup'), 2000);
           }
         }
       }
-      
-      // Si échec de connexion avec shopify_pending, suggérer de créer un compte
-      if (result?.error && searchParams.get('shopify_pending')) {
-        const errorMsg = result.error.message || '';
-        if (errorMsg.includes('Invalid login credentials') || errorMsg.includes('Email not confirmed')) {
-          toast.error("Compte non trouvé", {
-            description: "Ce compte n'existe pas encore. Créez un compte pour associer votre boutique Shopify.",
-          });
-          // Auto-switch to signup mode
-          setTimeout(() => setMode('signup'), 2000);
-        }
-      }
+    } catch (error) {
+      console.error('[Auth] handleSubmit error:', error);
+      toast.error("Une erreur est survenue lors de la connexion");
+    } finally {
+      // ✅ TOUJOURS exécuté - fix "Loading..." bloqué
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleGoogleSignIn = async () => {
