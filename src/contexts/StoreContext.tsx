@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -28,6 +28,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [selectedStore, setSelectedStore] = useState<ShopifyStore | null>(null);
   const [stores, setStores] = useState<ShopifyStore[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // ✅ FIX: Track last fetch to prevent rapid consecutive calls
+  const lastFetchRef = useRef<number>(0);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadStores = useCallback(async () => {
     // Validate user.id is defined AND is a valid UUID (not "undefined" string)
@@ -40,6 +44,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // ✅ FIX: Debounce - skip if called within 2 seconds
+    const now = Date.now();
+    if (now - lastFetchRef.current < 2000) {
+      console.log('🚨🚨🚨 [STORE_CONTEXT] Debounced - skipping fetch (too soon)');
+      return;
+    }
+    lastFetchRef.current = now;
+
     try {
       console.log('🚨🚨🚨 [STORE_CONTEXT] Loading stores for user:', user.id);
       const { data, error } = await supabase
@@ -51,8 +63,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      console.log('🚨🚨🚨 [STORE_CONTEXT] Loaded stores:', data?.length, data);
-      setStores(data || []);
+      console.log('🚨🚨🚨 [STORE_CONTEXT] Loaded stores:', data?.length);
+      
+      // ✅ FIX: Compare stores array to prevent unnecessary re-renders
+      setStores(prevStores => {
+        if (JSON.stringify(prevStores) === JSON.stringify(data || [])) {
+          console.log('🚨🚨🚨 [STORE_CONTEXT] Stores unchanged, keeping same reference');
+          return prevStores;
+        }
+        return data || [];
+      });
       
       // Only auto-select if no stores were loaded before
       if (data && data.length > 0) {
@@ -109,7 +129,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         (payload) => {
           if (isMounted) {
             console.log('🔄 [STORE_CONTEXT] Shopify connection changed:', payload);
-            loadStores();
+            
+            // ✅ FIX: Debounce realtime events with a timeout
+            if (debounceTimeoutRef.current) {
+              clearTimeout(debounceTimeoutRef.current);
+            }
+            debounceTimeoutRef.current = setTimeout(() => {
+              if (isMounted) {
+                loadStores();
+              }
+            }, 1000); // 1 second debounce
           }
         }
       )
@@ -122,6 +151,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
       console.log('⏹️ [STORE_CONTEXT] Unsubscribing from shopify connections');
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
       try {
         supabase.removeChannel(channel);
       } catch (e) {
