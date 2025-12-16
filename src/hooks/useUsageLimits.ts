@@ -111,6 +111,52 @@ const fetchUsageLimits = async (): Promise<UsageLimits> => {
   return result;
 };
 
+// Default safe values to prevent React error #300 when accessing undefined properties
+const DEFAULT_LIMITS: UsageLimits = {
+  canUseOptimizations: false,
+  canUseArticles: false,
+  canUseChat: false,
+  canUseShopifySearch: false,
+  canAddProducts: false,
+  canAddShopifyStore: false,
+  canUseCampaigns: false,
+  limitReached: {
+    optimizations: false,
+    articles: false,
+    chat: false,
+    shopifySearch: false,
+    products: false,
+    campaigns: false,
+    shopifyStores: false,
+  },
+  usage: {
+    optimizations_count: 0,
+    articles_count: 0,
+    chat_responses_count: 0,
+    shopify_requests_count: 0,
+    products_count: 0,
+    shopify_stores_count: 0,
+    campaigns_count: 0,
+  },
+  limits: {
+    max_optimizations: 0,
+    max_articles: 0,
+    max_chat_responses: 0,
+    max_shopify_requests: 0,
+    max_products: 0,
+    max_shopify_stores: 0,
+    max_campaigns: 0,
+  },
+  isTrialing: false,
+  isPaid: false,
+  planId: '',
+  trialEndsAt: null,
+  currentPlanId: null,
+  subscriptionStatus: null,
+  billingProvider: null,
+  shouldForcePayment: false,
+};
+
 export const useUsageLimits = () => {
   const [limits, setLimits] = useState<UsageLimits | null>(cachedLimits);
   const [loading, setLoading] = useState(!cachedLimits);
@@ -153,8 +199,17 @@ export const useUsageLimits = () => {
     return limits?.[actionMap[action] as keyof UsageLimits] as boolean || false;
   };
 
+  // Return limits with safe defaults merged to prevent undefined access
+  const safeLimits = limits ? {
+    ...DEFAULT_LIMITS,
+    ...limits,
+    limitReached: { ...DEFAULT_LIMITS.limitReached, ...limits.limitReached },
+    usage: { ...DEFAULT_LIMITS.usage, ...limits.usage },
+    limits: { ...DEFAULT_LIMITS.limits, ...limits.limits },
+  } : null;
+
   return {
-    limits: limits || null,
+    limits: safeLimits,
     loading,
     error,
     canDoAction,

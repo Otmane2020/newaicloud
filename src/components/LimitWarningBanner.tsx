@@ -12,10 +12,14 @@ export function LimitWarningBanner() {
 
   if (loading || !limits) return null;
 
-  // Show critical banner if optimizations or chat limit is reached
-  const limitReached =
-    limits.limitReached.optimizations ||
-    limits.limitReached.chat;
+  // Safe access to nested properties with defaults
+  const limitReached = limits.limitReached?.optimizations || limits.limitReached?.chat || false;
+  const optimizationsCount = Number(limits.usage?.optimizations_count) || 0;
+  const articlesCount = Number(limits.usage?.articles_count) || 0;
+  const chatCount = Number(limits.usage?.chat_responses_count) || 0;
+  const maxOptimizations = Number(limits.limits?.max_optimizations) || 1;
+  const maxArticles = Number(limits.limits?.max_articles) || 1;
+  const maxChatResponses = Number(limits.limits?.max_chat_responses) || 1;
 
   // For PAID users: ONLY show if limit is actually reached (100%)
   if (limits.isPaid) {
@@ -24,9 +28,9 @@ export function LimitWarningBanner() {
 
   // For TRIAL users: show if approaching limit (>80%) OR if limit reached
   if (limits.isTrialing) {
-    const shouldShowWarning =
-      limits.usage.optimizations_count / limits.limits.max_optimizations > 0.8 ||
-      limits.usage.chat_responses_count / limits.limits.max_chat_responses > 0.8;
+    const optimizationRatio = maxOptimizations > 0 ? optimizationsCount / maxOptimizations : 0;
+    const chatRatio = maxChatResponses > 0 ? chatCount / maxChatResponses : 0;
+    const shouldShowWarning = optimizationRatio > 0.8 || chatRatio > 0.8;
     
     if (!shouldShowWarning && !limitReached) return null;
   }
@@ -34,20 +38,26 @@ export function LimitWarningBanner() {
   // If not trial and not paid, don't show
   if (!limits.isTrialing && !limits.isPaid) return null;
 
-  const getWarningMessage = () => {
+  const getWarningMessage = (): string => {
     if (limitReached) {
-      const limitTypes = [];
-      if (limits.limitReached.optimizations) limitTypes.push(t.banners.limitWarning.limitLabels.optimizations);
-      if (limits.limitReached.chat) limitTypes.push(t.banners.limitWarning.limitLabels.chat);
+      const limitTypes: string[] = [];
+      const optLabel = t.banners?.limitWarning?.limitLabels?.optimizations;
+      const chatLabel = t.banners?.limitWarning?.limitLabels?.chat;
+      
+      if (limits.limitReached?.optimizations && typeof optLabel === 'string') limitTypes.push(optLabel);
+      if (limits.limitReached?.chat && typeof chatLabel === 'string') limitTypes.push(chatLabel);
 
       if (limits.isPaid) {
-        return t.banners.limitWarning.monthlyLimitReached;
+        const msg = t.banners?.limitWarning?.monthlyLimitReached;
+        return typeof msg === 'string' ? msg : 'Monthly limit reached';
       }
 
-      return tf("banners.limitWarning.limitReached", { limitTypes: limitTypes.join(", ") });
+      const result = tf("banners.limitWarning.limitReached", { limitTypes: limitTypes.join(", ") });
+      return typeof result === 'string' ? result : 'Limit reached';
     }
 
-    return t.banners.limitWarning.approaching;
+    const approaching = t.banners?.limitWarning?.approaching;
+    return typeof approaching === 'string' ? approaching : 'Approaching limit';
   };
 
   return (
@@ -86,16 +96,16 @@ export function LimitWarningBanner() {
           >
             <div className="flex flex-wrap gap-x-3 gap-y-0.5">
               <span className="whitespace-nowrap">
-                {t.dashboard.usage.labels.optimizations}: {limits.usage.optimizations_count}/
-                {formatLimit(limits.limits.max_optimizations)}
+                {String(t.dashboard?.usage?.labels?.optimizations || 'Optimizations')}: {optimizationsCount}/
+                {formatLimit(maxOptimizations)}
               </span>
               <span className="whitespace-nowrap">
-                {t.dashboard.usage.labels.articles}: {limits.usage.articles_count}/
-                {formatLimit(limits.limits.max_articles)}
+                {String(t.dashboard?.usage?.labels?.articles || 'Articles')}: {articlesCount}/
+                {formatLimit(maxArticles)}
               </span>
               <span className="whitespace-nowrap">
-                {t.dashboard.usage.labels.chatResponses}: {limits.usage.chat_responses_count}/
-                {formatLimit(limits.limits.max_chat_responses)}
+                {String(t.dashboard?.usage?.labels?.chatResponses || 'Chat')}: {chatCount}/
+                {formatLimit(maxChatResponses)}
               </span>
             </div>
           </div>
@@ -114,17 +124,17 @@ export function LimitWarningBanner() {
             {upgrading ? (
               <>
                 <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 animate-spin" />
-                <span>{t.banners.limitWarning.loading}</span>
+                <span>{String(t.banners?.limitWarning?.loading || 'Loading...')}</span>
               </>
             ) : (
               <>
                 <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                 <span>
                   {limitReached && limits.isPaid
-                    ? t.banners.limitWarning.upgradeNow
+                    ? String(t.banners?.limitWarning?.upgradeNow || 'Upgrade now')
                     : limitReached
-                      ? t.banners.limitWarning.activateNow
-                      : t.banners.limitWarning.viewPlans}
+                      ? String(t.banners?.limitWarning?.activateNow || 'Activate now')
+                      : String(t.banners?.limitWarning?.viewPlans || 'View plans')}
                 </span>
               </>
             )}

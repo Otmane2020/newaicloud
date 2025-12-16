@@ -116,14 +116,14 @@ export function UsageLimits() {
 
   const limits: UsageLimit[] = [
     {
-      label: t.dashboard.usage.labels.products,
+      label: String(t.dashboard?.usage?.labels?.products || 'Products'),
       current: realUsage?.products_optimized || 0,
       limit: realUsage?.products_total || 0,
       icon: <Package className="h-4 w-4" />,
       color: "hsl(var(--primary))"
     },
     {
-      label: t.dashboard.usage.labels.stores,
+      label: String(t.dashboard?.usage?.labels?.stores || 'Stores'),
       current: realUsage?.stores_count || 0,
       limit: plan?.max_shopify_stores || 1,
       icon: <Package className="h-4 w-4" />,
@@ -137,7 +137,7 @@ export function UsageLimits() {
       color: "hsl(var(--chart-2))"
     },
     {
-      label: t.dashboard.usage.labels.articles,
+      label: String(t.dashboard?.usage?.labels?.articles || 'Articles'),
       current: realUsage?.articles_count || 0,
       limit: plan?.max_articles_monthly || 0,
       icon: <FileText className="h-4 w-4" />,
@@ -158,19 +158,19 @@ export function UsageLimits() {
       <CardHeader>
         <div className="flex items-center justify-between mb-2">
           <div>
-            <CardTitle>{t.dashboard.usage.title}</CardTitle>
+            <CardTitle>{String(t.dashboard?.usage?.title || 'Usage')}</CardTitle>
             <CardDescription>
-              {t.dashboard.usage.description}
+              {String(t.dashboard?.usage?.description || 'Your usage statistics')}
             </CardDescription>
           </div>
           {plan && (
             <div className="text-right">
               <Badge variant="outline" className="text-base font-semibold mb-1">
-                {plan.name}
+                {String(plan.name || 'Plan')}
               </Badge>
               {!isTrialPlan && (
                 <p className="text-sm text-muted-foreground">
-                  {optimizationsLeft} {t.dashboard.usage.remaining}
+                  {String(optimizationsLeft)} {String(t.dashboard?.usage?.remaining || 'remaining')}
                 </p>
               )}
             </div>
