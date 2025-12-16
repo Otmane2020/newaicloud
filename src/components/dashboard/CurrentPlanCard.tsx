@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Loader2, CreditCard, Calendar, Package, TrendingUp, Zap } from 'lucide-react';
+import { Loader2, CreditCard, Calendar, Package, TrendingUp, Zap, ExternalLink } from 'lucide-react';
 import { PlanUpgradeDialog } from './PlanUpgradeDialog';
 import { useTranslation } from '@/lib/language';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
+import { useShopifyBilling } from '@/hooks/useShopifyBilling';
 
 interface Plan {
   id: string;
@@ -26,6 +27,7 @@ export function CurrentPlanCard() {
   const { user } = useAuth();
   const { t, tf, language } = useTranslation();
   const { limits: limitsData } = useUsageLimits();
+  const { isShopifyUser, shopDomain, billingProvider, createShopifySubscription } = useShopifyBilling();
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
   const [upgradeLoading, setUpgradeLoading] = useState(false);
@@ -115,6 +117,13 @@ export function CurrentPlanCard() {
   const handleUpgradeToFullPlan = async () => {
     setUpgradeLoading(true);
     try {
+      // 🛍️ SHOPIFY USERS: Use Shopify Billing
+      if (isShopifyUser || billingProvider === 'shopify') {
+        await createShopifySubscription('starter', 'monthly');
+        return;
+      }
+      
+      // Stripe flow
       const { data, error } = await supabase.functions.invoke('force-payment');
       if (error) throw error;
       if (data?.url) {
@@ -131,6 +140,19 @@ export function CurrentPlanCard() {
   const handleManageSubscription = async () => {
     setPortalLoading(true);
     try {
+      // 🛍️ SHOPIFY USERS: Redirect to Shopify Admin billing
+      if (isShopifyUser || billingProvider === 'shopify') {
+        const shopHandle = shopDomain?.replace('.myshopify.com', '');
+        if (shopHandle) {
+          window.open(`https://admin.shopify.com/store/${shopHandle}/settings/billing`, '_blank');
+        } else {
+          toast.error(language === 'fr' ? 'Domaine boutique non trouvé' : 'Shop domain not found');
+        }
+        setPortalLoading(false);
+        return;
+      }
+      
+      // Stripe customer portal
       const { data, error } = await supabase.functions.invoke('customer-portal');
       if (error) throw error;
       if (data?.url) {

@@ -118,6 +118,7 @@ interface ShopifyPricingPlansProps {
   isAuthenticating?: boolean;
   isEmbedded?: boolean;
   host?: string;
+  currentPlanId?: string;
 }
 
 export default function ShopifyPricingPlans({ 
@@ -126,7 +127,8 @@ export default function ShopifyPricingPlans({
   onSubscriptionCreated,
   isAuthenticating = false,
   isEmbedded = false,
-  host
+  host,
+  currentPlanId
 }: ShopifyPricingPlansProps) {
   const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
@@ -166,6 +168,8 @@ export default function ShopifyPricingPlans({
     errorDesc: language === "fr" 
       ? "Impossible de créer l'abonnement" 
       : "Could not create subscription",
+    currentPlan: language === "fr" ? "Plan actuel" : "Current Plan",
+    alreadyActive: language === "fr" ? "Abonnement déjà actif" : "Subscription already active",
   };
 
   const handleSelectPlan = async (planId: string) => {
@@ -192,7 +196,12 @@ export default function ShopifyPricingPlans({
 
       console.log("[ShopifyPricingPlans] Subscription response:", data);
 
-      // Handle both FREE and PAID plans - all return confirmationUrl now
+      // Handle already active subscription
+      if (data?.status === "ACTIVE") {
+        toast.success(t.alreadyActive);
+        navigate('/dashboard-light');
+        return;
+      }
 
       // Handle PAID plans - redirect to Shopify Billing
       if (data?.confirmationUrl) {
@@ -207,7 +216,7 @@ export default function ShopifyPricingPlans({
         return;
       }
       
-      // If we get here without isFree or confirmationUrl, something went wrong
+      // If we get here without status or confirmationUrl, something went wrong
       throw new Error("No confirmation URL received");
     } catch (err) {
       console.error("[ShopifyPricingPlans] Error:", err);
@@ -291,6 +300,8 @@ export default function ShopifyPricingPlans({
           const features = plan.features[language];
           const isSelected = selectedPlan === plan.id;
           const isLoading = loading && isSelected;
+          const isCurrentPlan = plan.id === currentPlanId || 
+            (plan.id === 'starter' && (currentPlanId === 'trial' || currentPlanId === 'starter'));
 
           return (
             <Card 
@@ -299,15 +310,27 @@ export default function ShopifyPricingPlans({
                 plan.popular 
                   ? "shadow-lg scale-[1.02] z-10" 
                   : "hover:shadow-md"
-              }`}
+              } ${isCurrentPlan ? "ring-2 ring-green-500" : ""}`}
               style={{ 
                 borderRadius: "8px",
-                border: plan.popular ? "2px solid #008060" : "1px solid #e1e3e5",
+                border: isCurrentPlan ? "2px solid #22c55e" : plan.popular ? "2px solid #008060" : "1px solid #e1e3e5",
                 backgroundColor: "white"
               }}
             >
+              {/* Current Plan Badge */}
+              {isCurrentPlan && (
+                <div className="absolute top-0 left-0">
+                  <Badge 
+                    className="rounded-none rounded-br-lg flex items-center gap-1 text-xs font-medium px-3 py-1"
+                    style={{ backgroundColor: "#22c55e", color: "white" }}
+                  >
+                    ✓ {t.currentPlan}
+                  </Badge>
+                </div>
+              )}
+              
               {/* Popular Badge - Shopify style */}
-              {plan.popular && (
+              {plan.popular && !isCurrentPlan && (
                 <div className="absolute top-0 right-0">
                   <Badge 
                     className="rounded-none rounded-bl-lg flex items-center gap-1 text-xs font-medium px-3 py-1"
@@ -374,20 +397,22 @@ export default function ShopifyPricingPlans({
                 <Button
                   className="w-full font-medium text-sm h-11 transition-all hover:opacity-90"
                   style={{ 
-                    background: "#1a1a1a",
+                    background: isCurrentPlan ? "#22c55e" : "#1a1a1a",
                     color: "white",
                     border: "none",
                     borderRadius: "6px",
                     boxShadow: "0 1px 0 rgba(0,0,0,0.05)"
                   }}
                   onClick={() => handleSelectPlan(plan.id)}
-                  disabled={loading}
+                  disabled={loading || isCurrentPlan}
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       {t.processing}
                     </>
+                  ) : isCurrentPlan ? (
+                    <>✓ {t.currentPlan}</>
                   ) : (
                     plan.trialDays ? t.startTrial : t.selectPlan
                   )}

@@ -498,6 +498,7 @@ const Subscription = () => {
         <ShopifyPricingPlans 
           shopDomain={shopDomain}
           language={language as "fr" | "en"}
+          currentPlanId={currentPlan?.id}
         />
       </div>
     );
