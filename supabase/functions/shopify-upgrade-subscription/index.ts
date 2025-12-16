@@ -8,18 +8,10 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const APP_URL = Deno.env.get("APP_URL") || "https://newai.sale";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[SHOPIFY-UPGRADE] ${step}${detailsStr}`);
-};
-
-// Plan pricing configuration (Shopify billing amounts)
-const PLAN_PRICING = {
-  starter: { monthly: 9.99, yearly: 95.90 },
-  "pro-500": { monthly: 49.00, yearly: 470.40 },
-  "pro-1000": { monthly: 98.00, yearly: 940.80 },
 };
 
 serve(async (req) => {
@@ -56,9 +48,9 @@ serve(async (req) => {
     const { newPlanId, billingCycle = "monthly" } = await req.json();
     logStep("Upgrade request", { userId: user.id, newPlanId, billingCycle });
 
-    if (!newPlanId || !PLAN_PRICING[newPlanId as keyof typeof PLAN_PRICING]) {
+    if (!newPlanId) {
       return new Response(
-        JSON.stringify({ error: "Invalid plan ID" }),
+        JSON.stringify({ error: "Plan ID is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -66,6 +58,22 @@ serve(async (req) => {
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
     });
+
+    // Get plan details from database - this is the FIX: use DB instead of hardcoded prices
+    const { data: plan, error: planError } = await supabaseAdmin
+      .from("subscription_plans")
+      .select("*")
+      .eq("id", newPlanId)
+      .eq("is_active", true)
+      .single();
+
+    if (planError || !plan) {
+      logStep("Plan not found", { error: planError, planId: newPlanId });
+      return new Response(
+        JSON.stringify({ error: "Plan not found or inactive" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Get user's Shopify connection
     const { data: connection, error: connError } = await supabaseAdmin
@@ -107,25 +115,11 @@ serve(async (req) => {
       );
     }
 
-    // Get plan details
-    const { data: plan, error: planError } = await supabaseAdmin
-      .from("subscription_plans")
-      .select("*")
-      .eq("id", newPlanId)
-      .single();
-
-    if (planError || !plan) {
-      logStep("Plan not found", { error: planError, planId: newPlanId });
-      return new Response(
-        JSON.stringify({ error: "Plan not found" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Calculate price
-    const pricing = PLAN_PRICING[newPlanId as keyof typeof PLAN_PRICING];
-    const price = billingCycle === "yearly" ? pricing.yearly : pricing.monthly;
+    // Calculate price from database
+    const price = billingCycle === "yearly" ? plan.price_yearly : plan.price_monthly;
     const interval = billingCycle === "yearly" ? "ANNUAL" : "EVERY_30_DAYS";
+
+    logStep("Plan pricing from DB", { planId: newPlanId, price, interval, planName: plan.name });
 
     // Create callback URL
     const callbackUrl = `${SUPABASE_URL}/functions/v1/shopify-billing-callback?shop=${connection.store_url}&plan=${newPlanId}&cycle=${billingCycle}`;
@@ -216,13 +210,15 @@ serve(async (req) => {
     }
 
     // Create pending subscription record
-    await supabaseAdmin.from("shopify_pending_subscriptions").insert({
+    await supabaseAdmin.from("shopify_pending_subscriptions").upsert({
       user_id: user.id,
       shop_domain: connection.store_url,
       plan_id: newPlanId,
       billing_cycle: billingCycle,
       status: "pending",
       created_at: new Date().toISOString(),
+    }, {
+      onConflict: "user_id,shop_domain",
     });
 
     logStep("Upgrade initiated successfully", { confirmationUrl });
