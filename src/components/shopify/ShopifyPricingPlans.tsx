@@ -170,6 +170,17 @@ export default function ShopifyPricingPlans({
       : "Could not create subscription",
     currentPlan: language === "fr" ? "Plan actuel" : "Current Plan",
     alreadyActive: language === "fr" ? "Abonnement déjà actif" : "Subscription already active",
+    upgrade: language === "fr" ? "Mettre à niveau" : "Upgrade",
+    downgrade: language === "fr" ? "Rétrograder" : "Downgrade",
+  };
+
+  // Helper to determine plan rank for upgrade/downgrade logic
+  const getPlanRank = (planId: string | undefined): number => {
+    if (!planId || planId === 'trial' || planId === 'free') return -1;
+    if (planId === 'starter') return 0;
+    if (planId === 'pro-500' || planId === 'pro') return 1;
+    if (planId === 'pro-1000' || planId === 'enterprise') return 2;
+    return -1;
   };
 
   const handleSelectPlan = async (planId: string) => {
@@ -410,16 +421,35 @@ export default function ShopifyPricingPlans({
                   onClick={() => handleSelectPlan(plan.id)}
                   disabled={loading || isCurrentPlan}
                 >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {t.processing}
-                    </>
-                  ) : isCurrentPlan ? (
-                    <>✓ {t.currentPlan}</>
-                  ) : (
-                    plan.trialDays ? t.startTrial : t.selectPlan
-                  )}
+                  {(() => {
+                    if (isLoading) {
+                      return (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {t.processing}
+                        </>
+                      );
+                    }
+                    if (isCurrentPlan) {
+                      return <>✓ {t.currentPlan}</>;
+                    }
+                    
+                    // Determine if upgrade or downgrade
+                    const currentRank = getPlanRank(currentPlanId);
+                    const targetRank = getPlanRank(plan.id);
+                    
+                    if (currentRank >= 0 && targetRank >= 0) {
+                      // User has an active plan
+                      if (targetRank < currentRank) {
+                        return t.downgrade;
+                      } else if (targetRank > currentRank) {
+                        return t.upgrade;
+                      }
+                    }
+                    
+                    // No current plan or same rank - show trial or select
+                    return plan.trialDays ? t.startTrial : t.selectPlan;
+                  })()}
                 </Button>
               </CardContent>
             </Card>
