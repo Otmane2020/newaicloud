@@ -26,7 +26,7 @@ export function ProductImageSelector({
         .from('shopify_products')
         .select(`
           product_images(id, position, src),
-          product_variants(id, title, image_url, position)
+          product_variants(id, title, image_url)
         `)
         .eq('id', productId)
         .single();
@@ -109,9 +109,7 @@ export function ProductImageSelector({
           <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
             Images des variantes
           </div>
-          {variants
-            .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
-            .map((variant: any) => (
+          {variants.map((variant: any) => (
               <DropdownMenuItem
                 key={variant.id}
                 onClick={async () => {
