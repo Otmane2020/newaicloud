@@ -31,26 +31,30 @@ export class ErrorBoundary extends Component<Props, State> {
       error.message.includes('AppBridge') ||
       error.message.includes('shopify');
 
-    // Some merchants see a transient "Minified React error #380" only
-    // inside the Shopify embedded iframe. In that case we try a single
-    // silent reload and avoid showing a scary error screen.
+    // Some merchants see transient React errors (#300, #380) that can be
+    // resolved with a single reload. Handle these gracefully.
     const isReact380Error = error.message.includes('Minified React error #380');
+    const isReact300Error = error.message.includes('Minified React error #300');
+    const isTransientReactError = isReact380Error || isReact300Error;
 
     const isInShopifyAdmin =
       typeof window !== 'undefined' &&
       new URLSearchParams(window.location.search).has('host');
 
-    if (isReact380Error && isInShopifyAdmin && typeof window !== 'undefined') {
+    if (isTransientReactError && typeof window !== 'undefined') {
       try {
         const storage = window.sessionStorage;
-        const hasReloaded = storage.getItem('react_380_reloaded') === '1';
+        const errorKey = isReact300Error ? 'react_300_reloaded' : 'react_380_reloaded';
+        const hasReloaded = storage.getItem(errorKey) === '1';
         if (!hasReloaded) {
-          storage.setItem('react_380_reloaded', '1');
-          console.warn('[ErrorBoundary] React #380 in Shopify context, reloading once');
+          storage.setItem(errorKey, '1');
+          console.warn(`[ErrorBoundary] React error detected, reloading once: ${error.message}`);
+          // Clear any cached data that might be corrupted
+          localStorage.removeItem('usage-limits-cache');
           window.location.reload();
         }
       } catch (e) {
-        console.warn('[ErrorBoundary] Failed to use sessionStorage for React #380 handling', e);
+        console.warn('[ErrorBoundary] Failed to use sessionStorage for React error handling', e);
       }
 
       // Do not switch to error UI for this transient issue
@@ -77,12 +81,14 @@ export class ErrorBoundary extends Component<Props, State> {
       error.message.includes('shopify');
 
     const isReact380Error = error.message.includes('Minified React error #380');
+    const isReact300Error = error.message.includes('Minified React error #300');
+    const isTransientReactError = isReact380Error || isReact300Error;
 
     const isInShopifyAdmin =
       typeof window !== 'undefined' &&
       new URLSearchParams(window.location.search).has('host');
 
-    if (!isBenignDomError && !isAppBridgeError && !(isReact380Error && isInShopifyAdmin)) {
+    if (!isBenignDomError && !isAppBridgeError && !isTransientReactError) {
       console.error('[ErrorBoundary] Uncaught error:', error);
       console.error('[ErrorBoundary] Error info:', errorInfo);
     }
