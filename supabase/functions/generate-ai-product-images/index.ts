@@ -334,10 +334,19 @@ CRITICAL INSTRUCTIONS:
   }
 });
 
-// Helper function to fetch image and convert to base64
+// Helper function to fetch image and convert to base64 (chunked to avoid stack overflow)
 async function fetchImageAsBase64(imageUrl: string): Promise<string> {
   const response = await fetch(imageUrl);
   const arrayBuffer = await response.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-  return base64;
+  const uint8Array = new Uint8Array(arrayBuffer);
+  
+  // Process in chunks to avoid stack overflow with large images
+  const CHUNK_SIZE = 8192;
+  let binary = '';
+  for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
+    const chunk = uint8Array.subarray(i, Math.min(i + CHUNK_SIZE, uint8Array.length));
+    binary += String.fromCharCode(...chunk);
+  }
+  
+  return btoa(binary);
 }
