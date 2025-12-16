@@ -264,7 +264,7 @@ export default function SetupWizard() {
   // ALWAYS show pricing - auth errors are non-blocking
   return (
     <div 
-      className="h-screen flex flex-col overflow-y-auto" 
+      className="min-h-screen flex flex-col" 
       style={{ 
         backgroundColor: "#f6f6f7", 
         fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" 
