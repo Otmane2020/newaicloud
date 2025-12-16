@@ -709,7 +709,7 @@ export function EmailInbox() {
                                   "p-4 border rounded-lg cursor-pointer transition-colors",
                                   !email.is_read 
                                     ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/30" 
-                                    : "bg-background hover:bg-muted/50"
+                                    : "bg-white dark:bg-card hover:bg-gray-50 dark:hover:bg-muted/50"
                                 )}
                               >
                                 <div className="flex items-start justify-between gap-4 mb-2">
@@ -786,7 +786,7 @@ export function EmailInbox() {
                                   "p-4 border rounded-lg cursor-pointer transition-colors",
                                   !email.is_read 
                                     ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/30" 
-                                    : "bg-background hover:bg-muted/50"
+                                    : "bg-white dark:bg-card hover:bg-gray-50 dark:hover:bg-muted/50"
                                 )}
                               >
                                 <div className="flex items-start justify-between gap-4 mb-2">
@@ -863,7 +863,7 @@ export function EmailInbox() {
                                   "p-4 border rounded-lg cursor-pointer transition-colors",
                                   !email.is_read 
                                     ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/30" 
-                                    : "bg-background hover:bg-muted/50"
+                                    : "bg-white dark:bg-card hover:bg-gray-50 dark:hover:bg-muted/50"
                                 )}
                               >
                                 <div className="flex items-start justify-between gap-4 mb-2">
@@ -940,7 +940,7 @@ export function EmailInbox() {
                                   "p-4 border rounded-lg cursor-pointer transition-colors",
                                   !email.is_read 
                                     ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/30" 
-                                    : "bg-background hover:bg-muted/50"
+                                    : "bg-white dark:bg-card hover:bg-gray-50 dark:hover:bg-muted/50"
                                 )}
                               >
                                 <div className="flex items-start justify-between gap-4 mb-2">
