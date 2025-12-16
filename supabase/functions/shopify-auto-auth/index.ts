@@ -107,19 +107,52 @@ serve(async (req) => {
 
     console.log("[SHOPIFY-AUTO-AUTH] Auto-authentication pour:", shop);
 
-    // 1. Vérifier que le pending_token est valide
-    const { data: pendingConnection, error: pendingError } = await supabase
-      .from("shopify_pending_connections")
-      .select("*")
-      .eq("pending_token", pending_token)
-      .eq("shop_url", shop)
-      .eq("is_claimed", false)
-      .single();
+    // Helper function for delay
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-    if (pendingError || !pendingConnection) {
-      console.error("[SHOPIFY-AUTO-AUTH] Token invalide ou expiré:", pendingError);
+    // 1. Vérifier que le pending_token est valide - WITH RETRY for replication lag
+    let pendingConnection = null;
+    let pendingError = null;
+    const MAX_TOKEN_RETRIES = 3;
+    const TOKEN_RETRY_DELAYS = [500, 1000, 2000]; // Exponential backoff
+    
+    for (let attempt = 0; attempt < MAX_TOKEN_RETRIES; attempt++) {
+      // Small delay before first attempt to allow replication
+      if (attempt === 0) {
+        await delay(300);
+      }
+      
+      console.log(`[SHOPIFY-AUTO-AUTH] Token lookup attempt ${attempt + 1}/${MAX_TOKEN_RETRIES}`);
+      
+      const { data, error } = await supabase
+        .from("shopify_pending_connections")
+        .select("*")
+        .eq("pending_token", pending_token)
+        .eq("shop_url", shop)
+        .eq("is_claimed", false)
+        .maybeSingle();
+      
+      if (data) {
+        pendingConnection = data;
+        pendingError = null;
+        console.log(`[SHOPIFY-AUTO-AUTH] ✅ Token found on attempt ${attempt + 1}`);
+        break;
+      }
+      
+      pendingError = error;
+      
+      // If not last attempt, wait before retry
+      if (attempt < MAX_TOKEN_RETRIES - 1) {
+        const delayMs = TOKEN_RETRY_DELAYS[attempt] || 2000;
+        console.log(`[SHOPIFY-AUTO-AUTH] Token not found, retrying in ${delayMs}ms...`);
+        await delay(delayMs);
+      }
+    }
+
+    if (!pendingConnection) {
+      console.error("[SHOPIFY-AUTO-AUTH] Token invalide après tous les retries:", pendingError);
       return new Response(
-        JSON.stringify({ error: "Invalid or expired pending token" }),
+        JSON.stringify({ error: "Invalid or expired pending token", details: "Token not found after retries" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
