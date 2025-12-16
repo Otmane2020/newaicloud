@@ -10,9 +10,9 @@ interface RequestBody {
   productTitle: string;
   productType: string;
   sourceImageUrl: string;
-  imageTypes: string[]; // ['front', 'profile', 'back', 'zoom_fabric', 'zoom_legs', 'zoom_detail']
+  imageTypes: string[];
   includeDecor: boolean;
-  decorType: 'living_room' | 'bedroom' | 'office';
+  decorType: 'living_room' | 'bedroom' | 'office' | 'dining_room';
   language: string;
 }
 
@@ -103,10 +103,9 @@ serve(async (req) => {
       );
     }
 
-    // Use Gemini direct API key instead of Lovable AI
-    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const lang = language === 'fr' ? 'fr' : 'en';
@@ -117,7 +116,7 @@ serve(async (req) => {
     console.log(`🎯 Image types requested: ${imageTypes.join(', ')}`);
     console.log(`🏠 Include decor: ${includeDecor} (${decorType})`);
 
-    // Prioritize profile view as primary image - sort image types to put profile first
+    // Prioritize profile view as primary image
     const sortedImageTypes = [...imageTypes].sort((a, b) => {
       if (a === 'profile') return -1;
       if (b === 'profile') return 1;
@@ -128,12 +127,12 @@ serve(async (req) => {
 
     console.log(`🎯 Sorted image types (profile priority): ${sortedImageTypes.join(', ')}`);
 
-    // Generate white background variant images
+    // Generate white background variant images using Lovable AI
     for (const imageType of sortedImageTypes) {
       const typePrompt = IMAGE_TYPE_PROMPTS[imageType]?.[lang] || IMAGE_TYPE_PROMPTS[imageType]?.en;
       if (!typePrompt) continue;
 
-      console.log(`🎨 Generating ${imageType} image via Gemini Direct...`);
+      console.log(`🎨 Generating ${imageType} image via Lovable AI...`);
 
       const prompt = lang === 'fr'
         ? `À partir de cette image de produit (${productTitle}, type: ${productType}), génère une image professionnelle e-commerce de haute qualité.
@@ -156,49 +155,35 @@ CRITICAL INSTRUCTIONS:
 - No text, no watermark`;
 
       try {
-        // Use Gemini 2.0 Flash direct API
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            contents: [
+            model: "google/gemini-2.5-flash-image-preview",
+            messages: [
               {
-                parts: [
-                  { text: prompt },
-                  { 
-                    inlineData: {
-                      mimeType: "image/jpeg",
-                      data: await fetchImageAsBase64(sourceImageUrl)
-                    }
-                  }
+                role: "user",
+                content: [
+                  { type: "text", text: prompt },
+                  { type: "image_url", image_url: { url: sourceImageUrl } }
                 ]
               }
             ],
-            generationConfig: {
-              responseModalities: ["TEXT", "IMAGE"]
-            }
+            modalities: ["image", "text"]
           }),
         });
 
         if (!response.ok) {
-          console.error(`❌ Error generating ${imageType}:`, response.status, await response.text());
+          const errorText = await response.text();
+          console.error(`❌ Error generating ${imageType}:`, response.status, errorText);
           continue;
         }
 
         const data = await response.json();
-        
-        // Extract image from Gemini response
-        const parts = data.candidates?.[0]?.content?.parts || [];
-        let imageUrl: string | null = null;
-        
-        for (const part of parts) {
-          if (part.inlineData?.mimeType?.startsWith('image/')) {
-            imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-            break;
-          }
-        }
+        const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
         if (imageUrl) {
           generatedImages.push({
@@ -206,21 +191,22 @@ CRITICAL INSTRUCTIONS:
             type: imageType,
             label: IMAGE_TYPE_LABELS[imageType]?.[lang] || imageType
           });
-          console.log(`✅ Generated ${imageType} image via Gemini Direct`);
+          console.log(`✅ Generated ${imageType} image via Lovable AI`);
+        } else {
+          console.log(`⚠️ No image returned for ${imageType}`);
         }
       } catch (error) {
         console.error(`❌ Error generating ${imageType}:`, error);
       }
 
       // Small delay between requests to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    // Generate decor image FROM the first generated white background image (prioritizing profile)
+    // Generate decor image from the first generated white background image
     if (includeDecor && generatedImages.length > 0) {
       console.log(`🏠 Generating decor image (${decorType}) from generated white background image...`);
 
-      // Use the first generated white background image as source for decor transformation
       const whiteBackgroundImage = generatedImages[0];
       const decorPrompt = DECOR_PROMPTS[decorType]?.[lang] || DECOR_PROMPTS[decorType]?.en;
       
@@ -251,51 +237,41 @@ CRITICAL INSTRUCTIONS:
 - The product must NOT be duplicated or modified`;
 
       try {
-        // For decor, we need to use the generated image which is base64
-        const imageBase64 = whiteBackgroundImage.url.startsWith('data:') 
-          ? whiteBackgroundImage.url.split(',')[1]
-          : await fetchImageAsBase64(whiteBackgroundImage.url);
-
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            contents: [
+            model: "google/gemini-2.5-flash-image-preview",
+            messages: [
               {
-                parts: [
-                  { text: prompt },
-                  { 
-                    inlineData: {
-                      mimeType: "image/png",
-                      data: imageBase64
-                    }
-                  }
+                role: "user",
+                content: [
+                  { type: "text", text: prompt },
+                  { type: "image_url", image_url: { url: whiteBackgroundImage.url } }
                 ]
               }
             ],
-            generationConfig: {
-              responseModalities: ["TEXT", "IMAGE"]
-            }
+            modalities: ["image", "text"]
           }),
         });
 
         if (response.ok) {
           const data = await response.json();
-          const parts = data.candidates?.[0]?.content?.parts || [];
-          
-          for (const part of parts) {
-            if (part.inlineData?.mimeType?.startsWith('image/')) {
-              generatedImages.push({
-                url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`,
-                type: 'decor',
-                label: IMAGE_TYPE_LABELS.decor[lang]
-              });
-              console.log(`✅ Generated decor image via Gemini Direct`);
-              break;
-            }
+          const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+          if (imageUrl) {
+            generatedImages.push({
+              url: imageUrl,
+              type: 'decor',
+              label: IMAGE_TYPE_LABELS.decor[lang]
+            });
+            console.log(`✅ Generated decor image via Lovable AI`);
           }
+        } else {
+          console.error(`❌ Error generating decor:`, response.status, await response.text());
         }
       } catch (error) {
         console.error(`❌ Error generating decor image:`, error);
@@ -333,20 +309,3 @@ CRITICAL INSTRUCTIONS:
     );
   }
 });
-
-// Helper function to fetch image and convert to base64 (chunked to avoid stack overflow)
-async function fetchImageAsBase64(imageUrl: string): Promise<string> {
-  const response = await fetch(imageUrl);
-  const arrayBuffer = await response.arrayBuffer();
-  const uint8Array = new Uint8Array(arrayBuffer);
-  
-  // Process in chunks to avoid stack overflow with large images
-  const CHUNK_SIZE = 8192;
-  let binary = '';
-  for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
-    const chunk = uint8Array.subarray(i, Math.min(i + CHUNK_SIZE, uint8Array.length));
-    binary += String.fromCharCode(...chunk);
-  }
-  
-  return btoa(binary);
-}
