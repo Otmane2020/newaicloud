@@ -111,8 +111,10 @@ export default function ShopifyApp() {
             .single();
           
           const subscriptionStatus = profile?.subscription_status;
-          if (isDemoStore || subscriptionStatus === 'active' || subscriptionStatus === 'trialing') {
-            console.log('🔑 [ShopifyApp] Quick-login for active user');
+          const hasActiveSubscription = isDemoStore || subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+          
+          if (hasActiveSubscription) {
+            console.log('🔑 [ShopifyApp] User has active subscription, attempting quick-login');
             
             try {
               const { data: authData, error: authError } = await supabase.functions.invoke("shopify-quick-login", {
@@ -124,18 +126,21 @@ export default function ShopifyApp() {
                   access_token: authData.access_token,
                   refresh_token: authData.refresh_token,
                 });
-                await new Promise(resolve => setTimeout(resolve, 200));
-                setStatus("processed");
-                navigate("/dashboard-light", { replace: true });
-                return;
+                await new Promise(resolve => setTimeout(resolve, 100));
               }
             } catch (err) {
-              console.error('⚠️ [ShopifyApp] Quick-login failed:', err);
+              console.error('⚠️ [ShopifyApp] Quick-login failed (will redirect anyway):', err);
             }
+            
+            // 🔧 FIX: Toujours rediriger vers dashboard-light si abonnement actif
+            // Même si quick-login échoue, l'utilisateur payant va au dashboard
+            setStatus("processed");
+            navigate("/dashboard-light", { replace: true });
+            return;
           }
         }
         
-        // Pas de connexion ou quick-login échoué → setup-wizard (standalone)
+        // Pas de connexion OU pas d'abonnement actif → setup-wizard pour paiement
         setStatus("processed");
         sessionStorage.setItem('shopify_auth_redirect', 'true');
         navigate(`/app/setup-wizard?shop=${shop}`, { replace: true });
