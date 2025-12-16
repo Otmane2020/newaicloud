@@ -51,11 +51,15 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
       value = value?.[k];
     }
     
-    if (!value) return key;
+    // Ensure we always return a string, never an object
+    if (!value || typeof value !== 'string') {
+      console.warn('[tf] Translation key returned non-string value:', key, typeof value);
+      return key;
+    }
     
     if (vars) {
       return Object.entries(vars).reduce(
-        (str, [key, val]) => str.replace(`{{${key}}}`, String(val)),
+        (str, [k, val]) => str.replace(`{{${k}}}`, String(val)),
         value
       );
     }
