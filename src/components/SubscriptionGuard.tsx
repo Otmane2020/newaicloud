@@ -57,95 +57,110 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      // Check Stripe for the real subscription status
-      console.log('🔄 Checking Stripe subscription status...');
+      // Load the profile from database FIRST to check if Shopify user
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('subscription_status, current_plan_id, trial_ends_at, stripe_customer_id, billing_provider')
+        .eq('id', user.id)
+        .single();
+      
+      // Check if this is a Shopify user - skip Stripe check entirely
+      const isShopifyUser = profileData?.billing_provider === 'shopify' || 
+                           user.email?.endsWith('@shopify.newai.sale');
+      
+      if (isShopifyUser && profileData?.subscription_status === 'active') {
+        console.log('🛒 [SubscriptionGuard] Shopify user with active subscription, bypassing Stripe check');
+        setProfile(profileData);
+        setLoading(false);
+        return;
+      }
       
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
         console.log('⚠️ No valid session, skipping Stripe check');
+        setProfile(profileData);
         setLoading(false);
         return;
       }
       
-      const { data: stripeData, error: stripeError } = await supabase.functions.invoke('check-subscription', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-      
-      if (stripeError) {
-        console.error('❌ Error checking Stripe subscription:', stripeError);
+      // Only check Stripe for non-Shopify users
+      if (!isShopifyUser) {
+        console.log('🔄 Checking Stripe subscription status...');
         
-        // Handle session expiration - redirect to auth
-        if (stripeError.message?.includes('Session expired') || 
-            stripeError.message?.includes('invalid_session') ||
-            stripeError.message?.includes('Session not found') ||
-            stripeError.message?.includes('401')) {
-          console.log('🔐 Session expired, signing out and redirecting to auth');
-          await supabase.auth.signOut();
-          window.location.href = '/auth';
-          return;
-        }
-      } else {
-        console.log('✅ Stripe subscription data:', stripeData);
+        const { data: stripeData, error: stripeError } = await supabase.functions.invoke('check-subscription', {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`
+          }
+        });
         
-        // Check for invalid trial state on paid plan
-        if (stripeData?.error === 'invalid_trial_state') {
-          console.error('⚠️ INVALID TRIAL STATE DETECTED:', stripeData);
-          setInvalidTrialState(true);
-          setLoading(false);
-          return;
-        }
-        
-        // If user has active subscription in Stripe, bypass the redirect
-        if (stripeData?.subscribed) {
-          console.log('✅ Active subscription found in Stripe, allowing access');
-          setHasActiveStripeSubscription(true);
+        if (stripeError) {
+          console.error('❌ Error checking Stripe subscription:', stripeError);
           
-          // Update profile in background (don't wait for it)
-          supabase
-            .from('profiles')
-            .update({
+          // Handle session expiration - redirect to auth
+          if (stripeError.message?.includes('Session expired') || 
+              stripeError.message?.includes('invalid_session') ||
+              stripeError.message?.includes('Session not found') ||
+              stripeError.message?.includes('401')) {
+            console.log('🔐 Session expired, signing out and redirecting to auth');
+            await supabase.auth.signOut();
+            window.location.href = '/auth';
+            return;
+          }
+        } else {
+          console.log('✅ Stripe subscription data:', stripeData);
+          
+          // Check for invalid trial state on paid plan
+          if (stripeData?.error === 'invalid_trial_state') {
+            console.error('⚠️ INVALID TRIAL STATE DETECTED:', stripeData);
+            setInvalidTrialState(true);
+            setLoading(false);
+            return;
+          }
+          
+          // If user has active subscription in Stripe, bypass the redirect
+          if (stripeData?.subscribed) {
+            console.log('✅ Active subscription found in Stripe, allowing access');
+            setHasActiveStripeSubscription(true);
+            
+            // Update profile in background (don't wait for it)
+            supabase
+              .from('profiles')
+              .update({
+                subscription_status: 'active',
+                onboarding_completed: true,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', user.id)
+              .then(({ error: updateError }) => {
+                if (updateError) {
+                  console.error('❌ Error updating profile:', updateError);
+                } else {
+                  console.log('✅ Profile updated with active subscription');
+                }
+              });
+            
+            // Set a valid profile to bypass the redirect check
+            setProfile({
               subscription_status: 'active',
-              onboarding_completed: true,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id)
-            .then(({ error: updateError }) => {
-              if (updateError) {
-                console.error('❌ Error updating profile:', updateError);
-              } else {
-                console.log('✅ Profile updated with active subscription');
-              }
+              current_plan_id: null,
+              trial_ends_at: null,
+              stripe_customer_id: null,
+              billing_provider: 'stripe'
             });
-          
-          // Set a valid profile to bypass the redirect check
-          setProfile({
-            subscription_status: 'active',
-            current_plan_id: null,
-            trial_ends_at: null,
-            stripe_customer_id: null,
-            billing_provider: 'stripe'
-          });
-          setLoading(false);
-          return;
+            setLoading(false);
+            return;
+          }
         }
       }
       
-      // Load the profile from database
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('subscription_status, current_plan_id, trial_ends_at, stripe_customer_id, billing_provider')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('❌ Error loading profile:', error);
+      // Profile already loaded above, handle errors and set state
+      if (profileError) {
+        console.error('❌ Error loading profile:', profileError);
         
         // If profile doesn't exist, create it
-        if (error.code === 'PGRST116') {
+        if (profileError.code === 'PGRST116') {
           console.log('📝 Profile not found, creating new profile...');
           const { error: insertError } = await supabase
             .from('profiles')
@@ -178,13 +193,14 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
 
       console.log('✅ [SubscriptionGuard] Profile loaded:', {
         userId: user.id,
-        status: data.subscription_status,
-        plan: data.current_plan_id,
-        trialEnds: data.trial_ends_at,
+        status: profileData.subscription_status,
+        plan: profileData.current_plan_id,
+        trialEnds: profileData.trial_ends_at,
+        billingProvider: profileData.billing_provider,
         timestamp: new Date().toISOString()
       });
 
-      setProfile(data);
+      setProfile(profileData);
     } catch (error) {
       console.error('❌ Error in loadUserProfile:', error);
     } finally {
