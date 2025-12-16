@@ -1943,289 +1943,102 @@ Note: Only include reliability badge if you have verified or extracted specifica
   <!-- Desktop table -->
   <table class="hidden md:table min-w-full">
 
-🎯 KEY BENEFITS SECTION (CRITICAL - PREMIUM STYLE REQUIRED):
+🎯 KEY BENEFITS SECTION (SIMPLE & CLEAN DESIGN):
 
-🚨 CHIC DESIGN RULES FOR KEY BENEFITS:
+🚨 DESIGN RULES FOR KEY BENEFITS - SIMPLE & EFFECTIVE:
 
-1. **ELEGANT CARDS WITH EFFECTS**:
-   - Clean white/surface background with graduated shadows
-   - Subtle borders or light edges
-   - Mandatory hover effects: shadow-xl with transition
+1. **CLEAN CARDS**:
+   - White/surface background with subtle shadow
+   - Hover effects: shadow-xl with transition
    - Generous spacing (p-6 md:p-8)
-   - Subtle colored border on top or left (accent color)
+   - Rounded corners (rounded-2xl)
 
-2. **STYLED ICONS WITH GRADIENTS**:
-   - ALWAYS use gradients (primary → accent) on icons
-   - Medium size: w-12 h-12 or w-10 h-10 in a circle
-   - Background circle with light gradient or solid color
-   - Create unique IDs for each gradient (benefit-grad-1, benefit-grad-2, etc.)
-   - Add hover: scale and slight rotation
+2. **SIMPLE ICONS - NO GRADIENTS**:
+   🚨 CRITICAL: Use SIMPLE white icons on colored backgrounds
+   - Icon container: colored background circle (w-14 h-14 rounded-full)
+   - Icon: white stroke (stroke="white")
+   - NO SVG gradients, NO defs, NO linearGradient
+   - Each card uses a DIFFERENT background color from the palette
 
-3. **MANDATORY STRUCTURE** - Ultra Attractive Design:
+3. **ICON COLOR PALETTE** (rotate for each card):
+   - Card 1: hsl(${designTokens.primary}) background
+   - Card 2: #10b981 (green) background
+   - Card 3: #f97316 (orange) background
+   - Card 4: #8b5cf6 (purple) background
+   - Card 5: #ec4899 (pink) background
+   - Card 6: #6366f1 (indigo) background
+
+4. **MANDATORY STRUCTURE**:
 \`\`\`html
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-  <!-- Benefit Card 1 - Blue/Purple Gradient -->
-  <div class="group relative bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 md:p-8 transition-all duration-500 hover:-translate-y-2 overflow-hidden" 
-       style="box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.06);">
-    
-    <!-- Animated gradient glow on hover (top right) -->
-    <div class="absolute top-0 right-0 w-32 h-32 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
-         style="background: radial-gradient(circle, rgba(59,130,246,0.15), transparent);"></div>
-    
-    <!-- Enhanced shadow on hover -->
-    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
-         style="box-shadow: 0 20px 60px rgba(59,130,246,0.25);"></div>
-    
-    <!-- Icon with vibrant gradient -->
-    <div class="relative mb-5">
-      <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 relative" 
-           style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); box-shadow: 0 8px 25px rgba(59,130,246,0.4);">
-        <svg class="w-8 h-8 relative z-10" viewBox="0 0 24 24" fill="none">
-          <path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <!-- Reverse gradient on hover for dynamic effect -->
-        <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
-             style="background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);"></div>
-      </div>
-    </div>
-    
-    <!-- Content -->
-    <h3 class="relative text-xl font-bold mb-3 transition-colors duration-300" style="color: #111827;">
-      Benefit Title
-    </h3>
-    <p class="relative leading-relaxed" style="color: #6b7280;">
-      Detailed benefit description with compelling text that explains the value.
-    </p>
-    
-    <!-- Bottom accent bar that grows on hover -->
-    <div class="absolute bottom-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500" 
-         style="background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);"></div>
-  </div>
-
-  <!-- Benefit Card 2 - Green/Teal Gradient -->
-  <div class="group relative bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 md:p-8 transition-all duration-500 hover:-translate-y-2 overflow-hidden" 
-       style="box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.06);">
-    
-    <div class="absolute top-0 right-0 w-32 h-32 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
-         style="background: radial-gradient(circle, rgba(16,185,129,0.15), transparent);"></div>
-    
-    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
-         style="box-shadow: 0 20px 60px rgba(16,185,129,0.25);"></div>
-    
-    <div class="relative mb-5">
-      <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:-rotate-6 relative" 
-           style="background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%); box-shadow: 0 8px 25px rgba(16,185,129,0.4);">
-        <svg class="w-8 h-8 relative z-10" viewBox="0 0 24 24" fill="none">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="white" stroke-width="2.5" fill="none"/>
-        </svg>
-        <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
-             style="background: linear-gradient(135deg, #14b8a6 0%, #10b981 100%);"></div>
-      </div>
-    </div>
-    
-    <h3 class="relative text-xl font-bold mb-3 transition-colors duration-300" style="color: #111827;">
-      Second Benefit
-    </h3>
-    <p class="relative leading-relaxed" style="color: #6b7280;">
-      Another compelling reason to choose this product with clear value proposition.
-    </p>
-    
-    <div class="absolute bottom-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500" 
-         style="background: linear-gradient(90deg, #10b981 0%, #14b8a6 100%);"></div>
-  </div>
-
-  <!-- Benefit Card 3 - Orange/Amber Gradient -->
-  <div class="group relative bg-gradient-to-br from-white to-gray-50 rounded-3xl p-6 md:p-8 transition-all duration-500 hover:-translate-y-2 overflow-hidden" 
-       style="box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.06);">
-    
-    <div class="absolute top-0 right-0 w-32 h-32 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
-         style="background: radial-gradient(circle, rgba(249,115,22,0.15), transparent);"></div>
-    
-    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
-         style="box-shadow: 0 20px 60px rgba(249,115,22,0.25);"></div>
-    
-    <div class="relative mb-5">
-      <div class="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 relative" 
-           style="background: linear-gradient(135deg, #f97316 0%, #f59e0b 100%); box-shadow: 0 8px 25px rgba(249,115,22,0.4);">
-        <svg class="w-8 h-8 relative z-10" viewBox="0 0 24 24" fill="none">
-          <path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="white" stroke-width="2" fill="none"/>
-        </svg>
-        <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" 
-             style="background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);"></div>
-      </div>
-    </div>
-    
-    <h3 class="relative text-xl font-bold mb-3 transition-colors duration-300" style="color: #111827;">
-      Third Benefit
-    </h3>
-    <p class="relative leading-relaxed" style="color: #6b7280;">
-      Final key advantage that seals the deal and convinces customers.
-    </p>
-    
-    <div class="absolute bottom-0 left-0 h-1 w-0 group-hover:w-full transition-all duration-500" 
-         style="background: linear-gradient(90deg, #f97316 0%, #f59e0b 100%);"></div>
-  </div>
-</div>
-\`\`\`
-
-🎨 **GRADIENT COLOR VARIATIONS** (rotate through these for multiple benefits):
-- **Blue-Purple**: #3b82f6 → #8b5cf6 (innovation, trust)
-- **Green-Teal**: #10b981 → #14b8a6 (eco-friendly, quality)
-- **Orange-Amber**: #f97316 → #f59e0b (energy, fast delivery)
-- **Pink-Rose**: #ec4899 → #f43f5e (premium, elegant)
-- **Indigo-Blue**: #6366f1 → #3b82f6 (tech, modern)
-- **Emerald-Green**: #059669 → #10b981 (nature, sustainable)
-
-4. **AVAILABLE SVG ICONS WITH GRADIENTS** (ROTATION OBLIGATOIRE):
-
-🚨 CRITICAL: Tu DOIS utiliser des icônes et gradients DIFFÉRENTS pour chaque carte de bénéfice!
-- Rotate les icônes dans l'ordre: Package → Delivery → Star → Shield → Sparkle → Check → Heart → Leaf
-- Rotate les gradients dans l'ordre: Blue-Purple → Green-Teal → Orange-Amber → Pink-Rose → Indigo-Blue → Emerald-Green
-- INTERDICTION de répéter la même icône ou le même gradient d'une carte à l'autre
-
-**GRADIENTS À UTILISER EN ROTATION (TOUJOURS UNIQUE PAR CARTE)**:
-1. Blue-Purple: #3b82f6 → #8b5cf6 (première carte)
-2. Green-Teal: #10b981 → #14b8a6 (deuxième carte)
-3. Orange-Amber: #f97316 → #f59e0b (troisième carte)
-4. Pink-Rose: #ec4899 → #f43f5e (quatrième carte si existe)
-5. Indigo-Blue: #6366f1 → #3b82f6 (cinquième carte si existe)
-6. Emerald-Green: #059669 → #10b981 (sixième carte si existe)
-
-📦 Package/Quality (ID unique: pkg-grad-1, pkg-grad-2, etc.):
-<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="pkg-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
-  </linearGradient></defs>
-  <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="url(#pkg-grad-[NUMERO_UNIQUE])" stroke-width="2"/>
-</svg>
-
-🚚 Delivery (ID unique: truck-grad-1, truck-grad-2, etc.):
-<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="truck-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
-  </linearGradient></defs>
-  <path d="M1 6h14v10H1V6zm14 0h3l3 4v6h-6V6zM6.5 19a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm11 0a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="url(#truck-grad-[NUMERO_UNIQUE])" stroke-width="2"/>
-</svg>
-
-⭐ Quality/Premium (ID unique: star-grad-1, star-grad-2, etc.):
-<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="star-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
-  </linearGradient></defs>
-  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#star-grad-[NUMERO_UNIQUE])"/>
-</svg>
-
-🛡️ Warranty/Security (ID unique: shield-grad-1, shield-grad-2, etc.):
-<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="shield-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
-  </linearGradient></defs>
-  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="url(#shield-grad-[NUMERO_UNIQUE])" stroke-width="2"/>
-</svg>
-
-✨ Innovation/New (ID unique: sparkle-grad-1, sparkle-grad-2, etc.):
-<svg class="w-7 h-7" viewBox="0 0 24 24">
-  <defs><linearGradient id="sparkle-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
-  </linearGradient></defs>
-  <path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6zm7 12l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z" fill="url(#sparkle-grad-[NUMERO_UNIQUE])"/>
-</svg>
-
-✓ Check/Validated (ID unique: check-grad-1, check-grad-2, etc.):
-<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="check-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
-  </linearGradient></defs>
-  <path d="M5 13l4 4L19 7" stroke="url(#check-grad-[NUMERO_UNIQUE])" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-
-❤️ Satisfaction/Love (ID unique: heart-grad-1, heart-grad-2, etc.):
-<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="heart-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
-  </linearGradient></defs>
-  <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="url(#heart-grad-[NUMERO_UNIQUE])" stroke-width="2"/>
-</svg>
-
-🌿 Eco/Sustainable (ID unique: leaf-grad-1, leaf-grad-2, etc.):
-<svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-  <defs><linearGradient id="leaf-grad-[NUMERO_UNIQUE]" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color: [COULEUR_GRADIENT_1]"/><stop offset="100%" style="stop-color: [COULEUR_GRADIENT_2]"/>
-  </linearGradient></defs>
-  <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.67.67-2.22c.52-1.75 2.06-3.16 3.86-3.53 1.95-.4 3.7.62 4.77 2.03l.87 1.16 3.83-5.88c.79-1.22.62-2.79-.36-3.89-1.08-1.22-3.02-1.44-4.42-.68" stroke="url(#leaf-grad-[NUMERO_UNIQUE])" stroke-width="2"/>
-</svg>
-
-🚨 EXEMPLE CORRECT - 3 CARTES AVEC DIVERSITÉ:
-Carte 1: Package + Blue-Purple (#3b82f6 → #8b5cf6)
-Carte 2: Delivery + Green-Teal (#10b981 → #14b8a6)
-Carte 3: Star + Orange-Amber (#f97316 → #f59e0b)
-
-5. **MANDATORY HOVER EFFECTS** (Spectacular & Eye-Catching):
-   - **Card elevation**: hover:-translate-y-2 (lifts card up)
-   - **Shadow evolution**: From subtle to dramatic (0 4px 20px → 0 20px 60px with color tint)
-   - **Icon animation**: scale-110 + rotation (rotate-6 or -rotate-6)
-   - **Glow effect**: Radial gradient appears on hover (top-right corner)
-   - **Bottom bar**: w-0 → w-full animated accent line
-   - **Smooth transitions**: duration-500 for fluid animations
-   - **Icon gradient flip**: Reverse gradient on hover for dynamic effect
-
-6. **COLORS IN LIGHT THEME** (Vibrant & Professional):
-   ✅ MANDATORY - Ultra Attractive Design:
-   - **Card base**: White (#ffffff) with subtle gray gradient (to-gray-50)
-   - **Icon backgrounds**: VIVID gradients with proper color pairs:
-     * Blue→Purple: #3b82f6 → #8b5cf6
-     * Green→Teal: #10b981 → #14b8a6
-     * Orange→Amber: #f97316 → #f59e0b
-   - **Icon glow**: Box-shadow with matching gradient color (rgba with 0.4 opacity)
-   - **Hover glow**: Radial gradient with 0.15 opacity
-   - **Text hierarchy**: #111827 (titles), #6b7280 (descriptions)
-   - **Accent bar**: Gradient line that grows on hover
-   - **Border**: Subtle 1px rgba(0,0,0,0.06) for definition
-   
-   🚨 STILL FORBIDDEN:
-   - ❌ Light pastel backgrounds on cards
-   - ❌ Washed-out or dull gradients
-
-7. **SPACING & LAYOUT**:
-   - Grid: grid-cols-1 md:grid-cols-2 lg:grid-cols-3
-   - Gap: gap-6 md:gap-8
-   - Card padding: p-6 md:p-8
-   - Icon margin: mb-5
-   - Rounded: rounded-2xl for cards
-
-🌈 COMPLETE EXAMPLE OF A STYLED KEY BENEFITS SECTION:
-\`\`\`html
-<section class="py-16 md:py-24" style="background: #ffffff;">
+<section class="py-16 md:py-24" style="background: hsl(${designTokens.surface});">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl md:text-4xl font-bold text-center mb-12" style="color: #111827;">
-      Why Choose This Product
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-12" style="color: hsl(${designTokens.text});">
+      Section Title
     </h2>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <!-- Card 1 -->
-      <div class="group bg-white rounded-2xl p-8 transition-all duration-300 hover:shadow-2xl" 
-           style="border-top: 4px solid hsl(${designTokens.primary}); box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
-        <div class="mb-5">
-          <div class="w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" 
-               style="background: linear-gradient(135deg, hsl(${designTokens.primary} / 0.12), hsl(${designTokens.accent} / 0.12));">
-            <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
-              <defs><linearGradient id="quality-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color: hsl(${designTokens.primary})"/>
-                <stop offset="100%" style="stop-color: hsl(${designTokens.accent})"/>
-              </linearGradient></defs>
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#quality-grad)"/>
-            </svg>
-          </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+
+      <!-- Benefit Card 1 -->
+      <div class="group bg-white rounded-2xl p-6 md:p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="w-14 h-14 rounded-full flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110" 
+             style="background: hsl(${designTokens.primary});">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
-        <h3 class="text-xl font-bold mb-3" style="color: #1f2937;">Premium Quality</h3>
-        <p class="leading-relaxed" style="color: #6b7280;">High-end materials selected for exceptional durability.</p>
+        <h3 class="text-xl font-bold mb-3" style="color: hsl(${designTokens.text});">Benefit Title</h3>
+        <p class="leading-relaxed" style="color: hsl(${designTokens.textMuted});">
+          Benefit description text here.
+        </p>
       </div>
-      
-      <!-- Repeat for other benefits with unique gradient IDs -->
+
+      <!-- Benefit Card 2 -->
+      <div class="group bg-white rounded-2xl p-6 md:p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="w-14 h-14 rounded-full flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110" 
+             style="background: #10b981;">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold mb-3" style="color: hsl(${designTokens.text});">Second Benefit</h3>
+        <p class="leading-relaxed" style="color: hsl(${designTokens.textMuted});">
+          Description of second benefit.
+        </p>
+      </div>
+
+      <!-- Benefit Card 3 -->
+      <div class="group bg-white rounded-2xl p-6 md:p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="w-14 h-14 rounded-full flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110" 
+             style="background: #f97316;">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold mb-3" style="color: hsl(${designTokens.text});">Third Benefit</h3>
+        <p class="leading-relaxed" style="color: hsl(${designTokens.textMuted});">
+          Description of third benefit.
+        </p>
+      </div>
+
     </div>
   </div>
 </section>
 \`\`\`
+
+5. **AVAILABLE SIMPLE ICONS** (white stroke on colored background):
+
+✓ Check: <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/>
+🛡️ Shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+⭐ Star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+📦 Package: <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+🚚 Truck: <path d="M1 3h15v13H1V3zm15 4h3l3 3v6h-6V7zm-9 10a2 2 0 100-4 2 2 0 000 4zm9 0a2 2 0 100-4 2 2 0 000 4z"/>
+❤️ Heart: <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+
+🚨 ICON RULES:
+- ALWAYS use stroke="white" and stroke-width="2"
+- ALWAYS add stroke-linecap="round" stroke-linejoin="round"
+- NEVER use <defs>, <linearGradient>, or url(#id) references
+- Use DIFFERENT colored backgrounds for each card
 
 🎨 CRITICAL DESIGN & COLOR RULES:
 
