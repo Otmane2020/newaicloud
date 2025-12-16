@@ -312,12 +312,21 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         }
       });
     
-    // Rediriger immédiatement vers onboarding
+    // Rediriger immédiatement - Shopify users vers setup-wizard, autres vers onboarding
+    const isShopifyUserInvalid = profile?.billing_provider === 'shopify' || 
+                                  user?.email?.endsWith('@shopify.newai.sale');
+    if (isShopifyUserInvalid) {
+      const shopHandle = user?.email?.split('@')[0] || '';
+      const shopDomain = `${shopHandle}.myshopify.com`;
+      console.log('🛒 [SubscriptionGuard] Invalid Shopify trial, redirecting to setup-wizard');
+      return <Navigate to={`/app/setup-wizard?shop=${encodeURIComponent(shopDomain)}`} replace />;
+    }
     return <Navigate to="/onboarding" replace />;
   }
   
   // Shopify users have billing_provider='shopify' - they don't need stripe_customer_id
-  const isShopifyUser = profile?.billing_provider === 'shopify';
+  const isShopifyUser = profile?.billing_provider === 'shopify' || 
+                        user?.email?.endsWith('@shopify.newai.sale');
   
   const hasValidSubscription = profile?.subscription_status && 
     (profile.subscription_status === 'active' 
@@ -329,12 +338,21 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       new Date(profile.trial_ends_at) > new Date()));
 
   if (!hasValidSubscription && !hasActiveStripeSubscription) {
-    console.log('⚠️ [SubscriptionGuard] No valid subscription, redirecting to onboarding:', {
+    console.log('⚠️ [SubscriptionGuard] No valid subscription:', {
       userId: user?.id,
       status: profile?.subscription_status,
-      hasStripeSubscription: hasActiveStripeSubscription,
+      isShopifyUser,
       timestamp: new Date().toISOString()
     });
+    
+    // Shopify users go to Shopify Billing setup, others go to Stripe onboarding
+    if (isShopifyUser) {
+      const shopHandle = user?.email?.split('@')[0] || '';
+      const shopDomain = `${shopHandle}.myshopify.com`;
+      console.log('🛒 [SubscriptionGuard] Redirecting Shopify user to setup-wizard');
+      return <Navigate to={`/app/setup-wizard?shop=${encodeURIComponent(shopDomain)}`} replace />;
+    }
+    
     return <Navigate to="/onboarding" replace />;
   }
 
