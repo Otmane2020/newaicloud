@@ -338,14 +338,17 @@ export default function ShopifyPricingPlans({
                   ))}
                 </ul>
 
-                {/* CTA Button - Shopify Polaris style */}
+                {/* CTA Button - Shopify Polaris blue style */}
                 <Button
-                  className="w-full font-medium text-sm h-10"
+                  className="w-full font-medium text-sm h-11 transition-all hover:opacity-90"
                   style={{ 
-                    backgroundColor: plan.popular ? "#008060" : "white",
-                    color: plan.popular ? "white" : "#202223",
-                    border: plan.popular ? "none" : "1px solid #8c9196",
-                    borderRadius: "4px"
+                    background: plan.popular 
+                      ? "linear-gradient(180deg, #2c6ecb 0%, #1a5bb8 100%)" 
+                      : "linear-gradient(180deg, #3b82f6 0%, #2563eb 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    boxShadow: "0 1px 0 rgba(0,0,0,0.05)"
                   }}
                   onClick={() => handleSelectPlan(plan.id)}
                   disabled={loading}
