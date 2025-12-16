@@ -3,7 +3,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
+
+// Redirect component for /app/installing → /app with preserved query params
+const ShopifyAppRedirect = () => {
+  const [params] = useSearchParams();
+  const queryString = params.toString();
+  return <Navigate to={`/app${queryString ? `?${queryString}` : ''}`} replace />;
+};
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
 import { AutoSyncProvider, useAutoSyncProgress } from "./contexts/AutoSyncContext";
@@ -205,7 +212,8 @@ const App = () => (
           {/* Page Plans EMBEDDED dans Shopify Admin (affichée après installation) */}
           <Route path="/app/plans-embedded" element={<PlansEmbedded />} />
           {/* Routes standalone (non-embedded) */}
-          {/* Route /app/installing supprimée - redirection directe vers setup-wizard */}
+          {/* Redirection /app/installing vers /app pour compatibilité */}
+          <Route path="/app/installing" element={<ShopifyAppRedirect />} />
           <Route path="/app/setup-wizard" element={<SetupWizardPage />} />
           <Route path="/app" element={<ShopifyApp />} />
             <Route
