@@ -53,12 +53,8 @@ export function useUpgradeNavigation(options: UseUpgradeNavigationOptions = {}):
           options.onUpgradeComplete();
         }
         
-        // Redirect to Shopify Billing - handle embedded iframe
-        if (window.top && window.top !== window) {
-          window.top.location.href = data.confirmationUrl;
-        } else {
-          window.location.href = data.confirmationUrl;
-        }
+        // Redirect to Shopify Billing in same page
+        window.location.href = data.confirmationUrl;
       } else {
         throw new Error("No confirmation URL received");
       }
