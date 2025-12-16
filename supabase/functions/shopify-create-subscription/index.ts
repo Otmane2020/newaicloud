@@ -113,26 +113,41 @@ serve(async (req) => {
     // Free plan uses the "free" plan created in Shopify Partner Dashboard
 
     // Detect if this is a dev/partner/test store (for test mode)
-    // Shopify partner test stores and development stores should use test mode
+    // Development stores CANNOT process real payments - test mode is REQUIRED
     // Check multiple patterns for development/test stores
     const shopNameLower = (connection.shop_name || shopDomain || "").toLowerCase();
+    
+    // FORCE TEST MODE for ALL dev stores - they cannot process real payments
+    // Development stores always have specific characteristics:
+    // 1. Domain patterns with dev/test/demo keywords
+    // 2. Stores created via Partner Dashboard (dev stores)
+    // 3. Staff/partner test accounts
     const isDevStore = 
       shopDomain.includes("-dev") || 
       shopDomain.includes("dev-") || 
       shopDomain.includes("test-") ||
       shopDomain.includes("-test") ||
+      shopDomain.includes("demo") ||
+      shopDomain.includes("sandbox") ||
       shopNameLower.includes("dev") ||
       shopNameLower.includes("test") ||
       shopNameLower.includes("partner") ||
       shopNameLower.includes("demo") ||
-      shopNameLower.includes("sandbox");
+      shopNameLower.includes("sandbox") ||
+      shopNameLower.includes("development");
     
-    // IMPORTANT: For App Store review and dev stores, enable test mode
-    // Shopify reviewers use partner/staff accounts that can't process real payments
-    // Set SHOPIFY_TEST_MODE=true to force test mode for all stores
+    // CRITICAL: For development stores, test mode is MANDATORY
+    // Without test: true, Shopify will reject the subscription with payment errors
+    // Also allow SHOPIFY_TEST_MODE=true env var for App Store review
     const testMode = isDevStore || Deno.env.get("SHOPIFY_TEST_MODE") === "true";
     
-    logStep("Test mode detection", { isDevStore, testMode, shopDomain, shopName: connection.shop_name });
+    logStep("Test mode detection", { 
+      isDevStore, 
+      testMode, 
+      shopDomain, 
+      shopName: connection.shop_name,
+      reason: isDevStore ? "Dev store detected - test mode required" : "Production store"
+    });
 
     // Build Shopify GraphQL mutation for subscription
     const mutation = `
