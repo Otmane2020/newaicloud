@@ -13,6 +13,7 @@ import { loginSchema, signupSchema } from '@/lib/validationSchemas';
 import { useTranslation } from '@/lib/language';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { supabase } from '@/integrations/supabase/client';
+import { ServerStatusAlert } from '@/components/ServerStatusAlert';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -28,8 +29,9 @@ export default function Auth() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [facebookLoading, setFacebookLoading] = useState(false);
-  const { signIn, signUp, signInWithGoogle, signInWithFacebook, user } = useAuth();
-  const { t } = useTranslation();
+  const [serverOffline, setServerOffline] = useState(false);
+  const { signIn, signUp, signInWithGoogle, signInWithFacebook, user, serverStatus } = useAuth();
+  const { t, language } = useTranslation();
   const navigate = useNavigate();
   
   // ✅ Guard pour empêcher multi-exécution du redirect
@@ -161,17 +163,25 @@ export default function Auth() {
       console.error('[Auth] handleSubmit error:', error);
       
       const errorMessage = error?.message || '';
-      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('timeout') || errorMessage.includes('NetworkError')) {
-        toast.error("Serveur indisponible", {
-          description: "Le serveur ne répond pas. Veuillez réessayer dans quelques minutes."
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('timeout') || errorMessage.includes('NetworkError') || errorMessage.includes('522')) {
+        setServerOffline(true);
+        toast.error(language === 'fr' ? "Serveur indisponible" : "Server unavailable", {
+          description: language === 'fr' 
+            ? "Le serveur ne répond pas. Veuillez réessayer dans quelques minutes."
+            : "The server is not responding. Please try again in a few minutes."
         });
       } else {
-        toast.error("Une erreur est survenue lors de la connexion");
+        toast.error(language === 'fr' ? "Une erreur est survenue lors de la connexion" : "An error occurred during login");
       }
     } finally {
       // ✅ TOUJOURS exécuté - fix "Loading..." bloqué
       setLoading(false);
     }
+  };
+
+  const handleRetry = () => {
+    setServerOffline(false);
+    window.location.reload();
   };
 
   const handleGoogleSignIn = async () => {
@@ -218,15 +228,22 @@ export default function Auth() {
                 : t.auth.signup}
           </p>
 
+          {/* Server Offline Alert */}
+          {(serverOffline || serverStatus === 'offline') && (
+            <ServerStatusAlert onRetry={handleRetry} isRetrying={loading} />
+          )}
+
           {searchParams.get('shopify_pending') && (
             <Alert className="mb-6 bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800">
               <ShoppingBag className="h-5 w-5 text-blue-600" />
               <AlertDescription className="text-sm">
                 <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                  Connexion Shopify en attente
+                  {language === 'fr' ? 'Connexion Shopify en attente' : 'Shopify connection pending'}
                 </p>
                 <p className="text-blue-700 dark:text-blue-300">
-                  Votre boutique {searchParams.get('shop') || 'Shopify'} sera automatiquement connectée et vos 10 premiers produits importés une fois votre plan sélectionné.
+                  {language === 'fr' 
+                    ? `Votre boutique ${searchParams.get('shop') || 'Shopify'} sera automatiquement connectée et vos 10 premiers produits importés une fois votre plan sélectionné.`
+                    : `Your store ${searchParams.get('shop') || 'Shopify'} will be automatically connected and your first 10 products imported once you select a plan.`}
                 </p>
               </AlertDescription>
             </Alert>
