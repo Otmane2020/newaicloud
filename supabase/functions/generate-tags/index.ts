@@ -13,30 +13,35 @@ interface TagGenerationRequest {
   force?: boolean;
 }
 
-async function callDeepSeek(messages: any[], maxTokens = 500) {
-  const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+async function callLovableAI(messages: any[], maxTokens = 500) {
+  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-  if (!deepseekApiKey) {
-    throw new Error('DeepSeek API key not configured');
+  if (!lovableApiKey) {
+    throw new Error('Lovable API key not configured');
   }
 
-  const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${deepseekApiKey}`,
+      'Authorization': `Bearer ${lovableApiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: 'google/gemini-2.5-flash',
       messages,
-      temperature: 0.5,
       max_tokens: maxTokens,
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+    if (response.status === 429) {
+      throw new Error('Rate limit exceeded. Please try again later.');
+    }
+    if (response.status === 402) {
+      throw new Error('AI credits exhausted. Please add credits to continue.');
+    }
+    throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
   }
 
   return await response.json();
@@ -163,7 +168,7 @@ Deno.serve(async (req: Request) => {
     });
     console.log(`🛡️ LANGUAGE GUARD: tags - detected=${language}, store=${rawStoreLanguage}, product="${product.title?.substring(0,30)}..."`);
 
-    console.log(`Generating tags with DeepSeek for product: ${product.title} (language: ${language})`);
+    console.log(`Generating tags with Lovable AI for product: ${product.title} (language: ${language})`);
 
     const tagPrompt = getSeoPrompt(language, 'tags', {
       title: product.title,
@@ -178,7 +183,7 @@ Deno.serve(async (req: Request) => {
 
     const systemRole = getSystemRole(language, 'tags');
 
-    const tagResponse = await callDeepSeek([
+    const tagResponse = await callLovableAI([
       {
         role: "system",
         content: systemRole,
@@ -230,7 +235,7 @@ Deno.serve(async (req: Request) => {
       throw updateError;
     }
 
-    console.log(`Tags generated with DeepSeek for product ${productId}: ${tags}`);
+    console.log(`Tags generated with Lovable AI for product ${productId}: ${tags}`);
 
     // Track usage - 1 optimization
     await supabaseClient.rpc('increment_usage', {
@@ -277,7 +282,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Tags generated successfully with DeepSeek",
+        message: "Tags generated successfully",
         data: {
           product_id: productId,
           tags: tags,
