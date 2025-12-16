@@ -154,7 +154,10 @@ export function SeoOptimization() {
   
 
   const fetchProducts = async () => {
-    if (!selectedStore) {
+    // Validate selectedStore and its ID before making any query
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!selectedStore?.id || !uuidRegex.test(selectedStore.id)) {
+      console.warn('⚠️ [SEO_OPTIMIZATION] Invalid or missing store ID, skipping fetch');
       setProducts([]);
       setLoading(false);
       return;

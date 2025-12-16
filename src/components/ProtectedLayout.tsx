@@ -26,7 +26,8 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   // Check if Shopify auth redirect is in progress - show loading instead of redirecting to /auth
   const isShopifyAuthInProgress = sessionStorage.getItem('shopify_auth_redirect') === 'true';
   
-  if (loading || isShopifyAuthInProgress) {
+  // Wait for both auth AND stores to finish loading to prevent "undefined" UUID errors
+  if (loading || storesLoading || isShopifyAuthInProgress) {
     // Clear flag after showing loading (will be set again if needed)
     if (isShopifyAuthInProgress && !loading) {
       sessionStorage.removeItem('shopify_auth_redirect');
