@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ShopifyPricingPlans from "@/components/shopify/ShopifyPricingPlans";
-import { Button } from "@/components/ui/button";
-import { LogOut, Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 // Demo store domain - bypass payment for this store
@@ -12,6 +11,10 @@ const DEMO_STORE_DOMAIN = "store-demo-20240334.myshopify.com";
 // Shopify Polaris colors
 const SHOPIFY_GREEN = "#008060";
 const SHOPIFY_DARK = "#1a1a1a";
+
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff
 
 // Shopify-style header component
 const ShopifyHeader = ({ shopName }: { shopName?: string }) => (
@@ -27,7 +30,6 @@ const ShopifyHeader = ({ shopName }: { shopName?: string }) => (
     }}
   >
     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-      {/* NewAI Logo */}
       <div style={{ 
         display: "flex", 
         alignItems: "center", 
@@ -50,7 +52,6 @@ const ShopifyHeader = ({ shopName }: { shopName?: string }) => (
         <span>NewAI</span>
       </div>
       
-      {/* Version badge like Shopify */}
       <span style={{
         backgroundColor: "rgba(255,255,255,0.15)",
         color: "rgba(255,255,255,0.9)",
@@ -63,7 +64,6 @@ const ShopifyHeader = ({ shopName }: { shopName?: string }) => (
       </span>
     </div>
 
-    {/* Center - Store name */}
     {shopName && (
       <div style={{
         color: "rgba(255,255,255,0.8)",
@@ -73,18 +73,21 @@ const ShopifyHeader = ({ shopName }: { shopName?: string }) => (
       </div>
     )}
 
-    {/* Right side - placeholder for future elements */}
     <div style={{ width: "150px" }} />
   </header>
 );
+
+// Helper function for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export default function SetupWizard() {
   const [searchParams] = useSearchParams();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [checkingSubscription, setCheckingSubscription] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const navigate = useNavigate();
   const checkedRef = useRef(false);
+  const authAttemptedRef = useRef(false);
 
   // Detect language from browser
   const browserLang = navigator.language?.startsWith("fr") ? "fr" : "en";
@@ -93,20 +96,25 @@ export default function SetupWizard() {
   const pendingToken = searchParams.get("pending_token");
   const shopFromUrl = searchParams.get("shop");
   
-  // Normalize shop domain to always have .myshopify.com
+  // Normalize shop domain
   const normalizedShop = shopFromUrl 
     ? (shopFromUrl.includes('.myshopify.com') ? shopFromUrl : `${shopFromUrl}.myshopify.com`)
     : null;
 
-  // Check if user already has an active subscription → redirect to dashboard (NON-BLOCKING)
+  const t = {
+    errorTitle: language === "fr" ? "Erreur de connexion" : "Connection Error",
+    retry: language === "fr" ? "Réessayer" : "Retry",
+    connecting: language === "fr" ? "Connexion en cours..." : "Connecting...",
+    connected: language === "fr" ? "Connexion réussie !" : "Connected successfully!",
+    retrying: language === "fr" ? "Nouvelle tentative..." : "Retrying...",
+  };
+
+  // Check existing subscription (NON-BLOCKING)
   useEffect(() => {
     if (checkedRef.current) return;
     checkedRef.current = true;
 
     const checkExistingSubscription = async () => {
-      // Show pricing IMMEDIATELY - no blocking
-      setCheckingSubscription(false);
-
       // Demo store detection
       if (normalizedShop === DEMO_STORE_DOMAIN || shopFromUrl === 'store-demo-20240334') {
         console.log('🎭 [SetupWizard] Demo store detected');
@@ -115,11 +123,9 @@ export default function SetupWizard() {
       try {
         if (!normalizedShop) return;
 
-        // Timeout after 3 seconds - fail fast
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 3000);
 
-        // Single optimized query with join-like behavior
         const { data: connection } = await supabase
           .from("shopify_connections")
           .select("user_id, store_url")
@@ -142,7 +148,6 @@ export default function SetupWizard() {
           }
         }
       } catch (err) {
-        // Ignore errors - non-blocking check
         console.log('[SetupWizard] Background check error (ignored):', err);
       }
     };
@@ -150,109 +155,98 @@ export default function SetupWizard() {
     checkExistingSubscription();
   }, [shopFromUrl, normalizedShop, navigate]);
 
-  const t = {
-    errorTitle: language === "fr" ? "Erreur" : "Error",
-    retry: language === "fr" ? "Réessayer" : "Retry",
-    logout: language === "fr" ? "Déconnexion" : "Logout",
-    logoutSuccess: language === "fr" ? "Déconnexion réussie" : "Logged out successfully",
-  };
-
-  const handleLogout = async () => {
+  // Auth function with retry logic
+  const attemptAuth = async (attempt: number = 0): Promise<boolean> => {
     try {
-      await supabase.auth.signOut();
-      toast.success(t.logoutSuccess);
-      navigate("/auth", { replace: true });
-    } catch (error) {
-      console.error("Logout error:", error);
+      console.log(`[SetupWizard] Auth attempt ${attempt + 1}/${MAX_RETRIES}`);
+      
+      const { data, error } = await supabase.functions.invoke("shopify-auto-auth", {
+        body: { 
+          shop: shopFromUrl,
+          pending_token: pendingToken 
+        },
+      });
+
+      if (error) {
+        console.error(`[SetupWizard] Auth attempt ${attempt + 1} failed:`, error);
+        throw error;
+      }
+
+      if (data?.access_token && data?.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+        console.log("[SetupWizard] ✅ Session set successfully");
+        toast.success(t.connected);
+        return true;
+      }
+      
+      throw new Error("No session tokens received");
+    } catch (err) {
+      // If we have more retries, try again
+      if (attempt < MAX_RETRIES - 1) {
+        const delayMs = RETRY_DELAYS[attempt] || 4000;
+        console.log(`[SetupWizard] Retrying in ${delayMs}ms...`);
+        setRetryCount(attempt + 1);
+        toast.loading(t.retrying, { id: "auth-retry" });
+        await delay(delayMs);
+        return attemptAuth(attempt + 1);
+      }
+      
+      // All retries exhausted
+      throw err;
     }
   };
 
-  // Process pending token ONLY if present (background auth, non-blocking)
+  // Process pending token with retry (NON-BLOCKING for UI)
   useEffect(() => {
+    if (!pendingToken || !shopFromUrl || authAttemptedRef.current) return;
+    authAttemptedRef.current = true;
+    
     const processToken = async () => {
-      if (!pendingToken || !shopFromUrl) return;
-      
       setIsAuthenticating(true);
+      setAuthError(null);
+      toast.loading(t.connecting, { id: "auth-progress" });
+      
       try {
-        console.log("[SetupWizard] Background auth with:", { shop: shopFromUrl });
-        
-        const { data, error } = await supabase.functions.invoke("shopify-auto-auth", {
-          body: { 
-            shop: shopFromUrl,
-            pending_token: pendingToken 
-          },
-        });
-
-        if (error) throw error;
-
-        if (data?.access_token && data?.refresh_token) {
-          await supabase.auth.setSession({
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-          });
-          console.log("[SetupWizard] Session set successfully");
-        }
+        await attemptAuth(0);
+        toast.dismiss("auth-progress");
+        toast.dismiss("auth-retry");
       } catch (err) {
-        console.error("[SetupWizard] Auth error:", err);
-        setAuthError(err instanceof Error ? err.message : "Unknown error");
+        console.error("[SetupWizard] All auth attempts failed:", err);
+        toast.dismiss("auth-progress");
+        toast.dismiss("auth-retry");
+        // Only set error after ALL retries failed - don't block UI
+        setAuthError(err instanceof Error ? err.message : "Authentication failed");
       } finally {
         setIsAuthenticating(false);
+        setRetryCount(0);
       }
     };
 
     processToken();
   }, [pendingToken, shopFromUrl]);
 
-  // Error state (only show if auth failed)
-  if (authError) {
-    return (
-      <div 
-        className="min-h-screen flex flex-col" 
-        style={{ 
-          backgroundColor: "#f6f6f7", 
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" 
-        }}
-      >
-        <ShopifyHeader shopName={normalizedShop || undefined} />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="max-w-md text-center p-8 border rounded-lg bg-white shadow-sm">
-            <h2 className="text-xl font-semibold text-red-600 mb-2">{t.errorTitle}</h2>
-            <p className="text-gray-600 mb-4">{authError}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 rounded-md text-white hover:opacity-90"
-              style={{ backgroundColor: SHOPIFY_GREEN }}
-            >
-              {t.retry}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Manual retry handler
+  const handleRetry = async () => {
+    authAttemptedRef.current = false;
+    setAuthError(null);
+    setIsAuthenticating(true);
+    toast.loading(t.connecting, { id: "auth-progress" });
+    
+    try {
+      await attemptAuth(0);
+      toast.dismiss("auth-progress");
+    } catch (err) {
+      toast.dismiss("auth-progress");
+      setAuthError(err instanceof Error ? err.message : "Authentication failed");
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
 
-  // Loading state while checking subscription
-  if (checkingSubscription) {
-    return (
-      <div 
-        className="min-h-screen flex flex-col" 
-        style={{ 
-          backgroundColor: "#f6f6f7", 
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" 
-        }}
-      >
-        <ShopifyHeader shopName={normalizedShop || undefined} />
-        <div className="flex-1 flex items-center justify-center">
-          <div 
-            className="animate-spin rounded-full h-8 w-8 border-b-2" 
-            style={{ borderColor: SHOPIFY_GREEN }}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // INSTANT display of pricing plans - Shopify Polaris style
+  // ALWAYS show pricing - auth errors are non-blocking
   return (
     <div 
       className="min-h-screen flex flex-col" 
@@ -262,6 +256,66 @@ export default function SetupWizard() {
       }}
     >
       <ShopifyHeader shopName={normalizedShop || undefined} />
+      
+      {/* Auth status banner - non-blocking */}
+      {authError && (
+        <div 
+          style={{
+            backgroundColor: "#fff4f4",
+            borderBottom: "1px solid #fecaca",
+            padding: "12px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px"
+          }}
+        >
+          <span style={{ color: "#dc2626", fontSize: "14px" }}>
+            {language === "fr" ? "Erreur de connexion" : "Connection error"}: {authError}
+          </span>
+          <button
+            onClick={handleRetry}
+            disabled={isAuthenticating}
+            style={{
+              backgroundColor: SHOPIFY_GREEN,
+              color: "white",
+              padding: "6px 16px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: 500,
+              border: "none",
+              cursor: isAuthenticating ? "not-allowed" : "pointer",
+              opacity: isAuthenticating ? 0.7 : 1,
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+          >
+            {isAuthenticating && <Loader2 size={14} className="animate-spin" />}
+            {t.retry}
+          </button>
+        </div>
+      )}
+
+      {/* Authenticating indicator - subtle */}
+      {isAuthenticating && !authError && (
+        <div 
+          style={{
+            backgroundColor: "#f0fdf4",
+            borderBottom: "1px solid #bbf7d0",
+            padding: "8px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px"
+          }}
+        >
+          <Loader2 size={14} className="animate-spin" style={{ color: SHOPIFY_GREEN }} />
+          <span style={{ color: "#166534", fontSize: "13px" }}>
+            {t.connecting} {retryCount > 0 && `(${language === "fr" ? "tentative" : "attempt"} ${retryCount + 1}/${MAX_RETRIES})`}
+          </span>
+        </div>
+      )}
       
       <div className="flex-1 py-12">
         <ShopifyPricingPlans
