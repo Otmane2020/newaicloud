@@ -124,6 +124,10 @@ Deno.serve(async (req) => {
             await handleOrderWebhook(supabase, connection, payload);
             break;
           
+          case 'app/uninstalled':
+            await handleAppUninstalled(supabase, connection, shopDomain);
+            break;
+          
           default:
             console.log('⚠️ Unhandled webhook topic:', topic);
         }
@@ -328,4 +332,87 @@ async function handleOrderWebhook(supabase: any, connection: any, payload: any) 
   }
 
   console.log('✅ Order webhook processed');
+}
+
+/**
+ * Handle app/uninstalled webhook - CRITICAL for billing enforcement
+ * When a merchant uninstalls the app, we must:
+ * 1. Mark subscription as cancelled
+ * 2. Mark shopify_connection as inactive
+ * 3. Clear subscription data in profiles
+ */
+async function handleAppUninstalled(supabase: any, connection: any, shopDomain: string) {
+  console.log('🚨 APP UNINSTALLED webhook received for:', shopDomain);
+  console.log('📋 Connection data:', { id: connection.id, user_id: connection.user_id });
+
+  const userId = connection.user_id;
+
+  // 1. Mark subscription as cancelled in subscriptions table
+  const { error: subError } = await supabase
+    .from('subscriptions')
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('seller_id', userId)
+    .eq('billing_provider', 'shopify');
+
+  if (subError) {
+    console.error('❌ Error cancelling subscription:', subError);
+  } else {
+    console.log('✅ Subscription marked as cancelled');
+  }
+
+  // 2. Update profile to remove active subscription
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({
+      subscription_status: 'cancelled',
+      current_plan_id: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (profileError) {
+    console.error('❌ Error updating profile:', profileError);
+  } else {
+    console.log('✅ Profile subscription status reset');
+  }
+
+  // 3. Mark shopify_connection as inactive
+  const { error: connError } = await supabase
+    .from('shopify_connections')
+    .update({
+      is_active: false,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', connection.id);
+
+  if (connError) {
+    console.error('❌ Error deactivating connection:', connError);
+  } else {
+    console.log('✅ Shopify connection marked as inactive');
+  }
+
+  // 4. Delete pending subscriptions
+  await supabase
+    .from('shopify_pending_subscriptions')
+    .delete()
+    .eq('user_id', userId);
+
+  // 5. Log this critical event
+  await supabase.from('system_logs').insert({
+    type: 'app_uninstalled',
+    function_name: 'shopify-webhook',
+    message: `App uninstalled by merchant: ${shopDomain}`,
+    metadata: {
+      shop: shopDomain,
+      user_id: userId,
+      connection_id: connection.id,
+      timestamp: new Date().toISOString(),
+    },
+  });
+
+  console.log('✅ App uninstall webhook fully processed - subscription cancelled');
 }

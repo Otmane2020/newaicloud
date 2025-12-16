@@ -33,6 +33,8 @@ const WEBHOOK_TOPICS = [
   'orders/create',
   // Themes and content changes
   'themes/publish',  // Useful to know when theme changes
+  // App lifecycle - CRITICAL for billing enforcement
+  'app/uninstalled',  // Detect app uninstallation to cancel subscription
 ];
 
 async function createWebhook(

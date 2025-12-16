@@ -10,6 +10,58 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+/**
+ * Verify if the shop has an active Shopify subscription for our app
+ */
+async function verifyShopifySubscription(shop: string, accessToken: string): Promise<boolean> {
+  try {
+    console.log("[VERIFY-SUBSCRIPTION] Checking Shopify subscription for:", shop);
+    
+    const query = `
+      query {
+        currentAppInstallation {
+          activeSubscriptions {
+            id
+            name
+            status
+            currentPeriodEnd
+          }
+        }
+      }
+    `;
+    
+    const response = await fetch(`https://${shop}/admin/api/2025-01/graphql.json`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": accessToken,
+      },
+      body: JSON.stringify({ query }),
+    });
+    
+    if (!response.ok) {
+      console.error("[VERIFY-SUBSCRIPTION] Failed to query Shopify:", response.status);
+      return false;
+    }
+    
+    const data = await response.json();
+    const subscriptions = data?.data?.currentAppInstallation?.activeSubscriptions || [];
+    
+    console.log("[VERIFY-SUBSCRIPTION] Active subscriptions found:", subscriptions.length);
+    
+    // Check if any subscription is active
+    const hasActive = subscriptions.some((sub: any) => 
+      sub.status === "ACTIVE" || sub.status === "ACCEPTED"
+    );
+    
+    console.log("[VERIFY-SUBSCRIPTION] Has active subscription:", hasActive);
+    return hasActive;
+  } catch (error) {
+    console.error("[VERIFY-SUBSCRIPTION] Error:", error);
+    return false;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -259,10 +311,36 @@ serve(async (req) => {
     // 6. Claim la connexion Shopify - vérifier d'abord si connexion existante
     const { data: existingConnection } = await supabase
       .from("shopify_connections")
-      .select("id, connected_at")
+      .select("id, connected_at, is_active")
       .eq("user_id", userId)
       .eq("store_url", shop)
       .maybeSingle();
+
+    // Si c'est une réinstallation (connexion existante mais inactive), vérifier l'abonnement Shopify
+    const isReinstallation = existingConnection && !existingConnection.is_active;
+    
+    if (isReinstallation) {
+      console.log("[SHOPIFY-AUTO-AUTH] 🔄 REINSTALLATION détectée - vérification abonnement Shopify...");
+      
+      // Vérifier l'abonnement avec l'API Shopify
+      const hasActiveShopifySubscription = await verifyShopifySubscription(
+        shop, 
+        pendingConnection.access_token
+      );
+      
+      if (!hasActiveShopifySubscription) {
+        console.log("[SHOPIFY-AUTO-AUTH] ❌ Pas d'abonnement actif sur Shopify - l'utilisateur doit repayer");
+        
+        // S'assurer que le profil reflète l'absence d'abonnement
+        await supabase.from("profiles").update({
+          subscription_status: "inactive",
+          current_plan_id: null,
+          updated_at: new Date().toISOString(),
+        }).eq("id", userId);
+      } else {
+        console.log("[SHOPIFY-AUTO-AUTH] ✅ Abonnement Shopify actif trouvé");
+      }
+    }
 
     // Ne mettre à jour connected_at QUE pour les NOUVELLES connexions
     const connectionData: Record<string, any> = {
