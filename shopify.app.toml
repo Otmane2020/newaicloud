@@ -2,7 +2,7 @@
 
 client_id = "a57869f9e856fc6af974670ab5dcd6a2"
 name = "NewAI - AI SEO and Marketing"
-application_url = "https://newai.sale/app/setup-wizard"
+application_url = "https://newai.sale"
 embedded = true
 
 [build]
@@ -30,6 +30,5 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-oauth",
-  "https://newai.sale/shopify/install"
+  "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-oauth"
 ]
