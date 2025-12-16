@@ -505,237 +505,245 @@ export const BulkAIImagesDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Layers className="h-5 w-5 text-primary" />
-            {language === 'fr' ? 'AI Images - Génération en masse' : 'AI Images - Bulk Generation'}
-          </DialogTitle>
-          <DialogDescription>
-            {language === 'fr'
-              ? `Générer des variantes d'images IA pour ${productsWithSelection.length} produit(s) sélectionné(s)`
-              : `Generate AI image variants for ${productsWithSelection.length} selected product(s)`}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="w-full max-w-lg sm:max-w-2xl md:max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[90vh] p-0 flex flex-col">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Layers className="h-5 w-5 text-primary" />
+              {language === 'fr' ? 'AI Images - Génération en masse' : 'AI Images - Bulk Generation'}
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              {language === 'fr'
+                ? `Générer des variantes d'images IA pour ${productsWithSelection.length} produit(s) sélectionné(s)`
+                : `Generate AI image variants for ${productsWithSelection.length} selected product(s)`}
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Loading indicator */}
-          {loadingGallery && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {language === 'fr' ? 'Chargement des galeries...' : 'Loading galleries...'}
-            </div>
-          )}
-
-          {/* Progress */}
-          {isGenerating && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>{language === 'fr' ? 'Progression' : 'Progress'}</span>
-                <span>{successCount + errorCount} / {productsWithSelection.length}</span>
+          <div className="space-y-4">
+            {/* Loading indicator */}
+            {loadingGallery && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {language === 'fr' ? 'Chargement des galeries...' : 'Loading galleries...'}
               </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-          )}
+            )}
 
-          {/* Configuration (only before generation starts) */}
-          {!isGenerating && successCount === 0 && (
-            <>
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  {language === 'fr' ? 'Types d\'images (2-5 max)' : 'Image types (2-5 max)'}
-                </Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {IMAGE_TYPES.map(type => (
-                    <Card
-                      key={type.id}
-                      className={`p-2 cursor-pointer transition-all ${
-                        selectedImageTypes.has(type.id)
-                          ? 'border-primary bg-primary/5'
-                          : 'hover:border-muted-foreground/50'
-                      }`}
-                      onClick={() => toggleImageType(type.id)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={selectedImageTypes.has(type.id)}
-                          onCheckedChange={() => toggleImageType(type.id)}
-                        />
-                        <type.icon className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs">
-                          {language === 'fr' ? type.label : type.labelEn}
-                        </span>
-                      </div>
-                    </Card>
-                  ))}
+            {/* Progress */}
+            {isGenerating && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{language === 'fr' ? 'Progression' : 'Progress'}</span>
+                  <span>{successCount + errorCount} / {productsWithSelection.length}</span>
                 </div>
+                <Progress value={progress} className="h-2" />
               </div>
+            )}
 
-              {/* Decor Option */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="include-decor-bulk"
-                    checked={includeDecor}
-                    onCheckedChange={(checked) => setIncludeDecor(!!checked)}
-                  />
-                  <Label htmlFor="include-decor-bulk" className="text-sm cursor-pointer">
-                    {language === 'fr' ? 'Ajouter 1 image en décor' : 'Add 1 decor image'}
+            {/* Configuration (only before generation starts) */}
+            {!isGenerating && successCount === 0 && (
+              <>
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">
+                    {language === 'fr' ? 'Types d\'images (2-5 max)' : 'Image types (2-5 max)'}
                   </Label>
-                </div>
-
-                {includeDecor && (
-                  <div className="grid grid-cols-3 gap-2 ml-6">
-                    {DECOR_TYPES.map(decor => (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {IMAGE_TYPES.map(type => (
                       <Card
-                        key={decor.id}
+                        key={type.id}
                         className={`p-2 cursor-pointer transition-all ${
-                          decorType === decor.id
+                          selectedImageTypes.has(type.id)
                             ? 'border-primary bg-primary/5'
                             : 'hover:border-muted-foreground/50'
                         }`}
-                        onClick={() => setDecorType(decor.id as any)}
+                        onClick={() => toggleImageType(type.id)}
                       >
                         <div className="flex items-center gap-2">
-                          <decor.icon className="h-3 w-3 text-muted-foreground" />
+                          <Checkbox
+                            checked={selectedImageTypes.has(type.id)}
+                            onCheckedChange={() => toggleImageType(type.id)}
+                          />
+                          <type.icon className="h-3 w-3 text-muted-foreground" />
                           <span className="text-xs">
-                            {language === 'fr' ? decor.label : decor.labelEn}
+                            {language === 'fr' ? type.label : type.labelEn}
                           </span>
                         </div>
                       </Card>
                     ))}
                   </div>
-                )}
-              </div>
-            </>
-          )}
+                </div>
 
-          {/* Product List with Gallery Images (same as SmartBackgroundDialog) */}
-          <ScrollArea className="h-[350px] border rounded-lg" ref={scrollRef}>
-            <div className="p-3 space-y-4">
-              {selectedProducts.map(product => {
-                const status = productStatuses.get(product.id);
-                const galleryImages = productGalleryImages.get(product.id) || [];
-                const productSelectedImages = selectedImages.get(product.id) || new Set();
-                
-                return (
-                  <div
-                    key={product.id}
-                    id={`bulk-ai-product-${product.id}`}
-                    className={`p-3 rounded-lg border transition-colors ${
-                      status?.status === 'generating' || status?.status === 'saving'
-                        ? 'border-primary bg-primary/5'
-                        : status?.status === 'success'
-                        ? 'border-green-500 bg-green-500/5'
-                        : status?.status === 'error'
-                        ? 'border-destructive bg-destructive/5'
-                        : 'border-border'
-                    }`}
-                  >
-                    {/* Product Header */}
-                    <div className="flex items-center gap-3 mb-2">
-                      {status && getStatusIcon(status.status)}
-                      <span className="flex-1 text-sm font-medium truncate">{product.title}</span>
-                      {status?.imagesGenerated && (
-                        <span className="text-xs text-muted-foreground">
-                          {status.imagesGenerated} img
-                        </span>
-                      )}
-                      {status && getStatusBadge(status.status)}
-                    </div>
-                    
-                    {/* Gallery Images Grid (only show before generation) */}
-                    {!isGenerating && successCount === 0 && galleryImages.length > 0 && (
-                      <div className="grid grid-cols-6 gap-2 mt-2">
-                        {galleryImages.map(img => {
-                          const isSelected = productSelectedImages.has(img.id);
-                          const isAi = isAiGeneratedImage(img.src, img.optimization_count);
-                          
-                          return (
-                            <div
-                              key={img.id}
-                              className={`relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all ${
-                                isSelected 
-                                  ? 'border-primary ring-2 ring-primary/30' 
-                                  : 'border-transparent hover:border-muted-foreground/50'
-                              }`}
-                              onClick={() => toggleImageSelection(product.id, img.id)}
-                            >
-                              <img
-                                src={img.src}
-                                alt={img.alt_text || ''}
-                                className="w-full h-full object-cover"
-                              />
-                              {/* Selection checkbox overlay */}
-                              <div className={`absolute top-1 left-1 w-4 h-4 rounded-sm flex items-center justify-center ${
-                                isSelected ? 'bg-primary' : 'bg-black/50'
-                              }`}>
-                                {isSelected && <Check className="h-3 w-3 text-white" />}
-                              </div>
-                              {/* AI badge */}
-                              {isAi && (
-                                <Badge 
-                                  variant="secondary" 
-                                  className="absolute bottom-1 right-1 text-[10px] px-1 py-0"
-                                >
-                                  AI
-                                </Badge>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                {/* Decor Option */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="include-decor-bulk"
+                      checked={includeDecor}
+                      onCheckedChange={(checked) => setIncludeDecor(!!checked)}
+                    />
+                    <Label htmlFor="include-decor-bulk" className="text-sm cursor-pointer">
+                      {language === 'fr' ? 'Ajouter 1 image en décor' : 'Add 1 decor image'}
+                    </Label>
                   </div>
-                );
-              })}
-            </div>
-          </ScrollArea>
 
-          {/* Stats */}
-          <div className="flex gap-4 text-sm">
-            <span className="flex items-center gap-1">
-              <ImageIcon className="h-4 w-4 text-muted-foreground" />
-              {productsWithSelection.length} {language === 'fr' ? 'produit(s) sélectionné(s)' : 'product(s) selected'}
-            </span>
-            <span className="flex items-center gap-1">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              {successCount} {language === 'fr' ? 'succès' : 'success'}
-            </span>
-            {errorCount > 0 && (
-              <span className="flex items-center gap-1">
-                <AlertCircle className="h-4 w-4 text-destructive" />
-                {errorCount} {language === 'fr' ? 'erreur(s)' : 'error(s)'}
-              </span>
+                  {includeDecor && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 ml-6">
+                      {DECOR_TYPES.map(decor => (
+                        <Card
+                          key={decor.id}
+                          className={`p-2 cursor-pointer transition-all ${
+                            decorType === decor.id
+                              ? 'border-primary bg-primary/5'
+                              : 'hover:border-muted-foreground/50'
+                          }`}
+                          onClick={() => setDecorType(decor.id as any)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <decor.icon className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs">
+                              {language === 'fr' ? decor.label : decor.labelEn}
+                            </span>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
+
+            {/* Product List with Gallery Images */}
+            <ScrollArea className="h-[250px] sm:h-[350px] border rounded-lg" ref={scrollRef}>
+              <div className="p-3 space-y-4">
+                {selectedProducts.map(product => {
+                  const status = productStatuses.get(product.id);
+                  const galleryImages = productGalleryImages.get(product.id) || [];
+                  const productSelectedImages = selectedImages.get(product.id) || new Set();
+                  
+                  return (
+                    <div
+                      key={product.id}
+                      id={`bulk-ai-product-${product.id}`}
+                      className={`p-3 rounded-lg border transition-colors ${
+                        status?.status === 'generating' || status?.status === 'saving'
+                          ? 'border-primary bg-primary/5'
+                          : status?.status === 'success'
+                          ? 'border-green-500 bg-green-500/5'
+                          : status?.status === 'error'
+                          ? 'border-destructive bg-destructive/5'
+                          : 'border-border'
+                      }`}
+                    >
+                      {/* Product Header */}
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                        {status && getStatusIcon(status.status)}
+                        <span className="flex-1 text-xs sm:text-sm font-medium truncate">{product.title}</span>
+                        {status?.imagesGenerated && (
+                          <span className="text-xs text-muted-foreground">
+                            {status.imagesGenerated} img
+                          </span>
+                        )}
+                        {status && getStatusBadge(status.status)}
+                      </div>
+                      
+                      {/* Gallery Images Grid (only show before generation) */}
+                      {!isGenerating && successCount === 0 && galleryImages.length > 0 && (
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-2">
+                          {galleryImages.map(img => {
+                            const isSelected = productSelectedImages.has(img.id);
+                            const isAi = isAiGeneratedImage(img.src, img.optimization_count);
+                            
+                            return (
+                              <div
+                                key={img.id}
+                                className={`relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 transition-all ${
+                                  isSelected 
+                                    ? 'border-primary ring-2 ring-primary/30' 
+                                    : 'border-transparent hover:border-muted-foreground/50'
+                                }`}
+                                onClick={() => toggleImageSelection(product.id, img.id)}
+                              >
+                                <img
+                                  src={img.src}
+                                  alt={img.alt_text || ''}
+                                  className="w-full h-full object-cover"
+                                />
+                                {/* Selection checkbox overlay */}
+                                <div className={`absolute top-1 left-1 w-4 h-4 rounded-sm flex items-center justify-center ${
+                                  isSelected ? 'bg-primary' : 'bg-black/50'
+                                }`}>
+                                  {isSelected && <Check className="h-3 w-3 text-white" />}
+                                </div>
+                                {/* AI badge */}
+                                {isAi && (
+                                  <Badge 
+                                    variant="secondary" 
+                                    className="absolute bottom-1 right-1 text-[10px] px-1 py-0"
+                                  >
+                                    AI
+                                  </Badge>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+
+            {/* Stats */}
+            <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
+              <span className="flex items-center gap-1">
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                {productsWithSelection.length} {language === 'fr' ? 'produit(s)' : 'product(s)'}
+              </span>
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                {successCount} {language === 'fr' ? 'succès' : 'success'}
+              </span>
+              {errorCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  {errorCount} {language === 'fr' ? 'erreur(s)' : 'error(s)'}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        <DialogFooter>
+        {/* Sticky Footer for Mobile */}
+        <div className="fixed sm:relative bottom-0 left-0 right-0 bg-background border-t sm:border-t-0 p-4 sm:p-6 sm:pt-0 flex gap-2 justify-end">
           {isGenerating ? (
-            <Button variant="destructive" onClick={handleCancel}>
+            <Button variant="destructive" onClick={handleCancel} className="flex-1 sm:flex-none">
               <X className="h-4 w-4 mr-2" />
               {language === 'fr' ? 'Annuler' : 'Cancel'}
             </Button>
           ) : successCount > 0 ? (
-            <Button onClick={() => { onOpenChange(false); onComplete?.(); }}>
+            <Button onClick={() => { onOpenChange(false); onComplete?.(); }} className="flex-1 sm:flex-none">
               <Check className="h-4 w-4 mr-2" />
               {language === 'fr' ? 'Fermer' : 'Close'}
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" onClick={() => onOpenChange(false)} className="hidden sm:flex">
                 {language === 'fr' ? 'Annuler' : 'Cancel'}
               </Button>
-              <Button onClick={handleGenerateAll} disabled={productsWithSelection.length === 0 || loadingGallery}>
+              <Button 
+                onClick={handleGenerateAll} 
+                disabled={productsWithSelection.length === 0 || loadingGallery}
+                className="flex-1 sm:flex-none"
+              >
                 <Sparkles className="h-4 w-4 mr-2" />
                 {language === 'fr' 
-                  ? `Générer pour ${productsWithSelection.length} produit(s)` 
-                  : `Generate for ${productsWithSelection.length} product(s)`}
+                  ? `Générer (${productsWithSelection.length})` 
+                  : `Generate (${productsWithSelection.length})`}
               </Button>
             </>
           )}
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
