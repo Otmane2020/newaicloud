@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -226,25 +226,37 @@ export function SeoOptimization() {
     }
   };
 
+  // ✅ FIX: Track store ID to prevent unnecessary refetches
+  const lastFetchedStoreIdRef = useRef<string | null>(null);
+
   // Recharger les produits quand la boutique change
   useEffect(() => {
+    // ✅ FIX: Only fetch if store ID actually changed
+    if (selectedStore?.id === lastFetchedStoreIdRef.current) {
+      console.log('🔄 [SEO_OPTIMIZATION] Store ID unchanged, skipping fetch');
+      return;
+    }
+    
     console.log('🔄 [SEO_OPTIMIZATION] selectedStore changed:', {
       hasStore: !!selectedStore,
       storeId: selectedStore?.id,
-      storeName: selectedStore?.store_name
+      storeName: selectedStore?.store_name,
+      previousStoreId: lastFetchedStoreIdRef.current
     });
     
     if (selectedStore) {
       console.log('📦 [SEO_OPTIMIZATION] Loading products for store:', selectedStore.store_name);
+      lastFetchedStoreIdRef.current = selectedStore.id;
       setSelectedProducts(new Set()); // Vider les sélections
       fetchProducts();
     } else {
       // Cas où il n'y a pas de store sélectionné
       console.log('⚠️ [SEO_OPTIMIZATION] No store selected, clearing products');
+      lastFetchedStoreIdRef.current = null;
       setProducts([]);
       setLoading(false);
     }
-  }, [selectedStore]);
+  }, [selectedStore?.id]); // ✅ FIX: Depend on ID only, not whole object
 
   // Réagir aux changements de filtre dans l'URL
   useEffect(() => {

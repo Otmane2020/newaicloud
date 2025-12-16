@@ -65,6 +65,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           // Find the current store in the new data to get a fresh reference
           const currentStore = data.find(s => s.id === prev.id);
           if (currentStore) {
+            // ✅ FIX: Only update if data actually changed to prevent re-renders
+            if (JSON.stringify(currentStore) === JSON.stringify(prev)) {
+              console.log('🚨🚨🚨 [STORE_CONTEXT] Store data unchanged, keeping same reference');
+              return prev; // Keep same reference to prevent re-renders
+            }
             console.log('🚨🚨🚨 [STORE_CONTEXT] Updating store reference:', currentStore.store_name, 'ID:', currentStore.id);
             return currentStore;
           }
