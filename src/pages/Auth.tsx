@@ -52,6 +52,26 @@ export default function Auth() {
           return;
         }
         
+        // Check if this is a Shopify user
+        const isShopifyUser = user.email?.endsWith('@shopify.newai.sale');
+        
+        if (isShopifyUser) {
+          // Check subscription status for Shopify user
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('subscription_status, billing_provider')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile?.subscription_status !== 'active' && profile?.subscription_status !== 'trialing') {
+            // Shopify user without active subscription -> setup-wizard
+            const shopHandle = user.email.split('@')[0];
+            console.log('🛒 [Auth] Shopify user without subscription, redirecting to setup-wizard');
+            navigate(`/app/setup-wizard?shop=${shopHandle}.myshopify.com`);
+            return;
+          }
+        }
+        
         // Vérifier s'il y a un pending_token Shopify à associer
         const shopifyPending = searchParams.get('shopify_pending');
         const checkoutSuccess = searchParams.get('checkout') === 'success';

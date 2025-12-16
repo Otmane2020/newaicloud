@@ -109,18 +109,30 @@ export default function SetupWizard() {
     retrying: language === "fr" ? "Nouvelle tentative..." : "Retrying...",
   };
 
-  // Check existing subscription (NON-BLOCKING)
+  // Check existing subscription and session (NON-BLOCKING)
   useEffect(() => {
     if (checkedRef.current) return;
     checkedRef.current = true;
 
-    const checkExistingSubscription = async () => {
+    const checkSessionAndSubscription = async () => {
       // Demo store detection
       if (normalizedShop === DEMO_STORE_DOMAIN || shopFromUrl === 'store-demo-20240334') {
         console.log('🎭 [SetupWizard] Demo store detected');
       }
 
       try {
+        // If no pending token, check if user has session
+        if (!pendingToken && normalizedShop) {
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (!session) {
+            // No session and no pending token - redirect to /app to restart OAuth
+            console.log('⚠️ [SetupWizard] No session and no pending_token, redirecting to /app');
+            navigate(`/app?shop=${encodeURIComponent(normalizedShop)}`, { replace: true });
+            return;
+          }
+        }
+
         if (!normalizedShop) return;
 
         const controller = new AbortController();
@@ -144,7 +156,7 @@ export default function SetupWizard() {
 
           if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
             console.log('✅ [SetupWizard] Active subscription found, redirecting');
-            navigate("/dashboard", { replace: true });
+            navigate("/dashboard-light", { replace: true });
           }
         }
       } catch (err) {
@@ -152,8 +164,8 @@ export default function SetupWizard() {
       }
     };
 
-    checkExistingSubscription();
-  }, [shopFromUrl, normalizedShop, navigate]);
+    checkSessionAndSubscription();
+  }, [shopFromUrl, normalizedShop, navigate, pendingToken]);
 
   // Auth function with retry logic
   const attemptAuth = async (attempt: number = 0): Promise<boolean> => {
