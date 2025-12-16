@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,33 +10,25 @@ const APP_URL = Deno.env.get("APP_URL") || "https://newai.sale";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Mapping des plans vers Shopify Billing - All tiers from database
-// IMPORTANT: Prices must match EXACTLY with ShopifyPricingPlans.tsx
+// Mapping des plans vers Shopify Billing
 const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number }> = {
-  // Trial
   "trial": { name: "14-Day Free Trial", price: 0.01, interval: "EVERY_30_DAYS", trialDays: 14 },
-  
-  // Starter - Monthly & Yearly (7.99 x 12 = 95.88)
   "starter-monthly": { name: "Starter (100 optimizations)", price: 9.99, interval: "EVERY_30_DAYS", trialDays: 7 },
   "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 95.88, interval: "ANNUAL", trialDays: 7 },
-  
-  // Pro (pro-500) - Monthly & Yearly (39 x 12 = 468)
   "pro-500-monthly": { name: "Pro (500 optimizations)", price: 49.00, interval: "EVERY_30_DAYS" },
   "pro-500-yearly": { name: "Pro Annual (500 optimizations)", price: 468.00, interval: "ANNUAL" },
-  
-  // Enterprise (pro-1000) - Monthly & Yearly (159 x 12 = 1908)
   "pro-1000-monthly": { name: "Enterprise (2,000 optimizations)", price: 199.00, interval: "EVERY_30_DAYS" },
   "pro-1000-yearly": { name: "Enterprise Annual (2,000 optimizations)", price: 1908.00, interval: "ANNUAL" },
 };
 
-const logStep = (step: string, details?: any) => {
+const logStep = (step: string, details?: unknown) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[SHOPIFY-BILLING] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -44,7 +36,6 @@ serve(async (req) => {
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
-    // Parse request body
     const { planId, billingCycle, shopDomain } = await req.json();
     
     logStep("Request received", { planId, billingCycle, shopDomain });
@@ -56,47 +47,88 @@ serve(async (req) => {
       );
     }
 
-    // Get auth user
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Normalize shop domain
+    const normalizedShop = shopDomain
+      .replace(/^https?:\/\//, "")
+      .replace(/\/+$/, "")
+      .toLowerCase();
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    logStep("User authenticated", { userId: user.id });
-
-    // Get Shopify connection for this user
+    // 1️⃣ LOAD SHOP TOKEN (shop-centric, not user-centric)
     const { data: connection, error: connError } = await supabase
       .from("shopify_connections")
       .select("*")
-      .eq("user_id", user.id)
-      .eq("store_url", shopDomain)
+      .or(`store_url.eq.${normalizedShop},store_url.ilike.%${normalizedShop}%`)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
 
-    if (connError || !connection) {
-      logStep("No active Shopify connection found", { error: connError });
+    if (connError || !connection?.access_token) {
+      logStep("No active Shopify connection found", { error: connError, shopDomain: normalizedShop });
       return new Response(
-        JSON.stringify({ error: "No active Shopify connection found for this store" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Shop not connected" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     logStep("Shopify connection found", { storeUrl: connection.store_url });
 
-    // Determine plan key
+    // Use the actual store_url from DB for API calls
+    const apiShopDomain = connection.store_url
+      .replace(/^https?:\/\//, "")
+      .replace(/\/+$/, "")
+      .toLowerCase();
+
+    // 2️⃣ CHECK EXISTING SUBSCRIPTION (ANTI DOUBLE PAY - CRITICAL)
+    logStep("Checking existing subscription on Shopify...");
+    
+    const checkRes = await fetch(
+      `https://${apiShopDomain}/admin/api/2025-01/graphql.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": connection.access_token,
+        },
+        body: JSON.stringify({
+          query: `
+            {
+              currentAppInstallation {
+                activeSubscriptions {
+                  id
+                  name
+                  status
+                  test
+                  currentPeriodEnd
+                }
+              }
+            }
+          `,
+        }),
+      }
+    );
+
+    if (checkRes.ok) {
+      const checkJson = await checkRes.json();
+      const subs = checkJson?.data?.currentAppInstallation?.activeSubscriptions || [];
+      const activeSubscription = subs.find((s: { status: string }) => s.status === "ACTIVE");
+
+      if (activeSubscription) {
+        logStep("ACTIVE subscription already exists - returning early (no double pay)", activeSubscription);
+        return new Response(
+          JSON.stringify({
+            status: "ACTIVE",
+            subscription: activeSubscription,
+            message: "Subscription already active - no payment needed"
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      logStep("No active subscription found, proceeding to create one");
+    } else {
+      logStep("Warning: Could not check existing subscription, proceeding cautiously");
+    }
+
+    // 3️⃣ DETERMINE PLAN
     const planKey = planId === "trial" ? "trial" : `${planId}-${billingCycle}`;
     const plan = SHOPIFY_PLANS[planKey];
 
@@ -109,47 +141,25 @@ serve(async (req) => {
 
     logStep("Plan selected", { planKey, plan });
 
-    // ALL plans (including free) go through Shopify Billing
-    // Free plan uses the "free" plan created in Shopify Partner Dashboard
-
-    // Detect if this is a dev/partner/test store (for test mode)
-    // Development stores CANNOT process real payments - test mode is REQUIRED
-    // Check multiple patterns for development/test stores
-    const shopNameLower = (connection.shop_name || shopDomain || "").toLowerCase();
-    
-    // FORCE TEST MODE for ALL dev stores - they cannot process real payments
-    // Development stores always have specific characteristics:
-    // 1. Domain patterns with dev/test/demo keywords
-    // 2. Stores created via Partner Dashboard (dev stores)
-    // 3. Staff/partner test accounts
+    // Detect dev store for test mode
+    const shopNameLower = (connection.shop_name || apiShopDomain || "").toLowerCase();
     const isDevStore = 
-      shopDomain.includes("-dev") || 
-      shopDomain.includes("dev-") || 
-      shopDomain.includes("test-") ||
-      shopDomain.includes("-test") ||
-      shopDomain.includes("demo") ||
-      shopDomain.includes("sandbox") ||
+      apiShopDomain.includes("-dev") || 
+      apiShopDomain.includes("dev-") || 
+      apiShopDomain.includes("test-") ||
+      apiShopDomain.includes("-test") ||
+      apiShopDomain.includes("demo") ||
+      apiShopDomain.includes("sandbox") ||
       shopNameLower.includes("dev") ||
       shopNameLower.includes("test") ||
       shopNameLower.includes("partner") ||
-      shopNameLower.includes("demo") ||
-      shopNameLower.includes("sandbox") ||
-      shopNameLower.includes("development");
+      shopNameLower.includes("demo");
     
-    // CRITICAL: For development stores, test mode is MANDATORY
-    // Without test: true, Shopify will reject the subscription with payment errors
-    // Also allow SHOPIFY_TEST_MODE=true env var for App Store review
     const testMode = isDevStore || Deno.env.get("SHOPIFY_TEST_MODE") === "true";
     
-    logStep("Test mode detection", { 
-      isDevStore, 
-      testMode, 
-      shopDomain, 
-      shopName: connection.shop_name,
-      reason: isDevStore ? "Dev store detected - test mode required" : "Production store"
-    });
+    logStep("Test mode detection", { isDevStore, testMode, apiShopDomain });
 
-    // Build Shopify GraphQL mutation for subscription
+    // 4️⃣ CREATE SUBSCRIPTION (ONLY NOW - AFTER CHECK)
     const mutation = `
       mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int, $test: Boolean) {
         appSubscriptionCreate(
@@ -172,38 +182,30 @@ serve(async (req) => {
       }
     `;
 
-    // Return URL - Shopify will redirect here after payment confirmation
-    // This must be the edge function URL, Shopify Admin allows redirects to app backend endpoints
-    const returnUrl = `${SUPABASE_URL}/functions/v1/shopify-billing-callback?shop=${encodeURIComponent(shopDomain)}&plan=${encodeURIComponent(planId)}&cycle=${billingCycle}`;
+    const returnUrl = `${SUPABASE_URL}/functions/v1/shopify-billing-callback?shop=${encodeURIComponent(apiShopDomain)}&plan=${encodeURIComponent(planId)}&cycle=${billingCycle}`;
 
-    const variables: any = {
+    const variables: Record<string, unknown> = {
       name: plan.name,
       returnUrl,
       test: testMode,
       lineItems: [{
         plan: {
           appRecurringPricingDetails: {
-            price: { 
-              // Price is already the total annual amount for yearly plans
-              amount: plan.price, 
-              currencyCode: "USD" 
-            },
+            price: { amount: plan.price, currencyCode: "USD" },
             interval: plan.interval
           }
         }
       }]
     };
 
-    // Add trial days if applicable
     if (plan.trialDays) {
       variables.trialDays = plan.trialDays;
     }
 
-    logStep("Calling Shopify GraphQL API", { variables });
+    logStep("Creating Shopify subscription", { variables });
 
-    // Call Shopify Admin API
     const shopifyResponse = await fetch(
-      `https://${shopDomain}/admin/api/2025-01/graphql.json`,
+      `https://${apiShopDomain}/admin/api/2025-01/graphql.json`,
       {
         method: "POST",
         headers: {
@@ -244,10 +246,10 @@ serve(async (req) => {
       );
     }
 
-    // Store pending subscription info
+    // Store pending subscription info (shop-centric)
     await supabase.from("shopify_pending_subscriptions").upsert({
-      user_id: user.id,
-      shop_domain: shopDomain,
+      user_id: connection.user_id,
+      shop_domain: apiShopDomain,
       plan_id: planId,
       billing_cycle: billingCycle,
       shopify_subscription_id: result.appSubscription?.id,
@@ -259,6 +261,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
+        status: "PENDING",
         success: true, 
         confirmationUrl: result.confirmationUrl,
         subscriptionId: result.appSubscription?.id
