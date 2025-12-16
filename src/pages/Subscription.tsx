@@ -482,38 +482,84 @@ const Subscription = () => {
         <>
           <CurrentPlanCard />
 
-          {/* Billing cycle toggle for Shopify users */}
-          {(isShopifyUser || billingProvider === 'shopify') && (
-            <Card className="p-4 sm:p-5 md:p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Package className="w-5 h-5 text-green-600" />
-                    {language === 'fr' ? 'Facturation Shopify' : 'Shopify Billing'}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {language === 'fr' 
-                      ? 'Votre abonnement est géré via Shopify Billing' 
-                      : 'Your subscription is managed through Shopify Billing'}
-                  </p>
+          {/* 🛍️ SHOPIFY USERS: Show active subscription message, no upgrade options */}
+          {(isShopifyUser || billingProvider === 'shopify') && currentPlan && (
+            <Card className="p-6 sm:p-8 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-2 border-blue-300 dark:border-blue-700">
+              <div className="text-center space-y-6">
+                {/* Your Plan Badge */}
+                <Badge className="bg-blue-600 text-white px-4 py-1.5 text-sm">
+                  ✓ {language === 'fr' ? 'Votre Plan' : 'Your Plan'}
+                </Badge>
+                
+                {/* Plan Icon */}
+                <div className="flex justify-center">
+                  <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center">
+                    <Rocket className="w-8 h-8 text-white" />
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Label htmlFor="billing-cycle" className="text-sm font-medium">
-                    {language === 'fr' ? 'Cycle de facturation' : 'Billing Cycle'}
-                  </Label>
-                  <Select value={billingCycle} onValueChange={(v) => setBillingCycle(v as "monthly" | "yearly")}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="monthly">{language === 'fr' ? 'Mensuel' : 'Monthly'}</SelectItem>
-                      <SelectItem value="yearly">{language === 'fr' ? 'Annuel' : 'Yearly'}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                
+                {/* Plan Name */}
+                <h2 className="text-2xl sm:text-3xl font-bold text-foreground">{currentPlan.name}</h2>
+                <p className="text-muted-foreground">{currentPlan.description || (language === 'fr' ? 'Parfait pour démarrer' : 'Perfect for getting started')}</p>
+                
+                {/* Price */}
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-4xl sm:text-5xl font-bold text-blue-600">
+                    {currentPlan.price_monthly}{currency}
+                  </span>
+                  <span className="text-muted-foreground text-lg">/{language === 'fr' ? 'mois' : 'month'}</span>
+                </div>
+                
+                {/* Features */}
+                <div className="space-y-3 text-left max-w-sm mx-auto">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <span>{currentPlan.max_optimizations_monthly} {language === 'fr' ? 'optimisations/mois' : 'optimizations/month'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <span>{currentPlan.max_articles_monthly} {language === 'fr' ? 'articles/mois' : 'articles/month'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <span>{currentPlan.max_chat_responses_monthly} {language === 'fr' ? 'réponses chat/mois' : 'chat responses/month'}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                    <span>{currentPlan.max_shopify_stores} {language === 'fr' ? 'boutique(s) Shopify' : 'Shopify store(s)'}</span>
+                  </div>
+                  {currentPlan.max_products && currentPlan.max_products > 0 && (
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                      <span>{currentPlan.max_products === -1 ? '∞' : currentPlan.max_products} {language === 'fr' ? 'produits' : 'products'}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Current Plan Button */}
+                <Button variant="secondary" className="w-full max-w-sm" disabled>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  {language === 'fr' ? 'Plan actuel' : 'Current Plan'}
+                </Button>
+                
+                {/* Subscription Active Message */}
+                <div className="bg-blue-100 dark:bg-blue-900/40 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    ✓ {language === 'fr' ? 'Abonnement actif' : 'Subscription already active'}
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                    {language === 'fr' 
+                      ? 'Votre abonnement est géré via Shopify. Pour modifier votre plan, visitez votre tableau de bord Shopify.' 
+                      : 'Your subscription is managed through Shopify. To modify your plan, visit your Shopify dashboard.'}
+                  </p>
                 </div>
               </div>
             </Card>
           )}
+
+          {/* Only show upgrade options for NON-Shopify users */}
+          {!(isShopifyUser || billingProvider === 'shopify') && (
+            <>
 
           {isUpgradeFlow && currentPlan && (
             <Card className="p-4 sm:p-5 md:p-6 mb-6 sm:mb-7 md:mb-8 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 border-2 border-primary/30 dark:border-primary/50">
@@ -947,7 +993,9 @@ const Subscription = () => {
           <BillingPortal />
         </>
       )}
-      </>
+            </>
+          )}
+        </>
       )}
     </div>
   );
