@@ -228,10 +228,13 @@ export default function DashboardLight() {
     }
   ];
 
-  // Calculate overall score - only if we have actual data
+  // Calculate overall score - weighted: 60% SEO (products+collections), 40% optimization (tags+alt)
   const hasData = stats && (stats.productsTotal > 0 || stats.collectionsTotal > 0 || stats.tagsTotal > 0 || stats.altTotal > 0);
   const overallScore = hasData 
-    ? Math.round((stats.productsScore + stats.collectionsScore + stats.tagsScore + stats.altScore) / 4)
+    ? Math.round(
+        ((stats.productsScore + stats.collectionsScore) / 2) * 0.6 +
+        ((stats.tagsScore + stats.altScore) / 2) * 0.4
+      )
     : 0;
 
   return (
