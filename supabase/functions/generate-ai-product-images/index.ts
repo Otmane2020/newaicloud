@@ -203,38 +203,57 @@ CRITICAL INSTRUCTIONS:
       await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    // Generate decor image from the first generated white background image
-    if (includeDecor && generatedImages.length > 0) {
-      console.log(`🏠 Generating decor image (${decorType}) from generated white background image...`);
+    // Generate decor image using the ORIGINAL source image to preserve product fidelity
+    if (includeDecor) {
+      console.log(`🏠 Generating decor image (${decorType}) from ORIGINAL source image to preserve product...`);
 
-      const whiteBackgroundImage = generatedImages[0];
       const decorPrompt = DECOR_PROMPTS[decorType]?.[lang] || DECOR_PROMPTS[decorType]?.en;
       
       const prompt = lang === 'fr'
-        ? `TRANSFORME cette image de produit sur fond blanc en une image lifestyle professionnelle.
+        ? `ÉDITION D'IMAGE - NE PAS RÉGÉNÉRER LE PRODUIT
 
-INSTRUCTIONS CRITIQUES:
-- PRENDS ce produit (${productTitle}) EXACTEMENT comme il apparaît dans l'image
-- SUPPRIME le fond blanc et REMPLACE-LE par un environnement réaliste: ${decorPrompt}
-- Le produit doit être IDENTIQUE - même design, même couleur, même orientation
-- Intégration NATURELLE et RÉALISTE dans l'environnement
-- Éclairage naturel correspondant à la pièce, ombres cohérentes
-- Format 16:9 paysage, haute résolution
-- Composition harmonieuse mettant en valeur le produit au centre
-- Pas de texte, pas de watermark
-- Le produit ne doit PAS être dupliqué ou modifié`
-        : `TRANSFORM this white background product image into a professional lifestyle image.
+TÂCHE: Prends CE produit EXACT de l'image et place-le dans un décor réaliste.
 
-CRITICAL INSTRUCTIONS:
-- TAKE this product (${productTitle}) EXACTLY as it appears in the image
-- REMOVE the white background and REPLACE it with a realistic environment: ${decorPrompt}
-- The product must be IDENTICAL - same design, same color, same orientation
-- NATURAL and REALISTIC integration into the environment
-- Natural lighting matching the room, coherent shadows
-- 16:9 landscape format, high resolution
-- Harmonious composition highlighting the product in center
-- No text, no watermark
-- The product must NOT be duplicated or modified`;
+RÈGLES ABSOLUES:
+1. COPIE le produit PIXEL PAR PIXEL - même forme, même couleur, même texture, même proportions
+2. NE MODIFIE RIEN du produit - pas de redesign, pas de changement de couleur, pas de simplification
+3. SUPPRIME uniquement le fond et REMPLACE par: ${decorPrompt}
+4. Le produit doit être la COPIE EXACTE de celui dans l'image source
+
+TECHNIQUE:
+- Détourage précis du produit original
+- Placement naturel dans l'environnement
+- Ajout d'ombres cohérentes avec l'éclairage de la pièce
+- Le produit (${productTitle}) reste au centre de l'image
+- Format paysage 16:9, haute qualité
+
+INTERDIT:
+- Modifier le design du produit
+- Changer les couleurs
+- Simplifier ou styliser le produit
+- Générer un produit "similaire" - il doit être IDENTIQUE`
+        : `IMAGE EDITING - DO NOT REGENERATE THE PRODUCT
+
+TASK: Take THIS EXACT product from the image and place it in a realistic decor.
+
+ABSOLUTE RULES:
+1. COPY the product PIXEL BY PIXEL - same shape, same color, same texture, same proportions
+2. DO NOT MODIFY anything on the product - no redesign, no color change, no simplification
+3. ONLY REMOVE the background and REPLACE with: ${decorPrompt}
+4. The product must be the EXACT COPY of the one in the source image
+
+TECHNIQUE:
+- Precise cutout of the original product
+- Natural placement in the environment
+- Add shadows coherent with room lighting
+- The product (${productTitle}) stays in the center of the image
+- 16:9 landscape format, high quality
+
+FORBIDDEN:
+- Modifying product design
+- Changing colors
+- Simplifying or stylizing the product
+- Generating a "similar" product - it must be IDENTICAL`;
 
       try {
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -250,7 +269,8 @@ CRITICAL INSTRUCTIONS:
                 role: "user",
                 content: [
                   { type: "text", text: prompt },
-                  { type: "image_url", image_url: { url: whiteBackgroundImage.url } }
+                  // Use ORIGINAL source image to preserve product fidelity
+                  { type: "image_url", image_url: { url: sourceImageUrl } }
                 ]
               }
             ],
@@ -268,7 +288,7 @@ CRITICAL INSTRUCTIONS:
               type: 'decor',
               label: IMAGE_TYPE_LABELS.decor[lang]
             });
-            console.log(`✅ Generated decor image via Lovable AI`);
+            console.log(`✅ Generated decor image via Lovable AI (using original source)`);
           }
         } else {
           console.error(`❌ Error generating decor:`, response.status, await response.text());
@@ -276,8 +296,6 @@ CRITICAL INSTRUCTIONS:
       } catch (error) {
         console.error(`❌ Error generating decor image:`, error);
       }
-    } else if (includeDecor && generatedImages.length === 0) {
-      console.log(`⚠️ Cannot generate decor - no white background images generated first`);
     }
 
     console.log(`📦 Total images generated: ${generatedImages.length}`);
