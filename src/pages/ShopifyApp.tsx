@@ -5,9 +5,20 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 import { DEMO_CONFIG } from "@/lib/demoConfig";
+import { ConnectionTimeoutAlert } from "@/components/ServerStatusAlert";
 
 // Demo store domain - bypass payment for this store
 const DEMO_STORE_DOMAIN = "store-demo-20240334.myshopify.com";
+
+// Helper: detect server error
+const isServerError = (error: any): boolean => {
+  const msg = error?.message || String(error) || '';
+  return msg.includes('Failed to fetch') || 
+         msg.includes('timeout') || 
+         msg.includes('NetworkError') ||
+         msg.includes('522') ||
+         msg.includes('503');
+};
 
 // Helper: query with retry and exponential backoff
 const queryWithRetry = async <T,>(
@@ -41,7 +52,7 @@ const queryWithRetry = async <T,>(
 export default function ShopifyApp() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<"loading" | "error" | "processed">("loading");
+  const [status, setStatus] = useState<"loading" | "error" | "processed" | "server_offline">("loading");
   const { t, language } = useTranslation();
 
   useEffect(() => {
@@ -225,14 +236,26 @@ export default function ShopifyApp() {
           console.log('🆕 [ShopifyApp] New user, redirecting to SetupWizard for Shopify Billing');
           navigate(`/app/setup-wizard?shop=${shop}`, { replace: true });
         }
-      } catch (err) {
-        setStatus("error");
-        toast.error(t.shopifyApp?.unexpectedError || "Unexpected error");
+      } catch (err: any) {
+        if (isServerError(err)) {
+          setStatus("server_offline");
+          toast.error(
+            language === 'fr' ? 'Serveur indisponible' : 'Server unavailable',
+            { description: language === 'fr' ? 'Réessayez dans quelques minutes.' : 'Please try again in a few minutes.' }
+          );
+        } else {
+          setStatus("error");
+          toast.error(t.shopifyApp?.unexpectedError || "Unexpected error");
+        }
       }
     };
 
     processPendingToken();
   }, [params, navigate, t, status]);
+
+  if (status === "server_offline") {
+    return <ConnectionTimeoutAlert />;
+  }
 
   if (status === "error") {
     return (

@@ -5,12 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PublicHeader } from "@/components/PublicHeader";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
+import { ConnectionTimeoutAlert } from "@/components/ServerStatusAlert";
+
+// Helper: detect server error
+const isServerError = (error: any): boolean => {
+  const msg = error?.message || String(error) || '';
+  return msg.includes('Failed to fetch') || 
+         msg.includes('timeout') || 
+         msg.includes('NetworkError') ||
+         msg.includes('522') ||
+         msg.includes('503');
+};
 
 const ShopifyInstall = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<"loading" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "error" | "server_offline">("loading");
 
   useEffect(() => {
     const initOAuth = async () => {
@@ -54,19 +65,31 @@ const ShopifyInstall = () => {
         } else {
           throw new Error("No auth URL received");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("[SHOPIFY-INSTALL] Error:", error);
-        toast.error("Failed to initiate Shopify connection");
-        setStatus("error");
-        // Fallback: rediriger vers le guide
-        setTimeout(() => {
-          navigate(`/shopify/guide?shop=${encodeURIComponent(shop)}`, { replace: true });
-        }, 2000);
+        if (isServerError(error)) {
+          setStatus("server_offline");
+          toast.error(
+            language === 'fr' ? 'Serveur indisponible' : 'Server unavailable',
+            { description: language === 'fr' ? 'Réessayez dans quelques minutes.' : 'Please try again in a few minutes.' }
+          );
+        } else {
+          toast.error("Failed to initiate Shopify connection");
+          setStatus("error");
+          // Fallback: rediriger vers le guide
+          setTimeout(() => {
+            navigate(`/shopify/guide?shop=${encodeURIComponent(shop)}`, { replace: true });
+          }, 2000);
+        }
       }
     };
 
     initOAuth();
   }, [searchParams, navigate]);
+
+  if (status === "server_offline") {
+    return <ConnectionTimeoutAlert />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
