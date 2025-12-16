@@ -232,9 +232,9 @@ export default function ShopifyApp() {
             navigate(`/app/setup-wizard?shop=${shop}`, { replace: true });
           }
         } else {
-          // Nouvel utilisateur → /app/installing pour l'animation, puis setup-wizard
-          console.log('🆕 [ShopifyApp] New user, redirecting to Installing page');
-          navigate(`/app/installing?shop=${shop}`, { replace: true });
+          // Nouvel utilisateur → directement vers setup-wizard (plus rapide)
+          console.log('🆕 [ShopifyApp] New user, redirecting directly to SetupWizard');
+          navigate(`/app/setup-wizard?shop=${shop}`, { replace: true });
         }
       } catch (err: any) {
         if (isServerError(err)) {
