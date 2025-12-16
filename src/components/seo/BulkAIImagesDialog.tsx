@@ -367,9 +367,38 @@ export const BulkAIImagesDialog = ({
         if (data?.images && data.images.length > 0) {
           updateProductStatus(product.id, { status: 'saving' });
 
+          // Find profile image to set as primary (position 1)
+          const profileImage = data.images.find((img: any) => img.type === 'profile');
+          const otherImages = data.images.filter((img: any) => img.type !== 'profile');
+          
+          // Reorder: profile first, then others
+          const orderedImages = profileImage ? [profileImage, ...otherImages] : data.images;
+
           // Save images to database
           let savedCount = 0;
-          for (const img of data.images) {
+          
+          // If we have a profile image, shift all existing images positions
+          if (profileImage) {
+            // Get all existing images and increment their positions
+            const { data: existingImages } = await supabase
+              .from('product_images')
+              .select('id, position')
+              .eq('product_id', product.id)
+              .order('position', { ascending: true });
+            
+            if (existingImages && existingImages.length > 0) {
+              // Shift all existing positions by the number of new images
+              for (const existing of existingImages) {
+                await supabase
+                  .from('product_images')
+                  .update({ position: (existing.position || 0) + orderedImages.length })
+                  .eq('id', existing.id);
+              }
+            }
+          }
+          
+          for (let imgIndex = 0; imgIndex < orderedImages.length; imgIndex++) {
+            const img = orderedImages[imgIndex];
             try {
               let imageUrl = img.url;
 
@@ -397,15 +426,8 @@ export const BulkAIImagesDialog = ({
                 }
               }
 
-              // Get max position
-              const { data: existingImages } = await supabase
-                .from('product_images')
-                .select('position')
-                .eq('product_id', product.id)
-                .order('position', { ascending: false })
-                .limit(1);
-
-              const nextPosition = (existingImages?.[0]?.position || 0) + 1;
+              // Profile image gets position 1, others follow
+              const imagePosition = profileImage ? imgIndex + 1 : await getNextPosition(product.id, savedCount);
 
               // Insert image
               await supabase
@@ -414,14 +436,34 @@ export const BulkAIImagesDialog = ({
                   product_id: product.id,
                   src: imageUrl,
                   alt_text: `${product.title} - ${img.label}`,
-                  position: nextPosition + savedCount,
+                  position: imagePosition,
                   optimization_count: 1,
                 });
+
+              // If this is the profile image (position 1), update product's main image_url
+              if (img.type === 'profile' && imageUrl) {
+                await supabase
+                  .from('shopify_products')
+                  .update({ image_url: imageUrl })
+                  .eq('id', product.id);
+                console.log('[BulkAI] Set profile as main product image');
+              }
 
               savedCount++;
             } catch (imgError) {
               console.error('[BulkAI] Error saving image:', imgError);
             }
+          }
+          
+          // Helper function to get next position
+          async function getNextPosition(productId: string, offset: number): Promise<number> {
+            const { data: existingImages } = await supabase
+              .from('product_images')
+              .select('position')
+              .eq('product_id', productId)
+              .order('position', { ascending: false })
+              .limit(1);
+            return (existingImages?.[0]?.position || 0) + 1 + offset;
           }
 
           updateProductStatus(product.id, { status: 'success', imagesGenerated: savedCount });
