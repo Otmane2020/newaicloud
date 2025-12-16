@@ -16,6 +16,10 @@ interface Profile {
   billing_provider: string | null;
 }
 
+// Helper to detect Shopify users - MUST bypass all Stripe logic
+const isShopifyProfile = (profile?: Profile | null, email?: string | null) =>
+  profile?.billing_provider === 'shopify' || email?.endsWith('@shopify.newai.sale');
+
 export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { t } = useTranslation();
@@ -64,16 +68,18 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         .eq('id', user.id)
         .single();
       
-      // Check if this is a Shopify user - skip Stripe check entirely
-      const isShopifyUser = profileData?.billing_provider === 'shopify' || 
-                           user.email?.endsWith('@shopify.newai.sale');
-      
-      if (isShopifyUser && profileData?.subscription_status === 'active') {
-        console.log('🛒 [SubscriptionGuard] Shopify user with active subscription, bypassing Stripe check');
+      // 🛒 SHOPIFY USERS: FULL BYPASS - NO STRIPE LOGIC AT ALL
+      // Shopify Billing is the source of truth for Shopify users
+      if (isShopifyProfile(profileData, user.email)) {
+        console.log('🛒 [SubscriptionGuard] Shopify user detected → FULL bypass, NO Stripe logic');
         setProfile(profileData);
         setLoading(false);
-        return;
+        return; // EXIT IMMEDIATELY - no Stripe checks
       }
+      
+      // ========================================
+      // BELOW THIS POINT: STRIPE USERS ONLY
+      // ========================================
       
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
@@ -85,73 +91,71 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      // Only check Stripe for non-Shopify users
-      if (!isShopifyUser) {
-        console.log('🔄 Checking Stripe subscription status...');
+      // Stripe subscription check (only for non-Shopify users)
+      console.log('🔄 Checking Stripe subscription status...');
+      
+      const { data: stripeData, error: stripeError } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (stripeError) {
+        console.error('❌ Error checking Stripe subscription:', stripeError);
         
-        const { data: stripeData, error: stripeError } = await supabase.functions.invoke('check-subscription', {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`
-          }
-        });
+        // Handle session expiration - redirect to auth
+        if (stripeError.message?.includes('Session expired') || 
+            stripeError.message?.includes('invalid_session') ||
+            stripeError.message?.includes('Session not found') ||
+            stripeError.message?.includes('401')) {
+          console.log('🔐 Session expired, signing out and redirecting to auth');
+          await supabase.auth.signOut();
+          window.location.href = '/auth';
+          return;
+        }
+      } else {
+        console.log('✅ Stripe subscription data:', stripeData);
         
-        if (stripeError) {
-          console.error('❌ Error checking Stripe subscription:', stripeError);
+        // Check for invalid trial state on paid plan (STRIPE ONLY)
+        if (stripeData?.error === 'invalid_trial_state') {
+          console.error('⚠️ INVALID TRIAL STATE DETECTED:', stripeData);
+          setInvalidTrialState(true);
+          setLoading(false);
+          return;
+        }
+        
+        // If user has active subscription in Stripe, bypass the redirect
+        if (stripeData?.subscribed) {
+          console.log('✅ Active subscription found in Stripe, allowing access');
+          setHasActiveStripeSubscription(true);
           
-          // Handle session expiration - redirect to auth
-          if (stripeError.message?.includes('Session expired') || 
-              stripeError.message?.includes('invalid_session') ||
-              stripeError.message?.includes('Session not found') ||
-              stripeError.message?.includes('401')) {
-            console.log('🔐 Session expired, signing out and redirecting to auth');
-            await supabase.auth.signOut();
-            window.location.href = '/auth';
-            return;
-          }
-        } else {
-          console.log('✅ Stripe subscription data:', stripeData);
-          
-          // Check for invalid trial state on paid plan
-          if (stripeData?.error === 'invalid_trial_state') {
-            console.error('⚠️ INVALID TRIAL STATE DETECTED:', stripeData);
-            setInvalidTrialState(true);
-            setLoading(false);
-            return;
-          }
-          
-          // If user has active subscription in Stripe, bypass the redirect
-          if (stripeData?.subscribed) {
-            console.log('✅ Active subscription found in Stripe, allowing access');
-            setHasActiveStripeSubscription(true);
-            
-            // Update profile in background (don't wait for it)
-            supabase
-              .from('profiles')
-              .update({
-                subscription_status: 'active',
-                onboarding_completed: true,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', user.id)
-              .then(({ error: updateError }) => {
-                if (updateError) {
-                  console.error('❌ Error updating profile:', updateError);
-                } else {
-                  console.log('✅ Profile updated with active subscription');
-                }
-              });
-            
-            // Set a valid profile to bypass the redirect check
-            setProfile({
+          // Update profile in background (don't wait for it)
+          supabase
+            .from('profiles')
+            .update({
               subscription_status: 'active',
-              current_plan_id: null,
-              trial_ends_at: null,
-              stripe_customer_id: null,
-              billing_provider: 'stripe'
+              onboarding_completed: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+            .then(({ error: updateError }) => {
+              if (updateError) {
+                console.error('❌ Error updating profile:', updateError);
+              } else {
+                console.log('✅ Profile updated with active subscription');
+              }
             });
-            setLoading(false);
-            return;
-          }
+          
+          // Set a valid profile to bypass the redirect check
+          setProfile({
+            subscription_status: 'active',
+            current_plan_id: null,
+            trial_ends_at: null,
+            stripe_customer_id: null,
+            billing_provider: 'stripe'
+          });
+          setLoading(false);
+          return;
         }
       }
       
@@ -245,7 +249,17 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Show alert if invalid trial state detected
+  // 🛒 SHOPIFY USERS: IMMEDIATE ACCESS - Shopify Billing is source of truth
+  if (isShopifyProfile(profile, user?.email)) {
+    console.log('🛒 [SubscriptionGuard] Shopify user → granting access (Shopify Billing controls)');
+    return <>{children}</>;
+  }
+
+  // ========================================
+  // BELOW THIS POINT: STRIPE USERS ONLY
+  // ========================================
+
+  // Show alert if invalid trial state detected (STRIPE ONLY)
   if (invalidTrialState) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-background">
@@ -281,15 +295,13 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // SECURITY: Vérifier strictement l'abonnement avec stripe_customer_id OBLIGATOIRE
-  // CRITICAL: Ne JAMAIS accepter 'trialing' sans stripe_customer_id ET sans trial_ends_at
-  // Les free trials valides ont trial_ends_at défini même sans stripe_customer_id
+  // STRIPE ONLY: Reset invalid trials (no stripe_customer_id AND no trial_ends_at)
   if (
     profile?.subscription_status === 'trialing' && 
     !profile.stripe_customer_id &&
-    !profile.trial_ends_at // Only reset trials without an end date
+    !profile.trial_ends_at
   ) {
-    console.error('🚨 SECURITY ALERT: Invalid trial detected (no Stripe ID and no end date)!', {
+    console.error('🚨 SECURITY ALERT: Invalid Stripe trial detected (no Stripe ID and no end date)!', {
       userId: user?.id,
       email: user?.email,
       status: profile.subscription_status,
@@ -312,25 +324,13 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
         }
       });
     
-    // Rediriger immédiatement - Shopify users vers setup-wizard, autres vers onboarding
-    const isShopifyUserInvalid = profile?.billing_provider === 'shopify' || 
-                                  user?.email?.endsWith('@shopify.newai.sale');
-    if (isShopifyUserInvalid) {
-      const shopHandle = user?.email?.split('@')[0] || '';
-      const shopDomain = `${shopHandle}.myshopify.com`;
-      console.log('🛒 [SubscriptionGuard] Invalid Shopify trial, redirecting to setup-wizard');
-      return <Navigate to={`/app/setup-wizard?shop=${encodeURIComponent(shopDomain)}`} replace />;
-    }
     return <Navigate to="/onboarding" replace />;
   }
   
-  // Shopify users have billing_provider='shopify' - they don't need stripe_customer_id
-  const isShopifyUser = profile?.billing_provider === 'shopify' || 
-                        user?.email?.endsWith('@shopify.newai.sale');
-  
+  // STRIPE ONLY: Validate subscription
   const hasValidSubscription = profile?.subscription_status && 
     (profile.subscription_status === 'active' 
-      ? (profile.stripe_customer_id || isShopifyUser) // Stripe OR Shopify billing
+      ? profile.stripe_customer_id // Stripe users need stripe_customer_id
       : true) && 
     (profile.subscription_status === 'active' || 
      (profile.subscription_status === 'trialing' && 
@@ -338,25 +338,16 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
       new Date(profile.trial_ends_at) > new Date()));
 
   if (!hasValidSubscription && !hasActiveStripeSubscription) {
-    console.log('⚠️ [SubscriptionGuard] No valid subscription:', {
+    console.log('⚠️ [SubscriptionGuard] No valid Stripe subscription:', {
       userId: user?.id,
       status: profile?.subscription_status,
-      isShopifyUser,
       timestamp: new Date().toISOString()
     });
-    
-    // Shopify users go to Shopify Billing setup, others go to Stripe onboarding
-    if (isShopifyUser) {
-      const shopHandle = user?.email?.split('@')[0] || '';
-      const shopDomain = `${shopHandle}.myshopify.com`;
-      console.log('🛒 [SubscriptionGuard] Redirecting Shopify user to setup-wizard');
-      return <Navigate to={`/app/setup-wizard?shop=${encodeURIComponent(shopDomain)}`} replace />;
-    }
     
     return <Navigate to="/onboarding" replace />;
   }
 
-  console.log('✅ [SubscriptionGuard] Valid subscription found, allowing access:', {
+  console.log('✅ [SubscriptionGuard] Valid Stripe subscription found, allowing access:', {
     userId: user?.id,
     status: profile?.subscription_status,
     timestamp: new Date().toISOString()
