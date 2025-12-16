@@ -1,6 +1,18 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { fr, en, Translations } from './translations';
 
+// Helper function to ensure a value is always a string (prevents React error #300)
+export function safeString(value: any, fallback: string = ''): string {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'object') {
+    console.warn('[safeString] Received object instead of string:', value);
+    return fallback;
+  }
+  return String(value);
+}
+
 type Language = 'fr' | 'en';
 
 interface LanguageContextType {

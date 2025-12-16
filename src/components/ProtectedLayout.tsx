@@ -20,7 +20,10 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const { limits } = useUsageLimits();
   
-  const remainingCredits = (limits?.limits.max_optimizations || 0) - (limits?.usage.optimizations_count || 0);
+  // Safe calculation of remaining credits - prevent NaN/object rendering (React error #300)
+  const maxOpts = Number(limits?.limits?.max_optimizations) || 0;
+  const usedOpts = Number(limits?.usage?.optimizations_count) || 0;
+  const remainingCredits = Math.max(0, maxOpts - usedOpts);
   // Removed demo store bypass - authentication is required for all stores
 
   // Check if Shopify auth redirect is in progress - show loading instead of redirecting to /auth
@@ -63,7 +66,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
                   <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 dark:from-violet-500/20 dark:to-fuchsia-500/20 rounded-full border border-violet-300/50 dark:border-violet-500/30">
                     <Coins className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
                     <span className="text-xs font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                      {remainingCredits}
+                      {String(remainingCredits)}
                     </span>
                   </div>
                   <LanguageSwitcher />
