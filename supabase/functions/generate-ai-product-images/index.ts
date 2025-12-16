@@ -33,6 +33,14 @@ const IMAGE_TYPE_PROMPTS: Record<string, { fr: string; en: string }> = {
     fr: "Vue arrière du produit, montrant le dos/arrière, fond blanc pur avec ombre portée légère",
     en: "Back view of the product, showing the rear, pure white background with light drop shadow"
   },
+  top: {
+    fr: "Vue du dessus (vue plongeante) du produit, montrant le produit vu d'en haut à 90 degrés, fond blanc pur (#FFFFFF), éclairage studio professionnel",
+    en: "Top-down view of the product, showing the product from directly above at 90 degrees, pure white background (#FFFFFF), professional studio lighting"
+  },
+  low_angle: {
+    fr: "Vue en contre-plongée du produit (angle bas vers le haut), donnant une perspective dramatique et imposante, fond blanc pur (#FFFFFF), éclairage studio",
+    en: "Low angle view of the product (from below looking up), giving a dramatic and imposing perspective, pure white background (#FFFFFF), studio lighting"
+  },
   zoom_fabric: {
     fr: "Gros plan macro sur le tissu/matière du produit, montrant la texture détaillée, fond blanc",
     en: "Macro close-up on the fabric/material of the product, showing detailed texture, white background"
@@ -71,6 +79,8 @@ const IMAGE_TYPE_LABELS: Record<string, { fr: string; en: string }> = {
   angle45: { fr: "45°", en: "45°" },
   profile: { fr: "Profil", en: "Profile" },
   back: { fr: "Arrière", en: "Back" },
+  top: { fr: "Dessus", en: "Top" },
+  low_angle: { fr: "Contre-plongée", en: "Low angle" },
   zoom_fabric: { fr: "Zoom tissu", en: "Fabric zoom" },
   zoom_legs: { fr: "Zoom pieds", en: "Legs zoom" },
   zoom_detail: { fr: "Zoom détail", en: "Detail zoom" },
