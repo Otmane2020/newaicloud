@@ -76,7 +76,7 @@ import ShopifyRecover from "./pages/ShopifyRecover";
 import ShopifyInstallGuide from "./pages/ShopifyInstallGuide";
 import ShopifySuccess from "./pages/ShopifySuccess";
 import ShopifyApp from "./pages/ShopifyApp";
-import Installing from "./pages/Installing";
+
 import ShopifyBillingCallback from "./pages/ShopifyBillingCallback";
 import ShopifyPaymentCallback from "./pages/shopify/PaymentCallback";
 import NotFound from "./pages/NotFound";
@@ -205,7 +205,7 @@ const App = () => (
           {/* Page Plans EMBEDDED dans Shopify Admin (affichée après installation) */}
           <Route path="/app/plans-embedded" element={<PlansEmbedded />} />
           {/* Routes standalone (non-embedded) */}
-          <Route path="/app/installing" element={<Installing />} />
+          {/* Route /app/installing supprimée - redirection directe vers setup-wizard */}
           <Route path="/app/setup-wizard" element={<SetupWizardPage />} />
           <Route path="/app" element={<ShopifyApp />} />
             <Route
