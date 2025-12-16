@@ -30,8 +30,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadStores = useCallback(async () => {
-    if (!user?.id) {
-      console.log('🚨🚨🚨 [STORE_CONTEXT] No user, clearing stores');
+    // Validate user.id is defined AND is a valid UUID (not "undefined" string)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!user?.id || !uuidRegex.test(user.id)) {
+      console.log('🚨🚨🚨 [STORE_CONTEXT] No valid user ID, clearing stores');
       setStores([]);
       setSelectedStore(null);
       setLoading(false);

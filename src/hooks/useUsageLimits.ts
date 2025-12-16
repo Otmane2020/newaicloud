@@ -65,6 +65,12 @@ const fetchUsageLimits = async (): Promise<UsageLimits> => {
     throw new Error('User not authenticated');
   }
   
+  // Validate user.id is a valid UUID (not "undefined" string)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!user.id || !uuidRegex.test(user.id)) {
+    throw new Error('Invalid user ID');
+  }
+  
   // Get current session with token
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   
