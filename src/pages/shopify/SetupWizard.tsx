@@ -3,10 +3,80 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import ShopifyPricingPlans from "@/components/shopify/ShopifyPricingPlans";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+
 // Demo store domain - bypass payment for this store
 const DEMO_STORE_DOMAIN = "store-demo-20240334.myshopify.com";
+
+// Shopify Polaris colors
+const SHOPIFY_GREEN = "#008060";
+const SHOPIFY_DARK = "#1a1a1a";
+
+// Shopify-style header component
+const ShopifyHeader = ({ shopName }: { shopName?: string }) => (
+  <header 
+    style={{ 
+      backgroundColor: SHOPIFY_DARK, 
+      height: "56px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      padding: "0 20px",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif"
+    }}
+  >
+    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      {/* NewAI Logo */}
+      <div style={{ 
+        display: "flex", 
+        alignItems: "center", 
+        gap: "8px",
+        color: "white",
+        fontWeight: 600,
+        fontSize: "18px"
+      }}>
+        <div style={{
+          width: "32px",
+          height: "32px",
+          borderRadius: "8px",
+          background: `linear-gradient(135deg, ${SHOPIFY_GREEN}, #00a07a)`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <Sparkles size={18} color="white" />
+        </div>
+        <span>NewAI</span>
+      </div>
+      
+      {/* Version badge like Shopify */}
+      <span style={{
+        backgroundColor: "rgba(255,255,255,0.15)",
+        color: "rgba(255,255,255,0.9)",
+        padding: "4px 10px",
+        borderRadius: "12px",
+        fontSize: "12px",
+        fontWeight: 500
+      }}>
+        SEO Pro
+      </span>
+    </div>
+
+    {/* Center - Store name */}
+    {shopName && (
+      <div style={{
+        color: "rgba(255,255,255,0.8)",
+        fontSize: "14px"
+      }}>
+        {shopName.replace('.myshopify.com', '')}
+      </div>
+    )}
+
+    {/* Right side - placeholder for future elements */}
+    <div style={{ width: "150px" }} />
+  </header>
+);
 
 export default function SetupWizard() {
   const [searchParams] = useSearchParams();
@@ -140,16 +210,26 @@ export default function SetupWizard() {
   // Error state (only show if auth failed)
   if (authError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="max-w-md text-center p-8 border rounded-lg bg-card">
-          <h2 className="text-xl font-semibold text-destructive mb-2">{t.errorTitle}</h2>
-          <p className="text-muted-foreground mb-4">{authError}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            {t.retry}
-          </button>
+      <div 
+        className="min-h-screen flex flex-col" 
+        style={{ 
+          backgroundColor: "#f6f6f7", 
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" 
+        }}
+      >
+        <ShopifyHeader shopName={normalizedShop || undefined} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="max-w-md text-center p-8 border rounded-lg bg-white shadow-sm">
+            <h2 className="text-xl font-semibold text-red-600 mb-2">{t.errorTitle}</h2>
+            <p className="text-gray-600 mb-4">{authError}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 rounded-md text-white hover:opacity-90"
+              style={{ backgroundColor: SHOPIFY_GREEN }}
+            >
+              {t.retry}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -158,20 +238,42 @@ export default function SetupWizard() {
   // Loading state while checking subscription
   if (checkingSubscription) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div 
+        className="min-h-screen flex flex-col" 
+        style={{ 
+          backgroundColor: "#f6f6f7", 
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" 
+        }}
+      >
+        <ShopifyHeader shopName={normalizedShop || undefined} />
+        <div className="flex-1 flex items-center justify-center">
+          <div 
+            className="animate-spin rounded-full h-8 w-8 border-b-2" 
+            style={{ borderColor: SHOPIFY_GREEN }}
+          />
+        </div>
       </div>
     );
   }
 
   // INSTANT display of pricing plans - Shopify Polaris style
   return (
-    <div className="min-h-screen py-12" style={{ backgroundColor: "#f6f6f7", fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" }}>
-      <ShopifyPricingPlans
-        shopDomain={shopFromUrl || ""} 
-        language={language as "fr" | "en"}
-        isAuthenticating={isAuthenticating}
-      />
+    <div 
+      className="min-h-screen flex flex-col" 
+      style={{ 
+        backgroundColor: "#f6f6f7", 
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" 
+      }}
+    >
+      <ShopifyHeader shopName={normalizedShop || undefined} />
+      
+      <div className="flex-1 py-12">
+        <ShopifyPricingPlans
+          shopDomain={shopFromUrl || ""} 
+          language={language as "fr" | "en"}
+          isAuthenticating={isAuthenticating}
+        />
+      </div>
     </div>
   );
 }
