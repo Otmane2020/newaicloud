@@ -44,17 +44,20 @@ export function ReferralSystem() {
     if (!user) return;
 
     try {
-      // Get or create referral code (use maybeSingle instead of single)
-      const { data: existingReferral, error: fetchError } = await supabase
+      // Get or create referral code (use limit(1) to handle duplicates)
+      const { data: existingReferrals, error: fetchError } = await supabase
         .from("referrals")
         .select("referral_code")
         .eq("referrer_id", user.id)
-        .maybeSingle();
+        .order("created_at", { ascending: true })
+        .limit(1);
 
       if (fetchError) {
         console.error("Error fetching referral:", fetchError);
         return;
       }
+      
+      const existingReferral = existingReferrals?.[0];
 
       if (existingReferral) {
         setReferralCode(existingReferral.referral_code);
