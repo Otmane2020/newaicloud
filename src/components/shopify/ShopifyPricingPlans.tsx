@@ -167,36 +167,9 @@ export default function ShopifyPricingPlans({
           onSubscriptionCreated(data.confirmationUrl);
         }
         
-        // 🆕 Mode EMBEDDED: utiliser App Bridge Redirect
-        if (isEmbedded && (window as any).shopify) {
-          console.log("[ShopifyPricingPlans] EMBEDDED MODE - Using App Bridge redirect");
-          try {
-            // App Bridge v4: use shopify.loading() and redirect
-            const shopify = (window as any).shopify;
-            // Redirect to Shopify Billing page
-            window.location.href = data.confirmationUrl;
-            return;
-          } catch (bridgeErr) {
-            console.warn("[ShopifyPricingPlans] App Bridge redirect failed, falling back:", bridgeErr);
-          }
-        }
-        
-        // Mode STANDALONE: ouvrir dans un nouvel onglet
-        console.log("[ShopifyPricingPlans] STANDALONE MODE - Opening in new tab:", data.confirmationUrl);
-        window.open(data.confirmationUrl, '_blank');
-        
-        // Show toast to guide user
-        toast.success(
-          language === "fr" ? "Page de paiement ouverte" : "Payment page opened",
-          {
-            description: language === "fr" 
-              ? "Complétez votre paiement dans le nouvel onglet Shopify" 
-              : "Complete your payment in the new Shopify tab"
-          }
-        );
-        
-        setLoading(false);
-        setSelectedPlan(null);
+        // Redirect to Shopify Billing page in same window
+        console.log("[ShopifyPricingPlans] Redirecting to Shopify Billing:", data.confirmationUrl);
+        window.location.href = data.confirmationUrl;
         return;
       }
       
