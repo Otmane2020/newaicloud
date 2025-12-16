@@ -218,26 +218,18 @@ serve(async (req) => {
         // Nettoyer le state token
         await supabase.from("oauth_states").delete().eq("state_token", state);
 
-        // 🆕 EMBEDDED MODE: Rediriger vers l'app embedded dans Shopify Admin
-        // L'app utilise host pour charger dans l'iframe Shopify
-        let redirectUrl: string;
+        // ✅ 100% STANDALONE MODE - TOUJOURS rediriger vers newai.sale
+        // Ne JAMAIS utiliser admin.shopify.com/.../apps/... (architecture incompatible)
+        const redirectUrl = `${APP_URL}/app/setup-wizard?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}`;
+        console.log("[SHOPIFY-OAUTH] ✅ Redirecting to STANDALONE setup-wizard:", redirectUrl);
         
-        if (host) {
-          // ✅ Rediriger vers Shopify Admin embedded avec host
-          const shopHandle = shop.replace('.myshopify.com', '');
-          redirectUrl = `https://admin.shopify.com/store/${shopHandle}/apps/newai/app/plans-embedded?shop=${encodeURIComponent(shop)}&host=${encodeURIComponent(host)}&pending_token=${pendingToken}`;
-          console.log("[SHOPIFY-OAUTH] Redirecting to embedded plans (with host):", redirectUrl);
-        } else {
-          // Fallback: mode standalone si pas de host
-          redirectUrl = `${APP_URL}/app/setup-wizard?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}`;
-          console.log("[SHOPIFY-OAUTH] Redirecting to standalone setup (no host):", redirectUrl);
-        }
+        // Nettoyer le state token
+        await supabase.from("oauth_states").delete().eq("state_token", state);
         
         console.log(JSON.stringify({
           event: 'oauth_callback_success',
-          flow: host ? 'pre-auth-embedded' : 'pre-auth-standalone',
+          flow: 'standalone',
           shop: shop,
-          has_host: !!host,
           redirect: redirectUrl,
           expires_in_days: 7,
           timestamp: new Date().toISOString()
