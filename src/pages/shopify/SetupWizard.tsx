@@ -26,7 +26,10 @@ const ShopifyHeader = ({ shopName }: { shopName?: string }) => (
       alignItems: "center",
       justifyContent: "space-between",
       padding: "0 20px",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif"
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif",
+      position: "sticky",
+      top: 0,
+      zIndex: 50
     }}
   >
     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
