@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { StoreProvider } from "./contexts/StoreContext";
 import { AutoSyncProvider, useAutoSyncProgress } from "./contexts/AutoSyncContext";
 import { OptimizationProvider } from "./contexts/OptimizationContext";
@@ -133,23 +133,9 @@ function AdminEmailNotificationsMonitor() {
 }
 
 function AutoSyncMonitor() {
-  const [userId, setUserId] = useState<string>();
+  const { user } = useAuth();
   const { endSync } = useAutoSyncProgress();
-
-  useEffect(() => {
-    const getUserId = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user?.id);
-    };
-    getUserId();
-
-    // Écouter les changements d'authentification
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUserId(session?.user?.id);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const userId = user?.id;
 
   // Reset sync state when user is not authenticated
   useEffect(() => {
