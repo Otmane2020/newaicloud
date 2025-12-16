@@ -392,13 +392,16 @@ export default function DashboardLight() {
                   <div className={`text-3xl font-black ${
                     overallScore >= 80 ? 'text-[#22c55e]' : overallScore >= 60 ? 'text-[#FF8000]' : 'text-[#FF3333]'
                   }`}>
-                    {stats ? [stats.productsScore, stats.collectionsScore, stats.tagsScore, stats.altScore].filter(s => s >= 80).length : 0}
+                    {stats ? Math.round(
+                      ((stats.productsScore + stats.collectionsScore) / 2) * 0.6 +
+                      ((stats.tagsScore + stats.altScore) / 2) * 0.4
+                    ) : 0}
                   </div>
                   <div className="text-xs text-muted-foreground font-semibold">
-                    {language === 'fr' ? 'sur 4 catégories' : 'on 4 categories'}
+                    {language === 'fr' ? 'score pondéré' : 'weighted score'}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {language === 'fr' ? 'optimisées' : 'optimized'}
+                    /100
                   </div>
                 </div>
               </div>
