@@ -287,17 +287,16 @@ serve(async (req) => {
     const PAID_PLAN_PATTERNS = ['starter', 'pro', 'enterprise'];
     const hasPaidPlan = PAID_PLAN_PATTERNS.some(pattern => normalizedPlanForCheck.includes(pattern));
     
-    // isPaid: has a paid plan AND (status is active OR trialing with paid plan)
-    const isPaid = hasPaidPlan && 
-                   (profile.subscription_status === 'active' || profile.subscription_status === 'trialing');
+    // isPaid: has a paid plan AND status is ACTIVE (trialing users haven't paid yet!)
+    const isPaid = hasPaidPlan && profile.subscription_status === 'active';
     
-    // isTrialing: only true if NOT on a paid plan
-    const isTrialing = !isPaid && (
-                       profile.subscription_status === 'trialing' || 
+    // isTrialing: true if subscription_status is 'trialing' OR user has no active plan
+    // A user trialing a Starter/Pro/Enterprise plan is still trialing - they haven't paid yet
+    const isTrialing = profile.subscription_status === 'trialing' || 
                        !profile.current_plan_id ||
                        profile.current_plan_id === 'trial' ||
                        profile.subscription_status === 'cancelled' ||
-                       profile.subscription_status === 'inactive');
+                       profile.subscription_status === 'inactive';
     
     console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, hasPaidPlan: ${hasPaidPlan}, normalized: ${normalizedPlanForCheck}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
     
