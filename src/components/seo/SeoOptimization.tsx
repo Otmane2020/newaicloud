@@ -18,8 +18,8 @@ import {
   WorkflowItem,
 } from "./SeoWorkflowDialogs";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
-import { UpgradeDialog } from "@/components/UpgradeDialog";
-import { TrialLimitDialog } from "@/components/TrialLimitDialog";
+
+import { ShopifyUpgradeDialog } from "@/components/shopify/ShopifyUpgradeDialog";
 import { TrialLimitBanner } from "@/components/TrialLimitBanner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -1528,25 +1528,15 @@ export function SeoOptimization() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {limits?.shouldForcePayment ? (
-        <TrialLimitDialog
-          open={showUpgradeDialog}
-          onOpenChange={setShowUpgradeDialog}
-          limitType="optimizations"
-          currentUsage={limits?.usage.optimizations_count || 0}
-          maxUsage={limits?.limits.max_optimizations || 0}
-          trialMaxUsage={limits?.isTrialing ? limits?.limits.max_optimizations : undefined}
-          isTrialing={limits?.isTrialing || false}
-        />
-      ) : (
-        <UpgradeDialog
-          open={showUpgradeDialog}
-          onOpenChange={setShowUpgradeDialog}
-          limitType="optimizations"
-          usage={limits?.usage.optimizations_count}
-          limit={limits?.limits.max_optimizations}
-        />
-      )}
+      <ShopifyUpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        shopDomain={selectedStore?.store_url || ''}
+        currentPlanId={limits?.planId}
+        limitType="optimizations"
+        usage={limits?.usage.optimizations_count || 0}
+        limit={limits?.limits.max_optimizations || 0}
+      />
     </div>
   );
 }
