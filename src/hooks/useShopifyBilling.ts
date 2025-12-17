@@ -63,27 +63,31 @@ export function useShopifyBilling() {
 
   /**
    * ✅ SAFE: checks existing subscription before creating one
+   * @param forceUpgrade - Set to true when trialing user wants to activate full plan (same plan)
    */
   const createShopifySubscription = useCallback(
-    async (planId: string, billingCycle: "monthly" | "yearly") => {
+    async (planId: string, billingCycle: "monthly" | "yearly", forceUpgrade: boolean = false) => {
       if (!state.shopDomain) {
         toast.error("No Shopify store connected");
         return null;
       }
 
       try {
-        // 1️⃣ CHECK EXISTING SUBSCRIPTION
-        const { data: existing } = await supabase.functions.invoke(
-          "shopify-check-subscription",
-          { body: { shopDomain: state.shopDomain } }
-        );
+        // Skip check if forceUpgrade is true (trialing user activating full plan)
+        if (!forceUpgrade) {
+          // 1️⃣ CHECK EXISTING SUBSCRIPTION
+          const { data: existing } = await supabase.functions.invoke(
+            "shopify-check-subscription",
+            { body: { shopDomain: state.shopDomain } }
+          );
 
-        if (existing?.status === "ACTIVE") {
-          toast.success("Subscription already active");
-          return existing;
+          if (existing?.status === "ACTIVE") {
+            toast.success("Subscription already active");
+            return existing;
+          }
         }
 
-        // 2️⃣ CREATE ONLY IF NOT ACTIVE
+        // 2️⃣ CREATE SUBSCRIPTION (with forceUpgrade to replace trial)
         const { data, error } = await supabase.functions.invoke(
           "shopify-create-subscription",
           {
@@ -91,6 +95,7 @@ export function useShopifyBilling() {
               shopDomain: state.shopDomain,
               planId,
               billingCycle,
+              forceUpgrade,
             },
           }
         );

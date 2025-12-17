@@ -121,9 +121,9 @@ export function CurrentPlanCard({ hideUpgradeAlert = false }: CurrentPlanCardPro
   const handleUpgradeToFullPlan = async () => {
     setUpgradeLoading(true);
     try {
-      // 🛍️ SHOPIFY USERS: Use Shopify Billing
+      // 🛍️ SHOPIFY USERS: Use Shopify Billing with forceUpgrade to replace trial
       if (isShopifyUser || billingProvider === 'shopify') {
-        await createShopifySubscription('starter', 'monthly');
+        await createShopifySubscription('starter', 'monthly', true); // forceUpgrade = true for trialing users
         return;
       }
       
