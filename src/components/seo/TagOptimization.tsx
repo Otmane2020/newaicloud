@@ -587,6 +587,7 @@ export function TagOptimization() {
       'optimizing',
       async (results) => {
         await fetchProducts();
+        await refreshLimits(); // Refresh limits to show updated credit consumption
         
         const updatedProducts = await Promise.all(
           productIds.map(async (id) => {
