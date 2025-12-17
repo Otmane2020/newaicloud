@@ -104,8 +104,9 @@ function computeCitationScoreAIO(
 ): number {
   let score = 50;
 
-  // ≤ 140 caractères = +20
-  if (answer.length <= 140) score += 20;
+  // ✅ CORRECTION 1 — Utiliser preferredAnswerLength par plateforme
+  const preferredLength = PLATFORM_CONFIGS[platform].preferredAnswerLength;
+  if (answer.length <= preferredLength) score += 20;
   
   // Contient des chiffres = +20
   if (/\d/.test(answer)) score += 20;
@@ -144,10 +145,11 @@ function generateDirectAnswer(
       : `An ideal ${catLower} for 6 people measures between 160 and 180 cm. Below 160 cm, space becomes insufficient.`;
   }
   
+  // ✅ CORRECTION 4 — Comparison plus factuel, moins marketing
   if (queryType === 'comparison' && products.length >= 2) {
     return lang === 'fr'
-      ? `${products[0]?.title} est plus abordable (rapport qualité-prix), tandis que ${products[1]?.title} offre une meilleure durabilité grâce à ses matériaux.`
-      : `${products[0]?.title} is more affordable (value for money), while ${products[1]?.title} offers better durability thanks to its materials.`;
+      ? `${products[0]?.title} est généralement moins cher, tandis que ${products[1]?.title} utilise des matériaux plus épais et résistants.`
+      : `${products[0]?.title} is generally cheaper, while ${products[1]?.title} uses thicker and more durable materials.`;
   }
   
   if (queryType === 'comparison') {
@@ -243,10 +245,10 @@ function generateAioAnswers(
       // Determine difficulty
       const difficulty: 'easy' | 'medium' | 'hard' = items.length >= 5 ? 'hard' : items.length >= 2 ? 'medium' : 'easy';
       
-      // Extract keywords
+      // ✅ CORRECTION 3 — Keywords plus sémantiques (3 premiers mots, pas juste le premier)
       const keywords = [
         category.toLowerCase(),
-        ...items.slice(0, 3).map(p => p.title.split(' ')[0].toLowerCase()),
+        ...items.slice(0, 3).map(p => p.title.toLowerCase().split(' ').slice(0, 3).join(' ')),
         queryType,
         platform,
         lang === 'fr' ? 'guide' : 'guide',
@@ -307,6 +309,7 @@ function limitPerCategory(answers: AiAnswer[], maxPerCategory: number = 2): AiAn
  * ✅ LIVRABLE 2 — Génération d'article à partir du direct_answer
  * L'article est construit AUTOUR du direct_answer, pas l'inverse
  */
+// ✅ CORRECTION 5 — Ajout balise <article> pour SEO + AEO
 function generateArticleFromAnswer(
   question: string,
   directAnswer: string,
@@ -316,7 +319,8 @@ function generateArticleFromAnswer(
   const keyPointsTitle = lang === 'fr' ? 'Points essentiels' : 'Key points';
   const faqTitle = 'FAQ';
   
-  return `<h1>${question}</h1>
+  return `<article>
+<h1>${question}</h1>
 
 <p><strong>${directAnswer}</strong></p>
 
@@ -327,7 +331,8 @@ ${supporting.bullets.map((b: string) => `  <li>${b}</li>`).join('\n')}
 
 <h2>${faqTitle}</h2>
 ${supporting.faq.map((f: { q: string; a: string }) => `<h3>${f.q}</h3>
-<p>${f.a}</p>`).join('\n\n')}`;
+<p>${f.a}</p>`).join('\n\n')}
+</article>`;
 }
 
 /* -------------------- HTTP SERVER -------------------- */
@@ -444,7 +449,7 @@ serve(async (req) => {
       
       console.log(`✨ Generated ${answers.length} AIO answers for ${p}`);
       
-      // ✅ CORRECTION 1 — Insert into ai_answers with direct_answer as top-level
+      // ✅ Insert into ai_answers with direct_answer as top-level + category
       for (const answer of answers) {
         const insertData: any = {
           user_id: user.id,
@@ -459,6 +464,8 @@ serve(async (req) => {
           product_ids: answer.product_ids,
           keywords: answer.keywords,
           difficulty: answer.difficulty,
+          // ✅ CORRECTION 2 — Category en DB pour analytics
+          category: answer.category,
           status: 'pending'
         };
 
