@@ -1431,6 +1431,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         limitType="optimizations"
         usage={limits?.usage.optimizations_count || 0}
         limit={limits?.limits.max_optimizations || 100}
+        isTrialing={limits?.isTrialing || false}
       />
     </div>
   );
