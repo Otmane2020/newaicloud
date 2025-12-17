@@ -23,7 +23,11 @@ interface Plan {
   isTrial?: boolean;
 }
 
-export function CurrentPlanCard() {
+interface CurrentPlanCardProps {
+  hideUpgradeAlert?: boolean;
+}
+
+export function CurrentPlanCard({ hideUpgradeAlert = false }: CurrentPlanCardProps) {
   const { user } = useAuth();
   const { t, tf, language } = useTranslation();
   const { limits: limitsData } = useUsageLimits();
@@ -177,7 +181,7 @@ export function CurrentPlanCard() {
   const optimizationsUsed = limitsData?.usage.optimizations_count || 0;
   const optimizationsLimit = limitsData?.limits.max_optimizations || 0;
   const usagePercentage = optimizationsLimit > 0 ? (optimizationsUsed / optimizationsLimit) * 100 : 0;
-  const shouldShowUpgradeAlert = usagePercentage >= 80 && nextPlan;
+  const shouldShowUpgradeAlert = !hideUpgradeAlert && usagePercentage >= 80 && nextPlan;
 
   const formatOptimizationsCount = (count: number) => {
     if (count >= 1000) return `${(count / 1000).toFixed(0)}K`;

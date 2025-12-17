@@ -493,7 +493,7 @@ const Subscription = () => {
           </p>
         </div>
         
-        <CurrentPlanCard />
+        <CurrentPlanCard hideUpgradeAlert />
         
         <ShopifyPricingPlans 
           shopDomain={shopDomain}
@@ -519,7 +519,7 @@ const Subscription = () => {
         </div>
       ) : (
         <>
-          <CurrentPlanCard />
+          <CurrentPlanCard hideUpgradeAlert />
 
           {isUpgradeFlow && currentPlan && (
             <Card className="p-4 sm:p-5 md:p-6 mb-6 sm:mb-7 md:mb-8 bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 border-2 border-primary/30 dark:border-primary/50">
