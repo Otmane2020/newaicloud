@@ -135,9 +135,6 @@ import { isAeoreplyDomain } from "./hooks/useAppMode";
 
 const queryClient = new QueryClient();
 
-// Detect if we're on aeoreply domain at module load
-const isAeoreply = typeof window !== 'undefined' && isAeoreplyDomain();
-
 function AppQuotaMonitor() {
   useQuotaMonitoring();
   return null;
@@ -153,55 +150,39 @@ function AutoSyncMonitor() {
   const { endSync } = useAutoSyncProgress();
   const userId = user?.id;
 
-  // Reset sync state when user is not authenticated
   useEffect(() => {
     if (!userId) {
       endSync();
     }
   }, [userId, endSync]);
 
-  // Activer la synchronisation automatique pour tous les flux
   useAutoSync(userId);
   
   return null;
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ErrorBoundary>
-      <LanguageProvider>
-        <TooltipProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <FacebookSDKProvider>
-            <AutoSyncProvider>
-              <StoreProvider>
-                <OptimizationProvider>
-                  <AppQuotaMonitor />
-                  <AutoSyncMonitor />
-                  <AdminEmailNotificationsMonitor />
-                  <AutoTranslator />
-                  <BulkOptimizationIndicator />
-                  <PageTracker />
-                <div className="overflow-x-hidden max-w-full">
-              <Routes>
-            {/* Aeoreply.com Routes - Only rendered on aeoreply domain */}
-            {isAeoreply ? (
-              <>
-                <Route path="/" element={<AeoLanding />} />
-                <Route path="/auth" element={<AeoAuth />} />
-                <Route path="/dashboard" element={<AeoProtectedLayout><AeoDashboard /></AeoProtectedLayout>} />
-                <Route path="/assistant" element={<AeoProtectedLayout><AEO /></AeoProtectedLayout>} />
-                <Route path="/opportunities" element={<AeoProtectedLayout><AEO /></AeoProtectedLayout>} />
-                <Route path="/integrations" element={<AeoProtectedLayout><Integration /></AeoProtectedLayout>} />
-                <Route path="/settings" element={<AeoProtectedLayout><Account /></AeoProtectedLayout>} />
-                <Route path="/subscription" element={<AeoProtectedLayout><Subscription /></AeoProtectedLayout>} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </>
-            ) : (
-              <>
+// Dynamic routing component - evaluates domain at runtime
+function AeoreplyRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<AeoLanding />} />
+      <Route path="/auth" element={<AeoAuth />} />
+      <Route path="/dashboard" element={<AeoProtectedLayout><AeoDashboard /></AeoProtectedLayout>} />
+      <Route path="/assistant" element={<AeoProtectedLayout><AEO /></AeoProtectedLayout>} />
+      <Route path="/opportunities" element={<AeoProtectedLayout><AEO /></AeoProtectedLayout>} />
+      <Route path="/integrations" element={<AeoProtectedLayout><Integration /></AeoProtectedLayout>} />
+      <Route path="/settings" element={<AeoProtectedLayout><Account /></AeoProtectedLayout>} />
+      <Route path="/subscription" element={<AeoProtectedLayout><Subscription /></AeoProtectedLayout>} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+function NewAIRoutes() {
+  return (
+    <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/sitemap.xml" element={<SitemapXml />} />
             <Route path="/demo" element={<Demo />} />
@@ -674,23 +655,54 @@ const App = () => (
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
-              </>
-            )}
-          </Routes>
-          <Toaster />
-          <Sonner />
-          <AIAssistant />
-          <NotificationPermissionPrompt />
-          <AutoSyncProgressDialog />
-            </div>
+    </Routes>
+  );
+}
+
+// Dynamic route selector - evaluates at runtime
+function AppRoutes() {
+  const isAeoreply = isAeoreplyDomain();
+  
+  if (isAeoreply) {
+    return <AeoreplyRoutes />;
+  }
+  
+  return <NewAIRoutes />;
+}
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <ErrorBoundary>
+      <LanguageProvider>
+        <TooltipProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <FacebookSDKProvider>
+            <AutoSyncProvider>
+              <StoreProvider>
+                <OptimizationProvider>
+                  <AppQuotaMonitor />
+                  <AutoSyncMonitor />
+                  <AdminEmailNotificationsMonitor />
+                  <AutoTranslator />
+                  <BulkOptimizationIndicator />
+                  <PageTracker />
+                  <div className="overflow-x-hidden max-w-full">
+                    <AppRoutes />
+                    <Toaster />
+                    <Sonner />
+                    <AIAssistant />
+                    <NotificationPermissionPrompt />
+                    <AutoSyncProgressDialog />
+                  </div>
                 </OptimizationProvider>
               </StoreProvider>
             </AutoSyncProvider>
             </FacebookSDKProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-    </LanguageProvider>
+          </AuthProvider>
+        </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
     </ErrorBoundary>
   </QueryClientProvider>
 );

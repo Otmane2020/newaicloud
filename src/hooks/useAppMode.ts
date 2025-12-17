@@ -16,23 +16,17 @@ export interface AppModeConfig {
 
 export function useAppMode(): AppModeConfig {
   return useMemo(() => {
-    const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-    const isAeoreply = hostname.includes('aeoreply') || hostname.includes('localhost');
-    
-    // For testing on localhost, check URL path as fallback
-    const isAeoPath = typeof window !== 'undefined' && 
-      (window.location.pathname.startsWith('/aeo') || window.location.search.includes('mode=aeo'));
-    
-    const mode: AppMode = (isAeoreply || isAeoPath) ? 'aeoreply' : 'newai';
+    const isAeoreply = isAeoreplyDomain();
+    const mode: AppMode = isAeoreply ? 'aeoreply' : 'newai';
     
     if (mode === 'aeoreply') {
       return {
         mode: 'aeoreply',
         appName: 'Aeoreply',
         logo: 'Aeoreply',
-        primaryColor: 'hsl(262, 83%, 58%)', // Violet
-        gradientFrom: '#8B5CF6', // violet-500
-        gradientTo: '#3B82F6', // blue-500
+        primaryColor: 'hsl(262, 83%, 58%)',
+        gradientFrom: '#8B5CF6',
+        gradientTo: '#3B82F6',
         authRedirect: '/auth',
         dashboardRedirect: '/dashboard',
         isAeoreply: true,
@@ -54,13 +48,22 @@ export function useAppMode(): AppModeConfig {
 }
 
 // Helper to detect app mode without hook (for routing)
-export function getAppMode(): AppMode {
-  if (typeof window === 'undefined') return 'newai';
-  const hostname = window.location.hostname;
-  return hostname.includes('aeoreply') ? 'aeoreply' : 'newai';
-}
-
+// Supports ?mode=aeo parameter for testing in preview environments
 export function isAeoreplyDomain(): boolean {
   if (typeof window === 'undefined') return false;
-  return window.location.hostname.includes('aeoreply');
+  
+  const hostname = window.location.hostname;
+  const searchParams = new URLSearchParams(window.location.search);
+  
+  // Check domain OR URL parameter for testing
+  const isAeoreplyHost = hostname.includes('aeoreply');
+  const isAeoMode = searchParams.get('mode') === 'aeo';
+  
+  console.log('🌐 Domain detection:', { hostname, isAeoreplyHost, isAeoMode });
+  
+  return isAeoreplyHost || isAeoMode;
+}
+
+export function getAppMode(): AppMode {
+  return isAeoreplyDomain() ? 'aeoreply' : 'newai';
 }
