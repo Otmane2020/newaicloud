@@ -137,11 +137,12 @@ export function AppSidebar() {
     { title: t.blog.submenu.settings, url: "/blog?subtab=settings", icon: Settings, key: "settings" },
   ] : [];
 
-  // AEO (Answer Engine Optimization) sub items - opportunities for AI platforms
+  // AEO (Aeoreply) sub items - main navigation
   const aeoSubItems = [
-    { title: "ChatGPT", url: "/aeo?platform=chatgpt", icon: Bot, key: "chatgpt" },
-    { title: "Gemini", url: "/aeo?platform=gemini", icon: Brain, key: "gemini" },
-    { title: "Copilot", url: "/aeo?platform=copilot", icon: Zap, key: "copilot" },
+    { title: language === 'fr' ? "Assistant" : "Wizard", url: "/aeo?tab=wizard", icon: Lightbulb, key: "wizard" },
+    { title: language === 'fr' ? "Opportunités" : "Opportunities", url: "/aeo?tab=opportunities", icon: Sparkles, key: "opportunities" },
+    { title: language === 'fr' ? "Intégrations" : "Integrations", url: "/aeo?tab=integrations", icon: Link, key: "integrations" },
+    { title: language === 'fr' ? "Paramètres" : "Settings", url: "/aeo?tab=settings", icon: Settings, key: "settings" },
   ];
 
   // Social Media - Onglet principal séparé (restricted)
@@ -459,8 +460,8 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isAeoActive}>
-                      <Lightbulb className="h-4 w-4" />
-                      <span>{language === 'fr' ? 'Opportunités AEO' : 'AEO Opportunities'}</span>
+                      <Sparkles className="h-4 w-4" />
+                      <span>Aeoreply</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
