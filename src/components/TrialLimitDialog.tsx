@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CreditCard, Zap } from "lucide-react";
+import { CreditCard, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
+import { useShopifyBilling } from "@/hooks/useShopifyBilling";
+import { useNavigate } from "react-router-dom";
 
 interface TrialLimitDialogProps {
   open: boolean;
@@ -25,9 +27,21 @@ export function TrialLimitDialog({
 }: TrialLimitDialogProps) {
   const [loading, setLoading] = useState(false);
   const { t, tf } = useTranslation();
+  const { isShopifyUser, billingProvider } = useShopifyBilling();
+  const navigate = useNavigate();
 
   const handlePayNow = async () => {
     setLoading(true);
+    
+    // Shopify OAuth users → redirect to subscription page with Shopify Billing
+    if (isShopifyUser || billingProvider === "shopify") {
+      onOpenChange(false);
+      navigate("/subscription");
+      setLoading(false);
+      return;
+    }
+    
+    // Stripe users → force-payment flow
     try {
       const { data, error } = await supabase.functions.invoke("force-payment", {
         body: {
@@ -80,7 +94,11 @@ export function TrialLimitDialog({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="text-sm font-semibold">{t.dialogs.upgrade.starter.title}</div>
               <div className="text-xl sm:text-2xl font-bold">
-                {t.dialogs.upgrade.starter.price}<span className="text-xs sm:text-sm font-normal text-muted-foreground">{t.dialogs.upgrade.starter.perMonth}</span>
+                {isShopifyUser || billingProvider === "shopify" ? (
+                  <>$9.99<span className="text-xs sm:text-sm font-normal text-muted-foreground">/month</span></>
+                ) : (
+                  <>{t.dialogs.upgrade.starter.price}<span className="text-xs sm:text-sm font-normal text-muted-foreground">{t.dialogs.upgrade.starter.perMonth}</span></>
+                )}
               </div>
             </div>
             <ul className="text-xs sm:text-sm space-y-1.5 sm:space-y-2">
@@ -98,7 +116,7 @@ export function TrialLimitDialog({
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">{t.dialogs.upgrade.starter.features.searches}</span>
+                <span className="text-muted-foreground">{t.dialogs.upgrade.starter.features.searches}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold mt-0.5">✅</span>
