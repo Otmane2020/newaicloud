@@ -1128,7 +1128,7 @@ export function PageOptimization() {
                               // Optimiser directement cette page
                               handleOptimizeSelected([page.id]);
                             }}
-                            disabled={optimizationState.isRunning}
+                            disabled={isTypeRunning('pages')}
                             title={page.optimized ? "Re-optimize" : "Optimize"}
                             className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-lg gap-2"
                           >
@@ -1197,7 +1197,7 @@ export function PageOptimization() {
       )}
       
       <ProgressDialog
-        open={optimizationState.isRunning && optimizationState.type === 'pages'}
+        open={isTypeRunning('pages')}
         onOpenChange={(open) => !open && setShowProgressDialog(false)}
         type="seo"
         operation={optimizationState.operation}
