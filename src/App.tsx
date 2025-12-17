@@ -132,6 +132,8 @@ import AeoAuth from "./pages/AeoAuth";
 import AeoDashboard from "./pages/AeoDashboard";
 import AeoAnswers from "./pages/AeoAnswers";
 import AeoArticles from "./pages/AeoArticles";
+import AeoOnboarding from "./pages/AeoOnboarding";
+import AeoPricing from "./pages/AeoPricing";
 import { AeoProtectedLayout } from "./components/aeo/AeoProtectedLayout";
 import { isAeoreplyDomain } from "./hooks/useAppMode";
 
@@ -167,8 +169,11 @@ function AutoSyncMonitor() {
 function AeoreplyRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<AeoLanding />} />
+      <Route path="/" element={<Navigate to="/landing" replace />} />
+      <Route path="/landing" element={<AeoLanding />} />
       <Route path="/auth" element={<AeoAuth />} />
+      <Route path="/onboarding" element={<AeoOnboarding />} />
+      <Route path="/pricing" element={<AeoPricing />} />
       <Route path="/dashboard" element={<AeoProtectedLayout><AeoDashboard /></AeoProtectedLayout>} />
       <Route path="/wizard" element={<AeoProtectedLayout><AEO /></AeoProtectedLayout>} />
       <Route path="/opportunities" element={<AeoProtectedLayout><AEO /></AeoProtectedLayout>} />
@@ -178,10 +183,9 @@ function AeoreplyRoutes() {
       <Route path="/settings" element={<AeoProtectedLayout><Account /></AeoProtectedLayout>} />
       <Route path="/account" element={<AeoProtectedLayout><Account /></AeoProtectedLayout>} />
       <Route path="/subscription" element={<AeoProtectedLayout><Subscription /></AeoProtectedLayout>} />
-      <Route path="/pricing" element={<Pricing />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/landing" replace />} />
     </Routes>
   );
 }
