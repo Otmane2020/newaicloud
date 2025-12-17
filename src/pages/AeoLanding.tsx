@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/language";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { aeoTranslations } from "@/lib/translations/aeo";
+import { supabase } from "@/integrations/supabase/client";
+import { formatPrice } from "@/lib/formatUtils";
 import { 
   Zap, ArrowRight, Search, Sparkles, Send, MessageSquare, FileText, 
   Settings, Globe, Target, TrendingUp, Check, Mail, MapPin, 
@@ -13,10 +15,41 @@ import {
   Rocket, Crown, Star
 } from "lucide-react";
 
+interface PricingPlan {
+  id: string;
+  name: string;
+  price_monthly: number;
+  max_optimizations_monthly: number;
+  popular?: boolean;
+  best_value?: boolean;
+}
+
 export default function AeoLanding() {
   const navigate = useNavigate();
   const { language } = useTranslation();
   const t = aeoTranslations[language] || aeoTranslations.fr;
+  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
+
+  // Load pricing from database
+  useEffect(() => {
+    const loadPlans = async () => {
+      const { data } = await supabase
+        .from("subscription_plans")
+        .select("id, name, price_monthly, max_optimizations_monthly, popular, best_value")
+        .eq("is_active", true)
+        .in("id", ["starter", "pro-500", "enterprise-2000"])
+        .order("price_monthly");
+      
+      if (data) {
+        setPricingPlans(data.map(p => ({
+          ...p,
+          popular: p.id === "pro-500",
+          best_value: p.id.startsWith("enterprise")
+        })));
+      }
+    };
+    loadPlans();
+  }, []);
 
   // SEO Meta Tags
   useEffect(() => {
@@ -165,30 +198,17 @@ export default function AeoLanding() {
     { key: 'media', icon: Globe, data: t.landing.useCases.media },
   ];
 
-  const pricingPlans = [
-    {
-      name: "Starter",
-      price: language === 'fr' ? "9€" : "$9",
-      credits: "30",
-      icon: Rocket,
-      color: "blue",
-    },
-    {
-      name: "Pro",
-      price: language === 'fr' ? "29€" : "$29",
-      credits: "100",
-      icon: Zap,
-      color: "violet",
-      popular: true,
-    },
-    {
-      name: "Enterprise",
-      price: language === 'fr' ? "99€" : "$99",
-      credits: language === 'fr' ? "Illimité" : "Unlimited",
-      icon: Crown,
-      color: "amber",
-    },
-  ];
+  const getPlanIcon = (planId: string) => {
+    if (planId === "starter") return Rocket;
+    if (planId.startsWith("pro")) return Zap;
+    return Crown;
+  };
+
+  const getPlanColor = (planId: string) => {
+    if (planId === "starter") return "blue";
+    if (planId.startsWith("pro")) return "violet";
+    return "amber";
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-violet-50/30 to-blue-50/20 text-slate-900 overflow-hidden">
@@ -309,45 +329,51 @@ export default function AeoLanding() {
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {pricingPlans.map((plan, i) => (
-              <Card 
-                key={i} 
-                className={`p-6 text-center transition-all hover:shadow-lg ${
-                  plan.popular 
-                    ? 'border-2 border-violet-500 bg-white shadow-lg shadow-violet-500/10' 
-                    : 'border-slate-200 bg-white hover:border-violet-300'
-                }`}
-              >
-                {plan.popular && (
-                  <Badge className="mb-4 bg-violet-500">{language === 'fr' ? 'Populaire' : 'Popular'}</Badge>
-                )}
-                <div className={`w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center ${
-                  plan.color === 'violet' ? 'bg-violet-100' :
-                  plan.color === 'amber' ? 'bg-amber-100' : 'bg-blue-100'
-                }`}>
-                  <plan.icon className={`w-6 h-6 ${
-                    plan.color === 'violet' ? 'text-violet-500' :
-                    plan.color === 'amber' ? 'text-amber-500' : 'text-blue-500'
-                  }`} />
-                </div>
-                <h3 className="font-bold text-xl mb-2">{plan.name}</h3>
-                <div className="mb-4">
-                  <span className="text-3xl font-bold">{plan.price}</span>
-                  <span className="text-slate-500">/{language === 'fr' ? 'mois' : 'mo'}</span>
-                </div>
-                <p className="text-slate-600 text-sm">
-                  {plan.credits} {language === 'fr' ? 'crédits AEO' : 'AEO credits'}
-                </p>
-              </Card>
-            ))}
+            {pricingPlans.map((plan, i) => {
+              const PlanIcon = getPlanIcon(plan.id);
+              const planColor = getPlanColor(plan.id);
+              return (
+                <Card 
+                  key={i} 
+                  className={`p-6 text-center transition-all hover:shadow-lg ${
+                    plan.popular 
+                      ? 'border-2 border-violet-500 bg-white shadow-lg shadow-violet-500/10' 
+                      : 'border-slate-200 bg-white hover:border-violet-300'
+                  }`}
+                >
+                  {plan.popular && (
+                    <Badge className="mb-4 bg-violet-500">{language === 'fr' ? 'Populaire' : 'Popular'}</Badge>
+                  )}
+                  <div className={`w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center ${
+                    planColor === 'violet' ? 'bg-violet-100' :
+                    planColor === 'amber' ? 'bg-amber-100' : 'bg-blue-100'
+                  }`}>
+                    <PlanIcon className={`w-6 h-6 ${
+                      planColor === 'violet' ? 'text-violet-500' :
+                      planColor === 'amber' ? 'text-amber-500' : 'text-blue-500'
+                    }`} />
+                  </div>
+                  <h3 className="font-bold text-xl mb-2">{plan.name}</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold">{formatPrice(plan.price_monthly, language)}</span>
+                    <span className="text-slate-500">/{language === 'fr' ? 'mois' : 'mo'}</span>
+                  </div>
+                  <p className="text-slate-600 text-sm">
+                    {plan.max_optimizations_monthly === -1 
+                      ? (language === 'fr' ? 'Illimité' : 'Unlimited')
+                      : plan.max_optimizations_monthly
+                    } {language === 'fr' ? 'crédits AEO' : 'AEO credits'}
+                  </p>
+                </Card>
+              );
+            })}
           </div>
           <div className="text-center">
             <Button 
-              variant="outline" 
-              className="border-violet-300 text-violet-700 hover:bg-violet-50"
-              onClick={() => navigate('/pricing')}
+              className="bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600"
+              onClick={() => navigate('/onboarding')}
             >
-              {language === 'fr' ? 'Voir tous les plans' : 'View all plans'}
+              {language === 'fr' ? 'Commencer gratuitement' : 'Start for free'}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
