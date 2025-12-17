@@ -134,9 +134,6 @@ export default function Account() {
             <div className="bg-white rounded-lg border p-4 md:p-6">
               <UsageWidget />
             </div>
-            <div className="bg-white rounded-lg border p-4 md:p-6">
-              <UsageLimits />
-            </div>
           </div>
         </TabsContent>
       </Tabs>
