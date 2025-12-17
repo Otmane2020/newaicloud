@@ -180,6 +180,7 @@ export default function AEO() {
       // Call the edge function to generate article
       const { data, error } = await supabase.functions.invoke("generate-blog-article", {
         body: {
+          user_id: user?.id,
           store_id: selectedStore.id,
           title: opportunity.suggested_title || opportunity.question,
           keywords: opportunity.keywords || [],
