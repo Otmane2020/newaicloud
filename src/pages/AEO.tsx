@@ -13,24 +13,27 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AeoArticleGenerationDialog } from "@/components/aeo/AeoArticleGenerationDialog";
 
-interface AiOpportunity {
+// ✅ AEO Interface - Direct Answer Top-Level (from ai_answers table)
+interface AiAnswer {
   id: string;
   platform: string;
   query_type: string;
   question: string;
-  suggested_title: string | null;
-  suggested_structure: {
-    direct_answer?: string;
-    answer_confidence?: number;
-    supporting_content?: {
-      bullets?: string[];
-      faq?: { q: string; a: string }[];
-    };
-  } | any;
+  
+  // ✅ AEO CORE - Ce que l'IA cite
+  direct_answer: string;
+  answer_confidence: number | null;
+  
+  supporting_content: {
+    bullets?: string[];
+    faq?: { q: string; a: string }[];
+  } | null;
+  
   citation_potential: number | null;
   keywords: string[] | null;
   difficulty: string | null;
   status: string | null;
+  category: string | null;
   created_at: string;
 }
 
@@ -78,7 +81,7 @@ export default function AEO() {
   const { language } = useTranslation();
   const { user } = useAuth();
   const { selectedStore } = useStore();
-  const [opportunities, setOpportunities] = useState<AiOpportunity[]>([]);
+  const [opportunities, setOpportunities] = useState<AiAnswer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -88,7 +91,7 @@ export default function AEO() {
   const [generationProgress, setGenerationProgress] = useState(0);
   const [generationStep, setGenerationStep] = useState<string>('analyzing');
   const [generatedArticle, setGeneratedArticle] = useState<GeneratedArticle | null>(null);
-  const [selectedOpportunity, setSelectedOpportunity] = useState<AiOpportunity | null>(null);
+  const [selectedOpportunity, setSelectedOpportunity] = useState<AiAnswer | null>(null);
 
   const currentPlatform = (searchParams.get("platform") || "chatgpt") as keyof typeof platformConfig;
 
@@ -105,20 +108,20 @@ export default function AEO() {
     try {
       const today = new Date().toISOString().split('T')[0];
       
+      // ✅ Query from ai_answers table (not ai_opportunities)
       const { data, error } = await supabase
-        .from("ai_opportunities")
+        .from("ai_answers")
         .select("*")
         .eq("user_id", user.id)
         .eq("store_id", selectedStore.id)
         .eq("platform", currentPlatform)
         .gte("created_at", `${today}T00:00:00`)
-        .order("created_at", { ascending: false })
-        .limit(3);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       if (data && data.length > 0) {
-        setOpportunities(data);
+        setOpportunities(data as AiAnswer[]);
       } else {
         await generateOpportunities();
       }
@@ -146,7 +149,8 @@ export default function AEO() {
       if (error) throw error;
       
       if (data?.opportunities) {
-        setOpportunities(data.opportunities.slice(0, 3));
+        // ✅ No frontend limit - backend decides
+        setOpportunities(data.opportunities as AiAnswer[]);
         toast.success(language === 'fr' ? "Opportunités générées" : "Opportunities generated");
       }
     } catch (error) {
@@ -157,7 +161,7 @@ export default function AEO() {
     }
   };
 
-  const handleGenerateArticle = async (opportunity: AiOpportunity) => {
+  const handleGenerateArticle = async (opportunity: AiAnswer) => {
     if (!selectedStore?.id) return;
     
     setSelectedOpportunity(opportunity);
@@ -177,24 +181,18 @@ export default function AEO() {
         await new Promise(resolve => setTimeout(resolve, 800));
       }
 
-      // Call the edge function to generate article - AEO mode enabled
-      const { data, error } = await supabase.functions.invoke("generate-blog-article", {
+      // ✅ Call dedicated AEO article generator (Answer-First)
+      const { data, error } = await supabase.functions.invoke("generate-aeo-article", {
         body: {
+          answer_id: opportunity.id,
           user_id: user?.id,
           store_id: selectedStore.id,
-          title: opportunity.suggested_title || opportunity.question,
+          direct_answer: opportunity.direct_answer,
+          question: opportunity.question,
+          supporting_content: opportunity.supporting_content,
           keywords: opportunity.keywords || [],
-          category: "AEO",
-          productIds: [],
-          articleLength: "2000",
-          editorialAngle: "aeo", // ✅ AEO mode - Answer-First structure
-          isAEO: true, // ✅ Enable AEO structure with Answer Box, Key Facts, FAQ
-          aeo_mode: true, // ✅ Backup flag
-          targetAudience: "Clients recherchant des informations produits via IA",
-          layout: "editorial",
-          language: language,
-          articleType: 'aeo',
-          platform: opportunity.platform
+          platform: opportunity.platform,
+          language: language
         }
       });
 
@@ -212,12 +210,6 @@ export default function AEO() {
           keywords: data.article.keywords,
           shopify_url: data.article.shopify_url
         });
-
-        // Update opportunity status
-        await supabase
-          .from('ai_opportunities')
-          .update({ status: 'treated', article_id: data.article.id })
-          .eq('id', opportunity.id);
 
         // Update local state
         setOpportunities(prev => 
@@ -362,29 +354,37 @@ export default function AEO() {
                           <p className="font-medium text-lg">"{opp.question}"</p>
                         </div>
 
-                        {/* Direct Answer - CE QUE L'IA VA CITER */}
-                        {opp.suggested_structure?.direct_answer && (
+                        {/* ✅ Direct Answer - CE QUE L'IA VA CITER (top-level) */}
+                        {opp.direct_answer && (
                           <div className="bg-muted/50 p-3 rounded-lg border-l-4" style={{ borderLeftColor: config.color }}>
                             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                               <Sparkles className="h-3 w-3" />
                               {language === 'fr' ? 'Réponse citable par l\'IA' : 'AI-citable answer'}
                             </p>
                             <p className="text-sm font-medium leading-relaxed">
-                              "{opp.suggested_structure.direct_answer}"
+                              "{opp.direct_answer}"
                             </p>
+                            
+                            {/* ✅ WHY IT WORKS - Education utilisateur */}
+                            <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-2">
+                              {opp.direct_answer.length <= 150 && (
+                                <span className="flex items-center gap-1">✓ {language === 'fr' ? 'Réponse courte' : 'Short answer'}</span>
+                              )}
+                              {/\d/.test(opp.direct_answer) && (
+                                <span className="flex items-center gap-1">✓ {language === 'fr' ? 'Contient des chiffres' : 'Contains numbers'}</span>
+                              )}
+                              {!opp.direct_answer.toLowerCase().includes('dépend') && !opp.direct_answer.toLowerCase().includes('depends') && (
+                                <span className="flex items-center gap-1">✓ {language === 'fr' ? 'Affirmative' : 'Affirmative'}</span>
+                              )}
+                            </div>
                           </div>
                         )}
 
-                        {/* Suggested Title */}
-                        {opp.suggested_title && (
-                          <div>
-                            <p className="text-sm text-muted-foreground mb-1">
-                              {language === 'fr' ? 'Titre suggéré' : 'Suggested title'}
-                            </p>
-                            <p className="font-semibold" style={{ color: config.color }}>
-                              {opp.suggested_title}
-                            </p>
-                          </div>
+                        {/* Category badge */}
+                        {opp.category && (
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {opp.category}
+                          </Badge>
                         )}
 
                         {/* Meta info */}

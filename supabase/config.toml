@@ -601,3 +601,6 @@ verify_jwt = false
 
 [functions.generate-ai-query-opportunities]
 verify_jwt = true
+
+[functions.generate-aeo-article]
+verify_jwt = true
