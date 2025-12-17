@@ -1,8 +1,15 @@
+import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/language";
 import { aeoTranslations } from "@/lib/translations/aeo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { useAeoCredits } from "@/hooks/useAeoCredits";
+import { AeoOnboardingWizard } from "@/components/aeo/AeoOnboardingWizard";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   MessageSquare,
   FileText,
@@ -13,23 +20,59 @@ import {
   Lightbulb,
   Link,
   Settings,
+  AlertTriangle,
+  Zap,
 } from "lucide-react";
 
 export default function AeoDashboard() {
   const { language } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const t = aeoTranslations[language] || aeoTranslations.fr;
+  const { credits, loading: creditsLoading, getUsagePercentage, isLimitReached } = useAeoCredits();
+  
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+
+  // Check if user needs onboarding
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (!user) {
+        setCheckingOnboarding(false);
+        return;
+      }
+
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .single();
+
+        // Show onboarding if not completed
+        if (!profile?.onboarding_completed) {
+          setShowOnboarding(true);
+        }
+      } catch (error) {
+        console.error('Error checking onboarding:', error);
+      } finally {
+        setCheckingOnboarding(false);
+      }
+    };
+
+    checkOnboarding();
+  }, [user]);
 
   const stats = [
     { 
       label: t.dashboard.stats.totalResponses, 
-      value: "0", 
+      value: credits.answers.used.toString(), 
       icon: MessageSquare,
       color: "from-violet-500 to-purple-500"
     },
     { 
       label: t.dashboard.stats.totalArticles, 
-      value: "0", 
+      value: credits.articles.used.toString(), 
       icon: FileText,
       color: "from-blue-500 to-cyan-500"
     },
@@ -52,7 +95,7 @@ export default function AeoDashboard() {
       title: language === 'fr' ? "Assistant AEO" : "AEO Wizard",
       description: language === 'fr' ? "Générer des opportunités de citation" : "Generate citation opportunities",
       icon: Lightbulb,
-      url: "/assistant",
+      url: "/wizard",
       color: "from-violet-500 to-purple-500"
     },
     {
@@ -78,13 +121,100 @@ export default function AeoDashboard() {
     },
   ];
 
+  const usageItems = [
+    {
+      label: language === 'fr' ? "Optimisations AEO" : "AEO Optimizations",
+      used: credits.optimizations.used,
+      limit: credits.optimizations.limit,
+      percentage: getUsagePercentage('optimizations'),
+      isLimited: isLimitReached('optimizations'),
+    },
+    {
+      label: language === 'fr' ? "Articles AEO" : "AEO Articles",
+      used: credits.articles.used,
+      limit: credits.articles.limit,
+      percentage: getUsagePercentage('articles'),
+      isLimited: isLimitReached('articles'),
+    },
+    {
+      label: language === 'fr' ? "Réponses IA" : "AI Answers",
+      used: credits.answers.used,
+      limit: credits.answers.limit,
+      percentage: getUsagePercentage('answers'),
+      isLimited: isLimitReached('answers'),
+    },
+  ];
+
+  const anyLimitReached = usageItems.some(item => item.isLimited);
+
   return (
     <div className="space-y-8">
+      {/* Onboarding Wizard */}
+      <AeoOnboardingWizard 
+        open={showOnboarding} 
+        onOpenChange={setShowOnboarding}
+        onComplete={() => setShowOnboarding(false)}
+      />
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white">{t.dashboard.title}</h1>
         <p className="text-white/60 mt-1">{t.dashboard.subtitle}</p>
       </div>
+
+      {/* Usage Banner */}
+      <Card className={`p-6 ${anyLimitReached ? 'bg-red-500/10 border-red-500/30' : 'bg-gradient-to-r from-violet-500/10 to-blue-500/10 border-violet-500/20'}`}>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${anyLimitReached ? 'bg-red-500/20' : 'bg-gradient-to-br from-violet-500 to-blue-500'}`}>
+              {anyLimitReached ? (
+                <AlertTriangle className="w-6 h-6 text-red-400" />
+              ) : (
+                <Zap className="w-6 h-6 text-white" />
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold text-white">
+                {anyLimitReached 
+                  ? (language === 'fr' ? "Limite atteinte" : "Limit reached")
+                  : (language === 'fr' ? "Utilisation mensuelle" : "Monthly usage")}
+              </h3>
+              <p className="text-sm text-white/60">
+                {anyLimitReached
+                  ? (language === 'fr' ? "Passez à un plan supérieur pour continuer" : "Upgrade your plan to continue")
+                  : (language === 'fr' ? "Crédits AEO utilisés ce mois" : "AEO credits used this month")}
+              </p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-6 flex-1 max-w-2xl">
+            {usageItems.map((item, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/60">{item.label}</span>
+                  <span className={`text-xs font-medium ${item.isLimited ? 'text-red-400' : 'text-white'}`}>
+                    {item.used} / {item.limit}
+                  </span>
+                </div>
+                <Progress 
+                  value={item.percentage} 
+                  className={`h-2 ${item.isLimited ? 'bg-red-500/20' : 'bg-slate-700'}`}
+                />
+              </div>
+            ))}
+          </div>
+
+          {anyLimitReached && (
+            <Button 
+              onClick={() => navigate('/subscription')}
+              className="bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 text-white"
+            >
+              {language === 'fr' ? "Upgrade" : "Upgrade"}
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
+        </div>
+      </Card>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -150,7 +280,7 @@ export default function AeoDashboard() {
           <Button 
             size="lg"
             className="bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 text-white shadow-lg shadow-violet-500/25"
-            onClick={() => navigate('/assistant')}
+            onClick={() => navigate('/wizard')}
           >
             {language === 'fr' ? "Lancer l'assistant" : "Start wizard"}
             <ArrowRight className="w-5 h-5 ml-2" />
