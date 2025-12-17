@@ -583,7 +583,7 @@ export function SeoOptimization() {
     setSelectedProducts(newSelected);
   };
 
-  const { processBulkOperation, state: optimizationState, setShowDialog, setShowCompletedDialog, isTypeRunning } = useOptimization();
+  const { processBulkOperation, state: optimizationState, setShowDialog, setShowCompletedDialog, isTypeRunning, cancelOptimization, getOperationState } = useOptimization();
 
   const handleGenerateForSelected = async (productIds?: string[]) => {
     // Check usage limits first (only check optimization-specific limits)
@@ -1463,13 +1463,19 @@ export function SeoOptimization() {
 
       {/* Dialogs - Connected to OptimizationContext */}
       <ProgressDialog
-        open={optimizationState.showDialog && isTypeRunning('products')}
+        open={isTypeRunning('products')}
         onOpenChange={(open) => setShowDialog(open)}
         type="seo"
-        operation={optimizationState.operation}
-        current={optimizationState.current}
-        total={optimizationState.total}
-        items={processingItems}
+        operation={getOperationState('products')?.operation || 'optimizing'}
+        current={getOperationState('products')?.current || 0}
+        total={getOperationState('products')?.total || 0}
+        items={(getOperationState('products')?.items || []).map(item => ({
+          id: item.id,
+          title: item.title,
+          image_url: item.image_url,
+          status: item.status
+        }))}
+        onCancel={() => cancelOptimization('products')}
       />
 
       <ResultsDialog
