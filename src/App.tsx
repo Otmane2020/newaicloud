@@ -128,8 +128,15 @@ import StoreTemplates from "./pages/StoreTemplates";
 import SetupWizardPage from "./pages/shopify/SetupWizard";
 import PlansEmbedded from "./pages/shopify/PlansEmbedded";
 import AeoLanding from "./pages/AeoLanding";
+import AeoAuth from "./pages/AeoAuth";
+import AeoDashboard from "./pages/AeoDashboard";
+import { AeoProtectedLayout } from "./components/aeo/AeoProtectedLayout";
+import { isAeoreplyDomain } from "./hooks/useAppMode";
 
 const queryClient = new QueryClient();
+
+// Detect if we're on aeoreply domain at module load
+const isAeoreply = typeof window !== 'undefined' && isAeoreplyDomain();
 
 function AppQuotaMonitor() {
   useQuotaMonitoring();
@@ -178,6 +185,23 @@ const App = () => (
                   <PageTracker />
                 <div className="overflow-x-hidden max-w-full">
               <Routes>
+            {/* Aeoreply.com Routes - Only rendered on aeoreply domain */}
+            {isAeoreply ? (
+              <>
+                <Route path="/" element={<AeoLanding />} />
+                <Route path="/auth" element={<AeoAuth />} />
+                <Route path="/dashboard" element={<AeoProtectedLayout><AeoDashboard /></AeoProtectedLayout>} />
+                <Route path="/assistant" element={<AeoProtectedLayout><AEO /></AeoProtectedLayout>} />
+                <Route path="/opportunities" element={<AeoProtectedLayout><AEO /></AeoProtectedLayout>} />
+                <Route path="/integrations" element={<AeoProtectedLayout><Integration /></AeoProtectedLayout>} />
+                <Route path="/settings" element={<AeoProtectedLayout><Account /></AeoProtectedLayout>} />
+                <Route path="/subscription" element={<AeoProtectedLayout><Subscription /></AeoProtectedLayout>} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </>
+            ) : (
+              <>
             <Route path="/" element={<Index />} />
             <Route path="/sitemap.xml" element={<SitemapXml />} />
             <Route path="/demo" element={<Demo />} />
@@ -650,6 +674,8 @@ const App = () => (
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
+              </>
+            )}
           </Routes>
           <Toaster />
           <Sonner />
