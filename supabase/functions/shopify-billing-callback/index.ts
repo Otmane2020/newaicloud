@@ -178,6 +178,8 @@ serve(async (req) => {
       profileUpdate.trial_ends_at = trialEndsAt;
     }
 
+    logStep("Updating profile", { profileUpdate });
+
     const { error: profileError } = await supabase
       .from("profiles")
       .update(profileUpdate)
@@ -186,6 +188,30 @@ serve(async (req) => {
     if (profileError) {
       logStep("Error updating profile", { error: profileError });
       return Response.redirect(`${APP_URL}/app/setup-wizard?error=profile_update_failed`, 302);
+    }
+
+    // 🔄 RESET MONTHLY USAGE COUNTERS in usage_tracking table when plan is activated
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+    const monthKey = currentMonth.toISOString().split('T')[0];
+    
+    const { error: usageError } = await supabase
+      .from("usage_tracking")
+      .upsert({
+        seller_id: pending.user_id,
+        month: monthKey,
+        optimizations_count: 0,
+        articles_count: 0,
+        chat_responses_count: 0,
+        campaigns_count: 0,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "seller_id,month" });
+    
+    if (usageError) {
+      logStep("Warning: Could not reset usage counters", { error: usageError });
+    } else {
+      logStep("Usage counters reset to 0 for new billing period");
     }
 
     // Update pending subscription status
