@@ -105,7 +105,7 @@ export function CollectionOptimization() {
   const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { processBulkOperation, state: optimizationState, isTypeRunning, cancelOptimization } = useOptimization();
+  const { processBulkOperation, state: optimizationState, isTypeRunning, cancelOptimization, getOperationState } = useOptimization();
   const [searchParams] = useSearchParams();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
@@ -1515,18 +1515,15 @@ export function CollectionOptimization() {
         open={isTypeRunning('collections')}
         onOpenChange={() => {}}
         type="seo"
-        operation="optimizing"
-        current={optimizationState.current}
-        total={optimizationState.total}
-        items={optimizationState.items.map(item => {
-          const collection = collections.find(c => c.id === item.id);
-          return {
-            id: item.id,
-            title: item.title || collection?.title || '',
-            image_url: collection?.image_url,
-            status: item.status
-          };
-        })}
+        operation={getOperationState('collections')?.operation || 'optimizing'}
+        current={getOperationState('collections')?.current || 0}
+        total={getOperationState('collections')?.total || 0}
+        items={(getOperationState('collections')?.items || []).map(item => ({
+          id: item.id,
+          title: item.title,
+          image_url: item.image_url,
+          status: item.status
+        }))}
         onCancel={() => cancelOptimization('collections')}
       />
 

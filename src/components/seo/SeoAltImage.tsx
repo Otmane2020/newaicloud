@@ -454,7 +454,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
   };
 
   // Get the global optimization processor
-  const { processBulkOperation, state: optimizationState, isTypeRunning } = useOptimization();
+  const { processBulkOperation, state: optimizationState, isTypeRunning, cancelOptimization, getOperationState } = useOptimization();
 
   const handleOptimizeImage = async (imageId: string, useVision = true) => {
     // Check limits BEFORE optimizing
@@ -1391,15 +1391,21 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         </DialogContent>
       </Dialog>
 
-      {/* Optimization Progress Dialog - Using local state like TagOptimization */}
+      {/* Optimization Progress Dialog - Using global context */}
       <ProgressDialog
-        open={showProgressDialog}
+        open={isTypeRunning('alt')}
         onOpenChange={setShowProgressDialog}
         type="alt"
-        operation="optimizing"
-        current={progress.current}
-        total={progress.total}
-        items={processingItems}
+        operation={getOperationState('alt')?.operation || 'optimizing'}
+        current={getOperationState('alt')?.current || 0}
+        total={getOperationState('alt')?.total || 0}
+        items={(getOperationState('alt')?.items || []).map(item => ({
+          id: item.id,
+          title: item.title,
+          image_url: item.image_url,
+          status: item.status
+        }))}
+        onCancel={() => cancelOptimization('alt')}
       />
 
       {/* Results Dialog */}

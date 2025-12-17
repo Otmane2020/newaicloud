@@ -79,7 +79,7 @@ export function TagOptimization() {
   const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { processBulkOperation, state: optimizationState, isTypeRunning } = useOptimization();
+  const { processBulkOperation, state: optimizationState, isTypeRunning, cancelOptimization, getOperationState } = useOptimization();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -1347,13 +1347,19 @@ export function TagOptimization() {
 
       {/* Dialogs */}
       <ProgressDialog
-        open={showProgressDialog}
+        open={isTypeRunning('tags')}
         onOpenChange={setShowProgressDialog}
         type="tags"
-        operation={currentOperation}
-        current={progress.current}
-        total={progress.total}
-        items={processingItems}
+        operation={getOperationState('tags')?.operation || 'optimizing'}
+        current={getOperationState('tags')?.current || 0}
+        total={getOperationState('tags')?.total || 0}
+        items={(getOperationState('tags')?.items || []).map(item => ({
+          id: item.id,
+          title: item.title,
+          image_url: item.image_url,
+          status: item.status
+        }))}
+        onCancel={() => cancelOptimization('tags')}
       />
 
       <ResultsDialog

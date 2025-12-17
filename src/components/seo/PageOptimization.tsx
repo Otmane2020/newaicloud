@@ -110,7 +110,7 @@ export function PageOptimization() {
   const [lastSyncStatus, setLastSyncStatus] = useState<{ synced: number; failed: number; errors?: string[] } | undefined>(undefined);
   
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { processBulkOperation, state: optimizationState, isTypeRunning, cancelOptimization } = useOptimization();
+  const { processBulkOperation, state: optimizationState, isTypeRunning, cancelOptimization, getOperationState } = useOptimization();
 
   // Get store domain with automatic fetching and caching
   const { domain: storeDomain } = useStoreDomain();
@@ -1200,18 +1200,15 @@ export function PageOptimization() {
         open={isTypeRunning('pages')}
         onOpenChange={(open) => !open && setShowProgressDialog(false)}
         type="seo"
-        operation={optimizationState.operation}
-        current={optimizationState.current}
-        total={optimizationState.total}
-        items={optimizationState.items.map(item => {
-          const page = pages.find(p => p.id === item.id);
-          return {
-            id: item.id,
-            title: item.title || page?.title || '',
-            image_url: undefined,
-            status: item.status
-          };
-        })}
+        operation={getOperationState('pages')?.operation || 'optimizing'}
+        current={getOperationState('pages')?.current || 0}
+        total={getOperationState('pages')?.total || 0}
+        items={(getOperationState('pages')?.items || []).map(item => ({
+          id: item.id,
+          title: item.title,
+          image_url: item.image_url,
+          status: item.status
+        }))}
         onCancel={() => cancelOptimization('pages')}
       />
 

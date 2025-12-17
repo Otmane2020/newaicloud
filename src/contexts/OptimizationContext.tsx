@@ -9,7 +9,7 @@ export interface OperationState {
   current: number;
   total: number;
   operation: 'optimizing' | 'syncing';
-  items: Array<{ id: string; title: string; status: 'pending' | 'success' | 'error' }>;
+  items: Array<{ id: string; title: string; image_url?: string; status: 'pending' | 'processing' | 'success' | 'error' }>;
   cancelRequested: boolean;
   startedAt: Date;
 }
@@ -26,7 +26,7 @@ interface OptimizationState {
   current: number;
   total: number;
   operation: 'optimizing' | 'syncing';
-  items: Array<{ id: string; title: string; status: 'pending' | 'success' | 'error' }>;
+  items: Array<{ id: string; title: string; image_url?: string; status: 'pending' | 'processing' | 'success' | 'error' }>;
   cancelRequested: boolean;
 }
 
@@ -57,7 +57,7 @@ interface OptimizationContextType {
   toggleDialog: () => void;
   setShowDialog: (show: boolean) => void;
   setShowCompletedDialog: (show: boolean) => void;
-  processBulkOperation: <T>(
+  processBulkOperation: <T extends { id: string; title?: string; image_url?: string }>(
     type: OptimizationType,
     items: T[],
     processItem: (item: T, index: number) => Promise<boolean | ProcessItemResult>,
@@ -274,7 +274,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
     setState(prev => createFullState(prev.operations, prev.showDialog, prev.activeDialogType, show));
   }, []);
 
-  const processBulkOperation = useCallback(<T,>(
+  const processBulkOperation = useCallback(<T extends { id: string; title?: string; image_url?: string; product?: { title?: string } },>(
     type: OptimizationType,
     items: T[],
     processItem: (item: T, index: number) => Promise<boolean | ProcessItemResult>,
@@ -290,6 +290,14 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
     cancelledRefs.current.set(type, false);
     isProcessingRefs.current.set(type, true);
 
+    // Initialize all items as pending - get title from item.title or item.product?.title
+    const initialItems = items.map(item => ({
+      id: item.id,
+      title: item.title || (item as any).product?.title || `Item ${item.id.slice(0, 8)}`,
+      image_url: item.image_url || (item as any).src,
+      status: 'pending' as const,
+    }));
+
     setState(prev => {
       const newOperations = new Map(prev.operations);
       newOperations.set(type, {
@@ -297,7 +305,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
         current: 0,
         total: items.length,
         operation,
-        items: [],
+        items: initialItems,
         cancelRequested: false,
         startedAt: new Date(),
       });
@@ -321,11 +329,31 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
               break;
             }
 
+            // Set current item to processing
+            setState(prev => {
+              const newOperations = new Map(prev.operations);
+              const currentOp = newOperations.get(type);
+              if (currentOp) {
+                const updatedItems = currentOp.items.map((item, idx) => ({
+                  ...item,
+                  status: idx === i ? 'processing' as const : item.status,
+                }));
+                newOperations.set(type, {
+                  ...currentOp,
+                  current: i,
+                  items: updatedItems,
+                });
+              }
+              return createFullState(newOperations, prev.showDialog, prev.activeDialogType, prev.showCompletedDialog);
+            });
+
+            let itemSuccess = false;
             try {
               const result = await processItem(items[i], i);
               
               // Handle both boolean and ProcessItemResult
               if (typeof result === 'boolean') {
+                itemSuccess = result;
                 if (result) {
                   successCount++;
                 } else {
@@ -333,6 +361,7 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
                 }
               } else {
                 // ProcessItemResult object
+                itemSuccess = result.generated;
                 if (result.generated) {
                   successCount++;
                   // Track sync status
@@ -357,13 +386,19 @@ export function OptimizationProvider({ children }: { children: ReactNode }) {
               errorCount++;
             }
 
+            // Update item status after processing
             setState(prev => {
               const newOperations = new Map(prev.operations);
               const currentOp = newOperations.get(type);
               if (currentOp) {
+                const updatedItems = currentOp.items.map((item, idx) => ({
+                  ...item,
+                  status: idx === i ? (itemSuccess ? 'success' as const : 'error' as const) : item.status,
+                }));
                 newOperations.set(type, {
                   ...currentOp,
                   current: i + 1,
+                  items: updatedItems,
                 });
               }
               return createFullState(newOperations, prev.showDialog, prev.activeDialogType, prev.showCompletedDialog);
