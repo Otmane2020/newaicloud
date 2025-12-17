@@ -299,16 +299,23 @@ serve(async (req) => {
     console.log(`[LIMITS] Current usage:`, currentUsage);
     
     // ⚡ Fetch plan (trial or paid)
-    const planId = (!isTrialing && profile.current_plan_id) ? profile.current_plan_id : 'trial';
+    // Normalize plan ID: remove -monthly/-yearly suffix for Shopify billing plans
+    const rawPlanId = (!isTrialing && profile.current_plan_id) ? profile.current_plan_id : 'trial';
+    const normalizedPlanId = rawPlanId
+      .replace(/-monthly$/, '')
+      .replace(/-yearly$/, '');
+    
+    console.log(`[LIMITS] Plan ID normalization: ${rawPlanId} -> ${normalizedPlanId}`);
+    
     const { data: plan, error: planError } = await supabaseAdmin
       .from('subscription_plans')
       .select('*')
-      .eq('id', planId)
+      .eq('id', normalizedPlanId)
       .single();
 
     // CRITICAL FIX: Return proper response with currentUsage already initialized
     if (planError || !plan) {
-      console.error('[LIMITS] Error fetching plan:', planError, 'planId:', planId);
+      console.error('[LIMITS] Error fetching plan:', planError, 'planId:', normalizedPlanId);
       console.error('[LIMITS] Falling back to default trial limits');
       
       // Use conservative trial limits as fallback
