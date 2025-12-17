@@ -597,14 +597,29 @@ export const BulkAIImagesDialog = ({
               </div>
             )}
 
-            {/* Progress */}
+            {/* Progress - Style Google Shopping */}
             {isGenerating && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>{language === 'fr' ? 'Progression' : 'Progress'}</span>
-                  <span>{successCount + errorCount} / {productsWithSelection.length}</span>
+              <div className="space-y-3 p-4 bg-gradient-to-r from-primary/5 to-transparent rounded-xl border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {language === 'fr' ? 'Produit' : 'Product'}
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {successCount + errorCount} / {productsWithSelection.length}
+                    </span>
+                  </div>
+                  <span className="text-2xl sm:text-3xl font-bold text-primary">
+                    {Math.round(progress)}%
+                  </span>
                 </div>
-                <Progress value={progress} className="h-2" />
+                <Progress value={progress} className="h-3 sm:h-4" />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <span className="text-success">✓ {successCount}</span>
+                    {errorCount > 0 && <span className="text-destructive">| ✗ {errorCount}</span>}
+                  </span>
+                </div>
               </div>
             )}
 

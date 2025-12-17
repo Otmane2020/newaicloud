@@ -94,16 +94,16 @@ export function AeoArticleGenerationDialog({
 
           {/* Generation Progress */}
           {isGenerating && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-sm">
                   {steps[getCurrentStepIndex()]?.label}
                 </span>
-                <span className="font-bold text-lg" style={{ color: platformColor }}>
+                <span className="text-2xl sm:text-3xl font-bold" style={{ color: platformColor }}>
                   {Math.round(progress)}%
                 </span>
               </div>
-              <Progress value={progress} className="h-3" />
+              <Progress value={progress} className="h-3 sm:h-4" />
               
               {/* Step indicators */}
               <div className="space-y-2">

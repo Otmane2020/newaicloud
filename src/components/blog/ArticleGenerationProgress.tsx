@@ -174,13 +174,12 @@ export function ArticleGenerationProgress({
                 </p>
               </div>
               
-              <div className="w-full space-y-4">
-                <Progress value={progress} className="h-3" />
-                
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-primary">{currentMessage}</span>
-                  <span className="text-muted-foreground">{progress}%</span>
+              <div className="w-full space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-primary text-sm">{currentMessage}</span>
+                  <span className="text-2xl sm:text-3xl font-bold text-primary">{progress}%</span>
                 </div>
+                <Progress value={progress} className="h-3 sm:h-4" />
               </div>
               
               <div className="text-xs text-muted-foreground text-center max-w-xs">
