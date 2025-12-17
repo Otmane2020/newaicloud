@@ -1536,6 +1536,7 @@ export function SeoOptimization() {
         limitType="optimizations"
         usage={limits?.usage.optimizations_count || 0}
         limit={limits?.limits.max_optimizations || 0}
+        isTrialing={limits?.isTrialing || false}
       />
     </div>
   );

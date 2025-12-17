@@ -104,6 +104,7 @@ interface ShopifyUpgradeDialogProps {
   usage?: number;
   limit?: number;
   onUpgradeComplete?: () => void;
+  isTrialing?: boolean;
 }
 
 export function ShopifyUpgradeDialog({
@@ -114,7 +115,8 @@ export function ShopifyUpgradeDialog({
   limitType = 'optimizations',
   usage,
   limit,
-  onUpgradeComplete
+  onUpgradeComplete,
+  isTrialing = false
 }: ShopifyUpgradeDialogProps) {
   const { t, language } = useTranslation();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
@@ -122,9 +124,14 @@ export function ShopifyUpgradeDialog({
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   // Filter plans that are upgrades from current plan
+  // Si en trial → montrer TOUS les plans (pour activer le plan actuel ou upgrader)
   const availablePlans = SHOPIFY_PLANS.filter(plan => {
     if (!currentPlanId || currentPlanId === 'free' || currentPlanId === 'trial') return true;
     
+    // Si utilisateur en TRIAL → montrer tous les plans
+    if (isTrialing) return true;
+    
+    // Sinon, logique normale : montrer uniquement les plans supérieurs
     const planOrder = ['starter', 'pro-500', 'pro-1000'];
     const currentIndex = planOrder.indexOf(currentPlanId);
     const planIndex = planOrder.indexOf(plan.id);
@@ -307,15 +314,17 @@ export function ShopifyUpgradeDialog({
                     className={`w-full ${plan.popular ? "bg-gradient-to-r " + plan.color + " hover:opacity-90" : ""}`}
                     variant={plan.popular ? "default" : "outline"}
                     onClick={() => handleSelectPlan(plan.id)}
-                    disabled={loading || isCurrent}
+                    disabled={loading || (isCurrent && !isTrialing)}
                   >
                     {isLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         {language === 'fr' ? "Traitement..." : "Processing..."}
                       </>
-                    ) : isCurrent ? (
+                    ) : isCurrent && !isTrialing ? (
                       language === 'fr' ? "Plan actuel" : "Current Plan"
+                    ) : isCurrent && isTrialing ? (
+                      language === 'fr' ? `Activer ${plan.name}` : `Activate ${plan.name}`
                     ) : (
                       language === 'fr' ? "Sélectionner" : "Select"
                     )}
