@@ -20,6 +20,7 @@ import { getCurrencySymbol } from "@/lib/formatUtils";
 import { PricingCard } from "@/components/pricing/PricingCard";
 import { useShopifyBilling } from "@/hooks/useShopifyBilling";
 import ShopifyPricingPlans from "@/components/shopify/ShopifyPricingPlans";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
 
 interface Plan {
   id: string;
@@ -67,6 +68,11 @@ const Subscription = () => {
   
   // Shopify billing hook
   const { isShopifyUser, billingProvider, createShopifySubscription, loading: shopifyLoading } = useShopifyBilling();
+  
+  // Usage limits hook
+  const { limits: usageLimits } = useUsageLimits();
+  const isTrialing = usageLimits?.isTrialing || false;
+  const usageExhausted = usageLimits?.limitReached?.optimizations || false;
 
   const isUpgradeFlow = searchParams.get('upgrade') === 'true';
 
@@ -499,6 +505,8 @@ const Subscription = () => {
           shopDomain={shopDomain}
           language={language as "fr" | "en"}
           currentPlanId={currentPlan?.id}
+          isTrialing={isTrialing}
+          usageExhausted={usageExhausted}
         />
       </div>
     );

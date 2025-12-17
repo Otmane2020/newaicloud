@@ -119,6 +119,8 @@ interface ShopifyPricingPlansProps {
   isEmbedded?: boolean;
   host?: string;
   currentPlanId?: string;
+  isTrialing?: boolean;
+  usageExhausted?: boolean;
 }
 
 export default function ShopifyPricingPlans({ 
@@ -128,7 +130,9 @@ export default function ShopifyPricingPlans({
   isAuthenticating = false,
   isEmbedded = false,
   host,
-  currentPlanId
+  currentPlanId,
+  isTrialing = false,
+  usageExhausted = false
 }: ShopifyPricingPlansProps) {
   const navigate = useNavigate();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
@@ -172,6 +176,7 @@ export default function ShopifyPricingPlans({
     alreadyActive: language === "fr" ? "Abonnement déjà actif" : "Subscription already active",
     upgrade: language === "fr" ? "Mettre à niveau" : "Upgrade",
     downgrade: language === "fr" ? "Rétrograder" : "Downgrade",
+    activateFullPlan: language === "fr" ? "Activer le plan complet" : "Activate Full Plan",
   };
 
   // Helper to determine plan rank for upgrade/downgrade logic
@@ -317,6 +322,8 @@ export default function ShopifyPricingPlans({
           const isLoading = loading && isSelected;
           const isCurrentPlan = plan.id === currentPlanId || 
             (plan.id === 'starter' && (currentPlanId === 'trial' || currentPlanId === 'starter'));
+          // Trial user with exhausted quota should be able to activate full plan
+          const canActivateFullPlan = isCurrentPlan && isTrialing && usageExhausted;
 
           return (
             <Card 
@@ -412,14 +419,14 @@ export default function ShopifyPricingPlans({
                 <Button
                   className="w-full font-medium text-sm h-11 transition-all hover:opacity-90"
                   style={{ 
-                    background: isCurrentPlan ? "#22c55e" : "#1a1a1a",
+                    background: (isCurrentPlan && !canActivateFullPlan) ? "#22c55e" : "#1a1a1a",
                     color: "white",
                     border: "none",
                     borderRadius: "6px",
                     boxShadow: "0 1px 0 rgba(0,0,0,0.05)"
                   }}
                   onClick={() => handleSelectPlan(plan.id)}
-                  disabled={loading || isCurrentPlan}
+                  disabled={loading || (isCurrentPlan && !canActivateFullPlan)}
                 >
                   {(() => {
                     if (isLoading) {
@@ -430,6 +437,12 @@ export default function ShopifyPricingPlans({
                         </>
                       );
                     }
+                    
+                    // Trial user with exhausted quota - show activate full plan
+                    if (canActivateFullPlan) {
+                      return t.activateFullPlan;
+                    }
+                    
                     if (isCurrentPlan) {
                       return <>✓ {t.currentPlan}</>;
                     }
