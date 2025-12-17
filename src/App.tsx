@@ -127,6 +127,7 @@ import NewAIVideoGenerator from "./components/video/NewAIVideoGenerator";
 import StoreTemplates from "./pages/StoreTemplates";
 import SetupWizardPage from "./pages/shopify/SetupWizard";
 import PlansEmbedded from "./pages/shopify/PlansEmbedded";
+import AeoLanding from "./pages/AeoLanding";
 
 const queryClient = new QueryClient();
 
@@ -192,6 +193,7 @@ const App = () => (
             <Route path="/blog-seo-management" element={<BlogSeoManagement />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/aeoreply" element={<AeoLanding />} />
             <Route path="/documentation" element={<Documentation />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
