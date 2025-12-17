@@ -453,7 +453,8 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* AEO (Answer Engine Optimization) Menu with AI platform sub-tabs */}
+              {/* AEO (Answer Engine Optimization) Menu with AI platform sub-tabs - restricted to oben.rockman only */}
+              {hasFullAccess && (
               <Collapsible defaultOpen={isAeoActive} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -479,6 +480,7 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+              )}
 
               {/* Social Media - Onglet principal séparé - restricted */}
               {hasFullAccess && (

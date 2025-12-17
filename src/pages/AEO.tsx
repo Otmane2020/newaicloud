@@ -19,7 +19,14 @@ interface AiOpportunity {
   query_type: string;
   question: string;
   suggested_title: string | null;
-  suggested_structure: any;
+  suggested_structure: {
+    direct_answer?: string;
+    answer_confidence?: number;
+    supporting_content?: {
+      bullets?: string[];
+      faq?: { q: string; a: string }[];
+    };
+  } | any;
   citation_potential: number | null;
   keywords: string[] | null;
   difficulty: string | null;
@@ -347,6 +354,19 @@ export default function AEO() {
                           <p className="font-medium text-lg">"{opp.question}"</p>
                         </div>
 
+                        {/* Direct Answer - CE QUE L'IA VA CITER */}
+                        {opp.suggested_structure?.direct_answer && (
+                          <div className="bg-muted/50 p-3 rounded-lg border-l-4" style={{ borderLeftColor: config.color }}>
+                            <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                              <Sparkles className="h-3 w-3" />
+                              {language === 'fr' ? 'Réponse citable par l\'IA' : 'AI-citable answer'}
+                            </p>
+                            <p className="text-sm font-medium leading-relaxed">
+                              "{opp.suggested_structure.direct_answer}"
+                            </p>
+                          </div>
+                        )}
+
                         {/* Suggested Title */}
                         {opp.suggested_title && (
                           <div>
@@ -365,7 +385,7 @@ export default function AEO() {
                           
                           {opp.citation_potential && (
                             <Badge variant="secondary">
-                              {language === 'fr' ? 'Potentiel citation' : 'Citation potential'}: {opp.citation_potential}%
+                              {language === 'fr' ? 'Score citation' : 'Citation score'}: {opp.citation_potential}%
                             </Badge>
                           )}
 
