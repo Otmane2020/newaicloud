@@ -697,12 +697,12 @@ export function TagOptimization() {
                 </div>
                 <Button
                   size="lg"
-                  onClick={handleGenerateAll}
-                  disabled={isTypeRunning('tags') || productsNotOptimized === 0}
+                  onClick={productsNotOptimized > 0 ? handleGenerateAll : handleReoptimizeAll}
+                  disabled={isTypeRunning('tags') || products.length === 0}
                   className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 gap-2 shadow-lg"
                 >
                   <Sparkles className="w-5 h-5" />
-                  Start Optimization
+                  {productsNotOptimized > 0 ? 'Start Optimization' : 'Ré-optimiser tout'}
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </>
@@ -782,14 +782,14 @@ export function TagOptimization() {
               <span className="hidden sm:inline">Générer Tags</span>
             </Button>
             <Button
-              onClick={handleGenerateAllTags}
-              disabled={isTypeRunning('tags') || productsNotOptimized === 0}
+              onClick={productsNotOptimized > 0 ? handleGenerateAllTags : handleReoptimizeAll}
+              disabled={isTypeRunning('tags') || products.length === 0}
               variant="outline"
               size="sm"
               className="flex-1 sm:flex-none"
             >
               <Sparkles className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Générer tout</span>
+              <span className="hidden sm:inline">{productsNotOptimized > 0 ? 'Générer tout' : 'Ré-optimiser tout'}</span>
             </Button>
             <Button
               onClick={fetchProducts}
