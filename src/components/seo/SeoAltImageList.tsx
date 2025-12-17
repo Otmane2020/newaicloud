@@ -72,6 +72,7 @@ export function SeoAltImageList() {
   const [currentOperation, setCurrentOperation] = useState<'optimizing' | 'syncing'>('optimizing');
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [optimizedItems, setOptimizedItems] = useState<WorkflowItem[]>([]);
+  const [processingItems, setProcessingItems] = useState<Array<{ id: string; title: string; image_url?: string; status: 'pending' | 'processing' | 'success' | 'error' }>>([]);
   const [imagesToSync, setImagesToSync] = useState<ProductImage[]>([]);
   const [showGuide, setShowGuide] = useState(false);
   const [storeLanguage, setStoreLanguage] = useState<string>('fr');
@@ -232,6 +233,18 @@ export function SeoAltImageList() {
       return;
     }
 
+    // Initialize processing items with pending status
+    const initialProcessingItems = imagesToGenerate.map(img => {
+      const product = products.find(p => p.id === img.product_id);
+      return {
+        id: img.id,
+        title: product?.title || 'Image',
+        image_url: img.src,
+        status: 'pending' as const
+      };
+    });
+    setProcessingItems(initialProcessingItems);
+
     setCurrentOperation('optimizing');
     setShowProgressDialog(true);
     setProgress({ current: 0, total: imagesToGenerate.length });
@@ -239,6 +252,11 @@ export function SeoAltImageList() {
     const generatedImages: ProductImage[] = [];
 
     for (let i = 0; i < imagesToGenerate.length; i++) {
+      // Update current item to processing
+      setProcessingItems(prev => prev.map((item, idx) => 
+        idx === i ? { ...item, status: 'processing' as const } : item
+      ));
+
       try {
         const { data, error } = await supabase.functions.invoke('generate-alt-texts', {
           body: { 
@@ -254,11 +272,23 @@ export function SeoAltImageList() {
             alt_text: data.alt_text,
             product_title: product?.title
           });
+          // Update to success
+          setProcessingItems(prev => prev.map((item, idx) => 
+            idx === i ? { ...item, status: 'success' as const } : item
+          ));
+        } else {
+          // Update to error
+          setProcessingItems(prev => prev.map((item, idx) => 
+            idx === i ? { ...item, status: 'error' as const } : item
+          ));
         }
         
         setProgress({ current: i + 1, total: imagesToGenerate.length });
       } catch (error) {
         console.error('Error generating ALT text:', error);
+        setProcessingItems(prev => prev.map((item, idx) => 
+          idx === i ? { ...item, status: 'error' as const } : item
+        ));
       }
     }
 
@@ -818,6 +848,7 @@ export function SeoAltImageList() {
         operation={currentOperation}
         current={progress.current}
         total={progress.total}
+        items={processingItems}
       />
 
       <ResultsDialog
