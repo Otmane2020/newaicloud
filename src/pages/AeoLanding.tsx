@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/language";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -16,6 +17,74 @@ export default function AeoLanding() {
   const navigate = useNavigate();
   const { language } = useTranslation();
   const t = aeoTranslations[language] || aeoTranslations.fr;
+
+  // SEO Meta Tags
+  useEffect(() => {
+    const title = language === 'fr' 
+      ? "Aeoreply - Answer Engine Optimization | Soyez cité par ChatGPT, Gemini & Claude"
+      : "Aeoreply - Answer Engine Optimization | Get Cited by ChatGPT, Gemini & Claude";
+    
+    const description = language === 'fr'
+      ? "Aeoreply optimise votre contenu pour être cité par les IA comme ChatGPT, Gemini, Claude et Perplexity. Générez des réponses citables et des articles AEO pour augmenter votre visibilité."
+      : "Aeoreply optimizes your content to be cited by AI like ChatGPT, Gemini, Claude and Perplexity. Generate citable answers and AEO articles to boost your visibility.";
+
+    document.title = title;
+    
+    // Meta description
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (!metaDescription) {
+      metaDescription = document.createElement('meta');
+      metaDescription.setAttribute('name', 'description');
+      document.head.appendChild(metaDescription);
+    }
+    metaDescription.setAttribute('content', description);
+
+    // Open Graph
+    const ogTags = [
+      { property: 'og:title', content: title },
+      { property: 'og:description', content: description },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:url', content: 'https://aeoreply.com' },
+      { property: 'og:site_name', content: 'Aeoreply' },
+    ];
+
+    ogTags.forEach(({ property, content }) => {
+      let tag = document.querySelector(`meta[property="${property}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('property', property);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    });
+
+    // Twitter Card
+    const twitterTags = [
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description },
+    ];
+
+    twitterTags.forEach(({ name, content }) => {
+      let tag = document.querySelector(`meta[name="${name}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute('name', name);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    });
+
+    // Canonical URL
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', 'https://aeoreply.com');
+
+  }, [language]);
 
   const aiPlatforms = [
     { name: "ChatGPT", bg: "#10A37F", icon: "GPT" },
