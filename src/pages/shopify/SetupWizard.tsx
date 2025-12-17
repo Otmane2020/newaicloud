@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ShopifyPricingPlans from "@/components/shopify/ShopifyPricingPlans";
 import { Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useUsageLimits } from "@/hooks/useUsageLimits";
 
 // Demo store domain - bypass payment for this store
 const DEMO_STORE_DOMAIN = "store-demo-20240334.myshopify.com";
@@ -88,9 +89,13 @@ export default function SetupWizard() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const navigate = useNavigate();
   const checkedRef = useRef(false);
   const authAttemptedRef = useRef(false);
+  
+  // Get usage limits for trial/exhausted status
+  const { limits: usageLimits } = useUsageLimits();
 
   // Detect language from browser
   const browserLang = navigator.language?.startsWith("fr") ? "fr" : "en";
@@ -153,14 +158,20 @@ export default function SetupWizard() {
         if (connection?.user_id) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("subscription_status")
+            .select("subscription_status, current_plan_id")
             .eq("id", connection.user_id)
             .single();
 
-          if (profile?.subscription_status === 'active' || profile?.subscription_status === 'trialing') {
+          // Store current plan for display
+          if (profile?.current_plan_id) {
+            setCurrentPlanId(profile.current_plan_id);
+          }
+
+          if (profile?.subscription_status === 'active') {
             console.log('✅ [SetupWizard] Active subscription found, redirecting');
             navigate("/dashboard-light", { replace: true });
           }
+          // Note: trialing users stay on setup-wizard to see "Activate Full Plan" if quota exhausted
         }
       } catch (err) {
         console.log('[SetupWizard] Background check error (ignored):', err);
@@ -337,6 +348,9 @@ export default function SetupWizard() {
           shopDomain={shopFromUrl || ""} 
           language={language as "fr" | "en"}
           isAuthenticating={isAuthenticating}
+          currentPlanId={currentPlanId}
+          isTrialing={usageLimits?.isTrialing || false}
+          usageExhausted={usageLimits?.limitReached?.optimizations || false}
         />
       </div>
     </div>
