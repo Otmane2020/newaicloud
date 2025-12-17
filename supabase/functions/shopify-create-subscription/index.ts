@@ -110,12 +110,18 @@ serve(async (req) => {
       }
     );
 
+    // Track if user ever had an active subscription (to skip trial on downgrades)
+    let hadPriorSubscription = false;
+    
     if (checkRes.ok) {
       const checkJson = await checkRes.json();
       const subs = checkJson?.data?.currentAppInstallation?.activeSubscriptions || [];
       const activeSubscription = subs.find((s: { status: string }) => s.status === "ACTIVE");
 
       if (activeSubscription) {
+        // User has an active subscription - mark as having prior subscription
+        hadPriorSubscription = true;
+        
         // If forceUpgrade is true, allow creating a new subscription (Shopify will replace the old one)
         if (forceUpgrade) {
           logStep("UPGRADE MODE: Active subscription exists, but forceUpgrade=true - proceeding to replace", activeSubscription);
@@ -137,11 +143,37 @@ serve(async (req) => {
             );
           }
           
-          // Different plan requested - allow upgrade
-          logStep("Different plan requested - proceeding to upgrade", { currentPlan: activeSubscription.name, requestedPlan: requestedPlan?.name });
+          // Different plan requested - this is an upgrade/downgrade, mark prior subscription
+          hadPriorSubscription = true;
+          logStep("Different plan requested - proceeding to upgrade/downgrade", { currentPlan: activeSubscription.name, requestedPlan: requestedPlan?.name });
         }
       } else {
         logStep("No active subscription found, proceeding to create one");
+        
+        // Also check profiles table to see if user ever had an active subscription
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("subscription_status, trial_ends_at, current_plan_id")
+          .eq("id", connection.user_id)
+          .single();
+        
+        if (profileData) {
+          // If user had an active status before or used trial, they shouldn't get trial again
+          const hadActiveStatus = profileData.subscription_status === 'active' || 
+                                  profileData.subscription_status === 'past_due' ||
+                                  profileData.subscription_status === 'cancelled';
+          const usedTrial = profileData.trial_ends_at && new Date(profileData.trial_ends_at) < new Date();
+          const hadPaidPlan = profileData.current_plan_id && 
+                             profileData.current_plan_id !== 'trial' && 
+                             profileData.current_plan_id !== 'free';
+          
+          if (hadActiveStatus || usedTrial || hadPaidPlan) {
+            hadPriorSubscription = true;
+            logStep("User previously had subscription/used trial - will skip trial days", { 
+              hadActiveStatus, usedTrial, hadPaidPlan, profileData 
+            });
+          }
+        }
       }
     } else {
       logStep("Warning: Could not check existing subscription, proceeding cautiously");
@@ -217,8 +249,13 @@ serve(async (req) => {
       }]
     };
 
-    if (plan.trialDays) {
+    // CRITICAL: Only give trial days if user NEVER had a prior subscription
+    // Trial is a one-time benefit - once used or once had a paid plan, no more trial
+    if (plan.trialDays && !hadPriorSubscription) {
       variables.trialDays = plan.trialDays;
+      logStep("Adding trial days (first-time user)", { trialDays: plan.trialDays });
+    } else if (plan.trialDays && hadPriorSubscription) {
+      logStep("SKIPPING trial days - user had prior subscription", { trialDays: plan.trialDays, hadPriorSubscription });
     }
 
     logStep("Creating Shopify subscription", { variables });

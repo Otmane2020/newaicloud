@@ -43,8 +43,9 @@ import {
   Share2,
   Palette,
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useShopifyBilling } from "@/hooks/useShopifyBilling";
 import {
   Sidebar,
   SidebarContent,
@@ -74,6 +75,7 @@ import { StoreSelector } from "@/components/StoreSelector";
 export function AppSidebar() {
   const { state, isMobile: sidebarIsMobile, openMobile, toggleSidebar } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { t, language } = useTranslation();
   const currentPath = location.pathname;
@@ -81,6 +83,9 @@ export function AppSidebar() {
   const [userPlan, setUserPlan] = useState<string | null>(null);
   const [isEnterprise, setIsEnterprise] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Shopify billing detection
+  const { isShopifyUser, billingProvider } = useShopifyBilling();
   
   // Check if user is the test account
   const isTestAccount = user?.email === "sweet.deco.meubles@gmail.com";
@@ -681,8 +686,13 @@ export function AppSidebar() {
             <div className="flex flex-col gap-2 px-4 py-3 w-full">
               {state === "expanded" ? (
                 <>
-                  <NavLink 
-                    to="/account?tab=subscription"
+                  <button 
+                    onClick={() => {
+                      handleNavClick();
+                      // Shopify users go to /subscription (which shows ShopifyPricingPlans)
+                      // Stripe users also go to /subscription (which shows Stripe plans)
+                      navigate('/subscription');
+                    }}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group w-fit"
                   >
                     <Crown className="h-3.5 w-3.5 text-white shrink-0 group-hover:rotate-12 transition-transform" />
@@ -692,7 +702,7 @@ export function AppSidebar() {
                     <span className="text-white/90 text-xs font-normal" style={{ fontFamily: "'Inter', sans-serif" }}>
                       ({t.common.upgrade})
                     </span>
-                  </NavLink>
+                  </button>
                 </>
               ) : (
                 <div className="flex items-center justify-center relative">
