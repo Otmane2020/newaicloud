@@ -67,9 +67,7 @@ serve(async (req) => {
 
     // Generate SEO metadata
     const title = generateAEOTitle(question, platform, articleLang);
-    const metaDescription = direct_answer.length > 155 
-      ? direct_answer.substring(0, 152) + '...'
-      : direct_answer;
+    const metaDescription = direct_answer.slice(0, 155);
 
     // Save article to blog_articles
     const { data: article, error: insertError } = await supabase
@@ -93,7 +91,7 @@ serve(async (req) => {
       throw insertError;
     }
 
-    // Update ai_answers with article_id
+    // Update ai_answers with article_id (with user_id check for security)
     if (answer_id) {
       await supabase
         .from('ai_answers')
@@ -101,7 +99,8 @@ serve(async (req) => {
           status: 'treated',
           article_id: article.id 
         })
-        .eq('id', answer_id);
+        .eq('id', answer_id)
+        .eq('user_id', user_id);
     }
 
     console.log(`[AEO Article] Created article ${article.id} from answer ${answer_id}`);
@@ -179,11 +178,12 @@ function generateAEOArticleFromAnswer({
 
   // ✅ AEO STRUCTURE - Answer Box FIRST
   const answerBoxHtml = `
-<div class="aeo-answer-box" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #0ea5e9; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+<div class="aeo-answer-box" itemscope itemtype="https://schema.org/Answer" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left: 4px solid #0ea5e9; padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+  <meta itemprop="text" content="${directAnswer.replace(/"/g, '&quot;')}" />
   <p style="font-size: 12px; color: #64748b; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-    ✨ <strong>Réponse directe</strong> — Optimisée pour ${platformName}
+    ✨ <strong>${language === 'fr' ? 'Réponse directe' : 'Direct answer'}</strong> — ${language === 'fr' ? 'Optimisée pour les assistants IA' : 'Optimized for AI assistants'}
   </p>
-  <p style="font-size: 18px; font-weight: 600; color: #0f172a; line-height: 1.5; margin: 0;">
+  <p itemprop="text" style="font-size: 18px; font-weight: 600; color: #0f172a; line-height: 1.5; margin: 0;">
     ${directAnswer}
   </p>
 </div>`;
