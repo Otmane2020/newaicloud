@@ -110,7 +110,7 @@ export function PageOptimization() {
   const [lastSyncStatus, setLastSyncStatus] = useState<{ synced: number; failed: number; errors?: string[] } | undefined>(undefined);
   
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { processBulkOperation, state: optimizationState } = useOptimization();
+  const { processBulkOperation, state: optimizationState, isTypeRunning, cancelOptimization } = useOptimization();
 
   // Get store domain with automatic fetching and caching
   const { domain: storeDomain } = useStoreDomain();
@@ -854,11 +854,11 @@ export function PageOptimization() {
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <Button
                     onClick={() => handleOptimizeSelected()}
-                    disabled={selectedPages.size === 0 || optimizationState.isRunning}
+                    disabled={selectedPages.size === 0 || isTypeRunning('pages')}
                     size="sm"
                     className="gap-2"
                   >
-                    {optimizationState.isRunning ? (
+                    {isTypeRunning('pages') ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Sparkles className="w-4 h-4" />
@@ -867,12 +867,12 @@ export function PageOptimization() {
                   </Button>
                   <Button
                     onClick={pages.filter(p => !p.optimized).length > 0 ? handleOptimizeAll : handleReoptimizeAllPages}
-                    disabled={(optimizationState.type === 'pages' && optimizationState.isRunning)}
+                    disabled={isTypeRunning('pages')}
                     variant="outline"
                     size="sm"
                     className="gap-2"
                   >
-                    {optimizationState.isRunning ? (
+                    {isTypeRunning('pages') ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Sparkles className="w-4 h-4" />
@@ -893,7 +893,7 @@ export function PageOptimization() {
                   </Button>
                 </div>
 
-                {optimizationState.isRunning && optimizationState.type === 'pages' && (
+                {isTypeRunning('pages') && (
                   <div className="w-full sm:w-auto">
                     <ProgressBanner
                       current={optimizationState.current}
@@ -932,7 +932,7 @@ export function PageOptimization() {
                 </Button>
                 <Button
                   onClick={() => handleOptimizeSelected()}
-                  disabled={optimizationState.isRunning || selectedPages.size === 0}
+                  disabled={isTypeRunning('pages') || selectedPages.size === 0}
                   size="sm"
                   className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 border-0 text-primary-foreground font-semibold transition-all duration-300"
                 >
