@@ -198,10 +198,14 @@ export default function ShopifyPricingPlans({
     setSelectedPlan(planId);
 
     try {
-      // Determine if this is an upgrade (user has existing plan and selecting different one)
-      const isUpgrade = !!currentPlanId && currentPlanId !== planId && currentPlanId !== 'trial';
+      // Determine if this is an upgrade:
+      // 1. User selecting a different plan than current
+      // 2. OR trialing user activating their full plan (same plan but needs payment)
+      const isActivatingFullPlanFromTrial = isTrialing && (currentPlanId === planId || 
+        (planId === 'starter' && (currentPlanId === 'trial' || currentPlanId === 'starter')));
+      const isUpgrade = isActivatingFullPlanFromTrial || (!!currentPlanId && currentPlanId !== planId && currentPlanId !== 'trial');
       
-      console.log("[ShopifyPricingPlans] Creating subscription:", { planId, billingCycle, shopDomain, isUpgrade, currentPlanId });
+      console.log("[ShopifyPricingPlans] Creating subscription:", { planId, billingCycle, shopDomain, isUpgrade, currentPlanId, isTrialing, isActivatingFullPlanFromTrial });
 
       const { data, error } = await supabase.functions.invoke("shopify-create-subscription", {
         body: {
