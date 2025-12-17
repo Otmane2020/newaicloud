@@ -11,8 +11,8 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { ProgressDialog, ResultsDialog, SuccessDialog } from './SeoWorkflowDialogs';
-import { TrialLimitDialog } from '@/components/TrialLimitDialog';
-import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { ShopifyUpgradeDialog } from '@/components/shopify/ShopifyUpgradeDialog';
+
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { calculateAltTextScore } from '@/lib/seoQuality';
 import { useTranslation } from '@/lib/language';
@@ -1422,21 +1422,15 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         onClose={handleCloseResultsDialog}
       />
 
-      {/* Upgrade Dialogs */}
-      <TrialLimitDialog
-        open={showUpgradeDialog && (limits?.shouldForcePayment || limits?.limitReached?.optimizations)}
+      {/* Upgrade Dialog */}
+      <ShopifyUpgradeDialog
+        open={showUpgradeDialog}
         onOpenChange={setShowUpgradeDialog}
+        shopDomain={selectedStore?.store_url || ''}
+        currentPlanId={limits?.planId}
         limitType="optimizations"
-        currentUsage={limits?.usage.optimizations_count || 0}
-        maxUsage={limits?.limits.max_optimizations || 100}
-        trialMaxUsage={limits?.isTrialing ? limits?.limits.max_optimizations : undefined}
-        isTrialing={limits?.isTrialing || false}
-      />
-      
-      <UpgradeDialog
-        open={showUpgradeDialog && limits?.shouldForcePayment !== true}
-        onOpenChange={setShowUpgradeDialog}
-        limitType="optimizations"
+        usage={limits?.usage.optimizations_count || 0}
+        limit={limits?.limits.max_optimizations || 100}
       />
     </div>
   );

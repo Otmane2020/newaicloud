@@ -20,8 +20,8 @@ import {
   SuccessDialog,
   WorkflowItem 
 } from './SeoWorkflowDialogs';
-import { TrialLimitDialog } from '@/components/TrialLimitDialog';
-import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { ShopifyUpgradeDialog } from '@/components/shopify/ShopifyUpgradeDialog';
+
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import { calculateTagsScore } from '@/lib/seoQuality';
 import { 
@@ -1382,22 +1382,15 @@ export function TagOptimization() {
         }}
       />
 
-      {(limits?.shouldForcePayment || limits?.limitReached?.optimizations) ? (
-        <TrialLimitDialog
-          open={showUpgradeDialog}
-          onOpenChange={setShowUpgradeDialog}
-          limitType="optimizations"
-          currentUsage={limits?.usage.optimizations_count || 0}
-          maxUsage={limits?.limits.max_optimizations || 0}
-          isTrialing={limits?.isTrialing || false}
-        />
-      ) : (
-        <UpgradeDialog
-          open={showUpgradeDialog}
-          onOpenChange={setShowUpgradeDialog}
-          limitType="optimizations"
-        />
-      )}
+      <ShopifyUpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        shopDomain={selectedStore?.store_url || ''}
+        currentPlanId={limits?.planId}
+        limitType="optimizations"
+        usage={limits?.usage.optimizations_count || 0}
+        limit={limits?.limits.max_optimizations || 0}
+      />
     </div>
   );
 }
