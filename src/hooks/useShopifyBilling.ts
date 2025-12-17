@@ -28,30 +28,61 @@ export function useShopifyBilling() {
     const loadShopContext = async () => {
       try {
         /**
-         * ✅ SINGLE SOURCE OF TRUTH
-         * shopify_connections keyed by store_url (shop domain)
+         * ✅ SOURCE DE VÉRITÉ #1: profiles.billing_provider
+         * Si billing_provider est explicitement défini, l'utiliser
          */
-        const { data, error } = await supabase
-          .from("shopify_connections")
-          .select("store_url")
-          .eq("user_id", user.id)
-          .eq("is_active", true)
-          .limit(1)
-          .maybeSingle();
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("billing_provider")
+          .eq("id", user.id)
+          .single();
 
-        if (error) throw error;
+        if (profileError) {
+          console.error("[useShopifyBilling] Profile error:", profileError);
+        }
 
-        if (!data?.store_url) {
+        // Si billing_provider est explicitement 'stripe', utiliser Stripe (même si shopify_connections existe)
+        if (profile?.billing_provider === 'stripe') {
+          console.log("[useShopifyBilling] Profile has billing_provider=stripe, using Stripe billing");
           setState({ isShopifyUser: false, shopDomain: null, billingProvider: "stripe", loading: false });
           return;
         }
 
-        setState({
-          isShopifyUser: true,
-          shopDomain: data.store_url,
-          billingProvider: "shopify",
-          loading: false,
-        });
+        /**
+         * ✅ SOURCE DE VÉRITÉ #2: shopify_connections (pour OAuth users)
+         * Seulement si billing_provider n'est pas 'stripe'
+         */
+        const { data: connection, error: connError } = await supabase
+          .from("shopify_connections")
+          .select("store_url, connection_type")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (connError) throw connError;
+
+        // Si billing_provider est 'shopify' OU si c'est une connexion OAuth, utiliser Shopify Billing
+        if (profile?.billing_provider === 'shopify' || (connection && connection.connection_type === 'oauth')) {
+          setState({
+            isShopifyUser: true,
+            shopDomain: connection?.store_url || null,
+            billingProvider: "shopify",
+            loading: false,
+          });
+          return;
+        }
+
+        // Si connexion API_keys uniquement (pour sync), utiliser Stripe
+        if (connection && connection.connection_type !== 'oauth') {
+          console.log("[useShopifyBilling] API keys connection only, using Stripe billing");
+          setState({ isShopifyUser: false, shopDomain: connection.store_url, billingProvider: "stripe", loading: false });
+          return;
+        }
+
+        // Par défaut: Stripe
+        setState({ isShopifyUser: false, shopDomain: null, billingProvider: "stripe", loading: false });
       } catch (e) {
         console.error("[useShopifyBilling]", e);
         setState({ isShopifyUser: false, shopDomain: null, billingProvider: null, loading: false });
