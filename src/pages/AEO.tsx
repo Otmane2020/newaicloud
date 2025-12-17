@@ -177,14 +177,21 @@ export default function AEO() {
         await new Promise(resolve => setTimeout(resolve, 800));
       }
 
-      // Call the edge function to generate article
+      // Call the edge function to generate article - AEO mode enabled
       const { data, error } = await supabase.functions.invoke("generate-blog-article", {
         body: {
           user_id: user?.id,
           store_id: selectedStore.id,
           title: opportunity.suggested_title || opportunity.question,
           keywords: opportunity.keywords || [],
-          structure: opportunity.suggested_structure,
+          category: "AEO",
+          productIds: [],
+          articleLength: "2000",
+          editorialAngle: "aeo", // ✅ AEO mode - Answer-First structure
+          isAEO: true, // ✅ Enable AEO structure with Answer Box, Key Facts, FAQ
+          aeo_mode: true, // ✅ Backup flag
+          targetAudience: "Clients recherchant des informations produits via IA",
+          layout: "editorial",
           language: language,
           articleType: 'aeo',
           platform: opportunity.platform
