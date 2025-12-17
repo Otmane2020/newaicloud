@@ -957,7 +957,7 @@ const Subscription = () => {
             <PricingComparison />
           </div>
 
-          <UsageLimits />
+          
           <BillingPortal />
         </>
       )}
