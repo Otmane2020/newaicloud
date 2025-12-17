@@ -1345,10 +1345,13 @@ export function GoogleShopping() {
       <OptimizeAllDialog
         open={showOptimizeDialog}
         onClose={() => setShowOptimizeDialog(false)}
+        onCancel={() => setIsOptimizing(false)}
         results={optimizationResults}
         progress={optimizationProgress}
         isProcessing={isOptimizing}
         currentProduct={currentOptimizingProduct}
+        totalProducts={optimizationResults.length}
+        currentIndex={optimizationResults.filter(r => r.status !== 'pending').length}
       />
 
       <UpgradeDialog
