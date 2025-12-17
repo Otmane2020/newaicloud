@@ -2,16 +2,16 @@ import {
   LayoutDashboard,
   Lightbulb,
   Sparkles,
+  MessageSquare,
+  FileText,
   Link,
   Settings,
   User,
   LogOut,
   CreditCard,
-  ChevronRight,
   Zap,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -34,12 +34,11 @@ export function AeoSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
   const currentPath = location.pathname;
-  const currentSearch = location.search;
   const isMobile = useIsMobile();
 
-  // AEO specific menu items
+  // AEO specific menu items - EXACT ORDER FROM SPEC
   const mainMenuItems = [
     { 
       title: language === 'fr' ? "Tableau de bord" : "Dashboard", 
@@ -51,27 +50,33 @@ export function AeoSidebar() {
   const aeoMenuItems = [
     { 
       title: language === 'fr' ? "Assistant" : "Wizard", 
-      url: "/assistant", 
+      url: "/wizard", 
       icon: Lightbulb,
-      description: language === 'fr' ? "Générer des opportunités AEO" : "Generate AEO opportunities"
     },
     { 
       title: language === 'fr' ? "Opportunités" : "Opportunities", 
       url: "/opportunities", 
       icon: Sparkles,
-      description: language === 'fr' ? "Voir et gérer vos opportunités" : "View and manage opportunities"
+    },
+    { 
+      title: language === 'fr' ? "Réponses" : "Answers", 
+      url: "/answers", 
+      icon: MessageSquare,
+    },
+    { 
+      title: language === 'fr' ? "Articles" : "Articles", 
+      url: "/articles", 
+      icon: FileText,
     },
     { 
       title: language === 'fr' ? "Intégrations" : "Integrations", 
       url: "/integrations", 
       icon: Link,
-      description: language === 'fr' ? "Connecter vos plateformes" : "Connect your platforms"
     },
     { 
       title: language === 'fr' ? "Paramètres" : "Settings", 
       url: "/settings", 
       icon: Settings,
-      description: language === 'fr' ? "LLMs.txt et préférences" : "LLMs.txt and preferences"
     },
   ];
 
@@ -89,10 +94,6 @@ export function AeoSidebar() {
   ];
 
   const isActive = (path: string) => {
-    if (path.includes("?")) {
-      const [pathPart, searchPart] = path.split("?");
-      return currentPath === pathPart && currentSearch.includes(searchPart);
-    }
     return currentPath === path;
   };
 
