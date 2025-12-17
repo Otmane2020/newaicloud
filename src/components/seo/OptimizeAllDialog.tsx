@@ -128,7 +128,7 @@ export function OptimizeAllDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] p-0 overflow-hidden flex flex-col">
+      <DialogContent className="w-[95vw] max-w-lg h-[85vh] max-h-[600px] p-0 overflow-hidden flex flex-col">
         {/* Header avec animation */}
         <DialogHeader className="p-4 pb-2 sm:p-6 sm:pb-3 border-b bg-gradient-to-r from-primary/5 to-transparent">
           <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-3">
@@ -222,8 +222,8 @@ export function OptimizeAllDialog({
 
           {/* Liste des produits avec scroll */}
           {results.length > 0 && (
-            <div className="flex-1 min-h-0">
-              <ScrollArea className="h-[200px] sm:h-[280px] rounded-xl border bg-muted/30" ref={scrollAreaRef}>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <ScrollArea className="h-full max-h-[180px] sm:max-h-[220px] rounded-xl border bg-muted/30" ref={scrollAreaRef}>
                 <div className="p-2 sm:p-3 space-y-2">
                   <AnimatePresence mode="popLayout">
                     {results.map((result, index) => {
