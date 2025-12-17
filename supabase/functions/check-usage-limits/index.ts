@@ -273,17 +273,26 @@ serve(async (req) => {
     console.log('[LIMITS] Parallel queries completed - Profile:', !!profile, 'Usage:', !!usageData);
 
     // Determine trial/paid status
-    const isTrialing = profile.subscription_status === 'trialing' || 
+    // CRITICAL FIX: Check if user has a PAID plan first, before checking subscription_status
+    // Paid plans: starter, pro, enterprise, enterprise-8k (with optional -monthly/-yearly suffix)
+    const planId = profile.current_plan_id || '';
+    const normalizedPlanForCheck = planId.replace(/-monthly$/, '').replace(/-yearly$/, '');
+    const PAID_PLANS = ['starter', 'pro', 'enterprise', 'enterprise-8k'];
+    const hasPaidPlan = PAID_PLANS.includes(normalizedPlanForCheck);
+    
+    // isPaid: has a paid plan AND (status is active OR trialing with paid plan)
+    const isPaid = hasPaidPlan && 
+                   (profile.subscription_status === 'active' || profile.subscription_status === 'trialing');
+    
+    // isTrialing: only true if NOT on a paid plan
+    const isTrialing = !isPaid && (
+                       profile.subscription_status === 'trialing' || 
                        !profile.current_plan_id ||
                        profile.current_plan_id === 'trial' ||
                        profile.subscription_status === 'cancelled' ||
-                       profile.subscription_status === 'inactive';
+                       profile.subscription_status === 'inactive');
     
-    const isPaid = profile.subscription_status === 'active' && 
-                   profile.current_plan_id && 
-                   profile.current_plan_id !== 'trial';
-    
-    console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
+    console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, hasPaidPlan: ${hasPaidPlan}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
     
     // Handle usage tracking with safe defaults
     const currentUsage = usageData || {

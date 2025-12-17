@@ -71,7 +71,15 @@ export function TrialLimitDialog({
   const dialogTexts = isTrialing 
     ? t.dialogs.trialLimit 
     : (t.dialogs as any).planLimit || t.dialogs.trialLimit;
-  const usageFormatKey = isTrialing ? 'dialogs.trialLimit.usageFormat' : 'dialogs.planLimit.usageFormat';
+
+  // Format usage string directly using the dialogTexts object
+  const formatUsage = () => {
+    const template = dialogTexts.usageFormat || "{{limitType}}: {{currentUsage}}/{{maxUsage}} used";
+    return template
+      .replace('{{limitType}}', limitType)
+      .replace('{{currentUsage}}', String(currentUsage))
+      .replace('{{maxUsage}}', String(trialMaxUsage || maxUsage));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -87,11 +95,7 @@ export function TrialLimitDialog({
             {dialogTexts.description}
             {limitType && (
               <div className="mt-2 font-semibold text-foreground">
-                {tf(usageFormatKey, { 
-                  limitType, 
-                  currentUsage, 
-                  maxUsage: trialMaxUsage || maxUsage 
-                })}
+                {formatUsage()}
               </div>
             )}
           </DialogDescription>
