@@ -297,6 +297,7 @@ export type Database = {
         Row: {
           answer_confidence: number | null
           article_id: string | null
+          category: string | null
           citation_potential: number
           created_at: string | null
           difficulty: string | null
@@ -316,6 +317,7 @@ export type Database = {
         Insert: {
           answer_confidence?: number | null
           article_id?: string | null
+          category?: string | null
           citation_potential: number
           created_at?: string | null
           difficulty?: string | null
@@ -335,6 +337,7 @@ export type Database = {
         Update: {
           answer_confidence?: number | null
           article_id?: string | null
+          category?: string | null
           citation_potential?: number
           created_at?: string | null
           difficulty?: string | null
