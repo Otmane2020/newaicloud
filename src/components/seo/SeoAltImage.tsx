@@ -454,7 +454,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
   };
 
   // Get the global optimization processor
-  const { processBulkOperation } = useOptimization();
+  const { processBulkOperation, state: optimizationState, isTypeRunning } = useOptimization();
 
   const handleOptimizeImage = async (imageId: string, useVision = true) => {
     // Check limits BEFORE optimizing
@@ -851,7 +851,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                 <Button
                   size="lg"
                   onClick={handleOptimizeAllImages}
-                  disabled={showProgressDialog || limitsLoading || images.length === 0}
+                  disabled={isTypeRunning('alt') || limitsLoading || images.length === 0}
                   className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                 >
                   <Eye className="w-5 h-5" />
@@ -959,7 +959,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={() => handleGenerateForSelected(false)}
-              disabled={selectedImages.size === 0 || showProgressDialog}
+              disabled={selectedImages.size === 0 || isTypeRunning('alt')}
               size="sm"
             >
               <Sparkles className="w-4 h-4 sm:mr-2" />
@@ -967,7 +967,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
             </Button>
             <Button
               onClick={() => handleGenerateForSelected(true)}
-              disabled={selectedImages.size === 0 || showProgressDialog}
+              disabled={selectedImages.size === 0 || isTypeRunning('alt')}
               variant="outline"
               size="sm"
             >

@@ -105,7 +105,7 @@ export function CollectionOptimization() {
   const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { processBulkOperation, state: optimizationState } = useOptimization();
+  const { processBulkOperation, state: optimizationState, isTypeRunning } = useOptimization();
   const [searchParams] = useSearchParams();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
@@ -819,7 +819,7 @@ export function CollectionOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {optimizationState.isRunning && optimizationState.type === 'collections' ? (
+            {isTypeRunning('collections') ? (
               <ProgressBanner
                 current={optimizationState.current}
                 total={optimizationState.total}
@@ -844,7 +844,7 @@ export function CollectionOptimization() {
                   <Button
                     size="lg"
                     onClick={notOptimizedCount > 0 ? handleOptimizeAllCollections : handleReoptimizeAllCollections}
-                    disabled={optimizationState.isRunning || collections.length === 0}
+                    disabled={isTypeRunning('collections') || collections.length === 0}
                     className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                   >
                     <Sparkles className="w-5 h-5" />
@@ -936,7 +936,7 @@ export function CollectionOptimization() {
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={() => handleOptimizeSelected()}
-              disabled={selectedCollections.size === 0 || optimizationState.isRunning}
+              disabled={selectedCollections.size === 0 || isTypeRunning('collections')}
               size="sm"
             >
               <Sparkles className="w-4 h-4 sm:mr-2" />
@@ -944,7 +944,7 @@ export function CollectionOptimization() {
             </Button>
             <Button
               onClick={notOptimizedCount > 0 ? handleOptimizeAllCollections : handleReoptimizeAllCollections}
-              disabled={optimizationState.isRunning || collections.length === 0}
+              disabled={isTypeRunning('collections') || collections.length === 0}
               variant="outline"
               size="sm"
             >
@@ -1048,7 +1048,7 @@ export function CollectionOptimization() {
                 variant="default"
                 size="sm"
                 onClick={() => handleOptimizeSelected()}
-                disabled={optimizationState.isRunning || selectedCollections.size === 0}
+                disabled={isTypeRunning('collections') || selectedCollections.size === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 border-0 text-primary-foreground font-semibold transition-all duration-300"
               >
                 <Zap className="w-4 h-4" />
@@ -1059,7 +1059,7 @@ export function CollectionOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateAll}
-                disabled={optimizationState.isRunning || notOptimizedCount === 0}
+                disabled={isTypeRunning('collections') || notOptimizedCount === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 shadow-lg hover:shadow-accent/50 border-accent/30 text-accent-foreground font-semibold transition-all duration-300"
               >
                 <Sparkles className="w-4 h-4" />
@@ -1068,7 +1068,7 @@ export function CollectionOptimization() {
 
               <Button
                 onClick={handleGenerateAICollections}
-                disabled={generatingCollections || optimizationState.isRunning}
+                disabled={generatingCollections || isTypeRunning('collections')}
                 size="sm"
                 className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white border-0 font-semibold transition-all duration-300"
               >
@@ -1333,7 +1333,7 @@ export function CollectionOptimization() {
                               // Optimiser directement cette collection
                               handleOptimizeSelected([collection.id]);
                             }}
-                            disabled={optimizationState.isRunning}
+                            disabled={isTypeRunning('collections')}
                             title="Optimize"
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >
@@ -1512,7 +1512,7 @@ export function CollectionOptimization() {
 
       {/* Dialogs */}
       <ProgressDialog
-        open={optimizationState.isRunning && optimizationState.type === 'collections'}
+        open={isTypeRunning('collections')}
         onOpenChange={() => {}}
         type="seo"
         operation="optimizing"

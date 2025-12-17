@@ -583,7 +583,7 @@ export function SeoOptimization() {
     setSelectedProducts(newSelected);
   };
 
-  const { processBulkOperation, state: optimizationState, setShowDialog, setShowCompletedDialog } = useOptimization();
+  const { processBulkOperation, state: optimizationState, setShowDialog, setShowCompletedDialog, isTypeRunning } = useOptimization();
 
   const handleGenerateForSelected = async (productIds?: string[]) => {
     // Check usage limits first (only check optimization-specific limits)
@@ -854,7 +854,7 @@ export function SeoOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {optimizationState.isRunning && optimizationState.type === 'products' ? (
+            {isTypeRunning('products') ? (
               <ProgressBanner
                 current={optimizationState.current}
                 total={optimizationState.total}
@@ -886,14 +886,13 @@ export function SeoOptimization() {
                     console.log("🔘 [BUTTON_CLICKED]", {
                       notEnrichedCount,
                       loading,
-                      isRunning: optimizationState.isRunning,
-                      optimizationType: optimizationState.type,
+                      isRunning: isTypeRunning('products'),
                       totalProducts: products.length,
-                      buttonDisabled: (optimizationState.type === 'products' && optimizationState.isRunning) || loading,
+                      buttonDisabled: isTypeRunning('products') || loading,
                     });
                     handleGenerateAllSeo();
                   }}
-                  disabled={(optimizationState.type === 'products' && optimizationState.isRunning) || loading}
+                  disabled={isTypeRunning('products') || loading}
                   className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
                 >
                   <Sparkles className="w-5 h-5" />
@@ -1089,7 +1088,7 @@ export function SeoOptimization() {
                 variant="default"
                 size="sm"
                 onClick={() => handleGenerateForSelected()}
-                disabled={optimizationState.isRunning || selectedProducts.size === 0}
+                disabled={isTypeRunning('products') || selectedProducts.size === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
               >
                 <Zap className="w-4 h-4" />
@@ -1100,7 +1099,7 @@ export function SeoOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateAllSeo}
-                disabled={optimizationState.isRunning || loading || notEnrichedCount === 0}
+                disabled={isTypeRunning('products') || loading || notEnrichedCount === 0}
                 className="flex items-center gap-2 bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 shadow-lg hover:shadow-accent/50 border-accent/30 text-accent-foreground font-semibold transition-all duration-300"
               >
                 <Sparkles className="w-4 h-4" />
@@ -1268,7 +1267,7 @@ export function SeoOptimization() {
                               // Optimiser directement ce produit
                               handleGenerateForSelected([product.id]);
                             }}
-                            disabled={optimizationState.isRunning}
+                            disabled={isTypeRunning('products')}
                             title={t.seo.optimization.optimize}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >
@@ -1464,7 +1463,7 @@ export function SeoOptimization() {
 
       {/* Dialogs - Connected to OptimizationContext */}
       <ProgressDialog
-        open={optimizationState.showDialog && optimizationState.isRunning && optimizationState.type === 'products'}
+        open={optimizationState.showDialog && isTypeRunning('products')}
         onOpenChange={(open) => setShowDialog(open)}
         type="seo"
         operation={optimizationState.operation}

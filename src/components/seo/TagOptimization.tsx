@@ -79,7 +79,7 @@ export function TagOptimization() {
   const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { processBulkOperation, state: optimizationState } = useOptimization();
+  const { processBulkOperation, state: optimizationState, isTypeRunning } = useOptimization();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -677,7 +677,7 @@ export function TagOptimization() {
             </div>
           </div>
           <div className="flex flex-col gap-4 items-center">
-            {optimizationState.isRunning && optimizationState.type === 'tags' ? (
+            {isTypeRunning('tags') ? (
               <ProgressBanner
                 current={optimizationState.current}
                 total={optimizationState.total}
@@ -698,7 +698,7 @@ export function TagOptimization() {
                 <Button
                   size="lg"
                   onClick={handleGenerateAll}
-                  disabled={optimizationState.isRunning || productsNotOptimized === 0}
+                  disabled={isTypeRunning('tags') || productsNotOptimized === 0}
                   className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 gap-2 shadow-lg"
                 >
                   <Sparkles className="w-5 h-5" />
@@ -774,7 +774,7 @@ export function TagOptimization() {
                 const ids = Array.from(selectedProducts);
                 handleBulkGenerate(ids, true);
               }}
-              disabled={selectedProducts.size === 0 || optimizationState.isRunning}
+              disabled={selectedProducts.size === 0 || isTypeRunning('tags')}
               size="sm"
               className="flex-1 sm:flex-none"
             >
@@ -783,7 +783,7 @@ export function TagOptimization() {
             </Button>
             <Button
               onClick={handleGenerateAllTags}
-              disabled={optimizationState.isRunning || productsNotOptimized === 0}
+              disabled={isTypeRunning('tags') || productsNotOptimized === 0}
               variant="outline"
               size="sm"
               className="flex-1 sm:flex-none"
@@ -916,7 +916,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateAll}
-                disabled={optimizationState.isRunning || productsNotOptimized === 0}
+                disabled={isTypeRunning('tags') || productsNotOptimized === 0}
                 className="flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
@@ -927,7 +927,7 @@ export function TagOptimization() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleGenerateSelected(false)}
-                disabled={optimizationState.isRunning || selectedProducts.size === 0}
+                disabled={isTypeRunning('tags') || selectedProducts.size === 0}
                 className="flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
@@ -1108,7 +1108,7 @@ export function TagOptimization() {
                                // Optimiser directement ce produit sans confirmation
                                handleBulkGenerate([product.id], true);
                              }}
-                            disabled={optimizationState.isRunning}
+                            disabled={isTypeRunning('tags')}
                             className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
                           >
                            <Sparkles className="w-4 h-4" />
@@ -1256,7 +1256,7 @@ export function TagOptimization() {
                             }
                             handleBulkGenerate([product.id], true);
                           }}
-                          disabled={optimizationState.isRunning}
+                          disabled={isTypeRunning('tags')}
                           className="flex-1 bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg"
                         >
                           <Sparkles className="w-4 h-4 mr-1" />
