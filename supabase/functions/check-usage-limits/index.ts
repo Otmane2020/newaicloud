@@ -274,11 +274,18 @@ serve(async (req) => {
 
     // Determine trial/paid status
     // CRITICAL FIX: Check if user has a PAID plan first, before checking subscription_status
-    // Paid plans: starter, pro, enterprise, enterprise-8k (with optional -monthly/-yearly suffix)
+    // Normalize plan ID: lowercase, remove suffixes, handle spaces
     const planId = profile.current_plan_id || '';
-    const normalizedPlanForCheck = planId.replace(/-monthly$/, '').replace(/-yearly$/, '');
-    const PAID_PLANS = ['starter', 'pro', 'enterprise', 'enterprise-8k'];
-    const hasPaidPlan = PAID_PLANS.includes(normalizedPlanForCheck);
+    const normalizedPlanForCheck = planId
+      .toLowerCase()
+      .replace(/\s+/g, '-')           // Replace spaces with dashes
+      .replace(/-monthly$/, '')
+      .replace(/-yearly$/, '')
+      .replace(/-shopify$/, '');      // Handle Shopify suffix
+    
+    // Check if plan contains any paid plan keywords (handles variations like "enterprise-8k", "enterprise 8k", etc.)
+    const PAID_PLAN_PATTERNS = ['starter', 'pro', 'enterprise'];
+    const hasPaidPlan = PAID_PLAN_PATTERNS.some(pattern => normalizedPlanForCheck.includes(pattern));
     
     // isPaid: has a paid plan AND (status is active OR trialing with paid plan)
     const isPaid = hasPaidPlan && 
@@ -292,7 +299,7 @@ serve(async (req) => {
                        profile.subscription_status === 'cancelled' ||
                        profile.subscription_status === 'inactive');
     
-    console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, hasPaidPlan: ${hasPaidPlan}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
+    console.log(`[LIMITS] User status - isTrialing: ${isTrialing}, isPaid: ${isPaid}, hasPaidPlan: ${hasPaidPlan}, normalized: ${normalizedPlanForCheck}, status: ${profile.subscription_status}, plan: ${profile.current_plan_id}`);
     
     // Handle usage tracking with safe defaults
     const currentUsage = usageData || {
