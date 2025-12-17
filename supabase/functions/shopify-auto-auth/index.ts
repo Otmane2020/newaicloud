@@ -12,8 +12,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 /**
  * Verify if the shop has an active Shopify subscription for our app
+ * Returns: { hasSubscription: boolean, apiError: boolean, errorMessage?: string }
  */
-async function verifyShopifySubscription(shop: string, accessToken: string): Promise<boolean> {
+async function verifyShopifySubscription(shop: string, accessToken: string): Promise<{ hasSubscription: boolean; apiError: boolean; errorMessage?: string }> {
   try {
     console.log("[VERIFY-SUBSCRIPTION] Checking Shopify subscription for:", shop);
     
@@ -40,8 +41,11 @@ async function verifyShopifySubscription(shop: string, accessToken: string): Pro
     });
     
     if (!response.ok) {
-      console.error("[VERIFY-SUBSCRIPTION] Failed to query Shopify:", response.status);
-      return false;
+      // 🔧 FIX: Distinguish API error from "no subscription"
+      // Token expired (401/403) or other API error - don't assume no subscription
+      const errorStatus = response.status;
+      console.error("[VERIFY-SUBSCRIPTION] API error - token may be expired:", errorStatus);
+      return { hasSubscription: false, apiError: true, errorMessage: `Shopify API error: ${errorStatus}` };
     }
     
     const data = await response.json();
@@ -55,10 +59,10 @@ async function verifyShopifySubscription(shop: string, accessToken: string): Pro
     );
     
     console.log("[VERIFY-SUBSCRIPTION] Has active subscription:", hasActive);
-    return hasActive;
+    return { hasSubscription: hasActive, apiError: false };
   } catch (error) {
     console.error("[VERIFY-SUBSCRIPTION] Error:", error);
-    return false;
+    return { hasSubscription: false, apiError: true, errorMessage: String(error) };
   }
 }
 
@@ -323,13 +327,19 @@ serve(async (req) => {
       console.log("[SHOPIFY-AUTO-AUTH] 🔄 REINSTALLATION détectée - vérification abonnement Shopify...");
       
       // Vérifier l'abonnement avec l'API Shopify
-      const hasActiveShopifySubscription = await verifyShopifySubscription(
+      const subscriptionResult = await verifyShopifySubscription(
         shop, 
         pendingConnection.access_token
       );
       
-      if (!hasActiveShopifySubscription) {
-        console.log("[SHOPIFY-AUTO-AUTH] ❌ Pas d'abonnement actif sur Shopify - l'utilisateur doit repayer");
+      if (subscriptionResult.apiError) {
+        // 🔧 FIX: API error (token expired, network issue) - DON'T reset subscription
+        // Trust the database status, user may still have active subscription
+        console.log("[SHOPIFY-AUTO-AUTH] ⚠️ API error checking subscription - keeping existing status:", subscriptionResult.errorMessage);
+        // Just log and continue - don't reset profile
+      } else if (!subscriptionResult.hasSubscription) {
+        // API responded successfully but no active subscription found
+        console.log("[SHOPIFY-AUTO-AUTH] ❌ Pas d'abonnement actif confirmé par Shopify - l'utilisateur doit repayer");
         
         // S'assurer que le profil reflète l'absence d'abonnement
         await supabase.from("profiles").update({
@@ -338,7 +348,7 @@ serve(async (req) => {
           updated_at: new Date().toISOString(),
         }).eq("id", userId);
       } else {
-        console.log("[SHOPIFY-AUTO-AUTH] ✅ Abonnement Shopify actif trouvé");
+        console.log("[SHOPIFY-AUTO-AUTH] ✅ Abonnement Shopify actif confirmé");
       }
     }
 
