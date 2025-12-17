@@ -1389,6 +1389,7 @@ export function TagOptimization() {
           limitType="optimizations"
           currentUsage={limits?.usage.optimizations_count || 0}
           maxUsage={limits?.limits.max_optimizations || 0}
+          isTrialing={limits?.isTrialing || false}
         />
       ) : (
         <UpgradeDialog
