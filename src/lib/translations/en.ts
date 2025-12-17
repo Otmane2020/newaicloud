@@ -5736,12 +5736,20 @@ export const translations = {
       maybeLater: "Maybe Later",
     },
     trialLimit: {
-      title: "🚀 Upgrade to higher plan",
-      description: "You have reached the limit of your current plan:",
+      title: "🚀 Trial Limit Reached",
+      description: "You have reached the limit of your trial period. Upgrade to a paid plan to continue.",
       usageFormat: "{{limitType}}: {{currentUsage}}/{{maxUsage}} used",
       activateMyPlan: "Activate My Plan",
       later: "Maybe Later",
       unlockFeatures: "Unlock all features with a paid plan",
+    },
+    planLimit: {
+      title: "🎯 Monthly Limit Reached",
+      description: "You have used all your optimizations this month. Upgrade to a higher plan to continue.",
+      usageFormat: "{{limitType}}: {{currentUsage}}/{{maxUsage}} used",
+      activateMyPlan: "Upgrade Plan",
+      later: "Maybe Later",
+      unlockFeatures: "Unlock more optimizations with a higher plan",
     },
   },
 

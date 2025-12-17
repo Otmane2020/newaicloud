@@ -1536,6 +1536,7 @@ export function SeoOptimization() {
           currentUsage={limits?.usage.optimizations_count || 0}
           maxUsage={limits?.limits.max_optimizations || 0}
           trialMaxUsage={limits?.isTrialing ? limits?.limits.max_optimizations : undefined}
+          isTrialing={limits?.isTrialing || false}
         />
       ) : (
         <UpgradeDialog

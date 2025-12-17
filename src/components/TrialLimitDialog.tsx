@@ -15,6 +15,7 @@ interface TrialLimitDialogProps {
   currentUsage: number;
   maxUsage: number;
   trialMaxUsage?: number;
+  isTrialing?: boolean;
 }
 
 export function TrialLimitDialog({
@@ -24,6 +25,7 @@ export function TrialLimitDialog({
   currentUsage,
   maxUsage,
   trialMaxUsage,
+  isTrialing = true,
 }: TrialLimitDialogProps) {
   const [loading, setLoading] = useState(false);
   const { t, tf } = useTranslation();
@@ -65,6 +67,12 @@ export function TrialLimitDialog({
     }
   };
 
+  // Use appropriate translations based on trial/paid status
+  const dialogTexts = isTrialing 
+    ? t.dialogs.trialLimit 
+    : (t.dialogs as any).planLimit || t.dialogs.trialLimit;
+  const usageFormatKey = isTrialing ? 'dialogs.trialLimit.usageFormat' : 'dialogs.planLimit.usageFormat';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto">
@@ -73,13 +81,13 @@ export function TrialLimitDialog({
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
               <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
-            <DialogTitle className="text-lg sm:text-xl leading-tight">{t.dialogs.trialLimit.title}</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl leading-tight">{dialogTexts.title}</DialogTitle>
           </div>
           <DialogDescription className="text-sm sm:text-base pt-2">
-            {t.dialogs.trialLimit.description}
+            {dialogTexts.description}
             {limitType && (
               <div className="mt-2 font-semibold text-foreground">
-                {tf('dialogs.trialLimit.usageFormat', { 
+                {tf(usageFormatKey, { 
                   limitType, 
                   currentUsage, 
                   maxUsage: trialMaxUsage || maxUsage 
@@ -149,7 +157,7 @@ export function TrialLimitDialog({
               ) : (
                 <>
                   <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  {t.dialogs.upgrade.activateMyPlan}
+                  {dialogTexts.activateMyPlan}
                 </>
               )}
             </Button>
@@ -160,12 +168,12 @@ export function TrialLimitDialog({
               disabled={loading}
               className="w-full text-sm sm:text-base h-11 sm:h-12"
             >
-              {t.dialogs.upgrade.later}
+              {dialogTexts.later}
             </Button>
           </div>
 
           <p className="text-xs text-center text-muted-foreground px-2">
-            {t.dialogs.upgrade.unlockFeatures}
+            {dialogTexts.unlockFeatures}
           </p>
         </div>
       </DialogContent>

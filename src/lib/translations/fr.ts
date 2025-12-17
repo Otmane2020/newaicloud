@@ -6065,12 +6065,20 @@ export const translations = {
       maybeLater: "Plus tard",
     },
     trialLimit: {
-      title: "🚀 Passez au plan supérieur",
-      description: "Vous avez atteint la limite de votre plan actuel :",
+      title: "🚀 Limite d'essai atteinte",
+      description: "Vous avez atteint la limite de votre période d'essai. Passez à un plan payant pour continuer.",
       usageFormat: "{{limitType}} : {{currentUsage}}/{{maxUsage}} utilisés",
       activateMyPlan: "Activer Mon Plan",
       later: "Peut-être Plus Tard",
       unlockFeatures: "Débloquez toutes les fonctionnalités avec un plan payant",
+    },
+    planLimit: {
+      title: "🎯 Limite mensuelle atteinte",
+      description: "Vous avez utilisé toutes vos optimisations ce mois-ci. Passez à un plan supérieur pour continuer.",
+      usageFormat: "{{limitType}} : {{currentUsage}}/{{maxUsage}} utilisés",
+      activateMyPlan: "Passer au plan supérieur",
+      later: "Peut-être Plus Tard",
+      unlockFeatures: "Débloquez plus d'optimisations avec un plan supérieur",
     },
   },
 

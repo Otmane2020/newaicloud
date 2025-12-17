@@ -1430,6 +1430,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         currentUsage={limits?.usage.optimizations_count || 0}
         maxUsage={limits?.limits.max_optimizations || 100}
         trialMaxUsage={limits?.isTrialing ? limits?.limits.max_optimizations : undefined}
+        isTrialing={limits?.isTrialing || false}
       />
       
       <UpgradeDialog
