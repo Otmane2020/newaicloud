@@ -1203,6 +1203,16 @@ export function PageOptimization() {
         operation={optimizationState.operation}
         current={optimizationState.current}
         total={optimizationState.total}
+        items={optimizationState.items.map(item => {
+          const page = pages.find(p => p.id === item.id);
+          return {
+            id: item.id,
+            title: item.title || page?.title || '',
+            image_url: undefined,
+            status: item.status
+          };
+        })}
+        onCancel={() => cancelOptimization('pages')}
       />
 
       <ResultsDialog

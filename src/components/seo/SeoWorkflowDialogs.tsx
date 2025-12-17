@@ -1,20 +1,21 @@
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle, Eye, BarChart3, TrendingUp } from 'lucide-react';
+import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle, Eye, BarChart3, TrendingUp, XCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { GoogleSearchPreview } from './GoogleSearchPreview';
 import { buildPublicUrl } from '@/lib/shopifyDomainUtils';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArticlePreviewDialog } from '../blog/ArticlePreviewDialog';
 import { useStore } from '@/contexts/StoreContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useStoreDomain } from '@/hooks/useStoreDomain';
 import { useTranslation } from '@/lib/language';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ============= TYPES =============
 export interface WorkflowItem {
@@ -35,7 +36,7 @@ export interface WorkflowItem {
 
 export type WorkflowType = 'seo' | 'tags' | 'alt';
 
-// ============= PROGRESS DIALOG =============
+// ============= PROGRESS DIALOG - Style Google Shopping =============
 interface ProgressItem {
   id: string;
   title: string;
@@ -51,6 +52,7 @@ interface ProgressDialogProps {
   current: number;
   total: number;
   items?: ProgressItem[];
+  onCancel?: () => void;
 }
 
 export function ProgressDialog({ 
@@ -60,208 +62,261 @@ export function ProgressDialog({
   operation,
   current, 
   total,
-  items = []
+  items = [],
+  onCancel
 }: ProgressDialogProps) {
-  const [simulatedProgress, setSimulatedProgress] = useState(0);
-  const [visibleIndex, setVisibleIndex] = useState(0);
+  const { t, tf, language } = useTranslation();
+  const currentItemRef = useRef<HTMLDivElement>(null);
   const isComplete = current === total && total > 0;
   const isProcessing = total > 0 && !isComplete;
   
-  // Simulate smooth progress animation from 1% to 95%
+  const progress = total > 0 ? Math.round((current / total) * 100) : 0;
+  
+  // Count statuses
+  const successCount = items.filter(i => i.status === 'success').length;
+  const errorCount = items.filter(i => i.status === 'error').length;
+  const pendingCount = items.filter(i => i.status === 'pending' || !i.status).length;
+
+  // Auto-scroll to current processing item
   useEffect(() => {
-    if (!open || !isProcessing) {
-      setSimulatedProgress(0);
-      return;
-    }
-    
-    // Start at 1%
-    setSimulatedProgress(1);
-    
-    const interval = setInterval(() => {
-      setSimulatedProgress(prev => {
-        // Slow down as we approach 95%
-        const increment = prev < 30 ? 3 : prev < 60 ? 2 : prev < 80 ? 1 : 0.5;
-        const next = prev + increment;
-        return next >= 95 ? 95 : next;
+    if (currentItemRef.current && isProcessing) {
+      currentItemRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
       });
-    }, 150);
-    
-    return () => clearInterval(interval);
-  }, [open, isProcessing]);
+    }
+  }, [current, isProcessing]);
 
-  // Auto-scroll through items for bulk operations
-  useEffect(() => {
-    if (!open || items.length <= 1) return;
-    
-    // Update visible index based on current progress
-    const newIndex = Math.min(current, items.length - 1);
-    setVisibleIndex(newIndex);
-  }, [current, items.length, open]);
-  
-  // Calculate real percentage based on actual progress
-  const realPercentage = total > 0 ? Math.round((current / total) * 100) : 0;
-  
-  // Use simulated progress during processing, real percentage when complete
-  const displayPercentage = isComplete ? 100 : Math.max(simulatedProgress, realPercentage);
-
-  const { t, tf } = useTranslation();
-  
   const getTitle = () => {
     if (isComplete) {
-      return operation === 'syncing' ? t.dialogs.seoWorkflow.progress.completeSyncing : t.dialogs.seoWorkflow.progress.completeOptimizing;
+      return operation === 'syncing' 
+        ? (language === 'fr' ? 'Synchronisation terminée' : 'Sync completed')
+        : (language === 'fr' ? 'Optimisation terminée' : 'Optimization completed');
     }
-    if (operation === 'syncing') return t.dialogs.seoWorkflow.progress.syncingTitle;
+    if (operation === 'syncing') return language === 'fr' ? 'Synchronisation en cours...' : 'Syncing...';
+    return language === 'fr' ? 'Optimisation en cours...' : 'Optimizing...';
+  };
+
+  const getTypeLabel = () => {
     switch (type) {
-      case 'seo': return t.dialogs.seoWorkflow.progress.optimizingTitle;
-      case 'tags': return t.dialogs.seoWorkflow.progress.optimizingTitle;
-      case 'alt': return t.dialogs.seoWorkflow.progress.optimizingTitle;
+      case 'seo': return language === 'fr' ? 'Produit' : 'Product';
+      case 'tags': return language === 'fr' ? 'Produit' : 'Product';
+      case 'alt': return 'Image';
     }
   };
 
-  const getDescription = () => {
-    if (isComplete) {
-      return tf(operation === 'syncing' ? 'dialogs.seoWorkflow.progress.completeSyncing' : 'dialogs.seoWorkflow.progress.completeOptimizing', { count: total });
+  const getStatusBadge = (item: ProgressItem, isCurrentItem: boolean) => {
+    if (item.status === 'pending' || (!item.status && !isCurrentItem)) {
+      return (
+        <Badge variant="outline" className="text-xs bg-muted/50 text-muted-foreground border-muted-foreground/30">
+          {language === 'fr' ? 'En attente' : 'Pending'}
+        </Badge>
+      );
     }
-    if (operation === 'syncing') {
-      return tf('dialogs.seoWorkflow.progress.syncingDesc', { count: total });
-    }
-    // Show "Processing item X of Y" - when current is 0, we're processing item 1
-    const displayCurrent = current === 0 ? 1 : current;
-    const displayTotal = total;
-    return `Traitement en cours... ${displayCurrent}/${displayTotal}`;
-  };
 
-  // Get current item being processed
-  const currentItem = items[visibleIndex] || items[0];
-  const showProductInfo = items.length > 0 && currentItem;
+    if (item.status === 'processing' || isCurrentItem) {
+      return (
+        <Badge className="text-xs bg-primary/20 text-primary border-primary/30 animate-pulse">
+          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+          {language === 'fr' ? 'En cours...' : 'Processing...'}
+        </Badge>
+      );
+    }
+
+    if (item.status === 'success') {
+      return (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        >
+          <Badge className="text-xs bg-success/20 text-success border-success/30">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            {language === 'fr' ? 'Optimisé' : 'Optimized'}
+          </Badge>
+        </motion.div>
+      );
+    }
+
+    if (item.status === 'error') {
+      return (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        >
+          <Badge className="text-xs bg-destructive/20 text-destructive border-destructive/30">
+            <XCircle className="w-3 h-3 mr-1" />
+            {language === 'fr' ? 'Erreur' : 'Error'}
+          </Badge>
+        </motion.div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogTitle className="sr-only">{getTitle()}</DialogTitle>
-        <div className="flex flex-col items-center justify-center py-6 space-y-5">
-          
-          {/* Product carousel for bulk operations */}
-          {showProductInfo && (
-            <div className="w-full relative overflow-hidden">
-              <div 
-                className="flex transition-transform duration-500 ease-out"
-                style={{ transform: `translateX(-${visibleIndex * 100}%)` }}
+      <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] p-0 overflow-hidden flex flex-col">
+        {/* Header avec animation - Style Google Shopping */}
+        <DialogHeader className="p-4 pb-2 sm:p-6 sm:pb-3 border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-3">
+            {isProcessing ? (
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                className="flex-shrink-0"
               >
-                {items.map((item, index) => (
-                  <div 
-                    key={item.id} 
-                    className="w-full flex-shrink-0 flex items-center gap-4 px-4"
-                  >
-                    <div className="relative">
-                      {item.image_url ? (
-                        <img 
-                          src={item.image_url} 
-                          alt={item.title}
-                          className="w-16 h-16 object-cover rounded-lg border-2 border-primary/20 shadow-lg"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
-                          <Sparkles className="w-6 h-6 text-primary" />
-                        </div>
-                      )}
-                      {index === visibleIndex && !isComplete && (
-                        <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-1">
-                          <Loader2 className="w-3 h-3 text-primary-foreground animate-spin" />
-                        </div>
-                      )}
-                      {index < current && (
-                        <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
-                          <CheckCircle className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {index < current ? '✓ Terminé' : index === visibleIndex ? 'En cours...' : 'En attente'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                <Sparkles className="w-6 h-6 text-primary" />
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 500 }}
+              >
+                <CheckCircle className="w-6 h-6 text-success" />
+              </motion.div>
+            )}
+            <span className="truncate">{getTitle()}</span>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-hidden flex flex-col p-4 sm:p-6 pt-4 space-y-4">
+          {/* Progress Section - Style Google Shopping */}
+          <div className="space-y-3">
+            {/* Compteur et pourcentage */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">{getTypeLabel()}</span>
+                <span className="font-semibold text-foreground">
+                  {current} / {total}
+                </span>
               </div>
-              
-              {/* Dots indicator for multiple items */}
-              {items.length > 1 && (
-                <div className="flex justify-center gap-1 mt-3">
-                  {items.slice(0, Math.min(items.length, 10)).map((_, index) => (
-                    <div 
-                      key={index}
-                      className={cn(
-                        "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                        index === visibleIndex 
-                          ? "bg-primary w-4" 
-                          : index < current 
-                            ? "bg-green-500" 
-                            : "bg-muted-foreground/30"
-                      )}
-                    />
-                  ))}
-                  {items.length > 10 && (
-                    <span className="text-xs text-muted-foreground ml-1">+{items.length - 10}</span>
-                  )}
-                </div>
-              )}
+              <motion.span
+                key={progress}
+                initial={{ scale: 1.2, color: 'hsl(var(--primary))' }}
+                animate={{ scale: 1, color: 'hsl(var(--foreground))' }}
+                className="text-2xl sm:text-3xl font-bold"
+              >
+                {progress}%
+              </motion.span>
+            </div>
+
+            {/* Barre de progression */}
+            <Progress value={progress} className="h-3 sm:h-4" />
+          </div>
+
+          {/* Stats Summary - 3 colonnes */}
+          {items.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              <motion.div 
+                className="bg-success/10 rounded-xl p-2 sm:p-3 border border-success/20 text-center"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <CheckCircle className="w-4 h-4 text-success mx-auto mb-1" />
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{language === 'fr' ? 'Succès' : 'Success'}</p>
+                <p className="text-lg sm:text-xl font-bold text-success">{successCount}</p>
+              </motion.div>
+              <motion.div 
+                className="bg-destructive/10 rounded-xl p-2 sm:p-3 border border-destructive/20 text-center"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <XCircle className="w-4 h-4 text-destructive mx-auto mb-1" />
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{language === 'fr' ? 'Erreurs' : 'Errors'}</p>
+                <p className="text-lg sm:text-xl font-bold text-destructive">{errorCount}</p>
+              </motion.div>
+              <motion.div 
+                className="bg-muted rounded-xl p-2 sm:p-3 border text-center"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <AlertCircle className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{language === 'fr' ? 'En attente' : 'Pending'}</p>
+                <p className="text-lg sm:text-xl font-bold text-muted-foreground">{pendingCount}</p>
+              </motion.div>
             </div>
           )}
 
-          {/* Loader icon - smaller when product info is shown */}
-          <div className="relative">
-            {isComplete ? (
-              <CheckCircle className={cn(
-                "text-green-600 dark:text-green-400 animate-scale-in",
-                showProductInfo ? "w-10 h-10" : "w-16 h-16"
-              )} />
-            ) : (
-              <>
-                <Loader2 className={cn(
-                  "text-primary animate-spin",
-                  showProductInfo ? "w-10 h-10" : "w-16 h-16"
-                )} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className={cn(
-                    "bg-background rounded-full",
-                    showProductInfo ? "w-7 h-7" : "w-12 h-12"
-                  )} />
-                </div>
-              </>
-            )}
-          </div>
+          {/* Product List with scroll */}
+          {items.length > 0 && (
+            <ScrollArea className="flex-1 -mx-4 px-4" style={{ maxHeight: '300px' }}>
+              <AnimatePresence mode="popLayout">
+                <div className="space-y-2">
+                  {items.map((item, index) => {
+                    const isCurrentItem = index === current && isProcessing;
+                    return (
+                      <motion.div
+                        key={item.id}
+                        ref={isCurrentItem ? currentItemRef : null}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ 
+                          opacity: 1, 
+                          y: 0,
+                          scale: isCurrentItem ? 1.02 : 1,
+                        }}
+                        transition={{ duration: 0.2, delay: index * 0.02 }}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-xl border transition-all",
+                          isCurrentItem && "bg-primary/10 border-primary ring-2 ring-primary/30",
+                          item.status === 'success' && "bg-success/5 border-success/30",
+                          item.status === 'error' && "bg-destructive/5 border-destructive/30",
+                          !isCurrentItem && !item.status && "bg-muted/30"
+                        )}
+                      >
+                        {/* Image */}
+                        <div className="relative flex-shrink-0">
+                          {item.image_url ? (
+                            <img 
+                              src={item.image_url} 
+                              alt={item.title}
+                              className="w-12 h-12 object-cover rounded-lg border"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
+                              <Sparkles className="w-5 h-5 text-primary" />
+                            </div>
+                          )}
+                          {isCurrentItem && (
+                            <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-0.5">
+                              <Loader2 className="w-3 h-3 text-primary-foreground animate-spin" />
+                            </div>
+                          )}
+                        </div>
 
-          <div className="text-center space-y-2 w-full">
-            <h3 className="text-lg font-semibold">{getTitle()}</h3>
-            <p className="text-sm text-muted-foreground">{getDescription()}</p>
-            
-            {/* Progress Bar with real percentage */}
-            <div className="relative mt-4">
-              <div className="h-3 w-full bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-full transition-all duration-500 ease-out relative overflow-hidden"
-                  style={{ width: `${displayPercentage}%` }}
-                >
-                  {/* Animated shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
-                </div>
-              </div>
-            </div>
-            
-            <p className="text-lg font-bold text-blue-600 mt-2">
-              {displayPercentage}%
-            </p>
-          </div>
+                        {/* Title */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{item.title}</p>
+                        </div>
 
-          {/* Info message about background processing */}
-          {isProcessing && (
-            <div className="mt-2 p-3 bg-muted/50 rounded-lg border border-border/50">
-              <p className="text-xs text-muted-foreground text-center">
-                💡 Vous pouvez fermer cette fenêtre, le traitement continue en arrière-plan
-              </p>
-            </div>
+                        {/* Status Badge */}
+                        {getStatusBadge(item, isCurrentItem)}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </AnimatePresence>
+            </ScrollArea>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t bg-muted/30 flex justify-end gap-2">
+          {isProcessing && onCancel ? (
+            <Button variant="outline" onClick={onCancel} className="gap-2">
+              <X className="w-4 h-4" />
+              {language === 'fr' ? 'Annuler' : 'Cancel'}
+            </Button>
+          ) : (
+            <Button onClick={() => onOpenChange(false)}>
+              {language === 'fr' ? 'Fermer' : 'Close'}
+            </Button>
           )}
         </div>
       </DialogContent>

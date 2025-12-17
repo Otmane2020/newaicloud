@@ -105,7 +105,7 @@ export function CollectionOptimization() {
   const { t, tf } = useTranslation();
   const { selectedStore } = useStore();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
-  const { processBulkOperation, state: optimizationState, isTypeRunning } = useOptimization();
+  const { processBulkOperation, state: optimizationState, isTypeRunning, cancelOptimization } = useOptimization();
   const [searchParams] = useSearchParams();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
@@ -1518,6 +1518,16 @@ export function CollectionOptimization() {
         operation="optimizing"
         current={optimizationState.current}
         total={optimizationState.total}
+        items={optimizationState.items.map(item => {
+          const collection = collections.find(c => c.id === item.id);
+          return {
+            id: item.id,
+            title: item.title || collection?.title || '',
+            image_url: collection?.image_url,
+            status: item.status
+          };
+        })}
+        onCancel={() => cancelOptimization('collections')}
       />
 
       <ResultsDialog
