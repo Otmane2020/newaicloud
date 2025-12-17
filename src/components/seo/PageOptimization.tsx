@@ -1199,7 +1199,7 @@ export function PageOptimization() {
       <ProgressDialog
         open={isTypeRunning('pages')}
         onOpenChange={(open) => !open && setShowProgressDialog(false)}
-        type="seo"
+        type="pages"
         operation={getOperationState('pages')?.operation || 'optimizing'}
         current={getOperationState('pages')?.current || 0}
         total={getOperationState('pages')?.total || 0}
@@ -1215,7 +1215,7 @@ export function PageOptimization() {
       <ResultsDialog
         open={showResultsDialog}
         onOpenChange={setShowResultsDialog}
-        type="seo"
+        type="pages"
         items={optimizedPages.map(p => ({
           id: p.id,
           title: p.title,

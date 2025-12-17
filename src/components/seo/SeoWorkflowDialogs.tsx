@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle, Eye, BarChart3, TrendingUp, XCircle, X } from 'lucide-react';
+import { Loader2, CheckCircle, Upload, Sparkles, AlertCircle, Eye, BarChart3, TrendingUp, XCircle, X, FileText, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SeoConfidenceBadge } from './SeoConfidenceBadge';
 import { GoogleSearchPreview } from './GoogleSearchPreview';
@@ -34,7 +34,7 @@ export interface WorkflowItem {
   featured_image?: string; // For blog articles
 }
 
-export type WorkflowType = 'seo' | 'tags' | 'alt';
+export type WorkflowType = 'seo' | 'tags' | 'alt' | 'pages' | 'articles';
 
 // ============= PROGRESS DIALOG - Style Google Shopping =============
 interface ProgressItem {
@@ -102,6 +102,8 @@ export function ProgressDialog({
       case 'seo': return language === 'fr' ? 'Produit' : 'Product';
       case 'tags': return language === 'fr' ? 'Produit' : 'Product';
       case 'alt': return 'Image';
+      case 'pages': return 'Page';
+      case 'articles': return 'Article';
     }
   };
 
@@ -279,8 +281,17 @@ export function ProgressDialog({
                               className="w-12 h-12 object-cover rounded-lg border"
                             />
                           ) : (
-                            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center">
-                              <Sparkles className="w-5 h-5 text-primary" />
+                            <div className={cn(
+                              "w-12 h-12 rounded-lg flex items-center justify-center",
+                              type === 'pages' && "bg-gradient-to-br from-blue-500/20 to-blue-600/10",
+                              type === 'articles' && "bg-gradient-to-br from-purple-500/20 to-purple-600/10",
+                              type === 'alt' && "bg-gradient-to-br from-green-500/20 to-green-600/10",
+                              (type === 'seo' || type === 'tags') && "bg-gradient-to-br from-primary/20 to-primary/10"
+                            )}>
+                              {type === 'pages' && <FileText className="w-5 h-5 text-blue-500" />}
+                              {type === 'articles' && <FileText className="w-5 h-5 text-purple-500" />}
+                              {type === 'alt' && <ImageIcon className="w-5 h-5 text-green-500" />}
+                              {(type === 'seo' || type === 'tags') && <Sparkles className="w-5 h-5 text-primary" />}
                             </div>
                           )}
                           {isCurrentItem && (
@@ -350,13 +361,15 @@ export function ResultsDialog({
   const [selectedArticle, setSelectedArticle] = useState<WorkflowItem | null>(null);
   const { domain: storeDomain } = useStoreDomain();
   const { selectedStore } = useStore();
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
 
   const getTitle = () => {
     switch (type) {
       case 'seo': return t.dialogs.seoWorkflow.results.seoComplete;
       case 'tags': return t.dialogs.seoWorkflow.results.tagsComplete;
       case 'alt': return t.dialogs.seoWorkflow.results.altComplete;
+      case 'pages': return language === 'fr' ? 'Pages optimisées !' : 'Pages optimized!';
+      case 'articles': return language === 'fr' ? 'Articles optimisés !' : 'Articles optimized!';
     }
   };
 
@@ -367,6 +380,8 @@ export function ResultsDialog({
       case 'seo': return tf('dialogs.seoWorkflow.results.seoCompleteDesc', { successCount: count, type: t.dialogs.seoWorkflow.results.types[typeKey] });
       case 'tags': return tf('dialogs.seoWorkflow.results.tagsCompleteDesc', { successCount: count, type: t.dialogs.seoWorkflow.results.types[typeKey] });
       case 'alt': return tf('dialogs.seoWorkflow.results.altCompleteDesc', { successCount: count });
+      case 'pages': return language === 'fr' ? `${count} page(s) optimisée(s) avec succès` : `${count} page(s) optimized successfully`;
+      case 'articles': return language === 'fr' ? `${count} article(s) optimisé(s) avec succès` : `${count} article(s) optimized successfully`;
     }
   };
 
