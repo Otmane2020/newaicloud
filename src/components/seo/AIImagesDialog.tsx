@@ -487,16 +487,21 @@ export const AIImagesDialog = ({
               </div>
             )}
 
-            {/* Progress */}
+            {/* Progress - Style Google Shopping */}
             {isGenerating && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm text-muted-foreground">
-                    {language === 'fr' ? 'Génération en cours...' : 'Generating...'}
+              <div className="space-y-3 p-4 bg-gradient-to-r from-primary/5 to-transparent rounded-xl border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">
+                      {language === 'fr' ? 'Génération en cours...' : 'Generating...'}
+                    </span>
+                  </div>
+                  <span className="text-2xl sm:text-3xl font-bold text-primary">
+                    {Math.round(progress)}%
                   </span>
                 </div>
-                <Progress value={progress} className="h-2" />
+                <Progress value={progress} className="h-3 sm:h-4" />
               </div>
             )}
           </div>

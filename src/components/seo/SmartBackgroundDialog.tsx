@@ -1108,15 +1108,29 @@ export const SmartBackgroundDialog = ({
               </ScrollArea>
             </div>
 
-            {/* Progress */}
+            {/* Progress - Style Google Shopping */}
             {isGenerating && (
-              <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-2">
+              <div className="p-4 bg-gradient-to-r from-primary/5 to-transparent rounded-xl border space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">
-                    {sb.generating.replace('{{current}}', String(successCount + errorCount)).replace('{{total}}', String(selectedImages.size))}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {language === 'fr' ? 'Image' : 'Image'}
+                    </span>
+                    <span className="font-semibold text-foreground">
+                      {successCount + errorCount} / {selectedImages.size}
+                    </span>
+                  </div>
+                  <span className="text-2xl sm:text-3xl font-bold text-primary">
+                    {selectedImages.size > 0 ? Math.round(((successCount + errorCount) / selectedImages.size) * 100) : 0}%
+                  </span>
+                </div>
+                <Progress value={selectedImages.size > 0 ? ((successCount + errorCount) / selectedImages.size) * 100 : 0} className="h-3 sm:h-4" />
+                <div className="flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-2">
+                    <span className="text-success">✓ {successCount} {sb.generated}</span>
+                    {errorCount > 0 && <span className="text-destructive">| ✗ {errorCount} {sb.failed}</span>}
+                  </span>
                   <div className="flex gap-2">
-                    {/* 🆕 Force Stop button appears after 30 seconds of no progress */}
                     {stuckTime > 30 && (
                       <Button 
                         variant="destructive" 
@@ -1136,11 +1150,6 @@ export const SmartBackgroundDialog = ({
                       {sb.cancel}
                     </Button>
                   </div>
-                </div>
-                <Progress value={selectedImages.size > 0 ? ((successCount + errorCount) / selectedImages.size) * 100 : 0} className="h-2" />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{successCount} {sb.generated} {errorCount > 0 && `| ${errorCount} ${sb.failed}`}</span>
-                  <span>{selectedImages.size > 0 ? Math.round(((successCount + errorCount) / selectedImages.size) * 100) : 0}%</span>
                 </div>
                 {stuckTime > 10 && (
                   <p className="text-xs text-amber-600">
