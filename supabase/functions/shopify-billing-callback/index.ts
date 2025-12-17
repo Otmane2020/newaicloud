@@ -15,6 +15,17 @@ const logStep = (step: string, details?: any) => {
   console.log(`[SHOPIFY-BILLING-CALLBACK] ${step}${detailsStr}`);
 };
 
+// Helper to return error - JSON for POST, redirect for GET
+const returnError = (req: Request, errorCode: string, message: string) => {
+  if (req.method === "POST") {
+    return new Response(JSON.stringify({ success: false, error: message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
+  }
+  return Response.redirect(`${APP_URL}/app/setup-wizard?error=${errorCode}`, 302);
+};
+
 // Extract shop handle from myshopify.com domain
 const getShopHandle = (shopDomain: string): string => {
   // shop.myshopify.com -> shop
@@ -27,19 +38,39 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Function started");
+    logStep("Function started", { method: req.method });
     
     const url = new URL(req.url);
-    const shop = url.searchParams.get("shop");
-    const planId = url.searchParams.get("plan");
-    const cycle = url.searchParams.get("cycle") || "monthly";
-    const chargeId = url.searchParams.get("charge_id");
+    let shop: string | null = null;
+    let planId: string | null = null;
+    let cycle: string = "monthly";
+    let chargeId: string | null = null;
+
+    // Support both GET (redirect from Shopify) and POST (from frontend)
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        shop = body.shopDomain || body.shop;
+        planId = body.planId || body.plan;
+        cycle = body.billingCycle || body.cycle || "monthly";
+        chargeId = body.chargeId || body.charge_id;
+        logStep("Params from POST body", { shop, planId, cycle, chargeId });
+      } catch (e) {
+        logStep("Failed to parse body, falling back to query params");
+      }
+    }
     
-    logStep("Callback params", { shop, planId, cycle, chargeId });
+    // Fallback to query params (for GET redirects from Shopify)
+    if (!shop) shop = url.searchParams.get("shop");
+    if (!planId) planId = url.searchParams.get("plan");
+    if (!cycle || cycle === "monthly") cycle = url.searchParams.get("cycle") || "monthly";
+    if (!chargeId) chargeId = url.searchParams.get("charge_id");
+    
+    logStep("Final callback params", { shop, planId, cycle, chargeId });
 
     if (!shop) {
       logStep("Missing shop parameter");
-      return Response.redirect(`${APP_URL}/app/setup-wizard?error=missing_shop`, 302);
+      return returnError(req, "missing_shop", "Missing shop parameter");
     }
 
     const shopHandle = getShopHandle(shop);
@@ -57,7 +88,7 @@ serve(async (req) => {
 
     if (pendingError || !pending) {
       logStep("No pending subscription found", { error: pendingError });
-      return Response.redirect(`${APP_URL}/app/setup-wizard?error=no_pending_subscription`, 302);
+      return returnError(req, "no_pending_subscription", "No pending subscription found");
     }
 
     logStep("Pending subscription found", { userId: pending.user_id, planId: pending.plan_id });
@@ -72,7 +103,7 @@ serve(async (req) => {
 
     if (connError || !connection) {
       logStep("No Shopify connection found", { error: connError });
-      return Response.redirect(`${APP_URL}/app/setup-wizard?error=no_connection`, 302);
+      return returnError(req, "no_connection", "No Shopify connection found");
     }
 
     // Verify the subscription status with Shopify
@@ -118,7 +149,7 @@ serve(async (req) => {
     if (!shopifyResponse.ok) {
       const errorText = await shopifyResponse.text();
       logStep("Shopify API error", { status: shopifyResponse.status, error: errorText });
-      return Response.redirect(`${APP_URL}/app/setup-wizard?error=shopify_api_error`, 302);
+      return returnError(req, "shopify_api_error", "Shopify API error");
     }
 
     const shopifyData = await shopifyResponse.json();
@@ -134,7 +165,13 @@ serve(async (req) => {
         .update({ status: "cancelled" })
         .eq("id", pending.id);
       
-      // Redirect back to plan selection without error - user just cancelled
+      // Return appropriate response based on method
+      if (req.method === "POST") {
+        return new Response(JSON.stringify({ success: false, error: "No active subscription - user cancelled" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
       return Response.redirect(`${APP_URL}/app/setup-wizard`, 302);
     }
 
@@ -187,7 +224,7 @@ serve(async (req) => {
 
     if (profileError) {
       logStep("Error updating profile", { error: profileError });
-      return Response.redirect(`${APP_URL}/app/setup-wizard?error=profile_update_failed`, 302);
+      return returnError(req, "profile_update_failed", "Error updating profile");
     }
 
     // 🔄 RESET MONTHLY USAGE COUNTERS in usage_tracking table when plan is activated
@@ -271,8 +308,21 @@ serve(async (req) => {
       logStep("Import trigger error (non-blocking)", { error: String(importError) });
     }
 
-    // Redirect to payment callback page which will handle session creation
-    // Pass user_id and shop for quick-login authentication
+    // For POST requests (from frontend), return JSON response
+    if (req.method === "POST") {
+      logStep("Returning JSON success response for POST request");
+      return new Response(JSON.stringify({ 
+        success: true, 
+        userId: pending.user_id,
+        planId: pending.plan_id,
+        status: subscriptionStatus
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // For GET requests (redirect from Shopify), redirect to payment callback page
     const callbackUrl = `${APP_URL}/shopify/payment-callback?shop=${encodeURIComponent(shop)}&user_id=${pending.user_id}&plan=${pending.plan_id}&subscription=active`;
     logStep("Redirecting to payment callback", { url: callbackUrl });
     return Response.redirect(callbackUrl, 302);
@@ -280,6 +330,15 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
+    
+    // For POST requests, return JSON error
+    if (req.method === "POST") {
+      return new Response(JSON.stringify({ success: false, error: errorMessage }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+    
     return Response.redirect(`${APP_URL}/app/setup-wizard?error=unexpected_error`, 302);
   }
 });
