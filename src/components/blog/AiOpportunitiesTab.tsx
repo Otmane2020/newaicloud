@@ -3,19 +3,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, RefreshCw, MessageCircle, Bot, FileText, HelpCircle, CheckCircle } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, MessageCircle, Bot, FileText, HelpCircle, CheckCircle, Target, ListChecks, GitCompare, Quote } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
 import { Progress } from "@/components/ui/progress";
 
-interface AiOpportunity {
+// ✅ Interface AIO mise à jour avec direct_answer top-level
+interface AiAnswer {
   id: string;
   platform: 'chatgpt' | 'gemini' | 'copilot';
-  query_type: string;
+  query_type: 'direct' | 'list' | 'comparison';
   question: string;
-  suggested_title: string;
-  suggested_structure: any;
+  
+  // ✅ AIO CORE - ce que l'IA cite
+  direct_answer: string;
+  answer_confidence: number;
+  
+  supporting_content: {
+    bullets: string[];
+    faq: { q: string; a: string }[];
+  };
+  
   citation_potential: number;
   product_ids: string[];
   keywords: string[];
@@ -28,16 +37,14 @@ interface AiOpportunitiesTabProps {
   platformName: string;
   platformColor: string;
   platformIcon: React.ComponentType<any>;
-  onGenerateArticle: (opportunity: AiOpportunity) => void;
+  onGenerateArticle: (opportunity: AiAnswer) => void;
 }
 
+// Icons for AIO query types
 const QUERY_TYPE_ICONS: Record<string, React.ComponentType<any>> = {
-  comparison: FileText,
-  recommendation: Sparkles,
-  guide: FileText,
-  howto: HelpCircle,
-  faq: HelpCircle,
-  review: MessageCircle,
+  direct: Target,
+  list: ListChecks,
+  comparison: GitCompare,
 };
 
 export function AiOpportunitiesTab({ 
@@ -49,7 +56,7 @@ export function AiOpportunitiesTab({
 }: AiOpportunitiesTabProps) {
   const { selectedStore } = useStore();
   const { t, tf } = useTranslation();
-  const [opportunities, setOpportunities] = useState<AiOpportunity[]>([]);
+  const [opportunities, setOpportunities] = useState<AiAnswer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
@@ -68,7 +75,7 @@ export function AiOpportunitiesTab({
       
       const { data, error } = await supabase.functions.invoke('generate-ai-query-opportunities', {
         body: { 
-          store_id: selectedStore.id, 
+          storeId: selectedStore.id, 
           platform,
           refresh 
         }
@@ -96,14 +103,14 @@ export function AiOpportunitiesTab({
     loadOpportunities(true);
   };
 
-  const handleGenerateArticle = async (opp: AiOpportunity) => {
+  const handleGenerateArticle = async (opp: AiAnswer) => {
     setGenerating(opp.id);
     try {
       onGenerateArticle(opp);
       
-      // Mark as treated
+      // ✅ Update status in ai_answers table
       await supabase
-        .from('ai_opportunities')
+        .from('ai_answers')
         .update({ status: 'treated' })
         .eq('id', opp.id);
       
@@ -130,13 +137,11 @@ export function AiOpportunitiesTab({
   };
 
   const getQueryTypeLabel = (type: string) => {
+    const queryTypes = (t.blog.dialogs.aiOpportunities as any)?.queryTypes || {};
     const labels: Record<string, string> = {
-      comparison: t.blog.dialogs.aiOpportunities.queryTypes.comparison,
-      recommendation: t.blog.dialogs.aiOpportunities.queryTypes.recommendation,
-      guide: t.blog.dialogs.aiOpportunities.queryTypes.guide,
-      howto: t.blog.dialogs.aiOpportunities.queryTypes.howto,
-      faq: t.blog.dialogs.aiOpportunities.queryTypes.faq,
-      review: t.blog.dialogs.aiOpportunities.queryTypes.review,
+      direct: queryTypes.direct || 'Réponse directe',
+      list: queryTypes.list || 'Liste de critères',
+      comparison: queryTypes.comparison || 'Comparatif',
     };
     return labels[type] || type;
   };
@@ -177,17 +182,18 @@ export function AiOpportunitiesTab({
         </Button>
       </div>
 
-      {/* Info Card */}
+      {/* AIO Info Card */}
       <Card className="border-dashed" style={{ borderColor: `${platformColor}40` }}>
         <CardContent className="pt-4">
           <div className="flex items-start gap-3">
             <div className="p-2 rounded-full" style={{ backgroundColor: `${platformColor}15` }}>
-              <Sparkles className="w-5 h-5" style={{ color: platformColor }} />
+              <Quote className="w-5 h-5" style={{ color: platformColor }} />
             </div>
             <div className="space-y-1">
-              <p className="font-medium">{t.blog.dialogs.aiOpportunities.aeoTitle}</p>
+              <p className="font-medium">🎯 AIO = Réponses citables par l'IA</p>
               <p className="text-sm text-muted-foreground">
-                {tf('blog.dialogs.aiOpportunities.aeoDescription', { platform: platformName })}
+                Chaque réponse est optimisée pour être citée directement par {platformName}. 
+                Format : ≤2 phrases, chiffres concrets, affirmations claires.
               </p>
             </div>
           </div>
@@ -211,7 +217,7 @@ export function AiOpportunitiesTab({
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {opportunities.map((opp) => {
-            const QueryIcon = QUERY_TYPE_ICONS[opp.query_type] || FileText;
+            const QueryIcon = QUERY_TYPE_ICONS[opp.query_type] || Target;
             const isTreated = opp.status === 'treated';
             
             return (
@@ -240,26 +246,34 @@ export function AiOpportunitiesTab({
                   
                   <CardTitle className="text-base mt-2">
                     <span className="text-muted-foreground text-sm font-normal">
-                      {t.blog.dialogs.aiOpportunities.userAsks}
+                      🗣️ Question utilisateur :
                     </span>
                     <br />
-                    "{opp.question}"
+                    <span className="italic">"{opp.question}"</span>
                   </CardTitle>
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
-                  {/* Suggested Title */}
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      {t.blog.dialogs.aiOpportunities.suggestedTitle}
+                  {/* ✅ DIRECT ANSWER - Ce que l'IA cite */}
+                  <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Quote className="w-4 h-4" style={{ color: platformColor }} />
+                      <span className="text-xs font-medium" style={{ color: platformColor }}>
+                        🎯 Réponse citable par {platformName}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium leading-relaxed">
+                      {opp.direct_answer}
                     </p>
-                    <p className="text-sm font-medium">{opp.suggested_title}</p>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Confiance: {Math.round((opp.answer_confidence || 0.85) * 100)}%
+                    </div>
                   </div>
 
                   {/* Citation Potential */}
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-muted-foreground">{t.blog.dialogs.aiOpportunities.citationPotential}</span>
+                      <span className="text-muted-foreground">Potentiel de citation AIO</span>
                       <span className="font-medium" style={{ color: platformColor }}>
                         {opp.citation_potential}%
                       </span>
@@ -286,7 +300,7 @@ export function AiOpportunitiesTab({
 
                   {/* Products Count */}
                   <div className="text-xs text-muted-foreground">
-                    📦 {opp.product_ids?.length || 0} {t.blog.dialogs.opportunities.products}
+                    📦 {opp.product_ids?.length || 0} produits associés
                   </div>
 
                   {/* Generate Button */}
@@ -302,17 +316,17 @@ export function AiOpportunitiesTab({
                     {generating === opp.id ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {t.blog.dialogs.opportunities.generatingBtn}
+                        Génération en cours...
                       </>
                     ) : isTreated ? (
                       <>
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        {t.blog.dialogs.opportunities.treated}
+                        Article généré
                       </>
                     ) : (
                       <>
                         <Sparkles className="mr-2 h-4 w-4" />
-                        {t.blog.dialogs.aiOpportunities.generateAeoArticle}
+                        Générer article AIO
                       </>
                     )}
                   </Button>

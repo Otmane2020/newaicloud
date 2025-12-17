@@ -293,6 +293,74 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_answers: {
+        Row: {
+          answer_confidence: number | null
+          article_id: string | null
+          citation_potential: number
+          created_at: string | null
+          difficulty: string | null
+          direct_answer: string
+          id: string
+          keywords: string[] | null
+          platform: string
+          product_ids: string[] | null
+          query_type: string
+          question: string
+          status: string | null
+          store_id: string | null
+          supporting_content: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          answer_confidence?: number | null
+          article_id?: string | null
+          citation_potential: number
+          created_at?: string | null
+          difficulty?: string | null
+          direct_answer: string
+          id?: string
+          keywords?: string[] | null
+          platform: string
+          product_ids?: string[] | null
+          query_type: string
+          question: string
+          status?: string | null
+          store_id?: string | null
+          supporting_content?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          answer_confidence?: number | null
+          article_id?: string | null
+          citation_potential?: number
+          created_at?: string | null
+          difficulty?: string | null
+          direct_answer?: string
+          id?: string
+          keywords?: string[] | null
+          platform?: string
+          product_ids?: string[] | null
+          query_type?: string
+          question?: string
+          status?: string | null
+          store_id?: string | null
+          supporting_content?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_answers_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_opportunities: {
         Row: {
           article_id: string | null

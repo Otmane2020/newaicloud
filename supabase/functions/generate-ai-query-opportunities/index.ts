@@ -7,13 +7,17 @@ const corsHeaders = {
 };
 
 /**
- * ✅ VERSION CORRIGÉE – AIO (Answer-First)
- * Objectif : générer des ANSWERS citables par ChatGPT / Gemini / Copilot
- * (et NON des idées d'articles SEO génériques)
+ * ✅ VERSION AIO FINALE – Answer Engine Optimization
+ * 4 corrections critiques appliquées :
+ * 1. direct_answer = colonne top-level (pas dans JSON)
+ * 2. Réponses courtes, affirmatives, chiffrées (citables)
+ * 3. Scoring AIO réel
+ * 4. Limite par catégorie + plateforme
  */
 
 type Platform = 'chatgpt' | 'gemini' | 'copilot';
 type Lang = 'fr' | 'en';
+type QueryType = 'direct' | 'list' | 'comparison';
 
 interface Product {
   id: string;
@@ -23,47 +27,50 @@ interface Product {
   tags?: string | null;
 }
 
-interface AiAnswerOpportunity {
+interface AiAnswer {
   platform: Platform;
-  query_type: 'direct' | 'list' | 'comparison';
+  query_type: QueryType;
   question: string;
-  suggested_title: string;
-  suggested_structure: {
-    direct_answer: string;           // ⚠️ CE QUE L'IA VA CITER
-    answer_confidence: number;       // 0 → 1
-    supporting_content: {
-      bullets: string[];
-      faq: { q: string; a: string }[];
-      comparison_table?: any[];
-    };
+  
+  // ✅ AIO CORE (top-level, pas dans JSON)
+  direct_answer: string;
+  answer_confidence: number;
+  
+  // Secondaire
+  supporting_content: {
+    bullets: string[];
+    faq: { q: string; a: string }[];
+    comparison_table?: any[];
   };
-  citation_potential: number;        // score AIO réel
+  
+  citation_potential: number;
   product_ids: string[];
   keywords: string[];
   difficulty: 'easy' | 'medium' | 'hard';
+  category: string;
 }
 
-// Platform-specific configurations for Answer-First approach
+// Platform-specific configurations for AIO
 const PLATFORM_CONFIGS = {
   chatgpt: {
     name: 'ChatGPT',
     style: 'conversational',
-    preferredAnswerLength: 150, // caractères
-    citationWeight: 0.9,
+    preferredAnswerLength: 140,
+    citationWeight: 0.95,
     queryTypes: ['direct', 'comparison', 'list'] as const
   },
   gemini: {
     name: 'Gemini',
     style: 'factual',
-    preferredAnswerLength: 180,
-    citationWeight: 0.85,
+    preferredAnswerLength: 160,
+    citationWeight: 0.90,
     queryTypes: ['direct', 'list', 'comparison'] as const
   },
   copilot: {
     name: 'Copilot',
     style: 'practical',
-    preferredAnswerLength: 160,
-    citationWeight: 0.8,
+    preferredAnswerLength: 150,
+    citationWeight: 0.85,
     queryTypes: ['list', 'direct', 'comparison'] as const
   }
 };
@@ -86,132 +93,152 @@ function groupByCategory(products: Product[]): Record<string, Product[]> {
   }, {});
 }
 
-function computeCitationScore(answer: string, hasNumbers: boolean, isShort: boolean): number {
-  let score = 60;
-  if (isShort) score += 15;           // réponse courte (≤180 chars)
-  if (hasNumbers) score += 15;        // contient des chiffres
-  if (answer.includes('est') || answer.includes('is')) score += 5;  // réponse affirmative
-  if (answer.includes('cm') || answer.includes('kg') || answer.includes('€') || answer.includes('$')) score += 5; // unités de mesure
-  return Math.min(100, score);
+/**
+ * ✅ CORRECTION 3 — Scoring AIO réel
+ * Critères : longueur ≤140, chiffres, affirmatif, pas de "dépend"
+ */
+function computeCitationScoreAIO(
+  answer: string,
+  platform: Platform,
+  queryType: QueryType
+): number {
+  let score = 50;
+
+  // ≤ 140 caractères = +20
+  if (answer.length <= 140) score += 20;
+  
+  // Contient des chiffres = +20
+  if (/\d/.test(answer)) score += 20;
+  
+  // Pas de "dépend" / "depends" = +10
+  if (!answer.toLowerCase().includes('dépend') && !answer.toLowerCase().includes('depend')) score += 10;
+  
+  // Réponse directe = +10
+  if (queryType === 'direct') score += 10;
+  
+  // Unités de mesure = +5
+  if (/cm|kg|€|\$|%|mm|m²/.test(answer)) score += 5;
+  
+  // Affirmation forte = +5
+  if (answer.includes('est ') || answer.includes(' is ') || answer.includes('mesure') || answer.includes('measures')) score += 5;
+
+  const weight = PLATFORM_CONFIGS[platform].citationWeight;
+  return Math.min(100, Math.round(score * weight));
 }
 
-function generateDirectAnswer(category: string, products: Product[], lang: Lang, queryType: string): string {
-  const productCount = products.length;
-  const firstProduct = products[0]?.title || category;
+/**
+ * ✅ CORRECTION 2 — Réponses courtes, affirmatives, chiffrées
+ * Format AIO : ≤ 2 phrases, chiffres, affirmation, pas de "dépend de"
+ */
+function generateDirectAnswer(
+  category: string,
+  products: Product[],
+  lang: Lang,
+  queryType: QueryType
+): string {
+  const catLower = category.toLowerCase();
   
   if (queryType === 'direct') {
     return lang === 'fr'
-      ? `La ${category.toLowerCase()} idéale dépend principalement de l'espace disponible, du nombre d'utilisateurs et du matériau. En moyenne, les modèles les plus polyvalents mesurent entre 160 et 180 cm de long.`
-      : `The ideal ${category.toLowerCase()} mainly depends on available space, number of users, and material. Most versatile models are between 160 and 180 cm long.`;
+      ? `Une ${catLower} idéale pour 6 personnes mesure entre 160 et 180 cm. En dessous de 160 cm, l'espace devient insuffisant.`
+      : `An ideal ${catLower} for 6 people measures between 160 and 180 cm. Below 160 cm, space becomes insufficient.`;
+  }
+  
+  if (queryType === 'comparison' && products.length >= 2) {
+    return lang === 'fr'
+      ? `${products[0]?.title} est plus abordable (rapport qualité-prix), tandis que ${products[1]?.title} offre une meilleure durabilité grâce à ses matériaux.`
+      : `${products[0]?.title} is more affordable (value for money), while ${products[1]?.title} offers better durability thanks to its materials.`;
   }
   
   if (queryType === 'comparison') {
-    if (productCount >= 2) {
-      return lang === 'fr'
-        ? `Entre ${products[0]?.title} et ${products[1]?.title}, le premier offre un meilleur rapport qualité-prix tandis que le second se distingue par sa durabilité et son design premium.`
-        : `Between ${products[0]?.title} and ${products[1]?.title}, the first offers better value for money while the second stands out for its durability and premium design.`;
-    }
     return lang === 'fr'
-      ? `Pour comparer les ${category.toLowerCase()}, évaluez principalement : le prix au m², la qualité des matériaux et les avis clients vérifiés.`
-      : `To compare ${category.toLowerCase()}, mainly evaluate: price per sqm, material quality, and verified customer reviews.`;
+      ? `Pour comparer les ${catLower}, évaluez 3 critères : prix au m² (30%), qualité matériaux (40%), avis clients (30%).`
+      : `To compare ${catLower}, evaluate 3 criteria: price per sqm (30%), material quality (40%), customer reviews (30%).`;
   }
   
   // list type
   return lang === 'fr'
-    ? `Les 3 critères essentiels pour choisir une ${category.toLowerCase()} : 1) Dimensions adaptées à l'espace, 2) Matériaux durables (bois massif, métal), 3) Style cohérent avec la décoration.`
-    : `The 3 essential criteria for choosing a ${category.toLowerCase()}: 1) Dimensions suited to your space, 2) Durable materials (solid wood, metal), 3) Style consistent with decor.`;
+    ? `Les 3 critères clés pour choisir une ${catLower} sont : dimensions (160-180 cm), matériau (bois massif ou métal), et stabilité (pieds renforcés).`
+    : `The 3 key criteria to choose a ${catLower} are: dimensions (160-180 cm), material (solid wood or metal), and stability (reinforced legs).`;
+}
+
+function generateAiQuery(category: string, queryType: QueryType, lang: Lang): string {
+  const catLower = category.toLowerCase();
+  
+  if (queryType === 'direct') {
+    return lang === 'fr'
+      ? `Quelle taille idéale pour une ${catLower} ?`
+      : `What is the ideal size for a ${catLower}?`;
+  }
+  
+  if (queryType === 'comparison') {
+    return lang === 'fr'
+      ? `Comment comparer les ${catLower} ?`
+      : `How to compare ${catLower}?`;
+  }
+  
+  // list type
+  return lang === 'fr'
+    ? `Quels sont les critères pour choisir une ${catLower} ?`
+    : `What are the criteria for choosing a ${catLower}?`;
 }
 
 function generateSupportingBullets(category: string, lang: Lang): string[] {
   return lang === 'fr'
     ? [
-        `Mesurer l'espace disponible avant l'achat`,
-        `Vérifier le nombre de places assises nécessaires`,
-        `Choisir un matériau facile d'entretien`,
-        `Comparer les garanties fabricant`,
-        `Lire les avis clients récents`
+        `Mesurer l'espace disponible (prévoir 60 cm autour)`,
+        `Vérifier la capacité (6 personnes = 160 cm minimum)`,
+        `Privilégier bois massif ou métal pour la durabilité`,
+        `Comparer les garanties (5 ans minimum)`,
+        `Lire les avis récents (< 6 mois)`
       ]
     : [
-        `Measure available space before purchasing`,
-        `Check required seating capacity`,
-        `Choose easy-to-maintain materials`,
-        `Compare manufacturer warranties`,
-        `Read recent customer reviews`
+        `Measure available space (allow 60 cm around)`,
+        `Check capacity (6 people = 160 cm minimum)`,
+        `Prefer solid wood or metal for durability`,
+        `Compare warranties (5 years minimum)`,
+        `Read recent reviews (< 6 months)`
       ];
 }
 
 function generateFaq(category: string, directAnswer: string, lang: Lang): { q: string; a: string }[] {
+  const catLower = category.toLowerCase();
+  
   return lang === 'fr'
     ? [
-        { q: `Quelle taille choisir pour une ${category.toLowerCase()} ?`, a: directAnswer },
-        { q: `Quel budget prévoir pour une ${category.toLowerCase()} de qualité ?`, a: `Le budget moyen pour une ${category.toLowerCase()} de qualité varie entre 300€ et 800€ selon les matériaux et la marque.` },
-        { q: `Combien de temps dure une ${category.toLowerCase()} ?`, a: `Une ${category.toLowerCase()} de qualité peut durer 10 à 20 ans avec un entretien approprié.` }
+        { q: `Quelle taille pour une ${catLower} 6 personnes ?`, a: `Une ${catLower} pour 6 personnes mesure 160 à 180 cm de long.` },
+        { q: `Quel budget pour une ${catLower} de qualité ?`, a: `Budget moyen : 400€ à 900€ selon matériaux et marque.` },
+        { q: `Quelle durée de vie pour une ${catLower} ?`, a: `10 à 20 ans avec entretien régulier (bois : huiler 1x/an).` }
       ]
     : [
-        { q: `What size should I choose for a ${category.toLowerCase()}?`, a: directAnswer },
-        { q: `What budget for a quality ${category.toLowerCase()}?`, a: `The average budget for a quality ${category.toLowerCase()} ranges from $300 to $800 depending on materials and brand.` },
-        { q: `How long does a ${category.toLowerCase()} last?`, a: `A quality ${category.toLowerCase()} can last 10 to 20 years with proper maintenance.` }
+        { q: `What size for a 6-person ${catLower}?`, a: `A 6-person ${catLower} measures 160 to 180 cm long.` },
+        { q: `What budget for a quality ${catLower}?`, a: `Average budget: $400 to $900 depending on materials and brand.` },
+        { q: `How long does a ${catLower} last?`, a: `10 to 20 years with regular maintenance (wood: oil once a year).` }
       ];
 }
 
-function generateAiQuery(category: string, queryType: string, platform: Platform, lang: Lang): string {
-  const config = PLATFORM_CONFIGS[platform];
-  
-  if (queryType === 'direct') {
-    return lang === 'fr'
-      ? `Quelle est la meilleure ${category.toLowerCase()} ?`
-      : `What is the best ${category.toLowerCase()}?`;
-  }
-  
-  if (queryType === 'comparison') {
-    return lang === 'fr'
-      ? `Comparatif : quelle ${category.toLowerCase()} choisir ?`
-      : `Comparison: which ${category.toLowerCase()} to choose?`;
-  }
-  
-  // list type
-  return lang === 'fr'
-    ? `Quels sont les critères pour choisir une ${category.toLowerCase()} ?`
-    : `What are the criteria for choosing a ${category.toLowerCase()}?`;
-}
+/* -------------------- CORE AIO GENERATION -------------------- */
 
-function generateSuggestedTitle(category: string, queryType: string, platform: Platform, lang: Lang): string {
-  const config = PLATFORM_CONFIGS[platform];
-  
-  const prefixes = {
-    direct: lang === 'fr' ? 'Guide expert' : 'Expert Guide',
-    comparison: lang === 'fr' ? 'Comparatif' : 'Comparison',
-    list: lang === 'fr' ? 'Les critères essentiels' : 'Essential Criteria'
-  };
-  
-  return `${prefixes[queryType as keyof typeof prefixes]}: ${category} - ${lang === 'fr' ? 'Optimisé pour' : 'Optimized for'} ${config.name}`;
-}
-
-/* -------------------- CORE GENERATION -------------------- */
-
-function generateAiAnswerOpportunities(
+function generateAioAnswers(
   products: Product[],
   platform: Platform,
   lang: Lang
-): AiAnswerOpportunity[] {
+): AiAnswer[] {
   const categories = groupByCategory(products);
   const config = PLATFORM_CONFIGS[platform];
-  const results: AiAnswerOpportunity[] = [];
+  const results: AiAnswer[] = [];
 
   for (const [category, items] of Object.entries(categories)) {
     if (items.length === 0) continue;
 
-    // Generate one opportunity per query type for each category
+    // Generate one answer per query type for each category
     for (const queryType of config.queryTypes) {
       // ✅ ANSWER FIRST - Generate the citable answer
       const direct_answer = generateDirectAnswer(category, items, lang, queryType);
-      const ai_query = generateAiQuery(category, queryType, platform, lang);
-      const suggested_title = generateSuggestedTitle(category, queryType, platform, lang);
+      const question = generateAiQuery(category, queryType, lang);
       
-      // Calculate citation score based on answer quality
-      const isShort = direct_answer.length <= 180;
-      const hasNumbers = /\d/.test(direct_answer);
-      const citation_potential = Math.round(computeCitationScore(direct_answer, hasNumbers, isShort) * config.citationWeight);
+      // ✅ CORRECTION 3 — AIO scoring réel
+      const citation_potential = computeCitationScoreAIO(direct_answer, platform, queryType);
       
       // Determine difficulty
       const difficulty: 'easy' | 'medium' | 'hard' = items.length >= 5 ? 'hard' : items.length >= 2 ? 'medium' : 'easy';
@@ -223,34 +250,84 @@ function generateAiAnswerOpportunities(
         queryType,
         platform,
         lang === 'fr' ? 'guide' : 'guide',
-        lang === 'fr' ? 'comparatif' : 'comparison'
+        lang === 'fr' ? 'taille' : 'size'
       ].filter((v, i, a) => a.indexOf(v) === i && v.length > 2);
 
       results.push({
         platform,
         query_type: queryType,
-        question: ai_query,
-        suggested_title,
-        suggested_structure: {
-          direct_answer,           // ⚠️ CE QUE L'IA VA CITER
-          answer_confidence: 0.85,
-          supporting_content: {
-            bullets: generateSupportingBullets(category, lang),
-            faq: generateFaq(category, direct_answer, lang)
-          }
+        question,
+        direct_answer,              // ✅ TOP-LEVEL
+        answer_confidence: 0.85,
+        supporting_content: {
+          bullets: generateSupportingBullets(category, lang),
+          faq: generateFaq(category, direct_answer, lang)
         },
         citation_potential,
         product_ids: items.slice(0, 5).map(p => p.id),
         keywords,
-        difficulty
+        difficulty,
+        category
       });
     }
   }
 
-  // ⚠️ Return only top 3 most citable opportunities per day
-  return results
-    .sort((a, b) => b.citation_potential - a.citation_potential)
-    .slice(0, 3);
+  return results;
+}
+
+/**
+ * ✅ CORRECTION 4 — Limite par catégorie + plateforme
+ * 2 answers max par catégorie, triés par citation_potential
+ */
+function limitPerCategory(answers: AiAnswer[], maxPerCategory: number = 2): AiAnswer[] {
+  const grouped: Record<string, AiAnswer[]> = {};
+  
+  for (const answer of answers) {
+    const key = answer.category;
+    grouped[key] ??= [];
+    grouped[key].push(answer);
+  }
+  
+  const finalResults: AiAnswer[] = [];
+  
+  for (const category of Object.keys(grouped)) {
+    const categoryAnswers = grouped[category]
+      .sort((a, b) => b.citation_potential - a.citation_potential)
+      .slice(0, maxPerCategory);
+    
+    finalResults.push(...categoryAnswers);
+  }
+  
+  return finalResults.sort((a, b) => b.citation_potential - a.citation_potential);
+}
+
+/* -------------------- ARTICLE GENERATOR -------------------- */
+
+/**
+ * ✅ LIVRABLE 2 — Génération d'article à partir du direct_answer
+ * L'article est construit AUTOUR du direct_answer, pas l'inverse
+ */
+function generateArticleFromAnswer(
+  question: string,
+  directAnswer: string,
+  supporting: { bullets: string[]; faq: { q: string; a: string }[] },
+  lang: Lang
+): string {
+  const keyPointsTitle = lang === 'fr' ? 'Points essentiels' : 'Key points';
+  const faqTitle = 'FAQ';
+  
+  return `<h1>${question}</h1>
+
+<p><strong>${directAnswer}</strong></p>
+
+<h2>${keyPointsTitle}</h2>
+<ul>
+${supporting.bullets.map((b: string) => `  <li>${b}</li>`).join('\n')}
+</ul>
+
+<h2>${faqTitle}</h2>
+${supporting.faq.map((f: { q: string; a: string }) => `<h3>${f.q}</h3>
+<p>${f.a}</p>`).join('\n\n')}`;
 }
 
 /* -------------------- HTTP SERVER -------------------- */
@@ -284,7 +361,7 @@ serve(async (req) => {
       });
     }
 
-    const { storeId, platform, refresh = false } = await req.json();
+    const { storeId, platform, refresh = false, generateArticle = false } = await req.json();
 
     if (!storeId) {
       return new Response(JSON.stringify({ error: 'storeId is required' }), {
@@ -297,10 +374,10 @@ serve(async (req) => {
       ? [platform] 
       : ['chatgpt', 'gemini', 'copilot'];
 
-    // Check cache if not refreshing
+    // Check cache in ai_answers table if not refreshing
     if (!refresh) {
       const { data: cached } = await supabase
-        .from('ai_opportunities')
+        .from('ai_answers')
         .select('*')
         .eq('user_id', user.id)
         .eq('store_id', storeId)
@@ -308,7 +385,7 @@ serve(async (req) => {
         .order('citation_potential', { ascending: false });
 
       if (cached && cached.length > 0) {
-        console.log(`✅ Returning ${cached.length} cached AI Answer opportunities`);
+        console.log(`✅ Returning ${cached.length} cached AIO answers`);
         return new Response(JSON.stringify({ 
           success: true, 
           opportunities: cached,
@@ -318,9 +395,9 @@ serve(async (req) => {
         });
       }
     } else {
-      // Clear existing opportunities for refresh
+      // Clear existing answers for refresh
       await supabase
-        .from('ai_opportunities')
+        .from('ai_answers')
         .delete()
         .eq('user_id', user.id)
         .eq('store_id', storeId)
@@ -356,48 +433,80 @@ serve(async (req) => {
     const language = detectLanguage(products);
     console.log(`🌐 Detected language: ${language}, Products: ${products.length}`);
 
-    // Generate Answer-First opportunities for each platform
-    const allOpportunities: any[] = [];
+    // Generate AIO answers for each platform
+    const allAnswers: any[] = [];
     
     for (const p of platforms) {
-      const opportunities = generateAiAnswerOpportunities(products, p, language);
-      console.log(`✨ Generated ${opportunities.length} Answer-First opportunities for ${p}`);
+      const rawAnswers = generateAioAnswers(products, p, language);
       
-      // Insert into database
-      for (const opp of opportunities) {
+      // ✅ CORRECTION 4 — Limite par catégorie (2 par catégorie)
+      const answers = limitPerCategory(rawAnswers, 2);
+      
+      console.log(`✨ Generated ${answers.length} AIO answers for ${p}`);
+      
+      // ✅ CORRECTION 1 — Insert into ai_answers with direct_answer as top-level
+      for (const answer of answers) {
+        const insertData: any = {
+          user_id: user.id,
+          store_id: storeId,
+          platform: answer.platform,
+          query_type: answer.query_type,
+          question: answer.question,
+          direct_answer: answer.direct_answer,        // ✅ TOP-LEVEL
+          answer_confidence: answer.answer_confidence,
+          supporting_content: answer.supporting_content,
+          citation_potential: answer.citation_potential,
+          product_ids: answer.product_ids,
+          keywords: answer.keywords,
+          difficulty: answer.difficulty,
+          status: 'pending'
+        };
+
         const { data: inserted, error: insertError } = await supabase
-          .from('ai_opportunities')
-          .insert({
-            user_id: user.id,
-            store_id: storeId,
-            platform: opp.platform,
-            query_type: opp.query_type,
-            question: opp.question,
-            suggested_title: opp.suggested_title,
-            suggested_structure: opp.suggested_structure,
-            citation_potential: opp.citation_potential,
-            product_ids: opp.product_ids,
-            keywords: opp.keywords,
-            difficulty: opp.difficulty,
-            status: 'pending'
-          })
+          .from('ai_answers')
+          .insert(insertData)
           .select()
           .single();
 
         if (!insertError && inserted) {
-          allOpportunities.push(inserted);
+          // ✅ LIVRABLE 2 — Generate article if requested
+          if (generateArticle) {
+            const articleHtml = generateArticleFromAnswer(
+              answer.question,
+              answer.direct_answer,
+              answer.supporting_content,
+              language
+            );
+            inserted.generated_article = articleHtml;
+          }
+          
+          allAnswers.push(inserted);
         } else if (insertError) {
           console.error('Insert error:', insertError);
         }
       }
     }
 
-    console.log(`✅ Total Answer-First opportunities generated: ${allOpportunities.length}`);
+    console.log(`✅ Total AIO answers generated: ${allAnswers.length}`);
+
+    // ✅ LIVRABLE 3 — Example of what ChatGPT would cite
+    const exampleCitation = language === 'fr'
+      ? {
+          question: "Quelle taille idéale pour une table à manger 6 personnes ?",
+          your_answer: "Une table à manger idéale pour 6 personnes mesure entre 160 et 180 cm. En dessous de 160 cm, l'espace devient insuffisant.",
+          chatgpt_cites: "Pour 6 personnes, une table à manger doit mesurer entre 160 et 180 cm afin d'assurer un espace confortable."
+        }
+      : {
+          question: "What is the ideal size for a 6-person dining table?",
+          your_answer: "An ideal dining table for 6 people measures between 160 and 180 cm. Below 160 cm, space becomes insufficient.",
+          chatgpt_cites: "For 6 people, a dining table should measure between 160 and 180 cm to ensure comfortable space."
+        };
 
     return new Response(JSON.stringify({ 
       success: true, 
-      opportunities: allOpportunities,
-      cached: false
+      opportunities: allAnswers,
+      cached: false,
+      aio_example: exampleCitation
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
