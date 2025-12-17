@@ -48,42 +48,40 @@ interface SeoResult {
   };
 }
 
-// Enhanced DeepSeek caller with retry logic
-async function callDeepSeek(messages: any[], maxTokens = 500, retries = 3): Promise<any> {
-  const deepseekApiKey = Deno.env.get("DEEPSEEK_API_KEY");
+// Lovable AI caller (replacing DeepSeek due to insufficient balance)
+async function callLovableAI(messages: any[], maxTokens = 500, retries = 3): Promise<any> {
+  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
-  if (!deepseekApiKey) {
-    throw new Error("DeepSeek API key not configured");
+  if (!lovableApiKey) {
+    throw new Error("Lovable API key not configured");
   }
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${deepseekApiKey}`,
+          Authorization: `Bearer ${lovableApiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "deepseek-chat",
+          model: "google/gemini-2.5-flash",
           messages,
           temperature: 0.7,
           max_tokens: maxTokens,
-          stream: false,
         }),
       });
 
       if (!response.ok) {
         if (response.status === 429 && attempt < retries) {
-          // Rate limited, wait and retry
-          const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff
+          const waitTime = Math.pow(2, attempt) * 1000;
           console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt}`);
           await new Promise((resolve) => setTimeout(resolve, waitTime));
           continue;
         }
 
         const errorText = await response.text();
-        throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+        throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
       }
 
       return await response.json();
@@ -287,7 +285,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    console.log(`[SEO-GENERATION] Génération SEO avec DeepSeek pour: ${product.title}`);
+    console.log(`[SEO-GENERATION] Génération SEO avec Lovable AI pour: ${product.title}`);
 
     // Enhanced Vision AI analysis
     let visionData: VisionAnalysis | null = null;
@@ -389,7 +387,7 @@ Deno.serve(async (req: Request) => {
 
     const systemRole = getSystemRole(language, 'product');
     
-    const response = await callDeepSeek(
+    const response = await callLovableAI(
       [
         { role: "system", content: systemRole },
         { role: "user", content: enhancedSeoPrompt }
@@ -488,7 +486,7 @@ Deno.serve(async (req: Request) => {
         },
         metadata: {
           generated_at: new Date().toISOString(),
-          model: "deepseek-chat",
+          model: "google/gemini-2.5-flash",
         },
       }),
       {
