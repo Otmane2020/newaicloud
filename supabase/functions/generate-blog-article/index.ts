@@ -655,13 +655,126 @@ Aucun texte, juste une représentation visuelle du sujet.`;
       finalPaletteStyle = `--color-primary: ${customColors.primary}; --color-secondary: ${customColors.secondary}; --color-accent: ${customColors.accent};`;
     }
     
-    const prompt = `Tu es un expert en rédaction d'articles SEO pour e-commerce, spécialisé dans le style New York Times.
+    // Déterminer si c'est un article AEO
+    const isAEO = requestData.isAEO || requestData.aeo_mode || editorialAngle === 'aeo';
+    
+    const aeoStructure = isAEO ? `
+🔥 **STRUCTURE AEO OBLIGATOIRE** (Answer Engine Optimization) 🔥
+
+⚠️ CET ARTICLE DOIT ÊTRE OPTIMISÉ POUR ÊTRE CITÉ PAR LES IA (ChatGPT, Gemini, Copilot) ⚠️
+
+**ORDRE IMPOSÉ DES SECTIONS**:
+
+1️⃣ **ANSWER BOX** (CRITIQUE - EN HAUT DE L'ARTICLE)
+   - Immédiatement après le H1
+   - Maximum 2 phrases, ≤140 caractères
+   - Format: <div class="aeo-answer"><strong>[RÉPONSE DIRECTE]</strong></div>
+   - Doit être factuel, chiffré, affirmatif
+   - PAS de "cela dépend", PAS de marketing
+   - Exemple: "Une table à manger idéale pour 6 personnes mesure entre 160 et 180 cm. En dessous de 160 cm, l'espace devient insuffisant."
+
+2️⃣ **KEY FACTS** (Immédiatement après Answer Box)
+   - Liste à puces avec données chiffrées
+   - Format: <ul class="aeo-facts"><li>Donnée 1</li>...</ul>
+   - 4-6 faits clés avec chiffres
+   - Exemple:
+     • Hauteur d'assise standard : 45 cm
+     • Charge supportée recommandée : ≥ 120 kg
+     • Matériaux durables : bois massif, métal
+
+3️⃣ **MINI COMPARATIF** (Tableau en haut)
+   - <table class="aeo-table"> avec 3-4 colonnes max
+   - Données factuelles, pas marketing
+   - Après les Key Facts, avant le contenu long
+
+4️⃣ **FAQ COURTE** (3-5 questions - EN HAUT, pas en bas!)
+   - Questions fréquentes avec réponses directes
+   - Chaque réponse = 1-2 phrases max
+   - Format: <div class="aeo-faq"><h3>Question?</h3><p>Réponse courte.</p></div>
+
+5️⃣ **CONTENU DÉTAILLÉ** (Seulement après les sections AEO)
+   - Le reste de l'article peut être plus long
+   - Mais les éléments citables sont EN HAUT
+
+**CSS AEO OBLIGATOIRE**:
+<style>
+.aeo-answer {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-left: 4px solid #0ea5e9;
+  padding: 24px 28px;
+  margin: 30px 0;
+  border-radius: 0 12px 12px 0;
+  font-size: 20px;
+  line-height: 1.6;
+}
+.aeo-answer strong {
+  color: #0c4a6e;
+}
+.aeo-facts {
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 24px 32px;
+  margin: 24px 0;
+}
+.aeo-facts li {
+  margin: 12px 0;
+  font-size: 17px;
+  line-height: 1.5;
+}
+.aeo-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 16px;
+}
+.aeo-table th {
+  background: #f8fafc;
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+}
+.aeo-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.aeo-faq {
+  margin: 20px 0;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+.aeo-faq h3 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  color: #1f2937;
+}
+.aeo-faq p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.6;
+}
+</style>
+
+**RÈGLES AEO CRITIQUES**:
+- Réponses FACTUELLES, pas marketing
+- Chiffres et données concrètes
+- Pas de "dépend de", "selon vos besoins"
+- Phrases affirmatives et directes
+- Les LLM doivent pouvoir citer mot pour mot
+` : '';
+
+    const prompt = `Tu es un expert en rédaction d'articles ${isAEO ? 'AEO (Answer Engine Optimization)' : 'SEO'} pour e-commerce${!isAEO ? ', spécialisé dans le style New York Times' : ''}.
 
 **MISSION CRITIQUE**: Génère un article HTML complet de EXACTEMENT ${articleLength} mots sur le sujet "${articleTitle}".
 
 ⚠️ **LONGUEUR OBLIGATOIRE: ${articleLength} MOTS** ⚠️
 ${articleLength === '700' ? '📝 Article COURT et CONCIS (700 mots): Focus sur l\'essentiel, 3-4 sections max, style direct et impactant.' : ''}
 ${articleLength === '2000' ? '📚 Article APPROFONDI (2000 mots): Analyse détaillée, 6-8 sections, contenu expert, exemples multiples.' : ''}
+
+${aeoStructure}
 
 **CONTEXTE**:
 - Boutique: ${storeName}
@@ -670,20 +783,28 @@ ${articleLength === '2000' ? '📚 Article APPROFONDI (2000 mots): Analyse déta
 - Public cible: ${targetAudience || "Grand public"}
 - **Angle éditorial: ${editorialAngle}** ⚠️ RESPECTER STRICTEMENT
 - **Layout: ${layout}** ⚠️ APPLIQUER STRICTEMENT
+${isAEO ? '- **Mode AEO ACTIVÉ** - Structure Answer-First obligatoire' : ''}
 
 **🎯 ANGLE ÉDITORIAL "${editorialAngle}" - DIRECTIVES IMPÉRATIVES**:
 
-${editorialAngle === 'guide' ? `
-📚 **GUIDE COMPLET** (STRUCTURE OBLIGATOIRE):
-1. Introduction pédagogique (150 mots)
-2. Pourquoi ce guide est important
-3. Section 1: Comprendre les bases
-4. Section 2: Critères de choix détaillés
-5. Section 3: Comparatif produits avec tableau
-6. Section 4: Guide d'achat pas à pas
-7. Section 5: Conseils d'entretien et utilisation
-8. FAQ (minimum 5 questions)
-- Ton: Pédagogique, professeur bienveillant
+${editorialAngle === 'guide' || editorialAngle === 'aeo' ? `
+📚 **GUIDE COMPLET${isAEO ? ' AEO' : ''}** (STRUCTURE OBLIGATOIRE):
+${isAEO ? `
+1. H1 + ANSWER BOX (2 phrases max, réponse directe)
+2. KEY FACTS (4-6 faits chiffrés)
+3. MINI COMPARATIF (tableau)
+4. FAQ COURTE (3-5 questions)
+5. Puis contenu détaillé ci-dessous:
+` : ''}
+${isAEO ? '6' : '1'}. Introduction pédagogique (150 mots)
+${isAEO ? '7' : '2'}. Pourquoi ce guide est important
+${isAEO ? '8' : '3'}. Section 1: Comprendre les bases
+${isAEO ? '9' : '4'}. Section 2: Critères de choix détaillés
+${isAEO ? '10' : '5'}. Section 3: Comparatif produits avec tableau
+${isAEO ? '11' : '6'}. Section 4: Guide d'achat pas à pas
+${isAEO ? '12' : '7'}. Section 5: Conseils d'entretien et utilisation
+${!isAEO ? '8. FAQ (minimum 5 questions)' : ''}
+- Ton: Pédagogique, ${isAEO ? 'factuel et direct' : 'professeur bienveillant'}
 - Inclure: Tableaux comparatifs, listes à puces, encadrés conseils
 ` : ''}
 
@@ -805,7 +926,7 @@ ${productsContext}
    - <section> pour chaque partie
    - <header> pour les titres de section
 
-3. **TYPOGRAPHIE NEW YORK TIMES**:
+3. **TYPOGRAPHIE**:
    - Police: Georgia, Garamond, Times New Roman, serif
    - Titres: font-weight: 700, letter-spacing: -0.02em
    - Corps: line-height: 1.75, font-size: 18px
@@ -1038,16 +1159,16 @@ Si aucune image n'est disponible pour un produit, n'affiche PAS d'image pour ce 
    </style>
 
 10. **CONTENU RICHE**:
-    - Introduction captivante (200 mots)
-    - Table des matières complète
-    - Sections structurées avec H2/H3 (minimum 5 sections)
-    - Chaque section mentionne 1-2 produits avec liens et prix
-    - Galeries d'images pour les produits phares
-    - FAQ en fin d'article (5 questions minimum)
+    - ${isAEO ? 'ANSWER BOX en premier (2 phrases max)' : 'Introduction captivante (200 mots)'}
+    - ${isAEO ? 'KEY FACTS (4-6 faits chiffrés)' : 'Table des matières complète'}
+    - ${isAEO ? 'MINI COMPARATIF (tableau factuel)' : 'Sections structurées avec H2/H3 (minimum 5 sections)'}
+    - ${isAEO ? 'FAQ COURTE (3-5 questions, en haut)' : 'Chaque section mentionne 1-2 produits avec liens et prix'}
+    - ${isAEO ? 'Puis contenu détaillé' : 'Galeries d\'images pour les produits phares'}
+    ${!isAEO ? '- FAQ en fin d\'article (5 questions minimum)' : ''}
 
 11. **SEO**: Utilise naturellement les mots-clés "${keywords.join('", "')}" dans les titres et le texte
 
-12. **TON**: Journalistique, expert, accessible, enthousiaste
+12. **TON**: ${isAEO ? 'Factuel, direct, affirmatif - optimisé pour citation IA' : 'Journalistique, expert, accessible, enthousiaste'}
 
 **FORMAT DE SORTIE**: HTML pur et complet, prêt à insérer, commençant par <!DOCTYPE html>
 
