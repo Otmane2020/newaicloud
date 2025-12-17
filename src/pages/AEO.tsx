@@ -8,9 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
-import { Bot, Brain, Zap, Sparkles, RefreshCw, ExternalLink, Lightbulb } from "lucide-react";
+import { Bot, Brain, Zap, Sparkles, RefreshCw, Lightbulb, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AeoArticleGenerationDialog } from "@/components/aeo/AeoArticleGenerationDialog";
 
 interface AiOpportunity {
   id: string;
@@ -26,10 +27,19 @@ interface AiOpportunity {
   created_at: string;
 }
 
+interface GeneratedArticle {
+  id: string;
+  title: string;
+  content: string;
+  meta_description?: string;
+  keywords?: string[];
+  shopify_url?: string;
+}
+
 const platformConfig = {
   chatgpt: {
     icon: Bot,
-    color: "bg-emerald-500",
+    color: "#10b981",
     label: "ChatGPT",
     description: {
       fr: "Questions conversationnelles et comparaisons de produits",
@@ -38,7 +48,7 @@ const platformConfig = {
   },
   gemini: {
     icon: Brain,
-    color: "bg-blue-500",
+    color: "#3b82f6",
     label: "Gemini",
     description: {
       fr: "Requêtes factuelles et recherche intégrée Google",
@@ -47,7 +57,7 @@ const platformConfig = {
   },
   copilot: {
     icon: Zap,
-    color: "bg-purple-500",
+    color: "#8b5cf6",
     label: "Copilot",
     description: {
       fr: "Tutoriels pratiques et intégration Bing Shopping",
@@ -58,12 +68,20 @@ const platformConfig = {
 
 export default function AEO() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { language, t } = useTranslation();
+  const { language } = useTranslation();
   const { user } = useAuth();
   const { selectedStore } = useStore();
   const [opportunities, setOpportunities] = useState<AiOpportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Article generation state
+  const [generationDialogOpen, setGenerationDialogOpen] = useState(false);
+  const [isGeneratingArticle, setIsGeneratingArticle] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationStep, setGenerationStep] = useState<string>('analyzing');
+  const [generatedArticle, setGeneratedArticle] = useState<GeneratedArticle | null>(null);
+  const [selectedOpportunity, setSelectedOpportunity] = useState<AiOpportunity | null>(null);
 
   const currentPlatform = (searchParams.get("platform") || "chatgpt") as keyof typeof platformConfig;
 
@@ -78,7 +96,6 @@ export default function AEO() {
     
     setLoading(true);
     try {
-      // Fetch cached opportunities for current platform (max 3 per day)
       const today = new Date().toISOString().split('T')[0];
       
       const { data, error } = await supabase
@@ -96,7 +113,6 @@ export default function AEO() {
       if (data && data.length > 0) {
         setOpportunities(data);
       } else {
-        // Generate new opportunities if none exist for today
         await generateOpportunities();
       }
     } catch (error) {
@@ -134,6 +150,76 @@ export default function AEO() {
     }
   };
 
+  const handleGenerateArticle = async (opportunity: AiOpportunity) => {
+    if (!selectedStore?.id) return;
+    
+    setSelectedOpportunity(opportunity);
+    setGeneratedArticle(null);
+    setGenerationProgress(0);
+    setGenerationStep('analyzing');
+    setIsGeneratingArticle(true);
+    setGenerationDialogOpen(true);
+
+    try {
+      // Simulate progress steps
+      const steps = ['analyzing', 'structuring', 'generating', 'optimizing', 'complete'];
+      
+      for (let i = 0; i < steps.length - 1; i++) {
+        setGenerationStep(steps[i]);
+        setGenerationProgress((i + 1) * 20);
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+
+      // Call the edge function to generate article
+      const { data, error } = await supabase.functions.invoke("generate-blog-article", {
+        body: {
+          store_id: selectedStore.id,
+          title: opportunity.suggested_title || opportunity.question,
+          keywords: opportunity.keywords || [],
+          structure: opportunity.suggested_structure,
+          language: language,
+          articleType: 'aeo',
+          platform: opportunity.platform
+        }
+      });
+
+      if (error) throw error;
+
+      setGenerationStep('complete');
+      setGenerationProgress(100);
+
+      if (data?.article) {
+        setGeneratedArticle({
+          id: data.article.id,
+          title: data.article.title,
+          content: data.article.content,
+          meta_description: data.article.meta_description,
+          keywords: data.article.keywords,
+          shopify_url: data.article.shopify_url
+        });
+
+        // Update opportunity status
+        await supabase
+          .from('ai_opportunities')
+          .update({ status: 'treated', article_id: data.article.id })
+          .eq('id', opportunity.id);
+
+        // Update local state
+        setOpportunities(prev => 
+          prev.map(o => o.id === opportunity.id ? { ...o, status: 'treated' } : o)
+        );
+
+        toast.success(language === 'fr' ? "Article AEO généré avec succès !" : "AEO article generated successfully!");
+      }
+    } catch (error) {
+      console.error("Error generating article:", error);
+      toast.error(language === 'fr' ? "Erreur lors de la génération de l'article" : "Error generating article");
+      setGenerationDialogOpen(false);
+    } finally {
+      setIsGeneratingArticle(false);
+    }
+  };
+
   const handleTabChange = (value: string) => {
     setSearchParams({ platform: value });
   };
@@ -157,6 +243,7 @@ export default function AEO() {
   };
 
   const PlatformIcon = platformConfig[currentPlatform]?.icon || Lightbulb;
+  const currentColor = platformConfig[currentPlatform]?.color || "#10b981";
 
   return (
     <div className="container mx-auto p-4 md:p-6 space-y-6">
@@ -173,14 +260,25 @@ export default function AEO() {
               : 'Optimize your content to be cited by AI platforms'}
           </p>
         </div>
-        <Button 
-          onClick={generateOpportunities} 
-          disabled={refreshing || !selectedStore?.id}
-          variant="outline"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          {language === 'fr' ? 'Actualiser' : 'Refresh'}
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button 
+            onClick={generateOpportunities} 
+            disabled={refreshing || !selectedStore?.id}
+            className="flex-1 sm:flex-none"
+            style={{ backgroundColor: currentColor }}
+          >
+            <Plus className={`h-4 w-4 mr-2`} />
+            {language === 'fr' ? 'Nouvelles opportunités' : 'New opportunities'}
+          </Button>
+          <Button 
+            onClick={fetchOpportunities} 
+            disabled={refreshing || loading || !selectedStore?.id}
+            variant="outline"
+            size="icon"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing || loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </div>
 
       {/* Platform Tabs */}
@@ -200,10 +298,15 @@ export default function AEO() {
         {Object.entries(platformConfig).map(([key, config]) => (
           <TabsContent key={key} value={key} className="space-y-4 mt-4">
             {/* Platform Description */}
-            <Card className="border-l-4" style={{ borderLeftColor: config.color.replace('bg-', '') }}>
+            <Card className="border-l-4" style={{ borderLeftColor: config.color }}>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <config.icon className={`h-5 w-5 ${config.color} text-white p-1 rounded`} />
+                  <div 
+                    className="p-1.5 rounded"
+                    style={{ backgroundColor: config.color }}
+                  >
+                    <config.icon className="h-4 w-4 text-white" />
+                  </div>
                   {config.label}
                 </CardTitle>
                 <CardDescription>
@@ -227,71 +330,122 @@ export default function AEO() {
               </div>
             ) : opportunities.length > 0 ? (
               <div className="space-y-4">
-                {opportunities.map((opp) => (
-                  <Card key={opp.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 space-y-3">
-                      {/* Question */}
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">
-                          {language === 'fr' ? 'Question type' : 'Typical question'}
-                        </p>
-                        <p className="font-medium text-lg">"{opp.question}"</p>
-                      </div>
-
-                      {/* Suggested Title */}
-                      {opp.suggested_title && (
+                {opportunities.map((opp) => {
+                  const isTreated = opp.status === 'treated';
+                  return (
+                    <Card 
+                      key={opp.id} 
+                      className={`hover:shadow-md transition-shadow ${isTreated ? 'opacity-70' : ''}`}
+                      style={{ borderColor: isTreated ? undefined : `${config.color}30` }}
+                    >
+                      <CardContent className="p-4 space-y-3">
+                        {/* Question */}
                         <div>
                           <p className="text-sm text-muted-foreground mb-1">
-                            {language === 'fr' ? 'Titre suggéré' : 'Suggested title'}
+                            {language === 'fr' ? 'Question type' : 'Typical question'}
                           </p>
-                          <p className="font-semibold text-primary">{opp.suggested_title}</p>
+                          <p className="font-medium text-lg">"{opp.question}"</p>
                         </div>
-                      )}
 
-                      {/* Meta info */}
-                      <div className="flex flex-wrap items-center gap-2 pt-2">
-                        {getDifficultyBadge(opp.difficulty)}
-                        
-                        {opp.citation_potential && (
-                          <Badge variant="secondary">
-                            {language === 'fr' ? 'Potentiel citation' : 'Citation potential'}: {opp.citation_potential}%
-                          </Badge>
+                        {/* Suggested Title */}
+                        {opp.suggested_title && (
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">
+                              {language === 'fr' ? 'Titre suggéré' : 'Suggested title'}
+                            </p>
+                            <p className="font-semibold" style={{ color: config.color }}>
+                              {opp.suggested_title}
+                            </p>
+                          </div>
                         )}
 
-                        {opp.keywords?.slice(0, 3).map((keyword) => (
-                          <Badge key={keyword} variant="outline" className="text-xs">
-                            {keyword}
-                          </Badge>
-                        ))}
-                      </div>
+                        {/* Meta info */}
+                        <div className="flex flex-wrap items-center gap-2 pt-2">
+                          {getDifficultyBadge(opp.difficulty)}
+                          
+                          {opp.citation_potential && (
+                            <Badge variant="secondary">
+                              {language === 'fr' ? 'Potentiel citation' : 'Citation potential'}: {opp.citation_potential}%
+                            </Badge>
+                          )}
 
-                      {/* Action Button */}
-                      <div className="pt-2">
-                        <Button size="sm" className="w-full sm:w-auto">
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          {language === 'fr' ? 'Générer article AEO' : 'Generate AEO article'}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                          {isTreated && (
+                            <Badge className="bg-success hover:bg-success">
+                              ✓ {language === 'fr' ? 'Traité' : 'Treated'}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Keywords */}
+                        {opp.keywords && opp.keywords.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {opp.keywords.slice(0, 4).map((keyword) => (
+                              <Badge key={keyword} variant="outline" className="text-xs">
+                                {keyword}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Action Button */}
+                        <div className="pt-2">
+                          <Button 
+                            size="sm" 
+                            className="w-full sm:w-auto"
+                            onClick={() => handleGenerateArticle(opp)}
+                            disabled={isTreated}
+                            style={{ backgroundColor: isTreated ? undefined : config.color }}
+                          >
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            {isTreated 
+                              ? (language === 'fr' ? 'Article généré' : 'Article generated')
+                              : (language === 'fr' ? 'Générer article AEO' : 'Generate AEO article')
+                            }
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <Card>
                 <CardContent className="p-8 text-center">
                   <Lightbulb className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground mb-4">
                     {!selectedStore?.id 
                       ? (language === 'fr' ? 'Sélectionnez une boutique pour voir les opportunités' : 'Select a store to see opportunities')
-                      : (language === 'fr' ? 'Aucune opportunité générée. Cliquez sur Actualiser.' : 'No opportunities generated. Click Refresh.')
+                      : (language === 'fr' ? 'Aucune opportunité générée. Cliquez sur "Nouvelles opportunités".' : 'No opportunities generated. Click "New opportunities".')
                     }
                   </p>
+                  {selectedStore?.id && (
+                    <Button 
+                      onClick={generateOpportunities} 
+                      disabled={refreshing}
+                      style={{ backgroundColor: config.color }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {language === 'fr' ? 'Générer des opportunités' : 'Generate opportunities'}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Article Generation Dialog */}
+      <AeoArticleGenerationDialog
+        open={generationDialogOpen}
+        onClose={() => setGenerationDialogOpen(false)}
+        isGenerating={isGeneratingArticle}
+        progress={generationProgress}
+        currentStep={generationStep}
+        generatedArticle={generatedArticle}
+        opportunityTitle={selectedOpportunity?.question}
+        platformColor={currentColor}
+      />
     </div>
   );
 }
