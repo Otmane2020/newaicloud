@@ -14,6 +14,7 @@ interface SyncRequest {
   syncAltText?: boolean;
   syncGoogleShopping?: boolean;
   syncBodyHtml?: boolean; // Sync landing page / body HTML
+  syncImages?: boolean; // Sync AI-generated images to Shopify
   bodyHtml?: string; // Landing page HTML content to sync
   force?: boolean; // Bypass throttling check (for post-optimization sync)
   // Direct field updates (for inline editing)
@@ -153,7 +154,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, syncBodyHtml, bodyHtml, force, title, vendor, sku, price, cost, variant_id }: SyncRequest = bodyCheck;
+    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, syncBodyHtml, syncImages, bodyHtml, force, title, vendor, sku, price, cost, variant_id }: SyncRequest = bodyCheck;
 
     // Sync product SEO data
     if (productId) {
@@ -390,6 +391,89 @@ Deno.serve(async (req: Request) => {
           } catch (costError: any) {
             console.error("[SYNC-SEO] ❌ Cost update failed:", costError.message);
           }
+        }
+      }
+
+      // PHASE 1.7: Sync AI-generated images to Shopify
+      if (syncImages) {
+        console.log(`[SYNC-SEO] Syncing AI-generated images for product ${productId}...`);
+        
+        // Fetch AI-generated images (those with optimization_count > 0)
+        const { data: productImages, error: imagesError } = await supabaseClient
+          .from("product_images")
+          .select("id, src, alt_text, position, shopify_image_id, optimization_count")
+          .eq("product_id", productId)
+          .gt("optimization_count", 0)
+          .order("position", { ascending: true });
+        
+        if (imagesError) {
+          console.error("[SYNC-SEO] ❌ Failed to fetch product images:", imagesError);
+        } else if (productImages && productImages.length > 0) {
+          console.log(`[SYNC-SEO] Found ${productImages.length} AI-generated images to sync`);
+          
+          for (const image of productImages) {
+            try {
+              // Check if image URL is valid and accessible
+              if (!image.src || !image.src.startsWith('http')) {
+                console.log(`[SYNC-SEO] Skipping image with invalid URL: ${image.src}`);
+                continue;
+              }
+
+              // Use productCreateMedia to add/update image
+              const createMediaMutation = `
+                mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+                  productCreateMedia(productId: $productId, media: $media) {
+                    media {
+                      ... on MediaImage {
+                        id
+                        image {
+                          url
+                          altText
+                        }
+                      }
+                    }
+                    mediaUserErrors {
+                      field
+                      message
+                    }
+                  }
+                }
+              `;
+
+              const mediaInput = {
+                originalSource: image.src,
+                mediaContentType: "IMAGE",
+                alt: image.alt_text || product.title
+              };
+
+              const mediaResult = await shopifyGraphQL(shopUrl, shopifyAccessToken, createMediaMutation, {
+                productId: `gid://shopify/Product/${product.shopify_id}`,
+                media: [mediaInput]
+              });
+
+              if (mediaResult.data?.productCreateMedia?.media?.[0]?.id) {
+                console.log(`[SYNC-SEO] ✅ Image uploaded successfully: ${image.src.substring(0, 50)}...`);
+                
+                // Extract Shopify image ID from the media response
+                const mediaId = mediaResult.data.productCreateMedia.media[0].id;
+                
+                // Update local database with Shopify media ID
+                await supabaseClient
+                  .from("product_images")
+                  .update({ 
+                    last_synced_at: new Date().toISOString(),
+                    shopify_synced: true
+                  })
+                  .eq("id", image.id);
+              } else {
+                console.error(`[SYNC-SEO] ⚠️ Image upload returned no media ID`);
+              }
+            } catch (imageError: any) {
+              console.error(`[SYNC-SEO] ❌ Failed to upload image ${image.id}:`, imageError.message);
+            }
+          }
+        } else {
+          console.log("[SYNC-SEO] No AI-generated images to sync");
         }
       }
       

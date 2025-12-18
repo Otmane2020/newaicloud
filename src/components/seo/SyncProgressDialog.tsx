@@ -43,6 +43,7 @@ interface SyncOptions {
   syncVendor: boolean;
   syncTags: boolean;
   syncGoogleShopping: boolean;
+  syncImages: boolean;
 }
 
 interface SyncProgressDialogProps {
@@ -73,6 +74,7 @@ export function SyncProgressDialog({
     syncVendor: true,
     syncTags: true,
     syncGoogleShopping: true,
+    syncImages: true,
   });
   const abortRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -260,6 +262,18 @@ export function SyncProgressDialog({
                     }
                   />
                   <Label htmlFor="syncGoogleShopping" className="text-sm">Google Shopping</Label>
+                </div>
+                <div className="flex items-center space-x-2 col-span-2 pt-2 border-t">
+                  <Checkbox
+                    id="syncImages"
+                    checked={syncOptions.syncImages}
+                    onCheckedChange={(checked) =>
+                      setSyncOptions((prev) => ({ ...prev, syncImages: checked === true }))
+                    }
+                  />
+                  <Label htmlFor="syncImages" className="text-sm font-medium">
+                    📷 Images générées (fond blanc, AI) / Generated images
+                  </Label>
                 </div>
               </div>
             </CollapsibleContent>
