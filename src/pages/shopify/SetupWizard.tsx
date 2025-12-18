@@ -90,6 +90,7 @@ export default function SetupWizard() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true); // Start with loading
   const navigate = useNavigate();
   const checkedRef = useRef(false);
   const authAttemptedRef = useRef(false);
@@ -172,11 +173,14 @@ export default function SetupWizard() {
           if (profile?.subscription_status === 'active') {
             console.log('✅ [SetupWizard] Active subscription found, redirecting');
             navigate("/dashboard-light", { replace: true });
+            return; // Don't set isCheckingSubscription to false - we're navigating away
           }
           // Note: trialing users stay on setup-wizard to see "Activate Full Plan" if quota exhausted
         }
       } catch (err) {
         console.log('[SetupWizard] Background check error (ignored):', err);
+      } finally {
+        setIsCheckingSubscription(false);
       }
     };
 
@@ -273,6 +277,29 @@ export default function SetupWizard() {
       setIsAuthenticating(false);
     }
   };
+
+  // Show loading screen while checking subscription status
+  if (isCheckingSubscription) {
+    return (
+      <div 
+        className="min-h-screen flex flex-col" 
+        style={{ 
+          backgroundColor: "#f6f6f7", 
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" 
+        }}
+      >
+        <ShopifyHeader shopName={normalizedShop || undefined} />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 size={48} className="animate-spin mx-auto mb-4" style={{ color: SHOPIFY_GREEN }} />
+            <p style={{ color: "#6b7280", fontSize: "16px" }}>
+              {language === "fr" ? "Vérification de votre abonnement..." : "Checking your subscription..."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ALWAYS show pricing - auth errors are non-blocking
   return (
