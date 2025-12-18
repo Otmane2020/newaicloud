@@ -23,6 +23,12 @@ serve(async (req) => {
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
   }
 
+  // Admin account with unlimited optimizations
+  const ADMIN_CONFIG = {
+    email: 'oben.rockman@gmail.com',
+    userId: 'd0a2c485-2ebc-4452-8c91-de58fcfd4f63',
+  };
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -41,6 +47,22 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       throw new Error('Unauthorized');
+    }
+
+    // 🔓 ADMIN BYPASS: Skip consumption for admin account
+    if (user.email?.toLowerCase() === ADMIN_CONFIG.email.toLowerCase() || user.id === ADMIN_CONFIG.userId) {
+      console.log(`[CONSUME] 🔓 ADMIN ACCOUNT - Skipping consumption for ${user.email}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          consumed: 0,
+          previousBalance: 999999,
+          newBalance: 999999,
+          adminBypass: true,
+          message: 'Admin account - unlimited optimizations'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
     }
 
     // Parse request body
