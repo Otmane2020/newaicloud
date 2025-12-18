@@ -361,6 +361,22 @@ Deno.serve(async (req) => {
         
         console.log(`📸 Image ${img.id}: shopify_image_id=${img.shopify_image_id}, position=${img.position}, isGenerated=${isGenerated}, isBase64=${isBase64}`);
 
+        // 🚨 CRITICAL: Check if AI-generated image was already synced (shopify_sync_count >= 1)
+        // This prevents duplicate exports of AI images to Shopify gallery
+        if (isGenerated && hasShopifyId) {
+          // Fetch shopify_sync_count to check if already synced
+          const { data: imgSyncData } = await supabaseClient
+            .from("product_images")
+            .select("shopify_sync_count")
+            .eq("id", img.id)
+            .single();
+          
+          if (imgSyncData && imgSyncData.shopify_sync_count >= 1) {
+            console.log(`⏭️ AI image ${img.id} already synced to Shopify (sync_count: ${imgSyncData.shopify_sync_count}), skipping`);
+            continue; // Skip this image - already exported once
+          }
+        }
+
         if (hasShopifyId) {
           // Has Shopify ID - check if URL changed
           const imgGid = restIdToGid(img.shopify_image_id, 'MediaImage');
@@ -570,11 +586,14 @@ Deno.serve(async (req) => {
           const newMediaGid = newMedia.id;
           const newMediaUrl = newMedia.image?.url || newImageSrc;
           
-          // Update shopify_image_id in database
+          // Update shopify_image_id in database and mark as synced
           if (newLegacyId) {
             await supabaseClient
               .from('product_images')
-              .update({ shopify_image_id: parseInt(newLegacyId) })
+              .update({ 
+                shopify_image_id: parseInt(newLegacyId),
+                shopify_sync_count: 1  // Mark as synced once - prevents duplicate exports
+              })
               .eq('id', imgToReplace.id);
           }
           

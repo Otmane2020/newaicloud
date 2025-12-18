@@ -81,6 +81,20 @@ export async function autoSyncImageToShopify(options: AutoSyncOptions): Promise<
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // 🚨 Check if image was already synced to Shopify (prevent duplicate exports)
+    if (imageId) {
+      const { data: existingImage } = await supabaseAdmin
+        .from("product_images")
+        .select("shopify_sync_count, shopify_image_id")
+        .eq("id", imageId)
+        .single();
+      
+      if (existingImage?.shopify_sync_count >= 1 || existingImage?.shopify_image_id) {
+        console.log(`[AUTO-SYNC] ⏭️ Image already synced to Shopify (sync_count: ${existingImage?.shopify_sync_count}, shopify_image_id: ${existingImage?.shopify_image_id})`);
+        return { success: true, skipped: true, skipReason: "already_synced" };
+      }
+    }
+
     // Get product with Shopify ID
     const { data: product, error: productError } = await supabaseAdmin
       .from("shopify_products")
@@ -189,11 +203,12 @@ export async function autoSyncImageToShopify(options: AutoSyncOptions): Promise<
         .update({
           shopify_synced: true,
           last_synced_at: new Date().toISOString(),
-          shopify_image_id: createdMedia.id.replace("gid://shopify/MediaImage/", "")
+          shopify_image_id: createdMedia.id.replace("gid://shopify/MediaImage/", ""),
+          shopify_sync_count: 1  // Mark as synced once - prevents duplicate exports
         })
         .eq("id", imageId);
       
-      console.log(`[AUTO-SYNC] ✅ Updated product_images record ${imageId}`);
+      console.log(`[AUTO-SYNC] ✅ Updated product_images record ${imageId} with sync_count=1`);
     }
 
     return {
