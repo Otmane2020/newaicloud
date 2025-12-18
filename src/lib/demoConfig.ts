@@ -2,16 +2,16 @@
 // This configuration is used to identify the demo account and apply special rules
 
 export const DEMO_CONFIG = {
-  // Demo account credentials (password is NOT exposed here - handled server-side)
-  email: 'store-demo-20240334@shopify.newai.sale',
-  userId: '86ff1fc7-bd11-4e6a-9b11-af3db227e552',
-  storeId: 'ac187822-68a5-4d01-afab-e6e0689f777f',
-  storeName: 'Store Demo',
+  // Admin account with unlimited optimizations
+  email: 'oben.rockman@gmail.com',
+  userId: 'd0a2c485-2ebc-4452-8c91-de58fcfd4f63',
+  storeId: null as string | null, // No specific store tied
+  storeName: 'Admin Account',
   
-  // Demo restrictions
-  isReadOnly: true,
+  // Admin can modify (not read-only)
+  isReadOnly: false,
   
-  // Demo features
+  // Unlimited optimizations enabled
   unlimitedOptimizations: true,
   
   // Session duration (optional - set to 0 for unlimited)
