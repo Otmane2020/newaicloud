@@ -752,6 +752,8 @@ export const translations = {
         "For your landing pages to display correctly on Shopify, you must add custom CSS to your theme.",
       seeGuide: "See guide",
       mobileOptimized: "Mobile optimized",
+      regenerate: "Regenerate",
+      regenerateTooltip: "Regenerate landing page with new options",
     },
 
     // Progress messages

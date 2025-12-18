@@ -243,6 +243,24 @@ ${htmlContent}
                       {viewShopifyMode ? t.landingGeneration.preview.showWithoutCss : t.landingGeneration.preview.simulateShopify}
                     </TooltipContent>
                   </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          onOpenChange(false);
+                          if (onGenerateClick) {
+                            onGenerateClick();
+                          }
+                        }}
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        {t.landingGeneration.preview.regenerate || "Régénérer"}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t.landingGeneration.preview.regenerateTooltip || "Régénérer la landing page"}</TooltipContent>
+                  </Tooltip>
                 </TooltipProvider>
                 <Button variant="outline" size="sm" onClick={handleDownload} disabled={!currentLandingPage}>
                   {t.landingGeneration.preview.downloadHtml}
