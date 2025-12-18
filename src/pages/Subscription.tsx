@@ -21,6 +21,7 @@ import { PricingCard } from "@/components/pricing/PricingCard";
 import { useShopifyBilling } from "@/hooks/useShopifyBilling";
 import ShopifyPricingPlans from "@/components/shopify/ShopifyPricingPlans";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
+import { isAeoreplyDomain } from "@/hooks/useAppMode";
 
 interface Plan {
   id: string;
@@ -489,7 +490,9 @@ const Subscription = () => {
   }
 
   // 🛍️ SHOPIFY USERS: Show ShopifyPricingPlans (same as setup-wizard) with blue theme
-  if (isShopifyUser || billingProvider === 'shopify') {
+  // AEOREPLY GUARD: Aeoreply uses Stripe ONLY, never Shopify Billing
+  const isAeoreply = isAeoreplyDomain();
+  if (!isAeoreply && (isShopifyUser || billingProvider === 'shopify')) {
     return (
       <div className="container mx-auto px-4 py-6 sm:p-6 md:p-8 space-y-6">
         <div className="space-y-2 sm:space-y-3 md:space-y-4">
