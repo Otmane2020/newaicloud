@@ -149,13 +149,47 @@ export default function ShopifyApp() {
 
       // Mode installation avec pending_token
       if (!shop || !pendingToken) {
-        // Si pas de shop mais pas de pending_token, c'est probablement un accès direct - rediriger
-        if (!pendingToken && !shop) {
-          console.log('⚠️ [ShopifyApp] No shop or pending_token, redirecting to home');
+        // Si pas de shop → accès direct - rediriger vers home
+        if (!shop) {
+          console.log('⚠️ [ShopifyApp] No shop, redirecting to home');
           setStatus("processed");
           navigate("/", { replace: true });
           return;
         }
+        
+        // Si shop mais pas de pending_token → l'utilisateur revient avec un token expiré
+        // On doit relancer le flow OAuth pour obtenir un nouveau token
+        if (shop && !pendingToken) {
+          console.log('🔄 [ShopifyApp] Shop present but no pending_token, initiating OAuth to get fresh token');
+          setStatus("processed");
+          
+          try {
+            // Initier un nouveau flow OAuth
+            const { data, error } = await supabase.functions.invoke("shopify-oauth", {
+              body: { shop, preAuth: true },
+            });
+            
+            if (error || !data?.authUrl) {
+              console.error('❌ [ShopifyApp] OAuth initiation failed:', error);
+              toast.error(
+                language === 'fr' ? 'Erreur de connexion' : 'Connection error',
+                { description: language === 'fr' ? 'Veuillez réessayer depuis Shopify.' : 'Please try again from Shopify.' }
+              );
+              setStatus("error");
+              return;
+            }
+            
+            // Rediriger vers Shopify OAuth
+            console.log('🔗 [ShopifyApp] Redirecting to Shopify OAuth...');
+            window.location.href = data.authUrl;
+            return;
+          } catch (err) {
+            console.error('❌ [ShopifyApp] OAuth exception:', err);
+            setStatus("error");
+            return;
+          }
+        }
+        
         setStatus("error");
         toast.error(t.shopifyApp?.installationError || "Installation error", {
           description: t.shopifyApp?.missingParams || "Missing Shopify connection parameters.",
