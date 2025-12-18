@@ -607,16 +607,18 @@ const Index = () => {
 
                     <div>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold">{formatPrice(price, language)}</span>
-                        <span className="text-xs text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                        {!planConfig.isTrial && billingCycle === "yearly" ? (
+                          <>
+                            <span className="text-3xl font-bold">{formatPrice(planConfig.yearlyTotal, language)}</span>
+                            <span className="text-xs text-muted-foreground">{t.landing.pricing.perYear}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-3xl font-bold">{formatPrice(price, language)}</span>
+                            <span className="text-xs text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                          </>
+                        )}
                       </div>
-                      {!planConfig.isTrial && billingCycle === "yearly" && (
-                        <p className="text-xs text-success mt-1">
-                          {t.landing.pricing.billedAnnually
-                            .replace("{{currency}}", "")
-                            .replace("{{total}}", formatPrice(planConfig.yearlyTotal, language))}
-                        </p>
-                      )}
                       {planConfig.isTrial && (
                         <p className="text-xs text-success mt-1 font-semibold">{t.trial.duration}</p>
                       )}
