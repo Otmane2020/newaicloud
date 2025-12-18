@@ -1,4 +1,4 @@
-import { Store, Lock } from 'lucide-react';
+import { Store, Lock, ChevronDown } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/select';
 import { useStore } from '@/contexts/StoreContext';
 import { useDemoMode } from '@/hooks/useDemoMode';
-import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
 
 export function StoreSelector() {
@@ -46,41 +45,53 @@ export function StoreSelector() {
   }
 
   return (
-    <Select
-      value={selectedStore?.id || ''}
-      onValueChange={(value) => {
-        console.log('🔄 [STORE_SELECTOR] Changing store to:', value);
-        const store = stores.find(s => s.id === value);
-        if (store) {
-          console.log('✅ [STORE_SELECTOR] Store found:', {
-            id: store.id,
-            name: store.store_name
-          });
-          setSelectedStore(store);
-          console.log('✅ [STORE_SELECTOR] setSelectedStore called with store:', store.store_name);
-        } else {
-          console.error('❌ [STORE_SELECTOR] Store not found for ID:', value);
-        }
-      }}
-    >
-      <SelectTrigger className="flex items-center gap-3 px-3 py-2.5 h-auto bg-primary/10 hover:bg-primary/15 rounded-lg border-0 transition-colors">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <Store className="w-4 h-4 text-primary shrink-0" />
-          <span className="text-sm text-foreground truncate">
-            {selectedStore?.store_label || selectedStore?.store_name || selectedStore?.store_url || 'Sélectionner une boutique'}
-          </span>
-        </div>
-      </SelectTrigger>
-      <SelectContent>
-        {stores.map((store) => (
-          <SelectItem key={store.id} value={store.id}>
-            <div className="flex items-center gap-3">
-              <Store className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm">{store.store_label || store.store_name || store.store_url}</span>
-            </div>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="relative">
+      <Select
+        value={selectedStore?.id || ''}
+        onValueChange={(value) => {
+          console.log('🔄 [STORE_SELECTOR] Changing store to:', value);
+          const store = stores.find(s => s.id === value);
+          if (store) {
+            console.log('✅ [STORE_SELECTOR] Store found:', {
+              id: store.id,
+              name: store.store_name
+            });
+            setSelectedStore(store);
+            console.log('✅ [STORE_SELECTOR] setSelectedStore called with store:', store.store_name);
+          } else {
+            console.error('❌ [STORE_SELECTOR] Store not found for ID:', value);
+          }
+        }}
+      >
+        <SelectTrigger className="w-full h-auto px-3 py-2.5 bg-primary/10 hover:bg-primary/15 rounded-lg border-0 transition-colors focus:ring-0 focus:ring-offset-0">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <Store className="w-4 h-4 text-primary shrink-0" />
+            <SelectValue placeholder="Sélectionner une boutique">
+              <span className="text-sm text-foreground truncate">
+                {selectedStore?.store_label || selectedStore?.store_name || selectedStore?.store_url || 'Sélectionner'}
+              </span>
+            </SelectValue>
+          </div>
+        </SelectTrigger>
+        <SelectContent 
+          className="z-[200] bg-popover border border-border shadow-xl"
+          position="popper"
+          sideOffset={4}
+        >
+          {stores.map((store) => (
+            <SelectItem 
+              key={store.id} 
+              value={store.id}
+              className="cursor-pointer hover:bg-accent"
+            >
+              <div className="flex items-center gap-3">
+                <Store className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="text-sm">{store.store_label || store.store_name || store.store_url}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
