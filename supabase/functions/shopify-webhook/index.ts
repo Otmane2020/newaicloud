@@ -128,6 +128,19 @@ Deno.serve(async (req) => {
             await handleAppUninstalled(supabase, connection, shopDomain);
             break;
           
+          // 🆕 BILLING WEBHOOKS
+          case 'app_subscriptions/update':
+            await handleSubscriptionUpdate(supabase, connection, payload, shopDomain);
+            break;
+          
+          case 'subscription_billing_attempts/failure':
+            await handleBillingFailure(supabase, connection, payload, shopDomain);
+            break;
+          
+          case 'subscription_billing_attempts/success':
+            await handleBillingSuccess(supabase, connection, payload, shopDomain);
+            break;
+          
           default:
             console.log('⚠️ Unhandled webhook topic:', topic);
         }
@@ -415,4 +428,218 @@ async function handleAppUninstalled(supabase: any, connection: any, shopDomain: 
   });
 
   console.log('✅ App uninstall webhook fully processed - subscription cancelled');
+}
+
+/**
+ * Handle app_subscriptions/update webhook
+ * Triggered when subscription status changes (cancelled, expired, upgraded, etc.)
+ */
+async function handleSubscriptionUpdate(supabase: any, connection: any, payload: any, shopDomain: string) {
+  console.log('💳 SUBSCRIPTION UPDATE webhook received:', { shop: shopDomain, status: payload.status });
+  
+  const userId = connection.user_id;
+  const status = payload.status?.toUpperCase();
+  
+  let newSubscriptionStatus = 'active';
+  
+  // Map Shopify subscription status to our status
+  switch (status) {
+    case 'CANCELLED':
+    case 'CANCELED':
+      newSubscriptionStatus = 'cancelled';
+      break;
+    case 'EXPIRED':
+      newSubscriptionStatus = 'expired';
+      break;
+    case 'FROZEN':
+      newSubscriptionStatus = 'past_due';
+      break;
+    case 'ACTIVE':
+      newSubscriptionStatus = 'active';
+      break;
+    case 'PENDING':
+      newSubscriptionStatus = 'pending';
+      break;
+    default:
+      console.log('⚠️ Unknown subscription status:', status);
+      newSubscriptionStatus = 'inactive';
+  }
+  
+  // Update profile subscription status
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({
+      subscription_status: newSubscriptionStatus,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (profileError) {
+    console.error('❌ Error updating profile subscription status:', profileError);
+  } else {
+    console.log(`✅ Profile subscription status updated to: ${newSubscriptionStatus}`);
+  }
+
+  // Update subscriptions table
+  const { error: subError } = await supabase
+    .from('subscriptions')
+    .update({
+      status: newSubscriptionStatus,
+      updated_at: new Date().toISOString(),
+      ...(newSubscriptionStatus === 'cancelled' ? { cancelled_at: new Date().toISOString() } : {}),
+    })
+    .eq('seller_id', userId)
+    .eq('billing_provider', 'shopify');
+
+  if (subError) {
+    console.error('❌ Error updating subscription:', subError);
+  }
+
+  // Log event
+  await supabase.from('system_logs').insert({
+    type: 'subscription_update',
+    function_name: 'shopify-webhook',
+    message: `Subscription status changed to ${newSubscriptionStatus} for ${shopDomain}`,
+    metadata: {
+      shop: shopDomain,
+      user_id: userId,
+      old_status: payload.previous_status,
+      new_status: status,
+      timestamp: new Date().toISOString(),
+    },
+  });
+
+  console.log('✅ Subscription update webhook processed');
+}
+
+/**
+ * Handle subscription_billing_attempts/failure webhook
+ * Triggered when a payment fails
+ */
+async function handleBillingFailure(supabase: any, connection: any, payload: any, shopDomain: string) {
+  console.log('⚠️ BILLING FAILURE webhook received:', { shop: shopDomain });
+  
+  const userId = connection.user_id;
+  
+  // Update profile to past_due status
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({
+      subscription_status: 'past_due',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (profileError) {
+    console.error('❌ Error updating profile:', profileError);
+  } else {
+    console.log('✅ Profile marked as past_due');
+  }
+
+  // Update subscriptions table
+  await supabase
+    .from('subscriptions')
+    .update({
+      status: 'past_due',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('seller_id', userId)
+    .eq('billing_provider', 'shopify');
+
+  // Get user email for notification
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('id', userId)
+    .single();
+
+  // Send payment failed notification
+  if (profile?.email) {
+    try {
+      await supabase.functions.invoke('send-payment-failed', {
+        body: {
+          user_id: userId,
+          amount: payload.amount || '0',
+          currency: payload.currency || 'USD',
+          reason: payload.error_message || 'Payment failed',
+        },
+      });
+      console.log('✅ Payment failed notification sent');
+    } catch (notifError) {
+      console.error('❌ Error sending payment failed notification:', notifError);
+    }
+  }
+
+  // Log event
+  await supabase.from('system_logs').insert({
+    type: 'billing_failure',
+    function_name: 'shopify-webhook',
+    message: `Payment failed for ${shopDomain}`,
+    metadata: {
+      shop: shopDomain,
+      user_id: userId,
+      error: payload.error_message,
+      amount: payload.amount,
+      timestamp: new Date().toISOString(),
+    },
+  });
+
+  console.log('✅ Billing failure webhook processed');
+}
+
+/**
+ * Handle subscription_billing_attempts/success webhook
+ * Triggered when a payment succeeds
+ */
+async function handleBillingSuccess(supabase: any, connection: any, payload: any, shopDomain: string) {
+  console.log('✅ BILLING SUCCESS webhook received:', { shop: shopDomain });
+  
+  const userId = connection.user_id;
+  
+  // Update profile to active status (in case it was past_due)
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({
+      subscription_status: 'active',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+
+  if (profileError) {
+    console.error('❌ Error updating profile:', profileError);
+  } else {
+    console.log('✅ Profile confirmed as active');
+  }
+
+  // Update subscriptions table with new period end if available
+  const updateData: any = {
+    status: 'active',
+    updated_at: new Date().toISOString(),
+  };
+  
+  if (payload.billing_on) {
+    updateData.current_period_end = payload.billing_on;
+  }
+
+  await supabase
+    .from('subscriptions')
+    .update(updateData)
+    .eq('seller_id', userId)
+    .eq('billing_provider', 'shopify');
+
+  // Log event
+  await supabase.from('system_logs').insert({
+    type: 'billing_success',
+    function_name: 'shopify-webhook',
+    message: `Payment succeeded for ${shopDomain}`,
+    metadata: {
+      shop: shopDomain,
+      user_id: userId,
+      amount: payload.amount,
+      next_billing: payload.billing_on,
+      timestamp: new Date().toISOString(),
+    },
+  });
+
+  console.log('✅ Billing success webhook processed');
 }
