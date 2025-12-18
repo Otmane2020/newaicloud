@@ -3,12 +3,11 @@ import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUsageLimits } from "@/hooks/useUsageLimits";
-import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
 
@@ -22,6 +21,7 @@ export function AIAssistant() {
   const { t, language } = useTranslation();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
 
   // Hide on /mobileads route
   const hiddenRoutes = ['/mobileads'];
@@ -32,6 +32,12 @@ export function AIAssistant() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Contact form state
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState(user?.email || "");
+  const [contactMessage, setContactMessage] = useState("");
+  const [isSendingContact, setIsSendingContact] = useState(false);
 
   // Initialize welcome message based on language
   useEffect(() => {
@@ -46,6 +52,13 @@ export function AIAssistant() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Update email when user changes
+  useEffect(() => {
+    if (user?.email) {
+      setContactEmail(user.email);
+    }
+  }, [user]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -143,6 +156,53 @@ export function AIAssistant() {
     }
   };
 
+  const handleSendContact = async () => {
+    if (!contactName.trim() || !contactEmail.trim() || !contactMessage.trim()) {
+      toast.error(language === 'fr' ? "Veuillez remplir tous les champs" : "Please fill in all fields");
+      return;
+    }
+
+    setIsSendingContact(true);
+
+    try {
+      const { error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: contactName,
+          email: contactEmail,
+          subject: `[NewAI Support Chat] Message de ${contactName}`,
+          message: contactMessage,
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(t.aiAssistant.contactSent, {
+        description: t.aiAssistant.contactSentDescription,
+      });
+
+      // Reset form
+      setContactName("");
+      setContactMessage("");
+      setShowContactForm(false);
+
+      // Add confirmation message to chat
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: language === 'fr' 
+            ? `✅ Votre message a été envoyé avec succès ! Notre équipe vous répondra à ${contactEmail} dans les plus brefs délais.`
+            : `✅ Your message has been sent successfully! Our team will respond to ${contactEmail} as soon as possible.`,
+        },
+      ]);
+    } catch (error) {
+      console.error("Error sending contact:", error);
+      toast.error(t.aiAssistant.contactError);
+    } finally {
+      setIsSendingContact(false);
+    }
+  };
+
   return (
     <>
       {/* Floating button */}
@@ -180,66 +240,151 @@ export function AIAssistant() {
             </Button>
           </div>
 
-          {/* Messages */}
-          <ScrollArea className="flex-1 p-3 sm:p-4 bg-muted/20" ref={scrollRef}>
-            <div className="space-y-3">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${
-                    message.role === "user" ? "justify-end" : "justify-start"
-                  } animate-in fade-in slide-in-from-bottom-2 duration-300`}
+          {/* Toggle button for contact form */}
+          <div className="px-3 py-2 border-b bg-muted/30">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowContactForm(!showContactForm)}
+              className="w-full text-xs gap-2"
+            >
+              {showContactForm ? (
+                <>
+                  <MessageCircle className="h-3 w-3" />
+                  {t.aiAssistant.hideContactForm}
+                </>
+              ) : (
+                <>
+                  <Mail className="h-3 w-3" />
+                  {t.aiAssistant.showContactForm}
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Contact Form */}
+          {showContactForm ? (
+            <div className="flex-1 p-4 space-y-4 bg-muted/20 overflow-y-auto">
+              <div className="text-center mb-4">
+                <h4 className="font-medium text-sm">{t.aiAssistant.contactForm}</h4>
+                <p className="text-xs text-muted-foreground">{t.aiAssistant.contactFormDescription}</p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">{t.aiAssistant.yourName}</label>
+                  <Input
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="John Doe"
+                    className="mt-1 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">{t.aiAssistant.yourEmail}</label>
+                  <Input
+                    type="email"
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="john@example.com"
+                    className="mt-1 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">{t.aiAssistant.yourMessage}</label>
+                  <Textarea
+                    value={contactMessage}
+                    onChange={(e) => setContactMessage(e.target.value)}
+                    placeholder={language === 'fr' ? "Décrivez votre demande..." : "Describe your request..."}
+                    className="mt-1 text-sm min-h-[120px] resize-none"
+                  />
+                </div>
+
+                <Button
+                  onClick={handleSendContact}
+                  disabled={isSendingContact || !contactName.trim() || !contactEmail.trim() || !contactMessage.trim()}
+                  className="w-full"
                 >
-                  {message.role === "assistant" && (
-                    <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 flex-shrink-0">
-                      <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                  {isSendingContact ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {language === 'fr' ? "Envoi..." : "Sending..."}
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      {t.aiAssistant.sendContact}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Messages */}
+              <ScrollArea className="flex-1 p-3 sm:p-4 bg-muted/20" ref={scrollRef}>
+                <div className="space-y-3">
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${
+                        message.role === "user" ? "justify-end" : "justify-start"
+                      } animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                    >
+                      {message.role === "assistant" && (
+                        <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2 flex-shrink-0">
+                          <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[85%] sm:max-w-[80%] rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3 shadow-sm text-sm ${
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-br-sm"
+                            : "bg-card border rounded-bl-sm"
+                        }`}
+                      >
+                        <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2">
+                      <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2">
+                        <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                      </div>
+                      <div className="bg-card border rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3 shadow-sm">
+                        <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-primary" />
+                      </div>
                     </div>
                   )}
-                  <div
-                    className={`max-w-[85%] sm:max-w-[80%] rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3 shadow-sm text-sm ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
-                        : "bg-card border rounded-bl-sm"
-                    }`}
-                  >
-                    <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                  </div>
                 </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2">
-                  <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center mr-2">
-                    <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                  </div>
-                  <div className="bg-card border rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-3 shadow-sm">
-                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin text-primary" />
-                  </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+              </ScrollArea>
 
-          {/* Input */}
-          <div className="p-3 sm:p-4 border-t bg-background">
-            <div className="flex gap-2 items-end">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={t.aiAssistant.placeholder}
-                disabled={isLoading}
-                className="flex-1 text-sm rounded-xl resize-none min-h-[40px] sm:min-h-[44px]"
-              />
-              <Button
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading}
-                size="icon"
-                className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl flex-shrink-0"
-              >
-                <Send className="h-3 w-3 sm:h-4 sm:w-4" />
-              </Button>
-            </div>
-          </div>
+              {/* Input */}
+              <div className="p-3 sm:p-4 border-t bg-background">
+                <div className="flex gap-2 items-end">
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={t.aiAssistant.placeholder}
+                    disabled={isLoading}
+                    className="flex-1 text-sm rounded-xl resize-none min-h-[40px] sm:min-h-[44px]"
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isLoading}
+                    size="icon"
+                    className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl flex-shrink-0"
+                  >
+                    <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </Card>
       )}
     </>
