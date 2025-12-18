@@ -4100,16 +4100,51 @@ export default function ProductTitleDescription() {
           shopify_id: p.shopify_id,
           seo_title: p.seo_title,
           seo_description: p.seo_description,
+          body_html: p.description,
+          landing_page: p.landing_page,
+          landing_page_html: p.landing_page_html,
+          vendor: p.vendor,
+          tags: null, // Tags are fetched from database
         }))}
-        onSync={async (product) => {
-          await supabase.functions.invoke("sync-seo-to-shopify", {
-            body: {
-              productId: product.id,
-              shopifyId: product.shopify_id,
-              seoTitle: product.seo_title,
-              seoDescription: product.seo_description,
-            },
+        onSync={async (product, options) => {
+          // Build the body with selected options
+          const body: Record<string, unknown> = {
+            productId: product.id,
+          };
+
+          // Only include fields that are selected in options
+          if (options.syncSeoTitle || options.syncSeoDescription) {
+            // SEO fields are always synced via the edge function
+          }
+          
+          // Sync body HTML (landing page content)
+          if (options.syncBodyHtml && (product.landing_page_html || product.landing_page)) {
+            body.syncBodyHtml = true;
+            body.bodyHtml = product.landing_page_html || product.landing_page;
+          }
+
+          // Sync vendor
+          if (options.syncVendor && product.vendor) {
+            body.vendor = product.vendor;
+          }
+
+          // Sync tags
+          if (options.syncTags) {
+            body.syncTags = true;
+          }
+
+          // Sync Google Shopping
+          if (options.syncGoogleShopping) {
+            body.syncGoogleShopping = true;
+          }
+
+          const { error } = await supabase.functions.invoke("sync-seo-to-shopify", {
+            body,
           });
+
+          if (error) {
+            throw new Error(error.message || "Erreur de synchronisation");
+          }
         }}
         onComplete={() => {
           toast.success(t.contentOptimization.toasts.productsSynced);
