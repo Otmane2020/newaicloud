@@ -33,6 +33,7 @@ import { getCurrencySymbol, formatPrice, getPriceByLanguage } from "@/lib/format
 import { useShopifySync } from "@/hooks/useShopifySync";
 import { useAutoSyncProgress } from "@/contexts/AutoSyncContext";
 import { useShopifyBilling } from "@/hooks/useShopifyBilling";
+import { isAeoreplyDomain } from "@/hooks/useAppMode";
 
 interface Plan {
   id: string;
@@ -80,7 +81,14 @@ export default function Onboarding() {
   const [shopifyCheckComplete, setShopifyCheckComplete] = useState(false);
 
   // 🔧 IMMEDIATE URL-BASED CHECK: Redirect Shopify users BEFORE hook finishes loading
+  // AEOREPLY GUARD: Aeoreply NEVER redirects to setup-wizard (Stripe only)
   useEffect(() => {
+    const isAeoreply = isAeoreplyDomain();
+    if (isAeoreply) {
+      setShopifyCheckComplete(true);
+      return; // Aeoreply uses Stripe only, no Shopify redirect
+    }
+    
     const shopFromUrl = searchParams.get('shop');
     const hostFromUrl = searchParams.get('host');
     
@@ -98,10 +106,12 @@ export default function Onboarding() {
     
     // 🔧 IMMEDIATE EMAIL-BASED CHECK: Detect Shopify user by email pattern
     // shopify-auto-auth creates users with email: {shop_handle}@shopify.newai.sale
-    if (user?.email?.endsWith('@shopify.newai.sale')) {
+    // AEOREPLY GUARD: Skip this check for Aeoreply
+    if (!isAeoreply && user?.email?.endsWith('@shopify.newai.sale')) {
       console.log('🔄 [ONBOARDING] Shopify user detected via email pattern, immediate redirect to SetupWizard');
       const shopHandle = user.email.split('@')[0] || '';
       const shopDomainFromEmail = `${shopHandle}.myshopify.com`;
+      const hostFromUrl = searchParams.get('host');
       const redirectParams = new URLSearchParams({
         shop: shopDomainFromEmail,
         host: hostFromUrl || '',
@@ -113,7 +123,14 @@ export default function Onboarding() {
   }, [searchParams, navigate, user?.email]);
 
   // 🚫 CRITICAL: Redirect Shopify users to SetupWizard (Shopify Billing) instead of Stripe onboarding
+  // AEOREPLY GUARD: Aeoreply NEVER redirects to setup-wizard
   useEffect(() => {
+    const isAeoreply = isAeoreplyDomain();
+    if (isAeoreply) {
+      setShopifyCheckComplete(true);
+      return; // Aeoreply uses Stripe only
+    }
+    
     if (shopifyBillingLoading) return; // Wait for check to complete
     
     if (isShopifyUser && billingProvider === 'shopify') {
