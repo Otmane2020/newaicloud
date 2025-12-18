@@ -35,6 +35,10 @@ const WEBHOOK_TOPICS = [
   'themes/publish',  // Useful to know when theme changes
   // App lifecycle - CRITICAL for billing enforcement
   'app/uninstalled',  // Detect app uninstallation to cancel subscription
+  // 🆕 BILLING WEBHOOKS - Critical for subscription management
+  'app_subscriptions/update',  // Subscription status changes (cancelled, expired, upgraded, etc.)
+  'subscription_billing_attempts/failure',  // Payment failed
+  'subscription_billing_attempts/success',  // Payment succeeded
 ];
 
 async function createWebhook(
