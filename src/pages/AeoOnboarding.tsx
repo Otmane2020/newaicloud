@@ -187,10 +187,10 @@ export default function AeoOnboarding() {
 
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
-          planId,
-          billingCycle,
-          successUrl: `${window.location.origin}/onboarding?checkout=success`,
-          cancelUrl: `${window.location.origin}/onboarding`,
+          plan_id: planId,
+          billing_period: billingCycle,
+          success_url: `${window.location.origin}/onboarding?checkout=success`,
+          cancel_url: `${window.location.origin}/onboarding`,
         },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
