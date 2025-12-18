@@ -558,7 +558,7 @@ const Index = () => {
                 key: "starter",
                 priceMonthly: 9.99,
                 priceYearly: 7.99,
-                yearlyTotal: 95.88,
+                yearlyTotal: 96.00,
                 icon: "🟢",
                 featured: false,
                 hasPromo: false,
@@ -607,18 +607,14 @@ const Index = () => {
 
                     <div>
                       <div className="flex items-baseline gap-1">
-                        {!planConfig.isTrial && billingCycle === "yearly" ? (
-                          <>
-                            <span className="text-3xl font-bold">{formatPrice(planConfig.yearlyTotal, language)}</span>
-                            <span className="text-xs text-muted-foreground">{t.landing.pricing.perYear}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-3xl font-bold">{formatPrice(price, language)}</span>
-                            <span className="text-xs text-muted-foreground">{t.landing.pricing.perMonth}</span>
-                          </>
-                        )}
+                        <span className="text-3xl font-bold">{formatPrice(price, language)}</span>
+                        <span className="text-xs text-muted-foreground">{t.landing.pricing.perMonth}</span>
                       </div>
+                      {!planConfig.isTrial && billingCycle === "yearly" && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t.onboarding.billedAnnually} ({formatPrice(planConfig.yearlyTotal, language)}/{language === 'fr' ? 'an' : 'year'})
+                        </p>
+                      )}
                       {planConfig.isTrial && (
                         <p className="text-xs text-success mt-1 font-semibold">{t.trial.duration}</p>
                       )}

@@ -14,7 +14,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number }> = {
   "trial": { name: "14-Day Free Trial", price: 0.01, interval: "EVERY_30_DAYS", trialDays: 14 },
   "starter-monthly": { name: "Starter (100 optimizations)", price: 9.99, interval: "EVERY_30_DAYS", trialDays: 7 },
-  "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 95.88, interval: "ANNUAL", trialDays: 7 },
+  "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 96.00, interval: "ANNUAL", trialDays: 7 },
   "pro-500-monthly": { name: "Pro (500 optimizations)", price: 49.00, interval: "EVERY_30_DAYS" },
   "pro-500-yearly": { name: "Pro Annual (500 optimizations)", price: 468.00, interval: "ANNUAL" },
   "pro-1000-monthly": { name: "Enterprise (2,000 optimizations)", price: 199.00, interval: "EVERY_30_DAYS" },
