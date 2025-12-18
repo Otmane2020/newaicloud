@@ -9,6 +9,7 @@ interface DemoModeState {
   demoMessage: string;
   canModify: boolean;
   canSwitchStore: boolean;
+  unlimitedOptimizations: boolean;
 }
 
 /**
@@ -29,10 +30,11 @@ export const useDemoMode = (): DemoModeState => {
       isReadOnly: isDemoMode && DEMO_CONFIG.isReadOnly,
       demoStoreId: isDemoMode ? DEMO_CONFIG.storeId : null,
       demoMessage: isDemoMode 
-        ? 'Mode Démonstration - Les modifications ne seront pas enregistrées'
+        ? 'Mode Admin - Optimisations illimitées'
         : '',
-      canModify: !isDemoMode,
+      canModify: !isDemoMode || !DEMO_CONFIG.isReadOnly,
       canSwitchStore: !isDemoMode,
+      unlimitedOptimizations: isDemoMode && DEMO_CONFIG.unlimitedOptimizations,
     };
   }, [user?.email, user?.id]);
 };

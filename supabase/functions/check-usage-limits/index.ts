@@ -31,10 +31,10 @@ function detectLanguage(req: Request): 'fr' | 'en' {
   return acceptLanguage.toLowerCase().includes('fr') ? 'fr' : 'en';
 }
 
-// Demo account configuration
+// Demo account configuration - Admin with unlimited access
 const DEMO_CONFIG = {
-  email: 'store-demo-20240334@shopify.newai.sale',
-  userId: '86ff1fc7-bd11-4e6a-9b11-af3db227e552',
+  email: 'oben.rockman@gmail.com',
+  userId: 'd0a2c485-2ebc-4452-8c91-de58fcfd4f63',
 };
 
 // Helper to check if user is demo account
