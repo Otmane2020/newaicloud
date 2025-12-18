@@ -28,8 +28,8 @@ export function StoreSelector() {
     return null;
   }
 
-  // If only one store OR demo mode, show it in sidebar style (no select)
-  if (stores.length === 1 || isDemoMode) {
+  // If only one store OR cannot switch stores, show it in sidebar style (no select)
+  if (stores.length === 1 || !canSwitchStore) {
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 bg-primary/10 rounded-lg">
         {isDemoMode ? (
