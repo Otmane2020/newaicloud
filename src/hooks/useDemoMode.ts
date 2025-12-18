@@ -14,10 +14,9 @@ interface DemoModeState {
 
 /**
  * Hook to detect if current user is in demo mode
- * Demo mode applies special restrictions:
- * - Read-only access (no modifications to products, SEO, etc.)
- * - Unlimited optimizations (for testing purposes)
- * - Cannot switch stores
+ * Admin mode applies special privileges:
+ * - Unlimited optimizations
+ * - Can modify and switch stores
  */
 export const useDemoMode = (): DemoModeState => {
   const { user } = useAuth();
@@ -27,13 +26,13 @@ export const useDemoMode = (): DemoModeState => {
     
     return {
       isDemoMode,
-      isReadOnly: isDemoMode && DEMO_CONFIG.isReadOnly,
-      demoStoreId: isDemoMode ? DEMO_CONFIG.storeId : null,
+      isReadOnly: false, // Admin can modify everything
+      demoStoreId: null, // Admin is not locked to a specific store
       demoMessage: isDemoMode 
         ? 'Mode Admin - Optimisations illimitées'
         : '',
-      canModify: !isDemoMode || !DEMO_CONFIG.isReadOnly,
-      canSwitchStore: !isDemoMode,
+      canModify: true, // Admin can modify
+      canSwitchStore: true, // Admin can switch stores
       unlimitedOptimizations: isDemoMode && DEMO_CONFIG.unlimitedOptimizations,
     };
   }, [user?.email, user?.id]);
