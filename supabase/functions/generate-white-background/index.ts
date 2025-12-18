@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
+import { autoSyncImageToShopify } from "../_shared/auto-sync-to-shopify.ts";
 
 /**
  * POST-PROCESSING: Force exact format dimensions using FIT (not crop)
@@ -913,11 +914,33 @@ Please incorporate these specific instructions into the final image generation w
       }
     }
 
+    // 🆕 AUTO-SYNC TO SHOPIFY
+    let shopifySyncResult = null;
+    if (product_id && user && finalImageUrl && !finalImageUrl.startsWith('data:')) {
+      console.log(`[white-bg] 🚀 Auto-syncing to Shopify...`);
+      shopifySyncResult = await autoSyncImageToShopify({
+        productId: product_id,
+        imageUrl: finalImageUrl,
+        altText: productTitle || "Product image - white background",
+        userId: user.id,
+        autoSyncEnabled: body.autoSyncToShopify !== false // default true
+      });
+      
+      if (shopifySyncResult.success && !shopifySyncResult.skipped) {
+        console.log(`[white-bg] ✅ Auto-synced to Shopify: ${shopifySyncResult.shopifyImageId}`);
+      } else if (shopifySyncResult.skipped) {
+        console.log(`[white-bg] ⏭️ Shopify sync skipped: ${shopifySyncResult.skipReason}`);
+      } else {
+        console.error(`[white-bg] ❌ Shopify sync failed: ${shopifySyncResult.error}`);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         imageUrl: finalImageUrl,
         usedProvider: usedModel,
+        shopifySync: shopifySyncResult,
         metadata: {
           imageType,
           productTitle,

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
+import { autoSyncImageToShopify } from "../_shared/auto-sync-to-shopify.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +24,8 @@ serve(async (req) => {
   try {
     // VÉRIFIER LES LIMITES AVANT DE GÉNÉRER
     const authHeader = req.headers.get("Authorization");
+    let authenticatedUserId: string | null = null;
+    
     if (authHeader) {
       const supabaseAdmin = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
@@ -35,6 +38,7 @@ serve(async (req) => {
       } = await supabaseAdmin.auth.getUser(token);
 
       if (user) {
+        authenticatedUserId = user.id;
         const currentMonth = new Date().toISOString().substring(0, 7) + "-01";
         const { data: usage } = await supabaseAdmin
           .from("usage_tracking")
@@ -97,6 +101,8 @@ serve(async (req) => {
       imageUrl,
       prompt,
       productTitle,
+      productId, // 🆕 For auto-sync to Shopify
+      imageId,   // 🆕 For auto-sync to Shopify
       imageType = "secondary",
       format = "square",
       similarity = "medium",
@@ -105,7 +111,8 @@ serve(async (req) => {
       visionAiData,
       productDescription,
       seoTitle,
-      seoDescription
+      seoDescription,
+      autoSyncToShopify = true // 🆕 Auto-sync option
     } = body;
 
     if (!imageUrl || !prompt) {
@@ -521,11 +528,34 @@ RESULT: A stunning ${isMainImage ? "main product photo" : "lifestyle photo"} at 
       // Continue with original image
     }
 
+    // 🆕 AUTO-SYNC TO SHOPIFY
+    let shopifySyncResult = null;
+    if (productId && authenticatedUserId && finalImageUrl && !finalImageUrl.startsWith('data:')) {
+      console.log(`[image-bg] 🚀 Auto-syncing to Shopify...`);
+      shopifySyncResult = await autoSyncImageToShopify({
+        productId,
+        imageUrl: finalImageUrl,
+        imageId,
+        altText: productTitle || "Product image - custom background",
+        userId: authenticatedUserId,
+        autoSyncEnabled: autoSyncToShopify !== false
+      });
+      
+      if (shopifySyncResult.success && !shopifySyncResult.skipped) {
+        console.log(`[image-bg] ✅ Auto-synced to Shopify: ${shopifySyncResult.shopifyImageId}`);
+      } else if (shopifySyncResult.skipped) {
+        console.log(`[image-bg] ⏭️ Shopify sync skipped: ${shopifySyncResult.skipReason}`);
+      } else {
+        console.error(`[image-bg] ❌ Shopify sync failed: ${shopifySyncResult.error}`);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         imageUrl: finalImageUrl,
         usedProvider: usedModel,
+        shopifySync: shopifySyncResult,
         metadata: {
           prompt,
           imageType,
