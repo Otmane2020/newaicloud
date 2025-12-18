@@ -3708,6 +3708,7 @@ export type Database = {
           position: number | null
           product_id: string
           shopify_image_id: number | null
+          shopify_sync_count: number | null
           src: string
           updated_at: string
           width: number | null
@@ -3723,6 +3724,7 @@ export type Database = {
           position?: number | null
           product_id: string
           shopify_image_id?: number | null
+          shopify_sync_count?: number | null
           src: string
           updated_at?: string
           width?: number | null
@@ -3738,6 +3740,7 @@ export type Database = {
           position?: number | null
           product_id?: string
           shopify_image_id?: number | null
+          shopify_sync_count?: number | null
           src?: string
           updated_at?: string
           width?: number | null
