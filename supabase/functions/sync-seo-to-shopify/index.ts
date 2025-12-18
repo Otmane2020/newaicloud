@@ -13,6 +13,8 @@ interface SyncRequest {
   syncTags?: boolean;
   syncAltText?: boolean;
   syncGoogleShopping?: boolean;
+  syncBodyHtml?: boolean; // Sync landing page / body HTML
+  bodyHtml?: string; // Landing page HTML content to sync
   force?: boolean; // Bypass throttling check (for post-optimization sync)
   // Direct field updates (for inline editing)
   title?: string; // Product title update
@@ -151,14 +153,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, force, title, vendor, sku, price, cost, variant_id }: SyncRequest = bodyCheck;
+    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, syncBodyHtml, bodyHtml, force, title, vendor, sku, price, cost, variant_id }: SyncRequest = bodyCheck;
 
     // Sync product SEO data
     if (productId) {
       // Get store connection for this user
       const { data: product, error: productError } = await supabaseClient
         .from("shopify_products")
-        .select("shopify_id, title, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id, last_seo_sync_at, last_synced_data")
+        .select("shopify_id, title, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id, last_seo_sync_at, last_synced_data, landing_page, landing_page_html")
         .eq("id", productId)
         .eq("seller_id", user.id)
         .maybeSingle();
@@ -276,7 +278,34 @@ Deno.serve(async (req: Request) => {
         throw new Error(`Failed to update SEO in Shopify: ${error.message}`);
       }
 
-      // PHASE 1.5: Direct field updates (title, vendor, sku, price, cost) - for inline editing
+      // PHASE 1.5: Sync body HTML (landing page content)
+      if (syncBodyHtml) {
+        const contentToSync = bodyHtml || product.landing_page_html || product.landing_page;
+        if (contentToSync) {
+          console.log(`[SYNC-SEO] Updating product body HTML (${contentToSync.length} chars)...`);
+          const bodyHtmlMutation = `
+            mutation productUpdate($input: ProductInput!) {
+              productUpdate(input: $input) {
+                product { id descriptionHtml }
+                userErrors { field message }
+              }
+            }
+          `;
+          try {
+            await shopifyGraphQL(shopUrl, shopifyAccessToken, bodyHtmlMutation, {
+              input: {
+                id: `gid://shopify/Product/${product.shopify_id}`,
+                descriptionHtml: contentToSync
+              }
+            });
+            console.log("[SYNC-SEO] ✅ Body HTML (landing page) updated successfully");
+          } catch (bodyError: any) {
+            console.error("[SYNC-SEO] ❌ Body HTML update failed:", bodyError.message);
+          }
+        }
+      }
+
+      // PHASE 1.6: Direct field updates (title, vendor, sku, price, cost) - for inline editing
       if (title !== undefined || vendor !== undefined) {
         console.log(`[SYNC-SEO] Updating product fields - title: "${title}", vendor: "${vendor}"...`);
         const productFieldsMutation = `
