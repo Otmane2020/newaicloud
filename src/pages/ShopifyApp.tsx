@@ -64,9 +64,11 @@ export default function ShopifyApp() {
       const pendingToken = params.get("pending_token");
       const host = params.get("host");
 
-      // Normaliser le shop domain (ajouter .myshopify.com si absent)
+      // Normaliser le shop domain (ajouter .myshopify.com si absent + lowercase)
       const shop = rawShop 
-        ? (rawShop.includes('.myshopify.com') ? rawShop : `${rawShop}.myshopify.com`)
+        ? (rawShop.includes('.myshopify.com') 
+            ? rawShop.toLowerCase() 
+            : `${rawShop}.myshopify.com`.toLowerCase())
         : null;
 
       console.log('🔍 [ShopifyApp] Params:', { rawShop, shop, pendingToken: !!pendingToken, host: !!host });

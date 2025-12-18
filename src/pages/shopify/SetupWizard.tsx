@@ -104,9 +104,11 @@ export default function SetupWizard() {
   const pendingToken = searchParams.get("pending_token");
   const shopFromUrl = searchParams.get("shop");
   
-  // Normalize shop domain
+  // Normalize shop domain (lowercase for case-insensitive matching)
   const normalizedShop = shopFromUrl 
-    ? (shopFromUrl.includes('.myshopify.com') ? shopFromUrl : `${shopFromUrl}.myshopify.com`)
+    ? (shopFromUrl.includes('.myshopify.com') 
+        ? shopFromUrl.toLowerCase() 
+        : `${shopFromUrl}.myshopify.com`.toLowerCase())
     : null;
 
   const t = {
