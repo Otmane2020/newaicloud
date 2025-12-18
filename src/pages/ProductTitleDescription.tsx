@@ -68,6 +68,7 @@ import { BulkLandingProgressDialog } from "@/components/seo/BulkLandingProgressD
 import { SmartBulkLandingDialog } from "@/components/seo/SmartBulkLandingDialog";
 import { AIImagesDialog } from "@/components/seo/AIImagesDialog";
 import { BulkAIImagesDialog } from "@/components/seo/BulkAIImagesDialog";
+import { SyncProgressDialog } from "@/components/seo/SyncProgressDialog";
 
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
 import { ProductGalleryDialog } from "@/components/seo/ProductGalleryDialog";
@@ -247,6 +248,9 @@ export default function ProductTitleDescription() {
   const [showSmartBgDialog, setShowSmartBgDialog] = useState(false);
   const [showAIImagesDialog, setShowAIImagesDialog] = useState(false);
   const [showBulkAIImagesDialog, setShowBulkAIImagesDialog] = useState(false);
+  // Sync progress dialog states
+  const [showSyncProgressDialog, setShowSyncProgressDialog] = useState(false);
+  const [syncProducts, setSyncProducts] = useState<Product[]>([]);
   // Removed showImageSelectionDialog, imageSelectionMode, pendingProduct, pendingProductImages - now integrated in AiBackgroundDialog
   
   // Inline editing states
@@ -1939,7 +1943,7 @@ export default function ProductTitleDescription() {
               </Button>
               <Button
                 variant="outline"
-                onClick={async () => {
+                onClick={() => {
                   const productsToSync = filteredProducts.filter(
                     (p) => p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title),
                   );
@@ -1949,39 +1953,19 @@ export default function ProductTitleDescription() {
                     return;
                   }
 
-                  const toastId = toast.loading(
-                    `${t.contentOptimization.buttons.synchronizing} ${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}...`,
-                  );
-
-                  try {
-                    for (const product of productsToSync) {
-                      await supabase.functions.invoke("sync-seo-to-shopify", {
-                        body: {
-                          productId: product.id,
-                          shopifyId: product.shopify_id,
-                          seoTitle: product.seo_title,
-                          seoDescription: product.seo_description,
-                        },
-                      });
-                    }
-                    toast.success(`${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}`, {
-                      id: toastId,
-                    });
-                  } catch (error) {
-                    console.error("Sync error:", error);
-                    toast.error(t.contentOptimization.toasts.syncError, { id: toastId });
-                  }
+                  setSyncProducts(productsToSync);
+                  setShowSyncProgressDialog(true);
                 }}
                 disabled={syncingToShopify}
                 size="lg"
                 className="gap-2"
               >
-                {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 {t.contentOptimization.buttons.syncAll}
               </Button>
               <Button
                 variant="outline"
-                onClick={async () => {
+                onClick={() => {
                   const productsToSync = Array.from(selectedProducts)
                     .map((id) => products.find((p) => p.id === id))
                     .filter((p) => p && p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title)) as Product[];
@@ -1991,35 +1975,14 @@ export default function ProductTitleDescription() {
                     return;
                   }
 
-                  const toastId = toast.loading(
-                    `${t.contentOptimization.buttons.synchronizing} ${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}...`,
-                  );
-
-                  try {
-                    for (const product of productsToSync) {
-                      await supabase.functions.invoke("sync-seo-to-shopify", {
-                        body: {
-                          productId: product.id,
-                          shopifyId: product.shopify_id,
-                          seoTitle: product.seo_title,
-                          seoDescription: product.seo_description,
-                        },
-                      });
-                    }
-                    toast.success(`${productsToSync.length} ${t.contentOptimization.toasts.productsSynced}`, {
-                      id: toastId,
-                    });
-                    setSelectedProducts(new Set());
-                  } catch (error) {
-                    console.error("Sync error:", error);
-                    toast.error(t.contentOptimization.toasts.syncError, { id: toastId });
-                  }
+                  setSyncProducts(productsToSync);
+                  setShowSyncProgressDialog(true);
                 }}
                 disabled={syncingToShopify || selectedProducts.size === 0}
                 size="lg"
                 className="gap-2"
               >
-                {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 {t.contentOptimization.buttons.syncSelected} ({selectedProducts.size})
               </Button>
             </div>
@@ -4123,6 +4086,35 @@ export default function ProductTitleDescription() {
         onComplete={() => {
           fetchProducts();
           refreshLimits();
+        }}
+      />
+
+      {/* Sync Progress Dialog */}
+      <SyncProgressDialog
+        open={showSyncProgressDialog}
+        onOpenChange={setShowSyncProgressDialog}
+        products={syncProducts.map(p => ({
+          id: p.id,
+          title: p.title,
+          image_url: p.image_url,
+          shopify_id: p.shopify_id,
+          seo_title: p.seo_title,
+          seo_description: p.seo_description,
+        }))}
+        onSync={async (product) => {
+          await supabase.functions.invoke("sync-seo-to-shopify", {
+            body: {
+              productId: product.id,
+              shopifyId: product.shopify_id,
+              seoTitle: product.seo_title,
+              seoDescription: product.seo_description,
+            },
+          });
+        }}
+        onComplete={() => {
+          toast.success(t.contentOptimization.toasts.productsSynced);
+          setSelectedProducts(new Set());
+          fetchProducts();
         }}
       />
     </div>
