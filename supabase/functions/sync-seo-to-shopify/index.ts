@@ -215,15 +215,17 @@ Deno.serve(async (req: Request) => {
         const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
         
         if (lastSync > thirtySecondsAgo) {
-          console.log(`Product ${productId} was synced less than 30 seconds ago, skipping`);
+          console.log(`Product ${productId} was synced less than 30 seconds ago, skipping (already synced)`);
+          // Return success with skipped flag - NOT an error (prevents UI showing as error)
           return new Response(
             JSON.stringify({
-              success: false,
-              message: "Synchronisation en cours, veuillez patienter quelques secondes.",
-              error: "SYNC_TOO_RECENT"
+              success: true,
+              skipped: true,
+              message: "Produit déjà synchronisé / Product already synced",
+              reason: "SYNC_TOO_RECENT"
             }),
             {
-              status: 429,
+              status: 200,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             }
           );
