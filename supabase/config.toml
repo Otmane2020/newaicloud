@@ -605,5 +605,11 @@ verify_jwt = true
 [functions.generate-aeo-article]
 verify_jwt = true
 
+[functions.test-shopify-product]
+verify_jwt = false
+
+[functions.bulk-sync-vendor-to-shopify]
+verify_jwt = false
+
 [functions.bulk-sync-vendor-to-shopify]
 verify_jwt = false
