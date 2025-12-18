@@ -4138,6 +4138,11 @@ export default function ProductTitleDescription() {
             body.syncGoogleShopping = true;
           }
 
+          // Sync images (AI-generated)
+          if (options.syncImages) {
+            body.syncImages = true;
+          }
+
           const { error } = await supabase.functions.invoke("sync-seo-to-shopify", {
             body,
           });
