@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
+import { autoSyncImageToShopify } from "../_shared/auto-sync-to-shopify.ts";
 
 /**
  * POST-PROCESSING: Force exact format dimensions
@@ -77,6 +78,8 @@ serve(async (req) => {
   try {
     // Check usage limits first
     const authHeader = req.headers.get("Authorization");
+    let authenticatedUserId: string | null = null;
+    
     if (authHeader) {
       const supabaseAdmin = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
@@ -89,6 +92,7 @@ serve(async (req) => {
       } = await supabaseAdmin.auth.getUser(token);
 
       if (user) {
+        authenticatedUserId = user.id;
         const currentMonth = new Date().toISOString().substring(0, 7) + "-01";
         const { data: usage } = await supabaseAdmin
           .from("usage_tracking")
@@ -732,10 +736,33 @@ Qualité = OBLIGATOIRE.
       }
     }
 
+    // 🆕 AUTO-SYNC TO SHOPIFY
+    let shopifySyncResult = null;
+    if (productId && authenticatedUserId && processedImageUrl && !processedImageUrl.startsWith('data:')) {
+      console.log(`[ai-bg-gen] 🚀 Auto-syncing to Shopify...`);
+      shopifySyncResult = await autoSyncImageToShopify({
+        productId,
+        imageUrl: processedImageUrl,
+        imageId,
+        altText: productTitle || "Product image - AI background",
+        userId: authenticatedUserId,
+        autoSyncEnabled: body.autoSyncToShopify !== false
+      });
+      
+      if (shopifySyncResult.success && !shopifySyncResult.skipped) {
+        console.log(`[ai-bg-gen] ✅ Auto-synced to Shopify: ${shopifySyncResult.shopifyImageId}`);
+      } else if (shopifySyncResult.skipped) {
+        console.log(`[ai-bg-gen] ⏭️ Shopify sync skipped: ${shopifySyncResult.skipReason}`);
+      } else {
+        console.error(`[ai-bg-gen] ❌ Shopify sync failed: ${shopifySyncResult.error}`);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         imageUrl: processedImageUrl,
+        shopifySync: shopifySyncResult,
         metadata: {
           productTitle,
           style,
