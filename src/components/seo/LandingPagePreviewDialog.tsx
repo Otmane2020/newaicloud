@@ -22,6 +22,7 @@ interface LandingPagePreviewDialogProps {
   seoDescription?: string;
   storeUrl?: string;
   onGenerateClick?: () => void;
+  onLandingPageGenerated?: (html: string) => void;
 }
 
 export function LandingPagePreviewDialog({
@@ -35,9 +36,10 @@ export function LandingPagePreviewDialog({
   seoDescription,
   storeUrl,
   onGenerateClick,
+  onLandingPageGenerated,
 }: LandingPagePreviewDialogProps) {
   const { t } = useTranslation();
-  const [isSyncing, setIsSyncing] = useState(false);
+  // Bouton Sync supprimé - auto-sync activé après génération
   const [productUrl, setProductUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
   const [showThemeGuide, setShowThemeGuide] = useState(false);
@@ -152,43 +154,8 @@ ${htmlContent}
     return htmlContent;
   };
 
-  // Sync to Shopify mutation
-  const syncMutation = useMutation({
-    mutationFn: async (htmlContent: string) => {
-      // Check if theme CSS has been added before syncing
-      if (!themeCssAdded) {
-        setShowThemeGuide(true);
-        throw new Error("Theme CSS not configured");
-      }
-      
-      setIsSyncing(true);
-      const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
-        body: {
-          productId,
-          productTitle,
-          productHandle,
-          htmlContent,
-        },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      toast.success(t.landingGeneration.preview.syncSuccess);
-      if (data.productUrl) {
-        setProductUrl(data.productUrl);
-      }
-      setIsSyncing(false);
-    },
-    onError: (error: any) => {
-      if (error.message !== "Theme CSS not configured") {
-        console.error("Sync error:", error);
-        toast.error(t.landingGeneration.preview.syncError);
-      }
-      setIsSyncing(false);
-    },
-  });
+  // Note: Le bouton Sync manuel a été supprimé - l'auto-sync est intégré dans generate-smart-landing
+  // Ce commentaire documente le changement pour référence future
 
   const handleDownload = () => {
     if (!currentLandingPage) return;
@@ -265,21 +232,8 @@ ${htmlContent}
                 <Button variant="outline" size="sm" onClick={handleDownload} disabled={!currentLandingPage}>
                   {t.landingGeneration.preview.downloadHtml}
                 </Button>
-                {!productUrl ? (
-                  <Button
-                    onClick={() => syncMutation.mutate(currentLandingPage)}
-                    disabled={isSyncing || !currentLandingPage}
-                  >
-                    {isSyncing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {t.landingGeneration.preview.synchronization}
-                      </>
-                    ) : (
-                      t.landingGeneration.preview.syncWithShopify
-                    )}
-                  </Button>
-                ) : (
+                {/* Bouton Sync supprimé - auto-sync intégré dans la génération */}
+                {productUrl && (
                   <Button
                     variant="default"
                     size="sm"
