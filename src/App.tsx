@@ -136,8 +136,10 @@ import AeoOnboarding from "./pages/AeoOnboarding";
 import AeoPricing from "./pages/AeoPricing";
 import AeoSubscription from "./pages/AeoSubscription";
 import AeoAccount from "./pages/AeoAccount";
+import AeoPublicAnswer from "./pages/AeoPublicAnswer";
 import { AeoProtectedLayout } from "./components/aeo/AeoProtectedLayout";
 import { isAeoreplyDomain } from "./hooks/useAppMode";
+import { HelmetProvider } from "react-helmet-async";
 
 const queryClient = new QueryClient();
 
@@ -185,6 +187,8 @@ function AeoreplyRoutes() {
       <Route path="/settings" element={<AeoProtectedLayout><AeoAccount /></AeoProtectedLayout>} />
       <Route path="/account" element={<AeoProtectedLayout><AeoAccount /></AeoProtectedLayout>} />
       <Route path="/subscription" element={<AeoProtectedLayout><AeoSubscription /></AeoProtectedLayout>} />
+      {/* Public AEO Answer pages - /:brand/answers/:slug */}
+      <Route path="/:brand/answers/:slug" element={<AeoPublicAnswer />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/landing" replace />} />
@@ -683,40 +687,42 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ErrorBoundary>
-      <LanguageProvider>
-        <TooltipProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <FacebookSDKProvider>
-            <AutoSyncProvider>
-              <StoreProvider>
-                <OptimizationProvider>
-                  <AppQuotaMonitor />
-                  <AutoSyncMonitor />
-                  <AdminEmailNotificationsMonitor />
-                  <AutoTranslator />
-                  <BulkOptimizationIndicator />
-                  <PageTracker />
-                  <div className="overflow-x-hidden max-w-full">
-                    <AppRoutes />
-                    <Toaster />
-                    <Sonner />
-                    <AIAssistant />
-                    <NotificationPermissionPrompt />
-                    <AutoSyncProgressDialog />
-                  </div>
-                </OptimizationProvider>
-              </StoreProvider>
-            </AutoSyncProvider>
-            </FacebookSDKProvider>
-          </AuthProvider>
-        </BrowserRouter>
-        </TooltipProvider>
-      </LanguageProvider>
-    </ErrorBoundary>
-  </QueryClientProvider>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <LanguageProvider>
+          <TooltipProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <FacebookSDKProvider>
+              <AutoSyncProvider>
+                <StoreProvider>
+                  <OptimizationProvider>
+                    <AppQuotaMonitor />
+                    <AutoSyncMonitor />
+                    <AdminEmailNotificationsMonitor />
+                    <AutoTranslator />
+                    <BulkOptimizationIndicator />
+                    <PageTracker />
+                    <div className="overflow-x-hidden max-w-full">
+                      <AppRoutes />
+                      <Toaster />
+                      <Sonner />
+                      <AIAssistant />
+                      <NotificationPermissionPrompt />
+                      <AutoSyncProgressDialog />
+                    </div>
+                  </OptimizationProvider>
+                </StoreProvider>
+              </AutoSyncProvider>
+              </FacebookSDKProvider>
+            </AuthProvider>
+          </BrowserRouter>
+          </TooltipProvider>
+        </LanguageProvider>
+      </ErrorBoundary>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;
