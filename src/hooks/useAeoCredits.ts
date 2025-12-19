@@ -25,125 +25,26 @@ export const AEO_CREDIT_COSTS: AeoCreditCosts = {
   refreshAnalysis: 1,
 };
 
-// Plan limits - maps plan IDs to AEO credit limits
-const PLAN_LIMITS: Record<string, AeoCredits> = {
-  'free': {
-    optimizations: { used: 0, limit: 10 },
-    articles: { used: 0, limit: 3 },
-    answers: { used: 0, limit: 20 },
-  },
-  'trial': {
-    optimizations: { used: 0, limit: 50 },
-    articles: { used: 0, limit: 5 },
-    answers: { used: 0, limit: 50 },
-  },
-  'starter': {
-    optimizations: { used: 0, limit: 100 },
-    articles: { used: 0, limit: 30 },
-    answers: { used: 0, limit: 200 },
-  },
-  'starter-100': {
-    optimizations: { used: 0, limit: 100 },
-    articles: { used: 0, limit: 30 },
-    answers: { used: 0, limit: 200 },
-  },
-  'pro-500': {
-    optimizations: { used: 0, limit: 500 },
-    articles: { used: 0, limit: 150 },
-    answers: { used: 0, limit: 1000 },
-  },
-  'pro-1000': {
-    optimizations: { used: 0, limit: 1000 },
-    articles: { used: 0, limit: 300 },
-    answers: { used: 0, limit: 2000 },
-  },
-  'pro-2000': {
-    optimizations: { used: 0, limit: 2000 },
-    articles: { used: 0, limit: 600 },
-    answers: { used: 0, limit: 4000 },
-  },
-  'enterprise-2000': {
-    optimizations: { used: 0, limit: 2000 },
-    articles: { used: 0, limit: 600 },
-    answers: { used: 0, limit: 4000 },
-  },
-  'pro-4000': {
-    optimizations: { used: 0, limit: 4000 },
-    articles: { used: 0, limit: 1200 },
-    answers: { used: 0, limit: 8000 },
-  },
-  'enterprise-4000': {
-    optimizations: { used: 0, limit: 4000 },
-    articles: { used: 0, limit: 1200 },
-    answers: { used: 0, limit: 8000 },
-  },
-  'business-5000': {
-    optimizations: { used: 0, limit: 5000 },
-    articles: { used: 0, limit: 1500 },
-    answers: { used: 0, limit: 10000 },
-  },
-  'pro-8000': {
-    optimizations: { used: 0, limit: 8000 },
-    articles: { used: 0, limit: 2400 },
-    answers: { used: 0, limit: 16000 },
-  },
-  'enterprise-8000': {
-    optimizations: { used: 0, limit: 8000 },
-    articles: { used: 0, limit: 2400 },
-    answers: { used: 0, limit: 16000 },
-  },
-  'pro-16000': {
-    optimizations: { used: 0, limit: 16000 },
-    articles: { used: 0, limit: 4800 },
-    answers: { used: 0, limit: 32000 },
-  },
-  'enterprise-16000': {
-    optimizations: { used: 0, limit: 16000 },
-    articles: { used: 0, limit: 4800 },
-    answers: { used: 0, limit: 32000 },
-  },
-  'pro-32000': {
-    optimizations: { used: 0, limit: 32000 },
-    articles: { used: 0, limit: 9600 },
-    answers: { used: 0, limit: 64000 },
-  },
-  'enterprise-32000': {
-    optimizations: { used: 0, limit: 32000 },
-    articles: { used: 0, limit: 9600 },
-    answers: { used: 0, limit: 64000 },
-  },
-  'pro-50000': {
-    optimizations: { used: 0, limit: 50000 },
-    articles: { used: 0, limit: 15000 },
-    answers: { used: 0, limit: 100000 },
-  },
-  'enterprise-64000': {
-    optimizations: { used: 0, limit: 64000 },
-    articles: { used: 0, limit: 19200 },
-    answers: { used: 0, limit: 128000 },
-  },
-  'enterprise-128000': {
-    optimizations: { used: 0, limit: 128000 },
-    articles: { used: 0, limit: 38400 },
-    answers: { used: 0, limit: 256000 },
-  },
-  'enterprise-200000': {
-    optimizations: { used: 0, limit: 200000 },
-    articles: { used: 0, limit: 60000 },
-    answers: { used: 0, limit: 500000 },
-  },
+// Default limits for free plan (fallback)
+const DEFAULT_FREE_LIMITS: AeoCredits = {
+  optimizations: { used: 0, limit: 20 },
+  articles: { used: 0, limit: 0 },
+  answers: { used: 0, limit: 10 },
 };
+
+// Ratio for calculating answers limit from optimizations
+const ANSWERS_RATIO = 2; // 2 answers per optimization
 
 export function useAeoCredits() {
   const { user } = useAuth();
   const { language } = useTranslation();
-  const [credits, setCredits] = useState<AeoCredits>(PLAN_LIMITS['free']);
+  const [credits, setCredits] = useState<AeoCredits>(DEFAULT_FREE_LIMITS);
   const [loading, setLoading] = useState(true);
   const [planId, setPlanId] = useState<string>('free');
 
   const fetchCredits = useCallback(async () => {
     if (!user) {
-      setCredits(PLAN_LIMITS['free']);
+      setCredits(DEFAULT_FREE_LIMITS);
       setLoading(false);
       return;
     }
@@ -159,8 +60,18 @@ export function useAeoCredits() {
       const currentPlan = profile?.current_plan_id || 'free';
       setPlanId(currentPlan);
 
-      // Get base limits for plan
-      const baseLimits = PLAN_LIMITS[currentPlan] || PLAN_LIMITS['free'];
+      // Get plan limits from subscription_plans table
+      const { data: planData } = await supabase
+        .from('subscription_plans')
+        .select('max_optimizations_monthly, max_articles_monthly')
+        .eq('id', currentPlan)
+        .single();
+
+      // Calculate limits from DB or use defaults
+      const optimizationsLimit = planData?.max_optimizations_monthly || DEFAULT_FREE_LIMITS.optimizations.limit;
+      const articlesLimit = planData?.max_articles_monthly || DEFAULT_FREE_LIMITS.articles.limit;
+      // Calculate answers limit based on optimizations (2x ratio)
+      const answersLimit = optimizationsLimit * ANSWERS_RATIO;
 
       // Get usage from ai_opportunities and ai_answers tables
       const [opportunitiesResult, answersResult, articlesResult] = await Promise.all([
@@ -185,19 +96,21 @@ export function useAeoCredits() {
       setCredits({
         optimizations: { 
           used: opportunitiesResult.count || 0, 
-          limit: baseLimits.optimizations.limit 
+          limit: optimizationsLimit 
         },
         articles: { 
           used: articlesResult.count || 0, 
-          limit: baseLimits.articles.limit 
+          limit: articlesLimit 
         },
         answers: { 
           used: answersResult.count || 0, 
-          limit: baseLimits.answers.limit 
+          limit: answersLimit 
         },
       });
     } catch (error) {
       console.error('Error fetching AEO credits:', error);
+      // Fallback to defaults on error
+      setCredits(DEFAULT_FREE_LIMITS);
     } finally {
       setLoading(false);
     }

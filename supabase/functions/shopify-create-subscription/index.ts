@@ -10,21 +10,91 @@ const APP_URL = Deno.env.get("APP_URL") || "https://newai.sale";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Mapping des plans vers Shopify Billing
-const SHOPIFY_PLANS: Record<string, { name: string; price: number; interval: "EVERY_30_DAYS" | "ANNUAL"; trialDays?: number }> = {
-  "trial": { name: "14-Day Free Trial", price: 0.01, interval: "EVERY_30_DAYS", trialDays: 14 },
-  "starter-monthly": { name: "Starter (100 optimizations)", price: 9.99, interval: "EVERY_30_DAYS", trialDays: 7 },
-  "starter-yearly": { name: "Starter Annual (100 optimizations)", price: 96.00, interval: "ANNUAL", trialDays: 7 },
-  "pro-500-monthly": { name: "Pro (500 optimizations)", price: 49.00, interval: "EVERY_30_DAYS" },
-  "pro-500-yearly": { name: "Pro Annual (500 optimizations)", price: 468.00, interval: "ANNUAL" },
-  "pro-1000-monthly": { name: "Enterprise (2,000 optimizations)", price: 199.00, interval: "EVERY_30_DAYS" },
-  "pro-1000-yearly": { name: "Enterprise Annual (2,000 optimizations)", price: 1908.00, interval: "ANNUAL" },
-};
-
 const logStep = (step: string, details?: unknown) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[SHOPIFY-BILLING] ${step}${detailsStr}`);
 };
+
+interface PlanData {
+  id: string;
+  name: string;
+  price_monthly: number;
+  price_yearly: number;
+  max_optimizations_monthly: number;
+  max_articles_monthly: number;
+}
+
+interface ShopifyPlan {
+  name: string;
+  price: number;
+  interval: "EVERY_30_DAYS" | "ANNUAL";
+  trialDays?: number;
+  dbPlanId: string;
+  optimizations: number;
+}
+
+// Helper to get plan details from database
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getPlanFromDatabase(
+  supabase: any, 
+  planId: string, 
+  billingCycle: string
+): Promise<ShopifyPlan | null> {
+  // Normalize plan ID for database lookup
+  let dbPlanId = planId;
+  
+  // Handle legacy plan IDs (starter-monthly -> starter, pro-500-monthly -> pro-500, etc.)
+  if (planId.endsWith('-monthly') || planId.endsWith('-yearly')) {
+    dbPlanId = planId.replace(/-monthly$/, '').replace(/-yearly$/, '');
+  }
+  
+  // Special case for starter which might come as "starter-100"
+  if (dbPlanId === 'starter-100') {
+    dbPlanId = 'starter';
+  }
+  
+  logStep("Looking up plan in database", { planId, dbPlanId, billingCycle });
+  
+  const { data, error } = await supabase
+    .from("subscription_plans")
+    .select("id, name, price_monthly, price_yearly, max_optimizations_monthly, max_articles_monthly")
+    .eq("id", dbPlanId)
+    .single();
+  
+  if (error || !data) {
+    logStep("Plan not found in database", { error, planId: dbPlanId });
+    return null;
+  }
+  
+  const plan = data as PlanData;
+  logStep("Plan found in database", plan);
+  
+  // Build Shopify-compatible plan object
+  const isYearly = billingCycle === 'yearly';
+  const price = isYearly ? Number(plan.price_yearly) : Number(plan.price_monthly);
+  const interval: "EVERY_30_DAYS" | "ANNUAL" = isYearly ? "ANNUAL" : "EVERY_30_DAYS";
+  
+  // Build plan name with optimization count
+  const optimizations = plan.max_optimizations_monthly;
+  const planName = `${plan.name} (${optimizations.toLocaleString()} optimizations${isYearly ? ' - Annual' : ''})`;
+  
+  // Determine trial days based on plan type
+  let trialDays: number | undefined;
+  if (planId === 'trial') {
+    trialDays = 14;
+  } else if (dbPlanId === 'starter') {
+    trialDays = 7;
+  }
+  
+  return {
+    name: planName,
+    price: price,
+    interval: interval,
+    trialDays,
+    dbPlanId,
+    optimizations: plan.max_optimizations_monthly
+  };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -54,7 +124,6 @@ serve(async (req) => {
       .toLowerCase();
 
     // 1️⃣ LOAD SHOP TOKEN (shop-centric, not user-centric)
-    // Use exact match first, then order by created_at DESC and limit 1 to handle duplicates gracefully
     const { data: connections, error: connError } = await supabase
       .from("shopify_connections")
       .select("*")
@@ -126,26 +195,34 @@ serve(async (req) => {
         if (forceUpgrade) {
           logStep("UPGRADE MODE: Active subscription exists, but forceUpgrade=true - proceeding to replace", activeSubscription);
         } else {
-          // Check if the user is trying to select the same plan
-          const currentPlanName = activeSubscription.name?.toLowerCase() || "";
-          const requestedPlanKey = planId === "trial" ? "trial" : `${planId}-${billingCycle}`;
-          const requestedPlan = SHOPIFY_PLANS[requestedPlanKey];
+          // Get plan from DB to compare
+          const requestedPlan = await getPlanFromDatabase(supabase, planId, billingCycle || 'monthly');
           
-          if (requestedPlan && currentPlanName.includes(requestedPlan.name.toLowerCase().split(" ")[0])) {
-            logStep("Same plan already active - returning early (no double pay)", activeSubscription);
-            return new Response(
-              JSON.stringify({
-                status: "ACTIVE",
-                subscription: activeSubscription,
-                message: "Subscription already active - no payment needed"
-              }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
+          if (requestedPlan) {
+            const currentPlanName = activeSubscription.name?.toLowerCase() || "";
+            const requestedPlanNameLower = requestedPlan.name.toLowerCase();
+            
+            // Check if same plan by comparing optimization counts
+            const currentOptMatch = currentPlanName.match(/(\d+,?\d*)\s*optimization/);
+            const requestedOptMatch = requestedPlanNameLower.match(/(\d+,?\d*)\s*optimization/);
+            
+            if (currentOptMatch && requestedOptMatch && 
+                currentOptMatch[1].replace(',', '') === requestedOptMatch[1].replace(',', '')) {
+              logStep("Same plan already active - returning early (no double pay)", activeSubscription);
+              return new Response(
+                JSON.stringify({
+                  status: "ACTIVE",
+                  subscription: activeSubscription,
+                  message: "Subscription already active - no payment needed"
+                }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
           }
           
-          // Different plan requested - this is an upgrade/downgrade, mark prior subscription
+          // Different plan requested - this is an upgrade/downgrade
           hadPriorSubscription = true;
-          logStep("Different plan requested - proceeding to upgrade/downgrade", { currentPlan: activeSubscription.name, requestedPlan: requestedPlan?.name });
+          logStep("Different plan requested - proceeding to upgrade/downgrade", { currentPlan: activeSubscription.name });
         }
       } else {
         logStep("No active subscription found, proceeding to create one");
@@ -179,18 +256,17 @@ serve(async (req) => {
       logStep("Warning: Could not check existing subscription, proceeding cautiously");
     }
 
-    // 3️⃣ DETERMINE PLAN
-    const planKey = planId === "trial" ? "trial" : `${planId}-${billingCycle}`;
-    const plan = SHOPIFY_PLANS[planKey];
+    // 3️⃣ GET PLAN FROM DATABASE (instead of hardcoded mapping)
+    const plan = await getPlanFromDatabase(supabase, planId, billingCycle || 'monthly');
 
     if (!plan) {
       return new Response(
-        JSON.stringify({ error: `Unknown plan: ${planKey}` }),
+        JSON.stringify({ error: `Unknown plan: ${planId}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    logStep("Plan selected", { planKey, plan });
+    logStep("Plan selected from database", { planId, plan });
 
     // Detect dev store for test mode
     const shopNameLower = (connection.shop_name || apiShopDomain || "").toLowerCase();
@@ -233,7 +309,7 @@ serve(async (req) => {
       }
     `;
 
-    const returnUrl = `${SUPABASE_URL}/functions/v1/shopify-billing-callback?shop=${encodeURIComponent(apiShopDomain)}&plan=${encodeURIComponent(planId)}&cycle=${billingCycle}`;
+    const returnUrl = `${SUPABASE_URL}/functions/v1/shopify-billing-callback?shop=${encodeURIComponent(apiShopDomain)}&plan=${encodeURIComponent(plan.dbPlanId)}&cycle=${billingCycle}`;
 
     const variables: Record<string, unknown> = {
       name: plan.name,
@@ -250,7 +326,6 @@ serve(async (req) => {
     };
 
     // CRITICAL: Only give trial days if user NEVER had a prior subscription
-    // Trial is a one-time benefit - once used or once had a paid plan, no more trial
     if (plan.trialDays && !hadPriorSubscription) {
       variables.trialDays = plan.trialDays;
       logStep("Adding trial days (first-time user)", { trialDays: plan.trialDays });
@@ -302,11 +377,11 @@ serve(async (req) => {
       );
     }
 
-    // Store pending subscription info (shop-centric)
+    // Store pending subscription info (shop-centric) - use normalized DB plan ID
     await supabase.from("shopify_pending_subscriptions").upsert({
       user_id: connection.user_id,
       shop_domain: apiShopDomain,
-      plan_id: planId,
+      plan_id: plan.dbPlanId,
       billing_cycle: billingCycle,
       shopify_subscription_id: result.appSubscription?.id,
       status: "pending",
