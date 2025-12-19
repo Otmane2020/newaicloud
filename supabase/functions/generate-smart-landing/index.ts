@@ -1,4 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { wrapForShopify } from "../_shared/shopify-html-wrapper.ts";
+import { 
+  shopifyGraphQL, 
+  restIdToGid, 
+  handleUserErrors,
+  PRODUCT_UPDATE_FULL_MUTATION 
+} from "../_shared/shopify-graphql.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,6 +33,10 @@ serve(async (req) => {
       language = "fr",
       theme = "light",
       designStyle = "modern",
+      // Auto-sync parameters
+      productId,
+      shopifyId,
+      storeId,
     } = await req.json();
 
     if (!LOVABLE_API_KEY) {
@@ -316,8 +328,76 @@ Generate the complete HTML.`;
 
     console.log(`✅ [Smart Landing Premium] Generated ${html.length} chars for: ${displayTitle}`);
 
+    // AUTO-SYNC: Synchroniser automatiquement vers Shopify si les IDs sont fournis
+    let syncResult = null;
+    if (productId && shopifyId && storeId) {
+      try {
+        console.log(`🔄 [Auto-Sync] Starting auto-sync to Shopify for product ${productId}`);
+        
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        // Récupérer les credentials Shopify
+        const { data: connection, error: connError } = await supabase
+          .from("shopify_connections")
+          .select("id, store_url, access_token")
+          .eq("id", storeId)
+          .maybeSingle();
+        
+        if (connError || !connection?.access_token) {
+          console.warn(`⚠️ [Auto-Sync] No Shopify connection found for store ${storeId}`);
+        } else {
+          const storeUrl = (connection.store_url || "").replace(/\/$/, "").replace(/^https?:\/\//, "");
+          const productGid = restIdToGid(shopifyId, 'Product');
+          
+          // Le titre à synchroniser : optimizedTitle ou productTitle
+          const titleToSync = optimizedTitle || productTitle;
+          
+          // Mettre à jour le produit sur Shopify via GraphQL
+          const result = await shopifyGraphQL<{
+            productUpdate: {
+              product: { id: string; title: string; descriptionHtml: string; handle: string };
+              userErrors: Array<{ field: string[]; message: string }>;
+            };
+          }>(storeUrl, connection.access_token, PRODUCT_UPDATE_FULL_MUTATION, {
+            input: {
+              id: productGid,
+              title: titleToSync,
+              descriptionHtml: wrapForShopify(html),
+            }
+          });
+          
+          handleUserErrors(result.productUpdate?.userErrors, 'productUpdate');
+          
+          // Mettre à jour last_synced_at dans la DB
+          await supabase
+            .from("shopify_products")
+            .update({
+              last_synced_at: new Date().toISOString(),
+            })
+            .eq("id", productId);
+          
+          syncResult = {
+            synced: true,
+            title: titleToSync,
+            handle: result.productUpdate?.product?.handle,
+          };
+          
+          console.log(`✅ [Auto-Sync] Successfully synced to Shopify: ${titleToSync}`);
+        }
+      } catch (syncError: any) {
+        console.error(`❌ [Auto-Sync] Sync failed:`, syncError.message);
+        syncResult = { synced: false, error: syncError.message };
+      }
+    }
+
     return new Response(
-      JSON.stringify({ html, success: true }),
+      JSON.stringify({ 
+        html, 
+        success: true,
+        autoSync: syncResult,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 

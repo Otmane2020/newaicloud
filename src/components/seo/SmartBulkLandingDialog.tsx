@@ -25,6 +25,8 @@ interface ProductItem {
   body_html?: string;
   seo_title?: string;
   has_landing_page?: boolean | null;
+  shopify_id?: number | null;
+  store_id?: string | null;
 }
 
 interface ProcessedItem {
@@ -200,7 +202,7 @@ export function SmartBulkLandingDialog({
         }
       }
 
-      // Step 3: Generate landing page with retry for network errors
+      // Step 3: Generate landing page with retry for network errors + AUTO-SYNC
       const { data, error } = await withRetry(async () => {
         const result = await supabase.functions.invoke("generate-smart-landing", {
           body: {
@@ -215,11 +217,24 @@ export function SmartBulkLandingDialog({
             // If not provided, the backend defaults to FR.
             theme: config.theme,
             designStyle: config.designStyle,
+            // AUTO-SYNC: Passer les IDs pour synchronisation automatique vers Shopify
+            productId: product.id,
+            shopifyId: product.shopify_id,
+            storeId: product.store_id || storeId,
           },
         });
         if (result.error) throw new Error(result.error.message || "Erreur de génération");
         return result;
       }, 3, 2000);
+      
+      // Log auto-sync result
+      if (data?.autoSync) {
+        if (data.autoSync.synced) {
+          console.log(`[SmartBulk] Auto-synced to Shopify: ${product.title}`);
+        } else {
+          console.warn(`[SmartBulk] Auto-sync failed: ${data.autoSync.error}`);
+        }
+      }
 
       if (!data?.html) throw new Error("Pas de HTML généré");
 
