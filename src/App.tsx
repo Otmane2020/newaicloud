@@ -137,6 +137,8 @@ import AeoPricing from "./pages/AeoPricing";
 import AeoSubscription from "./pages/AeoSubscription";
 import AeoAccount from "./pages/AeoAccount";
 import AeoPublicAnswer from "./pages/AeoPublicAnswer";
+import AeoKeywordTracking from "./pages/AeoKeywordTracking";
+import AeoUrlTracking from "./pages/AeoUrlTracking";
 import { AeoProtectedLayout } from "./components/aeo/AeoProtectedLayout";
 import { isAeoreplyDomain } from "./hooks/useAppMode";
 import { HelmetProvider } from "react-helmet-async";
@@ -183,6 +185,8 @@ function AeoreplyRoutes() {
       <Route path="/opportunities" element={<AeoProtectedLayout><AEO /></AeoProtectedLayout>} />
       <Route path="/answers" element={<AeoProtectedLayout><AeoAnswers /></AeoProtectedLayout>} />
       <Route path="/articles" element={<AeoProtectedLayout><AeoArticles /></AeoProtectedLayout>} />
+      <Route path="/tracking/keywords" element={<AeoProtectedLayout><AeoKeywordTracking /></AeoProtectedLayout>} />
+      <Route path="/tracking/urls" element={<AeoProtectedLayout><AeoUrlTracking /></AeoProtectedLayout>} />
       <Route path="/integrations" element={<AeoProtectedLayout><Integration /></AeoProtectedLayout>} />
       <Route path="/settings" element={<AeoProtectedLayout><AeoAccount /></AeoProtectedLayout>} />
       <Route path="/account" element={<AeoProtectedLayout><AeoAccount /></AeoProtectedLayout>} />
