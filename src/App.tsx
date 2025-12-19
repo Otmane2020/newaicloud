@@ -134,6 +134,8 @@ import AeoAnswers from "./pages/AeoAnswers";
 import AeoArticles from "./pages/AeoArticles";
 import AeoOnboarding from "./pages/AeoOnboarding";
 import AeoPricing from "./pages/AeoPricing";
+import AeoSubscription from "./pages/AeoSubscription";
+import AeoAccount from "./pages/AeoAccount";
 import { AeoProtectedLayout } from "./components/aeo/AeoProtectedLayout";
 import { isAeoreplyDomain } from "./hooks/useAppMode";
 
@@ -180,9 +182,9 @@ function AeoreplyRoutes() {
       <Route path="/answers" element={<AeoProtectedLayout><AeoAnswers /></AeoProtectedLayout>} />
       <Route path="/articles" element={<AeoProtectedLayout><AeoArticles /></AeoProtectedLayout>} />
       <Route path="/integrations" element={<AeoProtectedLayout><Integration /></AeoProtectedLayout>} />
-      <Route path="/settings" element={<AeoProtectedLayout><Account /></AeoProtectedLayout>} />
-      <Route path="/account" element={<AeoProtectedLayout><Account /></AeoProtectedLayout>} />
-      <Route path="/subscription" element={<AeoProtectedLayout><Subscription /></AeoProtectedLayout>} />
+      <Route path="/settings" element={<AeoProtectedLayout><AeoAccount /></AeoProtectedLayout>} />
+      <Route path="/account" element={<AeoProtectedLayout><AeoAccount /></AeoProtectedLayout>} />
+      <Route path="/subscription" element={<AeoProtectedLayout><AeoSubscription /></AeoProtectedLayout>} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/landing" replace />} />
