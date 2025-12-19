@@ -22,7 +22,11 @@ import {
   Settings,
   AlertTriangle,
   Zap,
+  Target,
 } from "lucide-react";
+
+// AI Platforms targeted by AEO
+const AI_PLATFORMS = ['ChatGPT', 'Gemini', 'Perplexity', 'Copilot', 'Claude'];
 
 export default function AeoDashboard() {
   const { language } = useTranslation();
@@ -33,6 +37,12 @@ export default function AeoDashboard() {
   
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [answersStats, setAnswersStats] = useState({
+    total: 0,
+    published: 0,
+    highCitation: 0,
+    avgScore: 0,
+  });
 
   // Check if user needs onboarding
   useEffect(() => {
@@ -63,28 +73,62 @@ export default function AeoDashboard() {
     checkOnboarding();
   }, [user]);
 
+  // Fetch answers stats
+  useEffect(() => {
+    const fetchAnswersStats = async () => {
+      if (!user) return;
+
+      try {
+        // Get all answers for this user
+        const { data: answers } = await supabase
+          .from('ai_answers')
+          .select('id, is_published, citation_potential')
+          .eq('user_id', user.id);
+
+        if (answers) {
+          const total = answers.length;
+          const published = answers.filter(a => a.is_published).length;
+          const highCitation = answers.filter(a => (a.citation_potential || 0) >= 80).length;
+          const avgScore = total > 0 
+            ? Math.round(answers.reduce((sum, a) => sum + (a.citation_potential || 0), 0) / total)
+            : 0;
+
+          setAnswersStats({ total, published, highCitation, avgScore });
+        }
+      } catch (error) {
+        console.error('Error fetching answers stats:', error);
+      }
+    };
+
+    fetchAnswersStats();
+  }, [user]);
+
   const stats = [
     { 
-      label: t.dashboard.stats.totalResponses, 
-      value: credits.answers.used.toString(), 
+      label: language === 'fr' ? "Réponses AEO actives" : "Active AEO Answers",
+      sublabel: language === 'fr' ? `${answersStats.total} générées` : `${answersStats.total} generated`,
+      value: `${answersStats.published}`, 
       icon: MessageSquare,
       color: "from-violet-500 to-purple-500"
     },
     { 
-      label: t.dashboard.stats.totalArticles, 
-      value: credits.articles.used.toString(), 
-      icon: FileText,
-      color: "from-blue-500 to-cyan-500"
-    },
-    { 
-      label: t.dashboard.stats.avgCitationScore, 
-      value: "—", 
-      icon: TrendingUp,
+      label: language === 'fr' ? "Haute citation" : "High Citation",
+      sublabel: language === 'fr' ? "Score ≥ 80%" : "Score ≥ 80%",
+      value: answersStats.highCitation.toString(), 
+      icon: Target,
       color: "from-emerald-500 to-teal-500"
     },
     { 
-      label: t.dashboard.stats.platforms, 
-      value: "5", 
+      label: language === 'fr' ? "Score AEO moyen" : "Avg AEO Score",
+      sublabel: language === 'fr' ? "Potentiel de citation" : "Citation potential",
+      value: answersStats.avgScore > 0 ? `${answersStats.avgScore}%` : "—", 
+      icon: TrendingUp,
+      color: "from-blue-500 to-cyan-500"
+    },
+    { 
+      label: language === 'fr' ? "Plateformes IA ciblées" : "AI Platforms Targeted",
+      sublabel: AI_PLATFORMS.slice(0, 3).join(' · '),
+      value: AI_PLATFORMS.length.toString(), 
       icon: Globe,
       color: "from-orange-500 to-amber-500"
     },
@@ -137,11 +181,11 @@ export default function AeoDashboard() {
       isLimited: isLimitReached('articles'),
     },
     {
-      label: language === 'fr' ? "Réponses IA" : "AI Answers",
-      used: credits.answers.used,
+      label: language === 'fr' ? "Réponses AEO actives" : "Active AEO Answers",
+      used: answersStats.published,
       limit: credits.answers.limit,
-      percentage: getUsagePercentage('answers'),
-      isLimited: isLimitReached('answers'),
+      percentage: credits.answers.limit > 0 ? (answersStats.published / credits.answers.limit) * 100 : 0,
+      isLimited: answersStats.published >= credits.answers.limit,
     },
   ];
 
@@ -229,6 +273,9 @@ export default function AeoDashboard() {
                 <p className="text-3xl font-bold mt-2 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
                   {stat.value}
                 </p>
+                {stat.sublabel && (
+                  <p className="text-xs text-white/40 mt-1">{stat.sublabel}</p>
+                )}
               </div>
               <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg`}>
                 <stat.icon className="w-5 h-5 text-white" />
