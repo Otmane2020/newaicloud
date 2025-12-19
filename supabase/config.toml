@@ -611,5 +611,8 @@ verify_jwt = false
 [functions.bulk-sync-vendor-to-shopify]
 verify_jwt = false
 
-[functions.bulk-sync-vendor-to-shopify]
+[functions.llms-txt]
+verify_jwt = false
+
+[functions.sitemap-answers]
 verify_jwt = false
