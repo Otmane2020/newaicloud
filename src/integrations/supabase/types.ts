@@ -293,6 +293,138 @@ export type Database = {
         }
         Relationships: []
       }
+      aeo_keyword_tracking: {
+        Row: {
+          check_count: number | null
+          created_at: string
+          found_count: number | null
+          id: string
+          is_active: boolean | null
+          keyword: string
+          last_checked_at: string | null
+          last_found_at: string | null
+          platform: string
+          suggested: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          check_count?: number | null
+          created_at?: string
+          found_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          keyword: string
+          last_checked_at?: string | null
+          last_found_at?: string | null
+          platform?: string
+          suggested?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          check_count?: number | null
+          created_at?: string
+          found_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          keyword?: string
+          last_checked_at?: string | null
+          last_found_at?: string | null
+          platform?: string
+          suggested?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      aeo_tracking_results: {
+        Row: {
+          checked_at: string
+          id: string
+          platform: string
+          position: number | null
+          query_used: string | null
+          response_snippet: string | null
+          tracking_id: string
+          tracking_type: string
+          user_id: string
+          was_found: boolean | null
+        }
+        Insert: {
+          checked_at?: string
+          id?: string
+          platform: string
+          position?: number | null
+          query_used?: string | null
+          response_snippet?: string | null
+          tracking_id: string
+          tracking_type: string
+          user_id: string
+          was_found?: boolean | null
+        }
+        Update: {
+          checked_at?: string
+          id?: string
+          platform?: string
+          position?: number | null
+          query_used?: string | null
+          response_snippet?: string | null
+          tracking_id?: string
+          tracking_type?: string
+          user_id?: string
+          was_found?: boolean | null
+        }
+        Relationships: []
+      }
+      aeo_url_tracking: {
+        Row: {
+          brand_name: string | null
+          check_count: number | null
+          cited_count: number | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_checked_at: string | null
+          last_cited_at: string | null
+          platform: string
+          suggested: boolean | null
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          brand_name?: string | null
+          check_count?: number | null
+          cited_count?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_checked_at?: string | null
+          last_cited_at?: string | null
+          platform?: string
+          suggested?: boolean | null
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          brand_name?: string | null
+          check_count?: number | null
+          cited_count?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_checked_at?: string | null
+          last_cited_at?: string | null
+          platform?: string
+          suggested?: boolean | null
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_answers: {
         Row: {
           answer_confidence: number | null
