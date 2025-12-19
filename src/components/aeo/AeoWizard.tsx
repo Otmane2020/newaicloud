@@ -16,7 +16,8 @@ import {
   ArrowRight,
   Plus,
   X,
-  CheckCircle2
+  CheckCircle2,
+  Info
 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +29,10 @@ interface WizardMode {
   id: 'url' | 'keywords' | 'links';
   enabled: boolean;
 }
+
+// AI platforms for AEO targeting
+const AI_TARGETS = ['chatgpt', 'gemini', 'claude', 'perplexity', 'copilot'] as const;
+type AiTarget = typeof AI_TARGETS[number];
 
 interface AeoWizardProps {
   onOpportunitiesGenerated?: () => void;
@@ -155,10 +160,14 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
           : `Generating AEO opportunities...`);
         
         // Call the generation function
+        // ✅ storeId is OPTIONAL - Aeoreply works without Shopify
+        // ✅ platform is 'aeo' with multiple AI targets
         const { data, error } = await supabase.functions.invoke("generate-ai-query-opportunities", {
           body: {
-            storeId: selectedStore?.id,
-            platform: 'chatgpt', // Default platform
+            storeId: selectedStore?.id ?? null, // Optional - can be null
+            projectType: 'aeoreply', // Aeoreply-specific identifier
+            platform: 'aeo', // Universal AEO platform
+            targets: AI_TARGETS, // All AI engines: chatgpt, gemini, claude, perplexity, copilot
             refresh: true,
             wizardMode: mode.id,
             wizardInput: mode.id === 'url' ? urlInput 
@@ -212,6 +221,18 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
             ? 'Sélectionnez vos sources de données pour générer des opportunités AEO'
             : 'Select your data sources to generate AEO opportunities'}
         </p>
+        
+        {/* AI Targets Display */}
+        <div className="flex items-center justify-center gap-2 flex-wrap pt-2">
+          <span className="text-xs text-muted-foreground">
+            {language === 'fr' ? 'Optimisé pour :' : 'Optimized for:'}
+          </span>
+          {AI_TARGETS.map((target) => (
+            <Badge key={target} variant="secondary" className="text-xs capitalize">
+              {target}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       {/* Mode Selection */}
@@ -354,25 +375,37 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
       )}
 
       {/* Generate Button */}
-      <Button
-        onClick={handleGenerate}
-        disabled={!hasValidInput() || isGenerating}
-        className="w-full"
-        size="lg"
-      >
-        {isGenerating ? (
-          <>
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            {language === 'fr' ? 'Génération en cours...' : 'Generating...'}
-          </>
-        ) : (
-          <>
-            <Sparkles className="h-5 w-5 mr-2" />
-            {language === 'fr' ? 'Générer les opportunités AEO' : 'Generate AEO Opportunities'}
-            <ArrowRight className="h-5 w-5 ml-2" />
-          </>
-        )}
-      </Button>
+      <div className="space-y-3">
+        <Button
+          onClick={handleGenerate}
+          disabled={!hasValidInput() || isGenerating}
+          className="w-full"
+          size="lg"
+        >
+          {isGenerating ? (
+            <>
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              {language === 'fr' ? 'Génération en cours...' : 'Generating...'}
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-5 w-5 mr-2" />
+              {language === 'fr' ? 'Générer les opportunités AEO' : 'Generate AEO Opportunities'}
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </>
+          )}
+        </Button>
+        
+        {/* Destination Info - where content goes */}
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border/50">
+          <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            {language === 'fr' 
+              ? 'Les réponses générées seront publiées sur Aeoreply et pourront être partagées sur votre site ou vos réseaux sociaux.'
+              : 'Generated answers will be published on Aeoreply and can be shared on your website or social media.'}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

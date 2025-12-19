@@ -15,9 +15,14 @@ const corsHeaders = {
  * 
  * Logique basée sur les INTENTIONS (price, duration, criteria, comparison)
  * plutôt que sur des catégories hardcodées.
+ * 
+ * ✅ AEOREPLY MODE:
+ * - storeId is OPTIONAL (can work without Shopify)
+ * - projectType: 'aeoreply' = works from URL/keywords/links analysis
+ * - targets: multiple AI platforms (chatgpt, gemini, claude, perplexity, copilot)
  */
 
-type Platform = 'chatgpt' | 'gemini' | 'copilot';
+type Platform = 'chatgpt' | 'gemini' | 'copilot' | 'claude' | 'perplexity' | 'aeo';
 type Lang = 'fr' | 'en';
 type QueryType = 'direct' | 'list' | 'comparison';
 type IntentType = 'price' | 'duration' | 'dimensions' | 'criteria' | 'comparison' | 'howto' | 'best';
@@ -51,7 +56,7 @@ interface AiAnswer {
 }
 
 // Platform-specific configurations for AEO
-const PLATFORM_CONFIGS = {
+const PLATFORM_CONFIGS: Record<string, { name: string; style: string; preferredAnswerLength: number; citationWeight: number; queryTypes: readonly QueryType[] }> = {
   chatgpt: {
     name: 'ChatGPT',
     style: 'conversational',
@@ -72,6 +77,27 @@ const PLATFORM_CONFIGS = {
     preferredAnswerLength: 150,
     citationWeight: 0.85,
     queryTypes: ['list', 'direct', 'comparison'] as const
+  },
+  claude: {
+    name: 'Claude',
+    style: 'analytical',
+    preferredAnswerLength: 145,
+    citationWeight: 0.92,
+    queryTypes: ['direct', 'list', 'comparison'] as const
+  },
+  perplexity: {
+    name: 'Perplexity',
+    style: 'researched',
+    preferredAnswerLength: 155,
+    citationWeight: 0.88,
+    queryTypes: ['direct', 'comparison', 'list'] as const
+  },
+  aeo: {
+    name: 'Universal AEO',
+    style: 'universal',
+    preferredAnswerLength: 140,
+    citationWeight: 0.95,
+    queryTypes: ['direct', 'comparison', 'list'] as const
   }
 };
 
@@ -586,21 +612,36 @@ serve(async (req) => {
       });
     }
 
-    const { storeId, platform, refresh = false, generateArticle = false } = await req.json();
+    const { 
+      storeId, 
+      platform, 
+      targets,
+      projectType,
+      refresh = false, 
+      generateArticle = false,
+      wizardMode,
+      wizardInput 
+    } = await req.json();
 
-    if (!storeId) {
-      return new Response(JSON.stringify({ error: 'storeId is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // ✅ AEOREPLY MODE: storeId is OPTIONAL
+    // When projectType is 'aeoreply', we work from wizard input (URL/keywords/links)
+    const isAeoreplyMode = projectType === 'aeoreply' || !storeId;
+
+    // Determine platforms to target
+    let platforms: Platform[];
+    if (platform === 'aeo' && targets) {
+      // Universal AEO mode with multiple targets
+      platforms = targets.filter((t: string) => PLATFORM_CONFIGS[t]);
+    } else if (platform) {
+      platforms = [platform];
+    } else {
+      platforms = ['chatgpt', 'gemini', 'copilot', 'claude', 'perplexity'];
     }
 
-    const platforms: Platform[] = platform 
-      ? [platform] 
-      : ['chatgpt', 'gemini', 'copilot'];
+    console.log(`🎯 Mode: ${isAeoreplyMode ? 'Aeoreply' : 'Store-based'}, Platforms: ${platforms.join(', ')}`);
 
-    // Check cache in ai_answers table if not refreshing
-    if (!refresh) {
+    // Check cache in ai_answers table if not refreshing (only for store mode)
+    if (!refresh && storeId) {
       const { data: cached } = await supabase
         .from('ai_answers')
         .select('*')
@@ -619,7 +660,7 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-    } else {
+    } else if (refresh && storeId) {
       // Clear existing answers for refresh
       await supabase
         .from('ai_answers')
@@ -629,27 +670,68 @@ serve(async (req) => {
         .in('platform', platforms);
     }
 
-    // Fetch products with more context
-    const { data: products, error: productsError } = await supabase
-      .from('shopify_products')
-      .select('id, title, product_type, vendor, tags, body_html, seo_description')
-      .eq('seller_id', user.id)
-      .eq('store_id', storeId)
-      .limit(100);
+    let products: Product[] = [];
 
-    if (productsError) {
-      console.error('Error fetching products:', productsError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch products' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // ✅ AEOREPLY MODE: Generate from wizard input instead of products
+    if (isAeoreplyMode && wizardMode && wizardInput) {
+      console.log(`📝 Aeoreply wizard mode: ${wizardMode}`);
+      
+      // Create pseudo-products from wizard input for the generation engine
+      if (wizardMode === 'url') {
+        // Analyze URL - create product from URL content
+        products = [{
+          id: `wizard-url-${Date.now()}`,
+          title: typeof wizardInput === 'string' ? `Content from ${wizardInput}` : 'URL Content',
+          product_type: 'web_content',
+          vendor: typeof wizardInput === 'string' ? new URL(wizardInput).hostname : 'unknown',
+          body_html: `Analyzed from ${wizardInput}`,
+        }];
+      } else if (wizardMode === 'keywords') {
+        // Create products from keywords
+        const keywordsList = Array.isArray(wizardInput) ? wizardInput : [wizardInput];
+        products = keywordsList.map((kw: string, i: number) => ({
+          id: `wizard-keyword-${i}-${Date.now()}`,
+          title: kw,
+          product_type: 'keyword_topic',
+          vendor: 'aeoreply',
+          body_html: `Topic: ${kw}`,
+        }));
+      } else if (wizardMode === 'links') {
+        // Create products from links
+        const linksList = Array.isArray(wizardInput) ? wizardInput : [wizardInput];
+        products = linksList.map((link: string, i: number) => ({
+          id: `wizard-link-${i}-${Date.now()}`,
+          title: `Page: ${link}`,
+          product_type: 'web_page',
+          vendor: new URL(link).hostname,
+          body_html: `Content from ${link}`,
+        }));
+      }
+    } else if (storeId) {
+      // STORE MODE: Fetch products from Shopify
+      const { data: storeProducts, error: productsError } = await supabase
+        .from('shopify_products')
+        .select('id, title, product_type, vendor, tags, body_html, seo_description')
+        .eq('seller_id', user.id)
+        .eq('store_id', storeId)
+        .limit(100);
+
+      if (productsError) {
+        console.error('Error fetching products:', productsError);
+        return new Response(JSON.stringify({ error: 'Failed to fetch products' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      products = storeProducts || [];
     }
 
-    if (!products || products.length === 0) {
+    if (products.length === 0) {
       return new Response(JSON.stringify({ 
         success: true, 
         opportunities: [],
-        message: 'No products found'
+        message: isAeoreplyMode ? 'No input provided' : 'No products found'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -673,7 +755,7 @@ serve(async (req) => {
       for (const answer of answers) {
         const insertData: any = {
           user_id: user.id,
-          store_id: storeId,
+          store_id: storeId ?? null, // Can be null for Aeoreply mode
           platform: answer.platform,
           query_type: answer.query_type,
           question: answer.question,
@@ -708,7 +790,8 @@ serve(async (req) => {
       success: true, 
       opportunities: allAnswers,
       cached: false,
-      engine: 'generic-multi-industry'
+      engine: 'generic-multi-industry',
+      mode: isAeoreplyMode ? 'aeoreply' : 'store'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
