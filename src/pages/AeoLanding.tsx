@@ -241,26 +241,45 @@ export default function AeoLanding() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-200/40 rounded-full blur-3xl" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-200/40 rounded-full blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-violet-100/30 to-blue-100/30 rounded-full blur-3xl" />
         </div>
         <div className="container mx-auto max-w-6xl relative z-10 text-center space-y-8">
-          <Badge className="bg-violet-100 text-violet-700 border-violet-200 px-4 py-2">
+          <Badge className="bg-violet-100 text-violet-700 border-violet-200 px-4 py-2 animate-fade-in">
             <Sparkles className="w-4 h-4 mr-2" />
             {t.landing.hero.badge}
           </Badge>
-          <h1 className="text-5xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-slate-900 via-violet-900 to-slate-900 bg-clip-text text-transparent">
-            {t.landing.hero.title}
+          <h1 className="text-5xl md:text-7xl font-bold leading-tight">
+            <span className="bg-gradient-to-r from-slate-900 via-violet-900 to-slate-900 bg-clip-text text-transparent">
+              {t.landing.hero.title}
+            </span>
           </h1>
-          <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
             {t.landing.hero.subtitle}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          
+          {/* Key differentiator message */}
+          <div className="flex items-center justify-center gap-4 flex-wrap text-sm">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 border border-red-200 text-red-700">
+              <span className="font-semibold">SEO</span>
+              <span>=</span>
+              <span>{language === 'fr' ? 'liens Google' : 'Google links'}</span>
+            </div>
+            <ArrowRight className="w-5 h-5 text-slate-400" />
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
+              <span className="font-semibold">AEO</span>
+              <span>=</span>
+              <span>{language === 'fr' ? 'réponses IA' : 'AI answers'}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
             <Button 
               size="lg" 
-              className="bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 text-white text-lg px-8 py-6 shadow-xl shadow-violet-500/25" 
-              onClick={() => navigate('/auth?mode=signup')}
+              className="bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 text-white text-lg px-8 py-6 shadow-xl shadow-violet-500/25 group" 
+              onClick={() => navigate('/onboarding')}
             >
               {t.landing.hero.cta}
-              <ArrowRight className="ml-2 w-5 h-5" />
+              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
             <Button 
               size="lg" 
@@ -271,27 +290,104 @@ export default function AeoLanding() {
               {t.landing.hero.ctaSecondary}
             </Button>
           </div>
+
+          {/* Trust indicators */}
+          <div className="flex items-center justify-center gap-6 text-sm text-slate-500 pt-4">
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-500" />
+              <span>{language === 'fr' ? 'Essai gratuit 7 jours' : '7-day free trial'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-500" />
+              <span>{language === 'fr' ? 'Sans carte bancaire' : 'No credit card'}</span>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* AI Assistants Logos */}
-      <section className="py-12 px-4">
+      <section className="py-16 px-4 bg-gradient-to-b from-transparent via-slate-50/50 to-transparent">
         <div className="container mx-auto max-w-4xl text-center">
-          <p className="text-slate-400 mb-8 text-sm uppercase tracking-wider">
-            {language === 'fr' ? "Optimisé pour les assistants IA" : "Optimized for AI Assistants"}
+          <p className="text-slate-500 mb-8 text-sm font-medium uppercase tracking-wider">
+            {language === 'fr' ? "Vos contenus cités par" : "Your content cited by"}
           </p>
-          <div className="flex justify-center gap-6 flex-wrap">
+          <div className="flex justify-center gap-8 flex-wrap">
             {aiPlatforms.map((p, i) => (
-              <div key={i} className="flex flex-col items-center gap-2 group">
+              <div key={i} className="flex flex-col items-center gap-3 group cursor-pointer">
                 <div 
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-sm shadow-lg transition-transform group-hover:scale-110" 
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all group-hover:scale-110 group-hover:shadow-xl" 
                   style={{ background: p.bg }}
                 >
                   {p.icon}
                 </div>
-                <span className="text-xs text-slate-500">{p.name}</span>
+                <span className="text-sm text-slate-600 font-medium">{p.name}</span>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AEO vs SEO Comparison - NEW VISUAL SECTION */}
+      <section className="py-24 px-4 bg-gradient-to-b from-slate-50 via-white to-slate-50">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-16">
+            <Badge className="bg-violet-100 text-violet-700 border-violet-200 mb-4">
+              {language === 'fr' ? 'Nouvelle ère' : 'New era'}
+            </Badge>
+            <h2 className="text-4xl font-bold mb-4 text-slate-900">{t.landing.comparison.title}</h2>
+            <p className="text-xl text-slate-600">{t.landing.comparison.subtitle}</p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* SEO Card */}
+            <Card className="p-8 border-slate-200 bg-slate-50/50 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-slate-200/50 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center">
+                    <Search className="w-6 h-6 text-slate-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-700">{t.landing.comparison.seo.title}</h3>
+                </div>
+                <ul className="space-y-4">
+                  {t.landing.comparison.seo.points.map((point, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-slate-300 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-slate-600 text-xs">→</span>
+                      </div>
+                      <span className="text-slate-600">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
+
+            {/* AEO Card */}
+            <Card className="p-8 border-violet-200 bg-gradient-to-br from-violet-50 to-blue-50 relative overflow-hidden shadow-lg shadow-violet-500/10">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-violet-200/50 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-blue-200/30 rounded-full" />
+              <Badge className="absolute top-4 right-4 bg-emerald-500 text-white border-0">
+                {language === 'fr' ? 'Nouveau' : 'New'}
+              </Badge>
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center shadow-lg">
+                    <Zap className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900">{t.landing.comparison.aeo.title}</h3>
+                </div>
+                <ul className="space-y-4">
+                  {t.landing.comparison.aeo.points.map((point, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-slate-800 font-medium">{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
           </div>
         </div>
       </section>
@@ -299,10 +395,15 @@ export default function AeoLanding() {
       {/* Value Propositions */}
       <section className="py-24 px-4">
         <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">
+              {language === 'fr' ? 'Pourquoi Aeoreply ?' : 'Why Aeoreply?'}
+            </h2>
+          </div>
           <div className="grid md:grid-cols-3 gap-8">
             {valuePropositions.map((prop, i) => (
-              <Card key={i} className="bg-white border-slate-200 p-8 hover:border-violet-300 hover:shadow-lg transition-all">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${prop.color} flex items-center justify-center mb-6 shadow-lg`}>
+              <Card key={i} className="bg-white border-slate-200 p-8 hover:border-violet-300 hover:shadow-xl transition-all group">
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${prop.color} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform`}>
                   <prop.icon className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-slate-900 mb-3">{prop.title}</h3>
