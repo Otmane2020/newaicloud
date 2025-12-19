@@ -297,62 +297,77 @@ export type Database = {
         Row: {
           answer_confidence: number | null
           article_id: string | null
+          brand_name: string | null
           category: string | null
           citation_potential: number
           created_at: string | null
           difficulty: string | null
           direct_answer: string
           id: string
+          is_published: boolean | null
           keywords: string[] | null
           platform: string
           product_ids: string[] | null
+          published_at: string | null
           query_type: string
           question: string
+          slug: string | null
           status: string | null
           store_id: string | null
           supporting_content: Json | null
           updated_at: string | null
           user_id: string
+          view_count: number | null
         }
         Insert: {
           answer_confidence?: number | null
           article_id?: string | null
+          brand_name?: string | null
           category?: string | null
           citation_potential: number
           created_at?: string | null
           difficulty?: string | null
           direct_answer: string
           id?: string
+          is_published?: boolean | null
           keywords?: string[] | null
           platform: string
           product_ids?: string[] | null
+          published_at?: string | null
           query_type: string
           question: string
+          slug?: string | null
           status?: string | null
           store_id?: string | null
           supporting_content?: Json | null
           updated_at?: string | null
           user_id: string
+          view_count?: number | null
         }
         Update: {
           answer_confidence?: number | null
           article_id?: string | null
+          brand_name?: string | null
           category?: string | null
           citation_potential?: number
           created_at?: string | null
           difficulty?: string | null
           direct_answer?: string
           id?: string
+          is_published?: boolean | null
           keywords?: string[] | null
           platform?: string
           product_ids?: string[] | null
+          published_at?: string | null
           query_type?: string
           question?: string
+          slug?: string | null
           status?: string | null
           store_id?: string | null
           supporting_content?: Json | null
           updated_at?: string | null
           user_id?: string
+          view_count?: number | null
         }
         Relationships: [
           {
@@ -6605,6 +6620,7 @@ export type Database = {
           severity: string
         }[]
       }
+      generate_answer_slug: { Args: { question_text: string }; Returns: string }
       generate_referral_code: { Args: { user_id: string }; Returns: string }
       get_next_article_image_version: {
         Args: { p_article_id: string }
