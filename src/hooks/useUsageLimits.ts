@@ -90,18 +90,64 @@ const fetchUsageLimits = async (): Promise<UsageLimits> => {
   }
   
   // Récupérer les infos du profil pour le trial et billing provider
-  const { data: profileData } = await supabase
+  let { data: profileData } = await supabase
     .from('profiles')
     .select('current_plan_id, subscription_status, trial_ends_at, billing_provider')
     .eq('id', user.id)
     .single();
-  
+
+  // 🔧 Auto-heal Shopify billing state: if Shopify subscription is active but profile is still "inactive"
+  // (can happen if the merchant returned via an unexpected URL), sync via billing-callback.
+  const detectedProvider = (profileData?.billing_provider as 'shopify' | 'stripe' | null) || (data?.billingProvider as 'shopify' | 'stripe' | null) || null;
+
+  let usageData = data;
+
+  if (detectedProvider === 'shopify' && profileData?.subscription_status !== 'active') {
+    const { data: connection } = await supabase
+      .from('shopify_connections')
+      .select('store_url, connection_type, is_active')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (connection?.store_url) {
+      await supabase.functions
+        .invoke('shopify-billing-callback', {
+          body: {
+            shop: connection.store_url,
+          },
+        })
+        .catch(() => null);
+
+      // Re-fetch after sync
+      const { data: refreshedLimits, error: refreshedLimitsError } = await supabase.functions.invoke('check-usage-limits', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      if (!refreshedLimitsError && refreshedLimits) {
+        usageData = refreshedLimits;
+      }
+
+      const { data: refreshedProfile } = await supabase
+        .from('profiles')
+        .select('current_plan_id, subscription_status, trial_ends_at, billing_provider')
+        .eq('id', user.id)
+        .single();
+      if (refreshedProfile) {
+        profileData = refreshedProfile;
+      }
+    }
+  }
+
   const result = {
-    ...data,
+    ...usageData,
     trialEndsAt: profileData?.trial_ends_at || null,
     currentPlanId: profileData?.current_plan_id || null,
     subscriptionStatus: profileData?.subscription_status || null,
-    billingProvider: (profileData?.billing_provider as 'shopify' | 'stripe' | null) || data.billingProvider || null,
+    billingProvider: (profileData?.billing_provider as 'shopify' | 'stripe' | null) || usageData.billingProvider || null,
   };
 
   // Update cache
