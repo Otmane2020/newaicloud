@@ -16,19 +16,36 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  // Get webhook headers FIRST
+  const hmac = req.headers.get('x-shopify-hmac-sha256');
+  const shopDomain = req.headers.get('x-shopify-shop-domain');
+  const topic = req.headers.get('x-shopify-topic');
+
+  console.log('📥 Webhook received:', { topic, shopDomain });
+
+  // 🆕 LOG IMMEDIATELY for diagnosis (before any processing)
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    await supabase.from('system_logs').insert({
+      type: 'webhook_received',
+      function_name: 'shopify-webhook',
+      message: `Webhook received: ${topic} from ${shopDomain}`,
+      metadata: { 
+        topic, 
+        shopDomain, 
+        hmac_present: !!hmac,
+        timestamp: new Date().toISOString() 
+      }
+    });
+  } catch (logError) {
+    console.error('❌ Failed to log webhook reception:', logError);
+  }
 
-    // Get webhook headers
-    const hmac = req.headers.get('x-shopify-hmac-sha256');
-    const shopDomain = req.headers.get('x-shopify-shop-domain');
-    const topic = req.headers.get('x-shopify-topic');
-
-    console.log('📥 Webhook received:', { topic, shopDomain });
-
+  try {
     if (!hmac || !shopDomain || !topic) {
       console.error('❌ Missing required headers');
       return new Response(JSON.stringify({ error: 'Missing required headers' }), {
@@ -44,15 +61,37 @@ Deno.serve(async (req) => {
     const apiSecret = Deno.env.get('SHOPIFY_API_SECRET');
     if (!apiSecret) {
       console.error('❌ SHOPIFY_API_SECRET not configured');
+      await supabase.from('system_logs').insert({
+        type: 'webhook_error',
+        function_name: 'shopify-webhook',
+        message: 'SHOPIFY_API_SECRET not configured',
+        metadata: { shopDomain, topic }
+      });
       return new Response(JSON.stringify({ error: 'Server configuration error' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const calculatedHmac = createHmac('sha256', apiSecret)
-      .update(rawBody, 'utf8')
-      .digest('base64');
+    // 🆕 Wrap HMAC calculation in try-catch for better error handling
+    let calculatedHmac: string;
+    try {
+      calculatedHmac = createHmac('sha256', apiSecret)
+        .update(rawBody, 'utf8')
+        .digest('base64');
+    } catch (hmacError) {
+      console.error('❌ HMAC calculation error:', hmacError);
+      await supabase.from('system_logs').insert({
+        type: 'webhook_hmac_error',
+        function_name: 'shopify-webhook',
+        message: 'HMAC calculation failed',
+        metadata: { shopDomain, topic, error: String(hmacError) }
+      });
+      return new Response(JSON.stringify({ error: 'HMAC calculation failed' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (calculatedHmac !== hmac) {
       console.error(JSON.stringify({
@@ -63,6 +102,12 @@ Deno.serve(async (req) => {
         received_hmac_length: hmac.length,
         timestamp: new Date().toISOString()
       }));
+      await supabase.from('system_logs').insert({
+        type: 'webhook_hmac_mismatch',
+        function_name: 'shopify-webhook',
+        message: `HMAC mismatch for ${topic} from ${shopDomain}`,
+        metadata: { shopDomain, topic }
+      });
       return new Response(JSON.stringify({ error: 'Invalid HMAC' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -85,18 +130,85 @@ Deno.serve(async (req) => {
     // Parse payload for async processing
     const payload = JSON.parse(rawBody);
 
-    // Find the Shopify connection for this domain (try store_url first, then shop_domain)
-    const { data: connection, error: connError } = await supabase
+    // 🆕 Normalize domain for flexible lookup (remove protocol and trailing slashes)
+    const normalizedDomain = shopDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    
+    // 🆕 Try multiple lookup strategies to find the store
+    let connection: { id: string; user_id: string } | null = null;
+    let connError: any = null;
+
+    // Strategy 1: Exact match on store_url
+    const result1 = await supabase
       .from('shopify_connections')
       .select('id, user_id')
       .eq('store_url', shopDomain)
+      .eq('is_active', true)
       .single();
+    
+    if (result1.data) {
+      connection = result1.data;
+    } else {
+      // Strategy 2: Try normalized domain
+      const result2 = await supabase
+        .from('shopify_connections')
+        .select('id, user_id')
+        .eq('store_url', normalizedDomain)
+        .eq('is_active', true)
+        .single();
+      
+      if (result2.data) {
+        connection = result2.data;
+      } else {
+        // Strategy 3: Flexible ILIKE search
+        const result3 = await supabase
+          .from('shopify_connections')
+          .select('id, user_id')
+          .ilike('store_url', `%${normalizedDomain}%`)
+          .eq('is_active', true)
+          .limit(1)
+          .single();
+        
+        if (result3.data) {
+          connection = result3.data;
+        } else {
+          // Strategy 4: Try inactive connections for app/uninstalled
+          if (topic === 'app/uninstalled') {
+            const result4 = await supabase
+              .from('shopify_connections')
+              .select('id, user_id')
+              .ilike('store_url', `%${normalizedDomain}%`)
+              .limit(1)
+              .single();
+            
+            if (result4.data) {
+              connection = result4.data;
+            }
+          }
+          connError = result3.error;
+        }
+      }
+    }
 
-    if (connError || !connection) {
-      console.error('❌ Store not found:', shopDomain);
-      // Already sent 200 OK, just log the error
+    if (!connection) {
+      console.error('❌ Store not found:', shopDomain, 'normalized:', normalizedDomain);
+      // 🆕 Log the error for diagnosis but return 200 OK to satisfy Shopify
+      await supabase.from('system_logs').insert({
+        type: 'webhook_store_not_found',
+        function_name: 'shopify-webhook',
+        message: `Store not found: ${shopDomain}`,
+        metadata: { 
+          shopDomain, 
+          normalizedDomain,
+          topic, 
+          error: connError?.message,
+          timestamp: new Date().toISOString()
+        }
+      });
+      // 🆕 Return 200 OK anyway to prevent Shopify from retrying
       return quickResponse;
     }
+
+    console.log('✅ Store found:', { id: connection.id, user_id: connection.user_id });
 
     // ✅ SHOPIFY COMPLIANCE: Process webhook asynchronously in background
     EdgeRuntime.waitUntil((async () => {
