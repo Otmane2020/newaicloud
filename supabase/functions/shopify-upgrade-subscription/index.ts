@@ -84,14 +84,8 @@ serve(async (req) => {
       });
     }
 
-    if (!APP_BASE_URL) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing APP_BASE_URL env var (public app URL). Required for Shopify returnUrl.",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    // Note: Shopify will call our backend billing callback URL, so APP_BASE_URL is not required here.
+
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false },
@@ -171,12 +165,11 @@ serve(async (req) => {
 
     logStep("Plan pricing from DB", { planId: newPlanId, price, interval, planName: plan.name });
 
-    // Return URL should land back in your APP, not in supabase functions.
-    // Then your app can call your callback edge function server-to-server or handle finalize.
-    // If you want Shopify to hit your edge function directly, make it a public URL you control (APP_BASE_URL).
-    const returnUrl = `${APP_BASE_URL.replace(/\/+$/, "")}/app/billing/return?shop=${encodeURIComponent(
+    // Shopify needs a public callback URL. We use our backend callback which then redirects to the app.
+    const returnUrl = `${SUPABASE_URL}/functions/v1/shopify-billing-callback?shop=${encodeURIComponent(
       shopDomain,
     )}&plan=${encodeURIComponent(newPlanId)}&cycle=${encodeURIComponent(billingCycle)}`;
+
 
     const mutation = `
       mutation AppSubscriptionCreate($name: String!, $returnUrl: URL!, $lineItems: [AppSubscriptionLineItemInput!]!) {
