@@ -88,8 +88,8 @@ export function detectContentLanguage(text: string): string {
 /**
  * Resolves the language to use with priority:
  * 1. Explicit language passed in the request
- * 2. Language detected from content (title, description)
- * 3. Store language from shopify_connections
+ * 2. Store language from shopify_connections (for consistency across all content)
+ * 3. Language detected from content (title, description) - fallback only
  * 4. Default: French
  */
 export function resolveLanguage(options: {
@@ -106,35 +106,24 @@ export function resolveLanguage(options: {
     }
   }
   
-  // 2. Check if content is too short or generic to detect reliably
-  const isContentTooShort = !options.contentText || options.contentText.length < 10;
-  
-  // 3. For short/generic content, prioritize store_language
-  if (isContentTooShort && options.storeLanguage) {
-    const lang = options.storeLanguage.split('-')[0].toLowerCase();
-    if (['fr', 'en', 'de', 'es', 'it'].includes(lang)) {
-      console.log(`🌍 Using store language (content too short): ${lang}`);
-      return lang;
-    }
-  }
-  
-  // 4. Detect from content text (title + description)
-  if (options.contentText && options.contentText.length >= 3) {
-    const detected = detectContentLanguage(options.contentText);
-    console.log(`🌍 Language detected from content "${options.contentText.substring(0, 30)}...": ${detected}`);
-    return detected;
-  }
-  
-  // 5. Use store language as fallback
+  // 2. Store language has priority over content detection for consistency
+  // This ensures all products/collections/articles in a store use the same language
   if (options.storeLanguage) {
     const lang = options.storeLanguage.split('-')[0].toLowerCase();
     if (['fr', 'en', 'de', 'es', 'it'].includes(lang)) {
-      console.log(`🌍 Using store language: ${lang}`);
+      console.log(`🌍 Using store language (priority): ${lang}`);
       return lang;
     }
   }
   
-  // 6. Default to French
+  // 3. Detect from content text (fallback if no store language)
+  if (options.contentText && options.contentText.length >= 3) {
+    const detected = detectContentLanguage(options.contentText);
+    console.log(`🌍 Language detected from content (fallback): ${detected}`);
+    return detected;
+  }
+  
+  // 4. Default to French
   console.log(`🌍 Using default language: fr`);
   return 'fr';
 }
