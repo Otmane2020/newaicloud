@@ -139,12 +139,16 @@ export default function SetupWizard() {
           if (!session) {
             // No session and no pending token - redirect to /app to restart OAuth
             console.log('⚠️ [SetupWizard] No session and no pending_token, redirecting to /app');
+            setIsCheckingSubscription(false); // ✅ Always clear loading before navigation
             navigate(`/app?shop=${encodeURIComponent(normalizedShop)}`, { replace: true });
             return;
           }
         }
 
-        if (!normalizedShop) return;
+        if (!normalizedShop) {
+          setIsCheckingSubscription(false);
+          return;
+        }
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 3000);
@@ -172,8 +176,9 @@ export default function SetupWizard() {
 
           if (profile?.subscription_status === 'active') {
             console.log('✅ [SetupWizard] Active subscription found, redirecting');
+            setIsCheckingSubscription(false); // ✅ Always clear loading before navigation
             navigate("/dashboard-light", { replace: true });
-            return; // Don't set isCheckingSubscription to false - we're navigating away
+            return;
           }
           // Note: trialing users stay on setup-wizard to see "Activate Full Plan" if quota exhausted
         }
