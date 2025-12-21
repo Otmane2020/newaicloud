@@ -19,7 +19,16 @@ serve(async (req) => {
   }
 
   try {
-    const { productId, productTitle, productHandle, htmlContent } = await req.json();
+    // Health check handler
+    const body = await req.json().catch(() => ({}));
+    if (body?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const { productId, productTitle, productHandle, htmlContent } = body;
 
     console.log("[sync-landing-to-shopify] Syncing landing page via GraphQL for product:", productId);
 

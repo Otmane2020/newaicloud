@@ -106,6 +106,20 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Health check handler - parse body early
+    const rawBody = await req.text();
+    let parsedBody: any = {};
+    try {
+      parsedBody = JSON.parse(rawBody);
+    } catch {}
+    
+    if (parsedBody?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -147,7 +161,7 @@ Deno.serve(async (req) => {
 
     console.log('[SYNC-IMAGES] ✅ User authorized for Shopify updates');
 
-    const { productId, images: requestImages, isReorderOnly } = await req.json();
+    const { productId, images: requestImages, isReorderOnly } = parsedBody;
 
     if (!productId) {
       throw new Error("Product ID is required");

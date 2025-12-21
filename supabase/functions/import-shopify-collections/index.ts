@@ -11,14 +11,22 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Parse request body first
+    const body = await req.json().catch(() => ({}));
+    
+    // Health check handler
+    if (body?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     console.log("🏗️ [IMPORT-COLLECTIONS] Starting import...");
     console.log("🔄 [IMPORT-COLLECTIONS] Version: 1.1.0 - Fixed parameters usage");
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Read request body first to check for serviceMode
-    const body = await req.json().catch(() => ({}));
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     const { serviceMode, userId: serviceModeUserId } = body;
 
     const authHeader = req.headers.get("Authorization");

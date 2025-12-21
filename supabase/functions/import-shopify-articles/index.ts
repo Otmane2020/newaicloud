@@ -53,7 +53,15 @@ Deno.serve(async (req: Request) => {
 
   try {
     // Parse request body first to check for serviceMode
-    const requestBody = await req.json();
+    const requestBody = await req.json().catch(() => ({}));
+    
+    // Health check handler
+    if (requestBody?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
     const { serviceMode, userId: serviceModeUserId } = requestBody;
     
     const authHeader = req.headers.get('Authorization');
