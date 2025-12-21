@@ -14,6 +14,15 @@ serve(async (req) => {
   }
 
   try {
+    // Health check handler
+    const body = await req.json().catch(() => ({}));
+    if (body?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     console.log('🔄 [SYNC-IMAGE] Starting collection image sync...');
     console.log('🔍 [SYNC-IMAGE] Supabase URL:', Deno.env.get('SUPABASE_URL'));
     console.log('🔍 [SYNC-IMAGE] Request headers:', req.headers);

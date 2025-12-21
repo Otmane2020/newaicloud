@@ -20,6 +20,15 @@ serve(async (req) => {
   }
 
   try {
+    // Health check handler
+    const body = await req.json().catch(() => ({}));
+    if (body?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     console.log('💰 [SYNC-PRICING] Starting pricing sync to Shopify via GraphQL...');
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

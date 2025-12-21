@@ -11,7 +11,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { pageId } = await req.json();
+    // Health check handler
+    const body = await req.json().catch(() => ({}));
+    if (body?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const { pageId } = body;
     const authHeader = req.headers.get('Authorization');
     
     if (!authHeader) {

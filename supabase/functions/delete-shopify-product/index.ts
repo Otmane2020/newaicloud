@@ -13,6 +13,20 @@ serve(async (req) => {
   }
 
   try {
+    // Health check handler
+    const body = await req.json().catch(() => ({}));
+    if (body?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const { productId } = body;
+    if (!productId) {
+      throw new Error("Missing productId");
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -30,10 +44,6 @@ serve(async (req) => {
       throw new Error("Authentication failed");
     }
 
-    const { productId } = await req.json();
-    if (!productId) {
-      throw new Error("Missing productId");
-    }
 
     // Get product details and Shopify connection
     const { data: product, error: productError } = await supabaseAdmin

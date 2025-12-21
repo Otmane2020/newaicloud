@@ -17,6 +17,15 @@ serve(async (req) => {
   }
 
   try {
+    // Health check handler
+    const body = await req.json().catch(() => ({}));
+    if (body?.healthCheck === true) {
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     logStep("Function started");
 
     const supabaseClient = createClient(
