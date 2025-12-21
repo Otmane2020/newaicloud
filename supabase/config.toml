@@ -619,3 +619,6 @@ verify_jwt = false
 
 [functions.sitemap-answers]
 verify_jwt = false
+
+[functions.shopify-diagnose-webhooks]
+verify_jwt = true
