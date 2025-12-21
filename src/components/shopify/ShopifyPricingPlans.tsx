@@ -84,7 +84,7 @@ const PLANS = [
     popular: true
   },
   {
-    id: 'pro-1000',
+    id: 'enterprise-2000',
     name: 'Enterprise',
     description: {
       en: 'For large-scale operations',
@@ -184,7 +184,7 @@ export default function ShopifyPricingPlans({
     if (!planId || planId === 'trial' || planId === 'free') return -1;
     if (planId === 'starter') return 0;
     if (planId === 'pro-500' || planId === 'pro') return 1;
-    if (planId === 'pro-1000' || planId === 'enterprise') return 2;
+    if (planId === 'enterprise-2000' || planId === 'enterprise' || planId === 'pro-1000') return 2;
     return -1;
   };
 

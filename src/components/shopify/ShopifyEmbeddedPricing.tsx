@@ -35,7 +35,7 @@ const PLANS = [
     popular: true
   },
   {
-    id: 'pro-1000',
+    id: 'enterprise-2000',
     name: 'Enterprise',
     monthlyPrice: 199,
     yearlyPrice: 159,
