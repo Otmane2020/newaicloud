@@ -579,7 +579,10 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.shopify-check-subscription]
-verify_jwt = true
+verify_jwt = false
+
+[functions.shopify-sync-subscription-status]
+verify_jwt = false
 
 [functions.register-sync-webhooks]
 verify_jwt = false

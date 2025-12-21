@@ -61,17 +61,56 @@ export function useAeoCredits() {
       setPlanId(currentPlan);
 
       // Get plan limits from subscription_plans table
-      const { data: planData } = await supabase
+      // Try exact match first, then base plan match for tiered plans like "enterprise-2000"
+      let planData = null;
+      
+      // First try exact match
+      const { data: exactMatch } = await supabase
         .from('subscription_plans')
         .select('max_optimizations_monthly, max_articles_monthly')
         .eq('id', currentPlan)
-        .single();
+        .maybeSingle();
 
-      // Calculate limits from DB or use defaults
-      const optimizationsLimit = planData?.max_optimizations_monthly || DEFAULT_FREE_LIMITS.optimizations.limit;
+      if (exactMatch) {
+        planData = exactMatch;
+        console.log('[useAeoCredits] Exact plan match found:', currentPlan, planData);
+      } else {
+        // Try base plan match (e.g., "enterprise-2000" -> "enterprise")
+        const basePlan = currentPlan.split('-')[0];
+        console.log('[useAeoCredits] Trying base plan match:', basePlan);
+        
+        const { data: baseMatch } = await supabase
+          .from('subscription_plans')
+          .select('max_optimizations_monthly, max_articles_monthly')
+          .eq('id', basePlan)
+          .maybeSingle();
+        
+        if (baseMatch) {
+          planData = baseMatch;
+          console.log('[useAeoCredits] Base plan match found:', basePlan, planData);
+        } else {
+          console.warn('[useAeoCredits] No plan found for:', currentPlan, 'or base:', basePlan);
+        }
+      }
+
+      // For tiered plans (e.g., "enterprise-2000"), extract the number as the limit
+      let optimizationsLimit = planData?.max_optimizations_monthly || DEFAULT_FREE_LIMITS.optimizations.limit;
+      
+      // Check if plan ID contains a number suffix (e.g., "enterprise-2000", "pro-1000")
+      const tierMatch = currentPlan.match(/-(\d+)$/);
+      if (tierMatch) {
+        const tierLimit = parseInt(tierMatch[1], 10);
+        if (!isNaN(tierLimit) && tierLimit > 0) {
+          optimizationsLimit = tierLimit;
+          console.log('[useAeoCredits] Using tier limit from plan ID:', tierLimit);
+        }
+      }
+      
       const articlesLimit = planData?.max_articles_monthly || DEFAULT_FREE_LIMITS.articles.limit;
       // Calculate answers limit based on optimizations (2x ratio)
       const answersLimit = optimizationsLimit * ANSWERS_RATIO;
+      
+      console.log('[useAeoCredits] Final limits:', { optimizationsLimit, articlesLimit, answersLimit });
 
       // Get usage from ai_opportunities and ai_answers tables
       const [opportunitiesResult, answersResult, articlesResult] = await Promise.all([
