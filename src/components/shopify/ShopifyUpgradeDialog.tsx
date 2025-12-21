@@ -67,7 +67,7 @@ const SHOPIFY_PLANS = [
     maxOptimizations: 500
   },
   {
-    id: 'pro-1000',
+    id: 'enterprise-2000',
     name: 'Enterprise',
     description: {
       en: 'For large-scale operations',
@@ -132,7 +132,7 @@ export function ShopifyUpgradeDialog({
     if (isTrialing) return true;
     
     // Sinon, logique normale : montrer uniquement les plans supérieurs
-    const planOrder = ['starter', 'pro-500', 'pro-1000'];
+    const planOrder = ['starter', 'pro-500', 'enterprise-2000'];
     const currentIndex = planOrder.indexOf(currentPlanId);
     const planIndex = planOrder.indexOf(plan.id);
     
