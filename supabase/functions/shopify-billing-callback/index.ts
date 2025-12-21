@@ -76,18 +76,64 @@ serve(async (req) => {
     const shopHandle = getShopHandle(shop);
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get the pending subscription
-    const { data: pending, error: pendingError } = await supabase
+    // Get the pending subscription - also check for 'active' status (in case of retry/duplicate callback)
+    let { data: pending, error: pendingError } = await supabase
       .from("shopify_pending_subscriptions")
       .select("*")
       .eq("shop_domain", shop)
       .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (pendingError || !pending) {
-      logStep("No pending subscription found", { error: pendingError });
+    // If no pending found, check if there's an active one (duplicate callback scenario)
+    if (!pending) {
+      const { data: activePending } = await supabase
+        .from("shopify_pending_subscriptions")
+        .select("*")
+        .eq("shop_domain", shop)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activePending) {
+        logStep("Already active subscription found, ensuring profile is synced", { 
+          userId: activePending.user_id, 
+          planId: activePending.plan_id 
+        });
+        
+        // Ensure profile is synced with active subscription
+        await supabase
+          .from("profiles")
+          .update({
+            subscription_status: "active",
+            current_plan_id: activePending.plan_id,
+            billing_provider: "shopify",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", activePending.user_id);
+
+        // Return success for POST, redirect for GET
+        if (req.method === "POST") {
+          return new Response(JSON.stringify({ 
+            success: true, 
+            userId: activePending.user_id,
+            planId: activePending.plan_id,
+            status: "active",
+            message: "Already active - profile synced"
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+        const callbackUrl = `${APP_URL}/shopify/payment-callback?shop=${encodeURIComponent(shop)}&user_id=${activePending.user_id}&plan=${activePending.plan_id}&subscription=active`;
+        return Response.redirect(callbackUrl, 302);
+      }
+    }
+
+    if (!pending) {
+      logStep("No pending or active subscription found", { error: pendingError });
       return returnError(req, "no_pending_subscription", "No pending subscription found");
     }
 

@@ -137,9 +137,8 @@ export default function SetupWizard() {
           const { data: { session } } = await supabase.auth.getSession();
           
           if (!session) {
-            // No session and no pending token - redirect to /app to restart OAuth
             console.log('⚠️ [SetupWizard] No session and no pending_token, redirecting to /app');
-            setIsCheckingSubscription(false); // ✅ Always clear loading before navigation
+            setIsCheckingSubscription(false);
             navigate(`/app?shop=${encodeURIComponent(normalizedShop)}`, { replace: true });
             return;
           }
@@ -150,17 +149,13 @@ export default function SetupWizard() {
           return;
         }
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-
+        // 1️⃣ Quick DB check first (fast)
         const { data: connection } = await supabase
           .from("shopify_connections")
           .select("user_id, store_url")
           .eq("store_url", normalizedShop)
           .eq("is_active", true)
           .maybeSingle();
-
-        clearTimeout(timeout);
 
         if (connection?.user_id) {
           const { data: profile } = await supabase
@@ -169,18 +164,56 @@ export default function SetupWizard() {
             .eq("id", connection.user_id)
             .single();
 
-          // Store current plan for display
           if (profile?.current_plan_id) {
             setCurrentPlanId(profile.current_plan_id);
           }
 
+          // If DB says active, redirect immediately
           if (profile?.subscription_status === 'active') {
-            console.log('✅ [SetupWizard] Active subscription found, redirecting');
-            setIsCheckingSubscription(false); // ✅ Always clear loading before navigation
+            console.log('✅ [SetupWizard] Active subscription found in DB, redirecting');
+            setIsCheckingSubscription(false);
             navigate("/dashboard-light", { replace: true });
             return;
           }
-          // Note: trialing users stay on setup-wizard to see "Activate Full Plan" if quota exhausted
+        }
+
+        // 2️⃣ Direct call to shopify-check-subscription (source of truth) with short timeout
+        console.log('🔄 [SetupWizard] Checking Shopify subscription directly...');
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+          const { data: shopifyCheck, error: shopifyError } = await supabase.functions.invoke(
+            'shopify-check-subscription',
+            { 
+              body: { shopDomain: normalizedShop },
+            }
+          );
+
+          clearTimeout(timeoutId);
+
+          if (!shopifyError && shopifyCheck?.status === 'ACTIVE') {
+            console.log('✅ [SetupWizard] Shopify confirms ACTIVE subscription');
+            
+            // Sync DB if out of sync
+            if (connection?.user_id) {
+              await supabase.functions.invoke('shopify-sync-subscription-status', {
+                body: { 
+                  shopDomain: normalizedShop, 
+                  userId: connection.user_id,
+                  forceSync: true 
+                }
+              }).catch(e => console.log('[SetupWizard] Sync failed (ignored):', e));
+            }
+
+            setIsCheckingSubscription(false);
+            navigate("/dashboard-light", { replace: true });
+            return;
+          }
+
+          console.log('📋 [SetupWizard] Shopify check result:', shopifyCheck?.status || 'unknown');
+        } catch (checkErr) {
+          console.log('[SetupWizard] Direct Shopify check failed (continuing):', checkErr);
         }
       } catch (err) {
         console.log('[SetupWizard] Background check error (ignored):', err);
