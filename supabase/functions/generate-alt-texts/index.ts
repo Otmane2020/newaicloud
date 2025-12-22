@@ -7,8 +7,11 @@ const corsHeaders = {
 };
 
 interface AltTextGenerationRequest {
-  imageIds: string[];
+  imageIds?: string[];
+  imageId?: string;      // Support single image ID
+  image_id?: string;     // Support snake_case variant
   force?: boolean;
+  language?: string;
 }
 
 async function callGeminiVision(imageUrl: string, productTitle: string, language: string): Promise<string> {
@@ -99,11 +102,23 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { imageIds, force = false }: AltTextGenerationRequest = await req.json();
+    const body: AltTextGenerationRequest = await req.json();
+    
+    // Normalize: accept imageIds array, imageId, or image_id (single)
+    let imageIds: string[] = [];
+    if (body.imageIds && Array.isArray(body.imageIds) && body.imageIds.length > 0) {
+      imageIds = body.imageIds;
+    } else if (body.imageId) {
+      imageIds = [body.imageId];
+    } else if (body.image_id) {
+      imageIds = [body.image_id];
+    }
 
-    if (!imageIds || imageIds.length === 0) {
+    const force = body.force ?? false;
+
+    if (imageIds.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Image IDs are required" }),
+        JSON.stringify({ error: "Image IDs are required (imageIds, imageId, or image_id)" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
