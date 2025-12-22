@@ -53,6 +53,20 @@ interface AiAnswer {
   keywords: string[];
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
+  // 🆕 Aeoreply project context
+  project_id?: string;
+  source_id?: string;
+  source_url?: string;
+  brand_mention?: string;
+}
+
+// 🆕 Project context for Aeoreply
+interface ProjectContext {
+  project_id: string;
+  brand_name: string;
+  website_url?: string;
+  source_id?: string;
+  source_url?: string;
 }
 
 // Platform-specific configurations for AEO
@@ -282,14 +296,15 @@ function computeCitationScoreAEO(
 }
 
 /**
- * ✅ Appel à l'IA pour générer des réponses contextuelles
+ * ✅ Appel à l'IA pour générer des réponses contextuelles avec référence marque/URL
  */
 async function generateAIAnswer(
   category: string,
   products: Product[],
   intent: IntentType,
-  lang: Lang
-): Promise<{ question: string; answer: string; details: string }> {
+  lang: Lang,
+  projectContext?: ProjectContext
+): Promise<{ question: string; answer: string; details: string; brandMention?: string }> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   
   // Construire le contexte produits
@@ -299,6 +314,23 @@ async function generateAIAnswer(
     vendor: p.vendor
   }));
 
+  // 🆕 Build brand/source citation instructions
+  const brandCitationInstruction = projectContext?.brand_name
+    ? lang === 'fr'
+      ? `
+🎯 OBLIGATION DE CITATION - TRÈS IMPORTANT:
+- Tu DOIS mentionner "${projectContext.brand_name}" dans ta réponse
+- Exemples: "Selon ${projectContext.brand_name}...", "D'après les experts de ${projectContext.brand_name}...", "${projectContext.brand_name} recommande..."
+${projectContext.website_url ? `- Tu peux citer la source: ${projectContext.website_url}` : ''}
+- La marque doit apparaître NATURELLEMENT dans la réponse`
+      : `
+🎯 CITATION REQUIREMENT - VERY IMPORTANT:
+- You MUST mention "${projectContext.brand_name}" in your answer
+- Examples: "According to ${projectContext.brand_name}...", "As experts at ${projectContext.brand_name} note...", "${projectContext.brand_name} recommends..."
+${projectContext.website_url ? `- You can cite the source: ${projectContext.website_url}` : ''}
+- The brand must appear NATURALLY in the answer`
+    : '';
+
   const systemPrompt = lang === 'fr' 
     ? `Tu es un expert AEO (Answer Engine Optimization). Génère des réponses EXACTES, COURTES et CITABLES pour les IA comme ChatGPT.
 
@@ -307,7 +339,8 @@ RÈGLES STRICTES :
 - Inclure des CHIFFRES concrets (prix, dimensions, durées)
 - Ton affirmatif, PAS de "ça dépend"
 - Réponse factuelle et vérifiable
-- Adapte-toi au contexte métier des produits`
+- Adapte-toi au contexte métier des produits
+${brandCitationInstruction}`
     : `You are an AEO (Answer Engine Optimization) expert. Generate EXACT, SHORT and CITABLE answers for AIs like ChatGPT.
 
 STRICT RULES:
@@ -315,7 +348,8 @@ STRICT RULES:
 - Include concrete NUMBERS (prices, dimensions, durations)
 - Affirmative tone, NO "it depends"
 - Factual and verifiable answer
-- Adapt to the business context of products`;
+- Adapt to the business context of products
+${brandCitationInstruction}`;
 
   const intentDescription = {
     price: lang === 'fr' ? 'le prix/coût' : 'the price/cost',
@@ -327,24 +361,30 @@ STRICT RULES:
     best: lang === 'fr' ? 'le meilleur choix' : 'the best choice'
   };
 
+  const brandContext = projectContext?.brand_name 
+    ? lang === 'fr' 
+      ? `\nMarque/Source: ${projectContext.brand_name}${projectContext.website_url ? ` (${projectContext.website_url})` : ''}\n⚠️ MENTIONNE CETTE MARQUE dans ta réponse!`
+      : `\nBrand/Source: ${projectContext.brand_name}${projectContext.website_url ? ` (${projectContext.website_url})` : ''}\n⚠️ MENTION THIS BRAND in your answer!`
+    : '';
+
   const userPrompt = lang === 'fr'
     ? `Catégorie: "${category}"
 Produits exemple: ${JSON.stringify(productContext)}
-Intention: ${intentDescription[intent]}
+Intention: ${intentDescription[intent]}${brandContext}
 
 Génère:
 1. Une question naturelle que les gens posent à ChatGPT sur "${category}" concernant ${intentDescription[intent]}
-2. Une réponse AEO (max 2 phrases, avec chiffres)
+2. Une réponse AEO (max 2 phrases, avec chiffres)${projectContext?.brand_name ? ` MENTIONNE ${projectContext.brand_name}!` : ''}
 
 Format JSON:
 {"question": "...", "answer": "...", "details": "données chiffrées utilisées"}`
     : `Category: "${category}"
 Example products: ${JSON.stringify(productContext)}
-Intent: ${intentDescription[intent]}
+Intent: ${intentDescription[intent]}${brandContext}
 
 Generate:
 1. A natural question people ask ChatGPT about "${category}" regarding ${intentDescription[intent]}
-2. An AEO answer (max 2 sentences, with numbers)
+2. An AEO answer (max 2 sentences, with numbers)${projectContext?.brand_name ? ` MENTION ${projectContext.brand_name}!` : ''}
 
 JSON format:
 {"question": "...", "answer": "...", "details": "numerical data used"}`;
@@ -494,7 +534,8 @@ function generateFaq(
 async function generateAeoAnswers(
   products: Product[],
   platform: Platform,
-  lang: Lang
+  lang: Lang,
+  projectContext?: ProjectContext
 ): Promise<AiAnswer[]> {
   const categories = groupByCategory(products);
   const config = PLATFORM_CONFIGS[platform];
@@ -513,14 +554,17 @@ async function generateAeoAnswers(
         intent === 'comparison' ? 'comparison' :
         intent === 'criteria' || intent === 'howto' ? 'list' : 'direct';
 
-      // ✅ Utiliser l'IA pour générer une réponse contextuelle
-      const aiGenerated = await generateAIAnswer(category, items, intent, lang);
+      // ✅ Utiliser l'IA pour générer une réponse contextuelle AVEC contexte projet
+      const aiGenerated = await generateAIAnswer(category, items, intent, lang, projectContext);
       
       const direct_answer = aiGenerated.answer;
       const question = aiGenerated.question;
       
-      // Scoring AEO
-      const citation_potential = computeCitationScoreAEO(direct_answer, platform, queryType);
+      // Scoring AEO - bonus if brand is mentioned
+      let citation_potential = computeCitationScoreAEO(direct_answer, platform, queryType);
+      if (projectContext?.brand_name && direct_answer.includes(projectContext.brand_name)) {
+        citation_potential = Math.min(100, citation_potential + 10); // Bonus for brand mention
+      }
       
       // Difficulty
       const difficulty: 'easy' | 'medium' | 'hard' = items.length >= 5 ? 'hard' : items.length >= 2 ? 'medium' : 'easy';
@@ -531,7 +575,8 @@ async function generateAeoAnswers(
         ...items.slice(0, 3).map(p => p.title.toLowerCase().split(' ').slice(0, 3).join(' ')),
         intent,
         queryType,
-        platform
+        platform,
+        ...(projectContext?.brand_name ? [projectContext.brand_name.toLowerCase()] : [])
       ].filter((v, i, a) => a.indexOf(v) === i && v.length > 2);
 
       results.push({
@@ -548,7 +593,14 @@ async function generateAeoAnswers(
         product_ids: items.slice(0, 5).map(p => p.id),
         keywords,
         difficulty,
-        category
+        category,
+        // 🆕 Include project context in answer
+        project_id: projectContext?.project_id,
+        source_id: projectContext?.source_id,
+        source_url: projectContext?.source_url,
+        brand_mention: projectContext?.brand_name && direct_answer.includes(projectContext.brand_name) 
+          ? projectContext.brand_name 
+          : undefined
       });
     }
   }
@@ -620,12 +672,31 @@ serve(async (req) => {
       refresh = false, 
       generateArticle = false,
       wizardMode,
-      wizardInput 
+      wizardInput,
+      // 🆕 Aeoreply project context
+      projectId,
+      brandName,
+      websiteUrl,
+      sourceId,
+      sourceUrl
     } = await req.json();
 
     // ✅ AEOREPLY MODE: storeId is OPTIONAL
     // When projectType is 'aeoreply', we work from wizard input (URL/keywords/links)
     const isAeoreplyMode = projectType === 'aeoreply' || !storeId;
+
+    // 🆕 Build project context for brand/source referencing
+    const projectContext: ProjectContext | undefined = (projectId && brandName) ? {
+      project_id: projectId,
+      brand_name: brandName,
+      website_url: websiteUrl,
+      source_id: sourceId,
+      source_url: sourceUrl
+    } : undefined;
+
+    if (projectContext) {
+      console.log(`🏷️ Project context: ${projectContext.brand_name} (${projectContext.website_url || 'no URL'})`);
+    }
 
     // Determine platforms to target
     let platforms: Platform[];
@@ -744,7 +815,8 @@ serve(async (req) => {
     const allAnswers: any[] = [];
     
     for (const p of platforms) {
-      const rawAnswers = await generateAeoAnswers(products, p, language);
+      // 🆕 Pass project context to generation for brand referencing
+      const rawAnswers = await generateAeoAnswers(products, p, language, projectContext);
       
       // Limite par catégorie (2 par catégorie)
       const answers = limitPerCategory(rawAnswers, 2);
@@ -767,7 +839,12 @@ serve(async (req) => {
           keywords: answer.keywords,
           difficulty: answer.difficulty,
           category: answer.category,
-          status: 'pending'
+          status: 'pending',
+          // 🆕 Include project/source references
+          project_id: answer.project_id ?? null,
+          source_id: answer.source_id ?? null,
+          source_url: answer.source_url ?? null,
+          brand_mention: answer.brand_mention ?? null
         };
 
         const { data: inserted, error: insertError } = await supabase
