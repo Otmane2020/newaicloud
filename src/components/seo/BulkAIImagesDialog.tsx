@@ -456,7 +456,7 @@ export const BulkAIImagesDialog = ({
               const imagePosition = profileImage ? imgIndex + 1 : await getNextPosition(product.id, savedCount);
 
               // Insert image
-              await supabase
+              const { data: newImage, error: insertImgError } = await supabase
                 .from('product_images')
                 .insert({
                   product_id: product.id,
@@ -465,7 +465,33 @@ export const BulkAIImagesDialog = ({
                   position: imagePosition,
                   optimization_count: 1,
                   is_ai_generated: true, // ✅ Mark as AI-generated to prevent re-export
-                });
+                })
+                .select('id')
+                .single();
+
+              // ✅ Create history entry for this AI-generated image
+              if (newImage && !insertImgError) {
+                const { data: userData } = await supabase.auth.getUser();
+                if (userData?.user) {
+                  // Get next version number
+                  const { data: maxVersion } = await supabase.rpc('get_next_image_version', { 
+                    p_image_id: newImage.id 
+                  });
+                  
+                  await supabase.from('product_image_history').insert({
+                    product_id: product.id,
+                    image_id: newImage.id,
+                    user_id: userData.user.id,
+                    optimization_type: 'ai_background',
+                    original_url: img.url, // Source URL used for generation
+                    optimized_url: imageUrl,
+                    version_number: maxVersion || 1,
+                    is_current: true,
+                    ai_model: 'Lovable AI',
+                    ai_prompt: `AI-generated ${img.type} image for ${product.title}`,
+                  });
+                }
+              }
 
               // If this is the profile image (position 1), update product's main image_url
               if (img.type === 'profile' && imageUrl) {

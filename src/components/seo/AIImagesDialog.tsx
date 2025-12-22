@@ -266,7 +266,7 @@ export const AIImagesDialog = ({
         const nextPosition = (existingImages?.[0]?.position || 0) + 1;
 
         // Insert into product_images
-        const { error: insertError } = await supabase
+        const { data: newImage, error: insertError } = await supabase
           .from('product_images')
           .insert({
             product_id: currentProduct.id,
@@ -275,9 +275,35 @@ export const AIImagesDialog = ({
             position: nextPosition,
             optimization_count: 1,
             is_ai_generated: true, // ✅ Mark as AI-generated to prevent re-export
-          });
+          })
+          .select('id')
+          .single();
 
         if (insertError) throw insertError;
+
+        // ✅ Create history entry for this AI-generated image
+        if (newImage) {
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData?.user) {
+            // Get next version number
+            const { data: maxVersion } = await supabase.rpc('get_next_image_version', { 
+              p_image_id: newImage.id 
+            });
+            
+            await supabase.from('product_image_history').insert({
+              product_id: currentProduct.id,
+              image_id: newImage.id,
+              user_id: userData.user.id,
+              optimization_type: 'ai_background',
+              original_url: img.url, // Source URL used for generation
+              optimized_url: imageUrl,
+              version_number: maxVersion || 1,
+              is_current: true,
+              ai_model: 'Lovable AI',
+              ai_prompt: `AI-generated ${img.type} image for ${currentProduct.title}`,
+            });
+          }
+        }
       }
 
       toast.success(
