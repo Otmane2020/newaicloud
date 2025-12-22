@@ -431,20 +431,26 @@ Deno.serve(async (req: Request) => {
         } else if (productImages && productImages.length > 0) {
           console.log(`[SYNC-SEO] Found ${productImages.length} ${syncAllImages ? 'gallery' : 'AI-generated'} images to sync`);
           
-          // STEP 2: Filter images - ONLY upload images that have NON-Shopify CDN sources
-          // Images with cdn.shopify.com URLs would fail after deletion because their source becomes invalid
+          // STEP 2: Filter images - Check which images can be uploaded
+          // With the new storage system, images should be in Supabase Storage (not Shopify CDN)
+          // Images in Supabase Storage can always be re-uploaded to Shopify
           const imagesToUpload = productImages.filter((img: any) => {
             const isShopifyCDN = img.src && (
               img.src.includes('cdn.shopify.com') || 
               img.src.includes('shopifycdn.com')
             );
+            
+            // Skip Shopify CDN images - these need to be migrated first
+            // Supabase Storage images (nekqqlhrjgmyudmmewas.supabase.co) can be uploaded
             if (isShopifyCDN) {
-              console.log(`[SYNC-SEO] ⚠️ Skipping Shopify CDN image (cannot re-upload): ${img.src.substring(0, 80)}...`);
+              console.log(`[SYNC-SEO] ⚠️ Skipping Shopify CDN image (needs migration to Supabase Storage): ${img.src.substring(0, 80)}...`);
+              return false;
             }
-            return !isShopifyCDN;
+            
+            return true;
           });
           
-          console.log(`[SYNC-SEO] ${imagesToUpload.length} images with local/Supabase sources to upload`);
+          console.log(`[SYNC-SEO] ${imagesToUpload.length} images with Supabase Storage sources to upload`);
           
           if (imagesToUpload.length > 0) {
             // STEP 3: Fetch existing media from Shopify
