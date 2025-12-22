@@ -310,7 +310,7 @@ export const AIImagesDialog = ({
       try {
         await supabase.functions.invoke('sync-seo-to-shopify', {
           body: {
-            productIds: [currentProduct.id],
+            productId: currentProduct.id, // Fixed: singular productId, not productIds array
             syncImages: true,
             syncAllImages: false, // 🔒 NEVER force-sync all - only sync new images (shopify_sync_count = 0)
           },
