@@ -96,7 +96,8 @@ serve(async (req) => {
       product_id, 
       style = "contextual", 
       imageType = "primary",
-      format = "square",
+      // 🔒 FORCE SQUARE FORMAT - ignore any other format requested
+      format: _requestedFormat,
       // SERP/Vision enrichment data
       serpData,
       visionAiData,
@@ -105,6 +106,10 @@ serve(async (req) => {
       seoDescription
     } = body;
 
+    // 🔒 FORCE SQUARE FORMAT ONLY - 1:1 ratio mandatory for e-commerce
+    const format = "square";
+    const targetDims = { width: 1024, height: 1024, ratio: "1:1" };
+
     if (!imageUrl || !productTitle) {
       return new Response(JSON.stringify({ error: "imageUrl and productTitle are required" }), {
         status: 400,
@@ -112,7 +117,7 @@ serve(async (req) => {
       });
     }
 
-    console.log("🎨 Generating beautiful contextual background for:", productTitle, "imageType:", imageType, "format:", format);
+    console.log("🎨 Generating SQUARE background for:", productTitle, "imageType:", imageType, "format:", format);
 
     // Initialize Supabase client for usage tracking
     const authHeader = req.headers.get("Authorization");
@@ -190,14 +195,7 @@ Si c'est un lit → angle montrant la tête de lit et la longueur
     const lifestylePromptSection = generateLifestylePromptSection(productTitle);
     console.log(`[product-bg] 🏠 Lifestyle context: ${lifestyleContext.slice(0, 100)}...`);
 
-    // 🆕 Format dimensions mapping
-    const formatDimensions: Record<string, { width: number; height: number; ratio: string }> = {
-      "square": { width: 1024, height: 1024, ratio: "1:1" },
-      "portrait": { width: 768, height: 1024, ratio: "3:4" },
-      "landscape": { width: 1024, height: 768, ratio: "4:3" },
-    };
-    const targetDims = formatDimensions[format] || formatDimensions["square"];
-    console.log(`[product-bg] 🎯 Target format: ${format} -> ${targetDims.width}x${targetDims.height}`);
+    // Format already set at line 110-111
 
     // 🆕 Visual Enhancement Instructions for Professional E-Commerce Quality
     // 🛑 PRODUCT PRESERVATION IS ABSOLUTE - DO NOT MODIFY THE PRODUCT
@@ -240,9 +238,7 @@ Any modification = potential customer complaint.
 
 📐 OUTPUT MUST BE EXACTLY ${targetDims.width}x${targetDims.height} pixels (${targetDims.ratio} ratio)
 📐 CREATE a ${targetDims.width}x${targetDims.height} canvas FIRST, then place content
-${format === "square" ? "🟦 PERFECT SQUARE: Width = Height = 1024 pixels" : ""}
-${format === "portrait" ? "📱 VERTICAL: Height (1024) > Width (768)" : ""}
-${format === "landscape" ? "🖼️ HORIZONTAL: Width (1024) > Height (768)" : ""}
+🟦 PERFECT SQUARE: Width = Height = 1024 pixels (MANDATORY 1:1 RATIO)
 
 ⚠️ PRODUCT MUST FILL 85-95% OF CANVAS - NO WHITE PADDING ⚠️
 Scale the product UP to TOUCH or NEARLY TOUCH the edges of the frame.
