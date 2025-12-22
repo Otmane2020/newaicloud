@@ -37,7 +37,8 @@ serve(async (req) => {
       visionAiData,
       serpData,
       style = "professional",
-      format = "square",
+      // 🔒 FORCE SQUARE FORMAT - ignore any other format
+      format: _requestedFormat,
     } = body;
 
     if (!productTitle) {
@@ -56,21 +57,12 @@ serve(async (req) => {
 
     console.log("📸 Product image URL received:", productImageUrl?.substring(0, 100) + "...");
 
-    // 🆕 Map format to dimensions and aspect ratio
-    const formatToDimensions: Record<string, string> = {
-      "square": "2000x2000px",
-      "portrait": "1500x2000px",
-      "landscape": "2000x1500px",
-    };
-    const formatToAspectRatio: Record<string, string> = {
-      "square": "1:1",
-      "portrait": "3:4",
-      "landscape": "4:3",
-    };
-    const dimensions = formatToDimensions[format] || "2000x2000px";
-    const aspectRatio = formatToAspectRatio[format] || "1:1";
+    // 🔒 FORCE SQUARE FORMAT ONLY - 1:1 ratio mandatory for e-commerce
+    const format = "square"; // Override any requested format
+    const dimensions = "2000x2000px";
+    const aspectRatio = "1:1";
     
-    console.log(`🎨 Format: ${format} -> ${aspectRatio} (${dimensions})`);
+    console.log(`🎨 FORCED SQUARE FORMAT: ${aspectRatio} (${dimensions})`);
 
     // Construire un prompt enrichi avec toutes les données produit
     let enrichedContext = productTitle;
