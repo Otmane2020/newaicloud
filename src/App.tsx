@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
-import { ThemeProvider } from "next-themes";
 
 // Redirect component for /app/installing → /app with preserved query params
 const ShopifyAppRedirect = () => {
@@ -29,6 +28,7 @@ import { useQuotaMonitoring } from "@/hooks/useQuotaMonitoring";
 import { useAutoSync } from "@/hooks/useAutoSync";
 import { useAdminEmailNotifications } from "@/hooks/useAdminEmailNotifications";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 import { ProtectedLayout } from "./components/ProtectedLayout";
 import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
 import { AdminLayout } from "./components/AdminLayout";
@@ -690,54 +690,43 @@ function AppRoutes() {
   return <NewAIRoutes />;
 }
 
-const App = () => {
-  const isAeoreply = isAeoreplyDomain();
-  
-  return (
-    <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
-        <ErrorBoundary>
-          <ThemeProvider 
-            attribute="class" 
-            defaultTheme="dark"
-            forcedTheme={isAeoreply ? "light" : "dark"}
-            disableTransitionOnChange
-          >
-            <LanguageProvider>
-              <TooltipProvider>
-              <BrowserRouter>
-                <AuthProvider>
-                  <FacebookSDKProvider>
-                  <AutoSyncProvider>
-                    <StoreProvider>
-                      <OptimizationProvider>
-                        <AppQuotaMonitor />
-                        <AutoSyncMonitor />
-                        <AdminEmailNotificationsMonitor />
-                        
-                        <BulkOptimizationIndicator />
-                        <PageTracker />
-                        <div className="overflow-x-hidden max-w-full">
-                          <AppRoutes />
-                          <Toaster />
-                          <Sonner />
-                          <AIAssistant />
-                          <NotificationPermissionPrompt />
-                          <AutoSyncProgressDialog />
-                        </div>
-                      </OptimizationProvider>
-                    </StoreProvider>
-                  </AutoSyncProvider>
-                  </FacebookSDKProvider>
-                </AuthProvider>
-              </BrowserRouter>
-              </TooltipProvider>
-            </LanguageProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
-      </QueryClientProvider>
-    </HelmetProvider>
-  );
-};
+const App = () => (
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <LanguageProvider>
+          <TooltipProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <FacebookSDKProvider>
+              <AutoSyncProvider>
+                <StoreProvider>
+                  <OptimizationProvider>
+                    <AppQuotaMonitor />
+                    <AutoSyncMonitor />
+                    <AdminEmailNotificationsMonitor />
+                    
+                    <BulkOptimizationIndicator />
+                    <PageTracker />
+                    <div className="overflow-x-hidden max-w-full">
+                      <AppRoutes />
+                      <Toaster />
+                      <Sonner />
+                      <AIAssistant />
+                      <NotificationPermissionPrompt />
+                      <AutoSyncProgressDialog />
+                    </div>
+                  </OptimizationProvider>
+                </StoreProvider>
+              </AutoSyncProvider>
+              </FacebookSDKProvider>
+            </AuthProvider>
+          </BrowserRouter>
+          </TooltipProvider>
+        </LanguageProvider>
+      </ErrorBoundary>
+    </QueryClientProvider>
+  </HelmetProvider>
+);
 
 export default App;
