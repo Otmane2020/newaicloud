@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Loader2,
   Sparkles,
@@ -33,6 +40,7 @@ import {
   Focus,
   Layers,
   Box,
+  Crown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
@@ -61,10 +69,10 @@ interface Product {
 interface GeneratedImage {
   id: string;
   url: string;
-  type: 'front' | 'profile' | 'back' | 'zoom_fabric' | 'zoom_legs' | 'zoom_detail' | 'decor';
+  type: 'front' | 'angle45' | 'profile' | 'back' | 'top' | 'low_angle' | 'zoom_fabric' | 'zoom_legs' | 'zoom_detail' | 'decor';
   label: string;
   selected: boolean;
-  variantId?: string; // If this image was generated for a variant
+  variantId?: string;
 }
 
 interface AIImagesDialogProps {
@@ -107,7 +115,11 @@ export const AIImagesDialog = ({
   const [includeDecor, setIncludeDecor] = useState(true);
   const [decorType, setDecorType] = useState<'living_room' | 'dining_room' | 'bedroom' | 'office'>('living_room');
   const [progress, setProgress] = useState(0);
+  const [displayedProgress, setDisplayedProgress] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Main image selection state
+  const [mainImageId, setMainImageId] = useState<string>('auto');
   
   // Variant selection state
   const [productVariants, setProductVariants] = useState<ProductVariant[]>([]);
@@ -116,9 +128,44 @@ export const AIImagesDialog = ({
   
   // Product gallery images for context
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  
+  // Progress animation ref
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentProduct = selectedProducts[currentProductIndex];
   const currentGeneratedImages = generatedImages.get(currentProduct?.id) || [];
+  
+  // Smooth progress animation effect
+  useEffect(() => {
+    if (isGenerating) {
+      // Clear any existing interval
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      
+      // Animate progress smoothly
+      progressIntervalRef.current = setInterval(() => {
+        setDisplayedProgress(prev => {
+          if (prev < progress) {
+            return Math.min(prev + 1, progress);
+          }
+          return prev;
+        });
+      }, 50);
+    } else {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      setDisplayedProgress(progress);
+    }
+    
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, [isGenerating, progress]);
 
   // Load variants and gallery images when product changes
   useEffect(() => {
@@ -174,9 +221,11 @@ export const AIImagesDialog = ({
       setCurrentProductIndex(0);
       setGeneratedImages(new Map());
       setProgress(0);
+      setDisplayedProgress(0);
       setProductVariants([]);
       setSelectedVariantIds(new Set());
       setGalleryImages([]);
+      setMainImageId('auto');
     }
   }, [open]);
   
@@ -352,6 +401,32 @@ export const AIImagesDialog = ({
     });
   };
 
+  // Helper to get uploaded URL for an image
+  const getUploadedUrl = async (img: GeneratedImage): Promise<string> => {
+    if (!img.url.startsWith('data:')) return img.url;
+    
+    const base64Data = img.url.split(',')[1];
+    const filename = `ai_main_${currentProduct.id}_${img.type}_${Date.now()}.png`;
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    
+    const { error: uploadError } = await supabase.storage
+      .from('generated-images')
+      .upload(filename, byteArray, { contentType: 'image/png' });
+    
+    if (uploadError) throw uploadError;
+    
+    const { data: urlData } = supabase.storage
+      .from('generated-images')
+      .getPublicUrl(filename);
+    
+    return urlData.publicUrl;
+  };
+
   const handleSaveSelected = async () => {
     const selectedImages = currentGeneratedImages.filter(img => img.selected);
     if (selectedImages.length === 0) {
@@ -447,12 +522,47 @@ export const AIImagesDialog = ({
         }
       }
 
+      // 🆕 Handle main image selection
+      let mainImageUrl: string | null = null;
+      
+      if (mainImageId === 'auto') {
+        // Auto: use angle45 if selected, otherwise first image
+        const angle45Image = selectedImages.find(img => img.type === 'angle45');
+        if (angle45Image) {
+          mainImageUrl = angle45Image.url.startsWith('data:') 
+            ? (await getUploadedUrl(angle45Image)) 
+            : angle45Image.url;
+        }
+      } else if (mainImageId !== 'none') {
+        // Specific image selected
+        const selectedMainImage = selectedImages.find(img => img.id === mainImageId);
+        if (selectedMainImage) {
+          mainImageUrl = selectedMainImage.url.startsWith('data:')
+            ? (await getUploadedUrl(selectedMainImage))
+            : selectedMainImage.url;
+        }
+      }
+      
+      // Update main product image if one was selected
+      if (mainImageUrl) {
+        const { error: updateError } = await supabase
+          .from('shopify_products')
+          .update({ image_url: mainImageUrl, updated_at: new Date().toISOString() })
+          .eq('id', currentProduct.id);
+        
+        if (updateError) {
+          console.warn('Failed to update main product image:', updateError);
+        } else {
+          console.log('✅ Main product image updated');
+        }
+      }
+
       // 🆕 Auto-sync AI-generated images to Shopify
       try {
         const { error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
           body: {
             productId: currentProduct.id,
-            allowCreateReplace: true, // 🔐 Explicit: Allow creating new images on Shopify
+            allowCreateReplace: true,
           },
         });
         
@@ -468,7 +578,6 @@ export const AIImagesDialog = ({
         }
       } catch (syncError) {
         console.warn('⚠️ Auto-sync to Shopify failed:', syncError);
-        // Don't fail the save operation if sync fails
       }
 
       toast.success(
@@ -719,20 +828,65 @@ export const AIImagesDialog = ({
 
             {/* Generated Images Preview */}
             {currentGeneratedImages.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                   {language === 'fr' 
                     ? `${currentGeneratedImages.length} image(s) générée(s) - Sélectionnez celles à sauvegarder`
                     : `${currentGeneratedImages.length} image(s) generated - Select ones to save`}
                 </Label>
+                
+                {/* Main Image Selection Dropdown */}
+                <div className="p-3 bg-gradient-to-r from-amber-500/10 to-transparent rounded-lg border border-amber-500/20">
+                  <div className="flex items-center gap-3">
+                    <Crown className="h-5 w-5 text-amber-500" />
+                    <div className="flex-1">
+                      <Label className="text-sm font-medium">
+                        {language === 'fr' ? 'Image principale du produit' : 'Main product image'}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {language === 'fr' 
+                          ? 'Cette image sera utilisée partout (SEO, fiche produit, galerie)'
+                          : 'This image will be used everywhere (SEO, product page, gallery)'}
+                      </p>
+                    </div>
+                    <Select value={mainImageId} onValueChange={setMainImageId}>
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder={language === 'fr' ? 'Sélectionner...' : 'Select...'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">
+                          <div className="flex items-center gap-2">
+                            <RotateCcw className="h-4 w-4" />
+                            {language === 'fr' ? 'Auto (Vue 45° si dispo)' : 'Auto (45° view if available)'}
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="none">
+                          <div className="flex items-center gap-2">
+                            <X className="h-4 w-4" />
+                            {language === 'fr' ? 'Ne pas changer' : 'Don\'t change'}
+                          </div>
+                        </SelectItem>
+                        {currentGeneratedImages.filter(img => img.selected).map(img => (
+                          <SelectItem key={img.id} value={img.id}>
+                            <div className="flex items-center gap-2">
+                              {getTypeIcon(img.type)}
+                              {img.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {currentGeneratedImages.map(img => (
                     <Card 
                       key={img.id}
                       className={`overflow-hidden cursor-pointer transition-all ${
                         img.selected ? 'ring-2 ring-primary' : 'opacity-60'
-                      }`}
+                      } ${mainImageId === img.id ? 'ring-2 ring-amber-500' : ''}`}
                       onClick={() => toggleImageSelection(img.id)}
                     >
                       <div className="aspect-square relative">
@@ -747,7 +901,12 @@ export const AIImagesDialog = ({
                             <span className="ml-1">{img.label}</span>
                           </Badge>
                         </div>
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          {mainImageId === img.id && (
+                            <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                              <Crown className="h-3 w-3 text-white" />
+                            </div>
+                          )}
                           {img.selected ? (
                             <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                               <Check className="h-4 w-4 text-primary-foreground" />
@@ -764,26 +923,67 @@ export const AIImagesDialog = ({
                 </div>
               </div>
             )}
-
-            {/* Progress - Style Google Shopping */}
-            {isGenerating && (
-              <div className="space-y-3 p-4 bg-gradient-to-r from-primary/5 to-transparent rounded-xl border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">
-                      {language === 'fr' ? 'Génération en cours...' : 'Generating...'}
-                    </span>
-                  </div>
-                  <span className="text-2xl sm:text-3xl font-bold text-primary">
-                    {Math.round(progress)}%
-                  </span>
-                </div>
-                <Progress value={progress} className="h-3 sm:h-4" />
-              </div>
-            )}
           </div>
         </ScrollArea>
+        
+        {/* Sticky Progress - Animated with Mockup */}
+        {isGenerating && (
+          <div className="sticky bottom-0 z-10 -mx-6 -mb-6 px-6 pb-6 pt-4 bg-gradient-to-t from-background via-background to-transparent">
+            <div className="space-y-3 p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl border border-primary/20 shadow-lg">
+              {/* Mockup Visual */}
+              <div className="flex items-center gap-4">
+                <div className="relative w-16 h-16 rounded-lg overflow-hidden border bg-white flex-shrink-0">
+                  {currentProduct?.image_url ? (
+                    <img 
+                      src={currentProduct.image_url} 
+                      alt={currentProduct.title}
+                      className="w-full h-full object-contain animate-pulse"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-6 w-6 text-muted-foreground animate-pulse" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary/30">
+                    <div 
+                      className="h-full bg-primary transition-all duration-300 ease-out"
+                      style={{ width: `${displayedProgress}%` }}
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        {[0, 1, 2].map(i => (
+                          <div 
+                            key={i}
+                            className="w-2 h-2 rounded-full bg-primary animate-bounce"
+                            style={{ animationDelay: `${i * 0.15}s` }}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm font-medium text-primary">
+                        {language === 'fr' ? 'Génération AI en cours...' : 'AI Generation in progress...'}
+                      </span>
+                    </div>
+                    <span className="text-3xl font-bold text-primary tabular-nums">
+                      {displayedProgress}%
+                    </span>
+                  </div>
+                  <Progress value={displayedProgress} className="h-3" />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {language === 'fr' 
+                      ? 'Images haute résolution 2048x2048px pour zoom e-commerce' 
+                      : 'High resolution 2048x2048px images for e-commerce zoom'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <DialogFooter className="flex gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
