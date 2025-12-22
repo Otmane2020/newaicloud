@@ -417,7 +417,7 @@ Deno.serve(async (req: Request) => {
         // STEP 1: First, fetch images from NewAI database to know what we have locally
         let imagesQuery = supabaseClient
           .from("product_images")
-          .select("id, src, alt_text, position, shopify_image_id, optimization_count, shopify_sync_count")
+          .select("id, src, alt_text, position, shopify_image_id, optimization_count, shopify_sync_count, last_synced_at")
           .eq("product_id", productId);
         
         if (!syncAllImages) {
@@ -434,27 +434,31 @@ Deno.serve(async (req: Request) => {
           
           // STEP 2: Filter images - Check which images can be uploaded
           // With the new storage system, images should be in Supabase Storage (not Shopify CDN)
-          // Images in Supabase Storage can always be re-uploaded to Shopify
-          const imagesToUpload = productImages.filter((img: any) => {
+          // Images in Supabase Storage can always be uploaded to Shopify.
+          const uploadableImages = productImages.filter((img: any) => {
             const isShopifyCDN = img.src && (
-              img.src.includes('cdn.shopify.com') || 
+              img.src.includes('cdn.shopify.com') ||
               img.src.includes('shopifycdn.com')
             );
             
             // Skip Shopify CDN images - these need to be migrated first
-            // Supabase Storage images (nekqqlhrjgmyudmmewas.supabase.co) can be uploaded
+            // Supabase Storage images (...supabase.co/storage/v1/object/public/...) can be uploaded
             if (isShopifyCDN) {
-              console.log(`[SYNC-SEO] ⚠️ Skipping Shopify CDN image (needs migration to Supabase Storage): ${img.src.substring(0, 80)}...`);
+              console.log(`[SYNC-SEO] ⚠️ Skipping Shopify CDN image (needs migration to storage): ${img.src.substring(0, 80)}...`);
               return false;
             }
             
             return true;
           });
+
+          // ✅ Prevent duplicates: only upload images that have never been synced to Shopify
+          // (Otherwise each export re-creates the same gallery images.)
+          const alreadySyncedCount = uploadableImages.filter((img: any) => (img.shopify_sync_count ?? 0) > 0).length;
+          const imagesToUpload = uploadableImages.filter((img: any) => (img.shopify_sync_count ?? 0) === 0);
           
-          console.log(`[SYNC-SEO] ${imagesToUpload.length} images with Supabase Storage sources to upload`);
+          console.log(`[SYNC-SEO] ${uploadableImages.length} uploadable images (${alreadySyncedCount} already synced, ${imagesToUpload.length} new to upload)`);
           
           if (imagesToUpload.length > 0) {
-            // STEP 3: Fetch existing media from Shopify
             const getMediaQuery = `
               query getProductMedia($productId: ID!) {
                 product(id: $productId) {
@@ -605,7 +609,7 @@ Deno.serve(async (req: Request) => {
               }
             }
           } else {
-            console.log(`[SYNC-SEO] ⚠️ No uploadable images (all images are from Shopify CDN - cannot re-upload)`);
+            console.log(`[SYNC-SEO] ✅ No new images to upload (already synced, or not uploadable).`);
           }
         } else {
           console.log(`[SYNC-SEO] No ${syncAllImages ? 'gallery' : 'AI-generated'} images found to sync`);
