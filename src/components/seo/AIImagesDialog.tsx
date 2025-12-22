@@ -306,16 +306,16 @@ export const AIImagesDialog = ({
         }
       }
 
-      // 🆕 Auto-sync to Shopify after saving all images
+      // 🆕 Auto-sync to Shopify ONLY for newly created images (NOT syncAllImages to avoid duplicates)
       try {
         await supabase.functions.invoke('sync-seo-to-shopify', {
           body: {
             productIds: [currentProduct.id],
             syncImages: true,
-            syncAllImages: true,
+            syncAllImages: false, // 🔒 NEVER force-sync all - only sync new images (shopify_sync_count = 0)
           },
         });
-        console.log(`✅ Auto-synced AI images to Shopify for product ${currentProduct.id}`);
+        console.log(`✅ Auto-synced new AI images to Shopify for product ${currentProduct.id}`);
         toast.info(
           language === 'fr' 
             ? 'Synchronisation Shopify en cours...' 

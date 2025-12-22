@@ -263,24 +263,7 @@ export function ProductGalleryDialog({
     try {
       const imageToDelete = images.find(img => img.id === imageId);
       
-      // Delete from Shopify first if it has a shopify_image_id
-      if (product.shopify_id && imageToDelete?.shopify_image_id) {
-        const { error: shopifyError } = await supabase.functions.invoke("sync-product-images-to-shopify", {
-          body: {
-            productId: product.id,
-            shopifyProductId: product.shopify_id,
-            storeId,
-            deleteImageIds: [imageToDelete.shopify_image_id],
-          },
-        });
-        
-        if (shopifyError) {
-          console.error("Shopify delete error:", shopifyError);
-          toast.warning("Image supprimée localement, erreur de sync Shopify");
-        }
-      }
-      
-      // Delete from database
+      // Delete from database FIRST (fast operation)
       const { error: dbError } = await supabase
         .from("product_images")
         .delete()
@@ -288,23 +271,39 @@ export function ProductGalleryDialog({
       
       if (dbError) throw dbError;
       
-      // Update positions of remaining images
+      // Update positions of remaining images in a single batch call
       const remainingImages = images.filter(img => img.id !== imageId);
       const reorderedImages = remainingImages.map((img, idx) => ({
         ...img,
         position: idx + 1,
       }));
       
-      // Update positions in database
-      for (const img of reorderedImages) {
-        await supabase
-          .from("product_images")
-          .update({ position: img.position })
-          .eq("id", img.id);
+      // Batch update positions using Promise.all (parallel, not sequential)
+      if (reorderedImages.length > 0) {
+        await Promise.all(
+          reorderedImages.map(img =>
+            supabase
+              .from("product_images")
+              .update({ position: img.position })
+              .eq("id", img.id)
+          )
+        );
       }
       
       setImages(reorderedImages);
       toast.success(t.toasts.success.deleted);
+      
+      // Delete from Shopify in background (non-blocking)
+      if (product.shopify_id && imageToDelete?.shopify_image_id) {
+        supabase.functions.invoke("sync-product-images-to-shopify", {
+          body: {
+            productId: product.id,
+            shopifyProductId: product.shopify_id,
+            storeId,
+            deleteImageIds: [imageToDelete.shopify_image_id],
+          },
+        }).catch(err => console.error("Background Shopify delete error:", err));
+      }
     } catch (error) {
       console.error("Error deleting image:", error);
       toast.error(t.toasts.error.deleting);

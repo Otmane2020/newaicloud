@@ -451,15 +451,32 @@ Deno.serve(async (req: Request) => {
             return true;
           });
 
-          // ✅ Determine which images to upload:
-          // - If syncAllImages is true (force export), upload ALL AI images regardless of previous sync
-          // - Otherwise, only upload images that have never been synced (shopify_sync_count = 0)
+          // 🔒 STRICT LOCK: Only upload images that have NEVER been synced (shopify_sync_count = 0)
+          // This prevents duplicate exports even if syncAllImages is accidentally true
           const alreadySyncedCount = uploadableImages.filter((img: any) => (img.shopify_sync_count ?? 0) > 0).length;
-          const imagesToUpload = syncAllImages 
-            ? uploadableImages // Force mode: upload ALL AI images
-            : uploadableImages.filter((img: any) => (img.shopify_sync_count ?? 0) === 0); // Normal: only new
           
-          console.log(`[SYNC-SEO] ${uploadableImages.length} AI images (${alreadySyncedCount} already synced, ${imagesToUpload.length} to export${syncAllImages ? ' - FORCE MODE' : ''})`);
+          // 🚨 CRITICAL CHANGE: ALWAYS filter by shopify_sync_count = 0, regardless of syncAllImages flag
+          // This ensures an image can ONLY be sent to Shopify ONCE
+          const imagesToUpload = uploadableImages.filter((img: any) => {
+            const syncCount = img.shopify_sync_count ?? 0;
+            const hasShopifyId = img.shopify_image_id && img.shopify_image_id !== '';
+            
+            // Image already synced - NEVER re-export
+            if (syncCount > 0) {
+              console.log(`[SYNC-SEO] 🔒 LOCKED: Image ${img.id} already synced ${syncCount} times, skipping`);
+              return false;
+            }
+            
+            // Image already has a Shopify ID - NEVER re-export
+            if (hasShopifyId) {
+              console.log(`[SYNC-SEO] 🔒 LOCKED: Image ${img.id} already has Shopify ID ${img.shopify_image_id}, skipping`);
+              return false;
+            }
+            
+            return true;
+          });
+          
+          console.log(`[SYNC-SEO] ${uploadableImages.length} AI images (${alreadySyncedCount} already synced/locked, ${imagesToUpload.length} new to export)`);
           
           if (imagesToUpload.length > 0) {
             const getMediaQuery = `
