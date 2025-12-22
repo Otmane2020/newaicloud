@@ -422,14 +422,18 @@ export const useImageOptimization = () => {
         });
 
         // 🔥 CRITICAL: Sync with Shopify after applying image
-        console.log('🔄 Syncing optimized image with Shopify...');
+        // Use allowCreateReplace: true because this is an intentional AI image optimization
+        console.log('🔄 Syncing optimized AI image with Shopify...');
         const syncToastId = toast.loading('Synchronisation avec Shopify...', {
           description: 'Application de l\'image optimisée'
         });
         
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-            body: { productId }
+            body: { 
+              productId,
+              allowCreateReplace: true // 🔐 Explicit intent: this AI image should be pushed to Shopify
+            }
           });
 
           // Handle different sync scenarios with detailed feedback

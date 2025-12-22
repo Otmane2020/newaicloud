@@ -1499,7 +1499,7 @@ export default function ProductTitleDescription() {
             const { data: syncData, error: syncError } = await supabase.functions.invoke(
               "sync-product-images-to-shopify",
               {
-                body: { productId },
+                body: { productId, allowCreateReplace: true }, // 🔐 Explicit: Bulk optimization action
               },
             );
 
@@ -1694,7 +1694,7 @@ export default function ProductTitleDescription() {
         for (const productId of productIds) {
           try {
             const { error: syncError } = await supabase.functions.invoke("sync-product-images-to-shopify", {
-              body: { productId },
+              body: { productId, allowCreateReplace: true }, // 🔐 Explicit: Bulk sync action
             });
 
             if (syncError) {

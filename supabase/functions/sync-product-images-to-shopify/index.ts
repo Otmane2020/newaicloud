@@ -161,27 +161,62 @@ Deno.serve(async (req) => {
 
     console.log('[SYNC-IMAGES] ✅ User authorized for Shopify updates');
 
-    const { productId, images: requestImages, isReorderOnly } = parsedBody;
+    const { 
+      productId, 
+      images: requestImages, 
+      isReorderOnly,
+      deleteImageIds,
+      allowCreateReplace = false, // 🔐 CRITICAL: Default to NO add/replace operations for safety
+      force = false // Legacy flag - treat as allowCreateReplace for backwards compatibility
+    } = parsedBody;
 
     if (!productId) {
       throw new Error("Product ID is required");
     }
+
+    // Determine if we should allow add/replace operations
+    const canCreateReplace = allowCreateReplace || force;
+    
+    // 🔐 SAFE MODE: If no explicit intent provided, do nothing (prevents duplicate exports)
+    const hasExplicitIntent = isReorderOnly || 
+                              deleteImageIds?.length > 0 || 
+                              canCreateReplace ||
+                              (requestImages && requestImages.length > 0);
 
     console.log(`🔄 Syncing images for product: ${productId}`);
     console.log(`👤 User ID: ${user.id}`);
     console.log(`📦 Request images provided: ${requestImages ? requestImages.length : 'none'}`);
     console.log(`📦 Request images details:`, JSON.stringify(requestImages?.slice(0, 3)));
     console.log(`🔄 Is reorder only: ${isReorderOnly}`);
+    console.log(`🔐 Allow create/replace: ${canCreateReplace}`);
+    console.log(`🔐 Has explicit intent: ${hasExplicitIntent}`);
+    
+    // 🔐 CRITICAL SAFETY CHECK: If no explicit intent, return immediately without processing
+    if (!hasExplicitIntent) {
+      console.log(`⏭️ [SAFE MODE] No explicit intent provided - returning without processing to prevent duplicates`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "No-op: Safe mode - no explicit intent provided. Use allowCreateReplace=true to create/replace images.",
+          noOperation: true,
+          hint: "Specify isReorderOnly, deleteImageIds, allowCreateReplace, or images array"
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
     
     // If request includes images with positions, this is a reorder request
     const isReorderRequest = (requestImages && Array.isArray(requestImages) && requestImages.length > 0) || isReorderOnly;
 
-    // Get product with images and store info
+    // Get product with images and store info (include is_ai_generated and shopify_sync_count for safety checks)
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
       .select(`
         *,
-        images:product_images(id, src, alt_text, position, shopify_image_id)
+        images:product_images(id, src, alt_text, position, shopify_image_id, is_ai_generated, shopify_sync_count)
       `)
       .eq("id", productId)
       .single();
@@ -359,6 +394,10 @@ Deno.serve(async (req) => {
     if (isReorderOnly) {
       console.log(`🔄 REORDER-ONLY mode: Skipping all image add/replace processing`);
       console.log(`📋 Will only reorder ${requestImages?.length || 0} images`);
+    } else if (!canCreateReplace) {
+      // 🔐 SAFE MODE: If canCreateReplace is false, skip all add/replace processing
+      console.log(`🔐 SAFE MODE: canCreateReplace=false, skipping all add/replace processing`);
+      console.log(`📋 Only reorder operations will be performed if images array provided`);
     } else {
       // Separate images into categories:
       // 1. New images (no shopify_image_id AND no corresponding Shopify image)
@@ -372,27 +411,35 @@ Deno.serve(async (req) => {
         const hasShopifyId = !!img.shopify_image_id;
         const isGenerated = isGeneratedImage(localUrl);
         const isBase64 = isBase64Image(localUrl);
+        const isAiGenerated = img.is_ai_generated === true; // 🔐 From database
+        const syncCount = img.shopify_sync_count || 0; // 🔐 From database (already loaded)
         
-        console.log(`📸 Image ${img.id}: shopify_image_id=${img.shopify_image_id}, position=${img.position}, isGenerated=${isGenerated}, isBase64=${isBase64}`);
+        console.log(`📸 Image ${img.id}: shopify_image_id=${img.shopify_image_id}, position=${img.position}, isGenerated=${isGenerated}, isBase64=${isBase64}, is_ai_generated=${isAiGenerated}, sync_count=${syncCount}`);
 
-        // 🚨 CRITICAL: Check if AI-generated image was already synced (shopify_sync_count >= 1)
-        // This prevents duplicate exports of AI images to Shopify gallery
-        if (isGenerated && hasShopifyId) {
-          // Fetch shopify_sync_count to check if already synced
-          const { data: imgSyncData } = await supabaseClient
-            .from("product_images")
-            .select("shopify_sync_count")
-            .eq("id", img.id)
-            .single();
-          
-          if (imgSyncData && imgSyncData.shopify_sync_count >= 1) {
-            console.log(`⏭️ AI image ${img.id} already synced to Shopify (sync_count: ${imgSyncData.shopify_sync_count}), skipping`);
-            continue; // Skip this image - already exported once
+        // 🔐 RULE 1: Skip imported Shopify images (is_ai_generated = false) - they should NEVER be replaced/re-uploaded
+        if (!isAiGenerated && hasShopifyId) {
+          console.log(`⏭️ [SAFE] Skipping non-AI image ${img.id} with shopify_id - imported images are never replaced`);
+          continue;
+        }
+
+        // 🔐 RULE 2: Skip AI images that were already synced once (shopify_sync_count >= 1)
+        if (isAiGenerated && syncCount >= 1) {
+          console.log(`⏭️ [SAFE] AI image ${img.id} already synced to Shopify (sync_count: ${syncCount}), skipping`);
+          continue;
+        }
+
+        // 🔐 RULE 3: Only process AI-generated images for add/replace
+        if (!isAiGenerated && !hasShopifyId) {
+          // This is a non-AI image without Shopify ID - could be manually added
+          // Only add if it's a base64 or generated URL (indicates intentional new content)
+          if (!isBase64 && !isGenerated) {
+            console.log(`⏭️ [SAFE] Skipping non-AI image ${img.id} without shopify_id - not a generated image`);
+            continue;
           }
         }
 
         if (hasShopifyId) {
-          // Has Shopify ID - check if URL changed
+          // Has Shopify ID - check if URL changed (only for AI images at this point)
           const imgGid = restIdToGid(img.shopify_image_id, 'MediaImage');
           const existingImg = existingMedia.find((m: any) => m.id === imgGid);
           
@@ -401,7 +448,7 @@ Deno.serve(async (req) => {
             const urlChanged = existingUrl !== localUrl && !localUrl.includes(existingUrl.split('?')[0]);
             
             if (isBase64 || isGenerated || urlChanged) {
-              console.log(`🔄 Image ${img.id} marked for REPLACE: existingUrl differs from localUrl (generated: ${isGenerated})`);
+              console.log(`🔄 AI Image ${img.id} marked for REPLACE: existingUrl differs from localUrl`);
               imagesToReplace.push(img);
             }
           } else {
@@ -410,7 +457,7 @@ Deno.serve(async (req) => {
             newImagesToAdd.push(img);
           }
         } else {
-          // No Shopify ID - check if it's a generated image that should replace by position
+          // No Shopify ID - this is a NEW AI image to add
           if (isGenerated || isBase64) {
             // Find matching Shopify image by position
             const position = img.position || 1;
@@ -418,19 +465,23 @@ Deno.serve(async (req) => {
             
             if (matchingShopifyImage) {
               // This generated image should REPLACE the Shopify image at this position
-              console.log(`🔄 Generated image ${img.id} at position ${position} will REPLACE existing Shopify image`);
+              console.log(`🔄 Generated AI image ${img.id} at position ${position} will REPLACE existing Shopify image`);
               // Temporarily assign the Shopify image ID for replacement
               img._replaceShopifyGid = matchingShopifyImage.id;
               imagesToReplace.push(img);
             } else {
               // No matching Shopify image - add as new
-              console.log(`➕ Generated image ${img.id} at position ${position} will be ADDED (no matching Shopify image)`);
+              console.log(`➕ Generated AI image ${img.id} at position ${position} will be ADDED (no matching Shopify image)`);
               newImagesToAdd.push(img);
             }
           } else {
-            // Regular new image without Shopify ID
-            console.log(`➕ Image ${img.id} marked as NEW (no shopify_image_id)`);
-            newImagesToAdd.push(img);
+            // Regular new image without Shopify ID - only if AI generated
+            if (isAiGenerated) {
+              console.log(`➕ AI Image ${img.id} marked as NEW (no shopify_image_id)`);
+              newImagesToAdd.push(img);
+            } else {
+              console.log(`⏭️ [SAFE] Skipping non-AI image ${img.id} - no shopify_id and not a generated URL`);
+            }
           }
         }
       }

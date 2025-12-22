@@ -173,7 +173,7 @@ export function BackgroundDialog({
           }
 
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-            body: { productId, force: true }
+            body: { productId, allowCreateReplace: true } // 🔐 Explicit: AI background removal images should sync
           });
           
           console.log('[BackgroundDialog] Shopify sync response', { productId, syncData, syncError });
@@ -239,7 +239,7 @@ export function BackgroundDialog({
       for (const productId of Array.from(selectedIds)) {
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-            body: { productId }
+            body: { productId, allowCreateReplace: true } // 🔐 Explicit: Manual sync button means user wants to push to Shopify
           });
           
           console.log('[BackgroundDialog] Manual sync response', { productId, syncData, syncError });

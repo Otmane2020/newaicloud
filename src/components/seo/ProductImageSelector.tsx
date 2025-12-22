@@ -127,10 +127,10 @@ export function ProductImageSelector({
                       .update({ is_current: true })
                       .eq('id', historyId);
 
-                    // 2. Sync to Shopify
+                    // 2. Sync to Shopify - selecting an AI image version is intentional
                     const { error: syncError } = await supabase.functions.invoke(
                       'sync-product-images-to-shopify',
-                      { body: { productId } }
+                      { body: { productId, allowCreateReplace: true } } // 🔐 Explicit: User selected this image to apply
                     );
 
                     if (syncError) {

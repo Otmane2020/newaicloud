@@ -142,10 +142,10 @@ export default function MediaHistory() {
 
       if (updateError) throw updateError;
 
-      // 2. Sync to Shopify
+      // 2. Sync to Shopify - restore is an intentional action
       const { data: syncData, error: syncError } = await supabase.functions.invoke(
         'sync-product-images-to-shopify',
-        { body: { productId } }
+        { body: { productId, allowCreateReplace: true } } // 🔐 Explicit: Restoring an AI image version should sync
       );
 
       console.log('[MediaHistory] Shopify sync response', { productId, syncData, syncError });

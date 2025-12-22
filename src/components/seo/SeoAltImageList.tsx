@@ -318,7 +318,7 @@ export function SeoAltImageList() {
         );
 
         const invokePromise = supabase.functions.invoke('sync-product-images-to-shopify', {
-          body: { productId }
+          body: { productId, allowCreateReplace: true } // 🔐 Explicit: Alt text optimization sync
         });
 
         const result = await Promise.race([invokePromise, timeoutPromise]);

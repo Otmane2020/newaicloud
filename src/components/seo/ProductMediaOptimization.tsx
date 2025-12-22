@@ -267,7 +267,7 @@ export const ProductMediaOptimization = () => {
 
       try {
         const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-          body: { productId: selectedImage.product_id }
+          body: { productId: selectedImage.product_id, allowCreateReplace: true } // 🔐 Explicit: White background optimization
         });
 
         console.log(`🔍 [WhiteBg] Shopify sync response:`, {
