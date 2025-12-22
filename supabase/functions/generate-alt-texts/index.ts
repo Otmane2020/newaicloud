@@ -14,11 +14,30 @@ interface AltTextGenerationRequest {
   language?: string;
 }
 
-async function callGeminiVision(imageUrl: string, productTitle: string, language: string): Promise<string> {
-  const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY');
+// Helper to add delay between API calls to avoid rate limits
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Convert ArrayBuffer to base64 without stack overflow (chunked approach)
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 32768; // Process in 32KB chunks to avoid stack overflow
+  let binary = '';
   
-  if (!geminiApiKey) {
-    throw new Error('Google Gemini API key not configured');
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  
+  return btoa(binary);
+}
+
+async function callGeminiVision(imageUrl: string, productTitle: string, language: string): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  
+  if (!LOVABLE_API_KEY) {
+    throw new Error('LOVABLE_API_KEY not configured');
   }
 
   const languageInstructions = language === 'fr' 
@@ -38,40 +57,42 @@ Le texte ALT doit:
 
 Réponds UNIQUEMENT avec le texte ALT, sans guillemets ni explication.`;
 
+  // Use Lovable AI Gateway instead of direct Gemini API
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+    'https://ai.gateway.lovable.dev/v1/chat/completions',
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { 
-              inlineData: {
-                mimeType: "image/jpeg",
-                data: await fetchImageAsBase64(imageUrl)
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { 
+                type: 'image_url',
+                image_url: { url: imageUrl }
               }
-            }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 150,
-        }
+            ]
+          }
+        ],
+        max_tokens: 150,
+        temperature: 0.3,
       }),
     }
   );
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json();
-  const altText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+  const altText = data.choices?.[0]?.message?.content?.trim() || '';
   
   // Clean up alt text - remove quotes if present
   return altText.replace(/^["']|["']$/g, '').substring(0, 125);
@@ -84,8 +105,7 @@ async function fetchImageAsBase64(imageUrl: string): Promise<string> {
   }
   
   const arrayBuffer = await response.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-  return base64;
+  return arrayBufferToBase64(arrayBuffer);
 }
 
 Deno.serve(async (req: Request) => {
@@ -269,6 +289,12 @@ Deno.serve(async (req: Request) => {
           p_field: 'optimizations_count',
           p_increment: 1
         });
+
+        // Add delay between images to avoid rate limits (1.5 seconds)
+        if (imageIds.indexOf(imageId) < imageIds.length - 1) {
+          console.log(`[ALT-TEXTS] Waiting 1.5s before next image to avoid rate limits...`);
+          await delay(1500);
+        }
 
       } catch (error) {
         console.error(`[ALT-TEXTS] Error processing image ${imageId}:`, error);
