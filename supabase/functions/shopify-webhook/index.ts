@@ -335,29 +335,95 @@ async function handleProductWebhook(supabase: any, connection: any, payload: any
     }
   }
 
-  // Handle images if present
+  // Handle images - sync FULL gallery from webhook payload
   if (payload.images && payload.images.length > 0) {
     const { data: product } = await supabase
       .from('shopify_products')
-      .select('id')
+      .select('id, seller_id')
       .eq('shopify_product_id', String(payload.id))
       .eq('store_id', connection.id)
       .single();
 
     if (product) {
-      const images = payload.images.map((img: any, index: number) => ({
-        product_id: product.id,
-        shopify_image_id: img.id ? Number(img.id) : null,
-        src: img.src,
-        alt_text: img.alt || '',
-        position: index,
-      }));
-
-      // Use (product_id, src) as conflict key to prevent duplicates
-      await supabase.from('product_images').upsert(images, {
-        onConflict: 'product_id,src',
-        ignoreDuplicates: false
+      // Filter out AI-generated images that were synced back to Shopify
+      const shopifyImages = payload.images.filter((img: any) => {
+        const url = img.src || '';
+        const isAIImage = url.includes('ai_generated_') || 
+                          url.includes('ai-generated-') ||
+                          url.includes('/generated-images/');
+        if (isAIImage) {
+          console.log(`⏭️ [WEBHOOK] Skipping AI re-import: ${url.substring(0, 60)}...`);
+        }
+        return !isAIImage;
       });
+
+      // Get existing Shopify-imported images (not AI-generated)
+      const { data: existingImages } = await supabase
+        .from('product_images')
+        .select('id, shopify_image_id, src, is_ai_generated')
+        .eq('product_id', product.id)
+        .eq('is_ai_generated', false);
+
+      // Create lookup maps
+      const existingByShopifyId = new Map(
+        (existingImages || [])
+          .filter((img: any) => img.shopify_image_id)
+          .map((img: any) => [String(img.shopify_image_id), img])
+      );
+      const existingBySrc = new Map(
+        (existingImages || []).map((img: any) => [img.src, img])
+      );
+      const incomingShopifyIds = new Set(
+        shopifyImages
+          .filter((img: any) => img.id)
+          .map((img: any) => String(img.id))
+      );
+
+      // Prepare images for upsert
+      const imagesToUpsert = shopifyImages.map((img: any, index: number) => {
+        const existingById = img.id ? existingByShopifyId.get(String(img.id)) : null;
+        const existingBySrcMatch = existingBySrc.get(img.src);
+        const existing = (existingById || existingBySrcMatch) as { id: string } | null;
+        
+        const imageData: any = {
+          product_id: product.id,
+          user_id: product.seller_id,
+          shopify_image_id: img.id ? Number(img.id) : null,
+          src: img.src,
+          alt_text: img.alt || '',
+          position: index,
+          is_ai_generated: false,
+        };
+        
+        // Add id only if updating existing image
+        if (existing?.id) {
+          imageData.id = existing.id;
+        }
+        
+        return imageData;
+      });
+
+      // Upsert all incoming images
+      if (imagesToUpsert.length > 0) {
+        await supabase.from('product_images').upsert(imagesToUpsert, {
+          onConflict: 'product_id,src',
+        });
+        console.log(`✅ [WEBHOOK] Upserted ${imagesToUpsert.length} Shopify images`);
+      }
+
+      // Delete images that are no longer in Shopify (only Shopify-imported ones with shopify_image_id)
+      const imagesToDelete = (existingImages || []).filter((img: any) => 
+        img.shopify_image_id && !incomingShopifyIds.has(String(img.shopify_image_id))
+      );
+
+      if (imagesToDelete.length > 0) {
+        const idsToDelete = imagesToDelete.map((img: any) => img.id);
+        await supabase
+          .from('product_images')
+          .delete()
+          .in('id', idsToDelete);
+        console.log(`🗑️ [WEBHOOK] Deleted ${imagesToDelete.length} images removed from Shopify`);
+      }
     }
   }
 
