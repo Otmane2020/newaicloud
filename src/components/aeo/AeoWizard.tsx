@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Globe, 
   Hash, 
@@ -16,7 +16,7 @@ import {
   ArrowRight,
   Plus,
   X,
-  CheckCircle2,
+  Building2,
   Info
 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
@@ -28,6 +28,13 @@ import { toast } from "sonner";
 interface WizardMode {
   id: 'url' | 'keywords' | 'links';
   enabled: boolean;
+}
+
+interface AeoProject {
+  id: string;
+  brand_name: string;
+  website_url: string | null;
+  language: string;
 }
 
 // AI platforms for AEO targeting
@@ -42,6 +49,13 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
   const { language } = useTranslation();
   const { user } = useAuth();
   const { selectedStore } = useStore();
+  
+  // Project management
+  const [projects, setProjects] = useState<AeoProject[]>([]);
+  const [selectedProject, setSelectedProject] = useState<AeoProject | null>(null);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [newBrandName, setNewBrandName] = useState("");
+  const [newWebsiteUrl, setNewWebsiteUrl] = useState("");
   
   const [modes, setModes] = useState<WizardMode[]>([
     { id: 'url', enabled: false },
@@ -58,6 +72,56 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState<string>("");
+
+  // Fetch existing projects
+  useEffect(() => {
+    if (user?.id) {
+      fetchProjects();
+    }
+  }, [user?.id]);
+
+  const fetchProjects = async () => {
+    if (!user?.id) return;
+    
+    const { data, error } = await supabase
+      .from('aeo_projects')
+      .select('id, brand_name, website_url, language')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      setProjects(data);
+      if (data.length > 0 && !selectedProject) {
+        setSelectedProject(data[0]);
+      }
+    }
+  };
+
+  const createProject = async () => {
+    if (!user?.id || !newBrandName.trim()) return;
+    
+    const { data, error } = await supabase
+      .from('aeo_projects')
+      .insert({
+        user_id: user.id,
+        brand_name: newBrandName.trim(),
+        website_url: newWebsiteUrl.trim() || null,
+        language: language
+      })
+      .select()
+      .single();
+    
+    if (!error && data) {
+      setProjects(prev => [data, ...prev]);
+      setSelectedProject(data);
+      setNewBrandName("");
+      setNewWebsiteUrl("");
+      setIsCreatingProject(false);
+      toast.success(language === 'fr' ? 'Projet créé' : 'Project created');
+    } else {
+      toast.error(language === 'fr' ? 'Erreur lors de la création' : 'Error creating project');
+    }
+  };
 
   const modeConfig = {
     url: {
@@ -115,6 +179,8 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
   };
 
   const hasValidInput = () => {
+    if (!selectedProject) return false;
+    
     const enabledModes = modes.filter(m => m.enabled);
     if (enabledModes.length === 0) return false;
     
@@ -127,7 +193,7 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
   };
 
   const handleGenerate = async () => {
-    if (!user?.id || !hasValidInput()) return;
+    if (!user?.id || !hasValidInput() || !selectedProject) return;
     
     setIsGenerating(true);
     setProgress(0);
@@ -138,6 +204,27 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
       let currentStepNum = 0;
       
       for (const mode of enabledModes) {
+        // Get the current input value for this mode
+        const inputValue = mode.id === 'url' ? urlInput 
+          : mode.id === 'keywords' ? keywords 
+          : links;
+        
+        // Save source to aeo_sources
+        const sourceValue = mode.id === 'url' ? urlInput : 
+          mode.id === 'keywords' ? keywords.join(', ') : links[0];
+        
+        const { data: sourceData } = await supabase
+          .from('aeo_sources')
+          .insert({
+            project_id: selectedProject.id,
+            user_id: user.id,
+            source_type: mode.id,
+            value: sourceValue,
+            status: 'pending'
+          })
+          .select()
+          .single();
+        
         // Step 1: Analyzing
         setCurrentStep(language === 'fr' 
           ? `Analyse ${modeConfig[mode.id].title}...` 
@@ -159,24 +246,34 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
           ? `Génération des opportunités AEO...` 
           : `Generating AEO opportunities...`);
         
-        // Call the generation function
-        // ✅ storeId is OPTIONAL - Aeoreply works without Shopify
-        // ✅ platform is 'aeo' with multiple AI targets
+        // Call the generation function with project context
         const { data, error } = await supabase.functions.invoke("generate-ai-query-opportunities", {
           body: {
-            storeId: selectedStore?.id ?? null, // Optional - can be null
-            projectType: 'aeoreply', // Aeoreply-specific identifier
-            platform: 'aeo', // Universal AEO platform
-            targets: AI_TARGETS, // All AI engines: chatgpt, gemini, claude, perplexity, copilot
+            storeId: selectedStore?.id ?? null,
+            projectType: 'aeoreply',
+            platform: 'aeo',
+            targets: AI_TARGETS,
             refresh: true,
             wizardMode: mode.id,
-            wizardInput: mode.id === 'url' ? urlInput 
-              : mode.id === 'keywords' ? keywords 
-              : links
+            wizardInput: inputValue,
+            // Project context for brand referencing
+            projectId: selectedProject.id,
+            brandName: selectedProject.brand_name,
+            websiteUrl: selectedProject.website_url,
+            sourceId: sourceData?.id,
+            sourceUrl: mode.id === 'url' ? urlInput : (mode.id === 'links' ? links[0] : null)
           }
         });
         
         if (error) throw error;
+        
+        // Update source status
+        if (sourceData?.id) {
+          await supabase
+            .from('aeo_sources')
+            .update({ status: 'analyzed', analyzed_at: new Date().toISOString() })
+            .eq('id', sourceData.id);
+        }
         
         currentStepNum++;
         setProgress((currentStepNum / totalSteps) * 100);
@@ -186,8 +283,8 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
       setProgress(100);
       
       toast.success(language === 'fr' 
-        ? 'Opportunités AEO générées avec succès' 
-        : 'AEO opportunities generated successfully');
+        ? `Opportunités AEO générées pour ${selectedProject.brand_name}` 
+        : `AEO opportunities generated for ${selectedProject.brand_name}`);
       
       // Reset form
       setUrlInput("");
@@ -218,8 +315,8 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
         </h2>
         <p className="text-muted-foreground">
           {language === 'fr' 
-            ? 'Sélectionnez vos sources de données pour générer des opportunités AEO'
-            : 'Select your data sources to generate AEO opportunities'}
+            ? 'Sélectionnez votre projet et vos sources de données'
+            : 'Select your project and data sources'}
         </p>
         
         {/* AI Targets Display */}
@@ -234,6 +331,89 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
           ))}
         </div>
       </div>
+
+      {/* Project Selection */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            {language === 'fr' ? 'Projet / Marque' : 'Project / Brand'}
+          </CardTitle>
+          <CardDescription>
+            {language === 'fr' 
+              ? 'Les réponses mentionneront cette marque pour que les IA puissent citer votre source'
+              : 'Answers will mention this brand so AIs can cite your source'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!isCreatingProject ? (
+            <>
+              {projects.length > 0 ? (
+                <Select 
+                  value={selectedProject?.id || ""} 
+                  onValueChange={(id) => setSelectedProject(projects.find(p => p.id === id) || null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={language === 'fr' ? 'Sélectionner un projet' : 'Select a project'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{project.brand_name}</span>
+                          {project.website_url && (
+                            <span className="text-xs text-muted-foreground">({project.website_url})</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  {language === 'fr' ? 'Aucun projet. Créez-en un pour commencer.' : 'No projects. Create one to get started.'}
+                </p>
+              )}
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => setIsCreatingProject(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {language === 'fr' ? 'Nouveau projet' : 'New project'}
+              </Button>
+            </>
+          ) : (
+            <div className="space-y-3">
+              <Input
+                placeholder={language === 'fr' ? 'Nom de la marque *' : 'Brand name *'}
+                value={newBrandName}
+                onChange={(e) => setNewBrandName(e.target.value)}
+              />
+              <Input
+                placeholder={language === 'fr' ? 'URL du site (optionnel)' : 'Website URL (optional)'}
+                value={newWebsiteUrl}
+                onChange={(e) => setNewWebsiteUrl(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button 
+                  onClick={createProject} 
+                  disabled={!newBrandName.trim()}
+                  className="flex-1"
+                >
+                  {language === 'fr' ? 'Créer' : 'Create'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCreatingProject(false)}
+                >
+                  {language === 'fr' ? 'Annuler' : 'Cancel'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Mode Selection */}
       <div className="grid md:grid-cols-3 gap-4">
@@ -396,13 +576,19 @@ export function AeoWizard({ onOpportunitiesGenerated }: AeoWizardProps) {
           )}
         </Button>
         
-        {/* Destination Info - where content goes */}
+        {/* Destination Info */}
         <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border/50">
           <Info className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
           <p className="text-xs text-muted-foreground">
-            {language === 'fr' 
-              ? 'Les réponses générées seront publiées sur Aeoreply et pourront être partagées sur votre site ou vos réseaux sociaux.'
-              : 'Generated answers will be published on Aeoreply and can be shared on your website or social media.'}
+            {selectedProject ? (
+              language === 'fr' 
+                ? `Les réponses mentionneront "${selectedProject.brand_name}" pour optimiser les citations IA.`
+                : `Answers will mention "${selectedProject.brand_name}" to optimize AI citations.`
+            ) : (
+              language === 'fr' 
+                ? 'Sélectionnez ou créez un projet pour commencer.'
+                : 'Select or create a project to get started.'
+            )}
           </p>
         </div>
       </div>

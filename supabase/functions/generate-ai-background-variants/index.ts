@@ -150,29 +150,38 @@ VISUAL QUALITY ENHANCEMENT - PROFESSIONAL E-COMMERCE PHOTOGRAPHY:
 
     // ---------- Variants avec contexte enrichi et décoratif ----------
     // 🆕 Include format/dimensions in all prompts with visual enhancement and orientation
-    // 🆕 IMAGE EDITING HEADER - Critical for product preservation while allowing orientation correction
+    // 🆕 IMAGE EDITING HEADER - Critical for ABSOLUTE product preservation (e-commerce sales)
     const imageEditingHeader = `
-🚨🚨🚨 THIS IS IMAGE EDITING - NOT GENERATION 🚨🚨🚨
+🚨🚨🚨 THIS IS IMAGE EDITING FOR E-COMMERCE SALES - NOT GENERATION 🚨🚨🚨
 You are EDITING the provided product image, NOT generating a new product.
+The customer will receive EXACTLY this product - it MUST look identical.
 
-CRITICAL RULES:
-1. EXTRACT the exact product from the input image pixel-by-pixel
-2. PRESERVE the product's form, colors, details, textures EXACTLY
-3. IF THE PRODUCT IS POORLY ORIENTED (rotated, wrong angle, upside down):
-   → CORRECT the orientation to show professional FRONT VIEW or 3/4 ANGLE
-   → Like professional furniture catalogs (IKEA, West Elm, Roche Bobois)
-4. REPLACE ONLY the background - the product itself stays IDENTICAL
-5. Apply professional studio lighting to match the new environment
+🛑🛑🛑 ABSOLUTE PROHIBITIONS (ZERO TOLERANCE) 🛑🛑🛑
+- ❌ DO NOT modify the product's SHAPE, FORM, or SILHOUETTE
+- ❌ DO NOT change product COLORS (fabric, material, finish)
+- ❌ DO NOT alter PROPORTIONS, DIMENSIONS, or RELATIVE SIZES
+- ❌ DO NOT add, remove, or modify ANY product details (buttons, cushions, legs, handles)
+- ❌ DO NOT "improve" or "stylize" the product design
+- ❌ DO NOT change the product's orientation, angle, or rotation
+- ❌ DO NOT make the product look different in ANY way
 
-⚠️ FATAL ERRORS (will be rejected):
-- Generating a NEW/DIFFERENT product = TOTAL FAILURE
-- Changing product shape, color, or details = FAILURE
-- Product appearing distorted or modified = FAILURE
+✅ WHAT YOU MUST DO:
+1. EXTRACT the EXACT product from input image PIXEL-PERFECT
+2. Keep product IDENTICAL - same colors, textures, details, proportions
+3. REPLACE ONLY the background with the requested environment
+4. Apply lighting that illuminates the product WITHOUT changing its appearance
+5. The final product must be INDISTINGUISHABLE from the original
 
-✅ ALLOWED:
-- Correcting product rotation/angle to professional standard
-- Adjusting lighting to match new background
-- Removing original background completely
+⚠️ E-COMMERCE CONTEXT:
+This image will be used to SELL this exact product.
+If the product looks different, customers will receive something unexpected.
+LEGAL REQUIREMENT: Product must match what customer receives.
+
+⚠️ FAILURE CONDITIONS (will be REJECTED):
+- Product shape differs from original = TOTAL FAILURE
+- Product colors differ from original = TOTAL FAILURE
+- Product proportions differ from original = TOTAL FAILURE
+- Any visible modification to the product = FAILURE
 `;
 
     const variants = [

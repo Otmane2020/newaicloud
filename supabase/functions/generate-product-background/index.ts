@@ -200,34 +200,37 @@ Si c'est un lit → angle montrant la tête de lit et la longueur
     console.log(`[product-bg] 🎯 Target format: ${format} -> ${targetDims.width}x${targetDims.height}`);
 
     // 🆕 Visual Enhancement Instructions for Professional E-Commerce Quality
+    // 🛑 PRODUCT PRESERVATION IS ABSOLUTE - DO NOT MODIFY THE PRODUCT
     const visualEnhancementInstructions = `
-🎨 VISUAL QUALITY ENHANCEMENT - PROFESSIONAL E-COMMERCE PHOTOGRAPHY
+🛑🛑🛑 CRITICAL E-COMMERCE REQUIREMENT: PRODUCT PRESERVATION 🛑🛑🛑
 
-FABRIC & TEXTURE OPTIMIZATION:
-- Enhance fabric textures to appear rich, luxurious, and tactile
-- Show natural fabric drape, folds, and depth
-- Highlight weave patterns, stitching quality, and material authenticity
-- Make velvet appear velvety, leather appear supple, linen appear crisp
-- Capture the "hand feel" of materials visually
+⚠️ THIS IMAGE IS FOR SELLING THE EXACT PRODUCT SHOWN
+The customer will receive EXACTLY this product - it MUST look identical.
 
-LIGHTING FOR SALES APPEAL:
-- Use professional studio lighting with main key light + fill light
-- Add subtle rim lighting to separate product from background
-- Create soft, flattering shadows that add depth without harsh contrast
-- Ensure colors appear vibrant, accurate, and true to material
+🚫 ABSOLUTE PROHIBITIONS (ZERO TOLERANCE):
+- DO NOT modify the product's SHAPE, FORM, or SILHOUETTE
+- DO NOT change product COLORS (fabric, wood finish, metal, etc.)
+- DO NOT alter PROPORTIONS, DIMENSIONS, or RELATIVE SIZES
+- DO NOT add, remove, or modify ANY product details
+- DO NOT change product orientation, angle, or rotation
+- DO NOT "improve" or "stylize" the product design
+- The product must remain EXACTLY as photographed
 
-EYE-CATCHING COMMERCIAL QUALITY:
-- Create "hero shot" quality - the image should make viewers WANT to buy
-- Professional color grading that enhances product appeal
-- Sharp focus on product details, slightly soft background if lifestyle
-- Clean, premium look suitable for high-end e-commerce
-- Think: IKEA catalog, West Elm, Roche Bobois photography quality
+✅ WHAT YOU CAN DO:
+1. REPLACE ONLY the background with requested environment
+2. Apply professional lighting that ILLUMINATES without changing colors
+3. Add soft shadows for depth
+4. Ensure product occupies 85-95% of canvas
 
-TEXTURE DETAIL ENHANCEMENT:
-- Zoom-worthy detail on material textures
-- Visible grain on wood, weave on fabric, sheen on leather
-- Natural material variations that prove authenticity
-- No plasticky or artificial-looking surfaces
+🎨 LIGHTING (without changing product appearance):
+- Professional studio lighting: key + fill + rim
+- Soft, flattering shadows for depth
+- Colors must remain TRUE to original product
+- Sharp focus on all product details
+
+⚠️ LEGAL REQUIREMENT:
+Product appearance must match what customer receives.
+Any modification = potential customer complaint.
 `;
 
     // Create contextual prompt based on product title and image type

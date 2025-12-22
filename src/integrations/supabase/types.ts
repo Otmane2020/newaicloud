@@ -338,6 +338,98 @@ export type Database = {
         }
         Relationships: []
       }
+      aeo_projects: {
+        Row: {
+          brand_name: string
+          created_at: string
+          id: string
+          language: string | null
+          llms_txt_url: string | null
+          logo_url: string | null
+          settings: Json | null
+          target_platforms: string[] | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          brand_name: string
+          created_at?: string
+          id?: string
+          language?: string | null
+          llms_txt_url?: string | null
+          logo_url?: string | null
+          settings?: Json | null
+          target_platforms?: string[] | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          brand_name?: string
+          created_at?: string
+          id?: string
+          language?: string | null
+          llms_txt_url?: string | null
+          logo_url?: string | null
+          settings?: Json | null
+          target_platforms?: string[] | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      aeo_sources: {
+        Row: {
+          analyzed_at: string | null
+          created_at: string
+          id: string
+          label: string | null
+          metadata: Json | null
+          project_id: string
+          source_type: string
+          status: string | null
+          updated_at: string
+          user_id: string
+          value: string
+        }
+        Insert: {
+          analyzed_at?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          metadata?: Json | null
+          project_id: string
+          source_type: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          value: string
+        }
+        Update: {
+          analyzed_at?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          metadata?: Json | null
+          project_id?: string
+          source_type?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aeo_sources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "aeo_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aeo_tracking_results: {
         Row: {
           checked_at: string
@@ -429,6 +521,7 @@ export type Database = {
         Row: {
           answer_confidence: number | null
           article_id: string | null
+          brand_mention: string | null
           brand_name: string | null
           category: string | null
           citation_potential: number
@@ -440,10 +533,13 @@ export type Database = {
           keywords: string[] | null
           platform: string
           product_ids: string[] | null
+          project_id: string | null
           published_at: string | null
           query_type: string
           question: string
           slug: string | null
+          source_id: string | null
+          source_url: string | null
           status: string | null
           store_id: string | null
           supporting_content: Json | null
@@ -454,6 +550,7 @@ export type Database = {
         Insert: {
           answer_confidence?: number | null
           article_id?: string | null
+          brand_mention?: string | null
           brand_name?: string | null
           category?: string | null
           citation_potential: number
@@ -465,10 +562,13 @@ export type Database = {
           keywords?: string[] | null
           platform: string
           product_ids?: string[] | null
+          project_id?: string | null
           published_at?: string | null
           query_type: string
           question: string
           slug?: string | null
+          source_id?: string | null
+          source_url?: string | null
           status?: string | null
           store_id?: string | null
           supporting_content?: Json | null
@@ -479,6 +579,7 @@ export type Database = {
         Update: {
           answer_confidence?: number | null
           article_id?: string | null
+          brand_mention?: string | null
           brand_name?: string | null
           category?: string | null
           citation_potential?: number
@@ -490,10 +591,13 @@ export type Database = {
           keywords?: string[] | null
           platform?: string
           product_ids?: string[] | null
+          project_id?: string | null
           published_at?: string | null
           query_type?: string
           question?: string
           slug?: string | null
+          source_id?: string | null
+          source_url?: string | null
           status?: string | null
           store_id?: string | null
           supporting_content?: Json | null
@@ -509,11 +613,26 @@ export type Database = {
             referencedRelation: "blog_articles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_answers_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "aeo_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_answers_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "aeo_sources"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ai_opportunities: {
         Row: {
           article_id: string | null
+          brand_mention: string | null
           citation_potential: number | null
           created_at: string | null
           difficulty: string | null
@@ -521,8 +640,11 @@ export type Database = {
           keywords: string[] | null
           platform: string
           product_ids: string[] | null
+          project_id: string | null
           query_type: string
           question: string
+          source_id: string | null
+          source_url: string | null
           status: string | null
           store_id: string | null
           suggested_structure: Json | null
@@ -532,6 +654,7 @@ export type Database = {
         }
         Insert: {
           article_id?: string | null
+          brand_mention?: string | null
           citation_potential?: number | null
           created_at?: string | null
           difficulty?: string | null
@@ -539,8 +662,11 @@ export type Database = {
           keywords?: string[] | null
           platform: string
           product_ids?: string[] | null
+          project_id?: string | null
           query_type: string
           question: string
+          source_id?: string | null
+          source_url?: string | null
           status?: string | null
           store_id?: string | null
           suggested_structure?: Json | null
@@ -550,6 +676,7 @@ export type Database = {
         }
         Update: {
           article_id?: string | null
+          brand_mention?: string | null
           citation_potential?: number | null
           created_at?: string | null
           difficulty?: string | null
@@ -557,8 +684,11 @@ export type Database = {
           keywords?: string[] | null
           platform?: string
           product_ids?: string[] | null
+          project_id?: string | null
           query_type?: string
           question?: string
+          source_id?: string | null
+          source_url?: string | null
           status?: string | null
           store_id?: string | null
           suggested_structure?: Json | null
@@ -572,6 +702,20 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_opportunities_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "aeo_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_opportunities_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "aeo_sources"
             referencedColumns: ["id"]
           },
           {
