@@ -231,7 +231,7 @@ export default function ProductTitleDescription() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [pendingApplyProductIds, setPendingApplyProductIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
-  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
+  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(2);
   // White background variant states
   const [whiteBgApplyTo, setWhiteBgApplyTo] = useState<"simple" | "variants">("simple");
   const [whiteBgSelectedVariants, setWhiteBgSelectedVariants] = useState<Map<string, string[]>>(new Map());
