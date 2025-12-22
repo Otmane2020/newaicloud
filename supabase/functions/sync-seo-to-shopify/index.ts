@@ -451,11 +451,15 @@ Deno.serve(async (req: Request) => {
             return true;
           });
 
-          // ✅ Prevent duplicates: only upload AI images that have never been synced to Shopify
+          // ✅ Determine which images to upload:
+          // - If syncAllImages is true (force export), upload ALL AI images regardless of previous sync
+          // - Otherwise, only upload images that have never been synced (shopify_sync_count = 0)
           const alreadySyncedCount = uploadableImages.filter((img: any) => (img.shopify_sync_count ?? 0) > 0).length;
-          const imagesToUpload = uploadableImages.filter((img: any) => (img.shopify_sync_count ?? 0) === 0);
+          const imagesToUpload = syncAllImages 
+            ? uploadableImages // Force mode: upload ALL AI images
+            : uploadableImages.filter((img: any) => (img.shopify_sync_count ?? 0) === 0); // Normal: only new
           
-          console.log(`[SYNC-SEO] ${uploadableImages.length} AI images (${alreadySyncedCount} already synced, ${imagesToUpload.length} new to export)`);
+          console.log(`[SYNC-SEO] ${uploadableImages.length} AI images (${alreadySyncedCount} already synced, ${imagesToUpload.length} to export${syncAllImages ? ' - FORCE MODE' : ''})`);
           
           if (imagesToUpload.length > 0) {
             const getMediaQuery = `
