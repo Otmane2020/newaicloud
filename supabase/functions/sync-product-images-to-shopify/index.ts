@@ -190,6 +190,7 @@ Deno.serve(async (req) => {
     console.log(`🔄 Is reorder only: ${isReorderOnly}`);
     console.log(`🔐 Allow create/replace: ${canCreateReplace}`);
     console.log(`🔐 Has explicit intent: ${hasExplicitIntent}`);
+    console.log(`🗑️ Delete image IDs: ${deleteImageIds?.length || 0}`, deleteImageIds);
     
     // 🔐 CRITICAL SAFETY CHECK: If no explicit intent, return immediately without processing
     if (!hasExplicitIntent) {
@@ -206,6 +207,107 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+    
+    // 🗑️ HANDLE DELETION FIRST: If deleteImageIds are provided, delete them from Shopify
+    if (deleteImageIds && Array.isArray(deleteImageIds) && deleteImageIds.length > 0) {
+      console.log(`🗑️ Processing ${deleteImageIds.length} image(s) for deletion from Shopify`);
+      
+      // Get product and connection info first for deletion
+      const { data: productForDelete, error: productForDeleteError } = await supabaseClient
+        .from("shopify_products")
+        .select(`
+          shopify_id,
+          store_id,
+          seller_id
+        `)
+        .eq("id", productId)
+        .single();
+      
+      if (productForDeleteError || !productForDelete) {
+        console.error(`❌ Product ${productId} not found for deletion`, productForDeleteError);
+        throw new Error(`Product not found for deletion`);
+      }
+      
+      if (!productForDelete.shopify_id) {
+        console.log(`⏭️ Product ${productId} not synced to Shopify yet - skipping deletion`);
+      } else {
+        // Get Shopify connection for deletion
+        let deleteConnection = null;
+        if (productForDelete.store_id) {
+          const { data: conn } = await supabaseClient
+            .from("shopify_connections")
+            .select("store_url, access_token")
+            .eq("id", productForDelete.store_id)
+            .eq("is_active", true)
+            .single();
+          deleteConnection = conn;
+        }
+        
+        if (!deleteConnection) {
+          const { data: conn } = await supabaseClient
+            .from("shopify_connections")
+            .select("store_url, access_token")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+          deleteConnection = conn;
+        }
+        
+        if (deleteConnection) {
+          const productGidForDelete = restIdToGid(productForDelete.shopify_id, 'Product');
+          
+          // Convert REST IDs to GraphQL GIDs for media
+          const mediaGidsToDelete = deleteImageIds.map((id: number | string) => 
+            restIdToGid(Number(id), 'MediaImage')
+          );
+          
+          console.log(`🗑️ Deleting media from Shopify:`, mediaGidsToDelete);
+          
+          try {
+            const deleteResult = await shopifyGraphQL(
+              deleteConnection.store_url,
+              deleteConnection.access_token,
+              PRODUCT_DELETE_MEDIA_MUTATION,
+              { 
+                productId: productGidForDelete, 
+                mediaIds: mediaGidsToDelete 
+              }
+            );
+            
+            if (deleteResult.productDeleteMedia?.mediaUserErrors?.length > 0) {
+              const errors = deleteResult.productDeleteMedia.mediaUserErrors;
+              console.error(`⚠️ Shopify media deletion errors:`, errors);
+              // Don't throw - just log the error, deletion from local DB already happened
+            } else {
+              console.log(`✅ Successfully deleted ${deleteResult.productDeleteMedia?.deletedMediaIds?.length || 0} media from Shopify`);
+              console.log(`✅ Deleted product image IDs:`, deleteResult.productDeleteMedia?.deletedProductImageIds);
+            }
+          } catch (deleteError: any) {
+            console.error(`❌ Error deleting media from Shopify:`, deleteError);
+            // Don't throw - the local deletion already happened, just log
+          }
+        } else {
+          console.warn(`⚠️ No Shopify connection found for deletion`);
+        }
+      }
+      
+      // If this was ONLY a delete request (no other operations), return success
+      if (!isReorderOnly && !canCreateReplace && (!requestImages || requestImages.length === 0)) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: `Deleted ${deleteImageIds.length} image(s) from Shopify`,
+            deletedCount: deleteImageIds.length,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
     }
     
     // If request includes images with positions, this is a reorder request
