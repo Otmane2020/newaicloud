@@ -14,6 +14,10 @@ interface RequestBody {
   includeDecor: boolean;
   decorType: 'living_room' | 'bedroom' | 'office' | 'dining_room';
   language: string;
+  // Enhanced context for better AI understanding
+  productDescription?: string;
+  galleryImages?: string[]; // URLs of existing product images for context
+  variantLabel?: string; // Label if generating for a variant
 }
 
 const IMAGE_TYPE_PROMPTS: Record<string, { fr: string; en: string }> = {
@@ -94,7 +98,19 @@ serve(async (req) => {
 
   try {
     const body: RequestBody = await req.json();
-    const { productId, productTitle, productType, sourceImageUrl, imageTypes, includeDecor, decorType, language } = body;
+    const { 
+      productId, 
+      productTitle, 
+      productType, 
+      sourceImageUrl, 
+      imageTypes, 
+      includeDecor, 
+      decorType, 
+      language,
+      productDescription,
+      galleryImages,
+      variantLabel
+    } = body;
 
     if (!sourceImageUrl) {
       return new Response(
@@ -111,10 +127,30 @@ serve(async (req) => {
     const lang = language === 'fr' ? 'fr' : 'en';
     const generatedImages: Array<{ url: string; type: string; label: string }> = [];
 
+    // Build enhanced context string for AI
+    const contextParts: string[] = [];
+    if (productDescription) {
+      // Clean HTML tags from description
+      const cleanDescription = productDescription.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (cleanDescription.length > 10) {
+        contextParts.push(lang === 'fr' 
+          ? `Description du produit: ${cleanDescription.substring(0, 500)}` 
+          : `Product description: ${cleanDescription.substring(0, 500)}`);
+      }
+    }
+    if (variantLabel) {
+      contextParts.push(lang === 'fr' 
+        ? `Variante: ${variantLabel}` 
+        : `Variant: ${variantLabel}`);
+    }
+    const enhancedContext = contextParts.length > 0 ? `\n\nCONTEXTE PRODUIT:\n${contextParts.join('\n')}` : '';
+
     console.log(`🖼️ Generating AI images for product: ${productTitle}`);
     console.log(`📷 Source image: ${sourceImageUrl}`);
     console.log(`🎯 Image types requested: ${imageTypes.join(', ')}`);
     console.log(`🏠 Include decor: ${includeDecor} (${decorType})`);
+    console.log(`📝 Has description: ${!!productDescription}`);
+    console.log(`🖼️ Gallery images count: ${galleryImages?.length || 0}`);
 
     // Prioritize profile view as primary image
     const sortedImageTypes = [...imageTypes].sort((a, b) => {
@@ -136,6 +172,7 @@ serve(async (req) => {
 
       const prompt = lang === 'fr'
         ? `À partir de cette image de produit (${productTitle}, type: ${productType}), génère une image professionnelle e-commerce de haute qualité.
+${enhancedContext}
 
 INSTRUCTIONS CRITIQUES:
 - ${typePrompt}
@@ -145,6 +182,7 @@ INSTRUCTIONS CRITIQUES:
 - Qualité professionnelle pour catalogue produit
 - Pas de texte, pas de watermark`
         : `From this product image (${productTitle}, type: ${productType}), generate a professional high-quality e-commerce image.
+${enhancedContext}
 
 CRITICAL INSTRUCTIONS:
 - ${typePrompt}
@@ -211,6 +249,7 @@ CRITICAL INSTRUCTIONS:
       
       const prompt = lang === 'fr'
         ? `ÉDITION D'IMAGE - NE PAS RÉGÉNÉRER LE PRODUIT
+${enhancedContext}
 
 TÂCHE: Prends CE produit EXACT de l'image et place-le dans un décor réaliste.
 
@@ -233,6 +272,7 @@ INTERDIT:
 - Simplifier ou styliser le produit
 - Générer un produit "similaire" - il doit être IDENTIQUE`
         : `IMAGE EDITING - DO NOT REGENERATE THE PRODUCT
+${enhancedContext}
 
 TASK: Take THIS EXACT product from the image and place it in a realistic decor.
 

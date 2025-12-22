@@ -54,6 +54,8 @@ interface Product {
   vendor?: string | null;
   handle?: string | null;
   product_type?: string | null;
+  body_html?: string | null;
+  seo_description?: string | null;
 }
 
 interface GeneratedImage {
@@ -111,42 +113,59 @@ export const AIImagesDialog = ({
   const [productVariants, setProductVariants] = useState<ProductVariant[]>([]);
   const [selectedVariantIds, setSelectedVariantIds] = useState<Set<string>>(new Set());
   const [isLoadingVariants, setIsLoadingVariants] = useState(false);
+  
+  // Product gallery images for context
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
 
   const currentProduct = selectedProducts[currentProductIndex];
   const currentGeneratedImages = generatedImages.get(currentProduct?.id) || [];
 
-  // Load variants when product changes
+  // Load variants and gallery images when product changes
   useEffect(() => {
-    const loadVariants = async () => {
+    const loadProductData = async () => {
       if (!currentProduct?.id) return;
       
       setIsLoadingVariants(true);
       try {
-        const { data, error } = await supabase
+        // Load variants
+        const { data: variantsData, error: variantsError } = await supabase
           .from('product_variants')
           .select('id, title, option1, option2, option3, image_url, sku')
           .eq('product_id', currentProduct.id)
           .order('created_at', { ascending: true });
         
-        if (error) throw error;
+        if (variantsError) throw variantsError;
         
         // Filter variants that have their own image (different from main product)
-        const variantsWithImages = (data || []).filter(v => 
+        const variantsWithImages = (variantsData || []).filter(v => 
           v.image_url && v.image_url !== currentProduct.image_url
         );
         
         setProductVariants(variantsWithImages);
         // By default, select all variants with images
         setSelectedVariantIds(new Set(variantsWithImages.map(v => v.id)));
+        
+        // Load gallery images for context
+        const { data: imagesData, error: imagesError } = await supabase
+          .from('product_images')
+          .select('src')
+          .eq('product_id', currentProduct.id)
+          .order('position', { ascending: true })
+          .limit(5);
+        
+        if (!imagesError && imagesData) {
+          setGalleryImages(imagesData.map(img => img.src).filter(Boolean));
+        }
       } catch (err) {
-        console.error('Error loading variants:', err);
+        console.error('Error loading product data:', err);
         setProductVariants([]);
+        setGalleryImages([]);
       } finally {
         setIsLoadingVariants(false);
       }
     };
     
-    loadVariants();
+    loadProductData();
   }, [currentProduct?.id, currentProduct?.image_url]);
 
   // Reset state when dialog opens
@@ -157,6 +176,7 @@ export const AIImagesDialog = ({
       setProgress(0);
       setProductVariants([]);
       setSelectedVariantIds(new Set());
+      setGalleryImages([]);
     }
   }, [open]);
   
@@ -268,6 +288,10 @@ export const AIImagesDialog = ({
             includeDecor,
             decorType,
             language,
+            // Enhanced context for better AI understanding
+            productDescription: currentProduct.body_html || currentProduct.seo_description || '',
+            galleryImages: galleryImages.length > 0 ? galleryImages : undefined,
+            variantLabel: source.isVariant ? source.label : undefined,
           },
         });
 
