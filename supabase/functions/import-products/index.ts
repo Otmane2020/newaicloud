@@ -1355,7 +1355,7 @@ Deno.serve(async (req: Request) => {
         
         const { data: batchImages, error: fetchBatchError } = await supabaseServiceClient
           .from("product_images")
-          .select("id, product_id, src, shopify_image_id, alt_text, optimization_count")
+          .select("id, product_id, src, shopify_image_id, alt_text, optimization_count, is_ai_generated")
           .in("product_id", batchIds);
         
         if (fetchBatchError) {
@@ -1368,28 +1368,34 @@ Deno.serve(async (req: Request) => {
       
       console.log(`📊 Total existing images found: ${existingImages.length}`)
       
-      // STEP 2: Identify images to PRESERVE (truly generated, not Shopify CDN)
-      // An image is "generated" if it's NOT from Shopify CDN (e.g., from our storage bucket)
+      // STEP 2: Identify images to PRESERVE (AI-generated, optimized, or non-CDN)
+      // 🔒 CRITICAL: NEVER delete AI-generated images - they take priority over Shopify imports
       const preservedImages: any[] = [];
       const imagesToDelete: string[] = [];
       
       if (existingImages) {
         for (const img of existingImages) {
           const isFromShopify = isShopifyCdnUrl(img.src);
+          const isAiGenerated = img.is_ai_generated === true;
+          const isOptimized = (img.optimization_count || 0) > 0;
           
-          // Preserve if:
-          // 1. NOT from Shopify CDN (truly generated/local image from NewAI)
-          // 2. OR has optimization_count > 0 (was optimized - keep even if from Shopify)
-          if (!isFromShopify || img.optimization_count > 0) {
+          // 🔒 Preserve if:
+          // 1. is_ai_generated = true (HIGHEST PRIORITY - AI images are NEVER replaced)
+          // 2. NOT from Shopify CDN (truly generated/local image from NewAI)
+          // 3. OR has optimization_count > 0 (was optimized - keep even if from Shopify)
+          if (isAiGenerated || !isFromShopify || isOptimized) {
             preservedImages.push(img);
+            if (isAiGenerated) {
+              console.log(`🔒 [AI PROTECT] Preserving AI image ${img.id} for product ${img.product_id}`);
+            }
           } else {
-            // Delete only non-optimized Shopify CDN images (will be re-imported fresh)
+            // Delete only non-optimized, non-AI Shopify CDN images (will be re-imported fresh)
             imagesToDelete.push(img.id);
           }
         }
       }
       
-      console.log(`🔒 Preserving ${preservedImages.length} generated/optimized images`);
+      console.log(`🔒 Preserving ${preservedImages.length} AI/generated/optimized images`);
       console.log(`🗑️ Will delete ${imagesToDelete.length} Shopify CDN images for fresh import`);
       
       // STEP 3: Delete Shopify CDN images - BATCHED to avoid "Bad Request" on large arrays
