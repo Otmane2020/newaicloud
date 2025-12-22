@@ -3850,6 +3850,8 @@ export type Database = {
         Row: {
           alt_text: string | null
           created_at: string
+          exported_at: string | null
+          exported_to_shopify: boolean | null
           height: number | null
           id: string
           is_ai_generated: boolean | null
@@ -3860,6 +3862,7 @@ export type Database = {
           product_id: string
           shopify_image_id: number | null
           shopify_sync_count: number | null
+          source: string | null
           src: string
           updated_at: string
           width: number | null
@@ -3867,6 +3870,8 @@ export type Database = {
         Insert: {
           alt_text?: string | null
           created_at?: string
+          exported_at?: string | null
+          exported_to_shopify?: boolean | null
           height?: number | null
           id?: string
           is_ai_generated?: boolean | null
@@ -3877,6 +3882,7 @@ export type Database = {
           product_id: string
           shopify_image_id?: number | null
           shopify_sync_count?: number | null
+          source?: string | null
           src: string
           updated_at?: string
           width?: number | null
@@ -3884,6 +3890,8 @@ export type Database = {
         Update: {
           alt_text?: string | null
           created_at?: string
+          exported_at?: string | null
+          exported_to_shopify?: boolean | null
           height?: number | null
           id?: string
           is_ai_generated?: boolean | null
@@ -3894,6 +3902,7 @@ export type Database = {
           product_id?: string
           shopify_image_id?: number | null
           shopify_sync_count?: number | null
+          source?: string | null
           src?: string
           updated_at?: string
           width?: number | null
