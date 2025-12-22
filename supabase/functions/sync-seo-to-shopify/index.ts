@@ -162,7 +162,7 @@ Deno.serve(async (req: Request) => {
       // Get store connection for this user
       const { data: product, error: productError } = await supabaseClient
         .from("shopify_products")
-        .select("shopify_id, title, optimized_title, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id, last_seo_sync_at, last_synced_data, landing_page, landing_page_html")
+        .select("shopify_id, title, regenerated_title, optimized_title, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id, last_seo_sync_at, last_synced_data, landing_page, landing_page_html")
         .eq("id", productId)
         .eq("seller_id", user.id)
         .maybeSingle();
@@ -243,10 +243,11 @@ Deno.serve(async (req: Request) => {
       // PHASE 1: Update SEO title and description using GraphQL (proper native SEO)
       // Priority:
       // 1) request.body.title (explicit user action from UI)
-      // 2) product.optimized_title
-      // 3) product.seo_title
-      // 4) product.title
-      const resolvedTitle = (title ?? product.optimized_title ?? product.seo_title ?? product.title ?? "").toString();
+      // 2) product.regenerated_title (AI regenerated - replaces Shopify title)
+      // 3) product.optimized_title (Google Shopping optimized)
+      // 4) product.seo_title
+      // 5) product.title (original)
+      const resolvedTitle = (title ?? product.regenerated_title ?? product.optimized_title ?? product.seo_title ?? product.title ?? "").toString();
 
       console.log(`[SYNC-SEO] Updating product ${product.shopify_id} SEO via GraphQL...`);
       console.log(`[SYNC-SEO] Resolved Title: "${resolvedTitle}"`);

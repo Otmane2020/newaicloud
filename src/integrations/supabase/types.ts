@@ -5149,6 +5149,7 @@ export type Database = {
           landing_page: string | null
           landing_page_html: string | null
           last_enriched_at: string | null
+          last_exported_at: string | null
           last_landing_generation_at: string | null
           last_optimization_at: string | null
           last_pricing_analysis: string | null
@@ -5157,6 +5158,7 @@ export type Database = {
           length: number | null
           length_unit: string | null
           market_price: number | null
+          needs_export: boolean | null
           optimization_count: number | null
           optimization_history: Json | null
           optimized_description: string | null
@@ -5165,6 +5167,7 @@ export type Database = {
           price: number | null
           product_type: string | null
           raw_data: Json | null
+          regenerated_title: string | null
           room: string | null
           seller_id: string
           seo_description: string | null
@@ -5280,6 +5283,7 @@ export type Database = {
           landing_page?: string | null
           landing_page_html?: string | null
           last_enriched_at?: string | null
+          last_exported_at?: string | null
           last_landing_generation_at?: string | null
           last_optimization_at?: string | null
           last_pricing_analysis?: string | null
@@ -5288,6 +5292,7 @@ export type Database = {
           length?: number | null
           length_unit?: string | null
           market_price?: number | null
+          needs_export?: boolean | null
           optimization_count?: number | null
           optimization_history?: Json | null
           optimized_description?: string | null
@@ -5296,6 +5301,7 @@ export type Database = {
           price?: number | null
           product_type?: string | null
           raw_data?: Json | null
+          regenerated_title?: string | null
           room?: string | null
           seller_id: string
           seo_description?: string | null
@@ -5411,6 +5417,7 @@ export type Database = {
           landing_page?: string | null
           landing_page_html?: string | null
           last_enriched_at?: string | null
+          last_exported_at?: string | null
           last_landing_generation_at?: string | null
           last_optimization_at?: string | null
           last_pricing_analysis?: string | null
@@ -5419,6 +5426,7 @@ export type Database = {
           length?: number | null
           length_unit?: string | null
           market_price?: number | null
+          needs_export?: boolean | null
           optimization_count?: number | null
           optimization_history?: Json | null
           optimized_description?: string | null
@@ -5427,6 +5435,7 @@ export type Database = {
           price?: number | null
           product_type?: string | null
           raw_data?: Json | null
+          regenerated_title?: string | null
           room?: string | null
           seller_id?: string
           seo_description?: string | null
