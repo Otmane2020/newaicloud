@@ -752,22 +752,6 @@ export default function ShopifyConnectionsList() {
                   >
                     <Settings className="w-4 h-4" />
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      if (isDemoMode) {
-                        toast.error(t.demo?.restrictions?.cannotModify || "Mode démo : action non autorisée");
-                        return;
-                      }
-                      setStoreToDelete(store);
-                      setShowDeleteDialog(true);
-                    }}
-                    className="gap-2 text-destructive hover:text-destructive"
-                    title={isDemoMode ? "Mode démo" : "Déconnecter la boutique"}
-                  >
-                    {isDemoMode ? <Lock className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
-                  </Button>
                 </div>
               </div>
             </CardContent>
