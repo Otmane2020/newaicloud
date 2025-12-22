@@ -79,37 +79,70 @@ ${chunk.map((t, idx) => `[${idx}]: "${t}"`).join("\n")}
 Return format (ONLY JSON, no markdown code blocks):
 [{"translatedText": "translated text here", "detectedSourceLanguage": "fr"}]`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
+    // Retry logic for transient errors (503, connection issues)
+    let response: Response | null = null;
+    let lastError: string = "";
+    const maxRetries = 3;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
           },
-        ],
-        temperature: 0.1,
-        max_tokens: 4000,
-      }),
-    });
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              {
+                role: "user",
+                content: prompt,
+              },
+            ],
+            temperature: 0.1,
+            max_tokens: 4000,
+          }),
+        });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[google-translate] Lovable AI fallback error:", response.status, errorText);
-      
-      if (response.status === 429) {
-        throw new Error("AI translation rate limited, please try again later");
+        if (response.ok) {
+          break; // Success, exit retry loop
+        }
+
+        const errorText = await response.text();
+        lastError = `${response.status}: ${errorText}`;
+        console.error(`[google-translate] Lovable AI attempt ${attempt}/${maxRetries} failed:`, response.status, errorText);
+        
+        // Don't retry for client errors (4xx except 429)
+        if (response.status === 429) {
+          throw new Error("AI translation rate limited, please try again later");
+        }
+        if (response.status === 402) {
+          throw new Error("AI translation requires credits, please add funds");
+        }
+        if (response.status >= 400 && response.status < 500) {
+          throw new Error(`AI translation failed: ${response.status}`);
+        }
+        
+        // For 5xx errors, wait and retry
+        if (attempt < maxRetries) {
+          const delay = attempt * 1000; // 1s, 2s, 3s
+          console.log(`[google-translate] Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      } catch (fetchError) {
+        lastError = fetchError instanceof Error ? fetchError.message : String(fetchError);
+        console.error(`[google-translate] Fetch error attempt ${attempt}/${maxRetries}:`, lastError);
+        
+        if (attempt < maxRetries) {
+          const delay = attempt * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
-      if (response.status === 402) {
-        throw new Error("AI translation requires credits, please add funds");
-      }
-      
-      throw new Error(`AI translation failed: ${response.status}`);
+    }
+
+    if (!response || !response.ok) {
+      throw new Error(`AI translation failed after ${maxRetries} attempts: ${lastError}`);
     }
 
     const data = await response.json();
