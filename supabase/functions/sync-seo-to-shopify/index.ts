@@ -15,6 +15,7 @@ interface SyncRequest {
   syncGoogleShopping?: boolean;
   syncBodyHtml?: boolean; // Sync landing page / body HTML
   syncImages?: boolean; // Sync AI-generated images to Shopify
+  syncAllImages?: boolean; // Sync ALL gallery images (not just AI-generated)
   bodyHtml?: string; // Landing page HTML content to sync
   force?: boolean; // Bypass throttling check (for post-optimization sync)
   // Direct field updates (for inline editing)
@@ -154,7 +155,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, syncBodyHtml, syncImages, bodyHtml, force, title, vendor, sku, price, cost, variant_id }: SyncRequest = bodyCheck;
+    const { productId, imageId, collectionId, syncTags, syncAltText, syncGoogleShopping, syncBodyHtml, syncImages, syncAllImages, bodyHtml, force, title, vendor, sku, price, cost, variant_id }: SyncRequest = bodyCheck;
 
     // Sync product SEO data
     if (productId) {
@@ -397,16 +398,21 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // PHASE 1.7: Sync AI-generated images to Shopify
+      // PHASE 1.7: Sync images to Shopify
       if (syncImages) {
-        console.log(`[SYNC-SEO] Syncing AI-generated images for product ${productId}...`);
+        console.log(`[SYNC-SEO] Syncing ${syncAllImages ? 'ALL gallery' : 'AI-generated'} images for product ${productId}...`);
         
-        // Fetch AI-generated images (those with optimization_count > 0)
-        const { data: productImages, error: imagesError } = await supabaseClient
+        // Build query - if syncAllImages, get all images; otherwise only AI-generated (optimization_count > 0)
+        let imagesQuery = supabaseClient
           .from("product_images")
           .select("id, src, alt_text, position, shopify_image_id, optimization_count")
-          .eq("product_id", productId)
-          .gt("optimization_count", 0)
+          .eq("product_id", productId);
+        
+        if (!syncAllImages) {
+          imagesQuery = imagesQuery.gt("optimization_count", 0);
+        }
+        
+        const { data: productImages, error: imagesError } = await imagesQuery
           .order("position", { ascending: true });
         
         if (imagesError) {

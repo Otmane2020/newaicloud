@@ -4112,9 +4112,14 @@ export default function ProductTitleDescription() {
             productId: product.id,
           };
 
-          // Only include fields that are selected in options
-          if (options.syncSeoTitle || options.syncSeoDescription) {
-            // SEO fields are always synced via the edge function
+          // Sync SEO title → also update product main title on Shopify
+          if (options.syncSeoTitle && product.seo_title) {
+            body.title = product.seo_title;
+          }
+          
+          // Sync SEO description
+          if (options.syncSeoDescription && product.seo_description) {
+            body.seoDescription = product.seo_description;
           }
           
           // Sync body HTML (landing page content)
@@ -4138,9 +4143,10 @@ export default function ProductTitleDescription() {
             body.syncGoogleShopping = true;
           }
 
-          // Sync images (AI-generated)
+          // Sync all gallery images (not just AI-generated)
           if (options.syncImages) {
             body.syncImages = true;
+            body.syncAllImages = true;
           }
 
           const { error } = await supabase.functions.invoke("sync-seo-to-shopify", {
