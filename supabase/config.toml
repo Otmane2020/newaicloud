@@ -551,8 +551,6 @@ verify_jwt = true
 [functions.admin-publish-social]
 verify_jwt = true
 
-[functions.google-translate]
-verify_jwt = false
 
 [functions.validate-coupon]
 verify_jwt = false
