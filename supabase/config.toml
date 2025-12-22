@@ -116,7 +116,6 @@ verify_jwt = true
 
 [functions.import-products]
 verify_jwt = false
-memory_limit_mb = 1024
 
 [functions.import-shopify-articles]
 verify_jwt = true
