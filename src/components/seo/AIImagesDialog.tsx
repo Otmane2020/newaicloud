@@ -32,9 +32,20 @@ import {
   Maximize2,
   Focus,
   Layers,
+  Box,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
+
+interface ProductVariant {
+  id: string;
+  title: string;
+  option1: string | null;
+  option2: string | null;
+  option3: string | null;
+  image_url: string | null;
+  sku: string | null;
+}
 
 interface Product {
   id: string;
@@ -51,6 +62,7 @@ interface GeneratedImage {
   type: 'front' | 'profile' | 'back' | 'zoom_fabric' | 'zoom_legs' | 'zoom_detail' | 'decor';
   label: string;
   selected: boolean;
+  variantId?: string; // If this image was generated for a variant
 }
 
 interface AIImagesDialogProps {
@@ -94,9 +106,48 @@ export const AIImagesDialog = ({
   const [decorType, setDecorType] = useState<'living_room' | 'dining_room' | 'bedroom' | 'office'>('living_room');
   const [progress, setProgress] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Variant selection state
+  const [productVariants, setProductVariants] = useState<ProductVariant[]>([]);
+  const [selectedVariantIds, setSelectedVariantIds] = useState<Set<string>>(new Set());
+  const [isLoadingVariants, setIsLoadingVariants] = useState(false);
 
   const currentProduct = selectedProducts[currentProductIndex];
   const currentGeneratedImages = generatedImages.get(currentProduct?.id) || [];
+
+  // Load variants when product changes
+  useEffect(() => {
+    const loadVariants = async () => {
+      if (!currentProduct?.id) return;
+      
+      setIsLoadingVariants(true);
+      try {
+        const { data, error } = await supabase
+          .from('product_variants')
+          .select('id, title, option1, option2, option3, image_url, sku')
+          .eq('product_id', currentProduct.id)
+          .order('created_at', { ascending: true });
+        
+        if (error) throw error;
+        
+        // Filter variants that have their own image (different from main product)
+        const variantsWithImages = (data || []).filter(v => 
+          v.image_url && v.image_url !== currentProduct.image_url
+        );
+        
+        setProductVariants(variantsWithImages);
+        // By default, select all variants with images
+        setSelectedVariantIds(new Set(variantsWithImages.map(v => v.id)));
+      } catch (err) {
+        console.error('Error loading variants:', err);
+        setProductVariants([]);
+      } finally {
+        setIsLoadingVariants(false);
+      }
+    };
+    
+    loadVariants();
+  }, [currentProduct?.id, currentProduct?.image_url]);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -104,8 +155,35 @@ export const AIImagesDialog = ({
       setCurrentProductIndex(0);
       setGeneratedImages(new Map());
       setProgress(0);
+      setProductVariants([]);
+      setSelectedVariantIds(new Set());
     }
   }, [open]);
+  
+  const toggleVariantSelection = (variantId: string) => {
+    setSelectedVariantIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(variantId)) {
+        newSet.delete(variantId);
+      } else {
+        newSet.add(variantId);
+      }
+      return newSet;
+    });
+  };
+  
+  const selectAllVariants = () => {
+    setSelectedVariantIds(new Set(productVariants.map(v => v.id)));
+  };
+  
+  const deselectAllVariants = () => {
+    setSelectedVariantIds(new Set());
+  };
+  
+  const getVariantLabel = (variant: ProductVariant) => {
+    const options = [variant.option1, variant.option2, variant.option3].filter(Boolean);
+    return options.length > 0 ? options.join(' / ') : variant.title || variant.sku || 'Variante';
+  };
 
   const toggleImageType = (typeId: string) => {
     const newSet = new Set(selectedImageTypes);
@@ -139,47 +217,86 @@ export const AIImagesDialog = ({
     setIsGenerating(true);
     setProgress(0);
 
+    // Build list of images to generate: main product + selected variants
+    const imageSourcesToGenerate: Array<{ id: string; imageUrl: string; label: string; isVariant: boolean }> = [
+      { id: currentProduct.id, imageUrl: currentProduct.image_url, label: currentProduct.title, isVariant: false }
+    ];
+    
+    // Add selected variants
+    for (const variantId of selectedVariantIds) {
+      const variant = productVariants.find(v => v.id === variantId);
+      if (variant?.image_url) {
+        imageSourcesToGenerate.push({
+          id: variant.id,
+          imageUrl: variant.image_url,
+          label: getVariantLabel(variant),
+          isVariant: true,
+        });
+      }
+    }
+
+    const totalSources = imageSourcesToGenerate.length;
+    const allGeneratedImages: GeneratedImage[] = [];
+
     const toastId = toast.loading(
       language === 'fr' 
-        ? `Génération des images IA pour ${currentProduct.title}...` 
-        : `Generating AI images for ${currentProduct.title}...`
+        ? `Génération pour ${totalSources} source(s)...` 
+        : `Generating for ${totalSources} source(s)...`
     );
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-ai-product-images', {
-        body: {
-          productId: currentProduct.id,
-          productTitle: currentProduct.title,
-          productType: currentProduct.product_type || 'furniture',
-          sourceImageUrl: currentProduct.image_url,
-          imageTypes: Array.from(selectedImageTypes),
-          includeDecor,
-          decorType,
-          language,
-        },
-      });
+      for (let i = 0; i < imageSourcesToGenerate.length; i++) {
+        const source = imageSourcesToGenerate[i];
+        const progressPercent = Math.round(((i) / totalSources) * 100);
+        setProgress(progressPercent);
 
-      if (error) throw error;
+        toast.loading(
+          language === 'fr' 
+            ? `Génération ${i + 1}/${totalSources}: ${source.label}...` 
+            : `Generating ${i + 1}/${totalSources}: ${source.label}...`,
+          { id: toastId }
+        );
 
-      if (data?.images && data.images.length > 0) {
-        const newImages: GeneratedImage[] = data.images.map((img: any, index: number) => ({
-          id: `${currentProduct.id}-${img.type}-${index}`,
-          url: img.url,
-          type: img.type,
-          label: img.label,
-          selected: true,
-        }));
+        const { data, error } = await supabase.functions.invoke('generate-ai-product-images', {
+          body: {
+            productId: currentProduct.id,
+            variantId: source.isVariant ? source.id : null,
+            productTitle: source.label,
+            productType: currentProduct.product_type || 'furniture',
+            sourceImageUrl: source.imageUrl,
+            imageTypes: Array.from(selectedImageTypes),
+            includeDecor,
+            decorType,
+            language,
+          },
+        });
 
+        if (error) throw error;
+
+        if (data?.images && data.images.length > 0) {
+          const newImages: GeneratedImage[] = data.images.map((img: any, index: number) => ({
+            id: `${source.id}-${img.type}-${index}`,
+            url: img.url,
+            type: img.type,
+            label: source.isVariant ? `${source.label} - ${img.label}` : img.label,
+            selected: true,
+            variantId: source.isVariant ? source.id : undefined,
+          }));
+          allGeneratedImages.push(...newImages);
+        }
+      }
+
+      if (allGeneratedImages.length > 0) {
         setGeneratedImages(prev => {
           const newMap = new Map(prev);
-          newMap.set(currentProduct.id, newImages);
+          newMap.set(currentProduct.id, allGeneratedImages);
           return newMap;
         });
 
         toast.success(
           language === 'fr' 
-            ? `${newImages.length} image(s) générée(s) avec succès` 
-            : `${newImages.length} image(s) generated successfully`,
+            ? `${allGeneratedImages.length} image(s) générée(s) pour ${totalSources} source(s)` 
+            : `${allGeneratedImages.length} image(s) generated for ${totalSources} source(s)`,
           { id: toastId }
         );
       } else {
@@ -483,6 +600,92 @@ export const AIImagesDialog = ({
                     </div>
                   )}
                 </div>
+
+                {/* Variant Selection - Only show if variants with images exist */}
+                {productVariants.length > 0 && (
+                  <div className="space-y-3 border-t pt-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <Box className="h-4 w-4 text-primary" />
+                        {language === 'fr' 
+                          ? `Variantes avec images (${selectedVariantIds.size}/${productVariants.length})` 
+                          : `Variants with images (${selectedVariantIds.size}/${productVariants.length})`}
+                      </Label>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={selectAllVariants}
+                          className="text-xs h-7"
+                        >
+                          {language === 'fr' ? 'Tout' : 'All'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={deselectAllVariants}
+                          className="text-xs h-7"
+                        >
+                          {language === 'fr' ? 'Aucun' : 'None'}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'fr' 
+                        ? 'Les images sélectionnées seront générées pour chaque variante cochée ci-dessous.'
+                        : 'Selected image types will be generated for each checked variant below.'}
+                    </p>
+                    
+                    <ScrollArea className="max-h-[200px]">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {productVariants.map(variant => (
+                          <Card
+                            key={variant.id}
+                            className={`p-2 cursor-pointer transition-all ${
+                              selectedVariantIds.has(variant.id)
+                                ? 'border-primary bg-primary/5'
+                                : 'hover:border-muted-foreground/50 opacity-70'
+                            }`}
+                            onClick={() => toggleVariantSelection(variant.id)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Checkbox 
+                                checked={selectedVariantIds.has(variant.id)}
+                                onCheckedChange={() => toggleVariantSelection(variant.id)}
+                              />
+                              {variant.image_url && (
+                                <img 
+                                  src={variant.image_url} 
+                                  alt={getVariantLabel(variant)}
+                                  className="w-8 h-8 object-contain rounded border bg-white"
+                                />
+                              )}
+                              <span className="text-xs truncate flex-1">
+                                {getVariantLabel(variant)}
+                              </span>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                    
+                    {selectedVariantIds.size > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {language === 'fr' 
+                          ? `${(selectedImageTypes.size + (includeDecor ? 1 : 0)) * (selectedVariantIds.size + 1)} images seront générées`
+                          : `${(selectedImageTypes.size + (includeDecor ? 1 : 0)) * (selectedVariantIds.size + 1)} images will be generated`}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+                
+                {isLoadingVariants && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {language === 'fr' ? 'Chargement des variantes...' : 'Loading variants...'}
+                  </div>
+                )}
               </>
             )}
 
