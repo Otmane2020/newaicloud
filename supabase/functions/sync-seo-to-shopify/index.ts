@@ -1047,7 +1047,7 @@ Deno.serve(async (req: Request) => {
         altText: imageData.alt_text?.substring(0, 50) + '...'
       });
       
-      const graphqlUrl = `https://${shopUrl}/admin/api/2025-01/graphql.json`;
+      const graphqlUrl = `https://${shopUrl}/admin/api/2025-07/graphql.json`;
       
       try {
         // Step 1: Query product media to find the MediaImage GID by matching image URL
@@ -1161,17 +1161,17 @@ Deno.serve(async (req: Request) => {
           throw new Error(`Image non trouvée sur Shopify. L'image n'existe peut-être plus dans le produit.`);
         }
         
-        // Step 2: Use mediaImageUpdate mutation (recommended) to update the alt text
+        // Step 2: Update alt text via productUpdateMedia (supported in 2025-01/2025-07)
         const updateMutation = `
-          mutation mediaImageUpdate($id: ID!, $input: MediaImageInput!) {
-            mediaImageUpdate(id: $id, input: $input) {
+          mutation productUpdateMedia($productId: ID!, $media: [UpdateMediaInput!]!) {
+            productUpdateMedia(productId: $productId, media: $media) {
               media {
                 ... on MediaImage {
                   id
                   alt
                 }
               }
-              userErrors {
+              mediaUserErrors {
                 field
                 message
               }
@@ -1179,7 +1179,7 @@ Deno.serve(async (req: Request) => {
           }
         `;
 
-        console.log(`[SYNC-IMAGE] Updating alt text via mediaImageUpdate for: ${mediaImageGid}`);
+        console.log(`[SYNC-IMAGE] Updating alt text via productUpdateMedia for: ${mediaImageGid}`);
         console.log(`[SYNC-IMAGE] New alt text: "${imageData.alt_text}"`);
 
         const updateResponse = await fetch(graphqlUrl, {
@@ -1191,35 +1191,33 @@ Deno.serve(async (req: Request) => {
           body: JSON.stringify({
             query: updateMutation,
             variables: {
-              id: mediaImageGid,
-              input: {
-                alt: imageData.alt_text,
-              },
+              productId: productGid,
+              media: [{ id: mediaImageGid, alt: imageData.alt_text }],
             },
           }),
         });
 
         if (!updateResponse.ok) {
           const errorText = await updateResponse.text();
-          console.error(`[SYNC-IMAGE] ❌ mediaImageUpdate HTTP error: ${updateResponse.status}`, errorText);
-          throw new Error(`Shopify mediaImageUpdate error: ${updateResponse.status} - ${errorText}`);
+          console.error(`[SYNC-IMAGE] ❌ productUpdateMedia HTTP error: ${updateResponse.status}`, errorText);
+          throw new Error(`Shopify productUpdateMedia error: ${updateResponse.status} - ${errorText}`);
         }
 
         const updateResult = await updateResponse.json();
 
         if (updateResult.errors) {
-          console.error(`[SYNC-IMAGE] ❌ mediaImageUpdate GraphQL errors:`, updateResult.errors);
-          throw new Error(`Shopify mediaImageUpdate errors: ${JSON.stringify(updateResult.errors)}`);
+          console.error(`[SYNC-IMAGE] ❌ productUpdateMedia GraphQL errors:`, updateResult.errors);
+          throw new Error(`Shopify productUpdateMedia errors: ${JSON.stringify(updateResult.errors)}`);
         }
 
-        const userErrors = updateResult.data?.mediaImageUpdate?.userErrors || [];
+        const userErrors = updateResult.data?.productUpdateMedia?.mediaUserErrors || [];
         if (userErrors.length > 0) {
-          console.error(`[SYNC-IMAGE] ❌ mediaImageUpdate user errors:`, userErrors);
-          throw new Error(`Shopify mediaImageUpdate user errors: ${JSON.stringify(userErrors)}`);
+          console.error(`[SYNC-IMAGE] ❌ productUpdateMedia user errors:`, userErrors);
+          throw new Error(`Shopify productUpdateMedia user errors: ${JSON.stringify(userErrors)}`);
         }
 
-        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via GraphQL mediaImageUpdate`);
-        console.log(`[SYNC-IMAGE] Updated media:`, JSON.stringify(updateResult.data?.mediaImageUpdate?.media));
+        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via GraphQL productUpdateMedia`);
+        console.log(`[SYNC-IMAGE] Updated media:`, JSON.stringify(updateResult.data?.productUpdateMedia?.media));
       } catch (gqlError: any) {
         console.error(`[SYNC-IMAGE] ❌ GraphQL operation failed:`, gqlError.message);
         throw new Error(`Erreur synchronisation Shopify: ${gqlError.message}`);
