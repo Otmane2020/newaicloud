@@ -267,6 +267,8 @@ Deno.serve(async (req: Request) => {
       const graphqlVariables = {
         input: {
           id: `gid://shopify/Product/${product.shopify_id}`,
+          // ✅ Sync regenerated title as main product title
+          title: product.seo_title || product.title || "",
           seo: {
             title: product.seo_title || product.title || "",
             description: product.seo_description || ""
@@ -398,79 +400,13 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // PHASE 1.7: Sync images to Shopify (REPLACE existing images)
+      // PHASE 1.7: Sync images to Shopify (SAFE REPLACE - only delete if we have local copies)
       if (syncImages) {
         console.log(`[SYNC-SEO] Syncing ${syncAllImages ? 'ALL gallery' : 'AI-generated'} images for product ${productId}...`);
         
         const shopifyProductGid = `gid://shopify/Product/${product.shopify_id}`;
         
-        // STEP 1: Fetch existing media from Shopify to delete them
-        const getMediaQuery = `
-          query getProductMedia($productId: ID!) {
-            product(id: $productId) {
-              media(first: 100) {
-                edges {
-                  node {
-                    id
-                  }
-                }
-              }
-            }
-          }
-        `;
-        
-        try {
-          console.log(`[SYNC-SEO] Fetching existing media from Shopify...`);
-          const existingMediaResult = await shopifyGraphQL(shopUrl, shopifyAccessToken, getMediaQuery, {
-            productId: shopifyProductGid
-          });
-          
-          const existingMediaIds = existingMediaResult.data?.product?.media?.edges?.map(
-            (edge: any) => edge.node.id
-          ) || [];
-          
-          console.log(`[SYNC-SEO] Found ${existingMediaIds.length} existing media in Shopify`);
-          
-          // STEP 2: Delete all existing media
-          if (existingMediaIds.length > 0) {
-            console.log(`[SYNC-SEO] Deleting ${existingMediaIds.length} existing media from Shopify...`);
-            
-            const deleteMediaMutation = `
-              mutation productDeleteMedia($productId: ID!, $mediaIds: [ID!]!) {
-                productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
-                  deletedMediaIds
-                  mediaUserErrors {
-                    field
-                    message
-                  }
-                }
-              }
-            `;
-            
-            try {
-              const deleteResult = await shopifyGraphQL(shopUrl, shopifyAccessToken, deleteMediaMutation, {
-                productId: shopifyProductGid,
-                mediaIds: existingMediaIds
-              });
-              
-              if (deleteResult.data?.productDeleteMedia?.deletedMediaIds) {
-                console.log(`[SYNC-SEO] ✅ Deleted ${deleteResult.data.productDeleteMedia.deletedMediaIds.length} media items`);
-              }
-              
-              if (deleteResult.data?.productDeleteMedia?.mediaUserErrors?.length > 0) {
-                console.warn(`[SYNC-SEO] ⚠️ Delete media user errors:`, deleteResult.data.productDeleteMedia.mediaUserErrors);
-              }
-            } catch (deleteError: any) {
-              console.error(`[SYNC-SEO] ⚠️ Error deleting existing media:`, deleteError.message);
-              // Continue anyway - we'll still try to upload new images
-            }
-          }
-        } catch (fetchError: any) {
-          console.error(`[SYNC-SEO] ⚠️ Error fetching existing media:`, fetchError.message);
-          // Continue anyway
-        }
-        
-        // STEP 3: Fetch images from NewAI database
+        // STEP 1: First, fetch images from NewAI database to know what we have locally
         let imagesQuery = supabaseClient
           .from("product_images")
           .select("id, src, alt_text, position, shopify_image_id, optimization_count")
@@ -486,66 +422,156 @@ Deno.serve(async (req: Request) => {
         if (imagesError) {
           console.error("[SYNC-SEO] ❌ Failed to fetch product images:", imagesError);
         } else if (productImages && productImages.length > 0) {
-          console.log(`[SYNC-SEO] Found ${productImages.length} ${syncAllImages ? 'gallery' : 'AI-generated'} images to upload`);
+          console.log(`[SYNC-SEO] Found ${productImages.length} ${syncAllImages ? 'gallery' : 'AI-generated'} images to sync`);
           
-          // STEP 4: Upload new images
-          for (const image of productImages) {
-            try {
-              // Check if image URL is valid and accessible
-              if (!image.src || !image.src.startsWith('http')) {
-                console.log(`[SYNC-SEO] Skipping image with invalid URL: ${image.src}`);
-                continue;
-              }
-
-              // Use productCreateMedia to add image
-              const createMediaMutation = `
-                mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
-                  productCreateMedia(productId: $productId, media: $media) {
-                    media {
-                      ... on MediaImage {
+          // STEP 2: Filter images - ONLY upload images that have NON-Shopify CDN sources
+          // Images with cdn.shopify.com URLs would fail after deletion because their source becomes invalid
+          const imagesToUpload = productImages.filter((img: any) => {
+            const isShopifyCDN = img.src && (
+              img.src.includes('cdn.shopify.com') || 
+              img.src.includes('shopifycdn.com')
+            );
+            if (isShopifyCDN) {
+              console.log(`[SYNC-SEO] ⚠️ Skipping Shopify CDN image (cannot re-upload): ${img.src.substring(0, 80)}...`);
+            }
+            return !isShopifyCDN;
+          });
+          
+          console.log(`[SYNC-SEO] ${imagesToUpload.length} images with local/Supabase sources to upload`);
+          
+          if (imagesToUpload.length > 0) {
+            // STEP 3: Fetch existing media from Shopify
+            const getMediaQuery = `
+              query getProductMedia($productId: ID!) {
+                product(id: $productId) {
+                  media(first: 100) {
+                    edges {
+                      node {
                         id
-                        image {
-                          url
-                          altText
+                        ... on MediaImage {
+                          image {
+                            url
+                          }
                         }
                       }
                     }
-                    mediaUserErrors {
-                      field
-                      message
-                    }
                   }
                 }
-              `;
-
-              const mediaInput = {
-                originalSource: image.src,
-                mediaContentType: "IMAGE",
-                alt: image.alt_text || product.title
-              };
-
-              const mediaResult = await shopifyGraphQL(shopUrl, shopifyAccessToken, createMediaMutation, {
-                productId: shopifyProductGid,
-                media: [mediaInput]
-              });
-
-              if (mediaResult.data?.productCreateMedia?.media?.[0]?.id) {
-                console.log(`[SYNC-SEO] ✅ Image uploaded successfully: ${image.src.substring(0, 50)}...`);
-                
-                // Update local database with sync status
-                await supabaseClient
-                  .from("product_images")
-                  .update({ 
-                    last_synced_at: new Date().toISOString(),
-                    shopify_synced: true
-                  })
-                  .eq("id", image.id);
-              } else {
-                console.error(`[SYNC-SEO] ⚠️ Image upload returned no media ID`);
               }
-            } catch (imageError: any) {
-              console.error(`[SYNC-SEO] ❌ Failed to upload image ${image.id}:`, imageError.message);
+            `;
+            
+            try {
+              console.log(`[SYNC-SEO] Fetching existing media from Shopify...`);
+              const existingMediaResult = await shopifyGraphQL(shopUrl, shopifyAccessToken, getMediaQuery, {
+                productId: shopifyProductGid
+              });
+              
+              const existingMedia = existingMediaResult.data?.product?.media?.edges || [];
+              const existingMediaIds = existingMedia.map((edge: any) => edge.node.id);
+              
+              console.log(`[SYNC-SEO] Found ${existingMediaIds.length} existing media in Shopify`);
+              
+              // STEP 4: Delete existing media that will be REPLACED by our new uploads
+              // We only delete if we have NEW local images to upload
+              if (existingMediaIds.length > 0 && imagesToUpload.length > 0) {
+                console.log(`[SYNC-SEO] Deleting ${existingMediaIds.length} existing media to replace with ${imagesToUpload.length} new images...`);
+                
+                const deleteMediaMutation = `
+                  mutation productDeleteMedia($productId: ID!, $mediaIds: [ID!]!) {
+                    productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
+                      deletedMediaIds
+                      mediaUserErrors {
+                        field
+                        message
+                      }
+                    }
+                  }
+                `;
+                
+                try {
+                  const deleteResult = await shopifyGraphQL(shopUrl, shopifyAccessToken, deleteMediaMutation, {
+                    productId: shopifyProductGid,
+                    mediaIds: existingMediaIds
+                  });
+                  
+                  if (deleteResult.data?.productDeleteMedia?.deletedMediaIds) {
+                    console.log(`[SYNC-SEO] ✅ Deleted ${deleteResult.data.productDeleteMedia.deletedMediaIds.length} media items`);
+                  }
+                  
+                  if (deleteResult.data?.productDeleteMedia?.mediaUserErrors?.length > 0) {
+                    console.warn(`[SYNC-SEO] ⚠️ Delete media user errors:`, deleteResult.data.productDeleteMedia.mediaUserErrors);
+                  }
+                } catch (deleteError: any) {
+                  console.error(`[SYNC-SEO] ⚠️ Error deleting existing media:`, deleteError.message);
+                  // Continue anyway - we'll still try to upload new images
+                }
+              }
+            } catch (fetchError: any) {
+              console.error(`[SYNC-SEO] ⚠️ Error fetching existing media:`, fetchError.message);
+              // Continue anyway
             }
+            
+            // STEP 5: Upload new images (only non-Shopify CDN images)
+            for (const image of imagesToUpload) {
+              try {
+                // Check if image URL is valid and accessible
+                if (!image.src || !image.src.startsWith('http')) {
+                  console.log(`[SYNC-SEO] Skipping image with invalid URL: ${image.src}`);
+                  continue;
+                }
+
+                // Use productCreateMedia to add image
+                const createMediaMutation = `
+                  mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
+                    productCreateMedia(productId: $productId, media: $media) {
+                      media {
+                        ... on MediaImage {
+                          id
+                          image {
+                            url
+                            altText
+                          }
+                        }
+                      }
+                      mediaUserErrors {
+                        field
+                        message
+                      }
+                    }
+                  }
+                `;
+
+                const mediaInput = {
+                  originalSource: image.src,
+                  mediaContentType: "IMAGE",
+                  alt: image.alt_text || product.title
+                };
+
+                const mediaResult = await shopifyGraphQL(shopUrl, shopifyAccessToken, createMediaMutation, {
+                  productId: shopifyProductGid,
+                  media: [mediaInput]
+                });
+
+                if (mediaResult.data?.productCreateMedia?.media?.[0]?.id) {
+                  console.log(`[SYNC-SEO] ✅ Image uploaded successfully: ${image.src.substring(0, 50)}...`);
+                  
+                  // Update local database with sync status
+                  await supabaseClient
+                    .from("product_images")
+                    .update({ 
+                      last_synced_at: new Date().toISOString(),
+                      shopify_synced: true
+                    })
+                    .eq("id", image.id);
+                } else {
+                  console.error(`[SYNC-SEO] ⚠️ Image upload returned no media ID`);
+                }
+              } catch (imageError: any) {
+                console.error(`[SYNC-SEO] ❌ Failed to upload image ${image.id}:`, imageError.message);
+              }
+            }
+          } else {
+            console.log(`[SYNC-SEO] ⚠️ No uploadable images (all images are from Shopify CDN - cannot re-upload)`);
           }
         } else {
           console.log(`[SYNC-SEO] No ${syncAllImages ? 'gallery' : 'AI-generated'} images found to sync`);
