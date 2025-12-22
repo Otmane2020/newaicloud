@@ -423,21 +423,25 @@ export const AIImagesDialog = ({
         }
       }
 
-      // 🆕 Auto-sync to Shopify ONLY for newly created images (NOT syncAllImages to avoid duplicates)
+      // 🆕 Auto-sync AI-generated images to Shopify
       try {
-        await supabase.functions.invoke('sync-seo-to-shopify', {
+        const { error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
           body: {
-            productId: currentProduct.id, // Fixed: singular productId, not productIds array
-            syncImages: true,
-            syncAllImages: false, // 🔒 NEVER force-sync all - only sync new images (shopify_sync_count = 0)
+            productId: currentProduct.id,
+            allowCreateReplace: true, // 🔐 Explicit: Allow creating new images on Shopify
           },
         });
-        console.log(`✅ Auto-synced new AI images to Shopify for product ${currentProduct.id}`);
-        toast.info(
-          language === 'fr' 
-            ? 'Synchronisation Shopify en cours...' 
-            : 'Syncing to Shopify...'
-        );
+        
+        if (syncError) {
+          console.warn('⚠️ Auto-sync to Shopify failed:', syncError);
+        } else {
+          console.log(`✅ Auto-synced new AI images to Shopify for product ${currentProduct.id}`);
+          toast.info(
+            language === 'fr' 
+              ? 'Images synchronisées avec Shopify' 
+              : 'Images synced to Shopify'
+          );
+        }
       } catch (syncError) {
         console.warn('⚠️ Auto-sync to Shopify failed:', syncError);
         // Don't fail the save operation if sync fails
