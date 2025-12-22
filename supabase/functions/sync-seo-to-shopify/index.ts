@@ -241,10 +241,17 @@ Deno.serve(async (req: Request) => {
       const shopifyAccessToken = storeConnection.access_token;
       
       // PHASE 1: Update SEO title and description using GraphQL (proper native SEO)
+      // Priority:
+      // 1) request.body.title (explicit user action from UI)
+      // 2) product.optimized_title
+      // 3) product.seo_title
+      // 4) product.title
+      const resolvedTitle = (title ?? product.optimized_title ?? product.seo_title ?? product.title ?? "").toString();
+
       console.log(`[SYNC-SEO] Updating product ${product.shopify_id} SEO via GraphQL...`);
-      console.log(`[SYNC-SEO] SEO Title: "${product.optimized_title || product.seo_title || product.title || ""}"`);
+      console.log(`[SYNC-SEO] Resolved Title: "${resolvedTitle}"`);
       console.log(`[SYNC-SEO] SEO Description: "${(product.seo_description || "").substring(0, 100)}..."`);
-      
+
       const productUpdateMutation = `
         mutation productUpdate($input: ProductInput!) {
           productUpdate(input: $input) {
@@ -264,12 +271,10 @@ Deno.serve(async (req: Request) => {
         }
       `;
 
-      const resolvedTitle = product.optimized_title || product.seo_title || product.title || "";
-
       const graphqlVariables = {
         input: {
           id: `gid://shopify/Product/${product.shopify_id}`,
-          // ✅ Sync regenerated title as main product title
+          // ✅ Sync title as main product title
           title: resolvedTitle,
           seo: {
             title: resolvedTitle,
@@ -411,7 +416,7 @@ Deno.serve(async (req: Request) => {
         // STEP 1: First, fetch images from NewAI database to know what we have locally
         let imagesQuery = supabaseClient
           .from("product_images")
-          .select("id, src, alt_text, position, shopify_image_id, optimization_count")
+          .select("id, src, alt_text, position, shopify_image_id, optimization_count, shopify_sync_count")
           .eq("product_id", productId);
         
         if (!syncAllImages) {
@@ -534,22 +539,38 @@ Deno.serve(async (req: Request) => {
                 });
 
                 const createdMedia = mediaResult.data?.productCreateMedia?.media?.[0];
-                const createdMediaId = createdMedia?.id;
-                const createdImageUrl = createdMedia?.image?.url;
+                const createdMediaId = createdMedia?.id as string | undefined;
+                const createdImageUrl = createdMedia?.image?.url as string | undefined;
+                const mediaUserErrors = mediaResult.data?.productCreateMedia?.mediaUserErrors || [];
 
-                if (createdMediaId && createdImageUrl) {
-                  console.log(`[SYNC-SEO] ✅ Image uploaded successfully: ${createdImageUrl.substring(0, 80)}...`);
+                if (mediaUserErrors.length > 0) {
+                  console.error(`[SYNC-SEO] ❌ productCreateMedia mediaUserErrors for image ${image.id}:`, JSON.stringify(mediaUserErrors));
+                  throw new Error(`Shopify media upload error: ${JSON.stringify(mediaUserErrors)}`);
+                }
 
-                  await supabaseClient
+                if (createdMediaId) {
+                  if (createdImageUrl) {
+                    console.log(`[SYNC-SEO] ✅ Image uploaded successfully: ${createdImageUrl.substring(0, 80)}...`);
+                  } else {
+                    // Shopify often returns image: null while processing is still pending.
+                    console.log(`[SYNC-SEO] ⏳ Media created but still processing (image.url is null). mediaId=${createdMediaId} imageId=${image.id}`);
+                  }
+
+                  // Mark as synced attempt in DB (IMPORTANT: product_images has no 'shopify_synced' column)
+                  const nextSyncCount = (image.shopify_sync_count ?? 0) + 1;
+                  const { error: markError } = await supabaseClient
                     .from("product_images")
                     .update({
                       last_synced_at: new Date().toISOString(),
-                      shopify_synced: true
+                      shopify_sync_count: nextSyncCount,
                     })
                     .eq("id", image.id);
+
+                  if (markError) {
+                    console.error(`[SYNC-SEO] ⚠️ Failed to update product_images sync fields for ${image.id}:`, markError);
+                  }
                 } else {
-                  // This is the classic "Media processing failed" symptom: media exists but image is null
-                  console.error(`[SYNC-SEO] ❌ Media processing failed for image ${image.id}`);
+                  console.error(`[SYNC-SEO] ❌ productCreateMedia did not return a media id for image ${image.id}`);
                   console.error(`[SYNC-SEO] ❌ productCreateMedia returned:`, JSON.stringify(createdMedia));
 
                   // Try to log to system_logs for automatic detection
@@ -561,14 +582,13 @@ Deno.serve(async (req: Request) => {
                     await admin.from('system_logs').insert({
                       type: 'error',
                       function_name: 'sync-seo-to-shopify',
-                      message: 'Media processing failed (productCreateMedia image is null)',
-                      user_id: user.id,
+                      message: 'Media upload failed (no media id returned from productCreateMedia)',
+                      user_id: user?.id ?? null,
                       metadata: {
                         productId,
                         imageId: image.id,
                         src: image.src,
                         shopifyProductId: product.shopify_id,
-                        createdMediaId: createdMediaId || null
                       }
                     });
                   } catch (_) {}
