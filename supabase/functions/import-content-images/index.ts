@@ -10,6 +10,89 @@ interface ImportRequest {
   types?: ('collections' | 'pages' | 'articles' | 'homepage')[];
 }
 
+// 🔒 CRITICAL: Check if an AI-generated image exists for this content
+// If an AI image exists, we MUST NOT overwrite it with a Shopify import
+async function isAiImageExists(
+  supabaseClient: any,
+  contentType: string,
+  contentId: string,
+  src: string
+): Promise<boolean> {
+  // Check if there's an existing AI-generated image for this content position
+  const { data: existingImage } = await supabaseClient
+    .from("content_images")
+    .select("id, is_ai_generated, src")
+    .eq("content_type", contentType)
+    .eq("content_id", contentId)
+    .eq("src", src)
+    .maybeSingle();
+
+  if (existingImage?.is_ai_generated === true) {
+    console.log(`🔒 [PROTECT] AI image exists for ${contentType}/${contentId}, skipping Shopify import`);
+    return true;
+  }
+
+  return false;
+}
+
+// 🔒 CRITICAL: Safe upsert that protects AI-generated images
+async function safeUpsertContentImage(
+  supabaseClient: any,
+  imageData: {
+    user_id: string;
+    store_id: string;
+    content_type: string;
+    content_id: string;
+    src: string;
+    alt_text: string | null;
+    position: number;
+  }
+): Promise<{ success: boolean; skipped: boolean }> {
+  // First, check if an AI image exists at this position for this content
+  const { data: existingImages } = await supabaseClient
+    .from("content_images")
+    .select("id, is_ai_generated, src, position")
+    .eq("content_type", imageData.content_type)
+    .eq("content_id", imageData.content_id)
+    .eq("position", imageData.position);
+
+  // If any AI-generated image exists at this position, skip
+  const aiImageExists = existingImages?.some((img: any) => img.is_ai_generated === true);
+  if (aiImageExists) {
+    console.log(`🔒 [PROTECT] AI image at position ${imageData.position} for ${imageData.content_type}, skipping`);
+    return { success: true, skipped: true };
+  }
+
+  // Also check by exact src match (in case src is the conflict key)
+  const isAiByUrl = await isAiImageExists(
+    supabaseClient,
+    imageData.content_type,
+    imageData.content_id,
+    imageData.src
+  );
+  if (isAiByUrl) {
+    return { success: true, skipped: true };
+  }
+
+  // Safe to upsert - mark as NOT AI-generated (from Shopify)
+  const { error } = await supabaseClient
+    .from("content_images")
+    .upsert({
+      ...imageData,
+      is_ai_generated: false, // 🔥 Explicitly mark as Shopify import
+    }, {
+      onConflict: 'content_type,content_id,src',
+      ignoreDuplicates: false
+    });
+
+  if (error) {
+    console.error(`[CONTENT-IMAGES] Upsert error:`, error);
+    return { success: false, skipped: false };
+  }
+
+  return { success: true, skipped: false };
+}
+
 function extractImagesFromHtml(html: string): Array<{ src: string; alt: string | null }> {
   const imgRegex = /<img[^>]+src="([^"]+)"[^>]*(?:alt="([^"]*)")?[^>]*>/gi;
   const images: Array<{ src: string; alt: string | null }> = [];
@@ -96,6 +179,7 @@ Deno.serve(async (req: Request) => {
     };
 
     let totalImported = 0;
+    let skippedAiImages = 0; // 🔒 Track AI images we protected
     const breakdown = { collections: 0, pages: 0, articles: 0, homepage: 0 };
     const filtered = { total: 0, excluded: 0, reasons: [] as string[] };
 
@@ -153,47 +237,45 @@ Deno.serve(async (req: Request) => {
             continue;
           }
 
-          // Add collection main image
+          // Add collection main image - 🔒 WITH AI PROTECTION
           if (collection.image?.src) {
-            await supabaseClient
-              .from("content_images")
-              .upsert({
+            const result = await safeUpsertContentImage(supabaseClient, {
+              user_id: user.id,
+              store_id: storeId,
+              content_type: 'collection',
+              content_id: dbCollection.id,
+              src: collection.image.src,
+              alt_text: collection.image.alt || null,
+              position: 0
+            });
+
+            if (result.success && !result.skipped) {
+              totalImported++;
+            } else if (result.skipped) {
+              skippedAiImages++;
+            }
+          }
+
+          // Extract images from body_html - 🔒 WITH AI PROTECTION
+          if (collection.body_html) {
+            const htmlImages = extractImagesFromHtml(collection.body_html);
+            for (let i = 0; i < htmlImages.length; i++) {
+              const result = await safeUpsertContentImage(supabaseClient, {
                 user_id: user.id,
                 store_id: storeId,
                 content_type: 'collection',
                 content_id: dbCollection.id,
-                src: collection.image.src,
-                alt_text: collection.image.alt,
-                position: 0
-              }, {
-                onConflict: 'content_type,content_id,src',
-                ignoreDuplicates: false
+                src: htmlImages[i].src,
+                alt_text: htmlImages[i].alt,
+                position: i + 1
               });
 
-            totalImported++;
-          }
-
-          // Extract images from body_html
-          if (collection.body_html) {
-            const htmlImages = extractImagesFromHtml(collection.body_html);
-            for (let i = 0; i < htmlImages.length; i++) {
-              await supabaseClient
-                .from("content_images")
-                .upsert({
-                  user_id: user.id,
-                  store_id: storeId,
-                  content_type: 'collection',
-                  content_id: dbCollection.id,
-                  src: htmlImages[i].src,
-                  alt_text: htmlImages[i].alt,
-                  position: i + 1
-                }, {
-                  onConflict: 'content_type,content_id,src',
-                  ignoreDuplicates: false
-                });
-
-              totalImported++;
-              breakdown.collections++;
+              if (result.success && !result.skipped) {
+                totalImported++;
+                breakdown.collections++;
+              } else if (result.skipped) {
+                skippedAiImages++;
+              }
             }
           }
         }
@@ -228,27 +310,26 @@ Deno.serve(async (req: Request) => {
             continue;
           }
 
-          // Extract images from body_html
+          // Extract images from body_html - 🔒 WITH AI PROTECTION
           if (page.body_html) {
             const htmlImages = extractImagesFromHtml(page.body_html);
             for (let i = 0; i < htmlImages.length; i++) {
-              await supabaseClient
-                .from("content_images")
-                .upsert({
-                  user_id: user.id,
-                  store_id: storeId,
-                  content_type: 'page',
-                  content_id: dbPage.id,
-                  src: htmlImages[i].src,
-                  alt_text: htmlImages[i].alt,
-                  position: i
-                }, {
-                  onConflict: 'content_type,content_id,src',
-                  ignoreDuplicates: false
-                });
+              const result = await safeUpsertContentImage(supabaseClient, {
+                user_id: user.id,
+                store_id: storeId,
+                content_type: 'page',
+                content_id: dbPage.id,
+                src: htmlImages[i].src,
+                alt_text: htmlImages[i].alt,
+                position: i
+              });
 
-              totalImported++;
-              breakdown.pages++;
+              if (result.success && !result.skipped) {
+                totalImported++;
+                breakdown.pages++;
+              } else if (result.skipped) {
+                skippedAiImages++;
+              }
             }
           }
         }
@@ -295,27 +376,26 @@ Deno.serve(async (req: Request) => {
                 continue;
               }
 
-              // Extract images from body_html
+              // Extract images from body_html - 🔒 WITH AI PROTECTION
               if (article.body_html) {
                 const htmlImages = extractImagesFromHtml(article.body_html);
                 for (let i = 0; i < htmlImages.length; i++) {
-                  await supabaseClient
-                    .from("content_images")
-                    .upsert({
-                      user_id: user.id,
-                      store_id: storeId,
-                      content_type: 'article',
-                      content_id: dbArticle.id,
-                      src: htmlImages[i].src,
-                      alt_text: htmlImages[i].alt,
-                      position: i
-                    }, {
-                      onConflict: 'content_type,content_id,src',
-                      ignoreDuplicates: false
-                    });
+                  const result = await safeUpsertContentImage(supabaseClient, {
+                    user_id: user.id,
+                    store_id: storeId,
+                    content_type: 'article',
+                    content_id: dbArticle.id,
+                    src: htmlImages[i].src,
+                    alt_text: htmlImages[i].alt,
+                    position: i
+                  });
 
-                  totalImported++;
-                  breakdown.articles++;
+                  if (result.success && !result.skipped) {
+                    totalImported++;
+                    breakdown.articles++;
+                  } else if (result.skipped) {
+                    skippedAiImages++;
+                  }
                 }
               }
             }
@@ -388,29 +468,26 @@ Deno.serve(async (req: Request) => {
               src = `https://${store.store_url}${src}`;
             }
             
-            console.log(`[HOMEPAGE] Upserting image ${i + 1}/${validImages.length}: ${src.substring(0, 80)}...`);
+            console.log(`[HOMEPAGE] Processing image ${i + 1}/${validImages.length}: ${src.substring(0, 80)}...`);
             
-            const { data, error } = await supabaseClient
-              .from("content_images")
-              .upsert({
-                user_id: user.id,
-                store_id: storeId,
-                content_type: 'homepage',
-                content_id: user.id, // Use user_id as content_id for homepage
-                src: src,
-                alt_text: validImages[i].alt || null,
-                position: i
-              }, {
-                onConflict: 'content_type,content_id,src',
-                ignoreDuplicates: false
-              });
+            // 🔒 Use safe upsert WITH AI PROTECTION
+            const result = await safeUpsertContentImage(supabaseClient, {
+              user_id: user.id,
+              store_id: storeId,
+              content_type: 'homepage',
+              content_id: user.id, // Use user_id as content_id for homepage
+              src: src,
+              alt_text: validImages[i].alt || null,
+              position: i
+            });
 
-            if (error) {
-              console.error(`[HOMEPAGE] Error upserting image ${i}: ${error.message}`);
-            } else {
+            if (result.success && !result.skipped) {
               console.log(`[HOMEPAGE] ✅ Successfully upserted image ${i + 1}`);
               totalImported++;
               breakdown.homepage++;
+            } else if (result.skipped) {
+              console.log(`[HOMEPAGE] 🔒 Skipped AI image ${i + 1}`);
+              skippedAiImages++;
             }
           }
           
@@ -423,7 +500,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    console.log(`[IMPORT-CONTENT-IMAGES] ✅ Import complete: ${totalImported} images`);
+    console.log(`[IMPORT-CONTENT-IMAGES] ✅ Import complete: ${totalImported} images imported, ${skippedAiImages} AI images protected`);
     console.log(`[IMPORT-CONTENT-IMAGES] Breakdown:`, breakdown);
     
     // 🔥 NEW: Update sync_history for live progress (final update for images)
@@ -469,8 +546,9 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully imported ${totalImported} images`,
+        message: `Successfully imported ${totalImported} images (${skippedAiImages} AI images protected)`,
         totalImported,
+        skippedAiImages, // 🔒 NEW: Track protected AI images
         totalImages,
         contentImagesCount: contentImagesCount || 0,
         productImagesCount: productImagesCount || 0,
