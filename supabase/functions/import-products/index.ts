@@ -1246,20 +1246,32 @@ Deno.serve(async (req: Request) => {
                     const productRecord = batch.find(p => p.shopify_id === shopifyId);
                     if (!productRecord) continue;
                     
-                    const productImages = node.images.edges.map((edge: any, index: number) => {
-                      // FIX: Use extractNumericId for proper GID parsing
-                      const numericId = extractNumericId(edge.node.id) || 0;
-                      return {
-                        product_id: productRecord.id,
-                        shopify_image_id: numericId,
-                        src: edge.node.url,
-                        position: index + 1,
-                        alt_text: edge.node.altText || "",
-                        width: edge.node.width || null,
-                        height: edge.node.height || null,
-                        is_ai_generated: false, // Images from Shopify are NOT AI-generated
-                      };
-                    });
+                    const productImages = node.images.edges
+                      .filter((edge: any) => {
+                        // SKIP images that are re-imported AI images (already exist locally)
+                        const url = edge.node.url || '';
+                        const isReimportedAI = url.includes('ai_generated_') || 
+                                               url.includes('ai-generated-') ||
+                                               url.includes('/generated-images/');
+                        if (isReimportedAI) {
+                          console.log(`⏭️ Skipping re-imported AI image: ${url.substring(0, 80)}...`);
+                        }
+                        return !isReimportedAI;
+                      })
+                      .map((edge: any, index: number) => {
+                        // FIX: Use extractNumericId for proper GID parsing
+                        const numericId = extractNumericId(edge.node.id) || 0;
+                        return {
+                          product_id: productRecord.id,
+                          shopify_image_id: numericId,
+                          src: edge.node.url,
+                          position: index + 1,
+                          alt_text: edge.node.altText || "",
+                          width: edge.node.width || null,
+                          height: edge.node.height || null,
+                          is_ai_generated: false, // Images from Shopify are NOT AI-generated
+                        };
+                      });
                     
                     allImages.push(...productImages);
                     imagesFetched += productImages.length;

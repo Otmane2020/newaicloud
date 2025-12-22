@@ -16,140 +16,167 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { userId, storeId, dryRun = true } = await req.json();
+    const { userId, storeId, productId, dryRun = true } = await req.json();
 
-    console.log(`[CLEANUP] Starting duplicate image cleanup for user ${userId}, store ${storeId}, dryRun: ${dryRun}`);
+    console.log(`[CLEANUP] Starting cleanup for user ${userId}, store ${storeId}, product ${productId || 'ALL'}, dryRun: ${dryRun}`);
 
-    // STEP 1: Find all duplicate images by shopify_image_id
-    // Keep only the oldest image per (product_id, shopify_image_id) combination
-    const { data: duplicates, error: findError } = await supabaseClient.rpc('find_duplicate_images', {
-      p_user_id: userId,
-      p_store_id: storeId
-    });
-
-    if (findError) {
-      // If RPC doesn't exist, use fallback query
-      console.log("[CLEANUP] RPC not found, using manual query...");
-      
-      // Get all product IDs for this user/store
-      let productsQuery = supabaseClient
-        .from('shopify_products')
-        .select('id')
-        .eq('seller_id', userId);
-      
-      if (storeId) {
-        productsQuery = productsQuery.eq('store_id', storeId);
-      }
-      
-      const { data: products, error: productsError } = await productsQuery;
-      
-      if (productsError) {
-        throw new Error(`Failed to fetch products: ${productsError.message}`);
-      }
-      
-      const productIds = products?.map(p => p.id) || [];
-      console.log(`[CLEANUP] Found ${productIds.length} products to check`);
-      
-      if (productIds.length === 0) {
-        return new Response(
-          JSON.stringify({ success: true, message: "No products found", deletedCount: 0 }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      // Find duplicates: images with same shopify_image_id on same product
-      const { data: allImages, error: imagesError } = await supabaseClient
-        .from('product_images')
-        .select('id, product_id, shopify_image_id, src, created_at, is_ai_generated')
-        .in('product_id', productIds)
-        .not('shopify_image_id', 'is', null)
-        .order('created_at', { ascending: true });
-      
-      if (imagesError) {
-        throw new Error(`Failed to fetch images: ${imagesError.message}`);
-      }
-      
-      console.log(`[CLEANUP] Found ${allImages?.length || 0} images with shopify_image_id`);
-      
-      // Group by product_id + shopify_image_id and find duplicates
-      const imageGroups = new Map<string, typeof allImages>();
-      
-      for (const img of allImages || []) {
-        const key = `${img.product_id}-${img.shopify_image_id}`;
-        if (!imageGroups.has(key)) {
-          imageGroups.set(key, []);
-        }
-        imageGroups.get(key)!.push(img);
-      }
-      
-      // Collect IDs to delete (keep the first/oldest one)
-      const idsToDelete: string[] = [];
-      let duplicateGroups = 0;
-      
-      for (const [key, images] of imageGroups) {
-        if (images.length > 1) {
-          duplicateGroups++;
-          // Keep the first (oldest), mark others for deletion
-          for (let i = 1; i < images.length; i++) {
-            idsToDelete.push(images[i].id);
-          }
-        }
-      }
-      
-      console.log(`[CLEANUP] Found ${duplicateGroups} groups with duplicates, ${idsToDelete.length} images to delete`);
-      
-      if (dryRun) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            dryRun: true,
-            duplicateGroups,
-            imagesToDelete: idsToDelete.length,
-            sampleIds: idsToDelete.slice(0, 10)
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      // Actually delete the duplicates
-      if (idsToDelete.length > 0) {
-        const BATCH_SIZE = 100;
-        let deletedCount = 0;
-        
-        for (let i = 0; i < idsToDelete.length; i += BATCH_SIZE) {
-          const batch = idsToDelete.slice(i, i + BATCH_SIZE);
-          const { error: deleteError } = await supabaseClient
-            .from('product_images')
-            .delete()
-            .in('id', batch);
-          
-          if (deleteError) {
-            console.error(`[CLEANUP] Error deleting batch: ${deleteError.message}`);
-          } else {
-            deletedCount += batch.length;
-            console.log(`[CLEANUP] Deleted batch ${Math.floor(i / BATCH_SIZE) + 1}, total: ${deletedCount}`);
-          }
-        }
-        
-        return new Response(
-          JSON.stringify({
-            success: true,
-            dryRun: false,
-            duplicateGroups,
-            deletedCount
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
+    // Get all products to check
+    let productsQuery = supabaseClient
+      .from('shopify_products')
+      .select('id, title')
+      .eq('seller_id', userId);
+    
+    if (storeId) {
+      productsQuery = productsQuery.eq('store_id', storeId);
+    }
+    
+    if (productId) {
+      productsQuery = productsQuery.eq('id', productId);
+    }
+    
+    const { data: products, error: productsError } = await productsQuery;
+    
+    if (productsError) {
+      throw new Error(`Failed to fetch products: ${productsError.message}`);
+    }
+    
+    const productIds = products?.map(p => p.id) || [];
+    console.log(`[CLEANUP] Found ${productIds.length} products to check`);
+    
+    if (productIds.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: "No duplicates found", deletedCount: 0 }),
+        JSON.stringify({ success: true, message: "No products found", stats: {} }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Get all images for these products
+    const { data: allImages, error: imagesError } = await supabaseClient
+      .from('product_images')
+      .select('id, product_id, shopify_image_id, src, created_at, is_ai_generated, shopify_sync_count')
+      .in('product_id', productIds)
+      .order('created_at', { ascending: true });
+    
+    if (imagesError) {
+      throw new Error(`Failed to fetch images: ${imagesError.message}`);
+    }
+
+    console.log(`[CLEANUP] Found ${allImages?.length || 0} total images`);
+
+    // Group images by product
+    const imagesByProduct = new Map<string, typeof allImages>();
+    for (const img of allImages || []) {
+      if (!imagesByProduct.has(img.product_id)) {
+        imagesByProduct.set(img.product_id, []);
+      }
+      imagesByProduct.get(img.product_id)!.push(img);
+    }
+
+    const idsToDelete: string[] = [];
+    const stats = {
+      productsAnalyzed: 0,
+      aiReimportedDeleted: 0,
+      duplicateShopifyDeleted: 0,
+      aiImagesKept: 0,
+      shopifyImagesKept: 0
+    };
+
+    for (const [prodId, images] of imagesByProduct) {
+      stats.productsAnalyzed++;
+      
+      // Separate AI images from Shopify images
+      const aiImages = images.filter(img => img.is_ai_generated === true);
+      const shopifyImages = images.filter(img => img.is_ai_generated === false || img.is_ai_generated === null);
+      
+      console.log(`[CLEANUP] Product ${prodId}: ${aiImages.length} AI images, ${shopifyImages.length} Shopify images`);
+
+      // RULE 1: Delete Shopify images that are re-imported AI images
+      // These have "ai_generated_" in the URL and a shopify_image_id
+      for (const shopifyImg of shopifyImages) {
+        const isReimportedAI = shopifyImg.src && (
+          shopifyImg.src.includes('ai_generated_') || 
+          shopifyImg.src.includes('ai-generated-') ||
+          shopifyImg.src.includes('/generated-images/')
+        );
+        
+        if (isReimportedAI && shopifyImg.shopify_image_id) {
+          console.log(`[CLEANUP] Marking for deletion (re-imported AI): ${shopifyImg.id}`);
+          idsToDelete.push(shopifyImg.id);
+          stats.aiReimportedDeleted++;
+        }
+      }
+
+      // RULE 2: Delete duplicate Shopify images (same shopify_image_id)
+      const shopifyIdGroups = new Map<number, typeof shopifyImages>();
+      for (const img of shopifyImages) {
+        if (img.shopify_image_id && !idsToDelete.includes(img.id)) {
+          if (!shopifyIdGroups.has(img.shopify_image_id)) {
+            shopifyIdGroups.set(img.shopify_image_id, []);
+          }
+          shopifyIdGroups.get(img.shopify_image_id)!.push(img);
+        }
+      }
+      
+      for (const [shopifyId, dupes] of shopifyIdGroups) {
+        if (dupes.length > 1) {
+          // Keep the oldest, delete the rest
+          for (let i = 1; i < dupes.length; i++) {
+            console.log(`[CLEANUP] Marking for deletion (duplicate shopify_id ${shopifyId}): ${dupes[i].id}`);
+            idsToDelete.push(dupes[i].id);
+            stats.duplicateShopifyDeleted++;
+          }
+        }
+      }
+
+      // Count what we're keeping
+      stats.aiImagesKept += aiImages.length;
+      stats.shopifyImagesKept += shopifyImages.filter(img => !idsToDelete.includes(img.id)).length;
+    }
+
+    console.log(`[CLEANUP] Total to delete: ${idsToDelete.length}`);
+    console.log(`[CLEANUP] Stats:`, stats);
+
+    if (dryRun) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          dryRun: true,
+          imagesToDelete: idsToDelete.length,
+          stats,
+          sampleIdsToDelete: idsToDelete.slice(0, 20)
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Actually delete the duplicates
+    let deletedCount = 0;
+    if (idsToDelete.length > 0) {
+      const BATCH_SIZE = 100;
+      
+      for (let i = 0; i < idsToDelete.length; i += BATCH_SIZE) {
+        const batch = idsToDelete.slice(i, i + BATCH_SIZE);
+        const { error: deleteError } = await supabaseClient
+          .from('product_images')
+          .delete()
+          .in('id', batch);
+        
+        if (deleteError) {
+          console.error(`[CLEANUP] Error deleting batch: ${deleteError.message}`);
+        } else {
+          deletedCount += batch.length;
+          console.log(`[CLEANUP] Deleted batch ${Math.floor(i / BATCH_SIZE) + 1}, total: ${deletedCount}`);
+        }
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true, duplicates }),
+      JSON.stringify({
+        success: true,
+        dryRun: false,
+        deletedCount,
+        stats
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
