@@ -1355,7 +1355,7 @@ Deno.serve(async (req: Request) => {
         
         const { data: batchImages, error: fetchBatchError } = await supabaseServiceClient
           .from("product_images")
-          .select("id, product_id, src, shopify_image_id, alt_text, optimization_count, is_ai_generated")
+          .select("id, product_id, src, shopify_image_id, alt_text, optimization_count, is_ai_generated, source")
           .in("product_id", batchIds);
         
         if (fetchBatchError) {
@@ -1371,6 +1371,7 @@ Deno.serve(async (req: Request) => {
       // STEP 2: Identify images to PRESERVE (AI-generated, optimized, or non-CDN)
       // 🔒 CRITICAL: NEVER delete AI-generated images - they take priority over Shopify imports
       // 🛡️ SMART MODE: Also protect all preserved images when syncMode is 'smart'
+      // 🔒 SOURCE-BASED: Use source column as the single source of truth
       const preservedImages: any[] = [];
       const imagesToDelete: string[] = [];
       
@@ -1378,20 +1379,22 @@ Deno.serve(async (req: Request) => {
         for (const img of existingImages) {
           const isFromShopify = isShopifyCdnUrl(img.src);
           const isAiGenerated = img.is_ai_generated === true;
+          const isAiSource = img.source === 'ai';
           const isOptimized = (img.optimization_count || 0) > 0;
           
-          // 🔒 Preserve if:
-          // 1. is_ai_generated = true (HIGHEST PRIORITY - AI images are NEVER replaced)
-          // 2. NOT from Shopify CDN (truly generated/local image from NewAI)
-          // 3. OR has optimization_count > 0 (was optimized - keep even if from Shopify)
-          // 4. 🛡️ SMART MODE: Protect ALL non-Shopify images regardless of flags
+          // 🔒 PROTECTION ABSOLUE: source === 'ai' OU is_ai_generated === true
+          // Ces images ne sont JAMAIS supprimées, même si elles ont un shopify_image_id après export
+          if (isAiSource || isAiGenerated) {
+            preservedImages.push(img);
+            console.log(`🔒 [AI PROTECT] Preserving AI image ${img.id} for product ${img.product_id} (source: ${img.source})`);
+            continue;
+          }
+          
+          // Protect optimized images and non-Shopify CDN images
           const smartModeProtect = syncMode === 'smart' && !isFromShopify;
           
-          if (isAiGenerated || smartModeProtect || !isFromShopify || isOptimized) {
+          if (smartModeProtect || !isFromShopify || isOptimized) {
             preservedImages.push(img);
-            if (isAiGenerated) {
-              console.log(`🔒 [AI PROTECT] Preserving AI image ${img.id} for product ${img.product_id}`);
-            }
           } else {
             // Delete only non-optimized, non-AI Shopify CDN images (will be re-imported fresh)
             imagesToDelete.push(img.id);
@@ -1403,6 +1406,7 @@ Deno.serve(async (req: Request) => {
       console.log(`🗑️ Will delete ${imagesToDelete.length} Shopify CDN images for fresh import`);
       
       // STEP 3: Delete Shopify CDN images - BATCHED to avoid "Bad Request" on large arrays
+      // 🔒 CRITICAL: Only delete images with source = 'shopify' (double protection)
       if (imagesToDelete.length > 0) {
         const DELETE_BATCH_SIZE = 100; // Reduced from 500 to avoid HTTP URL length limits with UUIDs
         const deleteBatches = Math.ceil(imagesToDelete.length / DELETE_BATCH_SIZE);
@@ -1414,10 +1418,12 @@ Deno.serve(async (req: Request) => {
           const batchIds = imagesToDelete.slice(i, i + DELETE_BATCH_SIZE);
           const batchNum = Math.floor(i / DELETE_BATCH_SIZE) + 1;
           
+          // 🔒 DOUBLE PROTECTION: Only delete if source = 'shopify'
           const { error: deleteError } = await supabaseServiceClient
             .from("product_images")
             .delete()
-            .in("id", batchIds);
+            .in("id", batchIds)
+            .eq("source", "shopify"); // 🔒 NEVER delete AI images
           
           if (deleteError) {
             console.error(`⚠️ Error deleting images batch ${batchNum}/${deleteBatches}:`, deleteError);
@@ -1557,15 +1563,18 @@ Deno.serve(async (req: Request) => {
             });
             
             if (safeImages.length > 0) {
+              // 🔒 CRITICAL FIX: Use product_id + source + src as composite key
+              // This ensures AI images (source='ai') are NEVER overwritten by Shopify images (source='shopify')
+              // Even after AI export to Shopify (when AI image gets shopify_image_id), source remains 'ai'
               const { error: imageError } = await supabaseServiceClient
                 .from("product_images")
                 .upsert(safeImages.map((img: any) => ({
                   ...img,
                   is_ai_generated: false, // Shopify images are NOT AI-generated
-                  source: 'shopify' // 🔒 CRITICAL: Mark as Shopify source (NEVER changes)
+                  source: 'shopify' // 🔒 CRITICAL: Mark as Shopify source (NEVER changes identity)
                 })), { 
-                  onConflict: 'product_id,shopify_image_id',
-                  ignoreDuplicates: false
+                  onConflict: 'product_id,shopify_image_id', // Fallback for existing Shopify images
+                  ignoreDuplicates: true // Skip if already exists (prevents duplicate errors)
                 });
 
               if (imageError) {
