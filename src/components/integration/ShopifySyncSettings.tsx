@@ -112,9 +112,9 @@ const useSyncData = (storeId?: string) => {
       if (data) {
         setSettings(data as SyncSettings);
       } else {
-        // Create default settings for this store
+        // Create default settings for this store - hourly by default
         const defaultSettings: Partial<SyncSettings> = {
-          import_frequency: "manual",
+          import_frequency: "hourly",
           import_schedule_hour: 9,
           import_schedule_day: 1,
           import_types: ["products", "collections", "pages", "articles", "images"],

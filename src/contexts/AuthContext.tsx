@@ -33,6 +33,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [serverStatus, setServerStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   const navigate = useNavigate();
 
+  // Trigger a light sync when user logs in
+  const triggerLoginSync = async (userId: string) => {
+    try {
+      console.log('[Auth] Triggering login sync for user:', userId);
+      const { error } = await supabase.functions.invoke('scheduled-sync', {
+        body: { userId, source: 'login' }
+      });
+      if (error) {
+        console.error('[Auth] Login sync error:', error);
+      } else {
+        console.log('[Auth] Login sync triggered successfully');
+      }
+    } catch (err) {
+      console.error('[Auth] Failed to trigger login sync:', err);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     let loadingTimeout: NodeJS.Timeout;
@@ -71,6 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
+          
+          // Trigger background sync on login/session restore
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            triggerLoginSync(session.user.id);
+          }
         } else {
           // No session and no special event - stop loading
           setLoading(false);
