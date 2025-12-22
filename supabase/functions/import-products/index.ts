@@ -53,6 +53,7 @@ interface RequestBody {
   autoImport?: boolean;  // 🆕 Flag pour mode auto-import
   maxProducts?: number;  // 🆕 Limite explicite
   syncHistoryId?: string;  // 🔥 NEW: For live progress updates
+  downloadImages?: boolean;  // 🆕 If true, download images to Supabase Storage (CPU intensive!)
 }
 
 interface ShopifyResponse {
@@ -1493,13 +1494,21 @@ Deno.serve(async (req: Request) => {
         console.log(`🔄 Removed ${duplicatesRemoved} duplicate images (same product_id + shopify_image_id or URL)`);
       }
       
-      // STEP 4: Download images to Supabase Storage and insert
-      // NEW: Store images physically in Supabase instead of just storing Shopify CDN URLs
+      // STEP 4: Save image references (or optionally download to Supabase Storage)
+      // 🚀 PERFORMANCE: By default, keep Shopify CDN URLs (much faster, no CPU overhead)
+      // Set downloadImages: true only if you need physical copies in Supabase Storage
       if (imagesToInsert.length > 0) {
-        const IMAGE_BATCH_SIZE = 20; // Smaller batches for download + upload
+        const IMAGE_BATCH_SIZE = 100; // Larger batches when not downloading
         const imageBatches = Math.ceil(imagesToInsert.length / IMAGE_BATCH_SIZE);
         
-        console.log(`📦 Downloading & storing ${imagesToInsert.length} images in ${imageBatches} batches (physical storage in Supabase)`);
+        // Only download if explicitly requested (very CPU intensive!)
+        const shouldDownloadImages = body.downloadImages === true;
+        
+        if (shouldDownloadImages) {
+          console.log(`📦 ⚠️ CPU INTENSIVE: Downloading & storing ${imagesToInsert.length} images in ${imageBatches} batches`);
+        } else {
+          console.log(`📦 🚀 FAST MODE: Saving ${imagesToInsert.length} image references in ${imageBatches} batches (using CDN URLs)`);
+        }
         
         for (let i = 0; i < imagesToInsert.length; i += IMAGE_BATCH_SIZE) {
           const batch = imagesToInsert.slice(i, i + IMAGE_BATCH_SIZE);
@@ -1507,48 +1516,46 @@ Deno.serve(async (req: Request) => {
           
           console.log(`🔄 Processing image batch ${batchNumber}/${imageBatches} (${batch.length} images)...`);
           
-          // Download and store each image in parallel within the batch
-          const processedBatch = await Promise.all(
-            batch.map(async (img) => {
-              // Check if image is from Shopify CDN
-              const isShopifyCdn = img.src && (
-                img.src.includes('cdn.shopify.com') || 
-                img.src.includes('shopifycdn.com')
-              );
-              
-              if (isShopifyCdn) {
-                // Download and store in Supabase Storage
-                const storedUrl = await downloadAndStoreImage(
-                  supabaseServiceClient,
-                  img.src,
-                  user.id,
-                  img.product_id,
-                  img.shopify_image_id
+          let processedBatch = batch;
+          
+          // Only download if explicitly requested (CPU intensive!)
+          if (shouldDownloadImages) {
+            processedBatch = await Promise.all(
+              batch.map(async (img) => {
+                const isShopifyCdn = img.src && (
+                  img.src.includes('cdn.shopify.com') || 
+                  img.src.includes('shopifycdn.com')
                 );
                 
-                if (storedUrl) {
-                  return { ...img, src: storedUrl };
+                if (isShopifyCdn) {
+                  const storedUrl = await downloadAndStoreImage(
+                    supabaseServiceClient,
+                    img.src,
+                    user.id,
+                    img.product_id,
+                    img.shopify_image_id
+                  );
+                  
+                  if (storedUrl) {
+                    return { ...img, src: storedUrl };
+                  }
+                  console.log(`[IMPORT] ⚠️ Using original URL as fallback for image ${img.shopify_image_id}`);
                 }
-                // If download failed, keep original URL as fallback
-                console.log(`[IMPORT] ⚠️ Using original URL as fallback for image ${img.shopify_image_id}`);
-              }
-              
-              return img;
-            })
-          );
+                
+                return img;
+              })
+            );
+          }
           
           // Filter out nulls and insert
           const validImages = processedBatch.filter(Boolean);
           
           if (validImages.length > 0) {
             // 🔒 CRITICAL: Only upsert images that are NOT already AI-generated
-            // Filter out any images that would conflict with existing AI images
             const safeImages = validImages.filter((img: any) => {
-              // Check if there's already an AI image for this product at this position
               const existingAiImage = preservedImages.find(
                 (p: any) => p.product_id === img.product_id && p.is_ai_generated === true
               );
-              // Only skip if trying to replace position 1 with a Shopify image when AI exists at position 1
               if (existingAiImage && img.position === 1 && existingAiImage.position === 1) {
                 console.log(`🔒 Skipping Shopify image - AI image already at position 1 for product ${img.product_id}`);
                 return false;
@@ -1561,8 +1568,8 @@ Deno.serve(async (req: Request) => {
                 .from("product_images")
                 .upsert(safeImages.map((img: any) => ({
                   ...img,
-                  is_ai_generated: false, // Shopify images are NOT AI-generated
-                  source: 'shopify' // 🔒 CRITICAL: Mark as Shopify source (NEVER changes)
+                  is_ai_generated: false,
+                  source: 'shopify'
                 })), { 
                   onConflict: 'product_id,shopify_image_id',
                   ignoreDuplicates: false
@@ -1575,19 +1582,19 @@ Deno.serve(async (req: Request) => {
                 }
               } else {
                 totalImages += safeImages.length;
-                console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed (${safeImages.length} images stored in Supabase)`);
+                console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed (${safeImages.length} images saved)`);
               }
             }
           }
           
-          // Delay between batches to avoid rate limits
+          // Shorter delay when not downloading
           if (i + IMAGE_BATCH_SIZE < imagesToInsert.length) {
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, shouldDownloadImages ? 300 : 50));
           }
         }
       }
       
-      console.log(`📊 Image import complete: ${totalImages} stored in Supabase, ${skippedImages} skipped (preserved)`);
+      console.log(`📊 Image import complete: ${totalImages} saved, ${skippedImages} skipped (preserved)`);
     }
 
     // 🔗 FETCH PRODUCT-COLLECTION RELATIONSHIPS FROM SHOPIFY
