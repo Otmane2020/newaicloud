@@ -168,7 +168,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[ALT-TEXTS] Processing ${imageIds.length} images for user ${user.id}`);
 
-    const results: Array<{ imageId: string; success: boolean; altText?: string; error?: string; synced?: boolean }> = [];
+    const results: Array<{ imageId: string; success: boolean; altText?: string; error?: string; synced?: boolean; syncError?: string }> = [];
 
     for (const imageId of imageIds) {
       try {
@@ -178,7 +178,8 @@ Deno.serve(async (req: Request) => {
           .select(`
             id, 
             src, 
-            alt_text, 
+            alt_text,
+            optimization_count,
             shopify_image_id,
             product_id,
             shopify_products!inner(
@@ -199,18 +200,20 @@ Deno.serve(async (req: Request) => {
         }
 
         const product = (image as any).shopify_products;
-        
+        const optimizationCount = (image as any).optimization_count ?? 0;
+
         // Verify ownership
         if (product.seller_id !== user.id) {
           results.push({ imageId, success: false, error: "Unauthorized" });
           continue;
         }
 
-        // Skip if already has alt text and not forcing
-        if (image.alt_text && image.alt_text.trim() !== '' && !force) {
-          results.push({ 
-            imageId, 
-            success: true, 
+        // Skip ONLY if already AI-optimized (optimization_count > 0) and not forcing.
+        // If alt_text exists but optimization_count is 0, we still generate (that's the "Not optimized" state).
+        if (image.alt_text && image.alt_text.trim() !== '' && optimizationCount > 0 && !force) {
+          results.push({
+            imageId,
+            success: true,
             altText: image.alt_text,
             synced: false
           });
@@ -234,7 +237,7 @@ Deno.serve(async (req: Request) => {
           .update({
             alt_text: altText,
             last_optimization_at: new Date().toISOString(),
-            optimization_count: 1,
+            optimization_count: optimizationCount + 1,
             is_ai_generated: true // ✅ Mark as AI-generated after optimization
           })
           .eq("id", imageId);
@@ -247,10 +250,12 @@ Deno.serve(async (req: Request) => {
 
         // 🔄 AUTO-SYNC: Sync ALT text to Shopify automatically after generation
         let synced = false;
+        let syncErrorMsg: string | undefined;
+
         if (image.shopify_image_id) {
           try {
             console.log(`[ALT-TEXTS] Auto-syncing ALT text to Shopify for image ${imageId}...`);
-            
+
             const syncResponse = await fetch(
               `${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-seo-to-shopify`,
               {
@@ -262,26 +267,28 @@ Deno.serve(async (req: Request) => {
                 body: JSON.stringify({
                   imageId: imageId,
                   syncAltText: true,
-                  force: true
+                  force: true,
                 }),
               }
             );
-            
+
             if (syncResponse.ok) {
               synced = true;
               console.log(`[ALT-TEXTS] ✅ ALT text synced to Shopify for image ${imageId}`);
             } else {
               const errorText = await syncResponse.text();
+              syncErrorMsg = errorText;
               console.error(`[ALT-TEXTS] ⚠️ Failed to sync ALT to Shopify:`, errorText);
             }
           } catch (syncError) {
+            syncErrorMsg = syncError instanceof Error ? syncError.message : 'Unknown sync error';
             console.error(`[ALT-TEXTS] ⚠️ Error during auto-sync:`, syncError);
           }
         } else {
           console.log(`[ALT-TEXTS] Image ${imageId} has no Shopify ID, skipping sync`);
         }
 
-        results.push({ imageId, success: true, altText, synced });
+        results.push({ imageId, success: true, altText, synced, syncError: syncErrorMsg });
 
         // Track usage
         await supabaseClient.rpc('increment_usage', {
@@ -298,22 +305,27 @@ Deno.serve(async (req: Request) => {
 
       } catch (error) {
         console.error(`[ALT-TEXTS] Error processing image ${imageId}:`, error);
-        results.push({ 
-          imageId, 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        results.push({
+          imageId,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
     }
 
     const successCount = results.filter(r => r.success).length;
     const syncedCount = results.filter(r => r.synced).length;
+    const single = imageIds.length === 1 ? results[0] : undefined;
 
     return new Response(
       JSON.stringify({
         success: true,
         message: `Generated ALT texts for ${successCount}/${imageIds.length} images, synced ${syncedCount} to Shopify`,
-        results
+        results,
+        // Compatibility fields expected by the frontend bulk processor (single-image calls)
+        shopifySynced: single?.synced ?? false,
+        syncError: single?.syncError,
+        altText: single?.altText,
       }),
       {
         status: 200,
