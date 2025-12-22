@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
           .insert({
             user_id: userId,
             store_id: storeId,
-            sync_type: 'import',
+            sync_type: 'full', // Now includes export + import
             content_types: setting.import_types || [],
             status: 'running',
           })
@@ -189,11 +189,52 @@ Deno.serve(async (req) => {
 
         const startTime = Date.now();
         let totalImported = 0;
+        let totalExported = 0;
         let hasError = false;
         let errorMessage = '';
 
-        // Use service role key for sync operations
-        const userClient = supabase;
+        // ========================================
+        // PHASE 1: EXPORT (NewAI → Shopify)
+        // ========================================
+        // Export products with needs_export = true or modified since last export
+        if (setting.export_auto_enabled !== false) {
+          console.log(`[SCHEDULED-SYNC] PHASE 1: Exporting products to Shopify...`);
+          
+          try {
+            const exportResult = await supabase.functions.invoke('batch-export-products', {
+              body: {
+                serviceMode: true,
+                userId: setting.user_id,
+                storeId,
+                batchSize: 100,
+                onlyNeedsExport: true
+              }
+            });
+
+            if (exportResult?.error) {
+              throw new Error(exportResult.error.message);
+            }
+
+            totalExported = exportResult?.data?.exported || 0;
+            console.log(`[SCHEDULED-SYNC] ✅ Exported ${totalExported} products to Shopify`);
+            
+            if (exportResult?.data?.errors > 0) {
+              errorMessage += `Export: ${exportResult.data.errors} errors; `;
+            }
+          } catch (exportError) {
+            console.error(`[SCHEDULED-SYNC] ⚠️ Export phase error:`, exportError);
+            const message = exportError instanceof Error ? exportError.message : String(exportError);
+            errorMessage += `Export: ${message}; `;
+            // Continue to import phase even if export fails
+          }
+        } else {
+          console.log(`[SCHEDULED-SYNC] Export disabled for user ${userId}, skipping export phase`);
+        }
+
+        // ========================================
+        // PHASE 2: IMPORT (Shopify → NewAI)
+        // ========================================
+        console.log(`[SCHEDULED-SYNC] PHASE 2: Importing from Shopify...`);
 
         // Import based on selected types
         for (const type of setting.import_types || []) {
@@ -277,9 +318,9 @@ Deno.serve(async (req) => {
           .from('sync_history')
           .update({
             status: hasError ? 'failed' : 'success',
-            items_synced: totalImported,
+            items_synced: totalImported + totalExported,
             duration_ms: duration,
-            error_message: hasError ? errorMessage : null,
+            error_message: errorMessage || null,
             completed_at: new Date().toISOString(),
           })
           .eq('id', historyEntry.id);
@@ -294,11 +335,12 @@ Deno.serve(async (req) => {
 
         const syncTimestamp = new Date().toISOString();
         
-        // Update last import AND next import timestamps for sync settings
+        // Update last import/export AND next import timestamps for sync settings
         await supabase
           .from('shopify_sync_settings')
           .update({ 
             last_import_at: syncTimestamp,
+            last_export_at: syncTimestamp,
             next_import_at: nextImportDate.toISOString()
           })
           .eq('user_id', userId)
@@ -312,7 +354,7 @@ Deno.serve(async (req) => {
           })
           .eq('id', storeId);
 
-        console.log(`[SCHEDULED-SYNC] ✅ Completed sync for user ${userId}: ${totalImported} items, ${duration}ms`);
+        console.log(`[SCHEDULED-SYNC] ✅ Completed sync for user ${userId}: exported ${totalExported}, imported ${totalImported}, ${duration}ms`);
         console.log(`[SCHEDULED-SYNC] Next sync scheduled for: ${nextImportDate.toISOString()}`);
         
         // Notifications removed - no need for sync notifications
