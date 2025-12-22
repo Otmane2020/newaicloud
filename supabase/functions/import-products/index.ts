@@ -1370,6 +1370,7 @@ Deno.serve(async (req: Request) => {
       
       // STEP 2: Identify images to PRESERVE (AI-generated, optimized, or non-CDN)
       // 🔒 CRITICAL: NEVER delete AI-generated images - they take priority over Shopify imports
+      // 🛡️ SMART MODE: Also protect all preserved images when syncMode is 'smart'
       const preservedImages: any[] = [];
       const imagesToDelete: string[] = [];
       
@@ -1383,7 +1384,10 @@ Deno.serve(async (req: Request) => {
           // 1. is_ai_generated = true (HIGHEST PRIORITY - AI images are NEVER replaced)
           // 2. NOT from Shopify CDN (truly generated/local image from NewAI)
           // 3. OR has optimization_count > 0 (was optimized - keep even if from Shopify)
-          if (isAiGenerated || !isFromShopify || isOptimized) {
+          // 4. 🛡️ SMART MODE: Protect ALL non-Shopify images regardless of flags
+          const smartModeProtect = syncMode === 'smart' && !isFromShopify;
+          
+          if (isAiGenerated || smartModeProtect || !isFromShopify || isOptimized) {
             preservedImages.push(img);
             if (isAiGenerated) {
               console.log(`🔒 [AI PROTECT] Preserving AI image ${img.id} for product ${img.product_id}`);
@@ -1537,21 +1541,41 @@ Deno.serve(async (req: Request) => {
           const validImages = processedBatch.filter(Boolean);
           
           if (validImages.length > 0) {
-            const { error: imageError } = await supabaseServiceClient
-              .from("product_images")
-              .upsert(validImages, { 
-                onConflict: 'product_id,shopify_image_id',
-                ignoreDuplicates: false
-              });
-
-            if (imageError) {
-              console.error(`❌ Image upsert error in batch ${batchNumber}:`, imageError);
-              if (validImages.length > 0) {
-                console.error(`First image in batch: product_id=${validImages[0].product_id}, shopify_image_id=${validImages[0].shopify_image_id}`);
+            // 🔒 CRITICAL: Only upsert images that are NOT already AI-generated
+            // Filter out any images that would conflict with existing AI images
+            const safeImages = validImages.filter((img: any) => {
+              // Check if there's already an AI image for this product at this position
+              const existingAiImage = preservedImages.find(
+                (p: any) => p.product_id === img.product_id && p.is_ai_generated === true
+              );
+              // Only skip if trying to replace position 1 with a Shopify image when AI exists at position 1
+              if (existingAiImage && img.position === 1 && existingAiImage.position === 1) {
+                console.log(`🔒 Skipping Shopify image - AI image already at position 1 for product ${img.product_id}`);
+                return false;
               }
-            } else {
-              totalImages += validImages.length;
-              console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed (${validImages.length} images stored in Supabase)`);
+              return true;
+            });
+            
+            if (safeImages.length > 0) {
+              const { error: imageError } = await supabaseServiceClient
+                .from("product_images")
+                .upsert(safeImages.map((img: any) => ({
+                  ...img,
+                  is_ai_generated: false // Shopify images are NOT AI-generated
+                })), { 
+                  onConflict: 'product_id,shopify_image_id',
+                  ignoreDuplicates: false
+                });
+
+              if (imageError) {
+                console.error(`❌ Image upsert error in batch ${batchNumber}:`, imageError);
+                if (safeImages.length > 0) {
+                  console.error(`First image in batch: product_id=${safeImages[0].product_id}, shopify_image_id=${safeImages[0].shopify_image_id}`);
+                }
+              } else {
+                totalImages += safeImages.length;
+                console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed (${safeImages.length} images stored in Supabase)`);
+              }
             }
           }
           
@@ -1888,8 +1912,13 @@ Deno.serve(async (req: Request) => {
         const idsToDelete = productsToDelete.map(p => p.id);
         
         // Delete related data first (variants, images)
+        // 🔒 CRITICAL: Never delete AI-generated images - they are protected
         await supabaseServiceClient.from('product_variants').delete().in('product_id', idsToDelete);
-        await supabaseServiceClient.from('product_images').delete().in('product_id', idsToDelete);
+        await supabaseServiceClient
+          .from('product_images')
+          .delete()
+          .in('product_id', idsToDelete)
+          .eq('is_ai_generated', false); // 🔒 PROTECT AI IMAGES
         
         // Then delete products
         const { error: deleteError } = await supabaseServiceClient
