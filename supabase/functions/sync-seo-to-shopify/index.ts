@@ -1400,7 +1400,7 @@ Deno.serve(async (req: Request) => {
         type: 'error',
         function_name: 'sync-seo-to-shopify',
         message: error instanceof Error ? error.message : 'An unknown error occurred',
-        user_id: (typeof user !== 'undefined' && user?.id) ? user.id : null,
+        user_id: null,
         metadata: {
           route: 'sync-seo-to-shopify',
         },
