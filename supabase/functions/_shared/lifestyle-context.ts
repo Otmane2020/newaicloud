@@ -1,4 +1,168 @@
 /**
+ * Determines if a product should be duplicated in scene (e.g., chairs around a table)
+ * and provides specific duplication instructions for realistic lifestyle scenes.
+ */
+export interface ProductDuplicationConfig {
+  shouldDuplicate: boolean;
+  quantity: number;
+  arrangement: string;
+  sceneDescription: string;
+}
+
+export function getProductDuplicationConfig(productTitle: string): ProductDuplicationConfig {
+  if (!productTitle) {
+    return { shouldDuplicate: false, quantity: 1, arrangement: "", sceneDescription: "" };
+  }
+  
+  const title = productTitle.toLowerCase();
+  
+  // === CHAISES - Salle à manger ===
+  if ((title.includes('chaise') || title.includes('chair')) && 
+      !title.includes('bureau') && !title.includes('office') && !title.includes('gaming')) {
+    // Dining chairs should be shown as a set around a table
+    return {
+      shouldDuplicate: true,
+      quantity: 4, // 4-6 chairs for dining scene
+      arrangement: "Disposer 4 à 6 chaises IDENTIQUES autour d'une belle table à manger en bois ou marbre",
+      sceneDescription: `🪑 SCÈNE SALLE À MANGER COMPLÈTE :
+- DUPLIQUER cette chaise pour créer un ensemble de 4 à 6 chaises IDENTIQUES
+- Les chaises doivent être disposées harmonieusement AUTOUR d'une table à manger élégante
+- Table en bois noble, marbre ou verre design au centre
+- UNE chaise au premier plan (celle d'origine) doit être le POINT FOCAL principal
+- Les autres chaises en arrière-plan créent l'ambiance d'une vraie salle à manger
+- Vaisselle élégante, verres cristal, serviettes pliées sur la table
+- Suspension design au-dessus de la table, lumière chaude
+- Décoration végétale : plantes vertes, vase avec fleurs fraîches`
+    };
+  }
+  
+  // === CHAISES - Bureau (ne pas dupliquer, une seule chaise) ===
+  if ((title.includes('chaise') || title.includes('chair')) && 
+      (title.includes('bureau') || title.includes('office') || title.includes('gaming'))) {
+    return { shouldDuplicate: false, quantity: 1, arrangement: "", sceneDescription: "" };
+  }
+  
+  // === TABOURETS - Bar/Cuisine ===
+  if (title.includes('tabouret') || title.includes('stool') || title.includes('bar')) {
+    return {
+      shouldDuplicate: true,
+      quantity: 3,
+      arrangement: "Disposer 2-3 tabourets IDENTIQUES le long d'un îlot central ou comptoir bar",
+      sceneDescription: `🍷 SCÈNE BAR/CUISINE MODERNE :
+- DUPLIQUER ce tabouret pour créer un ensemble de 2-3 tabourets IDENTIQUES
+- Les tabourets doivent être alignés le long d'un îlot central cuisine ou comptoir bar
+- UN tabouret au premier plan (celui d'origine) reste le POINT FOCAL
+- Îlot/comptoir en marbre, bois noble ou béton ciré
+- Suspensions design au-dessus du comptoir
+- Verres, bouteilles design, fruits frais sur le comptoir
+- Cuisine moderne en arrière-plan, lumière naturelle`
+    };
+  }
+  
+  // === ASSIETTES/VAISSELLE - Set de table ===
+  if (title.includes('assiette') || title.includes('plate') || title.includes('vaisselle')) {
+    return {
+      shouldDuplicate: true,
+      quantity: 4,
+      arrangement: "Disposer 4 assiettes IDENTIQUES sur une table dressée avec couverts et verres",
+      sceneDescription: `🍽️ TABLE DRESSÉE ÉLÉGANTE :
+- DUPLIQUER cette assiette pour créer un service de 4 couverts IDENTIQUES
+- UNE assiette au premier plan reste le POINT FOCAL principal
+- Les autres en arrière-plan créent une table complètement dressée
+- Couverts en argent/or, serviettes pliées, verres cristal
+- Nappe élégante ou table en bois noble
+- Centre de table avec fleurs fraîches`
+    };
+  }
+  
+  // === VERRES/FLÛTES ===
+  if (title.includes('verre') || title.includes('glass') || title.includes('flûte') || title.includes('coupe')) {
+    return {
+      shouldDuplicate: true,
+      quantity: 4,
+      arrangement: "Présenter 4 verres IDENTIQUES sur une table de réception ou plateau",
+      sceneDescription: `🥂 SCÈNE RÉCEPTION/CÉLÉBRATION :
+- DUPLIQUER ce verre pour créer un ensemble de 4 verres IDENTIQUES
+- UN verre au premier plan reste le POINT FOCAL
+- Les autres créent une ambiance de réception élégante
+- Plateau argenté ou table marbre
+- Lumière festive, bulles de champagne si approprié`
+    };
+  }
+  
+  // === COUSSINS ===
+  if (title.includes('coussin') || title.includes('cushion') || title.includes('pillow')) {
+    return {
+      shouldDuplicate: true,
+      quantity: 3,
+      arrangement: "Disposer 3-4 coussins sur un canapé, avec le coussin principal bien visible",
+      sceneDescription: `🛋️ COMPOSITION CANAPÉ COSY :
+- DUPLIQUER ce coussin pour créer un arrangement de 3-4 coussins
+- Le coussin d'origine au PREMIER PLAN, bien visible et mis en valeur
+- Les autres coussins (pouvant être légèrement différents) en arrière-plan
+- Canapé élégant, plaid doux, lumière chaleureuse
+- Ambiance cocooning salon moderne`
+    };
+  }
+  
+  // === BOUGIES ===
+  if (title.includes('bougie') || title.includes('candle')) {
+    return {
+      shouldDuplicate: true,
+      quantity: 3,
+      arrangement: "Groupe de 3 bougies de tailles variées pour ambiance déco",
+      sceneDescription: `🕯️ COMPOSITION BOUGIES AMBIANCE :
+- DUPLIQUER cette bougie pour créer un groupe harmonieux de 3 bougies
+- LA bougie principale au PREMIER PLAN, allumée et mise en valeur
+- Variations de tailles pour créer de la profondeur
+- Surface élégante : plateau en bois, marbre ou verre
+- Ambiance spa/détente, lumière tamisée`
+    };
+  }
+
+  // === SERVIETTES ===
+  if (title.includes('serviette') || title.includes('towel') || title.includes('napkin')) {
+    if (title.includes('table') || title.includes('napkin')) {
+      return {
+        shouldDuplicate: true,
+        quantity: 4,
+        arrangement: "4 serviettes pliées élégamment sur une table dressée",
+        sceneDescription: `🍽️ TABLE DRESSÉE :
+- DUPLIQUER cette serviette pour 4 couverts
+- LA serviette principale au PREMIER PLAN
+- Pliage élégant, assiettes et couverts assortis`
+      };
+    }
+    return {
+      shouldDuplicate: true,
+      quantity: 3,
+      arrangement: "Pile de 3 serviettes pliées dans salle de bain",
+      sceneDescription: `🛁 SALLE DE BAIN SPA :
+- DUPLIQUER cette serviette pour une pile soignée de 3
+- LA serviette du dessus au PREMIER PLAN
+- Étagère élégante, plantes, bougies, ambiance spa`
+      };
+  }
+  
+  // === POTS/CACHE-POTS ===
+  if (title.includes('pot') || title.includes('cache-pot') || title.includes('planter')) {
+    return {
+      shouldDuplicate: true,
+      quantity: 3,
+      arrangement: "Composition de 3 pots de tailles différentes",
+      sceneDescription: `🌿 COMPOSITION VÉGÉTALE :
+- DUPLIQUER ce pot en 3 tailles différentes si possible
+- LE pot principal au PREMIER PLAN avec belle plante
+- Composition équilibrée sur étagère ou au sol
+- Plantes variées : monstera, ficus, succulentes`
+    };
+  }
+  
+  // Produits qui ne doivent PAS être dupliqués
+  return { shouldDuplicate: false, quantity: 1, arrangement: "", sceneDescription: "" };
+}
+
+/**
  * Generates a lifestyle context string based on product title analysis.
  * This helps AI models create more contextual and realistic background images
  * by understanding how the product should be shown "in use".
@@ -7,6 +171,12 @@ export function generateLifestyleContext(productTitle: string): string {
   if (!productTitle) return "Environnement lifestyle premium avec éclairage professionnel et contexte d'utilisation réaliste";
   
   const title = productTitle.toLowerCase();
+  
+  // Check if product should be duplicated - use specific scene description
+  const duplicationConfig = getProductDuplicationConfig(productTitle);
+  if (duplicationConfig.shouldDuplicate) {
+    return duplicationConfig.sceneDescription;
+  }
   
   // === VÊTEMENTS HOMME ===
   if ((title.includes('veste') || title.includes('jacket') || title.includes('blouson')) && 
@@ -134,14 +304,7 @@ export function generateLifestyleContext(productTitle: string): string {
   
   // === MOBILIER - SALLE À MANGER ===
   if (title.includes('table') && (title.includes('manger') || title.includes('dining') || title.includes('repas'))) {
-    return "Salle à manger lumineuse avec chaises assorties, vaisselle design, vase avec fleurs fraîches, suspension au-dessus";
-  }
-  
-  if (title.includes('chaise') || title.includes('chair')) {
-    if (title.includes('bureau') || title.includes('office')) {
-      return "Bureau home office moderne avec écran, plante verte, étagère murale, lumière naturelle latérale";
-    }
-    return "Espace repas ou salon avec table en bois, décoration végétale, lumière naturelle, ambiance scandinave";
+    return "Salle à manger lumineuse avec 4-6 chaises assorties autour de la table, vaisselle design, vase avec fleurs fraîches, suspension au-dessus";
   }
   
   // === MOBILIER - BUREAU ===
@@ -166,20 +329,12 @@ export function generateLifestyleContext(productTitle: string): string {
     return "Salon moderne avec le tapis comme pièce centrale, canapé en arrière-plan, table basse, plantes vertes";
   }
   
-  if (title.includes('coussin') || title.includes('cushion') || title.includes('pillow')) {
-    return "Canapé ou lit confortable avec coussins arrangés, plaid doux, lumière naturelle, ambiance cocooning";
-  }
-  
-  if (title.includes('vase') || title.includes('pot') || title.includes('cache-pot')) {
+  if (title.includes('vase') || title.includes('cache-pot')) {
     return "Intérieur lumineux avec le vase sur étagère ou table, fleurs fraîches, décoration minimaliste chic";
   }
   
   if (title.includes('cadre') || title.includes('frame') || title.includes('tableau') || title.includes('poster')) {
     return "Mur élégant avec le cadre bien mis en valeur, éclairage galerie, décoration intérieure soignée";
-  }
-  
-  if (title.includes('bougie') || title.includes('candle')) {
-    return "Ambiance cosy et relaxante avec bougies allumées, salle de bain spa ou salon cocooning, lumière tamisée";
   }
   
   if (title.includes('plante') || title.includes('plant') || title.includes('fleur')) {
@@ -192,7 +347,7 @@ export function generateLifestyleContext(productTitle: string): string {
   }
   
   // === SALLE DE BAIN ===
-  if (title.includes('salle de bain') || title.includes('bathroom') || title.includes('serviette') || title.includes('towel')) {
+  if (title.includes('salle de bain') || title.includes('bathroom')) {
     return "Salle de bain spa avec carrelage élégant, plantes vertes, bougies, produits de beauté, ambiance détente";
   }
   
@@ -231,16 +386,33 @@ export function generateLifestyleContext(productTitle: string): string {
 
 /**
  * Generates a full lifestyle prompt section for AI image generation
+ * Now includes duplication instructions for products that should be shown as sets
  */
 export function generateLifestylePromptSection(productTitle: string): string {
   const context = generateLifestyleContext(productTitle);
+  const duplicationConfig = getProductDuplicationConfig(productTitle);
+  
+  let duplicationInstructions = "";
+  if (duplicationConfig.shouldDuplicate) {
+    duplicationInstructions = `
+🔄 DUPLICATION DU PRODUIT - CRÉER UN ENSEMBLE :
+${duplicationConfig.arrangement}
+
+⚠️ RÈGLES DE DUPLICATION :
+- Le produit D'ORIGINE de l'image reste le POINT FOCAL principal (premier plan, bien éclairé)
+- DUPLIQUER ce même produit pour créer ${duplicationConfig.quantity} exemplaires IDENTIQUES
+- Les copies en arrière-plan doivent être du MÊME produit, mêmes couleurs, mêmes détails
+- Disposition naturelle et réaliste comme dans un vrai intérieur/catalogue
+- Profondeur de champ: produit principal net, arrière-plan légèrement flou
+`;
+  }
   
   return `
 🎯 PRODUIT SOURCE À PRÉSERVER : "${productTitle}"
 
 🏠 CONTEXTE D'USAGE LIFESTYLE :
 ${context}
-
+${duplicationInstructions}
 📝 INSTRUCTIONS LIFESTYLE :
 - EXTRAIRE le produit EXACT de l'image source (pixel par pixel)
 - PRÉSERVER la forme, couleur et tous les détails du produit
