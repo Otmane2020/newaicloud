@@ -306,6 +306,26 @@ export const AIImagesDialog = ({
         }
       }
 
+      // 🆕 Auto-sync to Shopify after saving all images
+      try {
+        await supabase.functions.invoke('sync-seo-to-shopify', {
+          body: {
+            productIds: [currentProduct.id],
+            syncImages: true,
+            syncAllImages: true,
+          },
+        });
+        console.log(`✅ Auto-synced AI images to Shopify for product ${currentProduct.id}`);
+        toast.info(
+          language === 'fr' 
+            ? 'Synchronisation Shopify en cours...' 
+            : 'Syncing to Shopify...'
+        );
+      } catch (syncError) {
+        console.warn('⚠️ Auto-sync to Shopify failed:', syncError);
+        // Don't fail the save operation if sync fails
+      }
+
       toast.success(
         language === 'fr' 
           ? `${selectedImages.length} image(s) sauvegardée(s)` 

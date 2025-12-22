@@ -183,12 +183,19 @@ serve(async (req) => {
       // 🆕 Background style for smart background
       backgroundStyle = "shopping",
       // 🆕 Custom user prompt for additional instructions
-      customPrompt
+      customPrompt,
+      // 🆕 Gallery images for multi-image context (all product photos)
+      galleryImages = []
     } = body;
     
     // Log custom prompt if provided
     if (customPrompt) {
       console.log(`[white-bg] 🎨 Custom prompt received: ${customPrompt.slice(0, 100)}...`);
+    }
+
+    // 📝 Log gallery images for multi-image context
+    if (galleryImages && galleryImages.length > 0) {
+      console.log(`[white-bg] 🖼️ Gallery context: ${galleryImages.length} additional images provided for better understanding`);
     }
 
     // 📝 DETAILED LOGGING for debugging SERP/Vision data
@@ -635,7 +642,7 @@ Please incorporate these specific instructions into the final image generation w
       try {
         console.log("📝 Trying Gemini Direct (cheaper)...");
         
-        // Convert image URL to base64
+        // Convert main image URL to base64
         const base64Image = await imageUrlToBase64(imageUrl);
         if (!base64Image) {
           console.error("❌ Failed to convert image to base64 for Gemini");
@@ -644,6 +651,56 @@ Please incorporate these specific instructions into the final image generation w
 
         // Determine mime type
         const mimeType = imageUrl.includes('.png') ? 'image/png' : 'image/jpeg';
+
+        // 🆕 Build parts array with main image + gallery images for context
+        const parts: any[] = [];
+        
+        // Add gallery context instruction if gallery images exist
+        let promptWithGalleryContext = photographyPrompt;
+        if (galleryImages && galleryImages.length > 0) {
+          promptWithGalleryContext = `
+🖼️ GALLERY REFERENCE IMAGES PROVIDED:
+I'm providing ${galleryImages.length} additional reference images from this product's gallery. 
+Use these to understand the product from multiple angles:
+- Study ALL angles, colors, textures, and details from these reference images
+- The product should look IDENTICAL to what you see in these images
+- Pay attention to materials, finishes, and proportions visible in ALL angles
+
+${photographyPrompt}
+`;
+          console.log(`[white-bg] 🖼️ Added ${galleryImages.length} gallery images to prompt context`);
+        }
+        
+        parts.push({ text: promptWithGalleryContext });
+        
+        // Add main image (the one to process)
+        parts.push({ 
+          inlineData: { 
+            mimeType: mimeType, 
+            data: base64Image 
+          } 
+        });
+        
+        // 🆕 Add gallery images for context (limit to 4 for API limits)
+        if (galleryImages && galleryImages.length > 0) {
+          const galleryLimit = Math.min(galleryImages.length, 4);
+          for (let i = 0; i < galleryLimit; i++) {
+            const galleryUrl = galleryImages[i];
+            if (galleryUrl && galleryUrl !== imageUrl) {
+              const galleryBase64 = await imageUrlToBase64(galleryUrl);
+              if (galleryBase64) {
+                const galleryMime = galleryUrl.includes('.png') ? 'image/png' : 'image/jpeg';
+                parts.push({
+                  inlineData: {
+                    mimeType: galleryMime,
+                    data: galleryBase64
+                  }
+                });
+                console.log(`[white-bg] 🖼️ Added gallery image ${i + 1}/${galleryLimit} for context`);
+              }
+            }
+          }
+        }
 
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
@@ -655,15 +712,7 @@ Please incorporate these specific instructions into the final image generation w
             body: JSON.stringify({
               contents: [
                 {
-                  parts: [
-                    { text: photographyPrompt },
-                    { 
-                      inlineData: { 
-                        mimeType: mimeType, 
-                        data: base64Image 
-                      } 
-                    }
-                  ]
+                  parts: parts
                 }
               ],
               generationConfig: {
@@ -682,8 +731,8 @@ Please incorporate these specific instructions into the final image generation w
         const data = await response.json();
         
         // Extract base64 image from Gemini response
-        const parts = data.candidates?.[0]?.content?.parts || [];
-        const imagePart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image/'));
+        const responseParts = data.candidates?.[0]?.content?.parts || [];
+        const imagePart = responseParts.find((p: any) => p.inlineData?.mimeType?.startsWith('image/'));
         
         if (!imagePart?.inlineData?.data) {
           console.error("⚠️ No image in Gemini Direct response");
@@ -704,6 +753,33 @@ Please incorporate these specific instructions into the final image generation w
     async function tryLovableAI(): Promise<{ imageUrl: string; model: string } | null> {
       try {
         console.log("📝 Trying Lovable AI (fallback)...");
+        
+        // 🆕 Build content array with gallery context
+        const contentParts: any[] = [];
+        
+        let promptWithGalleryContext = photographyPrompt;
+        if (galleryImages && galleryImages.length > 0) {
+          promptWithGalleryContext = `
+🖼️ GALLERY REFERENCE: ${galleryImages.length} additional product images provided for context.
+Study ALL angles to understand the product's appearance from every side.
+
+${photographyPrompt}
+`;
+        }
+        
+        contentParts.push({ type: "text", text: promptWithGalleryContext });
+        contentParts.push({ type: "image_url", image_url: { url: imageUrl } });
+        
+        // Add gallery images (limit to 3 for API)
+        if (galleryImages && galleryImages.length > 0) {
+          const galleryLimit = Math.min(galleryImages.length, 3);
+          for (let i = 0; i < galleryLimit; i++) {
+            if (galleryImages[i] && galleryImages[i] !== imageUrl) {
+              contentParts.push({ type: "image_url", image_url: { url: galleryImages[i] } });
+            }
+          }
+        }
+        
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -715,10 +791,7 @@ Please incorporate these specific instructions into the final image generation w
             messages: [
               {
                 role: "user",
-                content: [
-                  { type: "text", text: photographyPrompt },
-                  { type: "image_url", image_url: { url: imageUrl } }
-                ]
+                content: contentParts
               }
             ],
             modalities: ["image", "text"]
