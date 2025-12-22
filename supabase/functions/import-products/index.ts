@@ -1561,7 +1561,8 @@ Deno.serve(async (req: Request) => {
                 .from("product_images")
                 .upsert(safeImages.map((img: any) => ({
                   ...img,
-                  is_ai_generated: false // Shopify images are NOT AI-generated
+                  is_ai_generated: false, // Shopify images are NOT AI-generated
+                  source: 'shopify' // 🔒 CRITICAL: Mark as Shopify source (NEVER changes)
                 })), { 
                   onConflict: 'product_id,shopify_image_id',
                   ignoreDuplicates: false
