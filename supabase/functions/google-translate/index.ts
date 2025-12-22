@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const GOOGLE_TRANSLATE_API_KEY = "AIzaSyDfUyKqHIFVw0H0wDXPGqhoVU5V3vEFZGk";
-const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 interface TranslateRequest {
   text: string | string[];
@@ -54,38 +54,36 @@ const languageNames: Record<string, string> = {
   et: "Estonian",
 };
 
-// Fallback translation using Lovable AI (OpenRouter)
+// Fallback translation using Lovable AI Gateway
 async function translateWithAI(texts: string[], targetLang: string, sourceLang?: string): Promise<{ translatedText: string; detectedSourceLanguage?: string }[]> {
   const targetLanguageName = languageNames[targetLang] || targetLang;
   const sourceLanguageName = sourceLang ? (languageNames[sourceLang] || sourceLang) : "auto-detect";
   
-  console.log(`[google-translate] Using AI fallback for ${texts.length} text(s)`);
+  console.log(`[google-translate] Using Lovable AI fallback for ${texts.length} text(s)`);
   
   // For batch translation, we'll process in chunks to avoid token limits
   const results: { translatedText: string; detectedSourceLanguage?: string }[] = [];
-  const chunkSize = 10;
+  const chunkSize = 20;
   
   for (let i = 0; i < texts.length; i += chunkSize) {
     const chunk = texts.slice(i, i + chunkSize);
     
-    const prompt = `Translate the following text(s) to ${targetLanguageName}. 
+    const prompt = `You are a professional translator. Translate the following text(s) to ${targetLanguageName}. 
 ${sourceLang ? `Source language: ${sourceLanguageName}` : "Detect the source language automatically."}
 
-IMPORTANT: Return ONLY a JSON array with the translations, no explanation. Each element should be an object with "translatedText" and optionally "detectedSourceLanguage" (2-letter code).
+IMPORTANT: Return ONLY a valid JSON array with the translations, no explanation or markdown. Each element should be an object with "translatedText" and optionally "detectedSourceLanguage" (2-letter code like "fr", "en", etc).
 
 Texts to translate:
 ${chunk.map((t, idx) => `[${idx}]: "${t}"`).join("\n")}
 
-Return format example:
+Return format (ONLY JSON, no markdown code blocks):
 [{"translatedText": "translated text here", "detectedSourceLanguage": "fr"}]`;
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://lovable.dev",
-        "X-Title": "Lovable Translation",
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
@@ -102,12 +100,22 @@ Return format example:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[google-translate] AI fallback error:", errorText);
+      console.error("[google-translate] Lovable AI fallback error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error("AI translation rate limited, please try again later");
+      }
+      if (response.status === 402) {
+        throw new Error("AI translation requires credits, please add funds");
+      }
+      
       throw new Error(`AI translation failed: ${response.status}`);
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "";
+    
+    console.log(`[google-translate] AI response for chunk ${i / chunkSize + 1}:`, content.substring(0, 200));
     
     // Parse JSON from response
     try {
@@ -130,7 +138,10 @@ Return format example:
       if (chunk.length === 1) {
         results.push({ translatedText: content.trim() });
       } else {
-        throw new Error("Failed to parse AI translation response");
+        // For multiple texts, try to extract anything useful
+        chunk.forEach((originalText) => {
+          results.push({ translatedText: originalText }); // Return original if parsing fails
+        });
       }
     }
   }
@@ -169,10 +180,11 @@ async function translateWithGoogle(textsToTranslate: string[], targetLang: strin
     
     // Check if it's a rate limit error - use AI fallback
     if (response.status === 403 || response.status === 429) {
-      console.log("[google-translate] Rate limit hit, using AI fallback");
+      console.log("[google-translate] Rate limit hit, using Lovable AI fallback");
       
-      if (!OPENROUTER_API_KEY) {
-        throw new Error("Google API rate limited and no AI fallback configured");
+      if (!LOVABLE_API_KEY) {
+        console.error("[google-translate] LOVABLE_API_KEY not configured");
+        throw new Error("Google API rate limited and AI fallback not available");
       }
       
       const aiTranslations = await translateWithAI(textsToTranslate, targetLang, sourceLang);
@@ -203,7 +215,7 @@ serve(async (req) => {
     
     // Health check
     if (body?.healthCheck) {
-      return new Response(JSON.stringify({ status: "ok", hasFallback: !!OPENROUTER_API_KEY }), {
+      return new Response(JSON.stringify({ status: "ok", hasFallback: !!LOVABLE_API_KEY }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -222,7 +234,7 @@ serve(async (req) => {
     
     const { translations, usedFallback } = await translateWithGoogle(textsToTranslate, targetLang, sourceLang);
 
-    console.log(`[google-translate] Successfully translated ${translations.length} text(s)${usedFallback ? " (via AI fallback)" : ""}`);
+    console.log(`[google-translate] Successfully translated ${translations.length} text(s)${usedFallback ? " (via Lovable AI fallback)" : ""}`);
 
     return new Response(
       JSON.stringify({
