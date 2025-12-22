@@ -230,7 +230,7 @@ export default function ProductTitleDescription() {
   const [pendingAiConfig, setPendingAiConfig] = useState<AiBackgroundConfig | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [pendingApplyProductIds, setPendingApplyProductIds] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<"grid" | "table">("table");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(2);
   // White background variant states
   const [whiteBgApplyTo, setWhiteBgApplyTo] = useState<"simple" | "variants">("simple");
