@@ -162,7 +162,7 @@ Deno.serve(async (req: Request) => {
       // Get store connection for this user
       const { data: product, error: productError } = await supabaseClient
         .from("shopify_products")
-        .select("shopify_id, title, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id, last_seo_sync_at, last_synced_data, landing_page, landing_page_html")
+        .select("shopify_id, title, optimized_title, seo_title, seo_description, tags, category, sub_category, vendor, store_id, seller_id, last_seo_sync_at, last_synced_data, landing_page, landing_page_html")
         .eq("id", productId)
         .eq("seller_id", user.id)
         .maybeSingle();
@@ -242,7 +242,7 @@ Deno.serve(async (req: Request) => {
       
       // PHASE 1: Update SEO title and description using GraphQL (proper native SEO)
       console.log(`[SYNC-SEO] Updating product ${product.shopify_id} SEO via GraphQL...`);
-      console.log(`[SYNC-SEO] SEO Title: "${product.seo_title || product.title || ""}"`);
+      console.log(`[SYNC-SEO] SEO Title: "${product.optimized_title || product.seo_title || product.title || ""}"`);
       console.log(`[SYNC-SEO] SEO Description: "${(product.seo_description || "").substring(0, 100)}..."`);
       
       const productUpdateMutation = `
@@ -264,13 +264,15 @@ Deno.serve(async (req: Request) => {
         }
       `;
 
+      const resolvedTitle = product.optimized_title || product.seo_title || product.title || "";
+
       const graphqlVariables = {
         input: {
           id: `gid://shopify/Product/${product.shopify_id}`,
           // ✅ Sync regenerated title as main product title
-          title: product.seo_title || product.title || "",
+          title: resolvedTitle,
           seo: {
-            title: product.seo_title || product.title || "",
+            title: resolvedTitle,
             description: product.seo_description || ""
           }
         }
@@ -471,40 +473,11 @@ Deno.serve(async (req: Request) => {
               
               console.log(`[SYNC-SEO] Found ${existingMediaIds.length} existing media in Shopify`);
               
-              // STEP 4: Delete existing media that will be REPLACED by our new uploads
-              // We only delete if we have NEW local images to upload
-              if (existingMediaIds.length > 0 && imagesToUpload.length > 0) {
-                console.log(`[SYNC-SEO] Deleting ${existingMediaIds.length} existing media to replace with ${imagesToUpload.length} new images...`);
-                
-                const deleteMediaMutation = `
-                  mutation productDeleteMedia($productId: ID!, $mediaIds: [ID!]!) {
-                    productDeleteMedia(productId: $productId, mediaIds: $mediaIds) {
-                      deletedMediaIds
-                      mediaUserErrors {
-                        field
-                        message
-                      }
-                    }
-                  }
-                `;
-                
-                try {
-                  const deleteResult = await shopifyGraphQL(shopUrl, shopifyAccessToken, deleteMediaMutation, {
-                    productId: shopifyProductGid,
-                    mediaIds: existingMediaIds
-                  });
-                  
-                  if (deleteResult.data?.productDeleteMedia?.deletedMediaIds) {
-                    console.log(`[SYNC-SEO] ✅ Deleted ${deleteResult.data.productDeleteMedia.deletedMediaIds.length} media items`);
-                  }
-                  
-                  if (deleteResult.data?.productDeleteMedia?.mediaUserErrors?.length > 0) {
-                    console.warn(`[SYNC-SEO] ⚠️ Delete media user errors:`, deleteResult.data.productDeleteMedia.mediaUserErrors);
-                  }
-                } catch (deleteError: any) {
-                  console.error(`[SYNC-SEO] ⚠️ Error deleting existing media:`, deleteError.message);
-                  // Continue anyway - we'll still try to upload new images
-                }
+              // STEP 4: IMPORTANT
+              // We do NOT delete existing Shopify media anymore.
+              // Deleting breaks existing CDN URLs used in landing pages / descriptions and can corrupt content.
+              if (existingMediaIds.length > 0) {
+                console.log(`[SYNC-SEO] Keeping ${existingMediaIds.length} existing media items (no deletion). Will only ADD new images.`);
               }
             } catch (fetchError: any) {
               console.error(`[SYNC-SEO] ⚠️ Error fetching existing media:`, fetchError.message);
@@ -518,6 +491,14 @@ Deno.serve(async (req: Request) => {
                 if (!image.src || !image.src.startsWith('http')) {
                   console.log(`[SYNC-SEO] Skipping image with invalid URL: ${image.src}`);
                   continue;
+                }
+
+                // Lightweight HEAD check for debugging (content-type/size)
+                try {
+                  const headRes = await fetch(image.src, { method: 'HEAD' });
+                  console.log(`[SYNC-SEO] [MEDIA-HEAD] ${headRes.status} ${headRes.headers.get('content-type') || ''} ${headRes.headers.get('content-length') || ''} :: ${image.src.substring(0, 120)}...`);
+                } catch (e) {
+                  console.log(`[SYNC-SEO] [MEDIA-HEAD] failed :: ${image.src.substring(0, 120)}...`);
                 }
 
                 // Use productCreateMedia to add image
@@ -552,19 +533,45 @@ Deno.serve(async (req: Request) => {
                   media: [mediaInput]
                 });
 
-                if (mediaResult.data?.productCreateMedia?.media?.[0]?.id) {
-                  console.log(`[SYNC-SEO] ✅ Image uploaded successfully: ${image.src.substring(0, 50)}...`);
-                  
-                  // Update local database with sync status
+                const createdMedia = mediaResult.data?.productCreateMedia?.media?.[0];
+                const createdMediaId = createdMedia?.id;
+                const createdImageUrl = createdMedia?.image?.url;
+
+                if (createdMediaId && createdImageUrl) {
+                  console.log(`[SYNC-SEO] ✅ Image uploaded successfully: ${createdImageUrl.substring(0, 80)}...`);
+
                   await supabaseClient
                     .from("product_images")
-                    .update({ 
+                    .update({
                       last_synced_at: new Date().toISOString(),
                       shopify_synced: true
                     })
                     .eq("id", image.id);
                 } else {
-                  console.error(`[SYNC-SEO] ⚠️ Image upload returned no media ID`);
+                  // This is the classic "Media processing failed" symptom: media exists but image is null
+                  console.error(`[SYNC-SEO] ❌ Media processing failed for image ${image.id}`);
+                  console.error(`[SYNC-SEO] ❌ productCreateMedia returned:`, JSON.stringify(createdMedia));
+
+                  // Try to log to system_logs for automatic detection
+                  try {
+                    const admin = createClient(
+                      Deno.env.get("SUPABASE_URL") ?? "",
+                      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+                    );
+                    await admin.from('system_logs').insert({
+                      type: 'error',
+                      function_name: 'sync-seo-to-shopify',
+                      message: 'Media processing failed (productCreateMedia image is null)',
+                      user_id: user.id,
+                      metadata: {
+                        productId,
+                        imageId: image.id,
+                        src: image.src,
+                        shopifyProductId: product.shopify_id,
+                        createdMediaId: createdMediaId || null
+                      }
+                    });
+                  } catch (_) {}
                 }
               } catch (imageError: any) {
                 console.error(`[SYNC-SEO] ❌ Failed to upload image ${image.id}:`, imageError.message);
@@ -760,7 +767,7 @@ Deno.serve(async (req: Request) => {
       
       const { data: productImageData, error: productImageError } = await supabaseClient
         .from("product_images")
-        .select("id, shopify_image_id, alt_text, product_id")
+        .select("id, src, shopify_image_id, alt_text, product_id")
         .eq("id", imageId)
         .maybeSingle();
 
@@ -771,7 +778,7 @@ Deno.serve(async (req: Request) => {
         // If not found in product_images, try content_images
         const { data: contentImageData, error: contentImageError } = await supabaseClient
           .from("content_images")
-          .select("id, shopify_image_id, alt_text, content_id, content_type")
+          .select("id, src, shopify_image_id, alt_text, content_id, content_type")
           .eq("id", imageId)
           .maybeSingle();
         
@@ -1103,11 +1110,11 @@ Deno.serve(async (req: Request) => {
           throw new Error(`Image non trouvée sur Shopify. L'image n'existe peut-être plus dans le produit.`);
         }
         
-        // Step 2: Use fileUpdate mutation to update the alt text
+        // Step 2: Use mediaImageUpdate mutation (recommended) to update the alt text
         const updateMutation = `
-          mutation fileUpdate($files: [FileUpdateInput!]!) {
-            fileUpdate(files: $files) {
-              files {
+          mutation mediaImageUpdate($id: ID!, $input: MediaImageInput!) {
+            mediaImageUpdate(id: $id, input: $input) {
+              media {
                 ... on MediaImage {
                   id
                   alt
@@ -1120,10 +1127,10 @@ Deno.serve(async (req: Request) => {
             }
           }
         `;
-        
-        console.log(`[SYNC-IMAGE] Updating alt text via fileUpdate for: ${mediaImageGid}`);
+
+        console.log(`[SYNC-IMAGE] Updating alt text via mediaImageUpdate for: ${mediaImageGid}`);
         console.log(`[SYNC-IMAGE] New alt text: "${imageData.alt_text}"`);
-        
+
         const updateResponse = await fetch(graphqlUrl, {
           method: 'POST',
           headers: {
@@ -1133,35 +1140,35 @@ Deno.serve(async (req: Request) => {
           body: JSON.stringify({
             query: updateMutation,
             variables: {
-              files: [{
-                id: mediaImageGid,
-                alt: imageData.alt_text
-              }]
-            }
-          })
+              id: mediaImageGid,
+              input: {
+                alt: imageData.alt_text,
+              },
+            },
+          }),
         });
-        
+
         if (!updateResponse.ok) {
           const errorText = await updateResponse.text();
-          console.error(`[SYNC-IMAGE] ❌ fileUpdate HTTP error: ${updateResponse.status}`, errorText);
-          throw new Error(`Shopify fileUpdate error: ${updateResponse.status} - ${errorText}`);
+          console.error(`[SYNC-IMAGE] ❌ mediaImageUpdate HTTP error: ${updateResponse.status}`, errorText);
+          throw new Error(`Shopify mediaImageUpdate error: ${updateResponse.status} - ${errorText}`);
         }
-        
+
         const updateResult = await updateResponse.json();
-        
+
         if (updateResult.errors) {
-          console.error(`[SYNC-IMAGE] ❌ fileUpdate GraphQL errors:`, updateResult.errors);
-          throw new Error(`Shopify fileUpdate errors: ${JSON.stringify(updateResult.errors)}`);
+          console.error(`[SYNC-IMAGE] ❌ mediaImageUpdate GraphQL errors:`, updateResult.errors);
+          throw new Error(`Shopify mediaImageUpdate errors: ${JSON.stringify(updateResult.errors)}`);
         }
-        
-        if (updateResult.data?.fileUpdate?.userErrors?.length > 0) {
-          const userErrors = updateResult.data.fileUpdate.userErrors;
-          console.error(`[SYNC-IMAGE] ❌ fileUpdate user errors:`, userErrors);
-          throw new Error(`Shopify fileUpdate user errors: ${JSON.stringify(userErrors)}`);
+
+        const userErrors = updateResult.data?.mediaImageUpdate?.userErrors || [];
+        if (userErrors.length > 0) {
+          console.error(`[SYNC-IMAGE] ❌ mediaImageUpdate user errors:`, userErrors);
+          throw new Error(`Shopify mediaImageUpdate user errors: ${JSON.stringify(userErrors)}`);
         }
-        
-        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via GraphQL fileUpdate`);
-        console.log(`[SYNC-IMAGE] Updated files:`, JSON.stringify(updateResult.data?.fileUpdate?.files));
+
+        console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via GraphQL mediaImageUpdate`);
+        console.log(`[SYNC-IMAGE] Updated media:`, JSON.stringify(updateResult.data?.mediaImageUpdate?.media));
       } catch (gqlError: any) {
         console.error(`[SYNC-IMAGE] ❌ GraphQL operation failed:`, gqlError.message);
         throw new Error(`Erreur synchronisation Shopify: ${gqlError.message}`);
@@ -1381,6 +1388,27 @@ Deno.serve(async (req: Request) => {
     throw new Error("Either productId, imageId, or collectionId must be provided");
   } catch (error) {
     console.error("Sync error:", error);
+
+    // Auto-detect + persist errors for debugging
+    try {
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+
+      await admin.from('system_logs').insert({
+        type: 'error',
+        function_name: 'sync-seo-to-shopify',
+        message: error instanceof Error ? error.message : 'An unknown error occurred',
+        user_id: (typeof user !== 'undefined' && user?.id) ? user.id : null,
+        metadata: {
+          route: 'sync-seo-to-shopify',
+        },
+        stack_trace: error instanceof Error ? error.stack : null,
+      });
+    } catch (_) {
+      // ignore logging failures
+    }
 
     return new Response(
       JSON.stringify({
