@@ -189,7 +189,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const redirectUrl = `${window.location.origin}/onboarding`;
+    // Detect if on Aeoreply domain to redirect to correct page
+    const hostname = window.location.hostname;
+    const isAeoreply = hostname.includes('aeoreply');
+    const redirectPath = isAeoreply ? '/dashboard' : '/onboarding';
+    const redirectUrl = `${window.location.origin}${redirectPath}`;
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

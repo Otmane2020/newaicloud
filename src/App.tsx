@@ -699,8 +699,8 @@ const App = () => {
         <ErrorBoundary>
           <ThemeProvider 
             attribute="class" 
-            defaultTheme={isAeoreply ? "light" : "dark"} 
-            forcedTheme={isAeoreply ? "light" : undefined}
+            defaultTheme="dark"
+            forcedTheme={isAeoreply ? "light" : "dark"}
             disableTransitionOnChange
           >
             <LanguageProvider>
