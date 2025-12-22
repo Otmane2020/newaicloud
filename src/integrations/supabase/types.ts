@@ -3849,6 +3849,7 @@ export type Database = {
           created_at: string
           height: number | null
           id: string
+          is_ai_generated: boolean | null
           last_optimization_at: string | null
           last_synced_at: string | null
           optimization_count: number | null
@@ -3865,6 +3866,7 @@ export type Database = {
           created_at?: string
           height?: number | null
           id?: string
+          is_ai_generated?: boolean | null
           last_optimization_at?: string | null
           last_synced_at?: string | null
           optimization_count?: number | null
@@ -3881,6 +3883,7 @@ export type Database = {
           created_at?: string
           height?: number | null
           id?: string
+          is_ai_generated?: boolean | null
           last_optimization_at?: string | null
           last_synced_at?: string | null
           optimization_count?: number | null

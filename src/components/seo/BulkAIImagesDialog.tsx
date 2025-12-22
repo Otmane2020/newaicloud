@@ -464,6 +464,7 @@ export const BulkAIImagesDialog = ({
                   alt_text: `${product.title} - ${img.label}`,
                   position: imagePosition,
                   optimization_count: 1,
+                  is_ai_generated: true, // ✅ Mark as AI-generated to prevent re-export
                 });
 
               // If this is the profile image (position 1), update product's main image_url

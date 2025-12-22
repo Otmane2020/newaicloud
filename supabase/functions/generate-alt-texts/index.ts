@@ -199,7 +199,8 @@ Deno.serve(async (req: Request) => {
           .update({
             alt_text: altText,
             last_optimization_at: new Date().toISOString(),
-            optimization_count: 1
+            optimization_count: 1,
+            is_ai_generated: true // ✅ Mark as AI-generated after optimization
           })
           .eq("id", imageId);
 

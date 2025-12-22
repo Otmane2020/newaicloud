@@ -376,6 +376,7 @@ serve(async (req) => {
         optimization_count: (image.optimization_count ?? 0) + 1,
         last_optimization_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        is_ai_generated: true, // ✅ Mark as AI-generated after optimization
       })
       .eq("id", image.id);
 

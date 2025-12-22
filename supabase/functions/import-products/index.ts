@@ -1257,6 +1257,7 @@ Deno.serve(async (req: Request) => {
                         alt_text: edge.node.altText || "",
                         width: edge.node.width || null,
                         height: edge.node.height || null,
+                        is_ai_generated: false, // Images from Shopify are NOT AI-generated
                       };
                     });
                     
