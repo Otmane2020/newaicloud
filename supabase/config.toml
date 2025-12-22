@@ -622,3 +622,6 @@ verify_jwt = false
 
 [functions.shopify-diagnose-webhooks]
 verify_jwt = true
+
+[functions.migrate-shopify-images]
+verify_jwt = true

@@ -73,6 +73,69 @@ function cleanUrl(url: string): string {
   return url.split("?")[0].trim().toLowerCase();
 }
 
+// --- NEW: Download image from Shopify CDN and upload to Supabase Storage ---
+async function downloadAndStoreImage(
+  supabaseAdmin: any,
+  imageUrl: string,
+  userId: string,
+  productId: string,
+  shopifyImageId: number | null
+): Promise<string | null> {
+  try {
+    // Download the image from Shopify CDN
+    const response = await fetch(imageUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NewAI/1.0)' }
+    });
+    
+    if (!response.ok) {
+      console.log(`[IMPORT] ⚠️ Failed to download image: ${response.status} - ${imageUrl.substring(0, 80)}...`);
+      return null;
+    }
+    
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const arrayBuffer = await response.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+    
+    // Get file extension
+    const extMap: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+    };
+    const ext = extMap[contentType] || 'jpg';
+    
+    // Generate unique filename
+    const timestamp = Date.now();
+    const imageIdPart = shopifyImageId || 'img';
+    const fileName = `${userId}/${productId}/${imageIdPart}_${timestamp}.${ext}`;
+    
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+      .from('generated-images')
+      .upload(fileName, data, {
+        contentType,
+        upsert: true
+      });
+    
+    if (uploadError) {
+      console.log(`[IMPORT] ⚠️ Storage upload failed: ${uploadError.message}`);
+      return null;
+    }
+    
+    // Get public URL
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from('generated-images')
+      .getPublicUrl(fileName);
+    
+    return publicUrl;
+  } catch (error: any) {
+    console.log(`[IMPORT] ⚠️ Error storing image: ${error.message}`);
+    return null;
+  }
+}
+
 function parseLinkHeader(linkHeader: string | null): string | null {
   if (!linkHeader) return null;
 
@@ -1407,43 +1470,80 @@ Deno.serve(async (req: Request) => {
         console.log(`🔄 Removed ${duplicatesRemoved} duplicate images (same product_id + shopify_image_id or URL)`);
       }
       
-      // STEP 4: Insert fresh images from Shopify
+      // STEP 4: Download images to Supabase Storage and insert
+      // NEW: Store images physically in Supabase instead of just storing Shopify CDN URLs
       if (imagesToInsert.length > 0) {
-        const IMAGE_BATCH_SIZE = 500;
+        const IMAGE_BATCH_SIZE = 20; // Smaller batches for download + upload
         const imageBatches = Math.ceil(imagesToInsert.length / IMAGE_BATCH_SIZE);
         
-        console.log(`📦 Inserting ${imagesToInsert.length} deduplicated Shopify images in ${imageBatches} batches`);
+        console.log(`📦 Downloading & storing ${imagesToInsert.length} images in ${imageBatches} batches (physical storage in Supabase)`);
         
         for (let i = 0; i < imagesToInsert.length; i += IMAGE_BATCH_SIZE) {
           const batch = imagesToInsert.slice(i, i + IMAGE_BATCH_SIZE);
           const batchNumber = Math.floor(i / IMAGE_BATCH_SIZE) + 1;
           
-          // Use upsert with composite constraint (product_id + shopify_image_id) to handle shared images across products
-          const { error: imageError } = await supabaseServiceClient
-            .from("product_images")
-            .upsert(batch, { 
-              onConflict: 'product_id,shopify_image_id',
-              ignoreDuplicates: false // Update duplicates instead of skipping
-            });
+          console.log(`🔄 Processing image batch ${batchNumber}/${imageBatches} (${batch.length} images)...`);
+          
+          // Download and store each image in parallel within the batch
+          const processedBatch = await Promise.all(
+            batch.map(async (img) => {
+              // Check if image is from Shopify CDN
+              const isShopifyCdn = img.src && (
+                img.src.includes('cdn.shopify.com') || 
+                img.src.includes('shopifycdn.com')
+              );
+              
+              if (isShopifyCdn) {
+                // Download and store in Supabase Storage
+                const storedUrl = await downloadAndStoreImage(
+                  supabaseServiceClient,
+                  img.src,
+                  user.id,
+                  img.product_id,
+                  img.shopify_image_id
+                );
+                
+                if (storedUrl) {
+                  return { ...img, src: storedUrl };
+                }
+                // If download failed, keep original URL as fallback
+                console.log(`[IMPORT] ⚠️ Using original URL as fallback for image ${img.shopify_image_id}`);
+              }
+              
+              return img;
+            })
+          );
+          
+          // Filter out nulls and insert
+          const validImages = processedBatch.filter(Boolean);
+          
+          if (validImages.length > 0) {
+            const { error: imageError } = await supabaseServiceClient
+              .from("product_images")
+              .upsert(validImages, { 
+                onConflict: 'product_id,shopify_image_id',
+                ignoreDuplicates: false
+              });
 
-          if (imageError) {
-            console.error(`❌ Image upsert error in batch ${batchNumber}:`, imageError);
-            // Log the first failing image for debugging
-            if (batch.length > 0) {
-              console.error(`First image in batch: product_id=${batch[0].product_id}, shopify_image_id=${batch[0].shopify_image_id}`);
+            if (imageError) {
+              console.error(`❌ Image upsert error in batch ${batchNumber}:`, imageError);
+              if (validImages.length > 0) {
+                console.error(`First image in batch: product_id=${validImages[0].product_id}, shopify_image_id=${validImages[0].shopify_image_id}`);
+              }
+            } else {
+              totalImages += validImages.length;
+              console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed (${validImages.length} images stored in Supabase)`);
             }
-          } else {
-            totalImages += batch.length;
-            console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed (${batch.length} images)`);
           }
           
+          // Delay between batches to avoid rate limits
           if (i + IMAGE_BATCH_SIZE < imagesToInsert.length) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 300));
           }
         }
       }
       
-      console.log(`📊 Image import complete: ${totalImages} inserted, ${skippedImages} skipped (preserved)`);
+      console.log(`📊 Image import complete: ${totalImages} stored in Supabase, ${skippedImages} skipped (preserved)`);
     }
 
     // 🔗 FETCH PRODUCT-COLLECTION RELATIONSHIPS FROM SHOPIFY
