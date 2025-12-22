@@ -171,26 +171,30 @@ serve(async (req) => {
       console.log(`🎨 Generating ${imageType} image via Lovable AI...`);
 
       const prompt = lang === 'fr'
-        ? `À partir de cette image de produit (${productTitle}, type: ${productType}), génère une image professionnelle e-commerce de haute qualité.
+        ? `À partir de cette image de produit (${productTitle}, type: ${productType}), génère une image professionnelle e-commerce ULTRA HAUTE RÉSOLUTION pour zoom e-commerce.
 ${enhancedContext}
 
 INSTRUCTIONS CRITIQUES:
 - ${typePrompt}
 - Le produit doit être identique à l'image source, même design, même couleur, même style
 - Fond blanc pur (#FFFFFF), éclairage studio professionnel
-- Image carrée 1024x1024 pixels
-- Qualité professionnelle pour catalogue produit
-- Pas de texte, pas de watermark`
-        : `From this product image (${productTitle}, type: ${productType}), generate a professional high-quality e-commerce image.
+- Image carrée HAUTE RÉSOLUTION 2048x2048 pixels minimum pour permettre le zoom e-commerce
+- Détails nets et précis, textures visibles même en zoom
+- Qualité professionnelle pour catalogue produit haut de gamme
+- Pas de texte, pas de watermark
+- Ultra haute résolution`
+        : `From this product image (${productTitle}, type: ${productType}), generate a professional ULTRA HIGH RESOLUTION e-commerce image for zoom capability.
 ${enhancedContext}
 
 CRITICAL INSTRUCTIONS:
 - ${typePrompt}
 - The product must be identical to the source image, same design, same color, same style
 - Pure white background (#FFFFFF), professional studio lighting
-- Square image 1024x1024 pixels
-- Professional quality for product catalog
-- No text, no watermark`;
+- HIGH RESOLUTION square image 2048x2048 pixels minimum for e-commerce zoom capability
+- Sharp details and visible textures even when zoomed
+- Professional quality for premium product catalog
+- No text, no watermark
+- Ultra high resolution`;
 
       try {
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
