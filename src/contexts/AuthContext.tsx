@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,34 @@ import { translations as en } from '@/lib/translations/en';
 const getTranslatedMessage = (frMessage: string, enMessage: string): string => {
   const lang = localStorage.getItem('app-language') || 'en';
   return lang === 'fr' ? frMessage : enMessage;
+};
+
+// Clear ONLY Supabase auth keys from localStorage.
+// Important: do NOT wipe the whole localStorage, otherwise we can break other app state (and even editor state).
+const clearSupabaseAuthStorage = () => {
+  try {
+    const keysToRemove: string[] = [];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+
+      // supabase-js v2 default key format: sb-<project-ref>-auth-token
+      if (/^sb-.*-auth-token$/.test(key)) {
+        keysToRemove.push(key);
+        continue;
+      }
+
+      // legacy / custom keys seen in codebase
+      if (key === 'supabase.auth.token' || key.startsWith('supabase.auth.')) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch (err) {
+    console.warn('[Auth] Failed to clear auth storage safely:', err);
+  }
 };
 
 interface AuthContextType {
@@ -32,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [serverStatus, setServerStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   const navigate = useNavigate();
+  const manualSignOutRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -49,32 +78,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!mounted) return;
-        
+
         console.log('[Auth] Event:', event, 'Session:', !!session);
-        
+
         // Handle session expiration and sign-out events
         if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+          const wasManualSignOut = manualSignOutRef.current;
+          manualSignOutRef.current = false;
+
           setSession(null);
           setUser(null);
           setLoading(false);
-          
-          // Clear all auth-related data
-          localStorage.clear();
-          
-          if (event === 'SIGNED_OUT' || !session) {
-            const lang = localStorage.getItem('app-language') || 'en';
-            const message = lang === 'fr' ? fr.auth.sessionExpired : en.auth.sessionExpired;
+
+          // Clear ONLY auth-related data (avoid wiping unrelated local storage)
+          clearSupabaseAuthStorage();
+
+          if (!wasManualSignOut) {
+            const message = getTranslatedMessage(fr.auth.sessionExpired, en.auth.sessionExpired);
             toast.error(message);
             navigate('/auth');
           }
-        } else if (session) {
+
+          return;
+        }
+
+        if (session) {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-        } else {
-          // No session and no special event - stop loading
-          setLoading(false);
+          return;
         }
+
+        // No session and no special event - stop loading
+        setLoading(false);
       }
     );
 
@@ -228,21 +264,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    manualSignOutRef.current = true;
+
     const { error } = await supabase.auth.signOut();
-    
-    // Get lang before clearing localStorage
-    const lang = localStorage.getItem('app-language') || 'en';
-    const message = lang === 'fr' ? fr.auth.logoutSuccess : en.auth.logoutSuccess;
-    
-    // Clear all local storage to remove stale tokens
-    localStorage.clear();
-    
+
+    const message = getTranslatedMessage(fr.auth.logoutSuccess, en.auth.logoutSuccess);
+
+    // Clear only auth keys (do not wipe all local storage)
+    clearSupabaseAuthStorage();
+
     if (error) {
       toast.error(error.message);
     } else {
       toast.success(message);
     }
-    
+
     // Force a complete page reload to clear all state
     window.location.href = '/';
   };
