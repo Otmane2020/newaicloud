@@ -285,6 +285,7 @@ export const AIImagesDialog = ({
 
     setIsGenerating(true);
     setProgress(0);
+    setDisplayedProgress(0);
 
     // Build list of images to generate: main product + selected variants
     const imageSourcesToGenerate: Array<{ id: string; imageUrl: string; label: string; isVariant: boolean }> = [
@@ -316,7 +317,8 @@ export const AIImagesDialog = ({
     try {
       for (let i = 0; i < imageSourcesToGenerate.length; i++) {
         const source = imageSourcesToGenerate[i];
-        const progressPercent = Math.round(((i) / totalSources) * 100);
+        // Progress from 5% to 90% during generation (reserve 0-5 for start, 90-100 for completion)
+        const progressPercent = Math.round(5 + ((i + 0.5) / totalSources) * 85);
         setProgress(progressPercent);
 
         toast.loading(
@@ -357,6 +359,10 @@ export const AIImagesDialog = ({
           }));
           allGeneratedImages.push(...newImages);
         }
+        
+        // Update progress after each source is completed
+        const completedProgress = Math.round(5 + ((i + 1) / totalSources) * 85);
+        setProgress(completedProgress);
       }
 
       if (allGeneratedImages.length > 0) {
