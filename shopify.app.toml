@@ -20,6 +20,18 @@ api_version = "2025-10"
   uri = "/webhooks/app/scopes_update"
 
   [[webhooks.subscriptions]]
+  topics = [ "products/create", "products/update", "products/delete" ]
+  uri = "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-webhook"
+
+  [[webhooks.subscriptions]]
+  topics = [ "collections/create", "collections/update", "collections/delete" ]
+  uri = "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-webhook"
+
+  [[webhooks.subscriptions]]
+  topics = [ "orders/create", "orders/updated", "orders/cancelled" ]
+  uri = "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-webhook"
+
+  [[webhooks.subscriptions]]
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
   uri = "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-gdpr-webhook"
 
