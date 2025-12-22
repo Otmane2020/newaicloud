@@ -116,7 +116,7 @@ serve(async (req) => {
       "api-v1",
       "assistant-ai",
       "audit-homepage-seo",
-      "batch-translate",
+      
       "calculate-proration",
       "chat-smart",
       "check-broken-links",

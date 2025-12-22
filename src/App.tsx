@@ -20,7 +20,7 @@ import { FacebookSDKProvider } from "@/components/FacebookSDK";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AIAssistant } from "@/components/AIAssistant";
 import { AutoSyncProgressDialog } from "@/components/AutoSyncProgressDialog";
-import { AutoTranslator } from "@/components/AutoTranslator";
+
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
 import { BulkOptimizationIndicator } from "@/components/BulkOptimizationIndicator";
 import { PageTracker } from "@/components/PageTracker";
@@ -705,7 +705,7 @@ const App = () => (
                     <AppQuotaMonitor />
                     <AutoSyncMonitor />
                     <AdminEmailNotificationsMonitor />
-                    <AutoTranslator />
+                    
                     <BulkOptimizationIndicator />
                     <PageTracker />
                     <div className="overflow-x-hidden max-w-full">
