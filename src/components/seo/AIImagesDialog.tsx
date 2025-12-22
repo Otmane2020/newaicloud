@@ -274,6 +274,7 @@ export const AIImagesDialog = ({
             alt_text: `${currentProduct.title} - ${img.label}`,
             position: nextPosition,
             optimization_count: 1,
+            is_ai_generated: true, // ✅ Mark as AI-generated to prevent re-export
           });
 
         if (insertError) throw insertError;
