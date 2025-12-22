@@ -935,6 +935,58 @@ Please incorporate these specific instructions into the final image generation w
       }
     }
 
+    // ✅ CREATE HISTORY ENTRY for this AI-generated image
+    // This ensures the image appears in the history panel with "is_current: true"
+    if (product_id && user && finalImageUrl && !finalImageUrl.startsWith('data:')) {
+      try {
+        const supabaseAdmin = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+        );
+        
+        // Find the product_image that was just created (if it exists)
+        const { data: productImage } = await supabaseAdmin
+          .from('product_images')
+          .select('id')
+          .eq('product_id', product_id)
+          .eq('src', finalImageUrl)
+          .maybeSingle();
+        
+        if (productImage) {
+          // Get next version number
+          const { data: maxVersion } = await supabaseAdmin.rpc('get_next_image_version', { 
+            p_image_id: productImage.id 
+          });
+          
+          // Create history entry
+          const { error: historyError } = await supabaseAdmin
+            .from('product_image_history')
+            .insert({
+              product_id: product_id,
+              image_id: productImage.id,
+              user_id: user.id,
+              optimization_type: mode === 'lifestyle' ? 'ai_lifestyle' : 'ai_background',
+              original_url: imageUrl, // Original source image
+              optimized_url: finalImageUrl,
+              version_number: maxVersion || 1,
+              is_current: true,
+              ai_model: usedModel,
+              ai_prompt: photographyPrompt.slice(0, 500), // Store truncated prompt
+            });
+          
+          if (historyError) {
+            console.error('[white-bg] ⚠️ Failed to create history entry:', historyError);
+          } else {
+            console.log('[white-bg] ✅ History entry created for AI image');
+          }
+        } else {
+          console.log('[white-bg] ⚠️ No product_image found to create history for');
+        }
+      } catch (historyErr) {
+        console.error('[white-bg] ⚠️ Error creating history:', historyErr);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
