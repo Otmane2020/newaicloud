@@ -40,6 +40,7 @@ import {
   ArrowUp,
   ArrowDown,
   AlertTriangle,
+  Copy,
 } from 'lucide-react';
 import {
   Select,
@@ -1278,6 +1279,17 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                         <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded truncate max-w-[200px]">
                           📁 {getFilenameFromUrl(img.src)}
                         </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(getFilenameFromUrl(img.src));
+                            toast.success(t.toasts.success.copied);
+                          }}
+                          className="p-0.5 hover:bg-muted rounded transition-colors"
+                          title={language === 'fr' ? 'Copier le nom' : 'Copy name'}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
                       </div>
                     )}
                   </td>
