@@ -1469,6 +1469,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           image_url: img.src
         }))}
         onClose={handleCloseResultsDialog}
+        requiresManualSync={optimizedImages.some(img => !canSyncToShopify(img.content_type))}
       />
 
       {/* Upgrade Dialog */}
