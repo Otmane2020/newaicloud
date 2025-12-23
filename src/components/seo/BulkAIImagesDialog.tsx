@@ -58,12 +58,21 @@ interface Product {
   status?: string | null;
 }
 
+interface GeneratedImage {
+  id: string;
+  type: string;
+  label: string;
+  url: string;
+  selected: boolean;
+}
+
 interface ProductStatus {
   id: string;
   title: string;
-  status: 'pending' | 'generating' | 'saving' | 'success' | 'error' | 'skipped';
+  status: 'pending' | 'generating' | 'saving' | 'syncing' | 'success' | 'error' | 'skipped';
   imagesGenerated?: number;
   error?: string;
+  generatedImages?: GeneratedImage[];
 }
 
 interface BulkAIImagesDialogProps {
@@ -129,6 +138,10 @@ export const BulkAIImagesDialog = ({
   const cancelledRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [loadingGallery, setLoadingGallery] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+  const [previewImages, setPreviewImages] = useState<GeneratedImage[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   
   // 🆕 Active only filter
   const [activeOnly, setActiveOnly] = useState(true);
@@ -425,135 +438,36 @@ export const BulkAIImagesDialog = ({
         if (error) throw error;
 
         if (data?.images && data.images.length > 0) {
-          updateProductStatus(product.id, { status: 'saving' });
-
           // Find selected primary image type to set as main (position 1)
           const primaryImage = data.images.find((img: any) => img.type === primaryImageAngle);
           const otherImages = data.images.filter((img: any) => img.type !== primaryImageAngle);
           
           // Reorder: primary first, then others
           const orderedImages = primaryImage ? [primaryImage, ...otherImages] : data.images;
-
-          // Save images to database
-          let savedCount = 0;
           
-          // If we have a primary image, shift all existing images positions
-          if (primaryImage) {
-            // Get all existing images and increment their positions
-            const { data: existingImages } = await supabase
-              .from('product_images')
-              .select('id, position')
-              .eq('product_id', product.id)
-              .order('position', { ascending: true });
-            
-            if (existingImages && existingImages.length > 0) {
-              // Shift all existing positions by the number of new images
-              for (const existing of existingImages) {
-                await supabase
-                  .from('product_images')
-                  .update({ position: (existing.position || 0) + orderedImages.length })
-                  .eq('id', existing.id);
-              }
-            }
+          // Convert to GeneratedImage format with selection state
+          const generatedImgs: GeneratedImage[] = orderedImages.map((img: any, idx: number) => ({
+            id: `gen-${product.id}-${img.type}-${idx}`,
+            type: img.type,
+            label: img.label || img.type,
+            url: img.url,
+            selected: true, // All selected by default
+          }));
+          
+          // Store generated images for preview
+          updateProductStatus(product.id, { 
+            status: 'success', 
+            imagesGenerated: generatedImgs.length,
+            generatedImages: generatedImgs 
+          });
+          
+          // Show preview for the first product
+          if (localSuccess === 0) {
+            setPreviewProduct(product);
+            setPreviewImages(generatedImgs);
+            setShowPreview(true);
           }
           
-          for (let imgIndex = 0; imgIndex < orderedImages.length; imgIndex++) {
-            const img = orderedImages[imgIndex];
-            try {
-              let imageUrl = img.url;
-
-              // Upload base64 to storage if needed
-              if (img.url.startsWith('data:')) {
-                const base64Data = img.url.split(',')[1];
-                const filename = `ai_generated_${product.id}_${img.type}_${Date.now()}.png`;
-                
-                const byteCharacters = atob(base64Data);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let j = 0; j < byteCharacters.length; j++) {
-                  byteNumbers[j] = byteCharacters.charCodeAt(j);
-                }
-                const byteArray = new Uint8Array(byteNumbers);
-
-                const { error: uploadError } = await supabase.storage
-                  .from('generated-images')
-                  .upload(filename, byteArray, { contentType: 'image/png' });
-
-                if (!uploadError) {
-                  const { data: urlData } = supabase.storage
-                    .from('generated-images')
-                    .getPublicUrl(filename);
-                  imageUrl = urlData.publicUrl;
-                }
-              }
-
-              // Primary image type gets position 1, others follow
-              const imagePosition = primaryImage ? imgIndex + 1 : await getNextPosition(product.id, savedCount);
-
-              // Insert image
-              const { data: newImage, error: insertImgError } = await supabase
-                .from('product_images')
-                .insert({
-                  product_id: product.id,
-                  src: imageUrl,
-                  alt_text: `${product.title} - ${img.label}`,
-                  position: imagePosition,
-                  optimization_count: 1,
-                  is_ai_generated: true, // ✅ Mark as AI-generated to prevent re-export
-                })
-                .select('id')
-                .single();
-
-              // ✅ Create history entry for this AI-generated image
-              if (newImage && !insertImgError) {
-                const { data: userData } = await supabase.auth.getUser();
-                if (userData?.user) {
-                  // Get next version number
-                  const { data: maxVersion } = await supabase.rpc('get_next_image_version', { 
-                    p_image_id: newImage.id 
-                  });
-                  
-                  await supabase.from('product_image_history').insert({
-                    product_id: product.id,
-                    image_id: newImage.id,
-                    user_id: userData.user.id,
-                    optimization_type: 'ai_background',
-                    original_url: img.url, // Source URL used for generation
-                    optimized_url: imageUrl,
-                    version_number: maxVersion || 1,
-                    is_current: true,
-                    ai_model: 'Lovable AI',
-                    ai_prompt: `AI-generated ${img.type} image for ${product.title}`,
-                  });
-                }
-              }
-
-              // If this is the primary image (position 1), update product's main image_url
-              if (img.type === primaryImageAngle && imageUrl) {
-                await supabase
-                  .from('shopify_products')
-                  .update({ image_url: imageUrl })
-                  .eq('id', product.id);
-                console.log(`[BulkAI] Set ${primaryImageAngle} as main product image`);
-              }
-
-              savedCount++;
-            } catch (imgError) {
-              console.error('[BulkAI] Error saving image:', imgError);
-            }
-          }
-          
-          // Helper function to get next position
-          async function getNextPosition(productId: string, offset: number): Promise<number> {
-            const { data: existingImages } = await supabase
-              .from('product_images')
-              .select('position')
-              .eq('product_id', productId)
-              .order('position', { ascending: false })
-              .limit(1);
-            return (existingImages?.[0]?.position || 0) + 1 + offset;
-          }
-
-          updateProductStatus(product.id, { status: 'success', imagesGenerated: savedCount });
           localSuccess++;
           setSuccessCount(localSuccess);
         } else {
@@ -574,19 +488,226 @@ export const BulkAIImagesDialog = ({
 
     setIsGenerating(false);
 
-    if (localSuccess > 0) {
+    if (localSuccess > 0 && !showPreview) {
       toast.success(
         language === 'fr'
           ? `${localSuccess} produit(s) traité(s) avec succès`
           : `${localSuccess} product(s) processed successfully`
       );
     }
+  };
 
-    if (localSuccess > 0 && localError === 0) {
-      setTimeout(() => {
+  // Toggle preview image selection
+  const togglePreviewImageSelection = (imageId: string) => {
+    setPreviewImages(prev => prev.map(img => 
+      img.id === imageId ? { ...img, selected: !img.selected } : img
+    ));
+  };
+
+  // Save and sync selected images
+  const handleSaveAndSync = async () => {
+    if (!previewProduct) return;
+    
+    const selectedPreviewImages = previewImages.filter(img => img.selected);
+    if (selectedPreviewImages.length === 0) {
+      toast.error(language === 'fr' ? 'Sélectionnez au moins une image' : 'Select at least one image');
+      return;
+    }
+
+    setIsSaving(true);
+    const toastId = toast.loading(
+      language === 'fr' ? 'Sauvegarde et synchronisation...' : 'Saving and syncing...'
+    );
+
+    try {
+      // Save images to database
+      let savedCount = 0;
+      const primaryImageAngleLocal = primaryImageAngle;
+      const primaryImage = selectedPreviewImages.find(img => img.type === primaryImageAngleLocal);
+      
+      // If we have a primary image, shift all existing images positions
+      if (primaryImage) {
+        const { data: existingImages } = await supabase
+          .from('product_images')
+          .select('id, position')
+          .eq('product_id', previewProduct.id)
+          .order('position', { ascending: true });
+        
+        if (existingImages && existingImages.length > 0) {
+          for (const existing of existingImages) {
+            await supabase
+              .from('product_images')
+              .update({ position: (existing.position || 0) + selectedPreviewImages.length })
+              .eq('id', existing.id);
+          }
+        }
+      }
+      
+      for (let imgIndex = 0; imgIndex < selectedPreviewImages.length; imgIndex++) {
+        const img = selectedPreviewImages[imgIndex];
+        try {
+          let imageUrl = img.url;
+
+          // Upload base64 to storage if needed
+          if (img.url.startsWith('data:')) {
+            const base64Data = img.url.split(',')[1];
+            const filename = `ai_generated_${previewProduct.id}_${img.type}_${Date.now()}.png`;
+            
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let j = 0; j < byteCharacters.length; j++) {
+              byteNumbers[j] = byteCharacters.charCodeAt(j);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+
+            const { error: uploadError } = await supabase.storage
+              .from('generated-images')
+              .upload(filename, byteArray, { contentType: 'image/png' });
+
+            if (!uploadError) {
+              const { data: urlData } = supabase.storage
+                .from('generated-images')
+                .getPublicUrl(filename);
+              imageUrl = urlData.publicUrl;
+            }
+          }
+
+          // Primary image type gets position 1, others follow
+          const imagePosition = primaryImage ? imgIndex + 1 : await getNextPositionHelper(previewProduct.id, savedCount);
+
+          // Insert image
+          const { data: newImage, error: insertImgError } = await supabase
+            .from('product_images')
+            .insert({
+              product_id: previewProduct.id,
+              src: imageUrl,
+              alt_text: `${previewProduct.title} - ${img.label}`,
+              position: imagePosition,
+              optimization_count: 1,
+              is_ai_generated: true,
+            })
+            .select('id')
+            .single();
+
+          // Create history entry
+          if (newImage && !insertImgError) {
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData?.user) {
+              const { data: maxVersion } = await supabase.rpc('get_next_image_version', { 
+                p_image_id: newImage.id 
+              });
+              
+              await supabase.from('product_image_history').insert({
+                product_id: previewProduct.id,
+                image_id: newImage.id,
+                user_id: userData.user.id,
+                optimization_type: 'ai_background',
+                original_url: img.url,
+                optimized_url: imageUrl,
+                version_number: maxVersion || 1,
+                is_current: true,
+                ai_model: 'Lovable AI',
+                ai_prompt: `AI-generated ${img.type} image for ${previewProduct.title}`,
+              });
+              
+              // Save to creative_history for AI history tab
+              await supabase.from('creative_history').insert({
+                user_id: userData.user.id,
+                product_id: previewProduct.id,
+                product_title: previewProduct.title,
+                template_id: 'ai-product-images',
+                template_name: img.label,
+                image_url: imageUrl,
+              });
+            }
+          }
+
+          // Update main product image if primary
+          if (img.type === primaryImageAngleLocal && imageUrl) {
+            await supabase
+              .from('shopify_products')
+              .update({ image_url: imageUrl })
+              .eq('id', previewProduct.id);
+          }
+
+          savedCount++;
+        } catch (imgError) {
+          console.error('[BulkAI] Error saving image:', imgError);
+        }
+      }
+      
+      // Helper function
+      async function getNextPositionHelper(productId: string, offset: number): Promise<number> {
+        const { data: existingImages } = await supabase
+          .from('product_images')
+          .select('position')
+          .eq('product_id', productId)
+          .order('position', { ascending: false })
+          .limit(1);
+        return (existingImages?.[0]?.position || 0) + 1 + offset;
+      }
+
+      // Auto-sync to Shopify
+      updateProductStatus(previewProduct.id, { status: 'syncing' });
+      
+      try {
+        const { error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+          body: {
+            productId: previewProduct.id,
+            allowCreateReplace: true,
+          },
+        });
+        
+        if (syncError) {
+          console.warn('⚠️ Auto-sync to Shopify failed:', syncError);
+        } else {
+          console.log(`✅ Auto-synced AI images to Shopify for product ${previewProduct.id}`);
+        }
+      } catch (syncError) {
+        console.warn('⚠️ Auto-sync to Shopify failed:', syncError);
+      }
+
+      toast.success(
+        language === 'fr' 
+          ? `${savedCount} image(s) sauvegardée(s) et synchronisée(s)` 
+          : `${savedCount} image(s) saved and synced`,
+        { id: toastId }
+      );
+      
+      // Close preview and move to next product or close dialog
+      setShowPreview(false);
+      setPreviewProduct(null);
+      setPreviewImages([]);
+      
+      // Check if there are more products with generated images
+      const allStatuses = Array.from(productStatuses.values());
+      const nextProduct = allStatuses.find(s => 
+        s.status === 'success' && 
+        s.generatedImages && 
+        s.generatedImages.length > 0 && 
+        s.id !== previewProduct.id
+      );
+      
+      if (nextProduct && nextProduct.generatedImages) {
+        const productData = productsWithSelection.find(p => p.id === nextProduct.id);
+        if (productData) {
+          setPreviewProduct(productData);
+          setPreviewImages(nextProduct.generatedImages);
+          setShowPreview(true);
+        }
+      } else {
+        // All done
         onOpenChange(false);
         onComplete?.();
-      }, 1500);
+      }
+    } catch (error: any) {
+      console.error('Error saving images:', error);
+      toast.error(
+        language === 'fr' ? 'Erreur lors de la sauvegarde' : 'Error saving images',
+        { id: toastId, description: error.message }
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -650,8 +771,61 @@ export const BulkAIImagesDialog = ({
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Loading indicator */}
-            {loadingGallery && (
+            {/* Preview Mode - Show generated images for save+sync */}
+            {showPreview && previewProduct && previewImages.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  <div>
+                    <p className="font-medium">{previewProduct.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'fr' 
+                        ? `${previewImages.length} image(s) générée(s) - Sélectionnez celles à sauvegarder` 
+                        : `${previewImages.length} image(s) generated - Select to save`}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {previewImages.map(img => (
+                    <div 
+                      key={img.id}
+                      className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+                        img.selected ? 'border-primary ring-2 ring-primary/30' : 'border-transparent hover:border-muted-foreground/50'
+                      }`}
+                      onClick={() => togglePreviewImageSelection(img.id)}
+                    >
+                      <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
+                      <div className={`absolute top-2 left-2 w-5 h-5 rounded flex items-center justify-center ${
+                        img.selected ? 'bg-primary' : 'bg-black/50'
+                      }`}>
+                        {img.selected && <Check className="h-3 w-3 text-white" />}
+                      </div>
+                      <Badge className="absolute bottom-2 left-2 text-xs">{img.label}</Badge>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => { setShowPreview(false); setPreviewProduct(null); }}>
+                    {language === 'fr' ? 'Annuler' : 'Cancel'}
+                  </Button>
+                  <Button onClick={handleSaveAndSync} disabled={isSaving || previewImages.filter(i => i.selected).length === 0}>
+                    {isSaving ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{language === 'fr' ? 'Synchronisation...' : 'Syncing...'}</>
+                    ) : (
+                      <><Sparkles className="h-4 w-4 mr-2" />{language === 'fr' ? 'Sauvegarder & Sync Shopify' : 'Save & Sync to Shopify'}</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Normal content when not in preview mode */}
+            {!showPreview && (
+              <>
+              {/* Loading indicator */}
+              {loadingGallery && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {language === 'fr' ? 'Chargement des galeries...' : 'Loading galleries...'}
