@@ -5,12 +5,32 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Normalize URL: remove query params and Shopify UUID suffixes
+// Normalize URL: remove query params and normalize to filename so we can dedupe
+// the same image hosted on different domains (generated-images storage vs Shopify CDN).
 const normalizeUrl = (url?: string | null): string => {
   if (!url) return "";
-  const base = url.split("?")[0];
+
+  const withoutQuery = url.split("?")[0];
+
+  let filename = withoutQuery;
+  try {
+    filename = new URL(withoutQuery).pathname.split("/").pop() || withoutQuery;
+  } catch {
+    filename = withoutQuery.split("/").pop() || withoutQuery;
+  }
+
+  filename = decodeURIComponent(filename);
+
   // Remove UUID suffix that Shopify adds: file_123e4567-e89b-12d3-a456-426614174000.jpg -> file.jpg
-  return base.replace(/_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.[a-zA-Z0-9]+$)/i, "");
+  filename = filename.replace(
+    /_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.[a-zA-Z0-9]+$)/i,
+    ""
+  );
+
+  // Shopify CDN variants often use _WIDTHxHEIGHT suffixes.
+  filename = filename.replace(/_\d+x\d+(?=\.[a-zA-Z0-9]+$)/i, "");
+
+  return filename.toLowerCase();
 };
 
 Deno.serve(async (req) => {
@@ -87,6 +107,7 @@ Deno.serve(async (req) => {
       duplicateShopifyDeleted: 0,
       duplicateNormalizedUrlDeleted: 0,
       duplicateAiImagesDeleted: 0,
+      aiShadowedByShopifyDeleted: 0,
       aiImagesKept: 0,
       shopifyImagesKept: 0
     };
@@ -192,6 +213,26 @@ Deno.serve(async (req) => {
             console.log(`[CLEANUP] Marking for deletion (duplicate AI image): ${dupes[i].id} - ${normalizedSrc}`);
             idsToDelete.push(dupes[i].id);
             stats.duplicateAiImagesDeleted++;
+          }
+        }
+      }
+
+      // RULE 5: If an AI image and a Shopify image resolve to the same normalized key (filename),
+      // keep the Shopify one and delete the AI duplicate to avoid double-display in the gallery.
+      const shopifyByKey = new Map<string, (typeof shopifyImages)[number]>();
+      for (const img of shopifyImages) {
+        if (!idsToDelete.includes(img.id) && img.src) {
+          shopifyByKey.set(normalizeUrl(img.src), img);
+        }
+      }
+
+      for (const img of aiImages) {
+        if (!idsToDelete.includes(img.id) && img.src) {
+          const key = normalizeUrl(img.src);
+          if (shopifyByKey.has(key)) {
+            console.log(`[CLEANUP] Marking for deletion (AI shadowed by Shopify): ${img.id} - ${key}`);
+            idsToDelete.push(img.id);
+            stats.aiShadowedByShopifyDeleted++;
           }
         }
       }
