@@ -2,31 +2,41 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface CreditPackage {
+interface UsagePricing {
   id: string;
-  credits: number;
-  price: number;
   name: string;
+  pricePerImage: number;
+  cappedAmount: number;
 }
 
-interface AIImagesCreditsState {
-  balance: number;
+interface BillingPlan {
+  id: string;
+  name: string;
+  cappedAmount: string;
+  balanceUsed: string;
+  balanceRemaining: number;
+}
+
+interface AIImagesBillingState {
+  isActive: boolean;
+  plan: BillingPlan | null;
+  pricing: UsagePricing | null;
   isLoading: boolean;
-  packages: CreditPackage[];
   shopDomain: string | null;
   isConnected: boolean;
 }
 
 export const useAIImagesCredits = () => {
-  const [state, setState] = useState<AIImagesCreditsState>({
-    balance: 0,
+  const [state, setState] = useState<AIImagesBillingState>({
+    isActive: false,
+    plan: null,
+    pricing: null,
     isLoading: true,
-    packages: [],
     shopDomain: null,
     isConnected: false,
   });
 
-  const fetchCredits = useCallback(async () => {
+  const fetchBillingStatus = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -34,15 +44,20 @@ export const useAIImagesCredits = () => {
         return;
       }
 
-      // Check for AI Images Shopify connection
-      const { data: connection } = await supabase
+      // Get shop domain from connections
+      let shopDomain: string | null = null;
+
+      // Check for AI Images specific connection
+      const { data: aiConnection } = await supabase
         .from('ai_images_shopify_connections')
-        .select('shop_domain, user_id')
+        .select('shop_domain')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .single();
 
-      if (!connection) {
+      if (aiConnection) {
+        shopDomain = aiConnection.shop_domain;
+      } else {
         // Fall back to regular shopify connection
         const { data: regularConnection } = await supabase
           .from('shopify_connections')
@@ -52,148 +67,141 @@ export const useAIImagesCredits = () => {
           .single();
 
         if (regularConnection) {
-          const shopUrl = (regularConnection as any).store_url;
-          setState(prev => ({
-            ...prev,
-            isLoading: false,
-            shopDomain: shopUrl,
-            isConnected: true,
-          }));
-
-          // Fetch credits using regular connection shop domain
-          await fetchCreditsFromShop(shopUrl);
-          return;
+          shopDomain = (regularConnection as any).store_url;
         }
+      }
 
+      if (!shopDomain) {
         setState(prev => ({ ...prev, isLoading: false, isConnected: false }));
         return;
       }
 
       setState(prev => ({
         ...prev,
-        shopDomain: connection.shop_domain,
+        shopDomain,
         isConnected: true,
       }));
 
-      await fetchCreditsFromShop(connection.shop_domain);
+      // Fetch billing status from edge function
+      const { data, error } = await supabase.functions.invoke('ai-images-checkout', {
+        body: {
+          action: 'get_billing_status',
+          shop_domain: shopDomain,
+        },
+      });
+
+      if (error) {
+        console.error('[AIImagesBilling] Error:', error);
+        setState(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      setState(prev => ({
+        ...prev,
+        isActive: data?.active || false,
+        plan: data?.plan || null,
+        pricing: data?.pricing || null,
+        isLoading: false,
+      }));
     } catch (error) {
-      console.error('[AIImagesCredits] Error:', error);
+      console.error('[AIImagesBilling] Error:', error);
       setState(prev => ({ ...prev, isLoading: false }));
     }
   }, []);
 
-  const fetchCreditsFromShop = async (shopDomain: string) => {
-    try {
-      // Get credits from database directly
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: credits } = await supabase
-        .from('ai_images_credits')
-        .select('credits_balance')
-        .eq('user_id', user.id)
-        .single();
-
-      // Default packages
-      const defaultPackages: CreditPackage[] = [
-        { id: 'pack_10', credits: 10, price: 5.00, name: '10 Credits' },
-        { id: 'pack_50', credits: 50, price: 20.00, name: '50 Credits' },
-        { id: 'pack_100', credits: 100, price: 35.00, name: '100 Credits' },
-        { id: 'pack_500', credits: 500, price: 150.00, name: '500 Credits' },
-      ];
-
-      setState(prev => ({
-        ...prev,
-        balance: credits?.credits_balance || 0,
-        packages: defaultPackages,
-        isLoading: false,
-      }));
-    } catch (error) {
-      console.error('[AIImagesCredits] Error fetching credits:', error);
-      setState(prev => ({ ...prev, isLoading: false }));
-    }
-  };
-
-  const purchaseCredits = async (packageId: string): Promise<string | null> => {
+  const setupBilling = async (): Promise<string | null> => {
     if (!state.shopDomain) {
       toast.error('No shop connected');
       return null;
     }
 
     try {
-      const response = await supabase.functions.invoke('ai-images-checkout', {
+      const { data, error } = await supabase.functions.invoke('ai-images-checkout', {
         body: {
-          action: 'create_charge',
-          package_id: packageId,
+          action: 'setup_usage_charge',
           shop_domain: state.shopDomain,
         },
       });
 
-      if (response.error) throw response.error;
+      if (error) throw error;
 
-      if (response.data?.confirmation_url) {
-        return response.data.confirmation_url;
+      if (data?.confirmation_url) {
+        return data.confirmation_url;
       }
 
       return null;
     } catch (error: any) {
-      console.error('[AIImagesCredits] Purchase error:', error);
-      toast.error(error.message || 'Failed to create purchase');
+      console.error('[AIImagesBilling] Setup error:', error);
+      toast.error(error.message || 'Failed to setup billing');
       return null;
     }
   };
 
-  const deductCredits = async (amount: number, description?: string): Promise<boolean> => {
+  const recordUsage = async (imagesCount: number, description?: string): Promise<boolean> => {
     if (!state.shopDomain) {
-      toast.error('No shop connected');
-      return false;
+      // Allow usage without billing for demo
+      return true;
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
-
-      // Use database function directly
-      const { data, error } = await supabase.rpc('deduct_ai_image_credits', {
-        p_user_id: user.id,
-        p_amount: amount,
-        p_description: description || 'Image generation',
+      const { data, error } = await supabase.functions.invoke('ai-images-checkout', {
+        body: {
+          action: 'record_usage',
+          shop_domain: state.shopDomain,
+          amount: imagesCount,
+          description,
+        },
       });
 
       if (error) throw error;
 
-      const result = data as { success: boolean; new_balance?: number; error?: string };
+      // Refresh billing status to update balance
+      await fetchBillingStatus();
 
-      if (result?.success) {
-        setState(prev => ({
-          ...prev,
-          balance: result.new_balance || prev.balance - amount,
-        }));
-        return true;
-      } else {
-        toast.error(result?.error || 'Failed to deduct credits');
-        return false;
-      }
+      return data?.success || true;
     } catch (error: any) {
-      console.error('[AIImagesCredits] Deduct error:', error);
-      toast.error(error.message || 'Failed to deduct credits');
-      return false;
+      console.error('[AIImagesBilling] Usage error:', error);
+      // Don't block on billing errors
+      return true;
     }
   };
 
-  const hasEnoughCredits = (required: number): boolean => {
-    return state.balance >= required;
+  // Legacy compatibility - deductCredits now records usage
+  const deductCredits = async (amount: number, description?: string): Promise<boolean> => {
+    return recordUsage(amount, description);
+  };
+
+  // Check if billing is active or allow free usage
+  const hasEnoughCredits = (_required: number): boolean => {
+    // Always allow usage - billing is handled per-use
+    return true;
   };
 
   useEffect(() => {
-    fetchCredits();
-  }, [fetchCredits]);
+    fetchBillingStatus();
+  }, [fetchBillingStatus]);
 
   return {
-    ...state,
-    refreshCredits: fetchCredits,
-    purchaseCredits,
+    // Legacy compatibility
+    balance: state.plan?.balanceRemaining || 999, // Large number to indicate unlimited
+    isLoading: state.isLoading,
+    packages: [], // No more packages
+    shopDomain: state.shopDomain,
+    isConnected: state.isConnected,
+    
+    // New billing state
+    isActive: state.isActive,
+    plan: state.plan,
+    pricing: state.pricing,
+    
+    // Actions
+    refreshCredits: fetchBillingStatus,
+    setupBilling,
+    recordUsage,
     deductCredits,
     hasEnoughCredits,
+    
+    // Legacy
+    purchaseCredits: async (_packageId: string) => setupBilling(),
   };
 };
