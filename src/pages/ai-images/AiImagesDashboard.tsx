@@ -187,8 +187,8 @@ export default function AiImagesDashboard() {
 
       if (dryRun) {
         const msg = isFr 
-          ? `Analyse terminée: ${data.imagesToDelete} doublons trouvés (${data.stats?.duplicateNormalizedUrlDeleted || 0} URLs similaires, ${data.stats?.duplicateShopifyDeleted || 0} IDs Shopify, ${data.stats?.aiReimportedDeleted || 0} IA réimportées)`
-          : `Analysis complete: ${data.imagesToDelete} duplicates found (${data.stats?.duplicateNormalizedUrlDeleted || 0} similar URLs, ${data.stats?.duplicateShopifyDeleted || 0} Shopify IDs, ${data.stats?.aiReimportedDeleted || 0} reimported AI)`;
+          ? `Analyse terminée: ${data.imagesToDelete} doublons trouvés (${data.stats?.duplicateAiImagesDeleted || 0} IA, ${data.stats?.duplicateNormalizedUrlDeleted || 0} URLs similaires, ${data.stats?.duplicateShopifyDeleted || 0} IDs Shopify)`
+          : `Analysis complete: ${data.imagesToDelete} duplicates found (${data.stats?.duplicateAiImagesDeleted || 0} AI, ${data.stats?.duplicateNormalizedUrlDeleted || 0} similar URLs, ${data.stats?.duplicateShopifyDeleted || 0} Shopify IDs)`;
         
         if (data.imagesToDelete > 0) {
           toast.info(msg, {
