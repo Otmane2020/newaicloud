@@ -115,6 +115,11 @@ export function ProductGalleryDialog({
     }
   }, [open, product?.id]);
 
+  const normalizeUrl = (url?: string | null) => {
+    if (!url) return "";
+    return url.split("?")[0];
+  };
+
   const loadImages = async () => {
     if (!product?.id) return;
     setLoading(true);
@@ -128,10 +133,10 @@ export function ProductGalleryDialog({
 
       if (error) throw error;
       
-      // Deduplicate images by src to avoid visual duplicates
+      // Deduplicate images by normalized src (ignore ?v=... cache-busting) to avoid visual duplicates
       // Then re-sort by position to preserve Shopify order
       const uniqueImages = data ? 
-        Array.from(new Map(data.map(img => [img.src, img])).values())
+        Array.from(new Map(data.map(img => [normalizeUrl(img.src), img])).values())
           .sort((a, b) => (a.position || 999) - (b.position || 999)) : [];
       
       setImages(uniqueImages);
@@ -315,6 +320,7 @@ export function ProductGalleryDialog({
   // Remove hasChanges state since we auto-save now
 
   const hasVariants = product?.variants && product.variants.length > 1;
+  const mainImageUrlSet = new Set(images.map((img) => normalizeUrl(img.src)).filter(Boolean));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -416,12 +422,19 @@ export function ProductGalleryDialog({
                   </div>
                 </div>
 
-                {/* Variant images section */}
+                {/* Variant images section (only show variants not already in main images, ignoring ?v=...) */}
                 {hasVariants && (
                   <div className="mt-6 pt-6 border-t">
                     <h3 className="text-sm font-medium mb-3">{t.productGallery?.variantImages || "Variant images"}</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      {product?.variants?.filter(v => v.image_url).map((variant) => (
+                      {Array.from(
+                        new Map(
+                          (product?.variants || [])
+                            .filter(v => v.image_url)
+                            .filter(v => !mainImageUrlSet.has(normalizeUrl(v.image_url)))
+                            .map(v => [normalizeUrl(v.image_url!), v])
+                        ).values()
+                      ).map((variant) => (
                         <div
                           key={variant.id}
                           className="relative aspect-square rounded-lg overflow-hidden border border-border"

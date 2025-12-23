@@ -199,13 +199,25 @@ export const BulkAIImagesDialog = ({
       
       if (error) throw error;
       
-      // Group images by product_id
+      // Group images by product_id (dedupe by normalized src to avoid x4/x5 visual duplicates)
       const imagesByProduct = new Map<string, ProductGalleryImage[]>();
+      const seenByProduct = new Map<string, Set<string>>();
+
+      const normalizeUrl = (url: string) => url.split("?")[0];
+
       data?.forEach(img => {
         const productId = (img as any).product_id;
+        const baseSrc = normalizeUrl(img.src);
+
         if (!imagesByProduct.has(productId)) {
           imagesByProduct.set(productId, []);
+          seenByProduct.set(productId, new Set());
         }
+
+        const seen = seenByProduct.get(productId)!;
+        if (seen.has(baseSrc)) return;
+        seen.add(baseSrc);
+
         imagesByProduct.get(productId)!.push({
           id: img.id,
           src: img.src,
