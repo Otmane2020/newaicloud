@@ -78,6 +78,7 @@ export default function AiImagesDashboard() {
   const activeStore = embeddedStore || selectedStore;
 
   const [activeTab, setActiveTab] = useState("products");
+  const [isCleaningDuplicates, setIsCleaningDuplicates] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -157,6 +158,58 @@ export default function AiImagesDashboard() {
     } catch (err) {
       console.error("Error loading image stats:", err);
       setImageStats(prev => ({ ...prev, loadingStats: false }));
+    }
+  };
+
+  const cleanupDuplicateImages = async (dryRun: boolean = false) => {
+    if (!activeStore) {
+      toast.error(isFr ? "Aucune boutique sélectionnée" : "No store selected");
+      return;
+    }
+    
+    setIsCleaningDuplicates(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error(isFr ? "Non authentifié" : "Not authenticated");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("cleanup-duplicate-images", {
+        body: {
+          userId: user.id,
+          storeId: activeStore.id,
+          dryRun
+        }
+      });
+
+      if (error) throw error;
+
+      if (dryRun) {
+        const msg = isFr 
+          ? `Analyse terminée: ${data.imagesToDelete} doublons trouvés (${data.stats?.duplicateNormalizedUrlDeleted || 0} URLs similaires, ${data.stats?.duplicateShopifyDeleted || 0} IDs Shopify, ${data.stats?.aiReimportedDeleted || 0} IA réimportées)`
+          : `Analysis complete: ${data.imagesToDelete} duplicates found (${data.stats?.duplicateNormalizedUrlDeleted || 0} similar URLs, ${data.stats?.duplicateShopifyDeleted || 0} Shopify IDs, ${data.stats?.aiReimportedDeleted || 0} reimported AI)`;
+        
+        if (data.imagesToDelete > 0) {
+          toast.info(msg, {
+            duration: 8000,
+            action: {
+              label: isFr ? "Supprimer maintenant" : "Delete now",
+              onClick: () => cleanupDuplicateImages(false)
+            }
+          });
+        } else {
+          toast.success(isFr ? "Aucun doublon trouvé !" : "No duplicates found!");
+        }
+      } else {
+        toast.success(isFr ? `${data.deletedCount} doublons supprimés !` : `${data.deletedCount} duplicates deleted!`);
+        loadImageStats();
+      }
+    } catch (err: any) {
+      console.error("Error cleaning duplicates:", err);
+      toast.error(isFr ? "Erreur lors du nettoyage" : "Error during cleanup");
+    } finally {
+      setIsCleaningDuplicates(false);
     }
   };
 
@@ -289,7 +342,7 @@ export default function AiImagesDashboard() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         {/* Image Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <Card className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <Download className="w-5 h-5 text-blue-500" />
@@ -327,6 +380,20 @@ export default function AiImagesDashboard() {
             <div>
               <p className="text-2xl font-bold">{imageStats.loadingStats ? "..." : imageStats.totalImages.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">{isFr ? "Total Images" : "Total Images"}</p>
+            </div>
+          </Card>
+
+          {/* Cleanup Duplicates Button */}
+          <Card 
+            className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors col-span-2 md:col-span-1" 
+            onClick={() => !isCleaningDuplicates && cleanupDuplicateImages(true)}
+          >
+            <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+              <Trash2 className={`w-5 h-5 text-red-500 ${isCleaningDuplicates ? 'animate-pulse' : ''}`} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">{isCleaningDuplicates ? (isFr ? "Analyse..." : "Analyzing...") : (isFr ? "Nettoyer doublons" : "Cleanup duplicates")}</p>
+              <p className="text-xs text-muted-foreground">{isFr ? "Supprimer images en double" : "Remove duplicate images"}</p>
             </div>
           </Card>
         </div>

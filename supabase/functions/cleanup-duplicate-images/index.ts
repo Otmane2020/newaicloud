@@ -5,6 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Normalize URL: remove query params and Shopify UUID suffixes
+const normalizeUrl = (url?: string | null): string => {
+  if (!url) return "";
+  const base = url.split("?")[0];
+  // Remove UUID suffix that Shopify adds: file_123e4567-e89b-12d3-a456-426614174000.jpg -> file.jpg
+  return base.replace(/_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.[a-zA-Z0-9]+$)/i, "");
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -77,6 +85,7 @@ Deno.serve(async (req) => {
       productsAnalyzed: 0,
       aiReimportedDeleted: 0,
       duplicateShopifyDeleted: 0,
+      duplicateNormalizedUrlDeleted: 0,
       aiImagesKept: 0,
       shopifyImagesKept: 0
     };
@@ -124,6 +133,38 @@ Deno.serve(async (req) => {
             console.log(`[CLEANUP] Marking for deletion (duplicate shopify_id ${shopifyId}): ${dupes[i].id}`);
             idsToDelete.push(dupes[i].id);
             stats.duplicateShopifyDeleted++;
+          }
+        }
+      }
+
+      // RULE 3: Delete duplicates based on normalized URL (removes ?v= and UUID suffixes)
+      // This catches images that look identical but have slightly different URLs
+      const normalizedUrlGroups = new Map<string, typeof shopifyImages>();
+      for (const img of shopifyImages) {
+        if (!idsToDelete.includes(img.id) && img.src) {
+          const normalizedSrc = normalizeUrl(img.src);
+          if (!normalizedUrlGroups.has(normalizedSrc)) {
+            normalizedUrlGroups.set(normalizedSrc, []);
+          }
+          normalizedUrlGroups.get(normalizedSrc)!.push(img);
+        }
+      }
+
+      for (const [normalizedSrc, dupes] of normalizedUrlGroups) {
+        if (dupes.length > 1) {
+          // Keep the one with shopify_image_id if possible, or the oldest
+          dupes.sort((a, b) => {
+            // Prefer entries with shopify_image_id
+            if (a.shopify_image_id && !b.shopify_image_id) return -1;
+            if (!a.shopify_image_id && b.shopify_image_id) return 1;
+            // Otherwise keep oldest
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          });
+          
+          for (let i = 1; i < dupes.length; i++) {
+            console.log(`[CLEANUP] Marking for deletion (duplicate normalized URL): ${dupes[i].id} - ${normalizedSrc}`);
+            idsToDelete.push(dupes[i].id);
+            stats.duplicateNormalizedUrlDeleted++;
           }
         }
       }
