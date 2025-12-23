@@ -3167,6 +3167,18 @@ export const translations = {
         reoptimizationErrors: "{{count}} erreurs lors de la ré-optimisation",
         reoptimizedWithSyncErrors: "{{success}}/{{total}} images ré-optimisées, {{syncError}} erreurs de sync",
         allGenerated: "{{count}} images optimisées avec succès!",
+        // Manual sync guide
+        manualSyncRequired: "Sync manuelle requise",
+        manualSyncGuide: "Comment synchroniser manuellement",
+        manualSyncStep1: "1. Copiez le texte ALT généré ci-dessous",
+        manualSyncStep2: "2. Allez dans Shopify Admin → Pages ou Paramètres",
+        manualSyncStep3: "3. Trouvez l'image par son nom de fichier",
+        manualSyncStep4: "4. Collez le texte ALT dans le champ approprié",
+        manualSyncNote: "Les images de page/homepage ne peuvent pas être synchronisées automatiquement via l'API Shopify.",
+        copyFilename: "Copier le nom du fichier",
+        copyAltText: "Copier le texte ALT",
+        imagesRequireManualSync: "image(s) nécessitent une sync manuelle",
+        pageHomepageNotAutoSync: "Les images de page/homepage ne sont pas synchronisées automatiquement.",
       },
       stats: {
         toOptimize: "À optimiser",
