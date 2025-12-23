@@ -699,10 +699,19 @@ function AiImagesRoutes() {
 
 // Dynamic route selector - evaluates at runtime
 function AppRoutes() {
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const fullUrl = typeof window !== 'undefined' ? window.location.href : '';
+  
+  console.log('🚀 AppRoutes - Current hostname:', hostname);
+  console.log('🚀 AppRoutes - Full URL:', fullUrl);
+  
   const isAeoreply = isAeoreplyDomain();
   const isAiImages = isAiImagesDomain();
   
+  console.log('🚀 AppRoutes - Detection results:', { isAiImages, isAeoreply, hostname });
+  
   if (isAiImages) {
+    console.log('✅ Rendering AiImagesRoutes for hostname:', hostname);
     return <AiImagesRoutes />;
   }
   
