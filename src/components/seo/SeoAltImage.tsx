@@ -97,6 +97,19 @@ type SeoScoreSort = 'none' | 'asc' | 'desc';
 type StatusFilter = 'all' | 'optimized' | 'not-optimized';
 type QualityFilter = 'all' | 'excellent' | 'good' | 'medium' | 'poor';
 
+// Helper: Extract filename from URL
+const getFilenameFromUrl = (url: string): string => {
+  if (!url) return 'unknown';
+  const urlParts = url.split('/');
+  const filename = urlParts[urlParts.length - 1]?.split('?')[0] || 'unknown';
+  return decodeURIComponent(filename);
+};
+
+// Helper: Check if image type can be synced via API
+const canSyncToShopify = (contentType?: string): boolean => {
+  return contentType !== 'page' && contentType !== 'homepage';
+};
+
 export interface SeoAltImageRef {
   getProgress: () => { current: number; total: number; isRunning: boolean };
 }
@@ -1162,6 +1175,29 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                             {t.seo.altImage.table.noAlt}
                           </Badge>
                         )}
+                        
+                        {/* Warning for page/homepage - manual sync required */}
+                        {!canSyncToShopify(img.content_type) && img.alt_text && (
+                          <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800">
+                            <div className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                              <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="font-medium">
+                                  {language === 'fr' ? 'Sync manuelle' : 'Manual sync'}
+                                </p>
+                                <p className="mt-0.5 text-amber-600 dark:text-amber-500">
+                                  {language === 'fr' 
+                                    ? 'Allez dans Files sur Shopify' 
+                                    : 'Go to Files on Shopify'}
+                                </p>
+                                <p className="mt-1 font-mono text-[10px] bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded truncate">
+                                  📁 {getFilenameFromUrl(img.src)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         <Button
                           size="sm"
                           variant="default"
@@ -1234,6 +1270,16 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                   </td>
                   <td className="px-4 py-3">
                     <div className="max-w-md line-clamp-2">{img.alt_text || '-'}</div>
+                    {/* Warning for page/homepage - manual sync required */}
+                    {!canSyncToShopify(img.content_type) && img.alt_text && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+                        <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                        <span>{language === 'fr' ? 'Sync manuelle' : 'Manual sync'}</span>
+                        <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded truncate max-w-[200px]">
+                          📁 {getFilenameFromUrl(img.src)}
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {img.alt_text ? (
