@@ -629,6 +629,105 @@ export type Database = {
           },
         ]
       }
+      ai_images_credit_transactions: {
+        Row: {
+          created_at: string | null
+          credits_amount: number
+          description: string | null
+          id: string
+          metadata: Json | null
+          shopify_charge_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credits_amount: number
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          shopify_charge_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credits_amount?: number
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          shopify_charge_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_images_credits: {
+        Row: {
+          created_at: string | null
+          credits_balance: number
+          id: string
+          total_credits_purchased: number
+          total_credits_used: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credits_balance?: number
+          id?: string
+          total_credits_purchased?: number
+          total_credits_used?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credits_balance?: number
+          id?: string
+          total_credits_purchased?: number
+          total_credits_used?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_images_shopify_connections: {
+        Row: {
+          access_token: string
+          id: string
+          installed_at: string | null
+          is_active: boolean | null
+          scope: string | null
+          shop_domain: string
+          shop_name: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          id?: string
+          installed_at?: string | null
+          is_active?: boolean | null
+          scope?: string | null
+          shop_domain: string
+          shop_name?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          id?: string
+          installed_at?: string | null
+          is_active?: boolean | null
+          scope?: string | null
+          shop_domain?: string
+          shop_name?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_opportunities: {
         Row: {
           article_id: string | null
@@ -6864,6 +6963,14 @@ export type Database = {
       }
     }
     Functions: {
+      add_ai_image_credits: {
+        Args: {
+          p_amount: number
+          p_shopify_charge_id?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_smart_search: {
         Args: { term: string }
         Returns: {
@@ -6909,6 +7016,10 @@ export type Database = {
         }[]
       }
       cleanup_stuck_syncs: { Args: never; Returns: undefined }
+      deduct_ai_image_credits: {
+        Args: { p_amount: number; p_description?: string; p_user_id: string }
+        Returns: Json
+      }
       detect_usage_anomalies: {
         Args: { p_threshold?: number; p_user_id: string }
         Returns: {
