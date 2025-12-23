@@ -18,7 +18,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-// ---- MULTI-LANGUAGE PROMPTS ----
+// ---- MULTI-LANGUAGE PROMPTS FOR PRODUCTS ----
 function getAltTextPrompt(
   lang: string,
   productTitle: string,
@@ -156,6 +156,143 @@ RISPONDI SOLO CON IL TESTO ALT FINALE.`
   return prompts[lang] || prompts['fr'];
 }
 
+// ---- MULTI-LANGUAGE PROMPTS FOR CONTENT IMAGES (collections, pages, homepage, articles) ----
+function getContentAltTextPrompt(
+  lang: string,
+  contentType: string,
+  contentTitle: string,
+  cleanDescription: string
+): string {
+  const typeLabels: Record<string, Record<string, string>> = {
+    fr: { collection: 'collection', homepage: 'page d\'accueil', page: 'page', article: 'article de blog' },
+    en: { collection: 'collection', homepage: 'homepage', page: 'page', article: 'blog article' },
+    de: { collection: 'Kollektion', homepage: 'Startseite', page: 'Seite', article: 'Blog-Artikel' },
+    es: { collection: 'colección', homepage: 'página de inicio', page: 'página', article: 'artículo de blog' },
+    it: { collection: 'collezione', homepage: 'homepage', page: 'pagina', article: 'articolo del blog' },
+  };
+
+  const typeLabel = typeLabels[lang]?.[contentType] || typeLabels['en']?.[contentType] || contentType;
+
+  const prompts: Record<string, string> = {
+    fr: `Tu es un expert SEO e-commerce. Génère UN SEUL texte ALT descriptif pour cette image de ${typeLabel}.
+
+LANGUE: Français
+LONGUEUR: 8-12 mots maximum
+
+🎯 CONTEXTE: Image de ${typeLabel}
+- Décris ce que représente l'image visuellement
+- Inclus le contexte de marque si pertinent
+- Pour une collection: mentionne le thème ou style de la collection
+- Pour une page d'accueil: décris l'ambiance ou le message visuel
+
+RÈGLES STRICTES:
+- UN SEUL résultat (pas de liste, pas d'options multiples)
+- Commence directement la description (pas de "Image de", "Voici", etc.)
+- Style naturel et fluide
+
+INFORMATIONS:
+Titre: ${contentTitle || 'Non spécifié'}
+Type: ${typeLabel}
+Description: ${cleanDescription || 'Non disponible'}
+
+RÉPONDS UNIQUEMENT AVEC LE TEXTE ALT FINAL.`,
+
+    en: `You are an e-commerce SEO expert. Generate ONE SINGLE descriptive ALT text for this ${typeLabel} image.
+
+LANGUAGE: English
+LENGTH: 8-12 words maximum
+
+🎯 CONTEXT: ${typeLabel} image
+- Describe what the image represents visually
+- Include brand context if relevant
+- For a collection: mention the theme or style of the collection
+- For a homepage: describe the ambiance or visual message
+
+STRICT RULES:
+- ONE SINGLE result (no list, no multiple options)
+- Start directly with the description (no "Image of", "Here is", etc.)
+- Natural and fluid style
+
+INFORMATION:
+Title: ${contentTitle || 'Not specified'}
+Type: ${typeLabel}
+Description: ${cleanDescription || 'Not available'}
+
+RESPOND ONLY WITH THE FINAL ALT TEXT.`,
+
+    de: `Du bist ein E-Commerce-SEO-Experte. Erstelle EINEN EINZIGEN beschreibenden ALT-Text für dieses ${typeLabel}-Bild.
+
+SPRACHE: Deutsch
+LÄNGE: 8-12 Wörter maximal
+
+🎯 KONTEXT: ${typeLabel}-Bild
+- Beschreibe, was das Bild visuell darstellt
+- Füge Markenkontext hinzu, wenn relevant
+- Für eine Kollektion: erwähne das Thema oder den Stil
+- Für eine Startseite: beschreibe die Atmosphäre oder visuelle Botschaft
+
+STRIKTE REGELN:
+- EIN EINZIGES Ergebnis (keine Liste, keine mehrfachen Optionen)
+- Beginne direkt mit der Beschreibung (kein "Bild von", "Hier ist", etc.)
+- Natürlicher und flüssiger Stil
+
+INFORMATIONEN:
+Titel: ${contentTitle || 'Nicht angegeben'}
+Typ: ${typeLabel}
+Beschreibung: ${cleanDescription || 'Nicht verfügbar'}
+
+ANTWORTE NUR MIT DEM ENDGÜLTIGEN ALT-TEXT.`,
+
+    es: `Eres un experto en SEO de e-commerce. Genera UN SOLO texto ALT descriptivo para esta imagen de ${typeLabel}.
+
+IDIOMA: Español
+LONGITUD: 8-12 palabras máximo
+
+🎯 CONTEXTO: Imagen de ${typeLabel}
+- Describe lo que representa la imagen visualmente
+- Incluye contexto de marca si es relevante
+- Para una colección: menciona el tema o estilo
+- Para una página de inicio: describe el ambiente o mensaje visual
+
+REGLAS ESTRICTAS:
+- UN SOLO resultado (sin lista, sin opciones múltiples)
+- Comienza directamente con la descripción (sin "Imagen de", "Aquí está", etc.)
+- Estilo natural y fluido
+
+INFORMACIÓN:
+Título: ${contentTitle || 'No especificado'}
+Tipo: ${typeLabel}
+Descripción: ${cleanDescription || 'No disponible'}
+
+RESPONDE SOLO CON EL TEXTO ALT FINAL.`,
+
+    it: `Sei un esperto SEO e-commerce. Genera UN SOLO testo ALT descrittivo per questa immagine di ${typeLabel}.
+
+LINGUA: Italiano
+LUNGHEZZA: 8-12 parole massimo
+
+🎯 CONTESTO: Immagine di ${typeLabel}
+- Descrivi cosa rappresenta visivamente l'immagine
+- Includi il contesto del marchio se rilevante
+- Per una collezione: menziona il tema o lo stile
+- Per una homepage: descrivi l'atmosfera o il messaggio visivo
+
+REGOLE RIGOROSE:
+- UN SOLO risultato (nessuna lista, nessuna opzione multipla)
+- Inizia direttamente con la descrizione (no "Immagine di", "Ecco", ecc.)
+- Stile naturale e fluido
+
+INFORMAZIONI:
+Titolo: ${contentTitle || 'Non specificato'}
+Tipo: ${typeLabel}
+Descrizione: ${cleanDescription || 'Non disponibile'}
+
+RISPONDI SOLO CON IL TESTO ALT FINALE.`
+  };
+
+  return prompts[lang] || prompts['fr'];
+}
+
 function getVisionRefinePrompt(lang: string, deepseekText: string): string {
   const prompts: Record<string, string> = {
     fr: `Analyse cette image de produit e-commerce et génère UN SEUL texte ALT de 8-12 mots maximum.
@@ -257,6 +394,128 @@ RISPONDI SOLO CON IL TESTO ALT FINALE.`
   return prompts[lang] || prompts['fr'];
 }
 
+function getContentVisionRefinePrompt(lang: string, deepseekText: string, contentType: string): string {
+  const typeLabels: Record<string, Record<string, string>> = {
+    fr: { collection: 'collection', homepage: 'page d\'accueil', page: 'page', article: 'article de blog' },
+    en: { collection: 'collection', homepage: 'homepage', page: 'page', article: 'blog article' },
+    de: { collection: 'Kollektion', homepage: 'Startseite', page: 'Seite', article: 'Blog-Artikel' },
+    es: { collection: 'colección', homepage: 'página de inicio', page: 'página', article: 'artículo de blog' },
+    it: { collection: 'collezione', homepage: 'homepage', page: 'pagina', article: 'articolo del blog' },
+  };
+
+  const typeLabel = typeLabels[lang]?.[contentType] || typeLabels['en']?.[contentType] || contentType;
+
+  const prompts: Record<string, string> = {
+    fr: `Analyse cette image de ${typeLabel} e-commerce et génère UN SEUL texte ALT de 8-12 mots maximum.
+
+Base suggérée: ${deepseekText}
+
+🎯 CONTEXTE: Image de ${typeLabel}
+- Décris ce que montre l'image visuellement
+- Capture l'ambiance, le style ou le message de l'image
+- Sois descriptif mais concis
+
+RÈGLES ABSOLUES:
+- UN SEUL texte final (jamais de liste ou options multiples)
+- Maximum 12 mots
+- Langue: Français
+- Naturel et fluide
+- Pas de préfixe comme "Voici" ou "Image de"
+
+RÉPONDS UNIQUEMENT AVEC LE TEXTE ALT FINAL.`,
+
+    en: `Analyze this e-commerce ${typeLabel} image and generate ONE SINGLE ALT text of 8-12 words maximum.
+
+Suggested base: ${deepseekText}
+
+🎯 CONTEXT: ${typeLabel} image
+- Describe what the image shows visually
+- Capture the ambiance, style or message of the image
+- Be descriptive but concise
+
+ABSOLUTE RULES:
+- ONE SINGLE final text (never a list or multiple options)
+- Maximum 12 words
+- Language: English
+- Natural and fluid
+- No prefix like "Here is" or "Image of"
+
+RESPOND ONLY WITH THE FINAL ALT TEXT.`,
+
+    de: `Analysiere dieses E-Commerce-${typeLabel}-Bild und erstelle EINEN EINZIGEN ALT-Text von maximal 8-12 Wörtern.
+
+Vorgeschlagene Basis: ${deepseekText}
+
+🎯 KONTEXT: ${typeLabel}-Bild
+- Beschreibe, was das Bild visuell zeigt
+- Erfasse die Atmosphäre, den Stil oder die Botschaft
+- Sei beschreibend aber prägnant
+
+ABSOLUTE REGELN:
+- EIN EINZIGER finaler Text (niemals eine Liste oder mehrere Optionen)
+- Maximal 12 Wörter
+- Sprache: Deutsch
+- Natürlich und flüssig
+- Kein Präfix wie "Hier ist" oder "Bild von"
+
+ANTWORTE NUR MIT DEM ENDGÜLTIGEN ALT-TEXT.`,
+
+    es: `Analiza esta imagen de ${typeLabel} e-commerce y genera UN SOLO texto ALT de 8-12 palabras máximo.
+
+Base sugerida: ${deepseekText}
+
+🎯 CONTEXTO: Imagen de ${typeLabel}
+- Describe lo que muestra la imagen visualmente
+- Captura el ambiente, estilo o mensaje de la imagen
+- Sé descriptivo pero conciso
+
+REGLAS ABSOLUTAS:
+- UN SOLO texto final (nunca una lista u opciones múltiples)
+- Máximo 12 palabras
+- Idioma: Español
+- Natural y fluido
+- Sin prefijo como "Aquí está" o "Imagen de"
+
+RESPONDE SOLO CON EL TEXTO ALT FINAL.`,
+
+    it: `Analizza questa immagine di ${typeLabel} e-commerce e genera UN SOLO testo ALT di 8-12 parole massimo.
+
+Base suggerita: ${deepseekText}
+
+🎯 CONTESTO: Immagine di ${typeLabel}
+- Descrivi cosa mostra visivamente l'immagine
+- Cattura l'atmosfera, lo stile o il messaggio
+- Sii descrittivo ma conciso
+
+REGOLE ASSOLUTE:
+- UN SOLO testo finale (mai una lista o opzioni multiple)
+- Massimo 12 parole
+- Lingua: Italiano
+- Naturale e fluido
+- Nessun prefisso come "Ecco" o "Immagine di"
+
+RISPONDI SOLO CON IL TESTO ALT FINALE.`
+  };
+
+  return prompts[lang] || prompts['fr'];
+}
+
+// Validate that alt text is not empty or generic
+function isValidAltText(altText: string | null | undefined): boolean {
+  if (!altText || altText.trim() === '') return false;
+  
+  const genericTexts = [
+    'product image', 'image', 'photo', 'picture',
+    'image de produit', 'image du produit', 'photo de produit',
+    'produktbild', 'bild',
+    'imagen de producto', 'imagen',
+    'immagine del prodotto', 'immagine',
+  ];
+  
+  const lowerText = altText.toLowerCase().trim();
+  return !genericTexts.includes(lowerText);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
@@ -267,56 +526,164 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ok: true }), { status: 200, headers: cors });
     }
 
-    const { image_id } = body;
+    const { image_id, imageType = 'product', force = false } = body;
     if (!image_id) throw new Error("image_id missing");
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // 1. Image
-    const { data: image } = await supabase
-      .from("product_images")
-      .select("id, src, alt_text, optimization_count, product_id")
-      .eq("id", image_id)
-      .single();
-    if (!image) throw new Error("Image not found");
+    console.log(`[smart-alt-text] Processing image ${image_id}, type: ${imageType}, force: ${force}`);
 
-    // 2. Product
-    const { data: product } = await supabase
-      .from("shopify_products")
-      .select("id, title, seo_title, body_html, product_type, category, seller_id, store_id")
-      .eq("id", image.product_id)
-      .single();
-    if (!product) throw new Error("Product not found");
+    // Determine if this is a product image or content image
+    const isContentImage = imageType !== 'product';
 
-    // 🛡️ LANGUAGE GUARD - Detect language from content
-    const { data: store } = await supabase
-      .from("shopify_connections")
-      .select("store_language")
-      .eq("id", product.store_id)
-      .single();
-    const rawStoreLanguage = store?.store_language || "en-US";
-    const lang = resolveLanguage({
-      contentText: `${product.title || ""} ${product.body_html || ""}`,
-      storeLanguage: rawStoreLanguage
-    });
-    console.log(`🛡️ LANGUAGE GUARD: alt-text - detected=${lang}, store=${rawStoreLanguage}, product="${product.title?.substring(0,30)}..."`);
+    let image: any;
+    let contextData: any;
+    let sellerId: string;
+    let storeId: string;
+    let lang: string;
+    let contentTitle: string = '';
+    let cleanDescription: string = '';
 
-    // Clean description
-    const cleanDescription = (product.body_html || "")
-      .replace(/<[^>]*>/g, " ")
-      .replace(/\s+/g, " ")
-      .slice(0, 400);
+    if (isContentImage) {
+      // ---- CONTENT IMAGE (collection, homepage, page, article) ----
+      console.log(`[smart-alt-text] Fetching content_image ${image_id}`);
+      
+      const { data: contentImage, error: contentError } = await supabase
+        .from("content_images")
+        .select("id, src, alt_text, optimization_count, content_id, content_type, store_id, user_id")
+        .eq("id", image_id)
+        .single();
+      
+      if (contentError || !contentImage) {
+        console.error(`[smart-alt-text] Content image not found:`, contentError);
+        throw new Error("Content image not found");
+      }
+      
+      image = contentImage;
+      sellerId = contentImage.user_id;
+      storeId = contentImage.store_id;
+      
+      // Get context based on content type
+      const contentType = contentImage.content_type || imageType;
+      console.log(`[smart-alt-text] Content type: ${contentType}, content_id: ${contentImage.content_id}`);
+      
+      if (contentType === 'collection') {
+        const { data: collection } = await supabase
+          .from("shopify_collections")
+          .select("id, title, body_html, store_id")
+          .eq("id", contentImage.content_id)
+          .single();
+        
+        if (collection) {
+          contextData = collection;
+          contentTitle = collection.title || '';
+          cleanDescription = (collection.body_html || "")
+            .replace(/<[^>]*>/g, " ")
+            .replace(/\s+/g, " ")
+            .slice(0, 400);
+        }
+      } else if (contentType === 'article') {
+        const { data: article } = await supabase
+          .from("blog_articles")
+          .select("id, title, content, store_id")
+          .eq("id", contentImage.content_id)
+          .single();
+        
+        if (article) {
+          contextData = article;
+          contentTitle = article.title || '';
+          cleanDescription = (article.content || "")
+            .replace(/<[^>]*>/g, " ")
+            .replace(/\s+/g, " ")
+            .slice(0, 400);
+        }
+      } else {
+        // For homepage/page, use minimal context
+        contentTitle = imageType || 'content';
+        cleanDescription = '';
+      }
+      
+      // Get store language
+      const { data: store } = await supabase
+        .from("shopify_connections")
+        .select("store_language")
+        .eq("id", storeId)
+        .single();
+      
+      const rawStoreLanguage = store?.store_language || "en-US";
+      lang = resolveLanguage({
+        contentText: `${contentTitle} ${cleanDescription}`,
+        storeLanguage: rawStoreLanguage
+      });
+      
+      console.log(`[smart-alt-text] 🛡️ LANGUAGE GUARD: content-image - detected=${lang}, store=${rawStoreLanguage}`);
+      
+    } else {
+      // ---- PRODUCT IMAGE ----
+      console.log(`[smart-alt-text] Fetching product_image ${image_id}`);
+      
+      const { data: productImage } = await supabase
+        .from("product_images")
+        .select("id, src, alt_text, optimization_count, product_id")
+        .eq("id", image_id)
+        .single();
+      
+      if (!productImage) throw new Error("Product image not found");
+      
+      image = productImage;
+      
+      // Get product data
+      const { data: product } = await supabase
+        .from("shopify_products")
+        .select("id, title, seo_title, body_html, product_type, category, seller_id, store_id")
+        .eq("id", productImage.product_id)
+        .single();
+      
+      if (!product) throw new Error("Product not found");
+      
+      contextData = product;
+      sellerId = product.seller_id;
+      storeId = product.store_id;
+      contentTitle = product.title;
+      
+      // Clean description
+      cleanDescription = (product.body_html || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .slice(0, 400);
+      
+      // Get store language
+      const { data: store } = await supabase
+        .from("shopify_connections")
+        .select("store_language")
+        .eq("id", product.store_id)
+        .single();
+      
+      const rawStoreLanguage = store?.store_language || "en-US";
+      lang = resolveLanguage({
+        contentText: `${product.title || ""} ${product.body_html || ""}`,
+        storeLanguage: rawStoreLanguage
+      });
+      
+      console.log(`[smart-alt-text] 🛡️ LANGUAGE GUARD: product - detected=${lang}, store=${rawStoreLanguage}, product="${product.title?.substring(0,30)}..."`);
+    }
 
-    // 4. Get multi-language prompt
-    const prompt = getAltTextPrompt(
-      lang,
-      product.title,
-      product.product_type || 'Non spécifié',
-      product.category || 'Non spécifiée',
-      cleanDescription
-    );
+    // Get prompt based on image type
+    let prompt: string;
+    if (isContentImage) {
+      prompt = getContentAltTextPrompt(lang, imageType, contentTitle, cleanDescription);
+    } else {
+      prompt = getAltTextPrompt(
+        lang,
+        contentTitle,
+        contextData?.product_type || 'Non spécifié',
+        contextData?.category || 'Non spécifiée',
+        cleanDescription
+      );
+    }
 
-    // ---- DeepSeek first pass
+    // ---- DeepSeek first pass ----
+    console.log(`[smart-alt-text] Calling DeepSeek for initial ALT text...`);
     const deepseekRes = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
@@ -330,13 +697,17 @@ serve(async (req) => {
     });
 
     const deepseekText = (await deepseekRes.json())?.choices?.[0]?.message?.content?.trim() || "";
+    console.log(`[smart-alt-text] DeepSeek response: "${deepseekText.substring(0, 100)}..."`);
 
-    // ---- Gemini Vision refinement
+    // ---- Gemini Vision refinement ----
+    console.log(`[smart-alt-text] Fetching image and calling Gemini Vision...`);
     const buffer = await fetch(image.src).then((r) => r.arrayBuffer());
     const base64 = arrayBufferToBase64(buffer);
 
-    // Get multi-language vision prompt
-    const visionPrompt = getVisionRefinePrompt(lang, deepseekText);
+    // Get vision prompt based on image type
+    const visionPrompt = isContentImage 
+      ? getContentVisionRefinePrompt(lang, deepseekText, imageType)
+      : getVisionRefinePrompt(lang, deepseekText);
 
     const geminiRes = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
@@ -357,7 +728,8 @@ serve(async (req) => {
       },
     );
 
-    let geminiText = (await geminiRes.json())?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || deepseekText || "Product image";
+    let geminiText = (await geminiRes.json())?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || deepseekText;
+    console.log(`[smart-alt-text] Gemini response: "${geminiText.substring(0, 100)}..."`);
     
     // Clean: take only the first line if multiple options returned
     geminiText = geminiText
@@ -368,38 +740,53 @@ serve(async (req) => {
       .replace(/^\*\s*/g, "")
       .trim();
 
-    // ---- 5. Update database
+    // ✅ VALIDATION: Ensure we have a valid alt text before saving
+    if (!isValidAltText(geminiText)) {
+      console.error(`[smart-alt-text] ❌ Generated alt text is empty or generic: "${geminiText}"`);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: "Failed to generate valid alt text - AI returned empty or generic response",
+        generatedText: geminiText
+      }), {
+        status: 400,
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log(`[smart-alt-text] ✅ Final alt text: "${geminiText}"`);
+
+    // ---- Update database ----
+    const tableName = isContentImage ? "content_images" : "product_images";
+    
     await supabase
-      .from("product_images")
+      .from(tableName)
       .update({
         alt_text: geminiText,
         optimization_count: (image.optimization_count ?? 0) + 1,
         last_optimization_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        is_ai_generated: true, // ✅ Mark as AI-generated after optimization
+        is_ai_generated: true,
       })
       .eq("id", image.id);
 
-    // ---- 6. Increment usage
+    console.log(`[smart-alt-text] Updated ${tableName} with new alt text`);
+
+    // ---- Increment usage ----
     await supabase.rpc("increment_usage", {
-      p_seller_id: product.seller_id,
+      p_seller_id: sellerId,
       p_field: "optimizations_count",
       p_increment: 3,
     });
 
-    // ---- 7. Auto-sync ALT text to Shopify
-    // Get shopify_image_id from product_images for sync
-    const { data: imageWithShopifyId } = await supabase
-      .from("product_images")
-      .select("shopify_image_id")
-      .eq("id", image_id)
-      .single();
-    
+    // ---- Auto-sync ALT text to Shopify ----
     let shopifySynced = false;
     let syncError = '';
     
-    if (imageWithShopifyId?.shopify_image_id) {
-      console.log(`[smart-alt-text] 🔄 Auto-syncing ALT text to Shopify for image ${image_id}`);
+    // Get shopify_image_id for sync
+    const shopifyImageId = image.shopify_image_id;
+    
+    if (shopifyImageId) {
+      console.log(`[smart-alt-text] 🔄 Auto-syncing ALT text to Shopify for image ${image_id}, type: ${imageType}`);
       try {
         const syncResponse = await fetch(
           `${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-seo-to-shopify`,
@@ -411,9 +798,9 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               imageId: image_id,
-              imageType: 'product',
+              imageType: imageType, // Pass the actual image type
               serviceMode: true,
-              userId: product.seller_id,
+              userId: sellerId,
             }),
           }
         );
@@ -441,7 +828,7 @@ serve(async (req) => {
       syncError = 'Image has no Shopify ID';
     }
 
-    // Return response with sync status - DO NOT say success if sync failed
+    // Return response with sync status
     return new Response(JSON.stringify({ 
       success: true, 
       alt: geminiText,
@@ -451,6 +838,7 @@ serve(async (req) => {
       headers: { ...cors, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error(`[smart-alt-text] Error:`, err);
     return new Response(
       JSON.stringify({
         success: false,
