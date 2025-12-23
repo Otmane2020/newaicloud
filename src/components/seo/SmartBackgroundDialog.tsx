@@ -298,12 +298,15 @@ export const SmartBackgroundDialog = ({
   const getProductImages = (product: Product): { url: string; label: string; imageId?: string; position?: number; isAiGenerated?: boolean }[] => {
     const images: { url: string; label: string; imageId?: string; position?: number; isAiGenerated?: boolean }[] = [];
     const seenUrls = new Set<string>();
+    const normalizeUrl = (url?: string | null) => (url ? url.split("?")[0] : "");
     
     // First, add gallery images from database
     const galleryImages = productGalleryImages.get(product.id) || [];
     galleryImages.forEach((img, idx) => {
-      if (!seenUrls.has(img.src)) {
-        seenUrls.add(img.src);
+      const key = normalizeUrl(img.src);
+      if (!key) return;
+      if (!seenUrls.has(key)) {
+        seenUrls.add(key);
         // 🆕 Detect ALL AI-generated images (white background, AI images, any generation)
         const aiPatterns = ['ai_generated_', 'white_background', 'generated-images/', '/storage/v1/object/public/generated'];
         const isAiGenerated = (img.optimization_count && img.optimization_count > 0) || 
@@ -321,13 +324,15 @@ export const SmartBackgroundDialog = ({
     // If no gallery images, fallback to product.image_url
     if (images.length === 0 && product.image_url) {
       images.push({ url: product.image_url, label: 'Image principale', isAiGenerated: false });
+      seenUrls.add(normalizeUrl(product.image_url));
     }
     
-    // Add variant images if different
+    // Add variant images if different (dedupe ignoring ?v=...)
     if (product.variants) {
       product.variants.forEach((v, idx) => {
-        if (v.image_url && !seenUrls.has(v.image_url)) {
-          seenUrls.add(v.image_url);
+        const key = normalizeUrl(v.image_url);
+        if (v.image_url && key && !seenUrls.has(key)) {
+          seenUrls.add(key);
           images.push({ url: v.image_url, label: v.title || `Variante ${idx + 1}`, isAiGenerated: false });
         }
       });
