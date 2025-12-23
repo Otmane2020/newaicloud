@@ -994,17 +994,25 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                         <span className="hidden sm:inline">{t.seo.altImage.actions.generateAlt}</span>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs">
+                    <TooltipContent side="bottom" className="max-w-sm p-3">
                       {hasManualSyncRequired ? (
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium text-amber-500">
-                            ⚠️ {manualSyncCount} {language === 'fr' ? 'image(s) nécessitent une sync manuelle' : 'image(s) require manual sync'}
+                        <div className="flex flex-col gap-2">
+                          <span className="font-semibold text-amber-500 flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4" />
+                            {manualSyncCount} {t.seo.altImage.toasts.imagesRequireManualSync}
                           </span>
-                          <span className="text-xs text-muted-foreground">
-                            {language === 'fr' 
-                              ? 'Les images de page/homepage ne sont pas synchronisées automatiquement.' 
-                              : 'Page/homepage images are not automatically synced.'}
-                          </span>
+                          
+                          <div className="text-xs space-y-1 text-muted-foreground border-l-2 border-amber-500/50 pl-2">
+                            <p className="font-medium text-foreground">{t.seo.altImage.toasts.manualSyncGuide}</p>
+                            <p>{t.seo.altImage.toasts.manualSyncStep1}</p>
+                            <p>{t.seo.altImage.toasts.manualSyncStep2}</p>
+                            <p>{t.seo.altImage.toasts.manualSyncStep3}</p>
+                            <p>{t.seo.altImage.toasts.manualSyncStep4}</p>
+                          </div>
+                          
+                          <p className="text-[10px] text-muted-foreground mt-1 italic">
+                            {t.seo.altImage.toasts.manualSyncNote}
+                          </p>
                         </div>
                       ) : (
                         <span>{t.seo.altImage.actions.generateAlt}</span>
@@ -1024,17 +1032,25 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                         <span className="hidden sm:inline">{t.seo.altImage.actions.visionAI}</span>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs">
+                    <TooltipContent side="bottom" className="max-w-sm p-3">
                       {hasManualSyncRequired ? (
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium text-amber-500">
-                            ⚠️ {manualSyncCount} {language === 'fr' ? 'image(s) nécessitent une sync manuelle' : 'image(s) require manual sync'}
+                        <div className="flex flex-col gap-2">
+                          <span className="font-semibold text-amber-500 flex items-center gap-1">
+                            <AlertTriangle className="w-4 h-4" />
+                            {manualSyncCount} {t.seo.altImage.toasts.imagesRequireManualSync}
                           </span>
-                          <span className="text-xs text-muted-foreground">
-                            {language === 'fr' 
-                              ? 'Les images de page/homepage ne sont pas synchronisées automatiquement.' 
-                              : 'Page/homepage images are not automatically synced.'}
-                          </span>
+                          
+                          <div className="text-xs space-y-1 text-muted-foreground border-l-2 border-amber-500/50 pl-2">
+                            <p className="font-medium text-foreground">{t.seo.altImage.toasts.manualSyncGuide}</p>
+                            <p>{t.seo.altImage.toasts.manualSyncStep1}</p>
+                            <p>{t.seo.altImage.toasts.manualSyncStep2}</p>
+                            <p>{t.seo.altImage.toasts.manualSyncStep3}</p>
+                            <p>{t.seo.altImage.toasts.manualSyncStep4}</p>
+                          </div>
+                          
+                          <p className="text-[10px] text-muted-foreground mt-1 italic">
+                            {t.seo.altImage.toasts.manualSyncNote}
+                          </p>
                         </div>
                       ) : (
                         <span>{t.seo.altImage.actions.visionAI}</span>
@@ -1382,31 +1398,57 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                           <Sparkles className="w-4 h-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-xs">
+                      <TooltipContent side="left" className="max-w-sm p-3">
                         {!canSyncToShopify(img.content_type) ? (
-                          <div className="flex flex-col gap-1">
-                            <span className="font-medium text-amber-500">
-                              {language === 'fr' ? '⚠️ Sync manuelle requise' : '⚠️ Manual sync required'}
+                          <div className="flex flex-col gap-2">
+                            <span className="font-semibold text-amber-500 flex items-center gap-1">
+                              <AlertTriangle className="w-4 h-4" />
+                              {t.seo.altImage.toasts.manualSyncRequired}
                             </span>
-                            <span className="text-xs text-muted-foreground">
-                              {language === 'fr' 
-                                ? 'Les images de page/homepage nécessitent une copie manuelle du texte ALT.' 
-                                : 'Page/homepage images require manual ALT text copy.'}
-                            </span>
-                            <div className="flex items-center gap-1 mt-1">
-                              <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded truncate max-w-[180px]">
-                                📁 {getFilenameFromUrl(img.src)}
-                              </span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigator.clipboard.writeText(getFilenameFromUrl(img.src));
-                                  toast.success(t.toasts.success.copied);
-                                }}
-                                className="p-0.5 hover:bg-background rounded transition-colors"
-                              >
-                                <Copy className="w-3 h-3" />
-                              </button>
+                            
+                            <div className="text-xs space-y-1 text-muted-foreground border-l-2 border-amber-500/50 pl-2">
+                              <p className="font-medium text-foreground">{t.seo.altImage.toasts.manualSyncGuide}</p>
+                              <p>{t.seo.altImage.toasts.manualSyncStep1}</p>
+                              <p>{t.seo.altImage.toasts.manualSyncStep2}</p>
+                              <p>{t.seo.altImage.toasts.manualSyncStep3}</p>
+                              <p>{t.seo.altImage.toasts.manualSyncStep4}</p>
+                            </div>
+                            
+                            <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-border">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] text-muted-foreground">{t.seo.altImage.toasts.copyFilename}:</span>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded truncate max-w-[140px]">
+                                    {getFilenameFromUrl(img.src)}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigator.clipboard.writeText(getFilenameFromUrl(img.src));
+                                      toast.success(t.toasts.success.copied);
+                                    }}
+                                    className="p-1 hover:bg-muted rounded transition-colors"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                              {img.alt_text && (
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[10px] text-muted-foreground">{t.seo.altImage.toasts.copyAltText}:</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigator.clipboard.writeText(img.alt_text || '');
+                                      toast.success(t.toasts.success.copied);
+                                    }}
+                                    className="p-1 hover:bg-muted rounded transition-colors flex items-center gap-1 text-[10px]"
+                                  >
+                                    <span className="truncate max-w-[100px]">{img.alt_text.substring(0, 20)}...</span>
+                                    <Copy className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ) : (
