@@ -94,12 +94,23 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    await supabaseAdmin.from("shopify_pending_connections").insert({
+    const { error: insertError } = await supabaseAdmin.from("shopify_pending_connections").insert({
       pending_token: stateToken,
       shop_url: shop,
+      access_token: "pending", // Placeholder until OAuth completes
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-      metadata: { app: "ai-images", host: host || null }
+      is_claimed: false,
+      metadata: { 
+        app_id: "ai-images", 
+        host: host || null,
+        installed_at: new Date().toISOString()
+      }
     });
+
+    if (insertError) {
+      log("Error storing pending connection", { error: insertError });
+      return new Response("Failed to initiate OAuth", { status: 500 });
+    }
 
     log("State token stored", { stateToken: stateToken.substring(0, 8) + "..." });
 

@@ -170,38 +170,30 @@ serve(async (req) => {
 
     // Get host from pending connection metadata for embedded redirect
     const storedHost = pendingConnection.metadata?.host;
+    const shopSlug = shop.replace('.myshopify.com', '');
     
-    // Redirect BACK to Shopify Admin (embedded app)
-    // The embedded app URL must use the Shopify-provided host parameter
+    log("Building redirect URL", { storedHost, shopSlug });
+    
+    // Construct embedded app URL
+    let embeddedUrl: string;
+    
     if (storedHost) {
-      // Decode the host to get the admin URL
-      let adminUrl: string;
       try {
-        const decodedHost = atob(storedHost);
         // Host is base64 encoded "admin.shopify.com/store/{shop-name}"
-        adminUrl = `https://${decodedHost}/apps/ai-product-shot`;
-      } catch {
-        // Fallback: construct from shop domain
-        const fallbackShopName = shop.replace('.myshopify.com', '');
-        adminUrl = `https://admin.shopify.com/store/${fallbackShopName}/apps/ai-product-shot`;
+        const decodedHost = atob(storedHost);
+        embeddedUrl = `https://${decodedHost}/apps/ai-product-shot`;
+        log("Using decoded host", { decodedHost, embeddedUrl });
+      } catch (e) {
+        log("Failed to decode host, using fallback", { error: e });
+        embeddedUrl = `https://admin.shopify.com/store/${shopSlug}/apps/ai-product-shot`;
       }
-      
-      log("Redirecting to embedded app", { adminUrl });
-      
-      return new Response(null, {
-        status: 302,
-        headers: {
-          ...corsHeaders,
-          Location: adminUrl,
-        },
-      });
+    } else {
+      // Fallback: construct from shop domain
+      embeddedUrl = `https://admin.shopify.com/store/${shopSlug}/apps/ai-product-shot`;
+      log("No host stored, using fallback", { embeddedUrl });
     }
     
-    // Fallback for non-embedded installs
-    const shopSlug = shop.replace('.myshopify.com', '');
-    const embeddedUrl = `https://admin.shopify.com/store/${shopSlug}/apps/ai-product-shot`;
-    
-    log("Redirecting to embedded app (fallback)", { embeddedUrl });
+    log("Final redirect", { embeddedUrl });
     
     return new Response(null, {
       status: 302,
