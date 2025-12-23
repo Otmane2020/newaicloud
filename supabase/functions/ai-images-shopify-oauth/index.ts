@@ -168,14 +168,46 @@ serve(async (req) => {
       log("Connection stored successfully");
     }
 
-    // Redirect to success page
-    const successUrl = `${appUrl}/ai-images/install-success?shop=${encodeURIComponent(shop)}`;
+    // Get host from pending connection metadata for embedded redirect
+    const storedHost = pendingConnection.metadata?.host;
+    
+    // Redirect BACK to Shopify Admin (embedded app)
+    // The embedded app URL must use the Shopify-provided host parameter
+    if (storedHost) {
+      // Decode the host to get the admin URL
+      let adminUrl: string;
+      try {
+        const decodedHost = atob(storedHost);
+        // Host is base64 encoded "admin.shopify.com/store/{shop-name}"
+        adminUrl = `https://${decodedHost}/apps/ai-product-shot`;
+      } catch {
+        // Fallback: construct from shop domain
+        const fallbackShopName = shop.replace('.myshopify.com', '');
+        adminUrl = `https://admin.shopify.com/store/${fallbackShopName}/apps/ai-product-shot`;
+      }
+      
+      log("Redirecting to embedded app", { adminUrl });
+      
+      return new Response(null, {
+        status: 302,
+        headers: {
+          ...corsHeaders,
+          Location: adminUrl,
+        },
+      });
+    }
+    
+    // Fallback for non-embedded installs
+    const shopSlug = shop.replace('.myshopify.com', '');
+    const embeddedUrl = `https://admin.shopify.com/store/${shopSlug}/apps/ai-product-shot`;
+    
+    log("Redirecting to embedded app (fallback)", { embeddedUrl });
     
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        Location: successUrl,
+        Location: embeddedUrl,
       },
     });
   } catch (error) {

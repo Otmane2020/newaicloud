@@ -339,36 +339,94 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
       }),
     });
 
+    let generatedImageUrl: string | null = null;
+    let usedModel = "google/gemini-2.5-flash-image-preview";
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error("❌ Lovable AI error:", response.status, errorText);
 
-      // Handle rate limiting
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "Rate limit exceeded. Please try again in a few moments.",
-            rateLimited: true,
-          }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+      // Handle rate limiting or payment required - try Gemini Direct fallback
+      if (response.status === 429 || response.status === 402) {
+        console.log("⚠️ Lovable AI limit reached, trying Gemini Direct fallback...");
+        
+        const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+        if (GOOGLE_GEMINI_API_KEY) {
+          try {
+            // Fetch image and convert to base64
+            const imageResponse = await fetch(imageUrl);
+            const imageArrayBuffer = await imageResponse.arrayBuffer();
+            const imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imageArrayBuffer)));
+            const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
+            
+            // Call Gemini Direct API
+            const geminiResponse = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [
+                      { text: contextualPrompt },
+                      { inline_data: { mime_type: mimeType, data: imageBase64 } }
+                    ]
+                  }],
+                  generationConfig: {
+                    responseModalities: ["TEXT", "IMAGE"]
+                  }
+                })
+              }
+            );
+            
+            if (geminiResponse.ok) {
+              const geminiData = await geminiResponse.json();
+              const imagePart = geminiData.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+              if (imagePart?.inlineData?.data) {
+                generatedImageUrl = `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
+                usedModel = "gemini-2.0-flash-exp (direct fallback)";
+                console.log("✅ Gemini Direct fallback succeeded!");
+              }
+            } else {
+              console.error("❌ Gemini Direct also failed:", await geminiResponse.text());
+            }
+          } catch (geminiError) {
+            console.error("❌ Gemini Direct fallback error:", geminiError);
+          }
+        }
+        
+        // If fallback also failed, return appropriate error
+        if (!generatedImageUrl) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: response.status === 429 
+                ? "Rate limit exceeded. Please try again in a few moments."
+                : "AI credits exhausted. Please check your Lovable AI credits.",
+              rateLimited: response.status === 429,
+              paymentRequired: response.status === 402,
+            }),
+            { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      } else {
+        throw new Error(`Lovable AI error ${response.status}: ${errorText}`);
       }
-
-      throw new Error(`Lovable AI error ${response.status}: ${errorText}`);
     }
 
-    const data = await response.json();
-    console.log("✅ Lovable AI response received");
-
-    const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    // If Lovable AI succeeded, extract image
+    if (!generatedImageUrl) {
+      const data = await response.json();
+      console.log("✅ Lovable AI response received");
+      generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    }
 
     if (!generatedImageUrl) {
-      console.error("⚠️ No image returned:", JSON.stringify(data, null, 2));
+      console.error("⚠️ No image returned from any provider");
       throw new Error("No image generated - unexpected response format");
     }
 
-    console.log("🎨 Beautiful background generated successfully");
+    console.log(`🎨 Background generated successfully via ${usedModel}`);
 
     // 🆕 POST-PROCESSING: Force exact format dimensions
     let processedImageUrl = generatedImageUrl;

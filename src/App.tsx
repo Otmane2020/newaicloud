@@ -683,8 +683,26 @@ function NewAIRoutes() {
   );
 }
 
-// AI Images Routes
+// AI Images Routes - with Shopify App Bridge for embedded mode
 function AiImagesRoutes() {
+  const search = new URLSearchParams(window.location.search);
+  const isEmbedded = search.get("embedded") === "1" || search.has("shop") || search.has("host");
+  
+  console.log('📦 AiImagesRoutes - isEmbedded:', isEmbedded, 'search:', window.location.search);
+  
+  // If embedded or has Shopify params, wrap in App Bridge provider and go directly to dashboard
+  if (isEmbedded) {
+    const { AiImagesAppBridgeProvider } = require("./components/ai-images/AiImagesAppBridgeProvider");
+    return (
+      <AiImagesAppBridgeProvider>
+        <Routes>
+          <Route path="*" element={<AiImagesDashboard />} />
+        </Routes>
+      </AiImagesAppBridgeProvider>
+    );
+  }
+  
+  // Standalone mode (landing page, auth, etc.)
   return (
     <Routes>
       <Route path="/" element={<AiImagesLanding />} />
