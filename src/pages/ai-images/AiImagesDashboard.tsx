@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -50,8 +50,30 @@ interface HistoryItem {
 
 export default function AiImagesDashboard() {
   const { language } = useTranslation();
-  const { selectedStore } = useStore();
+  const { selectedStore, stores } = useStore();
   const isFr = language === "fr";
+
+  // Detect Shopify embedded mode and get shop from URL params
+  const shopifyParams = useMemo(() => {
+    const search = new URLSearchParams(window.location.search);
+    return {
+      shop: search.get("shop"),
+      host: search.get("host"),
+      isEmbedded: search.get("embedded") === "1" || search.has("host"),
+    };
+  }, []);
+
+  // Find store from Shopify shop param if embedded
+  const embeddedStore = useMemo(() => {
+    if (!shopifyParams.shop || !stores.length) return null;
+    return stores.find(s => 
+      s.store_url?.includes(shopifyParams.shop!) || 
+      shopifyParams.shop!.includes(s.store_url?.replace('https://', '').replace('.myshopify.com', '') || '')
+    );
+  }, [shopifyParams.shop, stores]);
+
+  // Use embedded store if available, otherwise selectedStore
+  const activeStore = embeddedStore || selectedStore;
 
   const [activeTab, setActiveTab] = useState("products");
   const [products, setProducts] = useState<Product[]>([]);
@@ -68,26 +90,32 @@ export default function AiImagesDashboard() {
 
   useEffect(() => {
     loadProducts();
-  }, [selectedStore]);
+  }, [activeStore]);
 
   useEffect(() => {
     if (activeTab === "history") {
       loadHistory();
     }
-  }, [activeTab, selectedStore]);
+  }, [activeTab, activeStore]);
 
   const loadProducts = async () => {
-    if (!selectedStore) return;
+    if (!activeStore) {
+      console.log("[AiImagesDashboard] No active store, skipping products load");
+      setLoadingProducts(false);
+      return;
+    }
+    console.log("[AiImagesDashboard] Loading products for store:", activeStore.id);
     setLoadingProducts(true);
     try {
       const { data, error } = await supabase
         .from("shopify_products")
         .select("id, title, image_url, status, shopify_id, handle")
-        .eq("store_id", selectedStore.id)
+        .eq("store_id", activeStore.id)
         .order("title", { ascending: true });
 
       if (error) throw error;
       setProducts(data || []);
+      console.log("[AiImagesDashboard] Loaded", data?.length || 0, "products");
     } catch (err) {
       console.error("Error loading products:", err);
       toast.error(isFr ? "Erreur chargement produits" : "Error loading products");
@@ -109,8 +137,8 @@ export default function AiImagesDashboard() {
         .order("created_at", { ascending: false })
         .limit(100);
 
-      if (selectedStore) {
-        query.eq("store_id", selectedStore.id);
+      if (activeStore) {
+        query.eq("store_id", activeStore.id);
       }
 
       const { data, error } = await query;
