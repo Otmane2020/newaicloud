@@ -484,12 +484,16 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     setProgress({ current: 0, total: 1 });
 
     // Use global context processor - shows progress dialog even for single item
+    const imageType = image.image_type || 'product';
     await processBulkOperation(
       'alt',
       [image],
       async (img) => {
         const { data, error } = await supabase.functions.invoke('smart-alt-text', {
-          body: { image_id: img.id }
+          body: { 
+            image_id: img.id,
+            imageType: imageType
+          }
         });
 
         // Update local progress
@@ -514,7 +518,6 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         await refreshLimits();
 
         if (results.success > 0) {
-          const imageType = image.image_type || 'product';
           const { data: updatedImage } = await supabase
             .from(imageType === 'product' ? 'product_images' : 'content_images')
             .select('*')
