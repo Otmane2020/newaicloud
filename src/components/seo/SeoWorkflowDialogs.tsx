@@ -347,6 +347,7 @@ interface ResultsDialogProps {
     failed: number;
     errors?: string[];
   };
+  requiresManualSync?: boolean; // For page/homepage images that can't sync via API
 }
 
 export function ResultsDialog({
@@ -356,6 +357,7 @@ export function ResultsDialog({
   items,
   onClose,
   syncStatus,
+  requiresManualSync = false,
 }: ResultsDialogProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<WorkflowItem | null>(null);
@@ -525,6 +527,22 @@ export function ResultsDialog({
                 </span>
               </div>
             )
+          ) : requiresManualSync ? (
+            <div className="flex flex-col gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                  {language === 'fr' 
+                    ? 'ALT sauvegardé localement - Sync manuelle requise' 
+                    : 'ALT saved locally - Manual sync required'}
+                </span>
+              </div>
+              <p className="text-xs text-amber-600 dark:text-amber-400 pl-7">
+                {language === 'fr' 
+                  ? 'Les images Page/Homepage ne peuvent pas être synchronisées via API. Allez dans Files sur Shopify pour appliquer manuellement.' 
+                  : 'Page/Homepage images cannot be synced via API. Go to Files on Shopify to apply manually.'}
+              </p>
+            </div>
           ) : (
             <div className="flex items-center justify-center gap-2 p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
               <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
