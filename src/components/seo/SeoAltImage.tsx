@@ -975,23 +975,75 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           </div>
           
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button
-              onClick={() => handleGenerateForSelected(false)}
-              disabled={selectedImages.size === 0 || isTypeRunning('alt')}
-              size="sm"
-            >
-              <Sparkles className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t.seo.altImage.actions.generateAlt}</span>
-            </Button>
-            <Button
-              onClick={() => handleGenerateForSelected(true)}
-              disabled={selectedImages.size === 0 || isTypeRunning('alt')}
-              variant="outline"
-              size="sm"
-            >
-              <Eye className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t.seo.altImage.actions.visionAI}</span>
-            </Button>
+            {/* Check if selected images include manual sync required */}
+            {(() => {
+              const selectedImagesArray = sortedImages.filter(img => selectedImages.has(img.id));
+              const hasManualSyncRequired = selectedImagesArray.some(img => !canSyncToShopify(img.content_type));
+              const manualSyncCount = selectedImagesArray.filter(img => !canSyncToShopify(img.content_type)).length;
+              
+              return (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => handleGenerateForSelected(false)}
+                        disabled={selectedImages.size === 0 || isTypeRunning('alt')}
+                        size="sm"
+                      >
+                        <Sparkles className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{t.seo.altImage.actions.generateAlt}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs">
+                      {hasManualSyncRequired ? (
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-amber-500">
+                            ⚠️ {manualSyncCount} {language === 'fr' ? 'image(s) nécessitent une sync manuelle' : 'image(s) require manual sync'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {language === 'fr' 
+                              ? 'Les images de page/homepage ne sont pas synchronisées automatiquement.' 
+                              : 'Page/homepage images are not automatically synced.'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span>{t.seo.altImage.actions.generateAlt}</span>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => handleGenerateForSelected(true)}
+                        disabled={selectedImages.size === 0 || isTypeRunning('alt')}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Eye className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{t.seo.altImage.actions.visionAI}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs">
+                      {hasManualSyncRequired ? (
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-amber-500">
+                            ⚠️ {manualSyncCount} {language === 'fr' ? 'image(s) nécessitent une sync manuelle' : 'image(s) require manual sync'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {language === 'fr' 
+                              ? 'Les images de page/homepage ne sont pas synchronisées automatiquement.' 
+                              : 'Page/homepage images are not automatically synced.'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span>{t.seo.altImage.actions.visionAI}</span>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </>
+              );
+            })()}
             <Button
               onClick={handleImportContentImages}
               disabled={importing}
