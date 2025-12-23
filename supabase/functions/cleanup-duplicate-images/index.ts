@@ -30,6 +30,10 @@ const normalizeUrl = (url?: string | null): string => {
   // Shopify CDN variants often use _WIDTHxHEIGHT suffixes.
   filename = filename.replace(/_\d+x\d+(?=\.[a-zA-Z0-9]+$)/i, "");
 
+  // Remove numeric suffixes like _1, _2, _3 etc. (Shopify duplicates)
+  // e.g., FT204-CTEC_1.jpg -> FT204-CTEC.jpg
+  filename = filename.replace(/_\d+(?=\.[a-zA-Z0-9]+$)/i, "");
+
   return filename.toLowerCase();
 };
 
