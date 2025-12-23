@@ -29,6 +29,8 @@ import {
   X,
   Upload,
   Images,
+  AlertTriangle,
+  ExternalLink,
 } from "lucide-react";
 
 interface Product {
@@ -48,6 +50,17 @@ interface HistoryItem {
   image_url: string;
   created_at: string;
   caption: string | null;
+}
+
+interface DuplicateProductInfo {
+  productId: string;
+  productTitle: string;
+  duplicateCount: number;
+  duplicateGroups: Array<{
+    normalizedFilename: string;
+    imageCount: number;
+    images: Array<{ id: string; src: string; isAi: boolean }>;
+  }>;
 }
 
 export default function AiImagesDashboard() {
@@ -90,6 +103,8 @@ export default function AiImagesDashboard() {
   const [showBillingDialog, setShowBillingDialog] = useState(false);
   const [previewImage, setPreviewImage] = useState<HistoryItem | null>(null);
   const [singleProductToGenerate, setSingleProductToGenerate] = useState<Product | null>(null);
+  const [productsWithDuplicates, setProductsWithDuplicates] = useState<DuplicateProductInfo[]>([]);
+  const [showDuplicatesDialog, setShowDuplicatesDialog] = useState(false);
   
   // Image statistics
   const [imageStats, setImageStats] = useState({
@@ -186,6 +201,11 @@ export default function AiImagesDashboard() {
       if (error) throw error;
 
       if (dryRun) {
+        // Store products with duplicates for display
+        if (data.productsWithDuplicates && data.productsWithDuplicates.length > 0) {
+          setProductsWithDuplicates(data.productsWithDuplicates);
+        }
+        
         const msg = isFr 
           ? `Analyse terminée: ${data.imagesToDelete} doublons trouvés (${data.stats?.duplicateAiImagesDeleted || 0} IA, ${data.stats?.duplicateNormalizedUrlDeleted || 0} URLs similaires, ${data.stats?.duplicateShopifyDeleted || 0} IDs Shopify)`
           : `Analysis complete: ${data.imagesToDelete} duplicates found (${data.stats?.duplicateAiImagesDeleted || 0} AI, ${data.stats?.duplicateNormalizedUrlDeleted || 0} similar URLs, ${data.stats?.duplicateShopifyDeleted || 0} Shopify IDs)`;
@@ -194,15 +214,17 @@ export default function AiImagesDashboard() {
           toast.info(msg, {
             duration: 8000,
             action: {
-              label: isFr ? "Supprimer maintenant" : "Delete now",
-              onClick: () => cleanupDuplicateImages(false)
+              label: isFr ? "Voir produits affectés" : "View affected products",
+              onClick: () => setShowDuplicatesDialog(true)
             }
           });
         } else {
           toast.success(isFr ? "Aucun doublon trouvé !" : "No duplicates found!");
+          setProductsWithDuplicates([]);
         }
       } else {
         toast.success(isFr ? `${data.deletedCount} doublons supprimés !` : `${data.deletedCount} duplicates deleted!`);
+        setProductsWithDuplicates([]);
         loadImageStats();
       }
     } catch (err: any) {
@@ -385,15 +407,40 @@ export default function AiImagesDashboard() {
 
           {/* Cleanup Duplicates Button */}
           <Card 
-            className="p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors col-span-2 md:col-span-1" 
-            onClick={() => !isCleaningDuplicates && cleanupDuplicateImages(true)}
+            className={`p-4 flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors col-span-2 md:col-span-1 ${productsWithDuplicates.length > 0 ? 'ring-2 ring-amber-500/50' : ''}`}
+            onClick={() => {
+              if (productsWithDuplicates.length > 0) {
+                setShowDuplicatesDialog(true);
+              } else if (!isCleaningDuplicates) {
+                cleanupDuplicateImages(true);
+              }
+            }}
           >
-            <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
-              <Trash2 className={`w-5 h-5 text-red-500 ${isCleaningDuplicates ? 'animate-pulse' : ''}`} />
+            <div className={`w-10 h-10 rounded-lg ${productsWithDuplicates.length > 0 ? 'bg-amber-500/10' : 'bg-red-500/10'} flex items-center justify-center relative`}>
+              {productsWithDuplicates.length > 0 ? (
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+              ) : (
+                <Trash2 className={`w-5 h-5 text-red-500 ${isCleaningDuplicates ? 'animate-pulse' : ''}`} />
+              )}
+              {productsWithDuplicates.length > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 min-w-[20px] px-1 text-xs bg-amber-500">
+                  {productsWithDuplicates.length}
+                </Badge>
+              )}
             </div>
             <div>
-              <p className="text-sm font-semibold">{isCleaningDuplicates ? (isFr ? "Analyse..." : "Analyzing...") : (isFr ? "Nettoyer doublons" : "Cleanup duplicates")}</p>
-              <p className="text-xs text-muted-foreground">{isFr ? "Supprimer images en double" : "Remove duplicate images"}</p>
+              <p className="text-sm font-semibold">
+                {isCleaningDuplicates 
+                  ? (isFr ? "Analyse..." : "Analyzing...") 
+                  : productsWithDuplicates.length > 0 
+                    ? (isFr ? "Voir doublons détectés" : "View detected duplicates")
+                    : (isFr ? "Détecter doublons" : "Detect duplicates")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {productsWithDuplicates.length > 0 
+                  ? (isFr ? `${productsWithDuplicates.length} produits affectés` : `${productsWithDuplicates.length} products affected`)
+                  : (isFr ? "Analyser et supprimer" : "Analyze and remove")}
+              </p>
             </div>
           </Card>
         </div>
@@ -674,6 +721,114 @@ export default function AiImagesDashboard() {
         open={showBillingDialog}
         onOpenChange={setShowBillingDialog}
       />
+
+      {/* Products with Duplicates Dialog */}
+      <Dialog open={showDuplicatesDialog} onOpenChange={setShowDuplicatesDialog}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            {isFr ? `${productsWithDuplicates.length} produits avec doublons d'images` : `${productsWithDuplicates.length} products with duplicate images`}
+          </DialogTitle>
+          
+          <div className="flex-1 overflow-y-auto space-y-4 mt-4">
+            {productsWithDuplicates.map((product) => (
+              <Card key={product.productId} className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-base">{product.productTitle}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isFr 
+                        ? `${product.duplicateCount} doublons dans ${product.duplicateGroups.length} groupe(s)`
+                        : `${product.duplicateCount} duplicates in ${product.duplicateGroups.length} group(s)`}
+                    </p>
+                  </div>
+                  {activeStore && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        const storeUrl = activeStore.store_url?.replace(/\/$/, '') || '';
+                        const shopifyProductId = products.find(p => p.id === product.productId)?.shopify_id;
+                        if (shopifyProductId && storeUrl) {
+                          const adminUrl = storeUrl.replace('.myshopify.com', '.myshopify.com').replace('https://', 'https://admin.shopify.com/store/').replace('.myshopify.com', '') + `/products/${shopifyProductId}`;
+                          window.open(adminUrl, '_blank');
+                        }
+                      }}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Shopify
+                    </Button>
+                  )}
+                </div>
+                
+                {product.duplicateGroups.map((group, groupIdx) => (
+                  <div key={groupIdx} className="mt-3 pt-3 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {isFr ? "Fichier:" : "File:"} <code className="bg-muted px-1 rounded">{group.normalizedFilename}</code> 
+                      <span className="ml-2">({group.imageCount} {isFr ? "occurrences" : "occurrences"})</span>
+                    </p>
+                    <div className="flex gap-2 flex-wrap">
+                      {group.images.slice(0, 6).map((img, imgIdx) => (
+                        <div 
+                          key={img.id} 
+                          className={`relative w-16 h-16 rounded-md overflow-hidden border-2 ${
+                            imgIdx === 0 ? 'border-green-500' : 'border-red-500/50'
+                          }`}
+                          title={imgIdx === 0 ? (isFr ? "Conservé" : "Kept") : (isFr ? "Doublon" : "Duplicate")}
+                        >
+                          <img 
+                            src={img.src} 
+                            alt="" 
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-[10px] text-white text-center py-0.5">
+                            {img.isAi ? "AI" : "Shopify"}
+                          </div>
+                          {imgIdx > 0 && (
+                            <div className="absolute top-0 right-0 w-4 h-4 bg-red-500 flex items-center justify-center">
+                              <X className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {group.images.length > 6 && (
+                        <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center text-sm text-muted-foreground">
+                          +{group.images.length - 6}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </Card>
+            ))}
+          </div>
+          
+          <div className="flex justify-between items-center pt-4 border-t mt-4">
+            <p className="text-sm text-muted-foreground">
+              {isFr 
+                ? "Les images marquées en rouge seront supprimées"
+                : "Images marked in red will be deleted"}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowDuplicatesDialog(false)}>
+                {isFr ? "Annuler" : "Cancel"}
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  setShowDuplicatesDialog(false);
+                  cleanupDuplicateImages(false);
+                }}
+                className="gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                {isFr ? "Supprimer les doublons" : "Delete duplicates"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
