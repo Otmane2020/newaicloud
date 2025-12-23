@@ -5,27 +5,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BulkAIImagesDialog } from "@/components/seo/BulkAIImagesDialog";
+import { AIImagesCreditsDisplay, AIImagesCreditsPurchaseDialog } from "@/components/seo/AIImagesCreditsPurchase";
+import { format } from "date-fns";
+import { fr, enUS } from "date-fns/locale";
 import {
   Camera,
   Search,
   Image,
   History,
-  CreditCard,
   Sparkles,
   Package,
-  Clock,
   Trash2,
   Download,
-  ExternalLink,
   RefreshCcw,
-  Filter,
+  ZoomIn,
+  X,
 } from "lucide-react";
 
 interface Product {
@@ -47,12 +48,6 @@ interface HistoryItem {
   caption: string | null;
 }
 
-interface UserCredits {
-  total: number;
-  used: number;
-  remaining: number;
-}
-
 export default function AiImagesDashboard() {
   const { language } = useTranslation();
   const { selectedStore } = useStore();
@@ -67,24 +62,19 @@ export default function AiImagesDashboard() {
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [showBulkDialog, setShowBulkDialog] = useState(false);
-  const [credits, setCredits] = useState<UserCredits>({ total: 0, used: 0, remaining: 0 });
+  const [showBillingDialog, setShowBillingDialog] = useState(false);
+  const [previewImage, setPreviewImage] = useState<HistoryItem | null>(null);
+  const [singleProductToGenerate, setSingleProductToGenerate] = useState<Product | null>(null);
 
-  // Load products
   useEffect(() => {
     loadProducts();
   }, [selectedStore]);
 
-  // Load history when tab changes
   useEffect(() => {
     if (activeTab === "history") {
       loadHistory();
     }
   }, [activeTab, selectedStore]);
-
-  // Load credits
-  useEffect(() => {
-    loadCredits();
-  }, []);
 
   const loadProducts = async () => {
     if (!selectedStore) return;
@@ -133,28 +123,6 @@ export default function AiImagesDashboard() {
     }
   };
 
-  const loadCredits = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Get usage for current month
-      const { data, error } = await supabase
-        .from("usage_tracking")
-        .select("optimizations_count")
-        .eq("seller_id", user.id)
-        .gte("month", new Date().toISOString().slice(0, 7) + "-01")
-        .single();
-
-      const used = data?.optimizations_count || 0;
-      // Assuming 30 credits per $9.99 pack (10 images * 3 credits)
-      const total = 30;
-      setCredits({ total, used, remaining: Math.max(0, total - used) });
-    } catch (err) {
-      console.error("Error loading credits:", err);
-    }
-  };
-
   const deleteHistoryItem = async (id: string) => {
     try {
       const { error } = await supabase
@@ -179,6 +147,13 @@ export default function AiImagesDashboard() {
       }
       return [...prev, product];
     });
+  };
+
+  const handleGenerateSingle = (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation();
+    setSingleProductToGenerate(product);
+    setSelectedProducts([product]);
+    setShowBulkDialog(true);
   };
 
   const handleSelectAll = () => {
@@ -216,19 +191,8 @@ export default function AiImagesDashboard() {
             <span className="font-bold text-lg">AI Product Image Shot</span>
           </div>
 
-          {/* Credits Display */}
-          <div className="flex items-center gap-4">
-            <Card className="px-4 py-2 flex items-center gap-3">
-              <CreditCard className="w-4 h-4 text-primary" />
-              <div className="text-sm">
-                <span className="font-medium">{credits.remaining}</span>
-                <span className="text-muted-foreground">/{credits.total} {isFr ? "crédits" : "credits"}</span>
-              </div>
-            </Card>
-            <Button variant="outline" size="sm">
-              {isFr ? "Acheter Crédits" : "Buy Credits"}
-            </Button>
-          </div>
+          {/* Billing Display */}
+          <AIImagesCreditsDisplay onBuyClick={() => setShowBillingDialog(true)} />
         </div>
       </header>
 
@@ -248,7 +212,6 @@ export default function AiImagesDashboard() {
 
           {/* Products Tab */}
           <TabsContent value="products" className="space-y-4">
-            {/* Actions Bar */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="relative w-full sm:w-80">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -296,11 +259,6 @@ export default function AiImagesDashboard() {
                 <h3 className="font-semibold mb-2">
                   {isFr ? "Aucun produit trouvé" : "No products found"}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  {isFr
-                    ? "Importez vos produits depuis Shopify pour commencer."
-                    : "Import your products from Shopify to get started."}
-                </p>
               </Card>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -326,13 +284,27 @@ export default function AiImagesDashboard() {
                             <Image className="w-8 h-8 text-muted-foreground" />
                           </div>
                         )}
+                        
+                        {/* Sparkles button - always visible on hover */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className="h-10 w-10 rounded-full shadow-lg"
+                            onClick={(e) => handleGenerateSingle(e, product)}
+                          >
+                            <Sparkles className="w-5 h-5 text-primary" />
+                          </Button>
+                        </div>
+
                         {isSelected && (
-                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                              <Sparkles className="w-4 h-4 text-white" />
+                          <div className="absolute top-2 left-2">
+                            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                              <Sparkles className="w-3 h-3 text-white" />
                             </div>
                           </div>
                         )}
+                        
                         {product.status === "active" && (
                           <Badge className="absolute top-2 right-2 text-xs" variant="secondary">
                             {isFr ? "Actif" : "Active"}
@@ -349,27 +321,24 @@ export default function AiImagesDashboard() {
             )}
           </TabsContent>
 
-          {/* History Tab */}
+          {/* History Tab - NewAI Style */}
           <TabsContent value="history" className="space-y-4">
-            {/* Search and Filter */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center justify-between">
               <div className="relative w-full sm:w-80">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder={isFr ? "Rechercher par produit..." : "Search by product..."}
+                  placeholder={isFr ? "Rechercher historique..." : "Search history..."}
                   value={historySearchQuery}
                   onChange={e => setHistorySearchQuery(e.target.value)}
                   className="pl-10"
                 />
               </div>
-
               <Button variant="outline" size="sm" onClick={loadHistory} className="gap-2">
                 <RefreshCcw className="w-4 h-4" />
                 {isFr ? "Actualiser" : "Refresh"}
               </Button>
             </div>
 
-            {/* History Grid */}
             {loadingHistory ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {Array.from({ length: 10 }).map((_, i) => (
@@ -383,67 +352,43 @@ export default function AiImagesDashboard() {
                   {isFr ? "Aucun historique" : "No history yet"}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {isFr
-                    ? "Vos images générées par IA apparaîtront ici."
-                    : "Your AI-generated images will appear here."}
+                  {isFr ? "Vos images générées par IA apparaîtront ici." : "Your AI-generated images will appear here."}
                 </p>
               </Card>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {filteredHistory.map(item => (
-                  <Card key={item.id} className="group overflow-hidden">
-                    <div className="aspect-square relative bg-muted">
-                      <img
-                        src={item.image_url}
-                        alt={item.product_title || "AI Generated"}
-                        className="w-full h-full object-cover"
-                      />
-                      {/* Hover Actions */}
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <div key={item.id} className="group relative cursor-pointer" onClick={() => setPreviewImage(item)}>
+                    <img
+                      src={item.image_url}
+                      alt={item.product_title || "Creative"}
+                      className="w-full aspect-square object-cover rounded-lg transition-transform group-hover:scale-[1.02]"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col justify-between p-2">
+                      <div className="flex justify-between items-start">
                         <Button
-                          size="icon"
                           variant="secondary"
-                          className="h-8 w-8"
-                          onClick={() => window.open(item.image_url, "_blank")}
+                          size="icon"
+                          className="h-7 w-7 bg-white/20 hover:bg-white/40"
+                          onClick={(e) => { e.stopPropagation(); setPreviewImage(item); }}
                         >
-                          <ExternalLink className="w-4 h-4" />
+                          <ZoomIn className="h-4 w-4 text-white" />
                         </Button>
                         <Button
-                          size="icon"
-                          variant="secondary"
-                          className="h-8 w-8"
-                          onClick={() => {
-                            const a = document.createElement("a");
-                            a.href = item.image_url;
-                            a.download = `ai-image-${item.id}.png`;
-                            a.click();
-                          }}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="icon"
                           variant="destructive"
-                          className="h-8 w-8"
-                          onClick={() => deleteHistoryItem(item.id)}
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={(e) => { e.stopPropagation(); deleteHistoryItem(item.id); }}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    </div>
-                    <div className="p-3 space-y-1">
-                      <p className="text-sm font-medium truncate">{item.product_title || "—"}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        {new Date(item.created_at).toLocaleDateString()}
+                      <div className="text-white text-xs">
+                        <p className="font-medium truncate">{item.product_title}</p>
+                        <p className="opacity-70">{format(new Date(item.created_at), 'dd/MM/yyyy', { locale: isFr ? fr : enUS })}</p>
                       </div>
-                      {item.template_name && (
-                        <Badge variant="secondary" className="text-xs">
-                          {item.template_name}
-                        </Badge>
-                      )}
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
             )}
@@ -451,10 +396,64 @@ export default function AiImagesDashboard() {
         </Tabs>
       </main>
 
+      {/* Preview Dialog - NewAI Style */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-none">
+          <DialogTitle className="sr-only">
+            {previewImage?.product_title || 'Creative Preview'}
+          </DialogTitle>
+          {previewImage && (
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 z-10 text-white hover:bg-white/20 rounded-full"
+                onClick={() => setPreviewImage(null)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+              <img
+                src={previewImage.image_url}
+                alt={previewImage.product_title || 'Creative'}
+                className="w-full max-h-[80vh] object-contain"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-white">
+                    <p className="font-semibold text-lg">{previewImage.product_title}</p>
+                    <p className="text-sm opacity-70">
+                      {previewImage.template_name} • {format(new Date(previewImage.created_at), 'dd MMMM yyyy', { locale: isFr ? fr : enUS })}
+                    </p>
+                  </div>
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    className="gap-2"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = previewImage.image_url;
+                      link.download = `creative-${previewImage.id}.png`;
+                      link.click();
+                      toast.success(isFr ? "Téléchargé!" : "Downloaded!");
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                    {isFr ? "Télécharger" : "Download"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Bulk AI Images Dialog */}
       <BulkAIImagesDialog
         open={showBulkDialog}
-        onOpenChange={setShowBulkDialog}
+        onOpenChange={(open) => {
+          setShowBulkDialog(open);
+          if (!open) setSingleProductToGenerate(null);
+        }}
         selectedProducts={selectedProducts.map(p => ({
           id: p.id,
           title: p.title,
@@ -464,10 +463,16 @@ export default function AiImagesDashboard() {
         onComplete={() => {
           setShowBulkDialog(false);
           setSelectedProducts([]);
+          setSingleProductToGenerate(null);
           loadHistory();
-          loadCredits();
           toast.success(isFr ? "Images générées avec succès!" : "Images generated successfully!");
         }}
+      />
+
+      {/* Billing Dialog */}
+      <AIImagesCreditsPurchaseDialog
+        open={showBillingDialog}
+        onOpenChange={setShowBillingDialog}
       />
     </div>
   );

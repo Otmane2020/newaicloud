@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Coins, Package, Loader2, ExternalLink, Sparkles } from 'lucide-react';
+import { Zap, Loader2, ExternalLink, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAIImagesCredits } from '@/hooks/useAIImagesCredits';
 import { useTranslation } from '@/lib/language';
 
@@ -23,19 +23,19 @@ export const AIImagesCreditsPurchaseDialog = ({
   onOpenChange,
 }: AIImagesCreditsPurchaseDialogProps) => {
   const { language } = useTranslation();
-  const { balance, packages, purchaseCredits, isLoading } = useAIImagesCredits();
-  const [purchasingPackage, setPurchasingPackage] = useState<string | null>(null);
+  const { isActive, plan, pricing, setupBilling, isLoading } = useAIImagesCredits();
+  const [isSettingUp, setIsSettingUp] = useState(false);
 
-  const handlePurchase = async (packageId: string) => {
-    setPurchasingPackage(packageId);
+  const handleSetupBilling = async () => {
+    setIsSettingUp(true);
     try {
-      const confirmationUrl = await purchaseCredits(packageId);
+      const confirmationUrl = await setupBilling();
       if (confirmationUrl) {
         window.open(confirmationUrl, '_blank');
         onOpenChange(false);
       }
     } finally {
-      setPurchasingPackage(null);
+      setIsSettingUp(false);
     }
   };
 
@@ -44,77 +44,123 @@ export const AIImagesCreditsPurchaseDialog = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Coins className="h-5 w-5 text-primary" />
-            {language === 'fr' ? 'Acheter des Crédits' : 'Purchase Credits'}
+            <Zap className="h-5 w-5 text-primary" />
+            {language === 'fr' ? 'Facturation AI Images' : 'AI Images Billing'}
           </DialogTitle>
           <DialogDescription>
             {language === 'fr'
-              ? 'Achetez des crédits pour générer des images IA'
-              : 'Purchase credits to generate AI images'}
+              ? 'Paiement à l\'usage - Payez uniquement pour ce que vous générez'
+              : 'Pay as you go - Only pay for what you generate'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Current balance */}
-          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-            <span className="text-sm text-muted-foreground">
-              {language === 'fr' ? 'Solde actuel' : 'Current balance'}
-            </span>
-            <Badge variant="secondary" className="text-lg px-3 py-1">
-              <Coins className="h-4 w-4 mr-1" />
-              {balance}
-            </Badge>
-          </div>
-
-          {/* Packages */}
-          <div className="grid gap-3">
-            {packages.map((pkg) => (
-              <Card
-                key={pkg.id}
-                className="p-4 hover:border-primary/50 transition-colors cursor-pointer"
-                onClick={() => !purchasingPackage && handlePurchase(pkg.id)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Package className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{pkg.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        ${(pkg.price / pkg.credits).toFixed(2)}/{language === 'fr' ? 'crédit' : 'credit'}
-                      </p>
-                    </div>
+          {isActive && plan ? (
+            <>
+              {/* Active billing status */}
+              <Card className="p-4 border-green-500/30 bg-green-500/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-lg">${pkg.price.toFixed(2)}</p>
-                    <Button
-                      size="sm"
-                      disabled={purchasingPackage !== null}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePurchase(pkg.id);
-                      }}
-                    >
-                      {purchasingPackage === pkg.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          {language === 'fr' ? 'Acheter' : 'Buy'}
-                        </>
-                      )}
-                    </Button>
+                  <div>
+                    <p className="font-medium text-green-700 dark:text-green-400">
+                      {language === 'fr' ? 'Facturation Active' : 'Billing Active'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{plan.name}</p>
                   </div>
                 </div>
               </Card>
-            ))}
-          </div>
+
+              {/* Usage stats */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {language === 'fr' ? 'Utilisé ce mois' : 'Used this month'}
+                  </span>
+                  <span className="font-medium">${parseFloat(plan.balanceUsed || '0').toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {language === 'fr' ? 'Plafond mensuel' : 'Monthly cap'}
+                  </span>
+                  <span className="font-medium">${parseFloat(plan.cappedAmount).toFixed(2)}</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{
+                      width: `${Math.min(100, (parseFloat(plan.balanceUsed || '0') / parseFloat(plan.cappedAmount)) * 100)}%`
+                    }}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Not active - show setup */}
+              <Card className="p-4 border-amber-500/30 bg-amber-500/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <AlertCircle className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-amber-700 dark:text-amber-400">
+                      {language === 'fr' ? 'Facturation non configurée' : 'Billing not set up'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'fr' ? 'Activez pour un accès illimité' : 'Enable for unlimited access'}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Pricing info */}
+              {pricing && (
+                <Card className="p-4">
+                  <h4 className="font-medium mb-3">{pricing.name}</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span>
+                        ${pricing.pricePerImage.toFixed(2)} {language === 'fr' ? 'par image' : 'per image'}
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span>
+                        {language === 'fr' ? 'Plafond' : 'Capped at'} ${pricing.cappedAmount.toFixed(2)}/{language === 'fr' ? 'mois' : 'month'}
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span>
+                        {language === 'fr' ? 'Pas d\'engagement' : 'No commitment'}
+                      </span>
+                    </li>
+                  </ul>
+                </Card>
+              )}
+
+              <Button
+                className="w-full"
+                onClick={handleSetupBilling}
+                disabled={isSettingUp || isLoading}
+              >
+                {isSettingUp ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                )}
+                {language === 'fr' ? 'Activer la facturation' : 'Enable Billing'}
+              </Button>
+            </>
+          )}
 
           <p className="text-xs text-muted-foreground text-center">
             {language === 'fr'
-              ? 'Paiement sécurisé via Shopify Billing'
-              : 'Secure payment via Shopify Billing'}
+              ? 'Facturation sécurisée via Shopify'
+              : 'Secure billing via Shopify'}
           </p>
         </div>
       </DialogContent>
@@ -122,7 +168,7 @@ export const AIImagesCreditsPurchaseDialog = ({
   );
 };
 
-// Credit badge component for inline display
+// Billing status badge component for inline display
 export const AIImagesCreditsDisplay = ({
   onBuyClick,
   compact = false,
@@ -130,7 +176,7 @@ export const AIImagesCreditsDisplay = ({
   onBuyClick?: () => void;
   compact?: boolean;
 }) => {
-  const { balance, isLoading } = useAIImagesCredits();
+  const { isActive, plan, pricing, isLoading } = useAIImagesCredits();
   const { language } = useTranslation();
 
   if (isLoading) {
@@ -143,17 +189,22 @@ export const AIImagesCreditsDisplay = ({
 
   return (
     <div className={`flex items-center gap-2 ${compact ? '' : 'p-2 bg-muted/50 rounded-lg'}`}>
-      <Badge
-        variant={balance > 0 ? 'secondary' : 'destructive'}
-        className="gap-1"
-      >
-        <Coins className="h-3 w-3" />
-        {balance} {!compact && (language === 'fr' ? 'crédits' : 'credits')}
-      </Badge>
-      {onBuyClick && (
+      {isActive ? (
+        <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-700 dark:text-green-400">
+          <Zap className="h-3 w-3" />
+          {!compact && (language === 'fr' ? 'Actif' : 'Active')}
+          {plan && !compact && ` - $${parseFloat(plan.balanceUsed || '0').toFixed(2)}`}
+        </Badge>
+      ) : (
+        <Badge variant="outline" className="gap-1">
+          <Zap className="h-3 w-3" />
+          {!compact && `$${pricing?.pricePerImage.toFixed(2) || '0.15'}/${language === 'fr' ? 'img' : 'img'}`}
+        </Badge>
+      )}
+      {onBuyClick && !isActive && (
         <Button size="sm" variant="outline" onClick={onBuyClick} className="h-7 text-xs">
           <Sparkles className="h-3 w-3 mr-1" />
-          {language === 'fr' ? 'Acheter' : 'Buy'}
+          {language === 'fr' ? 'Activer' : 'Enable'}
         </Button>
       )}
     </div>
