@@ -33,9 +33,11 @@ import {
   Maximize2,
   Layers,
   Square,
+  Filter,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
+import { Switch } from '@/components/ui/switch';
 
 interface ProductGalleryImage {
   id: string;
@@ -53,6 +55,7 @@ interface Product {
   vendor?: string | null;
   handle?: string | null;
   product_type?: string | null;
+  status?: string | null;
 }
 
 interface ProductStatus {
@@ -126,14 +129,25 @@ export const BulkAIImagesDialog = ({
   const cancelledRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [loadingGallery, setLoadingGallery] = useState(false);
+  
+  // 🆕 Active only filter
+  const [activeOnly, setActiveOnly] = useState(true);
 
   // Store loaded gallery images per product
   const [productGalleryImages, setProductGalleryImages] = useState<Map<string, ProductGalleryImage[]>>(new Map());
   // Track selected images per product (product_id -> { url, imageId })
   const [selectedImages, setSelectedImages] = useState<Map<string, Set<string>>>(new Map());
 
-  // Memoize product IDs
-  const productIds = useMemo(() => selectedProducts.map(p => p.id).filter(Boolean), [selectedProducts]);
+  // 🆕 Filter products by status
+  const filteredProducts = useMemo(() => {
+    if (!activeOnly) return selectedProducts;
+    return selectedProducts.filter(p => 
+      p.status?.toLowerCase() === 'active' || !p.status
+    );
+  }, [selectedProducts, activeOnly]);
+
+  // Memoize product IDs (based on filtered products)
+  const productIds = useMemo(() => filteredProducts.map(p => p.id).filter(Boolean), [filteredProducts]);
 
   // Load gallery images on open (same as SmartBackgroundDialog)
   useEffect(() => {
@@ -174,7 +188,7 @@ export const BulkAIImagesDialog = ({
       });
       
       // Add fallback for products without gallery images
-      selectedProducts.forEach(p => {
+      filteredProducts.forEach(p => {
         if (!imagesByProduct.has(p.id) && p.image_url) {
           imagesByProduct.set(p.id, [{
             id: `fallback-${p.id}`,
@@ -210,7 +224,7 @@ export const BulkAIImagesDialog = ({
       
       // Initialize product statuses
       const statuses = new Map<string, ProductStatus>();
-      selectedProducts.forEach(p => {
+      filteredProducts.forEach(p => {
         const hasSelectedImages = newSelectedImages.has(p.id) && (newSelectedImages.get(p.id)?.size || 0) > 0;
         statuses.set(p.id, { 
           id: p.id, 
@@ -225,7 +239,7 @@ export const BulkAIImagesDialog = ({
       console.error('[BulkAI] Error loading gallery images:', error);
       // Fallback to product.image_url
       const fallbackStatuses = new Map<string, ProductStatus>();
-      selectedProducts.filter(p => p.image_url).forEach(p => {
+      filteredProducts.filter(p => p.image_url).forEach(p => {
         fallbackStatuses.set(p.id, { id: p.id, title: p.title, status: 'pending' });
       });
       setProductStatuses(fallbackStatuses);
@@ -287,11 +301,11 @@ export const BulkAIImagesDialog = ({
 
   // Get products with selected images (replacing productsWithImages)
   const productsWithSelection = useMemo(() => {
-    return selectedProducts.filter(p => {
+    return filteredProducts.filter(p => {
       const selected = selectedImages.get(p.id);
       return selected && selected.size > 0;
     });
-  }, [selectedProducts, selectedImages]);
+  }, [filteredProducts, selectedImages]);
 
   // Toggle image selection for a product
   const toggleImageSelection = (productId: string, imageId: string) => {
@@ -653,6 +667,24 @@ export const BulkAIImagesDialog = ({
             {/* Configuration (only before generation starts) */}
             {!isGenerating && successCount === 0 && (
               <>
+                {/* 🆕 Active only toggle */}
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="active-only-toggle" className="text-sm font-medium cursor-pointer">
+                      {language === 'fr' ? 'Produits actifs uniquement' : 'Active products only'}
+                    </Label>
+                    <Badge variant="secondary" className="text-xs">
+                      {filteredProducts.length} / {selectedProducts.length}
+                    </Badge>
+                  </div>
+                  <Switch
+                    id="active-only-toggle"
+                    checked={activeOnly}
+                    onCheckedChange={setActiveOnly}
+                  />
+                </div>
+
                 <div className="space-y-3">
                   <Label className="text-sm font-medium flex items-center gap-2">
                     {language === 'fr' ? `Types d'images (${selectedImageTypes.size}/9)` : `Image types (${selectedImageTypes.size}/9)`}
@@ -726,7 +758,7 @@ export const BulkAIImagesDialog = ({
             {/* Product List with Gallery Images */}
             <ScrollArea className="h-[250px] sm:h-[350px] border rounded-lg" ref={scrollRef}>
               <div className="p-3 space-y-4">
-                {selectedProducts.map(product => {
+                {filteredProducts.map(product => {
                   const status = productStatuses.get(product.id);
                   const galleryImages = productGalleryImages.get(product.id) || [];
                   const productSelectedImages = selectedImages.get(product.id) || new Set();
