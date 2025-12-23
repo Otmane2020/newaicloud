@@ -539,8 +539,8 @@ export function ResultsDialog({
               </div>
               <p className="text-xs text-amber-600 dark:text-amber-400 pl-7">
                 {language === 'fr' 
-                  ? 'Les images Page/Homepage ne peuvent pas être synchronisées via API. Allez dans Files sur Shopify pour appliquer manuellement.' 
-                  : 'Page/Homepage images cannot be synced via API. Go to Files on Shopify to apply manually.'}
+                  ? 'Les images Page/Homepage ne peuvent pas être synchronisées via API. Allez dans Content > Files sur Shopify et recherchez le nom du fichier.' 
+                  : 'Page/Homepage images cannot be synced via API. Go to Content > Files on Shopify and search for the filename.'}
               </p>
             </div>
           ) : (
