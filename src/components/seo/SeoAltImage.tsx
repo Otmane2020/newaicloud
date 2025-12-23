@@ -42,6 +42,7 @@ import {
   ArrowDown,
   AlertTriangle,
   Copy,
+  Check,
 } from 'lucide-react';
 import {
   Select,
@@ -111,6 +112,48 @@ const getFilenameFromUrl = (url: string): string => {
 const canSyncToShopify = (contentType?: string): boolean => {
   const manualSyncTypes = ['page', 'homepage', 'article', 'collection'];
   return !manualSyncTypes.includes(contentType || '');
+};
+
+// CopyButton component with visual feedback
+const CopyButton = ({ 
+  text, 
+  label, 
+  successMessage,
+  variant = 'outline'
+}: { 
+  text: string; 
+  label: string;
+  successMessage: string;
+  variant?: 'outline' | 'primary';
+}) => {
+  const [copied, setCopied] = React.useState(false);
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    toast.success(successMessage);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
+  return (
+    <Button
+      size="sm"
+      variant={variant === 'primary' ? 'default' : 'outline'}
+      onClick={handleCopy}
+      className={`transition-all duration-200 ${
+        copied 
+          ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' 
+          : ''
+      }`}
+    >
+      {copied ? (
+        <Check className="w-3 h-3 mr-1" />
+      ) : (
+        <Copy className="w-3 h-3 mr-1" />
+      )}
+      {label}
+    </Button>
+  );
 };
 
 export interface SeoAltImageRef {
@@ -1671,42 +1714,34 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                 const altText = updatedImg?.alt_text || img.alt_text || '';
                 
                 return (
-                  <div key={img.id} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
+                  <div key={img.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
                     <img 
                       src={img.src} 
                       alt={altText}
-                      className="w-12 h-12 object-cover rounded"
+                      className="w-14 h-14 object-cover rounded flex-shrink-0"
                     />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground truncate">{filename}</p>
-                      <p className="text-sm font-medium truncate">{altText || 'No ALT text'}</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          navigator.clipboard.writeText(filename);
-                          toast.success(language === 'fr' ? 'Nom du fichier copié' : 'Filename copied');
-                        }}
-                        title={t.seo.altImage.toasts.copyFilename}
-                      >
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                      {altText && (
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={() => {
-                            navigator.clipboard.writeText(altText);
-                            toast.success(language === 'fr' ? 'Texte ALT copié' : 'ALT text copied');
-                          }}
-                          title={t.seo.altImage.toasts.copyAltText}
-                        >
-                          <Copy className="w-3 h-3 mr-1" />
-                          ALT
-                        </Button>
-                      )}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      {/* Filename row */}
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-muted-foreground truncate flex-1">{filename}</p>
+                        <CopyButton 
+                          text={filename} 
+                          label={language === 'fr' ? 'Nom' : 'Name'}
+                          successMessage={language === 'fr' ? 'Nom du fichier copié' : 'Filename copied'}
+                        />
+                      </div>
+                      {/* ALT text row */}
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium truncate flex-1">{altText || 'No ALT text'}</p>
+                        {altText && (
+                          <CopyButton 
+                            text={altText} 
+                            label="ALT"
+                            successMessage={language === 'fr' ? 'Texte ALT copié' : 'ALT text copied'}
+                            variant="primary"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
