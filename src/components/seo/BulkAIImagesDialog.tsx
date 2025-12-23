@@ -1093,6 +1093,8 @@ export const BulkAIImagesDialog = ({
                 </span>
               )}
             </div>
+              </>
+            )}
           </div>
         </div>
 
