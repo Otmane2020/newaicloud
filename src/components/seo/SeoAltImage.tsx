@@ -1187,8 +1187,8 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                                 </p>
                                 <p className="mt-0.5 text-amber-600 dark:text-amber-500">
                                   {language === 'fr' 
-                                    ? 'Allez dans Files sur Shopify' 
-                                    : 'Go to Files on Shopify'}
+                                    ? 'Content > Files sur Shopify' 
+                                    : 'Content > Files on Shopify'}
                                 </p>
                                 <p className="mt-1 font-mono text-[10px] bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded truncate">
                                   📁 {getFilenameFromUrl(img.src)}
