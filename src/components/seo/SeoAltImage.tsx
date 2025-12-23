@@ -586,7 +586,7 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         const { data, error } = await supabase.functions.invoke(functionName, {
           body: { 
             image_id: img.id,
-            imageType: useVision ? imageType : undefined
+            imageType: imageType
           }
         });
         
