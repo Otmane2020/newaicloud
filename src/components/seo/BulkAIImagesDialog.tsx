@@ -203,7 +203,9 @@ export const BulkAIImagesDialog = ({
       const imagesByProduct = new Map<string, ProductGalleryImage[]>();
       const seenByProduct = new Map<string, Set<string>>();
 
-      const normalizeUrl = (url: string) => url.split("?")[0];
+      const normalizeUrl = (url: string) => url
+        .split("?")[0]
+        .replace(/_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.[a-zA-Z0-9]+$)/i, "");
 
       data?.forEach(img => {
         const productId = (img as any).product_id;
