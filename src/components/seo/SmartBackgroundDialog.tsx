@@ -298,7 +298,7 @@ export const SmartBackgroundDialog = ({
   const getProductImages = (product: Product): { url: string; label: string; imageId?: string; position?: number; isAiGenerated?: boolean }[] => {
     const images: { url: string; label: string; imageId?: string; position?: number; isAiGenerated?: boolean }[] = [];
     const seenUrls = new Set<string>();
-    const normalizeUrl = (url?: string | null) => (url ? url.split("?")[0] : "");
+    const normalizeUrl = (url?: string | null) => (url ? url.split("?")[0].replace(/_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.[a-zA-Z0-9]+$)/i, "") : "");
     
     // First, add gallery images from database
     const galleryImages = productGalleryImages.get(product.id) || [];

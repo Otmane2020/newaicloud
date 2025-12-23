@@ -117,7 +117,10 @@ export function ProductGalleryDialog({
 
   const normalizeUrl = (url?: string | null) => {
     if (!url) return "";
-    return url.split("?")[0];
+    const base = url.split("?")[0];
+    // Shopify often appends a UUID to filenames when duplicating uploads; remove it to dedupe visually.
+    // Example: file_name_123e4567-e89b-12d3-a456-426614174000.jpg -> file_name.jpg
+    return base.replace(/_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.[a-zA-Z0-9]+$)/i, "");
   };
 
   const loadImages = async () => {
