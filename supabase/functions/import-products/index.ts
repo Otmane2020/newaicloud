@@ -1570,24 +1570,67 @@ Deno.serve(async (req: Request) => {
               const imagesWithShopifyId = safeImages.filter((img: any) => img.shopify_image_id != null);
               const imagesWithoutShopifyId = safeImages.filter((img: any) => img.shopify_image_id == null);
               
-              // Upsert images WITH shopify_image_id (uses unique constraint)
+              // 🔧 Process images WITH shopify_image_id - check if exists first to increment import_count
               if (imagesWithShopifyId.length > 0) {
-                const { error: imageError } = await supabaseServiceClient
+                const shopifyImageIds = imagesWithShopifyId.map((img: any) => img.shopify_image_id).filter(Boolean);
+                
+                // Check existing images by shopify_image_id
+                const { data: existingImages } = await supabaseServiceClient
                   .from("product_images")
-                  .upsert(imagesWithShopifyId.map((img: any) => ({
-                    ...img,
-                    is_ai_generated: false,
-                    source: 'shopify'
-                  })), { 
-                    onConflict: 'product_id,shopify_image_id',
-                    ignoreDuplicates: false
-                  });
+                  .select("id, shopify_image_id, import_count")
+                  .in("shopify_image_id", shopifyImageIds);
+                
+                const existingImageMap = new Map(
+                  (existingImages || []).map((e: any) => [e.shopify_image_id?.toString(), e])
+                );
+                
+                // Split into new images and existing images
+                const newImages: any[] = [];
+                const existingToUpdate: any[] = [];
+                
+                for (const img of imagesWithShopifyId) {
+                  const existing = existingImageMap.get(img.shopify_image_id?.toString());
+                  if (existing) {
+                    existingToUpdate.push({
+                      id: existing.id,
+                      import_count: (existing.import_count || 0) + 1
+                    });
+                  } else {
+                    newImages.push(img);
+                  }
+                }
+                
+                // Update existing images (increment import_count)
+                if (existingToUpdate.length > 0) {
+                  for (const img of existingToUpdate) {
+                    await supabaseServiceClient
+                      .from("product_images")
+                      .update({ 
+                        import_count: img.import_count,
+                        last_synced_at: new Date().toISOString()
+                      })
+                      .eq("id", img.id);
+                  }
+                  console.log(`📊 Updated import_count for ${existingToUpdate.length} existing images`);
+                }
+                
+                // Insert new images
+                if (newImages.length > 0) {
+                  const { error: imageError } = await supabaseServiceClient
+                    .from("product_images")
+                    .insert(newImages.map((img: any) => ({
+                      ...img,
+                      is_ai_generated: false,
+                      source: 'shopify',
+                      import_count: 1
+                    })));
 
-                if (imageError) {
-                  console.error(`❌ Image upsert error (with shopify_id) in batch ${batchNumber}:`, imageError);
-                } else {
-                  totalImages += imagesWithShopifyId.length;
-                  console.log(`✅ Upserted ${imagesWithShopifyId.length} images with shopify_image_id`);
+                  if (imageError) {
+                    console.error(`❌ Image insert error (with shopify_id) in batch ${batchNumber}:`, imageError);
+                  } else {
+                    totalImages += newImages.length;
+                    console.log(`✅ Inserted ${newImages.length} new images with shopify_image_id`);
+                  }
                 }
               }
               
@@ -1597,16 +1640,42 @@ Deno.serve(async (req: Request) => {
                 const productIds = [...new Set(imagesWithoutShopifyId.map((img: any) => img.product_id))];
                 const { data: existingUrls } = await supabaseServiceClient
                   .from("product_images")
-                  .select("product_id, src")
+                  .select("id, product_id, src, import_count")
                   .in("product_id", productIds);
                 
-                const existingUrlSet = new Set(
-                  (existingUrls || []).map((e: any) => `${e.product_id}::${cleanUrl(e.src)}`)
+                const existingUrlMap = new Map(
+                  (existingUrls || []).map((e: any) => [`${e.product_id}::${cleanUrl(e.src)}`, e])
                 );
                 
-                const newImages = imagesWithoutShopifyId.filter((img: any) => 
-                  !existingUrlSet.has(`${img.product_id}::${cleanUrl(img.src)}`)
-                );
+                const newImages: any[] = [];
+                const existingToUpdate: any[] = [];
+                
+                for (const img of imagesWithoutShopifyId) {
+                  const key = `${img.product_id}::${cleanUrl(img.src)}`;
+                  const existing = existingUrlMap.get(key);
+                  if (existing) {
+                    existingToUpdate.push({
+                      id: existing.id,
+                      import_count: (existing.import_count || 0) + 1
+                    });
+                  } else {
+                    newImages.push(img);
+                  }
+                }
+                
+                // Update existing images (increment import_count)
+                if (existingToUpdate.length > 0) {
+                  for (const img of existingToUpdate) {
+                    await supabaseServiceClient
+                      .from("product_images")
+                      .update({ 
+                        import_count: img.import_count,
+                        last_synced_at: new Date().toISOString()
+                      })
+                      .eq("id", img.id);
+                  }
+                  console.log(`📊 Updated import_count for ${existingToUpdate.length} existing images (no shopify_id)`);
+                }
                 
                 if (newImages.length > 0) {
                   const { error: insertError } = await supabaseServiceClient
@@ -1614,7 +1683,8 @@ Deno.serve(async (req: Request) => {
                     .insert(newImages.map((img: any) => ({
                       ...img,
                       is_ai_generated: false,
-                      source: 'shopify'
+                      source: 'shopify',
+                      import_count: 1
                     })));
 
                   if (insertError) {
