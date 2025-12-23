@@ -10,6 +10,7 @@ interface AltTextGenerationRequest {
   imageIds?: string[];
   imageId?: string;      // Support single image ID
   image_id?: string;     // Support snake_case variant
+  imageType?: 'product' | 'content';  // Support image type for content_images
   force?: boolean;
   language?: string;
 }
@@ -135,6 +136,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const force = body.force ?? false;
+    const imageType = body.imageType || 'product';
 
     if (imageIds.length === 0) {
       return new Response(
@@ -166,50 +168,123 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`[ALT-TEXTS] Processing ${imageIds.length} images for user ${user.id}`);
+    console.log(`[ALT-TEXTS] Processing ${imageIds.length} images for user ${user.id}, imageType: ${imageType}`);
 
     const results: Array<{ imageId: string; success: boolean; altText?: string; error?: string; synced?: boolean; syncError?: string }> = [];
 
     for (const imageId of imageIds) {
       try {
-        // Get image data with product info
-        const { data: image, error: imageError } = await supabaseClient
-          .from("product_images")
-          .select(`
-            id, 
-            src, 
-            alt_text,
-            optimization_count,
-            shopify_image_id,
-            product_id,
-            shopify_products!inner(
-              id,
-              title,
-              seller_id,
-              store_id,
-              shopify_connections!inner(store_language)
-            )
-          `)
-          .eq("id", imageId)
-          .maybeSingle();
+        let image: any = null;
+        let contentData: any = null;
+        let storeLanguage = 'en-US';
+        let sellerId: string | null = null;
+        let storeId: string | null = null;
+        let productTitle = 'Image';
+        let isContentImage = imageType === 'content';
 
-        if (imageError || !image) {
-          console.error(`[ALT-TEXTS] Image not found: ${imageId}`, imageError);
+        // Try product_images first if imageType is 'product' or unspecified
+        if (!isContentImage) {
+          const { data: productImage, error: productImageError } = await supabaseClient
+            .from("product_images")
+            .select(`
+              id, 
+              src, 
+              alt_text,
+              optimization_count,
+              shopify_image_id,
+              product_id,
+              shopify_products!inner(
+                id,
+                title,
+                seller_id,
+                store_id,
+                shopify_connections!inner(store_language)
+              )
+            `)
+            .eq("id", imageId)
+            .maybeSingle();
+
+          if (productImage) {
+            image = productImage;
+            const product = (productImage as any).shopify_products;
+            productTitle = product.title;
+            sellerId = product.seller_id;
+            storeId = product.store_id;
+            storeLanguage = product.shopify_connections?.store_language || 'en-US';
+          }
+        }
+
+        // If not found in product_images or imageType is 'content', try content_images
+        if (!image) {
+          const { data: contentImage, error: contentImageError } = await supabaseClient
+            .from("content_images")
+            .select(`
+              id,
+              src,
+              alt_text,
+              optimization_count,
+              shopify_image_id,
+              content_id,
+              content_type,
+              user_id,
+              store_id
+            `)
+            .eq("id", imageId)
+            .maybeSingle();
+
+          if (contentImage) {
+            image = contentImage;
+            isContentImage = true;
+            sellerId = contentImage.user_id;
+            storeId = contentImage.store_id;
+            
+            // Get content title based on content_type
+            const contentType = contentImage.content_type;
+            if (contentType === 'collection') {
+              const { data: collection } = await supabaseClient
+                .from("shopify_collections")
+                .select("title")
+                .eq("id", contentImage.content_id)
+                .maybeSingle();
+              productTitle = collection?.title || 'Collection';
+            } else if (contentType === 'article') {
+              const { data: article } = await supabaseClient
+                .from("blog_articles")
+                .select("title")
+                .eq("id", contentImage.content_id)
+                .maybeSingle();
+              productTitle = article?.title || 'Article';
+            } else {
+              productTitle = contentType === 'page' ? 'Page' : contentType === 'homepage' ? 'Homepage' : 'Content';
+            }
+            
+            // Get store language
+            if (storeId) {
+              const { data: store } = await supabaseClient
+                .from("shopify_connections")
+                .select("store_language")
+                .eq("id", storeId)
+                .maybeSingle();
+              storeLanguage = store?.store_language || 'en-US';
+            }
+          }
+        }
+
+        if (!image) {
+          console.error(`[ALT-TEXTS] Image not found in both tables: ${imageId}`);
           results.push({ imageId, success: false, error: "Image not found" });
           continue;
         }
 
-        const product = (image as any).shopify_products;
-        const optimizationCount = (image as any).optimization_count ?? 0;
+        const optimizationCount = image.optimization_count ?? 0;
 
         // Verify ownership
-        if (product.seller_id !== user.id) {
+        if (sellerId !== user.id) {
           results.push({ imageId, success: false, error: "Unauthorized" });
           continue;
         }
 
         // Skip ONLY if already AI-optimized (optimization_count > 0) and not forcing.
-        // If alt_text exists but optimization_count is 0, we still generate (that's the "Not optimized" state).
         if (image.alt_text && image.alt_text.trim() !== '' && optimizationCount > 0 && !force) {
           results.push({
             imageId,
@@ -221,24 +296,24 @@ Deno.serve(async (req: Request) => {
         }
 
         // Detect language
-        const storeLanguage = product.shopify_connections?.store_language || 'en-US';
         const language = storeLanguage.toLowerCase().startsWith('fr') ? 'fr' : 'en';
 
-        console.log(`[ALT-TEXTS] Generating ALT for image ${imageId}, product: ${product.title}, language: ${language}`);
+        console.log(`[ALT-TEXTS] Generating ALT for ${isContentImage ? 'content' : 'product'} image ${imageId}, title: ${productTitle}, language: ${language}`);
 
         // Generate ALT text using Gemini Vision
-        const altText = await callGeminiVision(image.src, product.title, language);
+        const altText = await callGeminiVision(image.src, productTitle, language);
 
         console.log(`[ALT-TEXTS] Generated ALT: "${altText}"`);
 
-        // Update image in database
+        // Update image in the correct table
+        const tableName = isContentImage ? "content_images" : "product_images";
         const { error: updateError } = await supabaseClient
-          .from("product_images")
+          .from(tableName)
           .update({
             alt_text: altText,
             last_optimization_at: new Date().toISOString(),
             optimization_count: optimizationCount + 1,
-            is_ai_generated: true // ✅ Mark as AI-generated after optimization
+            is_ai_generated: true
           })
           .eq("id", imageId);
 
@@ -292,7 +367,7 @@ Deno.serve(async (req: Request) => {
 
         // Track usage
         await supabaseClient.rpc('increment_usage', {
-          p_seller_id: product.seller_id,
+          p_seller_id: sellerId,
           p_field: 'optimizations_count',
           p_increment: 1
         });
