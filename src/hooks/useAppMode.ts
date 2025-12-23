@@ -74,6 +74,8 @@ export function isAiImagesDomain(): boolean {
   const isAiImagesHost = hostname.includes('ai-images');
   const isAiImagesMode = searchParams.get('mode') === 'ai-images';
   
+  console.log('🖼️ AI Images Domain detection:', { hostname, isAiImagesHost, isAiImagesMode, result: isAiImagesHost || isAiImagesMode });
+  
   return isAiImagesHost || isAiImagesMode;
 }
 

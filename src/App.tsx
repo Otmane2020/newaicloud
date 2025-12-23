@@ -683,9 +683,28 @@ function NewAIRoutes() {
   );
 }
 
+// AI Images Routes
+function AiImagesRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<AiImagesLanding />} />
+      <Route path="/auth" element={<AiImagesAuth />} />
+      <Route path="/app/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
 // Dynamic route selector - evaluates at runtime
 function AppRoutes() {
   const isAeoreply = isAeoreplyDomain();
+  const isAiImages = isAiImagesDomain();
+  
+  if (isAiImages) {
+    return <AiImagesRoutes />;
+  }
   
   if (isAeoreply) {
     return <AeoreplyRoutes />;
