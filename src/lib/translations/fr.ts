@@ -3154,6 +3154,19 @@ export const translations = {
         syncSuccess: "{{success}} images synchronisées avec succès",
         syncWithErrors: "{{success}} images synchronisées, {{errors}} erreurs",
         syncError: "Erreur lors de la synchronisation",
+        // Limit messages
+        limitTrialing: "Limite du plan actuel atteinte. Passez à un plan payant pour continuer.",
+        limitPaid: "Limite mensuelle d'optimisations atteinte. Passez à un plan supérieur.",
+        noImagesToOptimize: "Aucune image à optimiser",
+        // Bulk optimization results
+        generatedWithSyncErrors: "{{success}} images générées, mais {{syncError}} erreurs de sync Shopify",
+        optimizedAndSynced: "{{success}} images optimisées et {{syncSuccess}} synchronisées avec Shopify!",
+        reoptimizedAndSynced: "{{success}} images ré-optimisées et {{syncSuccess}} synchronisées!",
+        reoptimizedSuccess: "{{success}} images ré-optimisées avec succès!",
+        optimizationErrors: "{{count}} erreurs lors de l'optimisation",
+        reoptimizationErrors: "{{count}} erreurs lors de la ré-optimisation",
+        reoptimizedWithSyncErrors: "{{success}}/{{total}} images ré-optimisées, {{syncError}} erreurs de sync",
+        allGenerated: "{{count}} images optimisées avec succès!",
       },
       stats: {
         toOptimize: "À optimiser",

@@ -559,9 +559,9 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     // Check limits BEFORE optimizing
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
-        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+        toast.error(t.seo.altImage.toasts.limitTrialing);
       } else if (limits?.isPaid) {
-        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+        toast.error(t.seo.altImage.toasts.limitPaid);
       }
       setShowUpgradeDialog(true);
       return;
@@ -607,12 +607,12 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       async (results) => {
         // This callback runs when bulk operation completes
         if (results.syncError > 0) {
-          toast.warning(`${results.success} images générées, mais ${results.syncError} erreurs de sync Shopify`);
+          toast.warning(tf('seo.altImage.toasts.generatedWithSyncErrors', { success: results.success, syncError: results.syncError }));
           console.log('[SeoAltImage] Sync errors:', results.syncErrors);
         } else if (results.success > 0 && results.syncSuccess > 0) {
-          toast.success(`${results.success} images optimisées et ${results.syncSuccess} synchronisées avec Shopify!`);
+          toast.success(tf('seo.altImage.toasts.optimizedAndSynced', { success: results.success, syncSuccess: results.syncSuccess }));
         } else if (results.success > 0) {
-          toast.success(tf('seo.altImage.allGenerated', { count: results.success }));
+          toast.success(tf('seo.altImage.toasts.allGenerated', { count: results.success }));
         } else if (results.error > 0) {
           toast.error(tf('seo.altImage.generatedWithErrors', { success: 0, errors: results.error }));
         }
@@ -633,16 +633,16 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     const finalImagesToProcess = isReoptimization ? images : imagesToOptimize;
 
     if (finalImagesToProcess.length === 0) {
-      toast.info('Aucune image à optimiser');
+      toast.info(t.seo.altImage.toasts.noImagesToOptimize);
       return;
     }
 
     // Check limits BEFORE optimizing
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
-        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+        toast.error(t.seo.altImage.toasts.limitTrialing);
       } else if (limits?.isPaid) {
-        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+        toast.error(t.seo.altImage.toasts.limitPaid);
       }
       setShowUpgradeDialog(true);
       return;
@@ -679,20 +679,20 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       'optimizing',
       async (results) => {
         if (results.syncError > 0) {
-          toast.warning(`${results.success} images générées, mais ${results.syncError} erreurs de sync Shopify`);
+          toast.warning(tf('seo.altImage.toasts.generatedWithSyncErrors', { success: results.success, syncError: results.syncError }));
           console.log('[SeoAltImage] Sync errors:', results.syncErrors);
         } else if (results.success > 0 && results.syncSuccess > 0) {
           toast.success(isReoptimization 
-            ? `${results.success} images ré-optimisées et ${results.syncSuccess} synchronisées!`
-            : `${results.success} images optimisées et ${results.syncSuccess} synchronisées!`
+            ? tf('seo.altImage.toasts.reoptimizedAndSynced', { success: results.success, syncSuccess: results.syncSuccess })
+            : tf('seo.altImage.toasts.optimizedAndSynced', { success: results.success, syncSuccess: results.syncSuccess })
           );
         } else if (results.success > 0) {
           toast.success(isReoptimization 
-            ? `${results.success} images ré-optimisées avec succès!`
-            : tf('seo.altImage.allGenerated', { count: results.success })
+            ? tf('seo.altImage.toasts.reoptimizedSuccess', { success: results.success })
+            : tf('seo.altImage.toasts.allGenerated', { count: results.success })
           );
         } else if (results.error > 0) {
-          toast.error(`${results.error} erreurs lors de l'optimisation`);
+          toast.error(tf('seo.altImage.toasts.optimizationErrors', { count: results.error }));
         }
         
         await fetchImages();
@@ -705,9 +705,9 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
     // Check limits BEFORE optimizing
     if (!limits?.canUseOptimizations || limits?.limitReached.optimizations) {
       if (limits?.isTrialing) {
-        toast.error('Limite du plan actuel atteinte. Passez à un plan payant pour continuer.');
+        toast.error(t.seo.altImage.toasts.limitTrialing);
       } else if (limits?.isPaid) {
-        toast.error('Limite mensuelle d\'optimisations atteinte. Passez à un plan supérieur.');
+        toast.error(t.seo.altImage.toasts.limitPaid);
       }
       setShowUpgradeDialog(true);
       return;
@@ -744,14 +744,14 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
       'optimizing',
       async (results) => {
         if (results.syncError > 0) {
-          toast.warning(`${results.success}/${images.length} images ré-optimisées, ${results.syncError} erreurs de sync`);
+          toast.warning(tf('seo.altImage.toasts.reoptimizedWithSyncErrors', { success: results.success, total: images.length, syncError: results.syncError }));
           console.log('[SeoAltImage] Sync errors:', results.syncErrors);
         } else if (results.success > 0 && results.syncSuccess > 0) {
-          toast.success(`${results.success} images ré-optimisées et ${results.syncSuccess} synchronisées!`);
+          toast.success(tf('seo.altImage.toasts.reoptimizedAndSynced', { success: results.success, syncSuccess: results.syncSuccess }));
         } else if (results.success > 0) {
-          toast.success(`${results.success} images ré-optimisées avec succès!`);
+          toast.success(tf('seo.altImage.toasts.reoptimizedSuccess', { success: results.success }));
         } else if (results.error > 0) {
-          toast.error(`${results.error} erreurs lors de la ré-optimisation`);
+          toast.error(tf('seo.altImage.toasts.reoptimizationErrors', { count: results.error }));
         }
         
         await fetchImages();

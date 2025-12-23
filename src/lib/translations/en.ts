@@ -3134,6 +3134,19 @@ export const translations = {
         syncSuccess: "{{success}} images synchronized successfully",
         syncWithErrors: "{{success}} images synchronized, {{errors}} errors",
         syncError: "Error during synchronization",
+        // Limit messages
+        limitTrialing: "Current plan limit reached. Upgrade to a paid plan to continue.",
+        limitPaid: "Monthly optimization limit reached. Upgrade to a higher plan.",
+        noImagesToOptimize: "No images to optimize",
+        // Bulk optimization results
+        generatedWithSyncErrors: "{{success}} images generated, but {{syncError}} Shopify sync errors",
+        optimizedAndSynced: "{{success}} images optimized and {{syncSuccess}} synced with Shopify!",
+        reoptimizedAndSynced: "{{success}} images re-optimized and {{syncSuccess}} synced!",
+        reoptimizedSuccess: "{{success}} images re-optimized successfully!",
+        optimizationErrors: "{{count}} optimization errors",
+        reoptimizationErrors: "{{count}} re-optimization errors",
+        reoptimizedWithSyncErrors: "{{success}}/{{total}} images re-optimized, {{syncError}} sync errors",
+        allGenerated: "{{count}} images optimized successfully!",
       },
       stats: {
         toOptimize: "To Optimize",
