@@ -105,6 +105,17 @@ Deno.serve(async (req) => {
     }
 
     const idsToDelete: string[] = [];
+    const productsWithDuplicates: Array<{
+      productId: string;
+      productTitle: string;
+      duplicateCount: number;
+      duplicateGroups: Array<{
+        normalizedFilename: string;
+        imageCount: number;
+        images: Array<{ id: string; src: string; isAi: boolean }>;
+      }>;
+    }> = [];
+    
     const stats = {
       productsAnalyzed: 0,
       aiReimportedDeleted: 0,
@@ -244,9 +255,49 @@ Deno.serve(async (req) => {
       // Count what we're keeping
       stats.aiImagesKept += aiImages.filter(img => !idsToDelete.includes(img.id)).length;
       stats.shopifyImagesKept += shopifyImages.filter(img => !idsToDelete.includes(img.id)).length;
+      
+      // Track products with duplicates for reporting
+      // Combine all images and find groups with duplicates
+      const allImages = [...shopifyImages, ...aiImages].filter(img => img.src);
+      const allNormalizedGroups = new Map<string, typeof allImages>();
+      for (const img of allImages) {
+        const normalizedSrc = normalizeUrl(img.src);
+        if (!allNormalizedGroups.has(normalizedSrc)) {
+          allNormalizedGroups.set(normalizedSrc, []);
+        }
+        allNormalizedGroups.get(normalizedSrc)!.push(img);
+      }
+      
+      // Find groups with more than 1 image (duplicates)
+      const duplicateGroups: typeof productsWithDuplicates[0]['duplicateGroups'] = [];
+      for (const [normalizedFilename, groupImages] of allNormalizedGroups) {
+        if (groupImages.length > 1) {
+          duplicateGroups.push({
+            normalizedFilename,
+            imageCount: groupImages.length,
+            images: groupImages.map(img => ({
+              id: img.id,
+              src: img.src || '',
+              isAi: img.is_ai_generated === true
+            }))
+          });
+        }
+      }
+      
+      if (duplicateGroups.length > 0) {
+        // Find product title
+        const productTitle = products?.find(p => p.id === prodId)?.title || prodId;
+        productsWithDuplicates.push({
+          productId: prodId,
+          productTitle,
+          duplicateCount: duplicateGroups.reduce((sum, g) => sum + g.imageCount - 1, 0),
+          duplicateGroups
+        });
+      }
     }
 
     console.log(`[CLEANUP] Total to delete: ${idsToDelete.length}`);
+    console.log(`[CLEANUP] Products with duplicates: ${productsWithDuplicates.length}`);
     console.log(`[CLEANUP] Stats:`, stats);
 
     if (dryRun) {
@@ -256,7 +307,8 @@ Deno.serve(async (req) => {
           dryRun: true,
           imagesToDelete: idsToDelete.length,
           stats,
-          sampleIdsToDelete: idsToDelete.slice(0, 20)
+          sampleIdsToDelete: idsToDelete.slice(0, 20),
+          productsWithDuplicates: productsWithDuplicates.sort((a, b) => b.duplicateCount - a.duplicateCount)
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
