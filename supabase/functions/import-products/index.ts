@@ -1564,26 +1564,69 @@ Deno.serve(async (req: Request) => {
             });
             
             if (safeImages.length > 0) {
-              const { error: imageError } = await supabaseServiceClient
-                .from("product_images")
-                .upsert(safeImages.map((img: any) => ({
-                  ...img,
-                  is_ai_generated: false,
-                  source: 'shopify'
-                })), { 
-                  onConflict: 'product_id,shopify_image_id',
-                  ignoreDuplicates: false
-                });
+              // 🔧 FIX: Split images with and without shopify_image_id
+              // Images WITH shopify_image_id can use upsert with conflict resolution
+              // Images WITHOUT shopify_image_id need a different approach
+              const imagesWithShopifyId = safeImages.filter((img: any) => img.shopify_image_id != null);
+              const imagesWithoutShopifyId = safeImages.filter((img: any) => img.shopify_image_id == null);
+              
+              // Upsert images WITH shopify_image_id (uses unique constraint)
+              if (imagesWithShopifyId.length > 0) {
+                const { error: imageError } = await supabaseServiceClient
+                  .from("product_images")
+                  .upsert(imagesWithShopifyId.map((img: any) => ({
+                    ...img,
+                    is_ai_generated: false,
+                    source: 'shopify'
+                  })), { 
+                    onConflict: 'product_id,shopify_image_id',
+                    ignoreDuplicates: false
+                  });
 
-              if (imageError) {
-                console.error(`❌ Image upsert error in batch ${batchNumber}:`, imageError);
-                if (safeImages.length > 0) {
-                  console.error(`First image in batch: product_id=${safeImages[0].product_id}, shopify_image_id=${safeImages[0].shopify_image_id}`);
+                if (imageError) {
+                  console.error(`❌ Image upsert error (with shopify_id) in batch ${batchNumber}:`, imageError);
+                } else {
+                  totalImages += imagesWithShopifyId.length;
+                  console.log(`✅ Upserted ${imagesWithShopifyId.length} images with shopify_image_id`);
                 }
-              } else {
-                totalImages += safeImages.length;
-                console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed (${safeImages.length} images saved)`);
               }
+              
+              // Insert images WITHOUT shopify_image_id (skip duplicates by checking first)
+              if (imagesWithoutShopifyId.length > 0) {
+                // Get existing URLs for these products to avoid duplicates
+                const productIds = [...new Set(imagesWithoutShopifyId.map((img: any) => img.product_id))];
+                const { data: existingUrls } = await supabaseServiceClient
+                  .from("product_images")
+                  .select("product_id, src")
+                  .in("product_id", productIds);
+                
+                const existingUrlSet = new Set(
+                  (existingUrls || []).map((e: any) => `${e.product_id}::${cleanUrl(e.src)}`)
+                );
+                
+                const newImages = imagesWithoutShopifyId.filter((img: any) => 
+                  !existingUrlSet.has(`${img.product_id}::${cleanUrl(img.src)}`)
+                );
+                
+                if (newImages.length > 0) {
+                  const { error: insertError } = await supabaseServiceClient
+                    .from("product_images")
+                    .insert(newImages.map((img: any) => ({
+                      ...img,
+                      is_ai_generated: false,
+                      source: 'shopify'
+                    })));
+
+                  if (insertError) {
+                    console.error(`❌ Image insert error (without shopify_id) in batch ${batchNumber}:`, insertError);
+                  } else {
+                    totalImages += newImages.length;
+                    console.log(`✅ Inserted ${newImages.length} images without shopify_image_id`);
+                  }
+                }
+              }
+              
+              console.log(`✅ Image batch ${batchNumber}/${imageBatches} completed`);
             }
           }
           
