@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { ProgressDialog, ResultsDialog, SuccessDialog } from './SeoWorkflowDialogs';
 import { ShopifyUpgradeDialog } from '@/components/shopify/ShopifyUpgradeDialog';
@@ -1314,19 +1315,53 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={() => {
-                        setSelectedImageForOptimize(img);
-                        setShowOptimizeDialog(true);
-                      }}
-                      disabled={generating}
-                      title="Optimiser avec Vision AI"
-                      className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => {
+                            setSelectedImageForOptimize(img);
+                            setShowOptimizeDialog(true);
+                          }}
+                          disabled={generating}
+                          className="bg-gradient-to-r from-primary via-primary to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary shadow-lg hover:shadow-primary/50 text-primary-foreground font-semibold transition-all duration-300"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs">
+                        {!canSyncToShopify(img.content_type) ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium text-amber-500">
+                              {language === 'fr' ? '⚠️ Sync manuelle requise' : '⚠️ Manual sync required'}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {language === 'fr' 
+                                ? 'Les images de page/homepage nécessitent une copie manuelle du texte ALT.' 
+                                : 'Page/homepage images require manual ALT text copy.'}
+                            </span>
+                            <div className="flex items-center gap-1 mt-1">
+                              <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded truncate max-w-[180px]">
+                                📁 {getFilenameFromUrl(img.src)}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(getFilenameFromUrl(img.src));
+                                  toast.success(t.toasts.success.copied);
+                                }}
+                                className="p-0.5 hover:bg-background rounded transition-colors"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <span>{language === 'fr' ? 'Optimiser avec Vision AI' : 'Optimize with Vision AI'}</span>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
                   </td>
                 </tr>
               ))}
