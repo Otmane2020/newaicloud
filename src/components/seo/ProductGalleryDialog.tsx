@@ -117,10 +117,30 @@ export function ProductGalleryDialog({
 
   const normalizeUrl = (url?: string | null) => {
     if (!url) return "";
-    const base = url.split("?")[0];
-    // Shopify often appends a UUID to filenames when duplicating uploads; remove it to dedupe visually.
-    // Example: file_name_123e4567-e89b-12d3-a456-426614174000.jpg -> file_name.jpg
-    return base.replace(/_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.[a-zA-Z0-9]+$)/i, "");
+
+    const withoutQuery = url.split("?")[0];
+
+    // Prefer dedupe by filename so that the same image hosted on different domains
+    // (e.g., generated-images storage vs Shopify CDN) is treated as identical.
+    let filename = withoutQuery;
+    try {
+      filename = new URL(withoutQuery).pathname.split("/").pop() || withoutQuery;
+    } catch {
+      filename = withoutQuery.split("/").pop() || withoutQuery;
+    }
+
+    filename = decodeURIComponent(filename);
+
+    // Shopify sometimes appends a UUID to filenames when duplicating uploads.
+    filename = filename.replace(
+      /_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.[a-zA-Z0-9]+$)/i,
+      ""
+    );
+
+    // Shopify CDN variants often use _WIDTHxHEIGHT suffixes.
+    filename = filename.replace(/_\d+x\d+(?=\.[a-zA-Z0-9]+$)/i, "");
+
+    return filename.toLowerCase();
   };
 
   const loadImages = async () => {
@@ -136,12 +156,39 @@ export function ProductGalleryDialog({
 
       if (error) throw error;
       
-      // Deduplicate images by normalized src (ignore ?v=... cache-busting) to avoid visual duplicates
-      // Then re-sort by position to preserve Shopify order
-      const uniqueImages = data ? 
-        Array.from(new Map(data.map(img => [normalizeUrl(img.src), img])).values())
-          .sort((a, b) => (a.position || 999) - (b.position || 999)) : [];
-      
+      // Deduplicate images by a normalized key (filename-based) to avoid visual duplicates
+      // across different hosts (generated-images storage vs Shopify CDN).
+      // Prefer the Shopify-backed entry (shopify_image_id) when both exist.
+      const uniqueImages = data
+        ? Object.values(
+            data.reduce<Record<string, ProductImage>>((acc, img) => {
+              const key = normalizeUrl(img.src);
+              const existing = acc[key];
+
+              if (!existing) {
+                acc[key] = img;
+                return acc;
+              }
+
+              // Prefer entries with Shopify id.
+              if (!!img.shopify_image_id && !existing.shopify_image_id) {
+                acc[key] = img;
+                return acc;
+              }
+              if (!img.shopify_image_id && !!existing.shopify_image_id) {
+                return acc;
+              }
+
+              // Otherwise prefer the lowest position (closer to main image).
+              const existingPos = existing.position ?? 999;
+              const imgPos = img.position ?? 999;
+              if (imgPos < existingPos) acc[key] = img;
+
+              return acc;
+            }, {})
+          ).sort((a, b) => (a.position || 999) - (b.position || 999))
+        : [];
+
       setImages(uniqueImages);
     } catch (error) {
       console.error("Error loading images:", error);
