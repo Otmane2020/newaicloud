@@ -5273,6 +5273,7 @@ export type Database = {
           expires_at: string
           id: string
           is_claimed: boolean | null
+          metadata: Json | null
           pending_token: string
           scope: string | null
           shop_url: string
@@ -5286,6 +5287,7 @@ export type Database = {
           expires_at: string
           id?: string
           is_claimed?: boolean | null
+          metadata?: Json | null
           pending_token: string
           scope?: string | null
           shop_url: string
@@ -5299,6 +5301,7 @@ export type Database = {
           expires_at?: string
           id?: string
           is_claimed?: boolean | null
+          metadata?: Json | null
           pending_token?: string
           scope?: string | null
           shop_url?: string
