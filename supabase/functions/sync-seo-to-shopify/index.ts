@@ -863,34 +863,41 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      if (!imageData.shopify_image_id) {
-        console.error('[SYNC-IMAGE] Image has no Shopify ID:', { imageId, imageType: imageData.content_type });
-        
-        // Special message for homepage images
-        if (imageData.content_type === 'homepage') {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              message: "Les images de la homepage ne peuvent pas être synchronisées car elles existent directement dans le HTML de votre boutique. L'optimisation du texte ALT a déjà été effectuée dans votre base de données.",
-              error: "HOMEPAGE_IMAGE_NOT_SYNCABLE",
-              imageId: imageId
-            }),
-            {
-              status: 400,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
-          );
-        }
-        
+      // For content images (collection, article), we don't need shopify_image_id
+      // We sync ALT directly via the parent resource's image field
+      const isContentImageWithoutShopifyId = imageType === 'content' && !imageData.shopify_image_id;
+      
+      if (!imageData.shopify_image_id && imageType === 'product') {
+        console.error('[SYNC-IMAGE] Product image has no Shopify ID:', { imageId });
         return new Response(
           JSON.stringify({
             success: false,
-            message: "Cette image n'a pas d'ID Shopify et ne peut pas être synchronisée. Elle a peut-être été importée manuellement ou n'existe plus dans Shopify.",
+            message: "Cette image de produit n'a pas d'ID Shopify et ne peut pas être synchronisée. Elle a peut-être été importée manuellement ou n'existe plus dans Shopify.",
             error: "NO_SHOPIFY_ID",
             imageId: imageId
           }),
           {
             status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      
+      // Special handling for homepage/page images - these cannot be synced via API
+      if (imageType === 'content' && (imageData.content_type === 'homepage' || imageData.content_type === 'page')) {
+        const typeLabel = imageData.content_type === 'homepage' ? 'homepage' : 'page';
+        console.log(`[SYNC-IMAGE] ${typeLabel} images cannot be synced via API - ALT saved locally only`);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Les images de ${typeLabel} ne peuvent pas être synchronisées automatiquement vers Shopify. Le texte ALT a été généré et sauvegardé dans votre base de données.\n\n⚠️ Pour appliquer cet ALT sur Shopify :\n• Modifiez l'image dans la Bibliothèque de fichiers Shopify, ou\n• Modifiez le code de votre thème si l'image est intégrée directement`,
+            error: `${typeLabel.toUpperCase()}_NOT_SYNCABLE`,
+            altText: imageData.alt_text,
+            savedLocally: true,
+            imageId: imageId
+          }),
+          {
+            status: 200, // Return 200 because the ALT was generated successfully, just not synced
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );
@@ -1040,16 +1047,130 @@ Deno.serve(async (req: Request) => {
       shopUrl = storeConnection.store_url;
       shopifyAccessToken = storeConnection.access_token;
       
-      console.log(`[SYNC-IMAGE] Syncing ALT text to Shopify via GraphQL:`, {
+      console.log(`[SYNC-IMAGE] Syncing ALT text to Shopify:`, {
         shopUrl,
+        imageType,
         contentId: shopifyId,
         imageId: imageData.shopify_image_id,
         altText: imageData.alt_text?.substring(0, 50) + '...'
       });
       
-      const graphqlUrl = `https://${shopUrl}/admin/api/2025-07/graphql.json`;
+      // ========== BRANCH BY IMAGE TYPE ==========
       
-      try {
+      if (imageType === 'content') {
+        // CONTENT IMAGES: Use REST API for collections and articles
+        const contentType = imageData.content_type;
+        
+        if (contentType === 'collection') {
+          // ========== COLLECTION IMAGE: Use REST API ==========
+          console.log(`[SYNC-IMAGE] Syncing collection image ALT via REST API for collection ${shopifyId}`);
+          
+          // Try custom_collection first
+          let collectionResponse = await fetch(
+            `https://${shopUrl}/admin/api/2025-01/custom_collections/${shopifyId}.json`,
+            {
+              method: 'PUT',
+              headers: {
+                'X-Shopify-Access-Token': shopifyAccessToken,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                custom_collection: {
+                  id: shopifyId,
+                  image: {
+                    alt: imageData.alt_text
+                  }
+                }
+              })
+            }
+          );
+
+          // If 404, try smart_collection
+          if (collectionResponse.status === 404) {
+            console.log(`[SYNC-IMAGE] Collection ${shopifyId} not found as custom_collection, trying smart_collection...`);
+            collectionResponse = await fetch(
+              `https://${shopUrl}/admin/api/2025-01/smart_collections/${shopifyId}.json`,
+              {
+                method: 'PUT',
+                headers: {
+                  'X-Shopify-Access-Token': shopifyAccessToken,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  smart_collection: {
+                    id: shopifyId,
+                    image: {
+                      alt: imageData.alt_text
+                    }
+                  }
+                })
+              }
+            );
+          }
+
+          if (!collectionResponse.ok) {
+            const errorText = await collectionResponse.text();
+            console.error(`[SYNC-IMAGE] ❌ Collection image ALT sync failed:`, collectionResponse.status, errorText);
+            throw new Error(`Erreur synchronisation ALT collection: ${collectionResponse.status} - ${errorText}`);
+          }
+
+          console.log(`[SYNC-IMAGE] ✅ Collection image ALT synced successfully via REST API`);
+          
+        } else if (contentType === 'article') {
+          // ========== ARTICLE IMAGE: Use REST API ==========
+          console.log(`[SYNC-IMAGE] Syncing article image ALT via REST API for article ${shopifyId}`);
+          
+          // First, we need to get the blog_id for this article
+          const { data: articleData, error: articleError } = await supabaseClient
+            .from("blog_articles")
+            .select("shopify_blog_id")
+            .eq("id", imageData.content_id)
+            .maybeSingle();
+          
+          if (articleError || !articleData?.shopify_blog_id) {
+            console.error(`[SYNC-IMAGE] ❌ Could not find blog_id for article:`, articleError);
+            throw new Error("Impossible de trouver le blog associé à cet article");
+          }
+          
+          const blogId = articleData.shopify_blog_id;
+          console.log(`[SYNC-IMAGE] Found blog_id: ${blogId} for article ${shopifyId}`);
+          
+          const articleResponse = await fetch(
+            `https://${shopUrl}/admin/api/2025-01/blogs/${blogId}/articles/${shopifyId}.json`,
+            {
+              method: 'PUT',
+              headers: {
+                'X-Shopify-Access-Token': shopifyAccessToken,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                article: {
+                  id: shopifyId,
+                  image: {
+                    alt: imageData.alt_text
+                  }
+                }
+              })
+            }
+          );
+
+          if (!articleResponse.ok) {
+            const errorText = await articleResponse.text();
+            console.error(`[SYNC-IMAGE] ❌ Article image ALT sync failed:`, articleResponse.status, errorText);
+            throw new Error(`Erreur synchronisation ALT article: ${articleResponse.status} - ${errorText}`);
+          }
+
+          console.log(`[SYNC-IMAGE] ✅ Article image ALT synced successfully via REST API`);
+          
+        } else {
+          // Should not happen - homepage/page are handled earlier
+          throw new Error(`Type de contenu non supporté pour sync: ${contentType}`);
+        }
+        
+      } else {
+        // PRODUCT IMAGES: Use GraphQL productUpdateMedia
+        const graphqlUrl = `https://${shopUrl}/admin/api/2025-07/graphql.json`;
+        
         // Step 1: Query product media to find the MediaImage GID by matching image URL
         const getMediaQuery = `
           query getProductMedia($productId: ID!) {
@@ -1218,9 +1339,6 @@ Deno.serve(async (req: Request) => {
 
         console.log(`[SYNC-IMAGE] ✅ Successfully synced ALT text via GraphQL productUpdateMedia`);
         console.log(`[SYNC-IMAGE] Updated media:`, JSON.stringify(updateResult.data?.productUpdateMedia?.media));
-      } catch (gqlError: any) {
-        console.error(`[SYNC-IMAGE] ❌ GraphQL operation failed:`, gqlError.message);
-        throw new Error(`Erreur synchronisation Shopify: ${gqlError.message}`);
       }
 
       // Update image last_synced_at timestamp in database
@@ -1236,7 +1354,20 @@ Deno.serve(async (req: Request) => {
 
       // Extract store name and build Shopify URL (to parent content)
       const storeName = shopUrl.replace('.myshopify.com', '');
-      const shopifyUrl = `https://admin.shopify.com/store/${storeName}/products/${shopifyId}`;
+      let shopifyUrl: string;
+      
+      if (imageType === 'content') {
+        const contentType = imageData.content_type;
+        if (contentType === 'collection') {
+          shopifyUrl = `https://admin.shopify.com/store/${storeName}/collections/${shopifyId}`;
+        } else if (contentType === 'article') {
+          shopifyUrl = `https://admin.shopify.com/store/${storeName}/articles/${shopifyId}`;
+        } else {
+          shopifyUrl = `https://admin.shopify.com/store/${storeName}`;
+        }
+      } else {
+        shopifyUrl = `https://admin.shopify.com/store/${storeName}/products/${shopifyId}`;
+      }
 
       return new Response(
         JSON.stringify({
