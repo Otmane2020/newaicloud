@@ -34,10 +34,13 @@ import {
   Layers,
   Square,
   Filter,
+  Coins,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
 import { Switch } from '@/components/ui/switch';
+import { useAIImagesCredits } from '@/hooks/useAIImagesCredits';
+import { AIImagesCreditsPurchaseDialog, AIImagesCreditsDisplay } from './AIImagesCreditsPurchase';
 
 interface ProductGalleryImage {
   id: string;
@@ -151,6 +154,12 @@ export const BulkAIImagesDialog = ({
   
   // 🆕 Primary image angle selection
   const [primaryImageAngle, setPrimaryImageAngle] = useState<string>('front');
+  
+  // 🆕 Credits purchase dialog
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  
+  // 🆕 AI Images Credits hook
+  const { balance: creditsBalance, hasEnoughCredits, deductCredits, refreshCredits } = useAIImagesCredits();
 
   // Store loaded gallery images per product
   const [productGalleryImages, setProductGalleryImages] = useState<Map<string, ProductGalleryImage[]>>(new Map());
@@ -759,10 +768,14 @@ export const BulkAIImagesDialog = ({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6">
           <DialogHeader className="mb-4">
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Layers className="h-5 w-5 text-primary" />
-              {language === 'fr' ? 'AI Images - Génération en masse' : 'AI Images - Bulk Generation'}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Layers className="h-5 w-5 text-primary" />
+                {language === 'fr' ? 'AI Images - Génération en masse' : 'AI Images - Bulk Generation'}
+              </DialogTitle>
+              {/* Credits Display */}
+              <AIImagesCreditsDisplay onBuyClick={() => setShowPurchaseDialog(true)} compact />
+            </div>
             <DialogDescription className="text-xs sm:text-sm">
               {language === 'fr'
                 ? `Générer des variantes d'images IA pour ${productsWithSelection.length} produit(s) sélectionné(s)`
@@ -1129,6 +1142,12 @@ export const BulkAIImagesDialog = ({
           )}
         </div>
       </DialogContent>
+      
+      {/* Credits Purchase Dialog */}
+      <AIImagesCreditsPurchaseDialog 
+        open={showPurchaseDialog} 
+        onOpenChange={setShowPurchaseDialog} 
+      />
     </Dialog>
   );
 };
