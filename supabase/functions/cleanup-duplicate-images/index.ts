@@ -86,6 +86,7 @@ Deno.serve(async (req) => {
       aiReimportedDeleted: 0,
       duplicateShopifyDeleted: 0,
       duplicateNormalizedUrlDeleted: 0,
+      duplicateAiImagesDeleted: 0,
       aiImagesKept: 0,
       shopifyImagesKept: 0
     };
@@ -169,8 +170,34 @@ Deno.serve(async (req) => {
         }
       }
 
+      // RULE 4: Delete duplicate AI images based on normalized URL
+      // AI images can also have duplicates with slightly different URLs
+      const aiNormalizedUrlGroups = new Map<string, typeof aiImages>();
+      for (const img of aiImages) {
+        if (!idsToDelete.includes(img.id) && img.src) {
+          const normalizedSrc = normalizeUrl(img.src);
+          if (!aiNormalizedUrlGroups.has(normalizedSrc)) {
+            aiNormalizedUrlGroups.set(normalizedSrc, []);
+          }
+          aiNormalizedUrlGroups.get(normalizedSrc)!.push(img);
+        }
+      }
+
+      for (const [normalizedSrc, dupes] of aiNormalizedUrlGroups) {
+        if (dupes.length > 1) {
+          // Keep the oldest AI image, delete the rest
+          dupes.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          
+          for (let i = 1; i < dupes.length; i++) {
+            console.log(`[CLEANUP] Marking for deletion (duplicate AI image): ${dupes[i].id} - ${normalizedSrc}`);
+            idsToDelete.push(dupes[i].id);
+            stats.duplicateAiImagesDeleted++;
+          }
+        }
+      }
+
       // Count what we're keeping
-      stats.aiImagesKept += aiImages.length;
+      stats.aiImagesKept += aiImages.filter(img => !idsToDelete.includes(img.id)).length;
       stats.shopifyImagesKept += shopifyImages.filter(img => !idsToDelete.includes(img.id)).length;
     }
 
