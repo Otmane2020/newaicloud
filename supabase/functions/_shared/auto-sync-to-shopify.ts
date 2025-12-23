@@ -85,12 +85,16 @@ export async function autoSyncImageToShopify(options: AutoSyncOptions): Promise<
     if (imageId) {
       const { data: existingImage } = await supabaseAdmin
         .from("product_images")
-        .select("shopify_sync_count, shopify_image_id")
+        .select("shopify_sync_count, shopify_image_id, shopify_media_id, exported_to_shopify")
         .eq("id", imageId)
         .single();
       
-      if (existingImage?.shopify_sync_count >= 1 || existingImage?.shopify_image_id) {
-        console.log(`[AUTO-SYNC] ⏭️ Image already synced to Shopify (sync_count: ${existingImage?.shopify_sync_count}, shopify_image_id: ${existingImage?.shopify_image_id})`);
+      // Skip if already exported (check all possible indicators)
+      if (existingImage?.exported_to_shopify || 
+          existingImage?.shopify_media_id || 
+          existingImage?.shopify_sync_count >= 1 || 
+          existingImage?.shopify_image_id) {
+        console.log(`[AUTO-SYNC] ⏭️ Image already synced to Shopify (exported: ${existingImage?.exported_to_shopify}, media_id: ${existingImage?.shopify_media_id}, sync_count: ${existingImage?.shopify_sync_count})`);
         return { success: true, skipped: true, skipReason: "already_synced" };
       }
     }
@@ -198,17 +202,29 @@ export async function autoSyncImageToShopify(options: AutoSyncOptions): Promise<
 
     // Update local database if we have an imageId
     if (imageId) {
+      // Get current sync_count to increment
+      const { data: currentImage } = await supabaseAdmin
+        .from("product_images")
+        .select("shopify_sync_count")
+        .eq("id", imageId)
+        .single();
+      
+      const newSyncCount = (currentImage?.shopify_sync_count || 0) + 1;
+      
       await supabaseAdmin
         .from("product_images")
         .update({
           shopify_synced: true,
+          exported_to_shopify: true,
+          exported_at: new Date().toISOString(),
           last_synced_at: new Date().toISOString(),
           shopify_image_id: createdMedia.id.replace("gid://shopify/MediaImage/", ""),
-          shopify_sync_count: 1  // Mark as synced once - prevents duplicate exports
+          shopify_media_id: createdMedia.id,  // Store full GID for tracking
+          shopify_sync_count: newSyncCount
         })
         .eq("id", imageId);
       
-      console.log(`[AUTO-SYNC] ✅ Updated product_images record ${imageId} with sync_count=1`);
+      console.log(`[AUTO-SYNC] ✅ Updated product_images record ${imageId} with sync_count=${newSyncCount}, shopify_media_id=${createdMedia.id}`);
     }
 
     return {

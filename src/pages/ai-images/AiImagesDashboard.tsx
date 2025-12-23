@@ -27,6 +27,8 @@ import {
   RefreshCcw,
   ZoomIn,
   X,
+  Upload,
+  Images,
 } from "lucide-react";
 
 interface Product {
@@ -87,9 +89,19 @@ export default function AiImagesDashboard() {
   const [showBillingDialog, setShowBillingDialog] = useState(false);
   const [previewImage, setPreviewImage] = useState<HistoryItem | null>(null);
   const [singleProductToGenerate, setSingleProductToGenerate] = useState<Product | null>(null);
+  
+  // Image statistics
+  const [imageStats, setImageStats] = useState({
+    shopifyImages: 0,
+    aiImages: 0,
+    exportedAiImages: 0,
+    totalImages: 0,
+    loadingStats: true
+  });
 
   useEffect(() => {
     loadProducts();
+    loadImageStats();
   }, [activeStore]);
 
   useEffect(() => {
@@ -97,6 +109,56 @@ export default function AiImagesDashboard() {
       loadHistory();
     }
   }, [activeTab, activeStore]);
+
+  const loadImageStats = async () => {
+    if (!activeStore) {
+      setImageStats(prev => ({ ...prev, loadingStats: false }));
+      return;
+    }
+    
+    try {
+      // Get product IDs for this store
+      const { data: storeProducts } = await supabase
+        .from("shopify_products")
+        .select("id")
+        .eq("store_id", activeStore.id);
+      
+      if (!storeProducts || storeProducts.length === 0) {
+        setImageStats({ shopifyImages: 0, aiImages: 0, exportedAiImages: 0, totalImages: 0, loadingStats: false });
+        return;
+      }
+      
+      const productIds = storeProducts.map(p => p.id);
+      
+      // Get all images for these products
+      const { data: images } = await supabase
+        .from("product_images")
+        .select("is_ai_generated, source, exported_to_shopify")
+        .in("product_id", productIds);
+      
+      if (!images) {
+        setImageStats({ shopifyImages: 0, aiImages: 0, exportedAiImages: 0, totalImages: 0, loadingStats: false });
+        return;
+      }
+      
+      const shopifyImages = images.filter(img => img.source === 'shopify' || !img.is_ai_generated).length;
+      const aiImages = images.filter(img => img.is_ai_generated === true).length;
+      const exportedAiImages = images.filter(img => img.is_ai_generated === true && img.exported_to_shopify === true).length;
+      
+      setImageStats({
+        shopifyImages,
+        aiImages,
+        exportedAiImages,
+        totalImages: images.length,
+        loadingStats: false
+      });
+      
+      console.log(`[AiImagesDashboard] Image stats: Shopify=${shopifyImages}, AI=${aiImages}, Exported=${exportedAiImages}, Total=${images.length}`);
+    } catch (err) {
+      console.error("Error loading image stats:", err);
+      setImageStats(prev => ({ ...prev, loadingStats: false }));
+    }
+  };
 
   const loadProducts = async () => {
     if (!activeStore) {
@@ -226,6 +288,49 @@ export default function AiImagesDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
+        {/* Image Statistics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <Card className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <Download className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{imageStats.loadingStats ? "..." : imageStats.shopifyImages.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">{isFr ? "Images Shopify" : "Shopify Images"}</p>
+            </div>
+          </Card>
+          
+          <Card className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-purple-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{imageStats.loadingStats ? "..." : imageStats.aiImages.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">{isFr ? "Images IA Créées" : "AI Images Created"}</p>
+            </div>
+          </Card>
+          
+          <Card className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <Upload className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{imageStats.loadingStats ? "..." : imageStats.exportedAiImages.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">{isFr ? "IA Exportées" : "AI Exported"}</p>
+            </div>
+          </Card>
+          
+          <Card className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+              <Images className="w-5 h-5 text-cyan-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{imageStats.loadingStats ? "..." : imageStats.totalImages.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">{isFr ? "Total Images" : "Total Images"}</p>
+            </div>
+          </Card>
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
             <TabsTrigger value="products" className="gap-2">
