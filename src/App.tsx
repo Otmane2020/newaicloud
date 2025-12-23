@@ -140,8 +140,12 @@ import AeoPublicAnswer from "./pages/AeoPublicAnswer";
 import AeoKeywordTracking from "./pages/AeoKeywordTracking";
 import AeoUrlTracking from "./pages/AeoUrlTracking";
 import { AeoProtectedLayout } from "./components/aeo/AeoProtectedLayout";
-import { isAeoreplyDomain } from "./hooks/useAppMode";
+import { isAeoreplyDomain, isAiImagesDomain } from "./hooks/useAppMode";
 import { HelmetProvider } from "react-helmet-async";
+import AiImagesLanding from "./pages/ai-images/AiImagesLanding";
+import AiImagesDashboard from "./pages/ai-images/AiImagesDashboard";
+import AiImagesAuth from "./pages/ai-images/AiImagesAuth";
+import { AiImagesProtectedLayout } from "./components/ai-images/AiImagesProtectedLayout";
 
 const queryClient = new QueryClient();
 

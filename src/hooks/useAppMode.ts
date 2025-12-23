@@ -64,6 +64,19 @@ export function isAeoreplyDomain(): boolean {
   return isAeoreplyHost || isAeoMode;
 }
 
+// Helper to detect AI Images domain
+export function isAiImagesDomain(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  const hostname = window.location.hostname;
+  const searchParams = new URLSearchParams(window.location.search);
+  
+  const isAiImagesHost = hostname.includes('ai-images');
+  const isAiImagesMode = searchParams.get('mode') === 'ai-images';
+  
+  return isAiImagesHost || isAiImagesMode;
+}
+
 export function getAppMode(): AppMode {
   return isAeoreplyDomain() ? 'aeoreply' : 'newai';
 }
