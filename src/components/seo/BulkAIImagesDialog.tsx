@@ -132,18 +132,25 @@ export const BulkAIImagesDialog = ({
   
   // 🆕 Active only filter
   const [activeOnly, setActiveOnly] = useState(true);
+  
+  // 🆕 Regenerate if already has AI images
+  const [regenerateExisting, setRegenerateExisting] = useState(false);
+  
+  // 🆕 Primary image angle selection
+  const [primaryImageAngle, setPrimaryImageAngle] = useState<string>('front');
 
   // Store loaded gallery images per product
   const [productGalleryImages, setProductGalleryImages] = useState<Map<string, ProductGalleryImage[]>>(new Map());
   // Track selected images per product (product_id -> { url, imageId })
   const [selectedImages, setSelectedImages] = useState<Map<string, Set<string>>>(new Map());
 
-  // 🆕 Filter products by status
+  // 🆕 Filter products by status - FIXED: properly check status
   const filteredProducts = useMemo(() => {
     if (!activeOnly) return selectedProducts;
-    return selectedProducts.filter(p => 
-      p.status?.toLowerCase() === 'active' || !p.status
-    );
+    return selectedProducts.filter(p => {
+      const status = p.status?.toLowerCase();
+      return status === 'active' || status === undefined || status === null || status === '';
+    });
   }, [selectedProducts, activeOnly]);
 
   // Memoize product IDs (based on filtered products)
@@ -203,20 +210,30 @@ export const BulkAIImagesDialog = ({
       
       setProductGalleryImages(imagesByProduct);
       
-      // Smart pre-selection: prefer non-AI images, but fallback to first image if all are AI
+      // Smart pre-selection based on regenerateExisting toggle
       const newSelectedImages = new Map<string, Set<string>>();
       
       imagesByProduct.forEach((images, productId) => {
         const nonAiImages = images.filter(img => !isAiGeneratedImage(img.src, img.optimization_count));
+        const hasAiImages = images.some(img => isAiGeneratedImage(img.src, img.optimization_count));
         
-        if (nonAiImages.length > 0) {
-          // Pre-select all non-AI images
-          newSelectedImages.set(productId, new Set(nonAiImages.map(img => img.id)));
-        } else if (images.length > 0) {
-          // FALLBACK: If ALL images are AI-generated, pre-select the first one anyway
-          // This allows users to regenerate AI images if they want
-          newSelectedImages.set(productId, new Set([images[0].id]));
-          console.log(`[BulkAI] Product ${productId}: all images are AI-generated, pre-selecting first for regeneration`);
+        if (regenerateExisting) {
+          // If regenerate is ON, select first non-AI image (or first image if all are AI)
+          if (nonAiImages.length > 0) {
+            newSelectedImages.set(productId, new Set([nonAiImages[0].id]));
+          } else if (images.length > 0) {
+            newSelectedImages.set(productId, new Set([images[0].id]));
+          }
+        } else {
+          // If regenerate is OFF, skip products that already have AI images
+          if (hasAiImages) {
+            // Don't select - will be skipped
+            console.log(`[BulkAI] Product ${productId}: has AI images, skipping (regenerate=off)`);
+          } else if (nonAiImages.length > 0) {
+            newSelectedImages.set(productId, new Set([nonAiImages[0].id]));
+          } else if (images.length > 0) {
+            newSelectedImages.set(productId, new Set([images[0].id]));
+          }
         }
       });
       
@@ -226,10 +243,13 @@ export const BulkAIImagesDialog = ({
       const statuses = new Map<string, ProductStatus>();
       filteredProducts.forEach(p => {
         const hasSelectedImages = newSelectedImages.has(p.id) && (newSelectedImages.get(p.id)?.size || 0) > 0;
+        const images = imagesByProduct.get(p.id) || [];
+        const hasAiImages = images.some(img => isAiGeneratedImage(img.src, img.optimization_count));
+        
         statuses.set(p.id, { 
           id: p.id, 
           title: p.title, 
-          status: hasSelectedImages ? 'pending' : 'skipped' 
+          status: hasSelectedImages ? 'pending' : (hasAiImages && !regenerateExisting ? 'skipped' : 'skipped')
         });
       });
       setProductStatuses(statuses);
@@ -407,18 +427,18 @@ export const BulkAIImagesDialog = ({
         if (data?.images && data.images.length > 0) {
           updateProductStatus(product.id, { status: 'saving' });
 
-          // Find profile image to set as primary (position 1)
-          const profileImage = data.images.find((img: any) => img.type === 'profile');
-          const otherImages = data.images.filter((img: any) => img.type !== 'profile');
+          // Find selected primary image type to set as main (position 1)
+          const primaryImage = data.images.find((img: any) => img.type === primaryImageAngle);
+          const otherImages = data.images.filter((img: any) => img.type !== primaryImageAngle);
           
-          // Reorder: profile first, then others
-          const orderedImages = profileImage ? [profileImage, ...otherImages] : data.images;
+          // Reorder: primary first, then others
+          const orderedImages = primaryImage ? [primaryImage, ...otherImages] : data.images;
 
           // Save images to database
           let savedCount = 0;
           
-          // If we have a profile image, shift all existing images positions
-          if (profileImage) {
+          // If we have a primary image, shift all existing images positions
+          if (primaryImage) {
             // Get all existing images and increment their positions
             const { data: existingImages } = await supabase
               .from('product_images')
@@ -466,8 +486,8 @@ export const BulkAIImagesDialog = ({
                 }
               }
 
-              // Profile image gets position 1, others follow
-              const imagePosition = profileImage ? imgIndex + 1 : await getNextPosition(product.id, savedCount);
+              // Primary image type gets position 1, others follow
+              const imagePosition = primaryImage ? imgIndex + 1 : await getNextPosition(product.id, savedCount);
 
               // Insert image
               const { data: newImage, error: insertImgError } = await supabase
@@ -507,13 +527,13 @@ export const BulkAIImagesDialog = ({
                 }
               }
 
-              // If this is the profile image (position 1), update product's main image_url
-              if (img.type === 'profile' && imageUrl) {
+              // If this is the primary image (position 1), update product's main image_url
+              if (img.type === primaryImageAngle && imageUrl) {
                 await supabase
                   .from('shopify_products')
                   .update({ image_url: imageUrl })
                   .eq('id', product.id);
-                console.log('[BulkAI] Set profile as main product image');
+                console.log(`[BulkAI] Set ${primaryImageAngle} as main product image`);
               }
 
               savedCount++;
@@ -667,22 +687,67 @@ export const BulkAIImagesDialog = ({
             {/* Configuration (only before generation starts) */}
             {!isGenerating && successCount === 0 && (
               <>
-                {/* 🆕 Active only toggle */}
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <Label htmlFor="active-only-toggle" className="text-sm font-medium cursor-pointer">
-                      {language === 'fr' ? 'Produits actifs uniquement' : 'Active products only'}
-                    </Label>
-                    <Badge variant="secondary" className="text-xs">
-                      {filteredProducts.length} / {selectedProducts.length}
-                    </Badge>
+                {/* Filters row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* 🆕 Active only toggle */}
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="active-only-toggle" className="text-sm font-medium cursor-pointer">
+                        {language === 'fr' ? 'Actifs uniquement' : 'Active only'}
+                      </Label>
+                      <Badge variant="secondary" className="text-xs">
+                        {filteredProducts.length}/{selectedProducts.length}
+                      </Badge>
+                    </div>
+                    <Switch
+                      id="active-only-toggle"
+                      checked={activeOnly}
+                      onCheckedChange={(checked) => {
+                        setActiveOnly(checked);
+                        // Reload gallery when filter changes
+                        setTimeout(() => loadAllGalleryImages(), 100);
+                      }}
+                    />
                   </div>
-                  <Switch
-                    id="active-only-toggle"
-                    checked={activeOnly}
-                    onCheckedChange={setActiveOnly}
-                  />
+
+                  {/* 🆕 Regenerate existing toggle */}
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="regenerate-toggle" className="text-sm font-medium cursor-pointer">
+                        {language === 'fr' ? 'Régénérer existants' : 'Regenerate existing'}
+                      </Label>
+                    </div>
+                    <Switch
+                      id="regenerate-toggle"
+                      checked={regenerateExisting}
+                      onCheckedChange={(checked) => {
+                        setRegenerateExisting(checked);
+                        // Reload gallery to recalculate selections
+                        setTimeout(() => loadAllGalleryImages(), 100);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* 🆕 Primary image angle dropdown */}
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">
+                    {language === 'fr' ? 'Photo principale :' : 'Primary photo:'}
+                  </Label>
+                  <select
+                    value={primaryImageAngle}
+                    onChange={(e) => setPrimaryImageAngle(e.target.value)}
+                    className="flex-1 max-w-[200px] h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  >
+                    {IMAGE_TYPES.map(type => (
+                      <option key={type.id} value={type.id}>
+                        {language === 'fr' ? type.label : type.labelEn}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-3">
