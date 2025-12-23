@@ -109,7 +109,8 @@ const getFilenameFromUrl = (url: string): string => {
 
 // Helper: Check if image type can be synced via API
 const canSyncToShopify = (contentType?: string): boolean => {
-  return contentType !== 'page' && contentType !== 'homepage';
+  const manualSyncTypes = ['page', 'homepage', 'article', 'collection'];
+  return !manualSyncTypes.includes(contentType || '');
 };
 
 export interface SeoAltImageRef {
@@ -143,6 +144,8 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
   const [showOptimizeDialog, setShowOptimizeDialog] = useState(false);
   const [selectedImageForOptimize, setSelectedImageForOptimize] = useState<ImageWithProduct | null>(null);
   const [processingItems, setProcessingItems] = useState<Array<{ id: string; title: string; image_url?: string }>>([]);
+  const [showManualSyncGuide, setShowManualSyncGuide] = useState(false);
+  const [manualSyncImages, setManualSyncImages] = useState<ImageWithProduct[]>([]);
   const { limits, loading: limitsLoading, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { t, tf, language } = useTranslation();
 
@@ -619,7 +622,19 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
           toast.error(tf('seo.altImage.generatedWithErrors', { success: 0, errors: results.error }));
         }
         
-        await fetchImages();
+        // Check for images that require manual sync and show guide
+        const manualSyncRequired = imagesToGenerate.filter(img => !canSyncToShopify(img.content_type));
+        if (manualSyncRequired.length > 0 && results.success > 0) {
+          // Refresh images to get updated alt texts
+          await fetchImages();
+          // Get the updated images with new alt texts
+          const updatedManualSyncImages = manualSyncRequired;
+          setManualSyncImages(updatedManualSyncImages);
+          setShowManualSyncGuide(true);
+        } else {
+          await fetchImages();
+        }
+        
         await refreshLimits();
         setSelectedImages(new Set());
       }
@@ -1624,6 +1639,93 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         limit={limits?.limits.max_optimizations || 100}
         isTrialing={limits?.isTrialing || false}
       />
+
+      {/* Manual Sync Guide Dialog */}
+      <Dialog open={showManualSyncGuide} onOpenChange={setShowManualSyncGuide}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-500">
+              <AlertTriangle className="w-5 h-5" />
+              {t.seo.altImage.toasts.manualSyncRequired}
+            </DialogTitle>
+            <DialogDescription>
+              {tf('seo.altImage.toasts.imagesRequireManualSync', { count: manualSyncImages.length })}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Guide steps */}
+            <div className="text-sm space-y-2 text-muted-foreground border-l-2 border-amber-500/50 pl-3">
+              <p className="font-medium text-foreground">{t.seo.altImage.toasts.manualSyncGuide}</p>
+              <p>1. {t.seo.altImage.toasts.manualSyncStep1}</p>
+              <p>2. {t.seo.altImage.toasts.manualSyncStep2}</p>
+              <p>3. {t.seo.altImage.toasts.manualSyncStep3}</p>
+              <p>4. {t.seo.altImage.toasts.manualSyncStep4}</p>
+            </div>
+
+            {/* Images list with copy buttons */}
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {manualSyncImages.map(img => {
+                const filename = getFilenameFromUrl(img.src);
+                const updatedImg = images.find(i => i.id === img.id);
+                const altText = updatedImg?.alt_text || img.alt_text || '';
+                
+                return (
+                  <div key={img.id} className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg">
+                    <img 
+                      src={img.src} 
+                      alt={altText}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground truncate">{filename}</p>
+                      <p className="text-sm font-medium truncate">{altText || 'No ALT text'}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          navigator.clipboard.writeText(filename);
+                          toast.success(language === 'fr' ? 'Nom du fichier copié' : 'Filename copied');
+                        }}
+                        title={t.seo.altImage.toasts.copyFilename}
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                      {altText && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => {
+                            navigator.clipboard.writeText(altText);
+                            toast.success(language === 'fr' ? 'Texte ALT copié' : 'ALT text copied');
+                          }}
+                          title={t.seo.altImage.toasts.copyAltText}
+                        >
+                          <Copy className="w-3 h-3 mr-1" />
+                          ALT
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-muted-foreground italic">
+              {t.seo.altImage.toasts.manualSyncNote}
+            </p>
+
+            <Button 
+              className="w-full" 
+              onClick={() => setShowManualSyncGuide(false)}
+            >
+              {t.common?.close || 'Close'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 });
