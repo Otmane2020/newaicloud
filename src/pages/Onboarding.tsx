@@ -698,7 +698,7 @@ export default function Onboarding() {
             duration: 10000,
             action: {
               label: "Réinstaller",
-              onClick: () => window.open("https://apps.shopify.com/newai-sale", "_blank"),
+              onClick: () => window.open("https://apps.shopify.com/newai-seo-and-marketing-scale", "_blank"),
             },
           });
         } else {

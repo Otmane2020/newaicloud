@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTranslation } from "@/lib/language";
 
 // Shopify App Store URL - OAuth flow is the ONLY supported method per Shopify requirements
-const SHOPIFY_APP_STORE_URL = "https://apps.shopify.com/newai-ai-seo-and-marketing";
+export const SHOPIFY_APP_STORE_URL = "https://apps.shopify.com/newai-seo-and-marketing-scale";
 
 interface ShopifyConnectionDialogProps {
   open: boolean;

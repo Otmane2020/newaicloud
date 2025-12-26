@@ -21,6 +21,7 @@ import { SHOW_TRIAL_PLAN } from "@/config/features";
 import { GoogleTrafficGrowth } from "@/components/landing/GoogleTrafficGrowth";
 import { GoogleShoppingSection } from "@/components/landing/GoogleShoppingSection";
 import { GooglePhoneMockups } from "@/components/landing/GooglePhoneMockups";
+import { SHOPIFY_APP_STORE_URL } from "@/components/integration/ShopifyConnectionDialog";
 import {
   Zap,
   ShoppingBag,
@@ -189,9 +190,10 @@ const Index = () => {
               <Button
                 size="lg"
                 className="group bg-success hover:bg-success/90 shadow-lg shadow-success/30 text-success-foreground w-full sm:w-auto"
-                onClick={() => navigate("/auth?mode=signup")}
+                onClick={() => window.open(SHOPIFY_APP_STORE_URL, "_blank")}
               >
-                {t.landing.hero.ctaPrimary}
+                <ShoppingBag className="mr-2 w-4 h-4" />
+                {language === "fr" ? "Installer sur Shopify" : "Install on Shopify"}
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button
