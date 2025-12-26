@@ -155,13 +155,19 @@ export default function SetupWizard() {
             );
             
             if (claimError) {
-              console.warn('[SetupWizard] ⚠️ Auto-claim failed:', claimError);
+              // Don't show error for already-claimed tokens or conflicts - it's normal for reinstalls
+              const errorMsg = claimError.message?.toLowerCase() || '';
+              if (!errorMsg.includes('already') && !errorMsg.includes('conflict')) {
+                console.warn('[SetupWizard] ⚠️ Auto-claim failed:', claimError);
+              } else {
+                console.log('[SetupWizard] ℹ️ Connection already exists (reinstall detected)');
+              }
             } else {
               console.log('[SetupWizard] ✅ Auto-claimed successfully:', claimData);
               toast.success(language === 'fr' ? 'Boutique Shopify connectée !' : 'Shopify store connected!');
             }
           } catch (claimErr) {
-            console.warn('[SetupWizard] ⚠️ Auto-claim error:', claimErr);
+            console.warn('[SetupWizard] ⚠️ Auto-claim error (non-blocking):', claimErr);
           }
         }
 

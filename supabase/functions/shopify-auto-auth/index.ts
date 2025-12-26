@@ -312,16 +312,45 @@ serve(async (req) => {
       }
     }
 
-    // 6. Claim la connexion Shopify - vérifier d'abord si connexion existante
-    const { data: existingConnection } = await supabase
+    // 6. Claim la connexion Shopify - IDEMPOTENT: chercher par store_url d'abord
+    // L'index unique idx_unique_active_store est sur (store_url) WHERE is_active = true
+    // Donc on doit chercher par store_url pour éviter les conflits
+    
+    // D'abord chercher une connexion existante pour ce store_url (quelque soit le user_id)
+    const { data: existingByStore } = await supabase
+      .from("shopify_connections")
+      .select("id, user_id, connected_at, is_active")
+      .eq("store_url", shop)
+      .maybeSingle();
+
+    // Ensuite chercher par user_id + store_url
+    const { data: existingByUser } = await supabase
       .from("shopify_connections")
       .select("id, connected_at, is_active")
       .eq("user_id", userId)
       .eq("store_url", shop)
       .maybeSingle();
 
-    // Si c'est une réinstallation (connexion existante mais inactive), vérifier l'abonnement Shopify
+    console.log("[SHOPIFY-AUTO-AUTH] 🔍 Existing connections check:", {
+      byStore: existingByStore ? { id: existingByStore.id, user_id: existingByStore.user_id, is_active: existingByStore.is_active } : null,
+      byUser: existingByUser ? { id: existingByUser.id, is_active: existingByUser.is_active } : null
+    });
+
+    // Déterminer quelle connexion mettre à jour
+    let existingConnection = existingByUser || existingByStore;
     const isReinstallation = existingConnection && !existingConnection.is_active;
+    const isExistingActiveForDifferentUser = existingByStore && existingByStore.is_active && existingByStore.user_id !== userId;
+    
+    if (isExistingActiveForDifferentUser) {
+      console.log("[SHOPIFY-AUTO-AUTH] ⚠️ Store already connected to different user, transferring ownership...");
+      // Désactiver l'ancienne connexion et en créer une nouvelle pour ce user
+      await supabase
+        .from("shopify_connections")
+        .update({ is_active: false })
+        .eq("id", existingByStore.id);
+      
+      existingConnection = null; // Force création nouvelle connexion
+    }
     
     if (isReinstallation) {
       console.log("[SHOPIFY-AUTO-AUTH] 🔄 REINSTALLATION détectée - vérification abonnement Shopify...");
@@ -352,36 +381,54 @@ serve(async (req) => {
       }
     }
 
-    // Ne mettre à jour connected_at QUE pour les NOUVELLES connexions
-    const connectionData: Record<string, any> = {
-      user_id: userId,
-      store_url: shop,
-      store_name: pendingConnection.commercial_name || shop,
-      access_token: pendingConnection.access_token,
-      is_active: true,
-      connection_type: "oauth",
-    };
-    
-    // Seulement si c'est une nouvelle connexion, ajouter connected_at
-    if (!existingConnection) {
-      connectionData.connected_at = new Date().toISOString();
-      console.log("[SHOPIFY-AUTO-AUTH] Nouvelle connexion - connected_at sera défini");
+    // Effectuer l'UPDATE ou INSERT selon le cas
+    if (existingConnection) {
+      // UPDATE existing connection
+      console.log("[SHOPIFY-AUTO-AUTH] 🔄 Updating existing connection:", existingConnection.id);
+      
+      const { error: updateError } = await supabase
+        .from("shopify_connections")
+        .update({
+          user_id: userId,
+          store_name: pendingConnection.commercial_name || shop,
+          access_token: pendingConnection.access_token,
+          is_active: true,
+          connection_type: "oauth",
+        })
+        .eq("id", existingConnection.id);
+
+      if (updateError) {
+        console.error("[SHOPIFY-AUTO-AUTH] Erreur update connexion:", updateError);
+        return new Response(
+          JSON.stringify({ error: "Failed to update connection", details: updateError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log("[SHOPIFY-AUTO-AUTH] ✅ Connexion mise à jour");
     } else {
-      console.log("[SHOPIFY-AUTO-AUTH] Connexion existante - connected_at préservé");
-    }
+      // INSERT new connection
+      console.log("[SHOPIFY-AUTO-AUTH] ➕ Creating new connection");
+      
+      const { error: insertError } = await supabase
+        .from("shopify_connections")
+        .insert({
+          user_id: userId,
+          store_url: shop,
+          store_name: pendingConnection.commercial_name || shop,
+          access_token: pendingConnection.access_token,
+          is_active: true,
+          connection_type: "oauth",
+          connected_at: new Date().toISOString(),
+        });
 
-    const { error: claimError } = await supabase
-      .from("shopify_connections")
-      .upsert(connectionData, {
-        onConflict: 'user_id,store_url'
-      });
-
-    if (claimError) {
-      console.error("[SHOPIFY-AUTO-AUTH] Erreur claim connexion:", claimError);
-      return new Response(
-        JSON.stringify({ error: "Failed to claim connection", details: claimError.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (insertError) {
+        console.error("[SHOPIFY-AUTO-AUTH] Erreur insert connexion:", insertError);
+        return new Response(
+          JSON.stringify({ error: "Failed to create connection", details: insertError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log("[SHOPIFY-AUTO-AUTH] ✅ Nouvelle connexion créée");
     }
 
     // 7. Marquer la pending_connection comme claimed
