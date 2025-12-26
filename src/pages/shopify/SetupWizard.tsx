@@ -132,15 +132,36 @@ export default function SetupWizard() {
       }
 
       try {
+        // Check if user has an existing session
+        const { data: { session } } = await supabase.auth.getSession();
+        
         // If no pending token, check if user has session
         if (!pendingToken && normalizedShop) {
-          const { data: { session } } = await supabase.auth.getSession();
-          
           if (!session) {
             console.log('⚠️ [SetupWizard] No session and no pending_token, redirecting to /app');
             setIsCheckingSubscription(false);
             navigate(`/app?shop=${encodeURIComponent(normalizedShop)}`, { replace: true });
             return;
+          }
+        }
+        
+        // If user already has session AND has pending token, auto-claim immediately
+        if (session && pendingToken) {
+          console.log('[SetupWizard] 🔗 User already logged in with pending token, auto-claiming...');
+          try {
+            const { data: claimData, error: claimError } = await supabase.functions.invoke(
+              "claim-shopify-connection",
+              { body: { pendingToken } }
+            );
+            
+            if (claimError) {
+              console.warn('[SetupWizard] ⚠️ Auto-claim failed:', claimError);
+            } else {
+              console.log('[SetupWizard] ✅ Auto-claimed successfully:', claimData);
+              toast.success(language === 'fr' ? 'Boutique Shopify connectée !' : 'Shopify store connected!');
+            }
+          } catch (claimErr) {
+            console.warn('[SetupWizard] ⚠️ Auto-claim error:', claimErr);
           }
         }
 
@@ -248,6 +269,26 @@ export default function SetupWizard() {
           refresh_token: data.refresh_token,
         });
         console.log("[SetupWizard] ✅ Session set successfully");
+        
+        // Auto-claim the pending connection if we have a pending token
+        if (pendingToken) {
+          try {
+            console.log("[SetupWizard] 🔗 Auto-claiming Shopify connection...");
+            const { data: claimData, error: claimError } = await supabase.functions.invoke(
+              "claim-shopify-connection",
+              { body: { pendingToken } }
+            );
+            
+            if (claimError) {
+              console.warn("[SetupWizard] ⚠️ Claim failed (non-blocking):", claimError);
+            } else {
+              console.log("[SetupWizard] ✅ Shopify connection claimed:", claimData);
+            }
+          } catch (claimErr) {
+            console.warn("[SetupWizard] ⚠️ Claim error (non-blocking):", claimErr);
+          }
+        }
+        
         toast.success(t.connected);
         return true;
       }
