@@ -230,25 +230,33 @@ serve(async (req) => {
         // Also check profiles table to see if user ever had an active subscription
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("subscription_status, trial_ends_at, current_plan_id")
+          .select("subscription_status, trial_ends_at, current_plan_id, has_used_trial")
           .eq("id", connection.user_id)
           .single();
         
         if (profileData) {
-          // If user had an active status before or used trial, they shouldn't get trial again
-          const hadActiveStatus = profileData.subscription_status === 'active' || 
-                                  profileData.subscription_status === 'past_due' ||
-                                  profileData.subscription_status === 'cancelled';
-          const usedTrial = profileData.trial_ends_at && new Date(profileData.trial_ends_at) < new Date();
-          const hadPaidPlan = profileData.current_plan_id && 
-                             profileData.current_plan_id !== 'trial' && 
-                             profileData.current_plan_id !== 'free';
+          // ONLY skip trial if:
+          // 1. User explicitly has_used_trial = true (they already used their trial period)
+          // 2. User currently has an ACTIVE subscription_status (meaning they're paying)
+          // 3. User has trial_ends_at in the PAST AND had an active subscription before
           
-          if (hadActiveStatus || usedTrial || hadPaidPlan) {
+          const hasExplicitlyUsedTrial = profileData.has_used_trial === true;
+          const isCurrentlyActive = profileData.subscription_status === 'active';
+          const hadTrialThatEnded = profileData.trial_ends_at && 
+                                    new Date(profileData.trial_ends_at) < new Date() &&
+                                    (profileData.subscription_status === 'cancelled' || 
+                                     profileData.subscription_status === 'past_due');
+          
+          // Don't consider 'inactive' users with a plan as having had a subscription
+          // They may have been assigned a plan but never actually paid/used trial
+          
+          if (hasExplicitlyUsedTrial || isCurrentlyActive || hadTrialThatEnded) {
             hadPriorSubscription = true;
             logStep("User previously had subscription/used trial - will skip trial days", { 
-              hadActiveStatus, usedTrial, hadPaidPlan, profileData 
+              hasExplicitlyUsedTrial, isCurrentlyActive, hadTrialThatEnded, profileData 
             });
+          } else {
+            logStep("User eligible for trial - never had active subscription", { profileData });
           }
         }
       }
