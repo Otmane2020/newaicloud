@@ -715,6 +715,35 @@ async function handleAppUninstalled(supabase: any, connection: any, shopDomain: 
     },
   });
 
+  // 🆕 GDPR: Also delete the user from auth.users completely
+  console.log('🗑️ Deleting user from auth.users:', userId);
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    // Create admin client with service role to delete auth user
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // Delete profile first (to avoid FK issues)
+    await supabaseAdmin.from('profiles').delete().eq('id', userId);
+    console.log('✅ Deleted user profile');
+
+    // Delete user from auth.users
+    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    
+    if (deleteAuthError) {
+      console.error('❌ Failed to delete auth user:', deleteAuthError);
+    } else {
+      console.log('✅ User completely deleted from auth.users:', userId);
+    }
+  } catch (authDeleteError) {
+    console.error('⚠️ Error deleting auth user (non-blocking):', authDeleteError);
+    // Don't fail the webhook - data has already been cleaned
+  }
+
   console.log('✅ App uninstall webhook fully processed - ALL DATA DELETED (GDPR compliant)');
 }
 
