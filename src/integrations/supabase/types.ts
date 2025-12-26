@@ -340,39 +340,63 @@ export type Database = {
       }
       aeo_projects: {
         Row: {
+          article_url_for_voice: string | null
+          auto_analyzed: boolean | null
+          brand_color: string | null
           brand_name: string
+          competitors: string[] | null
           created_at: string
+          description: string | null
           id: string
+          keywords: string[] | null
           language: string | null
           llms_txt_url: string | null
           logo_url: string | null
+          onboarding_completed: boolean | null
           settings: Json | null
+          target_audiences: string[] | null
           target_platforms: string[] | null
           updated_at: string
           user_id: string
           website_url: string | null
         }
         Insert: {
+          article_url_for_voice?: string | null
+          auto_analyzed?: boolean | null
+          brand_color?: string | null
           brand_name: string
+          competitors?: string[] | null
           created_at?: string
+          description?: string | null
           id?: string
+          keywords?: string[] | null
           language?: string | null
           llms_txt_url?: string | null
           logo_url?: string | null
+          onboarding_completed?: boolean | null
           settings?: Json | null
+          target_audiences?: string[] | null
           target_platforms?: string[] | null
           updated_at?: string
           user_id: string
           website_url?: string | null
         }
         Update: {
+          article_url_for_voice?: string | null
+          auto_analyzed?: boolean | null
+          brand_color?: string | null
           brand_name?: string
+          competitors?: string[] | null
           created_at?: string
+          description?: string | null
           id?: string
+          keywords?: string[] | null
           language?: string | null
           llms_txt_url?: string | null
           logo_url?: string | null
+          onboarding_completed?: boolean | null
           settings?: Json | null
+          target_audiences?: string[] | null
           target_platforms?: string[] | null
           updated_at?: string
           user_id?: string
