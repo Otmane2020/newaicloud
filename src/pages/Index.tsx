@@ -39,6 +39,8 @@ import {
   Play,
   Clock,
   Shield,
+  Loader2,
+  ExternalLink,
 } from "lucide-react";
 
 // Official Integration Logos
@@ -140,6 +142,14 @@ const Index = () => {
   const navigate = useNavigate();
   const { language, t } = useTranslation();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [isInstalling, setIsInstalling] = useState(false);
+
+  const handleInstallClick = () => {
+    setIsInstalling(true);
+    window.open(SHOPIFY_APP_STORE_URL, "_blank");
+    // Reset after a short delay since the page stays open
+    setTimeout(() => setIsInstalling(false), 2000);
+  };
 
   if (loading) {
     return (
@@ -190,11 +200,18 @@ const Index = () => {
               <Button
                 size="lg"
                 className="group bg-success hover:bg-success/90 shadow-lg shadow-success/30 text-success-foreground w-full sm:w-auto"
-                onClick={() => window.open(SHOPIFY_APP_STORE_URL, "_blank")}
+                onClick={handleInstallClick}
+                disabled={isInstalling}
               >
-                <ShoppingBag className="mr-2 w-4 h-4" />
+                {isInstalling ? (
+                  <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                ) : (
+                  <ShoppingBag className="mr-2 w-4 h-4" />
+                )}
                 {language === "fr" ? "Installer sur Shopify" : "Install on Shopify"}
-                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                {!isInstalling && (
+                  <ExternalLink className="ml-2 w-4 h-4" />
+                )}
               </Button>
               <Button
                 size="lg"
