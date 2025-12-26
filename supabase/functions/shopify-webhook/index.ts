@@ -537,8 +537,117 @@ async function handleAppUninstalled(supabase: any, connection: any, shopDomain: 
   console.log('📋 Connection data:', { id: connection.id, user_id: connection.user_id });
 
   const userId = connection.user_id;
+  const storeId = connection.id;
 
-  // 1. Mark subscription as cancelled in subscriptions table
+  // ============================================
+  // GDPR COMPLIANCE: Delete ALL user data
+  // ============================================
+  console.log('🗑️ Starting GDPR-compliant data deletion for user:', userId);
+
+  // 1. Delete all products and related data
+  const { data: products } = await supabase
+    .from('shopify_products')
+    .select('id')
+    .eq('store_id', storeId);
+  
+  if (products && products.length > 0) {
+    const productIds = products.map((p: any) => p.id);
+    
+    // Delete product images
+    await supabase.from('product_images').delete().in('product_id', productIds);
+    console.log('✅ Deleted product images');
+    
+    // Delete product variants
+    await supabase.from('product_variants').delete().in('product_id', productIds);
+    console.log('✅ Deleted product variants');
+    
+    // Delete creative history
+    await supabase.from('creative_history').delete().in('product_id', productIds);
+    console.log('✅ Deleted creative history');
+  }
+  
+  // Delete all products
+  await supabase.from('shopify_products').delete().eq('store_id', storeId);
+  console.log('✅ Deleted all products for store');
+
+  // 2. Delete all collections
+  await supabase.from('shopify_collections').delete().eq('store_id', storeId);
+  console.log('✅ Deleted all collections');
+
+  // 3. Delete all blog articles
+  await supabase.from('blog_articles').delete().eq('store_id', storeId);
+  console.log('✅ Deleted all blog articles');
+
+  // 4. Delete blog campaigns
+  await supabase.from('blog_campaigns').delete().eq('store_id', storeId);
+  console.log('✅ Deleted blog campaigns');
+
+  // 5. Delete blog opportunities
+  await supabase.from('blog_opportunities').delete().eq('store_id', storeId);
+  console.log('✅ Deleted blog opportunities');
+
+  // 6. Delete blog netlinking
+  await supabase.from('blog_netlinking').delete().eq('store_id', storeId);
+  console.log('✅ Deleted blog netlinking');
+
+  // 7. Delete chat order tracking
+  await supabase.from('chat_order_tracking').delete().eq('store_id', storeId);
+  console.log('✅ Deleted chat order tracking');
+
+  // 8. Delete content images
+  await supabase.from('content_images').delete().eq('store_id', storeId);
+  console.log('✅ Deleted content images');
+
+  // 9. Delete AI opportunities
+  await supabase.from('ai_opportunities').delete().eq('store_id', storeId);
+  console.log('✅ Deleted AI opportunities');
+
+  // 10. Delete ads campaigns and related data
+  const { data: campaigns } = await supabase
+    .from('ads_campaigns')
+    .select('id')
+    .eq('user_id', userId);
+
+  if (campaigns && campaigns.length > 0) {
+    const campaignIds = campaigns.map((c: any) => c.id);
+    await supabase.from('ads_campaign_products').delete().in('campaign_id', campaignIds);
+    await supabase.from('ads_campaign_collections').delete().in('campaign_id', campaignIds);
+    await supabase.from('ads_campaigns').delete().in('id', campaignIds);
+    console.log('✅ Deleted ads campaigns and relations');
+  }
+
+  // 11. Delete user-specific data linked to this store
+  await supabase.from('chat_knowledge_base').delete().eq('user_id', userId);
+  console.log('✅ Deleted chat knowledge base');
+
+  // 12. Delete chat sessions and messages
+  const { data: chatSessions } = await supabase
+    .from('chat_sessions')
+    .select('id')
+    .eq('user_id', userId);
+
+  if (chatSessions && chatSessions.length > 0) {
+    const sessionIds = chatSessions.map((s: any) => s.id);
+    await supabase.from('chat_messages').delete().in('session_id', sessionIds);
+    await supabase.from('chat_sessions').delete().in('id', sessionIds);
+    console.log('✅ Deleted chat sessions and messages');
+  }
+
+  // 13. Delete chat settings
+  await supabase.from('chat_settings').delete().eq('user_id', userId);
+  console.log('✅ Deleted chat settings');
+
+  // 14. Delete automation settings
+  await supabase.from('automation_settings').delete().eq('user_id', userId);
+  console.log('✅ Deleted automation settings');
+
+  // 15. Delete app notifications
+  await supabase.from('app_notifications').delete().eq('user_id', userId);
+  console.log('✅ Deleted app notifications');
+
+  // ============================================
+  // Mark subscription as cancelled
+  // ============================================
   const { error: subError } = await supabase
     .from('subscriptions')
     .update({
@@ -555,7 +664,7 @@ async function handleAppUninstalled(supabase: any, connection: any, shopDomain: 
     console.log('✅ Subscription marked as cancelled');
   }
 
-  // 2. Update profile to remove active subscription
+  // Update profile to remove active subscription
   const { error: profileError } = await supabase
     .from('profiles')
     .update({
@@ -571,14 +680,14 @@ async function handleAppUninstalled(supabase: any, connection: any, shopDomain: 
     console.log('✅ Profile subscription status reset');
   }
 
-  // 3. Mark shopify_connection as inactive
+  // Mark shopify_connection as inactive (don't delete for audit purposes)
   const { error: connError } = await supabase
     .from('shopify_connections')
     .update({
       is_active: false,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', connection.id);
+    .eq('id', storeId);
 
   if (connError) {
     console.error('❌ Error deactivating connection:', connError);
@@ -586,26 +695,27 @@ async function handleAppUninstalled(supabase: any, connection: any, shopDomain: 
     console.log('✅ Shopify connection marked as inactive');
   }
 
-  // 4. Delete pending subscriptions
+  // Delete pending subscriptions
   await supabase
     .from('shopify_pending_subscriptions')
     .delete()
     .eq('user_id', userId);
 
-  // 5. Log this critical event
+  // Log this critical event
   await supabase.from('system_logs').insert({
     type: 'app_uninstalled',
     function_name: 'shopify-webhook',
-    message: `App uninstalled by merchant: ${shopDomain}`,
+    message: `App uninstalled by merchant: ${shopDomain} - ALL USER DATA DELETED (GDPR)`,
     metadata: {
       shop: shopDomain,
       user_id: userId,
-      connection_id: connection.id,
+      connection_id: storeId,
+      data_deleted: true,
       timestamp: new Date().toISOString(),
     },
   });
 
-  console.log('✅ App uninstall webhook fully processed - subscription cancelled');
+  console.log('✅ App uninstall webhook fully processed - ALL DATA DELETED (GDPR compliant)');
 }
 
 /**
