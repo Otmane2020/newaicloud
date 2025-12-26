@@ -361,47 +361,18 @@ serve(async (req) => {
       userId: user.id
     });
 
-    // 🆕 Déclencher la synchronisation automatique complète via trigger-auto-sync
-    console.log("[CLAIM-SHOPIFY] 🚀 Triggering automatic sync for user", {
-      userId: user.id,
-      shopUrl: pending.shop_url
-    });
-
-    try {
-      // Appeler trigger-auto-sync qui gère toute la logique d'import
-      const functionUrl = `${supabaseUrl}/functions/v1/trigger-auto-sync`;
-      const syncResponse = await fetch(
-        functionUrl,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: user.id,
-          }),
-        }
-      );
-
-      if (!syncResponse.ok) {
-        const errorText = await syncResponse.text();
-        console.error("[CLAIM-SHOPIFY] ❌ Auto-sync trigger failed:", errorText);
-      } else {
-        const syncData = await syncResponse.json();
-        console.log("[CLAIM-SHOPIFY] ✅ Auto-sync triggered successfully:", syncData);
-      }
-    } catch (syncError) {
-      console.error("[CLAIM-SHOPIFY] ⚠️ Error triggering auto-sync:", syncError);
-      // Ne pas faire échouer la connexion si la sync échoue
-    }
+    // ⚠️ IMPORTANT: Ne PAS déclencher l'import ici!
+    // L'import sera fait APRÈS que l'utilisateur ait choisi et payé un abonnement
+    // dans shopify-billing-callback pour éviter d'importer des données pour des utilisateurs
+    // qui partent sans s'abonner
+    console.log("[CLAIM-SHOPIFY] ⏭️ Import différé - sera déclenché après paiement Shopify confirmé");
 
     return new Response(
       JSON.stringify({
         success: true,
         shop: pending.shop_url,
-        message: "Shopify connection successfully linked and products are being imported",
-        autoImportTriggered: true,
+        message: "Shopify connection successfully linked. Products will be imported after subscription is confirmed.",
+        autoImportTriggered: false,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
