@@ -116,7 +116,7 @@ export function AeoProtectedLayout({ children }: { children: React.ReactNode }) 
 
   if (!user) {
     const redirect = encodeURIComponent(`${location.pathname}${location.search}`);
-    return <Navigate to={`/auth?mode=signup&redirect=${redirect}`} replace />;
+    return <Navigate to={`/auth?authMode=signup&redirect=${redirect}`} replace />;
   }
 
   return (
