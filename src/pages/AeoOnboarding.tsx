@@ -65,7 +65,7 @@ export default function AeoOnboarding() {
 
   useEffect(() => {
     if (!user) {
-      navigate("/auth?mode=signup");
+      navigate("/auth?authMode=signup");
       return;
     }
     checkExistingSubscription();

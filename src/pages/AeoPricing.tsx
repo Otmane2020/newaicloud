@@ -12,7 +12,7 @@ export default function AeoPricing() {
     if (user) {
       navigate("/onboarding", { replace: true });
     } else {
-      navigate("/auth?mode=signup&redirect=/onboarding", { replace: true });
+      navigate("/auth?authMode=signup&redirect=/onboarding", { replace: true });
     }
   }, [user, navigate]);
 
