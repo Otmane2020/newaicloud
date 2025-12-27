@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useAeoCredits } from "@/hooks/useAeoCredits";
-import { AeoOnboardingWizard } from "@/components/aeo/AeoOnboardingWizard";
+import { SoftPaywallBanner } from "@/components/aeo/SoftPaywallBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -35,43 +35,40 @@ export default function AeoDashboard() {
   const t = aeoTranslations[language] || aeoTranslations.fr;
   const { credits, loading: creditsLoading, getUsagePercentage, isLimitReached } = useAeoCredits();
   
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [answersStats, setAnswersStats] = useState({
     total: 0,
     published: 0,
     highCitation: 0,
     avgScore: 0,
   });
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
 
-  // Check if user needs onboarding
+  // Check if user needs onboarding - redirect to /aeo-setup if not completed
   useEffect(() => {
     const checkOnboarding = async () => {
-      if (!user) {
-        setCheckingOnboarding(false);
-        return;
-      }
+      if (!user) return;
 
       try {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('onboarding_completed')
+          .select('onboarding_completed, subscription_status')
           .eq('id', user.id)
           .single();
 
-        // Show onboarding if not completed
+        // Redirect to setup wizard if onboarding not completed
         if (!profile?.onboarding_completed) {
-          setShowOnboarding(true);
+          navigate('/aeo-setup');
+          return;
         }
+        
+        setSubscriptionStatus(profile?.subscription_status || null);
       } catch (error) {
         console.error('Error checking onboarding:', error);
-      } finally {
-        setCheckingOnboarding(false);
       }
     };
 
     checkOnboarding();
-  }, [user]);
+  }, [user, navigate]);
 
   // Fetch answers stats
   useEffect(() => {
@@ -191,14 +188,19 @@ export default function AeoDashboard() {
 
   const anyLimitReached = usageItems.some(item => item.isLimited);
 
+  // Show soft paywall if user has answers but is on trial/no plan
+  const showSoftPaywall = answersStats.total > 0 && 
+    (!subscriptionStatus || subscriptionStatus === 'trialing' || subscriptionStatus === 'inactive');
+
   return (
     <div className="space-y-8">
-      {/* Onboarding Wizard */}
-      <AeoOnboardingWizard 
-        open={showOnboarding} 
-        onOpenChange={setShowOnboarding}
-        onComplete={() => setShowOnboarding(false)}
-      />
+      {/* Soft Paywall Banner */}
+      {showSoftPaywall && (
+        <SoftPaywallBanner 
+          answersCount={answersStats.total}
+          onUpgrade={() => navigate('/subscription')}
+        />
+      )}
 
       {/* Header */}
       <div>
