@@ -365,7 +365,7 @@ export const translations = {
 
   // ============= Offre promotionnelle =============
   announcement: {
-    limitedSale: "🔥 BLACK FRIDAY : Jusqu'à 30% de RÉDUCTION sur tous les plans",
+    limitedSale: "🎉 SOLDES NOUVEL AN : Jusqu'à 30% de RÉDUCTION sur tous les plans",
     checkOut: "Profiter de l'offre",
   },
 
