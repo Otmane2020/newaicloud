@@ -712,14 +712,14 @@ IMPORTANT:
           
           console.log(`✅ Produit ${productId} optimisé avec succès (compteur: ${currentCount + 1})`);
           
-          // Track usage: 1 title/description generation = 5 optimizations
+          // Track usage: 1 SEO title + 1 meta description = 2 optimizations par produit
           try {
             await supabaseClient.rpc("increment_usage", {
               p_seller_id: user.id,
               p_field: "optimizations_count",
-              p_increment: 5
+              p_increment: 2
             });
-            console.log("✅ Usage tracked: 5 optimizations");
+            console.log("✅ Usage tracked: 2 optimizations (1 title + 1 meta)");
           } catch (trackError) {
             console.error("⚠️ Failed to track usage:", trackError);
           }
