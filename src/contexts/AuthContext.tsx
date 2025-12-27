@@ -225,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    const redirectUrl = `${window.location.origin}/aeo-setup`;
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
