@@ -15,7 +15,9 @@ import { aeoTranslations } from '@/lib/translations/aeo';
 
 export default function AeoAuth() {
   const [searchParams] = useSearchParams();
-  const initialMode = searchParams.get('authMode') === 'signup' ? 'signup' : 'login';
+  const legacyMode = searchParams.get('mode');
+  const authModeParam = searchParams.get('authMode') ?? (legacyMode === 'signup' || legacyMode === 'login' ? legacyMode : null);
+  const initialMode = authModeParam === 'signup' ? 'signup' : 'login';
   const redirectParam = searchParams.get('redirect');
   const safeRedirect = redirectParam && redirectParam.startsWith('/') ? redirectParam : null;
 
