@@ -161,8 +161,26 @@ export default function AeoSetupWizard() {
         updated_at: new Date().toISOString(),
       }).eq("id", user.id);
 
-      toast.success(appLanguage === "fr" ? "Configuration terminée !" : "Setup complete!");
-      navigate("/aeo-pricing");
+      // Trigger auto-generation of AEO opportunities in the background
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (session?.session?.access_token) {
+          // Fire and forget - don't block navigation
+          supabase.functions.invoke("auto-generate-aeo", {
+            body: { 
+              websiteUrl: data.websiteUrl,
+              language: data.language,
+              competitors: data.competitors,
+            },
+            headers: { Authorization: `Bearer ${session.session.access_token}` },
+          }).catch(err => console.log("Auto-generate AEO started in background:", err));
+        }
+      } catch (e) {
+        console.log("Auto-generation will happen later:", e);
+      }
+
+      toast.success(appLanguage === "fr" ? "Configuration terminée ! Génération en cours..." : "Setup complete! Generating...");
+      navigate("/dashboard");
     } catch (error) {
       console.error("Error saving:", error);
       toast.error(appLanguage === "fr" ? "Erreur lors de la sauvegarde" : "Save error");

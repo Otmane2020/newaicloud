@@ -140,6 +140,7 @@ import AeoPublicAnswer from "./pages/AeoPublicAnswer";
 import AeoKeywordTracking from "./pages/AeoKeywordTracking";
 import AeoUrlTracking from "./pages/AeoUrlTracking";
 import { AeoProtectedLayout } from "./components/aeo/AeoProtectedLayout";
+import AeoSetupWizard from "./components/aeo/AeoSetupWizard";
 import { isAeoreplyDomain, isAiImagesDomain } from "./hooks/useAppMode";
 import { HelmetProvider } from "react-helmet-async";
 import AiImagesLanding from "./pages/ai-images/AiImagesLanding";
@@ -183,6 +184,7 @@ function AeoreplyRoutes() {
       <Route path="/landing" element={<AeoLanding />} />
       <Route path="/auth" element={<AeoAuth />} />
       <Route path="/onboarding" element={<AeoOnboarding />} />
+      <Route path="/aeo-setup" element={<AeoProtectedLayout><AeoSetupWizard /></AeoProtectedLayout>} />
       <Route path="/pricing" element={<AeoPricing />} />
       <Route path="/dashboard" element={<AeoProtectedLayout><AeoDashboard /></AeoProtectedLayout>} />
       <Route path="/wizard" element={<AeoProtectedLayout><AEO /></AeoProtectedLayout>} />
