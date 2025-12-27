@@ -7941,7 +7941,7 @@ export const translations = {
     processing: "Processing...",
   },
   announcement: {
-    limitedSale: "🔥 BLACK FRIDAY: Up to 30% OFF all plans",
+    limitedSale: "🎉 NEW YEAR SALE: Up to 30% OFF all plans",
     checkOut: "Get the Deal",
   },
   apiKeys: {
