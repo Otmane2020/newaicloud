@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,8 +6,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Shield, Users, TrendingUp, TrendingDown, RefreshCw, Languages, MoreVertical } from 'lucide-react';
+import { Shield, Users, TrendingUp, TrendingDown, RefreshCw, Languages, MoreVertical, Trash2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/lib/language';
 
@@ -33,6 +45,15 @@ export default function Admin() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+
+  const [deleteEmail, setDeleteEmail] = useState('');
+  const [deletingUser, setDeletingUser] = useState(false);
+
+  const deleteEmailTrimmed = useMemo(() => deleteEmail.trim().toLowerCase(), [deleteEmail]);
+  const canDeleteByEmail = useMemo(
+    () => deleteEmailTrimmed.length > 3 && deleteEmailTrimmed.includes('@'),
+    [deleteEmailTrimmed]
+  );
 
   useEffect(() => {
     loadData();
@@ -123,6 +144,30 @@ export default function Admin() {
     }
   };
 
+  const deleteUserByEmail = async () => {
+    if (!canDeleteByEmail) return;
+
+    try {
+      setDeletingUser(true);
+
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { email: deleteEmailTrimmed },
+      });
+
+      if (error) throw error;
+
+      console.log('[ADMIN] delete-user result', data);
+      toast.success(`Deleted: ${deleteEmailTrimmed}`);
+      setDeleteEmail('');
+      await loadData();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast.error(error?.message || 'Failed to delete user');
+    } finally {
+      setDeletingUser(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -198,6 +243,62 @@ export default function Admin() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Danger Zone */}
+        <Card className="mb-6 md:mb-8">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+              <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+              Delete user (full)
+            </CardTitle>
+            <CardDescription className="text-sm md:text-base">
+              Deletes the user from authentication + all related data (use with care).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-3 md:items-center">
+              <Input
+                value={deleteEmail}
+                onChange={(e) => setDeleteEmail(e.target.value)}
+                placeholder="user@email.com"
+                className="md:max-w-md"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" disabled={!canDeleteByEmail || deletingUser}>
+                    {deletingUser ? 'Deleting…' : 'Delete'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this user?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the user account and associated data for:{' '}
+                      <span className="font-medium">{deleteEmailTrimmed}</span>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={deletingUser}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={deleteUserByEmail}
+                      disabled={!canDeleteByEmail || deletingUser}
+                    >
+                      Confirm delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+
+            <p className="mt-2 text-xs text-muted-foreground">
+              Tip: this also removes users that no longer appear in the profiles list.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Users Table */}
         <Card>
