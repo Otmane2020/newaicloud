@@ -699,14 +699,12 @@ IMPORTANT:
           
           const currentCount = currentProduct?.optimization_count || 0;
           
-          // Mettre à jour avec le nouveau compteur
+          // Mettre à jour UNIQUEMENT seo_title et seo_description (PAS title ni body_html)
           await supabaseClient
             .from('shopify_products')
             .update({
-              title: result.seo_title,
               seo_title: result.seo_title,
               seo_description: result.meta_description,
-              description: result.html_body,
               optimization_count: currentCount + 1,
               last_optimization_at: new Date().toISOString()
             })
