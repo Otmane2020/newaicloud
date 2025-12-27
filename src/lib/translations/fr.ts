@@ -512,6 +512,16 @@ export const translations = {
     },
   },
 
+  // ============= Bulk Limit Dialog =============
+  bulkLimit: {
+    title: "Opération Bulk Non Disponible",
+    description: "Vous avez {{totalProducts}} produits.",
+    requirement: "Les opérations bulk sont disponibles à partir de {{maxProducts}} produits.",
+    upgrade: "Passez à un plan supérieur pour débloquer les opérations bulk.",
+    viewPlans: "Voir les plans",
+    close: "Fermer",
+  },
+
   // ============= Shopify Pending Alert =============
   shopifyPending: {
     title: "Connexion Shopify en attente",

@@ -72,6 +72,7 @@ import {
 // ShopifySyncSuccessDialog removed - unified into ResultsDialog
 import { VisionAIBanner } from "./VisionAIBanner";
 import { GoogleSearchPreview } from "./GoogleSearchPreview";
+import { BulkUpgradeDialog } from "./BulkUpgradeDialog";
 import { useStore } from "@/contexts/StoreContext";
 import { useStoreDomain } from "@/hooks/useStoreDomain";
 import { guardStoreData, verifyStateCoherence } from "@/lib/storeGuard";
@@ -144,6 +145,7 @@ export function SeoOptimization() {
     (searchParams.get("filter") as QualityFilter) || "all"
   );
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showBulkLimitDialog, setShowBulkLimitDialog] = useState(false);
   const [showReoptimizeDialog, setShowReoptimizeDialog] = useState(false);
   const [optimizedProducts, setOptimizedProducts] = useState<Product[]>([]);
   const [showLocalResultsDialog, setShowLocalResultsDialog] = useState(false);
@@ -535,6 +537,23 @@ export function SeoOptimization() {
     toast.info(tf("seo.optimization.showingOptimized", { count: enrichedCount }));
   };
 
+  // Smart Bulk Click - vérifie si l'utilisateur qualifie pour les opérations bulk
+  const handleBulkClick = () => {
+    const totalProducts = products.length;
+    const maxProducts = limits?.limits?.max_products || Infinity;
+    const isEnterprise = limits?.currentPlanId?.includes('enterprise') || 
+                         limits?.planId?.includes('enterprise');
+    
+    // Enterprise = toujours autoriser, ou si total >= max_products
+    if (isEnterprise || totalProducts >= maxProducts) {
+      handleGenerateAllSeo();
+      return;
+    }
+    
+    // Afficher le popup centré
+    setShowBulkLimitDialog(true);
+  };
+
   const handleGenerateAll = () => {
     if (notEnrichedCount === 0) {
       toast.info(t.seo.optimization.allProductsOptimized);
@@ -551,7 +570,7 @@ export function SeoOptimization() {
     // Call directly without confirmation dialog
     setActiveTab("not-enriched");
     setTimeout(() => {
-      handleGenerateAllSeo();
+      handleBulkClick();
     }, 100);
   };
 
@@ -890,7 +909,7 @@ export function SeoOptimization() {
                       totalProducts: products.length,
                       buttonDisabled: isTypeRunning('products') || loading,
                     });
-                    handleGenerateAllSeo();
+                    handleBulkClick();
                   }}
                   disabled={isTypeRunning('products') || loading}
                   className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
@@ -1537,6 +1556,17 @@ export function SeoOptimization() {
         usage={limits?.usage.optimizations_count || 0}
         limit={limits?.limits.max_optimizations || 0}
         isTrialing={limits?.isTrialing || false}
+      />
+
+      <BulkUpgradeDialog
+        open={showBulkLimitDialog}
+        onOpenChange={setShowBulkLimitDialog}
+        totalProducts={products.length}
+        maxProducts={limits?.limits?.max_products || 0}
+        onUpgradeClick={() => {
+          setShowBulkLimitDialog(false);
+          setShowUpgradeDialog(true);
+        }}
       />
     </div>
   );
