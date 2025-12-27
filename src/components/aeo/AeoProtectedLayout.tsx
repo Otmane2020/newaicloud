@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AeoSidebar } from "./AeoSidebar";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 
 export function AeoProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const { limits } = useUsageLimits();
   const { language } = useTranslation();
@@ -114,7 +115,8 @@ export function AeoProtectedLayout({ children }: { children: React.ReactNode }) 
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    const redirect = encodeURIComponent(`${location.pathname}${location.search}`);
+    return <Navigate to={`/auth?mode=signup&redirect=${redirect}`} replace />;
   }
 
   return (

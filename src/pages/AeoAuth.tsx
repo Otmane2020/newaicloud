@@ -16,6 +16,9 @@ import { aeoTranslations } from '@/lib/translations/aeo';
 export default function AeoAuth() {
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
+  const redirectParam = searchParams.get('redirect');
+  const safeRedirect = redirectParam && redirectParam.startsWith('/') ? redirectParam : null;
+
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,9 +37,9 @@ export default function AeoAuth() {
   useEffect(() => {
     if (user && !isRedirectingRef.current) {
       isRedirectingRef.current = true;
-      navigate('/dashboard');
+      navigate(safeRedirect || '/dashboard', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, safeRedirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
