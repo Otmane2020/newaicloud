@@ -147,6 +147,7 @@ import AiImagesLanding from "./pages/ai-images/AiImagesLanding";
 import AiImagesDashboard from "./pages/ai-images/AiImagesDashboard";
 import AiImagesAuth from "./pages/ai-images/AiImagesAuth";
 import { AiImagesProtectedLayout } from "./components/ai-images/AiImagesProtectedLayout";
+import { AiImagesAppBridgeProvider } from "./components/ai-images/AiImagesAppBridgeProvider";
 
 const queryClient = new QueryClient();
 
@@ -694,7 +695,6 @@ function AiImagesRoutes() {
   
   // If embedded or has Shopify params, wrap in App Bridge provider and go directly to dashboard
   if (isEmbedded) {
-    const { AiImagesAppBridgeProvider } = require("./components/ai-images/AiImagesAppBridgeProvider");
     return (
       <AiImagesAppBridgeProvider>
         <Routes>
