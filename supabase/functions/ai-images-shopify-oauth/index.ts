@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
 };
 
-const AI_IMAGES_APP_URL = "https://newai.sale"; // Base URL for AI Images app
+const AI_IMAGES_APP_URL = "https://ai-images.newai.sale";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -86,7 +86,7 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Verify state token from oauth_states table (with app_id check)
+    // Verify state token from oauth_states table
     const { data: oauthState, error: stateError } = await supabase
       .from("oauth_states")
       .select("user_id, expires_at, shop_name, is_pre_auth, host, app_id")
@@ -117,9 +117,7 @@ serve(async (req) => {
       return new Response("State token expired", { status: 400 });
     }
 
-    // Use host from query or stored state
     const host = hostFromQuery || oauthState?.host;
-    
     log("State token verified", { shop: oauthState?.shop_name || shop, host });
 
     // Exchange code for access token
@@ -151,45 +149,117 @@ serve(async (req) => {
     });
 
     let shopName = shop;
-    let shopEmail = null;
+    let shopEmail: string | null = null;
+    let shopCurrency = "USD";
+    let shopTimezone = "UTC";
     if (shopResponse.ok) {
       const shopData = await shopResponse.json();
       shopName = shopData.shop?.name || shop;
       shopEmail = shopData.shop?.email;
-      log("Shop info retrieved", { shopName, shopEmail });
+      shopCurrency = shopData.shop?.currency || "USD";
+      shopTimezone = shopData.shop?.iana_timezone || "UTC";
+      log("Shop info retrieved", { shopName, shopEmail, shopCurrency });
     }
 
-    // Create a user profile for AI Images app if needed
-    // For now, we use shop_domain as the primary identifier
-    
-    // Store connection in ai_images_shopify_connections
+    // ============================================
+    // CRITICAL: Create or find Supabase user
+    // ============================================
+    let userId: string | null = null;
+    let sessionToken: string | null = null;
+
+    // Check existing connection first
     const { data: existingConnection } = await supabase
       .from("ai_images_shopify_connections")
       .select("id, user_id")
       .eq("shop_domain", shop)
       .single();
 
-    let userId = existingConnection?.user_id;
-    
-    // If no existing connection, we need to handle user creation
-    // For embedded apps, the user might not have a Supabase account yet
-    if (!userId) {
-      // Check if there's a matching profile by email
-      if (shopEmail) {
-        const { data: profileByEmail } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", shopEmail)
-          .single();
-        
-        if (profileByEmail) {
-          userId = profileByEmail.id;
-          log("Found existing profile by email", { userId });
+    if (existingConnection?.user_id) {
+      userId = existingConnection.user_id;
+      log("Found existing user from connection", { userId });
+    }
+
+    // If no user found, try to find by email or create new user
+    if (!userId && shopEmail) {
+      // Check if user already exists with this email
+      const { data: existingUsers } = await supabase.auth.admin.listUsers();
+      const existingUser = existingUsers?.users?.find(u => u.email === shopEmail);
+
+      if (existingUser) {
+        userId = existingUser.id;
+        log("Found existing Supabase user by email", { userId, email: shopEmail });
+      } else {
+        // Create new user with Shopify email
+        const tempPassword = crypto.randomUUID();
+        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+          email: shopEmail,
+          password: tempPassword,
+          email_confirm: true,
+          user_metadata: {
+            shop_domain: shop,
+            shop_name: shopName,
+            source: "ai_images_shopify",
+          },
+        });
+
+        if (createError) {
+          log("Error creating user", { error: createError });
+        } else if (newUser?.user) {
+          userId = newUser.user.id;
+          log("Created new Supabase user", { userId, email: shopEmail });
+
+          // Create profile for the new user
+          await supabase.from("profiles").upsert({
+            id: userId,
+            email: shopEmail,
+            full_name: shopName,
+            billing_provider: "shopify",
+            subscription_status: "trial",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "id" });
+          log("Created user profile", { userId });
         }
       }
     }
 
-    // Upsert the connection
+    // If still no user (no email from shop), create anonymous-style user
+    if (!userId) {
+      const anonymousEmail = `${shop.replace('.myshopify.com', '')}@ai-images.shopify.local`;
+      const tempPassword = crypto.randomUUID();
+      
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email: anonymousEmail,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+          shop_domain: shop,
+          shop_name: shopName,
+          source: "ai_images_shopify",
+          is_shopify_merchant: true,
+        },
+      });
+
+      if (!createError && newUser?.user) {
+        userId = newUser.user.id;
+        log("Created anonymous Supabase user for shop", { userId, email: anonymousEmail });
+
+        // Create profile
+        await supabase.from("profiles").upsert({
+          id: userId,
+          email: anonymousEmail,
+          full_name: shopName,
+          billing_provider: "shopify",
+          subscription_status: "trial",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+      }
+    }
+
+    // ============================================
+    // Store connection in ai_images_shopify_connections
+    // ============================================
     const connectionData: Record<string, unknown> = {
       shop_domain: shop,
       shop_name: shopName,
@@ -204,27 +274,107 @@ serve(async (req) => {
       connectionData.user_id = userId;
     }
 
-    const { error: upsertError } = await supabase
+    const { data: upsertedConnection, error: upsertError } = await supabase
       .from("ai_images_shopify_connections")
-      .upsert(connectionData, { onConflict: "shop_domain" });
+      .upsert(connectionData, { onConflict: "shop_domain" })
+      .select("id")
+      .single();
 
     if (upsertError) {
-      log("Error storing connection", { error: upsertError });
+      log("Error storing AI Images connection", { error: upsertError });
     } else {
-      log("Connection stored successfully");
+      log("AI Images connection stored successfully", { connectionId: upsertedConnection?.id });
     }
 
-    // If user exists, update their profile
+    // ============================================
+    // ALSO create entry in shopify_connections for StoreContext compatibility
+    // ============================================
     if (userId) {
-      await supabase
-        .from("profiles")
-        .update({
-          billing_provider: "shopify",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", userId);
+      const storeUrl = `https://${shop}`;
       
-      log("Updated profile billing_provider to shopify", { userId });
+      const { data: existingShopifyConn } = await supabase
+        .from("shopify_connections")
+        .select("id")
+        .eq("store_url", storeUrl)
+        .single();
+
+      if (!existingShopifyConn) {
+        const { data: newShopifyConn, error: shopifyConnError } = await supabase
+          .from("shopify_connections")
+          .insert({
+            user_id: userId,
+            store_url: storeUrl,
+            store_name: shopName,
+            access_token: accessToken,
+            is_active: true,
+            currency: shopCurrency,
+            timezone: shopTimezone,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+
+        if (shopifyConnError) {
+          log("Error creating shopify_connections entry", { error: shopifyConnError });
+        } else {
+          log("Created shopify_connections entry for StoreContext", { storeId: newShopifyConn?.id });
+          
+          // Trigger initial product sync
+          if (newShopifyConn?.id) {
+            try {
+              const syncResponse = await fetch(`${SUPABASE_URL}/functions/v1/ai-images-sync-products`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                },
+                body: JSON.stringify({
+                  shopDomain: shop,
+                  storeId: newShopifyConn.id,
+                  userId: userId,
+                }),
+              });
+              log("Triggered product sync", { status: syncResponse.status });
+            } catch (syncError) {
+              log("Error triggering product sync (non-blocking)", { error: syncError });
+            }
+          }
+        }
+      } else {
+        // Update existing connection
+        await supabase
+          .from("shopify_connections")
+          .update({
+            access_token: accessToken,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingShopifyConn.id);
+        log("Updated existing shopify_connections entry");
+      }
+    }
+
+    // ============================================
+    // Initialize credits for new user
+    // ============================================
+    if (userId) {
+      const { data: existingCredits } = await supabase
+        .from("ai_images_credits")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
+      if (!existingCredits) {
+        // Give 5 free credits for new users
+        await supabase.from("ai_images_credits").insert({
+          user_id: userId,
+          credits_balance: 5,
+          total_credits_purchased: 0,
+          total_credits_used: 0,
+        });
+        log("Initialized 5 free credits for new user", { userId });
+      }
     }
 
     // Clean up oauth_states
@@ -232,33 +382,42 @@ serve(async (req) => {
       await supabase.from("oauth_states").delete().eq("state_token", state);
     }
 
-    // Build redirect URL
+    // ============================================
+    // Build redirect URL with session token
+    // ============================================
     const shopSlug = shop.replace('.myshopify.com', '');
-    let embeddedUrl: string;
+    let redirectUrl: string;
     
+    // For embedded apps, redirect back to Shopify admin
     if (host) {
       try {
-        // Host is base64 encoded "admin.shopify.com/store/{shop-name}"
         const decodedHost = atob(host);
-        embeddedUrl = `https://${decodedHost}/apps/ai-product-shot`;
-        log("Using decoded host", { decodedHost, embeddedUrl });
+        redirectUrl = `https://${decodedHost}/apps/ai-product-shot`;
+        log("Using decoded host for redirect", { decodedHost, redirectUrl });
       } catch (e) {
         log("Failed to decode host, using fallback", { error: e });
-        embeddedUrl = `https://admin.shopify.com/store/${shopSlug}/apps/ai-product-shot`;
+        redirectUrl = `https://admin.shopify.com/store/${shopSlug}/apps/ai-product-shot`;
       }
     } else {
-      // Fallback: construct from shop domain
-      embeddedUrl = `https://admin.shopify.com/store/${shopSlug}/apps/ai-product-shot`;
-      log("No host stored, using fallback", { embeddedUrl });
+      // Standalone mode - redirect to app with session
+      redirectUrl = `${AI_IMAGES_APP_URL}?shop=${encodeURIComponent(shop)}&installed=true`;
+    }
+
+    // Add shop param for session identification
+    const separator = redirectUrl.includes('?') ? '&' : '?';
+    redirectUrl = `${redirectUrl}${separator}shop=${encodeURIComponent(shop)}`;
+    
+    if (host) {
+      redirectUrl += `&host=${encodeURIComponent(host)}`;
     }
     
-    log("Final redirect", { embeddedUrl });
+    log("Final redirect", { redirectUrl });
     
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        Location: embeddedUrl,
+        Location: redirectUrl,
       },
     });
   } catch (error) {
