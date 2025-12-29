@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
+import { useAiImagesStore } from "@/hooks/useAiImagesStore";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BulkAIImagesDialog } from "@/components/seo/BulkAIImagesDialog";
@@ -66,9 +67,10 @@ interface DuplicateProductInfo {
 export default function AiImagesDashboard() {
   const { language } = useTranslation();
   const { selectedStore, stores } = useStore();
+  const { shopifyStore, aiImagesStore, loading: storeLoading, syncProducts, shopDomain } = useAiImagesStore();
   const isFr = language === "fr";
 
-  // Detect Shopify embedded mode and get shop from URL params
+  // Detect Shopify embedded mode
   const shopifyParams = useMemo(() => {
     const search = new URLSearchParams(window.location.search);
     return {
@@ -78,7 +80,7 @@ export default function AiImagesDashboard() {
     };
   }, []);
 
-  // Find store from Shopify shop param if embedded
+  // Find store from Shopify shop param if embedded (fallback to StoreContext)
   const embeddedStore = useMemo(() => {
     if (!shopifyParams.shop || !stores.length) return null;
     return stores.find(s => 
@@ -87,8 +89,8 @@ export default function AiImagesDashboard() {
     );
   }, [shopifyParams.shop, stores]);
 
-  // Use embedded store if available, otherwise selectedStore
-  const activeStore = embeddedStore || selectedStore;
+  // Priority: shopifyStore from hook > embeddedStore > selectedStore
+  const activeStore = shopifyStore || embeddedStore || selectedStore;
 
   const [activeTab, setActiveTab] = useState("products");
   const [isCleaningDuplicates, setIsCleaningDuplicates] = useState(false);
