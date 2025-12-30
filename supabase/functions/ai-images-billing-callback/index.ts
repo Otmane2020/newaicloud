@@ -113,6 +113,7 @@ serve(async (req) => {
             name
             status
             currentPeriodEnd
+            trialDays
           }
         }
       }
@@ -148,7 +149,7 @@ serve(async (req) => {
     // Then check subscriptions
     const activeSubscriptions = shopifyData.data?.currentAppInstallation?.activeSubscriptions || [];
     const activeSubscription = activeSubscriptions.find(
-      (sub: { status: string }) => sub.status === "ACTIVE"
+      (sub: { status: string }) => ["ACTIVE", "ACCEPTED"].includes(sub.status)
     );
 
     const purchase = activePurchase?.node || activeSubscription;
@@ -195,22 +196,28 @@ serve(async (req) => {
 
     // Get or create user credits record
     const userId = connection.user_id;
-    
+
+    // For recurring subscriptions, de-duplicate and track grants per billing cycle
+    const isSubscription = !!activeSubscription && purchase?.id === activeSubscription.id;
+    const grantId = isSubscription
+      ? `${purchase.id}:${purchase.currentPeriodEnd || "unknown"}`
+      : purchase.id;
+
     if (userId) {
-      // Check if credits already added for this purchase
+      // Check if credits already added for this purchase/cycle
       const { data: existingTransaction } = await supabase
         .from("ai_images_credit_transactions")
         .select("id")
-        .eq("shopify_charge_id", purchase.id)
+        .eq("shopify_charge_id", grantId)
         .eq("transaction_type", "purchase")
         .single();
 
       if (existingTransaction) {
-        log("Credits already added for this purchase", { chargeId: purchase.id });
-        
+        log("Credits already added for this purchase", { chargeId: grantId });
+
         if (req.method === "POST") {
-          return new Response(JSON.stringify({ 
-            success: true, 
+          return new Response(JSON.stringify({
+            success: true,
             message: "Credits already added",
             credits: creditsToAdd
           }), {
@@ -226,7 +233,7 @@ serve(async (req) => {
         .rpc("add_ai_image_credits", {
           p_user_id: userId,
           p_amount: creditsToAdd,
-          p_shopify_charge_id: purchase.id,
+          p_shopify_charge_id: grantId,
         });
 
       if (creditError) {
@@ -259,7 +266,7 @@ serve(async (req) => {
       await supabase
         .from("ai_images_credit_transactions")
         .update({ transaction_type: "purchase" })
-        .eq("shopify_charge_id", purchase.id)
+        .eq("shopify_charge_id", grantId)
         .eq("transaction_type", "pending_purchase");
 
     } else {
