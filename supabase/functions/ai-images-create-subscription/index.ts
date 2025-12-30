@@ -112,6 +112,8 @@ serve(async (req) => {
       const checkJson = await checkRes.json();
       const subs = checkJson?.data?.currentAppInstallation?.activeSubscriptions || [];
       const activeSubscription = subs.find((s: { status: string }) => ["ACTIVE", "ACCEPTED"].includes(s.status));
+
+      if (activeSubscription) {
         // Check if same plan
         if (activeSubscription.name?.toLowerCase().includes(plan.name.toLowerCase())) {
           log("Same plan already active", activeSubscription);
