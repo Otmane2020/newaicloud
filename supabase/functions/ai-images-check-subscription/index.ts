@@ -13,6 +13,20 @@ const log = (step: string, details?: unknown) => {
   console.log(`[AI-IMAGES-CHECK-SUBSCRIPTION] ${step}`, details ? JSON.stringify(details) : "");
 };
 
+const AI_IMAGES_PLANS: Record<string, { name: string; credits: number }> = {
+  starter: { name: "Starter Pack", credits: 50 },
+  pro: { name: "Pro Pack", credits: 200 },
+  business: { name: "Business Pack", credits: 500 },
+  enterprise: { name: "Enterprise Pack", credits: 1500 },
+};
+
+const inferPlanIdFromSubscriptionName = (name: string | null | undefined): keyof typeof AI_IMAGES_PLANS | null => {
+  const lower = (name || "").toLowerCase();
+  for (const [key, plan] of Object.entries(AI_IMAGES_PLANS) as Array<[keyof typeof AI_IMAGES_PLANS, { name: string; credits: number }]>) {
+    if (lower.includes(key) || lower.includes(plan.name.toLowerCase())) return key;
+  }
+  return null;
+};
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -76,6 +90,7 @@ serve(async (req) => {
             name
             status
             currentPeriodEnd
+            trialDays
           }
         }
       }
@@ -103,17 +118,57 @@ serve(async (req) => {
 
     const shopifyData = await shopifyResponse.json();
     const activeSubscriptions = shopifyData.data?.currentAppInstallation?.activeSubscriptions || [];
-    const activeSub = activeSubscriptions.find((s: { status: string }) => s.status === "ACTIVE");
+    const activeSub = activeSubscriptions.find((s: { status: string }) => ["ACTIVE", "ACCEPTED"].includes(s.status));
 
-    log("Subscription check complete", { 
-      hasActiveSubscription: !!activeSub, 
-      credits: creditsBalance 
+    // Auto-grant credits once per billing cycle (monthly subscription)
+    if (activeSub && connection.user_id && activeSub.currentPeriodEnd) {
+      const planId = inferPlanIdFromSubscriptionName(activeSub.name) || "starter";
+      const creditsToGrant = AI_IMAGES_PLANS[planId]?.credits ?? 50;
+      const grantId = `${activeSub.id}:${activeSub.currentPeriodEnd}`;
+
+      const { data: existingGrant } = await supabase
+        .from("ai_images_credit_transactions")
+        .select("id")
+        .eq("shopify_charge_id", grantId)
+        .eq("transaction_type", "purchase")
+        .maybeSingle();
+
+      if (!existingGrant) {
+        log("Granting monthly subscription credits", { userId: connection.user_id, planId, creditsToGrant, grantId });
+
+        const { error: grantErr } = await supabase.rpc("add_ai_image_credits", {
+          p_user_id: connection.user_id,
+          p_amount: creditsToGrant,
+          p_shopify_charge_id: grantId,
+        });
+
+        if (grantErr) {
+          log("Failed to grant monthly credits", { error: grantErr });
+        } else {
+          // Refresh credits balance after grant
+          const { data: credits } = await supabase
+            .from("ai_images_credits")
+            .select("credits_balance")
+            .eq("user_id", connection.user_id)
+            .single();
+          creditsBalance = credits?.credits_balance || creditsBalance;
+        }
+      }
+    }
+
+    const subscriptionStatus = activeSub?.trialDays && activeSub.trialDays > 0 ? "trialing" : "active";
+
+    log("Subscription check complete", {
+      hasActiveSubscription: !!activeSub,
+      subscriptionStatus,
+      credits: creditsBalance
     });
 
     return new Response(
       JSON.stringify({
         status: activeSub ? "ACTIVE" : "NONE",
         subscription: activeSub || null,
+        subscriptionStatus: activeSub ? subscriptionStatus : "none",
         credits: creditsBalance,
         shopDomain: normalizedShop,
       }),

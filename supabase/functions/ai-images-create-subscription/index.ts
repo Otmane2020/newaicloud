@@ -111,9 +111,7 @@ serve(async (req) => {
     if (checkRes.ok) {
       const checkJson = await checkRes.json();
       const subs = checkJson?.data?.currentAppInstallation?.activeSubscriptions || [];
-      const activeSubscription = subs.find((s: { status: string }) => s.status === "ACTIVE");
-
-      if (activeSubscription) {
+      const activeSubscription = subs.find((s: { status: string }) => ["ACTIVE", "ACCEPTED"].includes(s.status));
         // Check if same plan
         if (activeSubscription.name?.toLowerCase().includes(plan.name.toLowerCase())) {
           log("Same plan already active", activeSubscription);
@@ -151,10 +149,11 @@ serve(async (req) => {
     if (isRecurring) {
       // Recurring subscription for credit packs
       mutation = `
-        mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
+        mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int, $test: Boolean) {
           appSubscriptionCreate(
             name: $name
             returnUrl: $returnUrl
+            trialDays: $trialDays
             lineItems: $lineItems
             test: $test
           ) {
@@ -184,6 +183,11 @@ serve(async (req) => {
           }
         }]
       };
+
+      // Starter includes a free trial period
+      if (planId === "starter") {
+        variables.trialDays = 7;
+      }
     } else {
       // One-time purchase for credits
       mutation = `
