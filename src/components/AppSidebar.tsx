@@ -414,8 +414,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Google Search Console Menu - restricted */}
-              {hasFullAccess && (
+              {/* Google Search Console Menu - visible to all users */}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive('/seo?tab=google-console')}>
                   <NavLink to="/seo?tab=google-console">
@@ -424,7 +423,6 @@ export function AppSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              )}
 
               {/* Blog Menu with Submenu */}
               <Collapsible defaultOpen={isBlogActive} className="group/collapsible">
