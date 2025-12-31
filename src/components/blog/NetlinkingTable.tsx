@@ -468,7 +468,13 @@ export function NetlinkingTable() {
                           >
                           <TableCell>
                             <a
-                              href={entry.target_url}
+                              href={
+                                entry.target_url?.startsWith('http')
+                                  ? entry.target_url
+                                  : entry.target_url?.startsWith('mailto:') || entry.target_url?.startsWith('tel:')
+                                  ? entry.target_url
+                                  : `https://${entry.target_url}`
+                              }
                               target="_blank"
                               rel="noopener noreferrer"
                               className={`flex items-center gap-1 hover:underline text-sm font-medium ${
@@ -597,7 +603,15 @@ export function NetlinkingTable() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      onClick={() => window.open(entry.target_url, '_blank')}
+                                      onClick={() => {
+                                        const url =
+                                          entry.target_url?.startsWith('http')
+                                            ? entry.target_url
+                                            : entry.target_url?.startsWith('mailto:') || entry.target_url?.startsWith('tel:')
+                                            ? entry.target_url
+                                            : `https://${entry.target_url}`;
+                                        window.open(url, '_blank');
+                                      }}
                                       title={t.netlinking.tooltips.viewLink}
                                     >
                                       <Eye className="w-4 h-4" />
