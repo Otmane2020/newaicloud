@@ -620,8 +620,8 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg lg:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
               <DialogTitle className="text-lg sm:text-xl lg:text-2xl">{t.dialogs.campaignWizard.newCampaign}</DialogTitle>
             </div>
@@ -631,7 +631,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
           </DialogHeader>
 
           {/* Progress bar */}
-          <div className="flex gap-1 sm:gap-2 mb-4 sm:mb-6">
+          <div className="flex gap-1 sm:gap-2 mb-4 sm:mb-6 flex-shrink-0">
             {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
               <div
                 key={s}
@@ -642,9 +642,13 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
             ))}
           </div>
 
-          {renderStep()}
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+            {renderStep()}
+          </div>
 
-          <div className="flex justify-between pt-3 sm:pt-4 border-t gap-2">
+          {/* Sticky footer buttons */}
+          <div className="flex justify-between pt-3 sm:pt-4 border-t gap-2 flex-shrink-0 bg-background sticky bottom-0">
             <Button
               type="button"
               variant="outline"
