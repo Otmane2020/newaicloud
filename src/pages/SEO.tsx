@@ -217,22 +217,7 @@ export default function SEO() {
         {activeTab === 'collections' && <CollectionOptimization />}
         {activeTab === 'alt' && <SeoAltImage />}
         
-        {/* Blog tabs - restricted to full access users */}
-        {isBlogTab && !hasFullAccess && (
-          <div className="min-h-[40vh] flex flex-col items-center justify-center">
-            <Card className="p-8 text-center max-w-md">
-              <Clock className="w-16 h-16 mx-auto text-primary mb-4" />
-              <h2 className="text-2xl font-bold mb-2">
-                {language === 'fr' ? 'Bientôt disponible' : 'Coming Soon'}
-              </h2>
-              <p className="text-muted-foreground">
-                {language === 'fr' 
-                  ? 'Cette fonctionnalité sera disponible prochainement. Restez à l\'écoute !'
-                  : 'This feature will be available soon. Stay tuned!'}
-              </p>
-            </Card>
-          </div>
-        )}
+        {/* Blog tabs - now available to all users */}
         
         {activeTab === 'pages' && hasFullAccess && (
           <>
