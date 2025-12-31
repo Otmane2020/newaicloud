@@ -62,8 +62,6 @@ export function Navigation() {
     '/seo?tab=products',      // Product Optimization > Products
     '/seo?tab=homepage',      // SEO > Homepage
     '/seo?tab=audit',         // SEO Audit
-    '/blog?tab=netlinking',   // Netlinking
-    '/blog?tab=settings',     // Blog Settings
     '/social-media',          // Social Media (tout)
     '/shopping',              // Google Shopping
     '/merchant',              // Google Merchant
@@ -103,8 +101,8 @@ export function Navigation() {
         { path: '/blog?tab=articles', label: t.navigation.blogSubmenu.articles, icon: PenSquare },
         { path: '/blog?tab=campaigns', label: t.navigation.blogSubmenu.campaigns, icon: CalendarClock },
         { path: '/blog?tab=opportunities', label: t.navigation.blogSubmenu.opportunities, icon: Lightbulb },
-        { path: '/blog?tab=netlinking', label: t.navigation.blogSubmenu.netlinking, icon: LinkIcon, restricted: true },
-        { path: '/blog?tab=settings', label: t.navigation.blogSubmenu.settings, icon: Settings, restricted: true }
+        { path: '/blog?tab=netlinking', label: t.navigation.blogSubmenu.netlinking, icon: LinkIcon },
+        { path: '/blog?tab=settings', label: t.navigation.blogSubmenu.settings, icon: Settings }
       ]
     },
     // Social Media - Onglet principal séparé avec sous-menus
