@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
         // Récupérer l'article
         const { data: article, error: articleError } = await supabase
           .from("blog_articles")
-          .select("*, user_id, content")
+          .select("*, user_id, content, store_id")
           .eq("id", articleId)
           .single();
 
@@ -54,8 +54,9 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const links = await extractLinksFromHtml(article.content, article.user_id, supabase);
-        
+        const rawLinks = await extractLinksFromHtml(article.content, article.user_id, supabase);
+        const links = dedupeLinks(rawLinks);
+
         // Supprimer les anciens liens pour cet article
         await supabase
           .from("blog_netlinking")
@@ -63,10 +64,12 @@ Deno.serve(async (req) => {
           .eq("article_id", articleId);
 
         // Insérer les nouveaux liens
+        let inserted = true;
         if (links.length > 0) {
-          const netlinkingData = links.map(link => ({
+          const netlinkingData = links.map((link) => ({
             article_id: articleId,
             user_id: article.user_id,
+            store_id: article.store_id,
             target_url: link.url,
             anchor_text: link.anchor_text,
             link_type: link.type, // 'internal' or 'external'
@@ -79,6 +82,7 @@ Deno.serve(async (req) => {
             .insert(netlinkingData);
 
           if (insertError) {
+            inserted = false;
             console.error(`[NETLINKING] Erreur insertion pour article ${articleId}:`, insertError);
           } else {
             console.log(`[NETLINKING] ${links.length} liens extraits pour article ${articleId}`);
@@ -87,8 +91,8 @@ Deno.serve(async (req) => {
 
         results.push({
           article_id: articleId,
-          links_count: links.length,
-          success: true,
+          links_count: inserted ? links.length : 0,
+          success: inserted,
         });
       } catch (err) {
         console.error(`[NETLINKING] Erreur pour article ${articleId}:`, err);
@@ -119,6 +123,15 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+function dedupeLinks(links: LinkData[]): LinkData[] {
+  const map = new Map<string, LinkData>();
+  for (const link of links) {
+    // Unique key is the normalized URL; keep first occurrence
+    if (!map.has(link.url)) map.set(link.url, link);
+  }
+  return Array.from(map.values());
+}
 
 async function extractLinksFromHtml(
   html: string,
@@ -196,8 +209,24 @@ async function extractLinksFromHtml(
       }
     }
 
-    // Normaliser l'URL pour éviter les doublons (avec/sans https)
-    const normalizedUrl = url.replace(/^https?:\/\//, '');
+    // Normaliser l'URL pour éviter les doublons (http/https, protocol-less)
+    let normalizedUrl = url.trim();
+
+    // Keep special schemes as-is (mailto:, tel:, etc.) and anchors
+    const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(normalizedUrl);
+    if (!hasScheme && !normalizedUrl.startsWith('/') && !normalizedUrl.startsWith('#')) {
+      if (normalizedUrl.startsWith('//')) {
+        normalizedUrl = `https:${normalizedUrl}`;
+      } else {
+        normalizedUrl = `https://${normalizedUrl}`;
+      }
+    }
+
+    // Force https for http urls
+    normalizedUrl = normalizedUrl.replace(/^http:\/\//, 'https://');
+
+    // Remove trailing slash (but keep root)
+    if (normalizedUrl.length > 1) normalizedUrl = normalizedUrl.replace(/\/$/, '');
 
     links.push({
       url: normalizedUrl,
