@@ -9,7 +9,8 @@ const corsHeaders = {
 interface LinkData {
   url: string;
   anchor_text: string;
-  type: 'product' | 'page' | 'external';
+  type: 'internal' | 'external';
+  target_type?: 'product' | 'page' | 'external';
   product_id?: string;
   page_id?: string;
   position_in_content: number;
@@ -68,7 +69,8 @@ Deno.serve(async (req) => {
             user_id: article.user_id,
             target_url: link.url,
             anchor_text: link.anchor_text,
-            link_type: link.type,
+            link_type: link.type, // 'internal' or 'external'
+            target_type: link.target_type, // 'product', 'page', or 'external'
             seo_score: calculateSeoScore(link),
           }));
 
@@ -162,7 +164,8 @@ async function extractLinksFromHtml(
       .trim();
 
     // Déterminer le type de lien
-    let linkType: 'product' | 'page' | 'external' = 'external';
+    let linkType: 'internal' | 'external' = 'external';
+    let targetType: 'product' | 'page' | 'external' = 'external';
     let productId: string | undefined;
     let pageId: string | undefined;
 
@@ -173,7 +176,8 @@ async function extractLinksFromHtml(
         const handle = handleMatch[1];
         const foundId = productHandles.get(handle);
         if (foundId) {
-          linkType = 'product';
+          linkType = 'internal';
+          targetType = 'product';
           productId = foundId;
         }
       }
@@ -185,16 +189,21 @@ async function extractLinksFromHtml(
         const handle = handleMatch[1];
         const foundId = pageHandles.get(handle);
         if (foundId) {
-          linkType = 'page';
+          linkType = 'internal';
+          targetType = 'page';
           pageId = foundId;
         }
       }
     }
 
+    // Normaliser l'URL pour éviter les doublons (avec/sans https)
+    const normalizedUrl = url.replace(/^https?:\/\//, '');
+
     links.push({
-      url,
+      url: normalizedUrl,
       anchor_text: anchorText,
       type: linkType,
+      target_type: targetType,
       product_id: productId,
       page_id: pageId,
       position_in_content: position++,
@@ -226,7 +235,7 @@ function calculateSeoScore(link: LinkData): number {
   }
 
   // Bonus pour les liens internes (produit/page)
-  if (link.type === 'product' || link.type === 'page') {
+  if (link.type === 'internal') {
     score += 15;
   }
 
