@@ -63,7 +63,7 @@ export function NetlinkingTable() {
     working: 0,
     unchecked: 0,
   });
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -208,13 +208,29 @@ export function NetlinkingTable() {
     
     setAnalyzing(true);
     try {
+      // First fetch all article IDs for the user
+      const { data: articles, error: articlesError } = await supabase
+        .from('blog_articles')
+        .select('id')
+        .eq('user_id', user.id);
+
+      if (articlesError) throw articlesError;
+
+      if (!articles || articles.length === 0) {
+        toast.info(language === 'fr' ? 'Aucun article à analyser' : 'No articles to analyze');
+        setAnalyzing(false);
+        return;
+      }
+
+      const articleIds = articles.map(a => a.id);
+      
       const { data, error } = await supabase.functions.invoke('extract-netlinking-from-articles', {
-        body: { article_ids: null } // null means analyze all articles
+        body: { article_ids: articleIds }
       });
 
       if (error) throw error;
 
-      toast.success(tf('blog.dialogs.netlinking.extracted', { count: data.count, articles: data.articles_processed }));
+      toast.success(tf('blog.dialogs.netlinking.extracted', { count: data.total_links || 0, articles: articleIds.length }));
       await loadNetlinking(); // Reload the table
     } catch (error) {
       console.error('Error analyzing articles:', error);
