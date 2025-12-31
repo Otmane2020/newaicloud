@@ -21,12 +21,14 @@ interface Collection {
   id: string;
   title: string;
   products_count: number;
+  image_url: string | null;
 }
 
 interface Product {
   id: string;
   title: string;
   handle: string;
+  image_url: string | null;
 }
 
 interface CampaignWizardProps {
@@ -78,7 +80,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
       
       const { data, error } = await supabase
         .from('shopify_collections')
-        .select('id, title, products_count')
+        .select('id, title, products_count, image_url')
         .eq('store_id', selectedStore.id)
         .order('title', { ascending: true });
 
@@ -102,7 +104,7 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
     try {
       const { data, error } = await supabase
         .from('shopify_products')
-        .select('id, title, handle')
+        .select('id, title, handle, image_url')
         .eq('store_id', selectedStore.id)
         .filter('collection_ids', 'cs', `{${selectedCollections.join(',')}}`)
         .order('title', { ascending: true })
@@ -381,17 +383,33 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
                 </Label>
                 <ScrollArea className="h-[200px] sm:h-[280px] border rounded-lg p-3 sm:p-4">
                   {collections.map((collection) => (
-                    <div key={collection.id} className="flex items-center gap-2 sm:gap-3 py-2 border-b last:border-b-0">
+                    <div 
+                      key={collection.id} 
+                      className="flex items-center gap-2 sm:gap-3 py-2 border-b last:border-b-0 cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 transition-colors"
+                      onClick={() => {
+                        setSelectedCollections(prev =>
+                          prev.includes(collection.id)
+                            ? prev.filter(id => id !== collection.id)
+                            : [...prev, collection.id]
+                        );
+                      }}
+                    >
                       <Checkbox
                         checked={selectedCollections.includes(collection.id)}
-                        onCheckedChange={() => {
-                          setSelectedCollections(prev =>
-                            prev.includes(collection.id)
-                              ? prev.filter(id => id !== collection.id)
-                              : [...prev, collection.id]
-                          );
-                        }}
+                        onCheckedChange={() => {}}
+                        onClick={(e) => e.stopPropagation()}
                       />
+                      {collection.image_url ? (
+                        <img 
+                          src={collection.image_url} 
+                          alt={collection.title}
+                          className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-muted rounded flex items-center justify-center shrink-0">
+                          <Package className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
                       <span className="text-xs sm:text-sm flex-1 truncate">{collection.title}</span>
                       <Badge variant="outline" className="text-xs shrink-0">
                         {collection.products_count} {t.campaignWizard.steps.collectionsProducts.productsCount}
@@ -451,18 +469,34 @@ export function CampaignWizard({ open, onOpenChange, onSuccess }: CampaignWizard
                 </Label>
                 <ScrollArea className="h-[200px] sm:h-[280px] border rounded-lg p-3 sm:p-4">
                   {products.map((product) => (
-                    <div key={product.id} className="flex items-center gap-2 sm:gap-3 py-2 border-b last:border-b-0">
+                    <div 
+                      key={product.id} 
+                      className="flex items-center gap-2 sm:gap-3 py-2 border-b last:border-b-0 cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 transition-colors"
+                      onClick={() => {
+                        setSelectedProducts(prev =>
+                          prev.includes(product.id)
+                            ? prev.filter(id => id !== product.id)
+                            : [...prev, product.id]
+                        );
+                      }}
+                    >
                       <Checkbox
                         checked={selectedProducts.includes(product.id)}
-                        onCheckedChange={() => {
-                          setSelectedProducts(prev =>
-                            prev.includes(product.id)
-                              ? prev.filter(id => id !== product.id)
-                              : [...prev, product.id]
-                          );
-                        }}
+                        onCheckedChange={() => {}}
+                        onClick={(e) => e.stopPropagation()}
                       />
-                      <span className="text-xs sm:text-sm truncate">{product.title}</span>
+                      {product.image_url ? (
+                        <img 
+                          src={product.image_url} 
+                          alt={product.title}
+                          className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-muted rounded flex items-center justify-center shrink-0">
+                          <ShoppingBag className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <span className="text-xs sm:text-sm flex-1 truncate">{product.title}</span>
                     </div>
                   ))}
                 </ScrollArea>
