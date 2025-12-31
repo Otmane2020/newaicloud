@@ -129,13 +129,13 @@ export function AppSidebar() {
     { title: t.mediaHistory, url: "/products/media-history", icon: History, key: "mediaHistory" },
   ];
 
-  // Blog sub items - all restricted to oben.rockman only
-  const blogSubItems = hasFullAccess ? [
+  // Blog sub items - available to all users
+  const blogSubItems = [
     { title: t.blog.submenu.aiArticles, url: "/blog?subtab=create-article", icon: Sparkles, key: "aiArticles" },
     { title: t.blog.submenu.campaigns, url: "/blog?subtab=campaigns", icon: CalendarClock, key: "campaigns" },
     { title: t.blog.submenu.netlinking, url: "/blog?subtab=netlinking", icon: Link, key: "netlinking" },
     { title: t.blog.submenu.settings, url: "/blog?subtab=settings", icon: Settings, key: "settings" },
-  ] : [];
+  ];
 
   // AEO (Aeoreply) sub items - main navigation
   const aeoSubItems = [
