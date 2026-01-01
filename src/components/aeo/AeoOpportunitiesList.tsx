@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Bot, 
-  Building2,
+  Brain, 
+  Zap, 
   Sparkles, 
   RefreshCw, 
   Lightbulb,
@@ -49,36 +50,62 @@ interface GeneratedArticle {
 
 interface AeoOpportunitiesListProps {
   platform: string;
-  category?: 'product' | 'brand';
 }
 
-const categoryConfig: Record<string, {
+const platformConfig: Record<string, {
   icon: React.ComponentType<{ className?: string }>;
   color: string;
-  label: { fr: string; en: string };
+  label: string;
   description: { fr: string; en: string };
 }> = {
-  product: {
+  chatgpt: {
     icon: Bot,
     color: "#10b981",
-    label: { fr: "ChatGPT - Product", en: "ChatGPT - Product" },
+    label: "ChatGPT",
     description: {
-      fr: "Questions sur vos produits, comparaisons et recommandations",
-      en: "Product questions, comparisons and recommendations"
+      fr: "Questions conversationnelles et comparaisons",
+      en: "Conversational questions and comparisons"
     }
   },
-  brand: {
-    icon: Building2,
+  gemini: {
+    icon: Brain,
     color: "#3b82f6",
-    label: { fr: "ChatGPT - Brand", en: "ChatGPT - Brand" },
+    label: "Gemini",
     description: {
-      fr: "Questions sur votre marque, entreprise et valeurs",
-      en: "Questions about your brand, company and values"
+      fr: "Requêtes factuelles et recherche Google",
+      en: "Factual queries and Google search"
+    }
+  },
+  copilot: {
+    icon: Zap,
+    color: "#8b5cf6",
+    label: "Copilot",
+    description: {
+      fr: "Tutoriels et intégration Bing",
+      en: "Tutorials and Bing integration"
+    }
+  },
+  perplexity: {
+    icon: Lightbulb,
+    color: "#f59e0b",
+    label: "Perplexity",
+    description: {
+      fr: "Recherche approfondie avec sources",
+      en: "Deep research with sources"
+    }
+  },
+  claude: {
+    icon: Brain,
+    color: "#ec4899",
+    label: "Claude",
+    description: {
+      fr: "Analyses détaillées et raisonnement",
+      en: "Detailed analysis and reasoning"
     }
   }
 };
 
-export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOpportunitiesListProps) {
+export function AeoOpportunitiesList({ platform }: AeoOpportunitiesListProps) {
   const { language } = useTranslation();
   const { user } = useAuth();
   const { selectedStore } = useStore();
@@ -95,13 +122,13 @@ export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOppo
   const [generatedArticle, setGeneratedArticle] = useState<GeneratedArticle | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<AiAnswer | null>(null);
 
-  const config = categoryConfig[category] || categoryConfig.product;
+  const config = platformConfig[platform] || platformConfig.chatgpt;
 
   useEffect(() => {
     if (user?.id && selectedStore?.id) {
       fetchOpportunities();
     }
-  }, [user?.id, selectedStore?.id, platform, category]);
+  }, [user?.id, selectedStore?.id, platform]);
 
   const fetchOpportunities = async () => {
     if (!user?.id || !selectedStore?.id) return;
@@ -110,7 +137,7 @@ export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOppo
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      let query = supabase
+      const { data, error } = await supabase
         .from("ai_answers")
         .select("*")
         .eq("user_id", user.id)
@@ -118,13 +145,6 @@ export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOppo
         .eq("platform", platform)
         .gte("created_at", `${today}T00:00:00`)
         .order("created_at", { ascending: false });
-
-      // Filter by category if specified
-      if (category) {
-        query = query.eq("category", category);
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -150,7 +170,6 @@ export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOppo
         body: {
           storeId: selectedStore.id,
           platform: platform,
-          category: category,
           refresh: true
         }
       });
@@ -158,11 +177,7 @@ export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOppo
       if (error) throw error;
       
       if (data?.opportunities) {
-        // Filter opportunities by category
-        const filteredOpportunities = category 
-          ? data.opportunities.filter((opp: AiAnswer) => opp.category === category)
-          : data.opportunities;
-        setOpportunities(filteredOpportunities as AiAnswer[]);
+        setOpportunities(data.opportunities as AiAnswer[]);
         toast.success(language === 'fr' ? "Opportunités générées" : "Opportunities generated");
       }
     } catch (error) {
@@ -202,7 +217,6 @@ export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOppo
           supporting_content: opportunity.supporting_content,
           keywords: opportunity.keywords || [],
           platform: opportunity.platform,
-          category: opportunity.category,
           language: language
         }
       });
@@ -255,7 +269,7 @@ export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOppo
     );
   };
 
-  const CategoryIcon = config.icon;
+  const PlatformIcon = config.icon;
 
   if (loading) {
     return (
@@ -275,7 +289,7 @@ export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOppo
 
   return (
     <div className="space-y-4">
-      {/* Category Header */}
+      {/* Platform Header */}
       <Card className="border-l-4" style={{ borderLeftColor: config.color }}>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
@@ -284,9 +298,9 @@ export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOppo
                 className="p-1.5 rounded"
                 style={{ backgroundColor: config.color }}
               >
-                <CategoryIcon className="h-4 w-4 text-white" />
+                <PlatformIcon className="h-4 w-4 text-white" />
               </div>
-              {config.label[language as 'fr' | 'en']}
+              {config.label}
             </CardTitle>
             <div className="flex gap-2">
               <Button 
@@ -357,10 +371,6 @@ export function AeoOpportunitiesList({ platform, category = 'product' }: AeoOppo
                         {language === 'fr' ? 'Score' : 'Score'}: {opp.citation_potential}%
                       </Badge>
                     )}
-
-                    <Badge variant="outline" className="text-xs" style={{ borderColor: config.color, color: config.color }}>
-                      {category === 'product' ? '🛍️ Product' : '🏢 Brand'}
-                    </Badge>
 
                     {isTreated && (
                       <Badge className="bg-green-500 hover:bg-green-500">

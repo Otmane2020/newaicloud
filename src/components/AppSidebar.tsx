@@ -42,7 +42,6 @@ import {
   Code,
   Share2,
   Palette,
-  Building2,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
@@ -141,8 +140,7 @@ export function AppSidebar() {
   // AEO (Aeoreply) sub items - main navigation
   const aeoSubItems = [
     { title: language === 'fr' ? "Assistant" : "Wizard", url: "/aeo?tab=wizard", icon: Lightbulb, key: "wizard" },
-    { title: language === 'fr' ? "ChatGPT - Product" : "ChatGPT - Product", url: "/aeo?tab=chatgpt-product", icon: Bot, key: "chatgpt-product" },
-    { title: language === 'fr' ? "ChatGPT - Brand" : "ChatGPT - Brand", url: "/aeo?tab=chatgpt-brand", icon: Building2, key: "chatgpt-brand" },
+    { title: language === 'fr' ? "Opportunités" : "Opportunities", url: "/aeo?tab=opportunities", icon: Sparkles, key: "opportunities" },
     { title: language === 'fr' ? "Intégrations" : "Integrations", url: "/aeo?tab=integrations", icon: Link, key: "integrations" },
     { title: language === 'fr' ? "Paramètres" : "Settings", url: "/aeo?tab=settings", icon: Settings, key: "settings" },
   ];

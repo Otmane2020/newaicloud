@@ -10,12 +10,22 @@ import {
   Settings, 
   Link as LinkIcon,
   Bot,
-  Building2
+  Brain,
+  Zap,
+  Search
 } from "lucide-react";
 import { AeoWizard } from "@/components/aeo/AeoWizard";
 import { AeoOpportunitiesList } from "@/components/aeo/AeoOpportunitiesList";
 import { AeoIntegrations } from "@/components/aeo/AeoIntegrations";
 import { AeoSettings } from "@/components/aeo/AeoSettings";
+
+const platformTabs = [
+  { id: 'chatgpt', label: 'ChatGPT', icon: Bot, color: '#10b981' },
+  { id: 'gemini', label: 'Gemini', icon: Brain, color: '#3b82f6' },
+  { id: 'copilot', label: 'Copilot', icon: Zap, color: '#8b5cf6' },
+  { id: 'perplexity', label: 'Perplexity', icon: Search, color: '#f59e0b' },
+  { id: 'claude', label: 'Claude', icon: Brain, color: '#ec4899' },
+];
 
 export default function AEO() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,7 +33,8 @@ export default function AEO() {
   const { user } = useAuth();
   const { selectedStore } = useStore();
   
-  const currentTab = searchParams.get("tab") || "chatgpt-product";
+  const currentTab = searchParams.get("tab") || "opportunities";
+  const currentPlatform = searchParams.get("platform") || "chatgpt";
   
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -34,10 +45,17 @@ export default function AEO() {
     });
   };
 
+  const handlePlatformChange = (platform: string) => {
+    setSearchParams(prev => {
+      prev.set("platform", platform);
+      return prev;
+    });
+  };
+
   const handleOpportunitiesGenerated = () => {
     setRefreshKey(prev => prev + 1);
     setSearchParams(prev => {
-      prev.set("tab", "chatgpt-product");
+      prev.set("tab", "opportunities");
       return prev;
     });
   };
@@ -65,18 +83,14 @@ export default function AEO() {
 
       {/* Main Tabs */}
       <Tabs value={currentTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="wizard" className="flex items-center gap-2">
             <Lightbulb className="h-4 w-4" />
             <span className="hidden sm:inline">{language === 'fr' ? 'Assistant' : 'Wizard'}</span>
           </TabsTrigger>
-          <TabsTrigger value="chatgpt-product" className="flex items-center gap-2">
-            <Bot className="h-4 w-4 text-emerald-500" />
-            <span className="hidden sm:inline">ChatGPT - Product</span>
-          </TabsTrigger>
-          <TabsTrigger value="chatgpt-brand" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-blue-500" />
-            <span className="hidden sm:inline">ChatGPT - Brand</span>
+          <TabsTrigger value="opportunities" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">{language === 'fr' ? 'Opportunités' : 'Opportunities'}</span>
           </TabsTrigger>
           <TabsTrigger value="integrations" className="flex items-center gap-2">
             <LinkIcon className="h-4 w-4" />
@@ -93,22 +107,41 @@ export default function AEO() {
           <AeoWizard onOpportunitiesGenerated={handleOpportunitiesGenerated} />
         </TabsContent>
 
-        {/* ChatGPT Product Tab */}
-        <TabsContent value="chatgpt-product" className="mt-6">
-          <AeoOpportunitiesList 
-            key={`chatgpt-product-${refreshKey}`}
-            platform="chatgpt" 
-            category="product"
-          />
-        </TabsContent>
+        {/* Opportunities Tab */}
+        <TabsContent value="opportunities" className="mt-6">
+          <div className="space-y-4">
+            {/* Platform Sub-tabs */}
+            <Tabs value={currentPlatform} onValueChange={handlePlatformChange}>
+              <TabsList className="flex flex-wrap h-auto gap-1 bg-transparent p-0">
+                {platformTabs.map((platform) => {
+                  const Icon = platform.icon;
+                  const isActive = currentPlatform === platform.id;
+                  return (
+                    <TabsTrigger 
+                      key={platform.id} 
+                      value={platform.id}
+                      className="flex items-center gap-2 data-[state=active]:bg-muted"
+                      style={{
+                        borderBottom: isActive ? `2px solid ${platform.color}` : undefined
+                      }}
+                    >
+                      <Icon className="h-4 w-4" style={{ color: platform.color }} />
+                      <span className="hidden md:inline">{platform.label}</span>
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
 
-        {/* ChatGPT Brand Tab */}
-        <TabsContent value="chatgpt-brand" className="mt-6">
-          <AeoOpportunitiesList 
-            key={`chatgpt-brand-${refreshKey}`}
-            platform="chatgpt" 
-            category="brand"
-          />
+              {platformTabs.map((platform) => (
+                <TabsContent key={platform.id} value={platform.id} className="mt-4">
+                  <AeoOpportunitiesList 
+                    key={`${platform.id}-${refreshKey}`}
+                    platform={platform.id} 
+                  />
+                </TabsContent>
+              ))}
+            </Tabs>
+          </div>
         </TabsContent>
 
         {/* Integrations Tab */}
