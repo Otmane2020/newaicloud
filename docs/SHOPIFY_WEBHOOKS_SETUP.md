@@ -25,11 +25,6 @@ https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-webhook
 ### Commandes
 - `orders/create` - Nouvelle commande créée
 
-### 🆕 Facturation (Billing) - CRITIQUE
-- `app_subscriptions/update` - Changement de statut d'abonnement (trial → active, cancelled, etc.)
-- `subscription_billing_attempts/success` - Paiement réussi après essai
-- `subscription_billing_attempts/failure` - Échec de paiement
-
 ## Configuration dans Shopify Admin
 
 ### Étape 1 : Accéder aux Webhooks
