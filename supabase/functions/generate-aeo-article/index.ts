@@ -80,7 +80,7 @@ serve(async (req) => {
         meta_description: metaDescription,
         keywords: keywords || [],
         status: 'draft',
-        source: 'aeo_engine',
+        source: 'ai_generated',
         seo_title: title
       })
       .select()
