@@ -290,6 +290,7 @@ export function AppSidebar() {
   const isGoogleConsoleActive = isActive('/seo?tab=google-console');
   const isBlogActive = currentPath === "/blog" || blogSubItems.some((item) => isActive(item.url));
   const isAeoActive = currentPath === "/aeo" || aeoSubItems.some((item) => isActive(item.url));
+  const isAeoAnswersActive = currentPath === '/aeo-chatgpt' || currentPath === '/aeo-gemini' || currentPath === '/aeo-copilot';
   const isSocialMediaActive = currentPath === "/social-media" || socialMediaMainItems.some((item) => isActive(item.url)) || socialMediaSubItems.some((item) => isActive(item.url));
   const isSocialMediaCreativeActive = socialMediaSubItems.some((item) => isActive(item.url)) || isActive("/social-media?tab=creative");
   const isMerchantActive = currentPath === "/merchant" || merchantSubItems.some((item) => isActive(item.url));
@@ -330,6 +331,43 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* AEO AI Answers - Main tab with always visible sub-tabs */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isAeoAnswersActive}>
+                  <NavLink to="/aeo-chatgpt" onClick={handleNavClick}>
+                    <MessageSquare className="h-4 w-4" />
+                    <span>{language === 'fr' ? "AEO Réponses IA" : "AEO AI Answers"}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+                {/* Sub-tabs always visible */}
+                <SidebarMenuSub className="mt-1">
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-chatgpt'}>
+                      <NavLink to="/aeo-chatgpt" onClick={handleNavClick}>
+                        <Bot className="h-4 w-4" style={{ color: '#10b981' }} />
+                        <span>ChatGPT</span>
+                      </NavLink>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-gemini'}>
+                      <NavLink to="/aeo-gemini" onClick={handleNavClick}>
+                        <Brain className="h-4 w-4" style={{ color: '#3b82f6' }} />
+                        <span>Gemini</span>
+                      </NavLink>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-copilot'}>
+                      <NavLink to="/aeo-copilot" onClick={handleNavClick}>
+                        <Zap className="h-4 w-4" style={{ color: '#8b5cf6' }} />
+                        <span>Copilot</span>
+                      </NavLink>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </SidebarMenuItem>
 
               {/* Product Optimization Menu with Submenu - restricted */}
               {hasFullAccess && (
@@ -450,36 +488,6 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
-
-              {/* ChatGPT AEO - Direct link to platform page */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={currentPath === '/aeo-chatgpt'}>
-                  <NavLink to="/aeo-chatgpt" onClick={handleNavClick}>
-                    <Bot className="h-4 w-4" style={{ color: '#10b981' }} />
-                    <span>ChatGPT</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Gemini AEO - Direct link to platform page */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={currentPath === '/aeo-gemini'}>
-                  <NavLink to="/aeo-gemini" onClick={handleNavClick}>
-                    <Brain className="h-4 w-4" style={{ color: '#3b82f6' }} />
-                    <span>Gemini</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {/* Copilot AEO - Direct link to platform page */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={currentPath === '/aeo-copilot'}>
-                  <NavLink to="/aeo-copilot" onClick={handleNavClick}>
-                    <Zap className="h-4 w-4" style={{ color: '#8b5cf6' }} />
-                    <span>Copilot</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
 
               {/* AEO (Answer Engine Optimization) Menu with settings - restricted to oben.rockman only */}
               {hasFullAccess && (
