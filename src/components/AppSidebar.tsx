@@ -369,6 +369,14 @@ export function AppSidebar() {
                       </NavLink>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-calendar'}>
+                      <NavLink to="/aeo-calendar" onClick={handleNavClick}>
+                        <CalendarClock className="h-4 w-4" />
+                        <span>{language === 'fr' ? 'Calendrier' : 'Calendar'}</span>
+                      </NavLink>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
                 </SidebarMenuSub>
               </SidebarMenuItem>
 

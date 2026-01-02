@@ -338,6 +338,75 @@ export type Database = {
         }
         Relationships: []
       }
+      aeo_pillar_articles: {
+        Row: {
+          article_id: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          keywords: string[] | null
+          linked_qa_ids: string[] | null
+          meta_description: string | null
+          published_at: string | null
+          scheduled_for: string | null
+          status: string | null
+          store_id: string | null
+          title: string
+          topic: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          article_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          keywords?: string[] | null
+          linked_qa_ids?: string[] | null
+          meta_description?: string | null
+          published_at?: string | null
+          scheduled_for?: string | null
+          status?: string | null
+          store_id?: string | null
+          title: string
+          topic: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          article_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          keywords?: string[] | null
+          linked_qa_ids?: string[] | null
+          meta_description?: string | null
+          published_at?: string | null
+          scheduled_for?: string | null
+          status?: string | null
+          store_id?: string | null
+          title?: string
+          topic?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aeo_pillar_articles_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "blog_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aeo_pillar_articles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       aeo_projects: {
         Row: {
           article_url_for_voice: string | null
@@ -403,6 +472,74 @@ export type Database = {
           website_url?: string | null
         }
         Relationships: []
+      }
+      aeo_publication_calendar: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_pillar_published_at: string | null
+          last_qa_published_at: string | null
+          link_qa_to_pillar: boolean | null
+          next_pillar_scheduled_at: string | null
+          next_qa_scheduled_at: string | null
+          pillar_day_of_week: number | null
+          pillar_frequency: string | null
+          publication_hour: number | null
+          qa_per_day: number | null
+          store_id: string | null
+          total_pillars_published: number | null
+          total_qa_published: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_pillar_published_at?: string | null
+          last_qa_published_at?: string | null
+          link_qa_to_pillar?: boolean | null
+          next_pillar_scheduled_at?: string | null
+          next_qa_scheduled_at?: string | null
+          pillar_day_of_week?: number | null
+          pillar_frequency?: string | null
+          publication_hour?: number | null
+          qa_per_day?: number | null
+          store_id?: string | null
+          total_pillars_published?: number | null
+          total_qa_published?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_pillar_published_at?: string | null
+          last_qa_published_at?: string | null
+          link_qa_to_pillar?: boolean | null
+          next_pillar_scheduled_at?: string | null
+          next_qa_scheduled_at?: string | null
+          pillar_day_of_week?: number | null
+          pillar_frequency?: string | null
+          publication_hour?: number | null
+          qa_per_day?: number | null
+          store_id?: string | null
+          total_pillars_published?: number | null
+          total_qa_published?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aeo_publication_calendar_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "shopify_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       aeo_sources: {
         Row: {
