@@ -122,6 +122,8 @@ export function AeoPlatformPage({ platform }: AeoPlatformPageProps) {
 
   const syncAnswer = async (answer: AiAnswer): Promise<boolean> => {
     try {
+      console.log('[AEO Sync] Starting sync for answer:', answer.id);
+      
       const { data, error } = await supabase.functions.invoke('generate-aeo-article', {
         body: {
           answer_id: answer.id,
@@ -136,20 +138,22 @@ export function AeoPlatformPage({ platform }: AeoPlatformPageProps) {
         }
       });
 
-      if (error) throw error;
+      console.log('[AEO Sync] Response:', { data, error });
+
+      if (error) {
+        console.error('[AEO Sync] Function error:', error);
+        throw error;
+      }
 
       if (data?.success) {
-        // Update local state - mark as synced
-        await supabase
-          .from('ai_answers')
-          .update({ synced_at: new Date().toISOString() })
-          .eq('id', answer.id);
-        
+        console.log('[AEO Sync] Article created:', data.article?.id);
         return true;
       }
+      
+      console.error('[AEO Sync] Failed:', data?.error);
       return false;
     } catch (error) {
-      console.error('Error syncing answer:', error);
+      console.error('[AEO Sync] Error syncing answer:', error);
       return false;
     }
   };
