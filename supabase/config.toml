@@ -52,6 +52,10 @@ function = "process-social-campaigns"
 schedule = "0 * * * *"
 function = "process-recovery-automations"
 
+[cron.process-aeo-calendar-hourly]
+schedule = "0 * * * *"
+function = "process-aeo-calendar"
+
 [functions.process-recovery-automations]
 verify_jwt = false
 
@@ -552,7 +556,6 @@ verify_jwt = true
 [functions.admin-publish-social]
 verify_jwt = true
 
-
 [functions.validate-coupon]
 verify_jwt = false
 
@@ -644,4 +647,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.auto-generate-aeo]
+verify_jwt = true
+
+[functions.process-aeo-calendar]
+verify_jwt = false
+
+[functions.generate-aeo-pillar-article]
 verify_jwt = true

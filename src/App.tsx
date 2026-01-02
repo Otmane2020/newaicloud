@@ -142,6 +142,7 @@ import AeoAccount from "./pages/AeoAccount";
 import AeoPublicAnswer from "./pages/AeoPublicAnswer";
 import AeoKeywordTracking from "./pages/AeoKeywordTracking";
 import AeoUrlTracking from "./pages/AeoUrlTracking";
+import AeoCalendar from "./pages/AeoCalendar";
 import { AeoProtectedLayout } from "./components/aeo/AeoProtectedLayout";
 import AeoSetupWizard from "./components/aeo/AeoSetupWizard";
 import { isAeoreplyDomain, isAiImagesDomain } from "./hooks/useAppMode";
@@ -388,6 +389,14 @@ function NewAIRoutes() {
               element={
                 <ProtectedLayout>
                   <AeoCopilot />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/aeo-calendar"
+              element={
+                <ProtectedLayout>
+                  <AeoCalendar />
                 </ProtectedLayout>
               }
             />
