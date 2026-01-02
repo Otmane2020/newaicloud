@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Bot, Brain, Zap, RefreshCw, Sparkles, Check, FileText, ArrowRight } from "lucide-react";
+import { RefreshCw, Sparkles, Check, FileText, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { useTranslation } from "@/lib/language";
 import { Progress } from "@/components/ui/progress";
+import logoChatgpt from "@/assets/logo-chatgpt.png";
+import logoGemini from "@/assets/logo-gemini.png";
+import logoCopilot from "@/assets/logo-copilot.png";
 
 interface AiAnswer {
   id: string;
@@ -28,7 +31,7 @@ interface AiAnswer {
 }
 
 interface PlatformConfig {
-  icon: React.ElementType;
+  logo: string;
   color: string;
   bgColor: string;
   label: string;
@@ -40,7 +43,7 @@ interface PlatformConfig {
 
 const platformConfigs: Record<string, PlatformConfig> = {
   chatgpt: {
-    icon: Bot,
+    logo: logoChatgpt,
     color: "#10b981",
     bgColor: "bg-emerald-500/10",
     label: "ChatGPT",
@@ -50,7 +53,7 @@ const platformConfigs: Record<string, PlatformConfig> = {
     }
   },
   gemini: {
-    icon: Brain,
+    logo: logoGemini,
     color: "#3b82f6",
     bgColor: "bg-blue-500/10",
     label: "Gemini",
@@ -60,7 +63,7 @@ const platformConfigs: Record<string, PlatformConfig> = {
     }
   },
   copilot: {
-    icon: Zap,
+    logo: logoCopilot,
     color: "#8b5cf6",
     bgColor: "bg-violet-500/10",
     label: "Copilot",
@@ -86,7 +89,6 @@ export function AeoPlatformPage({ platform }: AeoPlatformPageProps) {
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   
   const config = platformConfigs[platform];
-  const Icon = config.icon;
 
   const fetchAnswers = useCallback(async () => {
     if (!user) return;
@@ -248,10 +250,10 @@ export function AeoPlatformPage({ platform }: AeoPlatformPageProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div 
-            className={`w-14 h-14 rounded-xl ${config.bgColor} flex items-center justify-center`}
+            className={`w-14 h-14 rounded-xl ${config.bgColor} flex items-center justify-center overflow-hidden`}
             style={{ boxShadow: `0 4px 14px ${config.color}30` }}
           >
-            <Icon className="w-7 h-7" style={{ color: config.color }} />
+            <img src={config.logo} alt={config.label} className="w-10 h-10 object-contain" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">{config.label}</h1>
@@ -309,7 +311,7 @@ export function AeoPlatformPage({ platform }: AeoPlatformPageProps) {
       {answers.length === 0 ? (
         <Card className="text-center py-12">
           <CardContent>
-            <Icon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <img src={config.logo} alt={config.label} className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <h3 className="text-lg font-semibold mb-2">
               {language === 'fr' ? 'Aucune réponse trouvée' : 'No answers found'}
             </h3>
