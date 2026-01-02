@@ -906,26 +906,46 @@ async function handleBillingFailure(supabase: any, connection: any, payload: any
 
 /**
  * Handle subscription_billing_attempts/success webhook
- * Triggered when a payment succeeds
+ * Triggered when a payment succeeds - CRITICAL for trial → active transition
  */
 async function handleBillingSuccess(supabase: any, connection: any, payload: any, shopDomain: string) {
   console.log('✅ BILLING SUCCESS webhook received:', { shop: shopDomain });
   
   const userId = connection.user_id;
   
-  // Update profile to active status (in case it was past_due)
+  // Get current profile status to check if transitioning from trial
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription_status, trial_ends_at, current_plan_id')
+    .eq('id', userId)
+    .single();
+
+  const wasTrialing = profile?.subscription_status === 'trialing';
+  
+  if (wasTrialing) {
+    console.log('🎉 TRIAL → ACTIVE transition for user:', userId);
+  }
+
+  // Update profile to active status and clear trial_ends_at
+  const profileUpdate: Record<string, any> = {
+    subscription_status: 'active',
+    updated_at: new Date().toISOString(),
+  };
+  
+  // Clear trial_ends_at when payment succeeds (trial is over)
+  if (wasTrialing) {
+    profileUpdate.trial_ends_at = null;
+  }
+
   const { error: profileError } = await supabase
     .from('profiles')
-    .update({
-      subscription_status: 'active',
-      updated_at: new Date().toISOString(),
-    })
+    .update(profileUpdate)
     .eq('id', userId);
 
   if (profileError) {
     console.error('❌ Error updating profile:', profileError);
   } else {
-    console.log('✅ Profile confirmed as active');
+    console.log('✅ Profile confirmed as active', { wasTrialing });
   }
 
   // Update subscriptions table with new period end if available
@@ -937,6 +957,11 @@ async function handleBillingSuccess(supabase: any, connection: any, payload: any
   if (payload.billing_on) {
     updateData.current_period_end = payload.billing_on;
   }
+  
+  // Set current_period_start to now when transitioning from trial
+  if (wasTrialing) {
+    updateData.current_period_start = new Date().toISOString();
+  }
 
   await supabase
     .from('subscriptions')
@@ -944,19 +969,22 @@ async function handleBillingSuccess(supabase: any, connection: any, payload: any
     .eq('seller_id', userId)
     .eq('billing_provider', 'shopify');
 
-  // Log event
+  // Log event with trial transition info
   await supabase.from('system_logs').insert({
     type: 'billing_success',
     function_name: 'shopify-webhook',
-    message: `Payment succeeded for ${shopDomain}`,
+    message: wasTrialing 
+      ? `Trial ended - first payment succeeded for ${shopDomain}` 
+      : `Payment succeeded for ${shopDomain}`,
     metadata: {
       shop: shopDomain,
       user_id: userId,
+      was_trialing: wasTrialing,
       amount: payload.amount,
       next_billing: payload.billing_on,
       timestamp: new Date().toISOString(),
     },
   });
 
-  console.log('✅ Billing success webhook processed');
+  console.log('✅ Billing success webhook processed', { transitionedFromTrial: wasTrialing });
 }
