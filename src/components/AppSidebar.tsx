@@ -451,7 +451,37 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* AEO (Answer Engine Optimization) Menu with AI platform sub-tabs - restricted to oben.rockman only */}
+              {/* ChatGPT AEO - Direct link to platform page */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={currentPath === '/aeo-chatgpt'}>
+                  <NavLink to="/aeo-chatgpt" onClick={handleNavClick}>
+                    <Bot className="h-4 w-4" style={{ color: '#10b981' }} />
+                    <span>ChatGPT</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Gemini AEO - Direct link to platform page */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={currentPath === '/aeo-gemini'}>
+                  <NavLink to="/aeo-gemini" onClick={handleNavClick}>
+                    <Brain className="h-4 w-4" style={{ color: '#3b82f6' }} />
+                    <span>Gemini</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Copilot AEO - Direct link to platform page */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={currentPath === '/aeo-copilot'}>
+                  <NavLink to="/aeo-copilot" onClick={handleNavClick}>
+                    <Zap className="h-4 w-4" style={{ color: '#8b5cf6' }} />
+                    <span>Copilot</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* AEO (Answer Engine Optimization) Menu with settings - restricted to oben.rockman only */}
               {hasFullAccess && (
               <Collapsible defaultOpen={isAeoActive} className="group/collapsible">
                 <SidebarMenuItem>
