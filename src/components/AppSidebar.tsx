@@ -46,6 +46,9 @@ import {
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useShopifyBilling } from "@/hooks/useShopifyBilling";
+import logoChatgpt from "@/assets/logo-chatgpt.png";
+import logoGemini from "@/assets/logo-gemini.png";
+import logoCopilot from "@/assets/logo-copilot.png";
 import {
   Sidebar,
   SidebarContent,
@@ -345,7 +348,7 @@ export function AppSidebar() {
                   <SidebarMenuSubItem>
                     <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-chatgpt'}>
                       <NavLink to="/aeo-chatgpt" onClick={handleNavClick}>
-                        <Bot className="h-4 w-4" style={{ color: '#10b981' }} />
+                        <img src={logoChatgpt} alt="ChatGPT" className="h-4 w-4 rounded" />
                         <span>ChatGPT</span>
                       </NavLink>
                     </SidebarMenuSubButton>
@@ -353,7 +356,7 @@ export function AppSidebar() {
                   <SidebarMenuSubItem>
                     <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-gemini'}>
                       <NavLink to="/aeo-gemini" onClick={handleNavClick}>
-                        <Brain className="h-4 w-4" style={{ color: '#3b82f6' }} />
+                        <img src={logoGemini} alt="Gemini" className="h-4 w-4" />
                         <span>Gemini</span>
                       </NavLink>
                     </SidebarMenuSubButton>
@@ -361,7 +364,7 @@ export function AppSidebar() {
                   <SidebarMenuSubItem>
                     <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-copilot'}>
                       <NavLink to="/aeo-copilot" onClick={handleNavClick}>
-                        <Zap className="h-4 w-4" style={{ color: '#8b5cf6' }} />
+                        <img src={logoCopilot} alt="Copilot" className="h-4 w-4" />
                         <span>Copilot</span>
                       </NavLink>
                     </SidebarMenuSubButton>
