@@ -31,6 +31,15 @@ api_version = "2025-10"
   topics = [ "orders/create", "orders/updated", "orders/cancelled" ]
   uri = "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-webhook"
 
+  # 🆕 BILLING WEBHOOKS - Critical for subscription lifecycle
+  [[webhooks.subscriptions]]
+  topics = [ "app_subscriptions/update" ]
+  uri = "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-webhook"
+
+  [[webhooks.subscriptions]]
+  topics = [ "subscription_billing_attempts/success", "subscription_billing_attempts/failure" ]
+  uri = "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-webhook"
+
   [[webhooks.subscriptions]]
   compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
   uri = "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopify-gdpr-webhook"
