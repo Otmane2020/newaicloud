@@ -567,6 +567,7 @@ export type Database = {
           status: string | null
           store_id: string | null
           supporting_content: Json | null
+          synced_at: string | null
           updated_at: string | null
           user_id: string
           view_count: number | null
@@ -596,6 +597,7 @@ export type Database = {
           status?: string | null
           store_id?: string | null
           supporting_content?: Json | null
+          synced_at?: string | null
           updated_at?: string | null
           user_id: string
           view_count?: number | null
@@ -625,6 +627,7 @@ export type Database = {
           status?: string | null
           store_id?: string | null
           supporting_content?: Json | null
+          synced_at?: string | null
           updated_at?: string | null
           user_id?: string
           view_count?: number | null

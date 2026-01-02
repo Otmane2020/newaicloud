@@ -52,6 +52,9 @@ import Collections from "./pages/Collections";
 import TestGlobale from "./pages/TestGlobale";
 import Blog from "./pages/Blog";
 import AEO from "./pages/AEO";
+import AeoChatGPT from "./pages/AeoChatGPT";
+import AeoGemini from "./pages/AeoGemini";
+import AeoCopilot from "./pages/AeoCopilot";
 import ArticleManagement from "./pages/ArticleManagement";
 import BlogNewAI from "./pages/BlogNewAI";
 import BlogSeoManagement from "./pages/BlogSeoManagement";
@@ -361,6 +364,30 @@ function NewAIRoutes() {
               element={
                 <ProtectedLayout>
                   <AEO />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/aeo-chatgpt"
+              element={
+                <ProtectedLayout>
+                  <AeoChatGPT />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/aeo-gemini"
+              element={
+                <ProtectedLayout>
+                  <AeoGemini />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/aeo-copilot"
+              element={
+                <ProtectedLayout>
+                  <AeoCopilot />
                 </ProtectedLayout>
               }
             />

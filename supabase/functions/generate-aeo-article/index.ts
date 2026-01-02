@@ -91,13 +91,14 @@ serve(async (req) => {
       throw insertError;
     }
 
-    // Update ai_answers with article_id (with user_id check for security)
+    // Update ai_answers with article_id and synced_at (with user_id check for security)
     if (answer_id) {
       await supabase
         .from('ai_answers')
         .update({ 
           status: 'treated',
-          article_id: article.id 
+          article_id: article.id,
+          synced_at: new Date().toISOString()
         })
         .eq('id', answer_id)
         .eq('user_id', user_id);
