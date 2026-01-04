@@ -150,6 +150,8 @@ import { HelmetProvider } from "react-helmet-async";
 import AiImagesLanding from "./pages/ai-images/AiImagesLanding";
 import AiImagesDashboard from "./pages/ai-images/AiImagesDashboard";
 import AiImagesAuth from "./pages/ai-images/AiImagesAuth";
+import AiImagesShopifyInstall from "./pages/ai-images/AiImagesShopifyInstall";
+import AiImagesShopifySuccess from "./pages/ai-images/AiImagesShopifySuccess";
 import { AiImagesProtectedLayout } from "./components/ai-images/AiImagesProtectedLayout";
 import { AiImagesAppBridgeProvider } from "./components/ai-images/AiImagesAppBridgeProvider";
 
@@ -725,11 +727,28 @@ function NewAIRoutes() {
 // AI Images Routes - with Shopify App Bridge for embedded mode
 function AiImagesRoutes() {
   const search = new URLSearchParams(window.location.search);
-  const isEmbedded = search.get("embedded") === "1" || search.has("shop") || search.has("host");
+  const pathname = window.location.pathname;
   
-  console.log('📦 AiImagesRoutes - isEmbedded:', isEmbedded, 'search:', window.location.search);
+  // Check if this is an installation flow (has hmac + timestamp = OAuth initiation from Shopify)
+  const isInstallFlow = search.has("hmac") && search.has("timestamp") && !search.has("embedded");
   
-  // If embedded or has Shopify params, wrap in App Bridge provider and go directly to dashboard
+  // Embedded mode: explicit embedded=1 param OR has host without being an install flow
+  const isEmbedded = search.get("embedded") === "1" || (search.has("host") && !isInstallFlow && pathname !== "/shopify/install");
+  
+  console.log('📦 AiImagesRoutes - Detection:', { 
+    isInstallFlow, 
+    isEmbedded, 
+    pathname,
+    search: window.location.search 
+  });
+  
+  // If it's an install flow at root, redirect to /shopify/install
+  if (isInstallFlow && pathname === "/") {
+    console.log('🔀 Redirecting install flow to /shopify/install');
+    return <Navigate to={`/shopify/install${window.location.search}`} replace />;
+  }
+  
+  // If embedded, wrap in App Bridge provider and go directly to dashboard
   if (isEmbedded) {
     return (
       <AiImagesAppBridgeProvider>
@@ -740,9 +759,14 @@ function AiImagesRoutes() {
     );
   }
   
-  // Standalone mode (landing page, auth, etc.)
+  // Standalone mode (landing page, auth, shopify install, etc.)
   return (
     <Routes>
+      {/* Shopify installation routes - MUST be before catch-all */}
+      <Route path="/shopify/install" element={<AiImagesShopifyInstall />} />
+      <Route path="/shopify/success" element={<AiImagesShopifySuccess />} />
+      
+      {/* Standard routes */}
       <Route path="/" element={<AiImagesLanding />} />
       <Route path="/auth" element={<AiImagesAuth />} />
       <Route path="/app/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
