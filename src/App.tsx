@@ -730,43 +730,45 @@ function AiImagesRoutes() {
   const pathname = window.location.pathname;
   
   // Check if this is an installation flow (has hmac + timestamp = OAuth initiation from Shopify)
-  const isInstallFlow = search.has("hmac") && search.has("timestamp") && !search.has("embedded");
-  
-  // Embedded mode: explicit embedded=1 param OR has host without being an install flow
-  const isEmbedded = search.get("embedded") === "1" || (search.has("host") && !isInstallFlow && pathname !== "/shopify/install");
+  const isInstallFlow = search.has("hmac") && search.has("timestamp");
   
   console.log('📦 AiImagesRoutes - Detection:', { 
     isInstallFlow, 
-    isEmbedded, 
     pathname,
+    hasHmac: search.has("hmac"),
+    hasTimestamp: search.has("timestamp"),
+    hasHost: search.has("host"),
     search: window.location.search 
   });
   
-  // If it's an install flow at root, redirect to /shopify/install
-  if (isInstallFlow && pathname === "/") {
-    console.log('🔀 Redirecting install flow to /shopify/install');
-    return <Navigate to={`/shopify/install${window.location.search}`} replace />;
+  // PRIORITY 1: If it's an install flow (from Shopify App Store), ALWAYS go to install page
+  if (isInstallFlow) {
+    console.log('🔀 Install flow detected - rendering AiImagesShopifyInstall');
+    return <AiImagesShopifyInstall />;
   }
+  
+  // Embedded mode: explicit embedded=1 param OR has host (post-installation)
+  const isEmbedded = search.get("embedded") === "1" || search.has("host");
+  
+  console.log('📦 AiImagesRoutes - Mode:', { isEmbedded });
   
   // If embedded, wrap in App Bridge provider and go directly to dashboard
   if (isEmbedded) {
     return (
       <AiImagesAppBridgeProvider>
         <Routes>
+          <Route path="/shopify/success" element={<AiImagesShopifySuccess />} />
           <Route path="*" element={<AiImagesDashboard />} />
         </Routes>
       </AiImagesAppBridgeProvider>
     );
   }
   
-  // Standalone mode (landing page, auth, shopify install, etc.)
+  // Standalone mode (landing page, auth, etc.)
   return (
     <Routes>
-      {/* Shopify installation routes - MUST be before catch-all */}
       <Route path="/shopify/install" element={<AiImagesShopifyInstall />} />
       <Route path="/shopify/success" element={<AiImagesShopifySuccess />} />
-      
-      {/* Standard routes */}
       <Route path="/" element={<AiImagesLanding />} />
       <Route path="/auth" element={<AiImagesAuth />} />
       <Route path="/app/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
