@@ -363,6 +363,12 @@ verify_jwt = false
 [functions.shopify-oauth]
 verify_jwt = false
 
+[functions.ai-images-shopify-install]
+verify_jwt = false
+
+[functions.ai-images-shopify-oauth]
+verify_jwt = false
+
 [functions.sync-deleted-resources]
 verify_jwt = false
 
