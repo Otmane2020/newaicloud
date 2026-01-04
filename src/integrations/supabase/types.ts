@@ -3805,6 +3805,7 @@ export type Database = {
       }
       oauth_states: {
         Row: {
+          app_id: string | null
           created_at: string | null
           expires_at: string
           host: string | null
@@ -3815,6 +3816,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          app_id?: string | null
           created_at?: string | null
           expires_at: string
           host?: string | null
@@ -3825,6 +3827,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          app_id?: string | null
           created_at?: string | null
           expires_at?: string
           host?: string | null
