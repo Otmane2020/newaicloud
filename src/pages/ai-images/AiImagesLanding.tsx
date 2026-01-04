@@ -69,17 +69,18 @@ const FEATURES = [
 ];
 
 const PRICING = {
-  name: "Image Pack",
-  nameFr: "Pack Images",
-  price: 9.99,
-  credits: 30,
+  name: "Starter Plan",
+  nameFr: "Forfait Starter",
+  price: 2.99,
+  pricePerImage: 0.15,
   features: [
-    { en: "30 AI Image Credits", fr: "30 Crédits Images IA" },
-    { en: "3 credits per generation", fr: "3 crédits par génération" },
+    { en: "$2.99/month base subscription", fr: "Abonnement de base 2,99$/mois" },
+    { en: "$0.15 per image (pay as you go)", fr: "0,15$ par image (à l'usage)" },
     { en: "HD 1:1 Square Format", fr: "Format Carré HD 1:1" },
     { en: "Background Removal", fr: "Suppression de Fond" },
     { en: "Scene Customization", fr: "Personnalisation de Scène" },
     { en: "Shopify Direct Sync", fr: "Sync Direct Shopify" },
+    { en: "No commitment - Cancel anytime", fr: "Sans engagement - Annulez quand vous voulez" },
   ],
 };
 
@@ -254,12 +255,12 @@ export default function AiImagesLanding() {
               {isFr ? "Tarification Simple" : "Simple Pricing"}
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-bold">
-              {isFr ? "Payez uniquement ce que vous utilisez" : "Pay Only For What You Use"}
+              {isFr ? "Tarif simple et transparent" : "Simple & Transparent Pricing"}
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
               {isFr
-                ? "Système de crédits flexible. 3 crédits par génération d'image."
-                : "Flexible credit system. 3 credits per image generation."}
+                ? "Forfait de base minimal + payez uniquement les images que vous générez."
+                : "Minimal base plan + only pay for the images you generate."}
             </p>
           </div>
 
@@ -273,10 +274,13 @@ export default function AiImagesLanding() {
                 <h3 className="text-2xl font-bold mb-2">{isFr ? PRICING.nameFr : PRICING.name}</h3>
                 <div className="flex items-baseline justify-center gap-1">
                   <span className="text-5xl font-bold">${PRICING.price}</span>
-                  <span className="text-muted-foreground">/{isFr ? "pack" : "pack"}</span>
+                  <span className="text-muted-foreground">/{isFr ? "mois" : "month"}</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  = {PRICING.credits} {isFr ? "crédits" : "credits"} ({Math.floor(PRICING.credits / 3)} {isFr ? "images" : "images"})
+                <p className="text-sm text-primary font-medium mt-2">
+                  + ${PRICING.pricePerImage} {isFr ? "par image générée" : "per image generated"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isFr ? "Pay as you go - Pas de crédits à acheter" : "Pay as you go - No credits to buy"}
                 </p>
               </div>
 
