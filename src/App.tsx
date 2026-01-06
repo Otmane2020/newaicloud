@@ -152,6 +152,7 @@ import AiImagesDashboard from "./pages/ai-images/AiImagesDashboard";
 import AiImagesAuth from "./pages/ai-images/AiImagesAuth";
 import AiImagesShopifyInstall from "./pages/ai-images/AiImagesShopifyInstall";
 import AiImagesShopifySuccess from "./pages/ai-images/AiImagesShopifySuccess";
+import AiImagesSetupWizard from "./pages/ai-images/AiImagesSetupWizard";
 import { AiImagesProtectedLayout } from "./components/ai-images/AiImagesProtectedLayout";
 import { AiImagesAppBridgeProvider } from "./components/ai-images/AiImagesAppBridgeProvider";
 
@@ -776,7 +777,9 @@ function AiImagesRoutes() {
       <Route path="/shopify/success" element={<AiImagesShopifySuccess />} />
       <Route path="/" element={<AiImagesLanding />} />
       <Route path="/auth" element={<AiImagesAuth />} />
-      {/* Post-installation dashboard routes - both /dashboard and /app/dashboard */}
+      {/* Setup wizard for post-OAuth pricing selection */}
+      <Route path="/setup" element={<AiImagesSetupWizard />} />
+      {/* Dashboard routes */}
       <Route path="/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
       <Route path="/app/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
       <Route path="/privacy" element={<Privacy />} />

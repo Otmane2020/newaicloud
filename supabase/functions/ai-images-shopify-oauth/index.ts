@@ -383,11 +383,11 @@ serve(async (req) => {
     }
 
     // ============================================
-    // Build redirect URL - Always redirect to standalone app (like NewAI)
+    // Build redirect URL - Redirect to setup wizard for pricing (like NewAI)
     // ============================================
-    const redirectUrl = `${AI_IMAGES_APP_URL}/dashboard?shop=${encodeURIComponent(shop)}&installed=true`;
+    const redirectUrl = `${AI_IMAGES_APP_URL}/setup?shop=${encodeURIComponent(shop)}&installed=true`;
     
-    log("Final redirect to standalone app", { redirectUrl });
+    log("Final redirect to setup wizard", { redirectUrl });
     
     return new Response(null, {
       status: 302,
