@@ -95,24 +95,11 @@ serve(async (req) => {
 
     if (stateError || !oauthState) {
       log("Invalid state token", { error: stateError });
-      
-      // Fallback: check shopify_pending_connections (old method)
-      const { data: pendingConnection, error: pendingError } = await supabase
-        .from("shopify_pending_connections")
-        .select("*")
-        .eq("pending_token", state)
-        .single();
-
-      if (pendingError || !pendingConnection) {
-        log("State token not found in any table");
-        return new Response("Invalid or expired state token", { status: 400 });
-      }
-
-      log("Found state in pending_connections (legacy flow)");
+      return new Response("Invalid or expired state token", { status: 400 });
     }
 
     // Check expiration
-    if (oauthState && new Date(oauthState.expires_at) < new Date()) {
+    if (new Date(oauthState.expires_at) < new Date()) {
       log("State token expired");
       return new Response("State token expired", { status: 400 });
     }
@@ -162,103 +149,30 @@ serve(async (req) => {
     }
 
     // ============================================
-    // CRITICAL: Create or find Supabase user
+    // CRITICAL: Create pending_token (like NewAI)
     // ============================================
-    let userId: string | null = null;
-    let sessionToken: string | null = null;
+    const pendingToken = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    // Check existing connection first
-    const { data: existingConnection } = await supabase
-      .from("ai_images_shopify_connections")
-      .select("id, user_id")
-      .eq("shop_domain", shop)
-      .single();
+    const { error: insertError } = await supabase.from("shopify_pending_connections").insert({
+      shop_url: shop,
+      access_token: accessToken,
+      scope: scope,
+      commercial_name: shopName,
+      pending_token: pendingToken,
+      expires_at: expiresAt.toISOString(),
+      is_claimed: false,
+    });
 
-    if (existingConnection?.user_id) {
-      userId = existingConnection.user_id;
-      log("Found existing user from connection", { userId });
-    }
-
-    // If no user found, try to find by email or create new user
-    if (!userId && shopEmail) {
-      // Check if user already exists with this email
-      const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const existingUser = existingUsers?.users?.find(u => u.email === shopEmail);
-
-      if (existingUser) {
-        userId = existingUser.id;
-        log("Found existing Supabase user by email", { userId, email: shopEmail });
-      } else {
-        // Create new user with Shopify email
-        const tempPassword = crypto.randomUUID();
-        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-          email: shopEmail,
-          password: tempPassword,
-          email_confirm: true,
-          user_metadata: {
-            shop_domain: shop,
-            shop_name: shopName,
-            source: "ai_images_shopify",
-          },
-        });
-
-        if (createError) {
-          log("Error creating user", { error: createError });
-        } else if (newUser?.user) {
-          userId = newUser.user.id;
-          log("Created new Supabase user", { userId, email: shopEmail });
-
-          // Create profile for the new user
-          await supabase.from("profiles").upsert({
-            id: userId,
-            email: shopEmail,
-            full_name: shopName,
-            billing_provider: "shopify",
-            subscription_status: "trial",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "id" });
-          log("Created user profile", { userId });
-        }
-      }
-    }
-
-    // If still no user (no email from shop), create anonymous-style user
-    if (!userId) {
-      const anonymousEmail = `${shop.replace('.myshopify.com', '')}@ai-images.shopify.local`;
-      const tempPassword = crypto.randomUUID();
-      
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email: anonymousEmail,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: {
-          shop_domain: shop,
-          shop_name: shopName,
-          source: "ai_images_shopify",
-          is_shopify_merchant: true,
-        },
-      });
-
-      if (!createError && newUser?.user) {
-        userId = newUser.user.id;
-        log("Created anonymous Supabase user for shop", { userId, email: anonymousEmail });
-
-        // Create profile
-        await supabase.from("profiles").upsert({
-          id: userId,
-          email: anonymousEmail,
-          full_name: shopName,
-          billing_provider: "shopify",
-          subscription_status: "trial",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "id" });
-      }
+    if (insertError) {
+      log("Error creating pending connection", { error: insertError });
+      // Continue anyway - we'll try to store in ai_images table
+    } else {
+      log("Pending connection created", { pendingToken });
     }
 
     // ============================================
-    // Store connection in ai_images_shopify_connections
+    // Also store in ai_images_shopify_connections (for quick lookup)
     // ============================================
     const connectionData: Record<string, unknown> = {
       shop_domain: shop,
@@ -269,125 +183,26 @@ serve(async (req) => {
       installed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    
-    if (userId) {
-      connectionData.user_id = userId;
-    }
 
-    const { data: upsertedConnection, error: upsertError } = await supabase
+    const { error: upsertError } = await supabase
       .from("ai_images_shopify_connections")
-      .upsert(connectionData, { onConflict: "shop_domain" })
-      .select("id")
-      .single();
+      .upsert(connectionData, { onConflict: "shop_domain" });
 
     if (upsertError) {
       log("Error storing AI Images connection", { error: upsertError });
     } else {
-      log("AI Images connection stored successfully", { connectionId: upsertedConnection?.id });
-    }
-
-    // ============================================
-    // ALSO create entry in shopify_connections for StoreContext compatibility
-    // ============================================
-    if (userId) {
-      const storeUrl = `https://${shop}`;
-      
-      const { data: existingShopifyConn } = await supabase
-        .from("shopify_connections")
-        .select("id")
-        .eq("store_url", storeUrl)
-        .single();
-
-      if (!existingShopifyConn) {
-        const { data: newShopifyConn, error: shopifyConnError } = await supabase
-          .from("shopify_connections")
-          .insert({
-            user_id: userId,
-            store_url: storeUrl,
-            store_name: shopName,
-            access_token: accessToken,
-            is_active: true,
-            currency: shopCurrency,
-            timezone: shopTimezone,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .select("id")
-          .single();
-
-        if (shopifyConnError) {
-          log("Error creating shopify_connections entry", { error: shopifyConnError });
-        } else {
-          log("Created shopify_connections entry for StoreContext", { storeId: newShopifyConn?.id });
-          
-          // Trigger initial product sync
-          if (newShopifyConn?.id) {
-            try {
-              const syncResponse = await fetch(`${SUPABASE_URL}/functions/v1/ai-images-sync-products`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-                },
-                body: JSON.stringify({
-                  shopDomain: shop,
-                  storeId: newShopifyConn.id,
-                  userId: userId,
-                }),
-              });
-              log("Triggered product sync", { status: syncResponse.status });
-            } catch (syncError) {
-              log("Error triggering product sync (non-blocking)", { error: syncError });
-            }
-          }
-        }
-      } else {
-        // Update existing connection
-        await supabase
-          .from("shopify_connections")
-          .update({
-            access_token: accessToken,
-            is_active: true,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingShopifyConn.id);
-        log("Updated existing shopify_connections entry");
-      }
-    }
-
-    // ============================================
-    // Initialize credits for new user
-    // ============================================
-    if (userId) {
-      const { data: existingCredits } = await supabase
-        .from("ai_images_credits")
-        .select("id")
-        .eq("user_id", userId)
-        .single();
-
-      if (!existingCredits) {
-        // Give 5 free credits for new users
-        await supabase.from("ai_images_credits").insert({
-          user_id: userId,
-          credits_balance: 5,
-          total_credits_purchased: 0,
-          total_credits_used: 0,
-        });
-        log("Initialized 5 free credits for new user", { userId });
-      }
+      log("AI Images connection stored successfully");
     }
 
     // Clean up oauth_states
-    if (oauthState) {
-      await supabase.from("oauth_states").delete().eq("state_token", state);
-    }
+    await supabase.from("oauth_states").delete().eq("state_token", state);
 
     // ============================================
-    // Build redirect URL - Redirect to setup wizard for pricing (like NewAI)
+    // Build redirect URL - WITH pending_token (like NewAI)
     // ============================================
-    const redirectUrl = `${AI_IMAGES_APP_URL}/setup?shop=${encodeURIComponent(shop)}&installed=true`;
+    const redirectUrl = `${AI_IMAGES_APP_URL}/setup?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}`;
     
-    log("Final redirect to setup wizard", { redirectUrl });
+    log("Final redirect to setup wizard with pending_token", { redirectUrl });
     
     return new Response(null, {
       status: 302,

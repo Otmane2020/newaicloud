@@ -53,6 +53,13 @@ const CREDIT_PACKAGES = [
   },
 ];
 
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [1000, 2000, 4000];
+
+// Helper function for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Header component
 const AppHeader = ({ shopName }: { shopName?: string }) => (
   <header 
@@ -114,13 +121,14 @@ export default function AiImagesSetupWizard() {
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const authAttemptedRef = useRef(false);
 
   // Language detection
   const isFr = navigator.language?.startsWith("fr");
   
   const shopFromUrl = searchParams.get("shop");
-  const installedParam = searchParams.get("installed");
+  const pendingToken = searchParams.get("pending_token");
   
   // Normalize shop domain
   const normalizedShop = shopFromUrl 
@@ -129,56 +137,97 @@ export default function AiImagesSetupWizard() {
         : `${shopFromUrl}.myshopify.com`.toLowerCase())
     : null;
 
-  // Auto-login after OAuth
-  useEffect(() => {
-    if (!shopFromUrl || authAttemptedRef.current) return;
-    
-    const attemptAutoLogin = async () => {
-      // Check if already authenticated
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        console.log("✅ [AiImagesSetupWizard] Already authenticated");
-        setIsCheckingSubscription(false);
-        return;
+  const t = {
+    connecting: isFr ? "Connexion en cours..." : "Connecting...",
+    connected: isFr ? "Connexion réussie !" : "Connected successfully!",
+    retrying: isFr ? "Nouvelle tentative..." : "Retrying...",
+    retry: isFr ? "Réessayer" : "Retry",
+  };
+
+  // Auth function with retry logic (like NewAI)
+  const attemptAuth = async (attempt: number = 0): Promise<boolean> => {
+    try {
+      console.log(`[AiImagesSetupWizard] Auth attempt ${attempt + 1}/${MAX_RETRIES}`);
+      
+      const { data, error } = await supabase.functions.invoke("ai-images-auto-auth", {
+        body: { 
+          shop: normalizedShop,
+          pending_token: pendingToken 
+        },
+      });
+
+      if (error) {
+        console.error(`[AiImagesSetupWizard] Auth attempt ${attempt + 1} failed:`, error);
+        throw error;
       }
 
-      // If post-install, attempt quick login
-      if (installedParam === "true") {
-        authAttemptedRef.current = true;
-        setIsAuthenticating(true);
-        
-        try {
-          console.log("🔐 [AiImagesSetupWizard] Attempting auto-login for:", normalizedShop);
-          
-          const { data, error } = await supabase.functions.invoke('ai-images-quick-login', {
-            body: { shop: normalizedShop }
-          });
+      if (data?.access_token && data?.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+        console.log("[AiImagesSetupWizard] ✅ Session set successfully");
+        toast.success(t.connected);
+        return true;
+      }
+      
+      throw new Error("No session tokens received");
+    } catch (err) {
+      if (attempt < MAX_RETRIES - 1) {
+        const delayMs = RETRY_DELAYS[attempt] || 4000;
+        console.log(`[AiImagesSetupWizard] Retrying in ${delayMs}ms...`);
+        setRetryCount(attempt + 1);
+        toast.loading(t.retrying, { id: "auth-retry" });
+        await delay(delayMs);
+        return attemptAuth(attempt + 1);
+      }
+      throw err;
+    }
+  };
 
-          if (error) {
-            console.error("❌ Auto-login failed:", error);
-            setAuthError(error.message);
-          } else if (data?.session) {
-            console.log("✅ Auto-login successful");
-            await supabase.auth.setSession({
-              access_token: data.session.access_token,
-              refresh_token: data.session.refresh_token
-            });
-            toast.success(isFr ? "Connexion réussie !" : "Connected successfully!");
-          }
-        } catch (err) {
-          console.error("❌ Auto-login error:", err);
-          setAuthError(err instanceof Error ? err.message : "Login failed");
-        } finally {
-          setIsAuthenticating(false);
-          setIsCheckingSubscription(false);
-        }
-      } else {
+  // Process pending_token (like NewAI SetupWizard)
+  useEffect(() => {
+    if (!pendingToken || !normalizedShop || authAttemptedRef.current) return;
+    authAttemptedRef.current = true;
+
+    const processToken = async () => {
+      setIsAuthenticating(true);
+      setAuthError(null);
+      toast.loading(t.connecting, { id: "auth-progress" });
+
+      try {
+        await attemptAuth(0);
+        toast.dismiss("auth-progress");
+        toast.dismiss("auth-retry");
+      } catch (err) {
+        console.error("[AiImagesSetupWizard] All auth attempts failed:", err);
+        toast.dismiss("auth-progress");
+        toast.dismiss("auth-retry");
+        setAuthError(err instanceof Error ? err.message : "Authentication failed");
+      } finally {
+        setIsAuthenticating(false);
+        setRetryCount(0);
         setIsCheckingSubscription(false);
       }
     };
 
-    attemptAutoLogin();
-  }, [shopFromUrl, installedParam, normalizedShop, isFr]);
+    processToken();
+  }, [pendingToken, normalizedShop]);
+
+  // If no pending_token, check existing session
+  useEffect(() => {
+    if (pendingToken) return; // Let pending_token flow handle it
+
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log("✅ [AiImagesSetupWizard] Already authenticated");
+      }
+      setIsCheckingSubscription(false);
+    };
+
+    checkSession();
+  }, [pendingToken]);
 
   // Check if user already has active subscription
   useEffect(() => {
@@ -202,6 +251,24 @@ export default function AiImagesSetupWizard() {
     checkSubscription();
   }, [isCheckingSubscription, normalizedShop, navigate]);
 
+  // Manual retry handler
+  const handleRetry = async () => {
+    authAttemptedRef.current = false;
+    setAuthError(null);
+    setIsAuthenticating(true);
+    toast.loading(t.connecting, { id: "auth-progress" });
+    
+    try {
+      await attemptAuth(0);
+      toast.dismiss("auth-progress");
+    } catch (err) {
+      toast.dismiss("auth-progress");
+      setAuthError(err instanceof Error ? err.message : "Authentication failed");
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
   const handleSelectPlan = async (planId: string) => {
     if (!normalizedShop) {
       toast.error(isFr ? "Boutique non trouvée" : "Shop not found");
@@ -218,7 +285,7 @@ export default function AiImagesSetupWizard() {
         body: {
           planId,
           shopDomain: normalizedShop,
-          isRecurring: true, // Monthly subscription
+          isRecurring: true,
         }
       });
 
@@ -283,17 +350,41 @@ export default function AiImagesSetupWizard() {
             backgroundColor: "#fff4f4",
             borderBottom: "1px solid #fecaca",
             padding: "12px 20px",
-            textAlign: "center"
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "12px"
           }}
         >
           <span style={{ color: "#dc2626", fontSize: "14px" }}>
             {isFr ? "Erreur de connexion" : "Connection error"}: {authError}
           </span>
+          <button
+            onClick={handleRetry}
+            disabled={isAuthenticating}
+            style={{
+              backgroundColor: PRIMARY_COLOR,
+              color: "white",
+              padding: "6px 16px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: 500,
+              border: "none",
+              cursor: isAuthenticating ? "not-allowed" : "pointer",
+              opacity: isAuthenticating ? 0.7 : 1,
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+          >
+            {isAuthenticating && <Loader2 size={14} className="animate-spin" />}
+            {t.retry}
+          </button>
         </div>
       )}
 
       {/* Authenticating indicator */}
-      {isAuthenticating && (
+      {isAuthenticating && !authError && (
         <div 
           style={{
             backgroundColor: "#f0fdf4",
@@ -307,7 +398,7 @@ export default function AiImagesSetupWizard() {
         >
           <Loader2 size={14} className="animate-spin" style={{ color: PRIMARY_COLOR }} />
           <span style={{ color: "#166534", fontSize: "13px" }}>
-            {isFr ? "Connexion en cours..." : "Connecting..."}
+            {t.connecting} {retryCount > 0 && `(${isFr ? "tentative" : "attempt"} ${retryCount + 1}/${MAX_RETRIES})`}
           </span>
         </div>
       )}
