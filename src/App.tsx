@@ -765,12 +765,19 @@ function AiImagesRoutes() {
   }
   
   // Standalone mode (landing page, auth, etc.)
+  // Check if this is a post-installation redirect (shop + installed params)
+  const isPostInstall = search.has("shop") && search.get("installed") === "true";
+  
+  console.log('📦 AiImagesRoutes - Standalone mode:', { isPostInstall, pathname });
+  
   return (
     <Routes>
       <Route path="/shopify/install" element={<AiImagesShopifyInstall />} />
       <Route path="/shopify/success" element={<AiImagesShopifySuccess />} />
       <Route path="/" element={<AiImagesLanding />} />
       <Route path="/auth" element={<AiImagesAuth />} />
+      {/* Post-installation dashboard routes - both /dashboard and /app/dashboard */}
+      <Route path="/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
       <Route path="/app/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
