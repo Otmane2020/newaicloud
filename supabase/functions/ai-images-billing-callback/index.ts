@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const AI_IMAGES_APP_URL = "https://newai.sale";
+const AI_IMAGES_APP_URL = "https://ai-images.newai.sale";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -31,7 +31,7 @@ const returnError = (req: Request, errorCode: string, message: string) => {
       status: 400,
     });
   }
-  return Response.redirect(`${AI_IMAGES_APP_URL}/ai-images?error=${errorCode}`, 302);
+  return Response.redirect(`${AI_IMAGES_APP_URL}/setup?error=${errorCode}`, 302);
 };
 
 serve(async (req) => {
@@ -163,7 +163,7 @@ serve(async (req) => {
           status: 400,
         });
       }
-      return Response.redirect(`${AI_IMAGES_APP_URL}/ai-images?cancelled=true`, 302);
+      return Response.redirect(`${AI_IMAGES_APP_URL}/setup?shop=${encodeURIComponent(shop)}&cancelled=true`, 302);
     }
 
     log("Active purchase found", purchase);
@@ -218,14 +218,14 @@ serve(async (req) => {
         if (req.method === "POST") {
           return new Response(JSON.stringify({
             success: true,
-            message: "Credits already added",
+            message: "Credits already added for this purchase",
             credits: creditsToAdd
           }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,
           });
         }
-        return Response.redirect(`${AI_IMAGES_APP_URL}/ai-images?success=true&credits=${creditsToAdd}`, 302);
+        return Response.redirect(`${AI_IMAGES_APP_URL}/dashboard?shop=${encodeURIComponent(shop)}&installed=true&credits=${creditsToAdd}`, 302);
       }
 
       // Add credits using the database function
@@ -302,10 +302,9 @@ serve(async (req) => {
       });
     }
 
-    // For GET requests, redirect to app
-    const shopSlug = shop.replace('.myshopify.com', '');
-    const redirectUrl = `https://admin.shopify.com/store/${shopSlug}/apps/ai-product-shot?success=true&credits=${creditsToAdd}`;
-    log("Redirecting to app", { url: redirectUrl });
+    // For GET requests, redirect to dashboard (standalone)
+    const redirectUrl = `${AI_IMAGES_APP_URL}/dashboard?shop=${encodeURIComponent(shop)}&installed=true&credits=${creditsToAdd}`;
+    log("Redirecting to dashboard", { url: redirectUrl });
     
     return Response.redirect(redirectUrl, 302);
 
@@ -320,6 +319,6 @@ serve(async (req) => {
       });
     }
     
-    return Response.redirect(`${AI_IMAGES_APP_URL}/ai-images?error=unexpected_error`, 302);
+    return Response.redirect(`${AI_IMAGES_APP_URL}/setup?error=unexpected_error`, 302);
   }
 });

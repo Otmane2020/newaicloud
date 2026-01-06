@@ -727,28 +727,35 @@ function NewAIRoutes() {
 
 // AI Images Routes - with Shopify App Bridge for embedded mode
 function AiImagesRoutes() {
-  const search = new URLSearchParams(window.location.search);
-  const pathname = window.location.pathname;
+  const search = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   
-  // Check if this is an installation flow (has hmac + timestamp = OAuth initiation from Shopify)
-  const isInstallFlow = search.has("hmac") && search.has("timestamp");
+  console.log('📦 AiImagesRoutes - Params:', { pathname, search: search.toString() });
   
-  console.log('📦 AiImagesRoutes - Detection:', { 
-    isInstallFlow, 
-    pathname,
-    hasHmac: search.has("hmac"),
-    hasTimestamp: search.has("timestamp"),
-    hasHost: search.has("host"),
-    search: window.location.search 
-  });
+  // PRIORITY 1: If pathname is /setup, always render setup wizard (pricing page after OAuth)
+  if (pathname === "/setup") {
+    console.log('📦 AiImagesRoutes - Rendering /setup (pricing page)');
+    return (
+      <Routes>
+        <Route path="/setup" element={<AiImagesSetupWizard />} />
+        <Route path="*" element={<Navigate to="/setup" replace />} />
+      </Routes>
+    );
+  }
   
-  // PRIORITY 1: If it's an install flow (from Shopify App Store), ALWAYS go to install page
-  if (isInstallFlow) {
-    console.log('🔀 Install flow detected - rendering AiImagesShopifyInstall');
-    return <AiImagesShopifyInstall />;
+  // PRIORITY 2: If pathname is /dashboard with success params, render dashboard
+  if (pathname === "/dashboard") {
+    console.log('📦 AiImagesRoutes - Rendering /dashboard');
+    return (
+      <Routes>
+        <Route path="/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    );
   }
   
   // Embedded mode: explicit embedded=1 param OR has host (post-installation)
+  // BUT only if NOT on /setup or /dashboard routes
   const isEmbedded = search.get("embedded") === "1" || search.has("host");
   
   console.log('📦 AiImagesRoutes - Mode:', { isEmbedded });
@@ -766,10 +773,7 @@ function AiImagesRoutes() {
   }
   
   // Standalone mode (landing page, auth, etc.)
-  // Check if this is a post-installation redirect (shop + installed params)
-  const isPostInstall = search.has("shop") && search.get("installed") === "true";
-  
-  console.log('📦 AiImagesRoutes - Standalone mode:', { isPostInstall, pathname });
+  console.log('📦 AiImagesRoutes - Standalone mode:', { pathname });
   
   return (
     <Routes>
