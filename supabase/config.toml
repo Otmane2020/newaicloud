@@ -372,6 +372,9 @@ verify_jwt = false
 [functions.ai-images-quick-login]
 verify_jwt = false
 
+[functions.ai-images-auto-auth]
+verify_jwt = false
+
 [functions.sync-deleted-resources]
 verify_jwt = false
 
