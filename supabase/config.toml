@@ -369,6 +369,9 @@ verify_jwt = false
 [functions.ai-images-shopify-oauth]
 verify_jwt = false
 
+[functions.ai-images-quick-login]
+verify_jwt = false
+
 [functions.sync-deleted-resources]
 verify_jwt = false
 
