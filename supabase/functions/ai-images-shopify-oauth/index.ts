@@ -383,35 +383,11 @@ serve(async (req) => {
     }
 
     // ============================================
-    // Build redirect URL with session token
+    // Build redirect URL - Always redirect to standalone app (like NewAI)
     // ============================================
-    const shopSlug = shop.replace('.myshopify.com', '');
-    let redirectUrl: string;
+    const redirectUrl = `${AI_IMAGES_APP_URL}/dashboard?shop=${encodeURIComponent(shop)}&installed=true`;
     
-    // For embedded apps, redirect back to Shopify admin
-    if (host) {
-      try {
-        const decodedHost = atob(host);
-        redirectUrl = `https://${decodedHost}/apps/ai-product-shot`;
-        log("Using decoded host for redirect", { decodedHost, redirectUrl });
-      } catch (e) {
-        log("Failed to decode host, using fallback", { error: e });
-        redirectUrl = `https://admin.shopify.com/store/${shopSlug}/apps/ai-product-shot`;
-      }
-    } else {
-      // Standalone mode - redirect to app with session
-      redirectUrl = `${AI_IMAGES_APP_URL}?shop=${encodeURIComponent(shop)}&installed=true`;
-    }
-
-    // Add shop param for session identification
-    const separator = redirectUrl.includes('?') ? '&' : '?';
-    redirectUrl = `${redirectUrl}${separator}shop=${encodeURIComponent(shop)}`;
-    
-    if (host) {
-      redirectUrl += `&host=${encodeURIComponent(host)}`;
-    }
-    
-    log("Final redirect", { redirectUrl });
+    log("Final redirect to standalone app", { redirectUrl });
     
     return new Response(null, {
       status: 302,
