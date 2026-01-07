@@ -1,6 +1,8 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+# IMPORTANT: Replace with your actual AI Images app client_id from Shopify Partner Dashboard
+# Then run: shopify app deploy --config=shopify.ai-images.app.toml
 
-client_id = "REMPLACE_PAR_TON_AI_IMAGES_CLIENT_ID"
+client_id = "YOUR_AI_IMAGES_CLIENT_ID"
 
 name = "AI Product Image Shot"
 
