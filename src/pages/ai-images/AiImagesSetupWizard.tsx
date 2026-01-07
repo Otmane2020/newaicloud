@@ -198,7 +198,17 @@ export default function AiImagesSetupWizard() {
         console.error("[AiImagesSetupWizard] All auth attempts failed:", err);
         toast.dismiss("auth-progress");
         toast.dismiss("auth-retry");
-        setAuthError(err instanceof Error ? err.message : "Authentication failed");
+        
+        // Detect expired/invalid token errors
+        const errorMsg = err instanceof Error ? err.message : "Authentication failed";
+        if (errorMsg.includes("expired") || errorMsg.includes("Invalid") || errorMsg.includes("not found")) {
+          setAuthError(isFr 
+            ? "Le lien d'installation a expiré. Veuillez réinstaller l'application depuis Shopify."
+            : "Installation link has expired. Please reinstall the app from Shopify."
+          );
+        } else {
+          setAuthError(errorMsg);
+        }
       } finally {
         setIsAuthenticating(false);
         setRetryCount(0);
@@ -344,8 +354,38 @@ export default function AiImagesSetupWizard() {
     >
       <AppHeader shopName={normalizedShop || undefined} />
       
-      {/* Auth error banner */}
-      {authError && (
+      {/* Auth error - Full screen for expired tokens */}
+      {authError && authError.includes(isFr ? "expiré" : "expired") && (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <Card className="max-w-md p-8 text-center shadow-lg">
+            <div className="w-16 h-16 mx-auto rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">
+              {isFr ? "Lien d'installation expiré" : "Installation Link Expired"}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {authError}
+            </p>
+            <Button
+              onClick={() => {
+                const shopName = normalizedShop?.replace('.myshopify.com', '');
+                if (shopName) {
+                  window.open(`https://admin.shopify.com/store/${shopName}/apps`, '_top');
+                }
+              }}
+              className="w-full bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600"
+            >
+              {isFr ? "Réinstaller l'application" : "Reinstall Application"}
+            </Button>
+          </Card>
+        </div>
+      )}
+
+      {/* Auth error banner (for other errors) */}
+      {authError && !authError.includes(isFr ? "expiré" : "expired") && (
         <div 
           style={{
             backgroundColor: "#fff4f4",

@@ -70,19 +70,25 @@ serve(async (req) => {
     }
 
     if (!pendingConnection) {
-      log("Token invalid after all retries");
+      log("Token invalid after all retries - likely expired or already claimed");
       return new Response(
-        JSON.stringify({ error: "Invalid or expired pending token" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          error: "Invalid or expired pending token. Please reinstall the app.",
+          code: "TOKEN_EXPIRED"
+        }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Check expiration
     if (new Date(pendingConnection.expires_at) < new Date()) {
-      log("Token expired");
+      log("Token expired", { expires_at: pendingConnection.expires_at });
       return new Response(
-        JSON.stringify({ error: "Token has expired" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          error: "Installation link has expired. Please reinstall the app from Shopify.",
+          code: "TOKEN_EXPIRED"
+        }),
+        { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
