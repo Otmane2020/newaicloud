@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Camera, Sparkles, Loader2, Check, ImageIcon } from "lucide-react";
@@ -6,7 +6,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAiImagesAppBridge, useAiImagesIsEmbedded } from "@/components/ai-images/AiImagesAppBridgeProvider";
+import { useAiImagesIsEmbedded } from "@/components/ai-images/AiImagesAppBridgeProvider";
+import createApp from "@shopify/app-bridge";
+import { Redirect } from "@shopify/app-bridge/actions";
 
 // App colors
 const PRIMARY_COLOR = "#0891b2"; // Cyan-600
@@ -85,8 +87,25 @@ const AppHeader = ({ shopName }: { shopName?: string }) => (
 export default function AiImagesSetupWizard() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const shopify = useAiImagesAppBridge();
   const isEmbedded = useAiImagesIsEmbedded();
+  const hostParam = searchParams.get("host");
+  
+  // Initialize App Bridge v3 for billing redirects (required by Shopify security)
+  const appBridge = useMemo(() => {
+    if (!hostParam) return null;
+    
+    try {
+      return createApp({
+        apiKey: "47fe9e78f7a16bb0ffe6f31929c7a44e", // AI Images Client ID
+        host: hostParam,
+        forceRedirect: true,
+      });
+    } catch (err) {
+      console.error("[AiImagesSetupWizard] App Bridge init error:", err);
+      return null;
+    }
+  }, [hostParam]);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -297,12 +316,13 @@ export default function AiImagesSetupWizard() {
       if (data?.confirmationUrl) {
         console.log("🔗 Redirecting to Shopify billing:", data.confirmationUrl);
         
-        // Use App Bridge redirect for embedded apps (required by Shopify security)
-        if (isEmbedded && shopify) {
-          // @ts-ignore - App Bridge v4 navigation
-          await shopify.idToken?.(); // Ensure token is fresh
-          window.open(data.confirmationUrl, '_top');
+        // Use App Bridge v3 Redirect for embedded apps (required by Shopify security)
+        if (isEmbedded && appBridge) {
+          console.log("[AiImagesSetupWizard] Using App Bridge Redirect.Action.REMOTE");
+          const redirect = Redirect.create(appBridge);
+          redirect.dispatch(Redirect.Action.REMOTE, data.confirmationUrl);
         } else {
+          // Fallback for non-embedded
           window.location.href = data.confirmationUrl;
         }
       } else if (data?.status === 'ACTIVE') {
