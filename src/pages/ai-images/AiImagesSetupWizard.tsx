@@ -292,7 +292,8 @@ export default function AiImagesSetupWizard() {
       }
     } catch (err) {
       console.error("Error creating subscription:", err);
-      toast.error(isFr ? "Erreur lors de la création de l'abonnement" : "Error creating subscription");
+      // Simple user-friendly error without technical details
+      toast.error(isFr ? "Erreur de connexion. Veuillez réessayer." : "Connection error. Please try again.");
     } finally {
       setIsLoading(false);
     }
