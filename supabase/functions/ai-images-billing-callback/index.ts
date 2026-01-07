@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 const AI_IMAGES_APP_URL = "https://ai-images.newai.sale";
+const AI_IMAGES_APP_HANDLE = "ai-product-shot"; // App handle from Shopify Partner Dashboard
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -23,13 +24,23 @@ const AI_IMAGES_PLANS: Record<string, { name: string; credits: number; price: nu
   "enterprise": { name: "Enterprise Pack", credits: 1500, price: 149.99 },
 };
 
-// Helper to return error - JSON for POST, redirect for GET
-const returnError = (req: Request, errorCode: string, message: string) => {
+// Helper to build Shopify Admin embedded URL
+const buildShopifyAdminUrl = (shop: string, path: string, params?: URLSearchParams) => {
+  const queryString = params ? `?${params.toString()}` : '';
+  return `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}${path}${queryString}`;
+};
+
+// Helper to return error - JSON for POST, redirect for GET (embedded in Shopify Admin)
+const returnError = (req: Request, shop: string | null, errorCode: string, message: string) => {
   if (req.method === "POST") {
     return new Response(JSON.stringify({ success: false, error: message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });
+  }
+  // Redirect to Shopify Admin embedded setup page with error
+  if (shop) {
+    return Response.redirect(buildShopifyAdminUrl(shop, '/setup', new URLSearchParams({ error: errorCode })), 302);
   }
   return Response.redirect(`${AI_IMAGES_APP_URL}/setup?error=${errorCode}`, 302);
 };
@@ -69,7 +80,7 @@ serve(async (req) => {
 
     if (!shop) {
       log("Missing shop parameter");
-      return returnError(req, "missing_shop", "Missing shop parameter");
+      return returnError(req, null, "missing_shop", "Missing shop parameter");
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -84,7 +95,7 @@ serve(async (req) => {
 
     if (connError || !connection) {
       log("No AI Images Shopify connection found", { error: connError });
-      return returnError(req, "no_connection", "No Shopify connection found");
+      return returnError(req, shop, "no_connection", "No Shopify connection found");
     }
 
     log("Connection found", { shopDomain: connection.shop_domain, userId: connection.user_id });
@@ -134,7 +145,7 @@ serve(async (req) => {
     if (!shopifyResponse.ok) {
       const errorText = await shopifyResponse.text();
       log("Shopify API error", { status: shopifyResponse.status, error: errorText });
-      return returnError(req, "shopify_api_error", "Shopify API error");
+      return returnError(req, shop, "shopify_api_error", "Shopify API error");
     }
 
     const shopifyData = await shopifyResponse.json();
@@ -163,7 +174,8 @@ serve(async (req) => {
           status: 400,
         });
       }
-      return Response.redirect(`${AI_IMAGES_APP_URL}/setup?shop=${encodeURIComponent(shop)}&cancelled=true`, 302);
+      // Redirect back to setup page in Shopify Admin
+      return Response.redirect(buildShopifyAdminUrl(shop, '/setup', new URLSearchParams({ cancelled: 'true' })), 302);
     }
 
     log("Active purchase found", purchase);
@@ -225,7 +237,8 @@ serve(async (req) => {
             status: 200,
           });
         }
-        return Response.redirect(`${AI_IMAGES_APP_URL}/dashboard?shop=${encodeURIComponent(shop)}&installed=true&credits=${creditsToAdd}`, 302);
+        // Redirect to dashboard in Shopify Admin
+        return Response.redirect(buildShopifyAdminUrl(shop, '/dashboard', new URLSearchParams({ installed: 'true', credits: String(creditsToAdd) })), 302);
       }
 
       // Add credits using the database function
@@ -302,9 +315,9 @@ serve(async (req) => {
       });
     }
 
-    // For GET requests, redirect to dashboard (standalone)
-    const redirectUrl = `${AI_IMAGES_APP_URL}/dashboard?shop=${encodeURIComponent(shop)}&installed=true&credits=${creditsToAdd}`;
-    log("Redirecting to dashboard", { url: redirectUrl });
+    // For GET requests, redirect to dashboard in Shopify Admin (embedded)
+    const redirectUrl = buildShopifyAdminUrl(shop, '/dashboard', new URLSearchParams({ installed: 'true', credits: String(creditsToAdd) }));
+    log("Redirecting to Shopify Admin dashboard (embedded)", { url: redirectUrl });
     
     return Response.redirect(redirectUrl, 302);
 
@@ -319,6 +332,6 @@ serve(async (req) => {
       });
     }
     
-    return Response.redirect(`${AI_IMAGES_APP_URL}/setup?error=unexpected_error`, 302);
+    return Response.redirect(`${AI_IMAGES_APP_URL}/setup?error=unexpected_error`, 302); // Fallback without shop
   }
 });
