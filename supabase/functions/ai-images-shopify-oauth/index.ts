@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const AI_IMAGES_APP_URL = "https://ai-images.newai.sale";
+const AI_IMAGES_APP_HANDLE = "ai-product-shot"; // App handle from Shopify Partner Dashboard
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -198,22 +199,13 @@ serve(async (req) => {
     await supabase.from("oauth_states").delete().eq("state_token", state);
 
     // ============================================
-    // Build redirect URL - App URL with host for embedding
+    // Build redirect URL - STAY IN SHOPIFY ADMIN (embedded app)
     // ============================================
-    // Shopify will embed the app via the host parameter
-    const redirectParams = new URLSearchParams({
-      shop,
-      pending_token: pendingToken,
-    });
+    // Redirect to Shopify Admin which will load the app in iframe
+    // Format: https://{shop}/admin/apps/{app-handle}/setup?pending_token=xxx
+    const redirectUrl = `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}/setup?pending_token=${pendingToken}`;
     
-    // Add host parameter for embedded context
-    if (host) {
-      redirectParams.set("host", host);
-    }
-    
-    const redirectUrl = `${AI_IMAGES_APP_URL}/setup?${redirectParams.toString()}`;
-    
-    log("Final redirect to setup wizard", { redirectUrl, shop, hasHost: !!host });
+    log("Final redirect to Shopify Admin (embedded)", { redirectUrl, shop });
     
     return new Response(null, {
       status: 302,
