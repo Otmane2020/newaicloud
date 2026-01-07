@@ -24,10 +24,10 @@ const AI_IMAGES_PLANS: Record<string, { name: string; credits: number; price: nu
   "enterprise": { name: "Enterprise Pack", credits: 1500, price: 149.99 },
 };
 
-// Helper to build Shopify Admin embedded URL
-const buildShopifyAdminUrl = (shop: string, path: string, params?: URLSearchParams) => {
+// Helper to build Shopify Admin embedded URL - NO sub-routes allowed!
+const buildShopifyAdminUrl = (shop: string, params?: URLSearchParams) => {
   const queryString = params ? `?${params.toString()}` : '';
-  return `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}${path}${queryString}`;
+  return `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}${queryString}`;
 };
 
 // Helper to return error - JSON for POST, redirect for GET (embedded in Shopify Admin)
@@ -38,9 +38,9 @@ const returnError = (req: Request, shop: string | null, errorCode: string, messa
       status: 400,
     });
   }
-  // Redirect to Shopify Admin embedded setup page with error
+  // Redirect to Shopify Admin ROOT with error param
   if (shop) {
-    return Response.redirect(buildShopifyAdminUrl(shop, '/setup', new URLSearchParams({ error: errorCode })), 302);
+    return Response.redirect(buildShopifyAdminUrl(shop, new URLSearchParams({ error: errorCode })), 302);
   }
   return Response.redirect(`${AI_IMAGES_APP_URL}/setup?error=${errorCode}`, 302);
 };
@@ -174,8 +174,8 @@ serve(async (req) => {
           status: 400,
         });
       }
-      // Redirect back to setup page in Shopify Admin
-      return Response.redirect(buildShopifyAdminUrl(shop, '/setup', new URLSearchParams({ cancelled: 'true' })), 302);
+      // Redirect back to app ROOT in Shopify Admin with cancelled param
+      return Response.redirect(buildShopifyAdminUrl(shop, new URLSearchParams({ cancelled: 'true' })), 302);
     }
 
     log("Active purchase found", purchase);
@@ -237,8 +237,8 @@ serve(async (req) => {
             status: 200,
           });
         }
-        // Redirect to dashboard in Shopify Admin
-        return Response.redirect(buildShopifyAdminUrl(shop, '/dashboard', new URLSearchParams({ installed: 'true', credits: String(creditsToAdd) })), 302);
+        // Redirect to app ROOT in Shopify Admin with installed param
+        return Response.redirect(buildShopifyAdminUrl(shop, new URLSearchParams({ installed: 'true', credits: String(creditsToAdd) })), 302);
       }
 
       // Add credits using the database function
@@ -315,9 +315,9 @@ serve(async (req) => {
       });
     }
 
-    // For GET requests, redirect to dashboard in Shopify Admin (embedded)
-    const redirectUrl = buildShopifyAdminUrl(shop, '/dashboard', new URLSearchParams({ installed: 'true', credits: String(creditsToAdd) }));
-    log("Redirecting to Shopify Admin dashboard (embedded)", { url: redirectUrl });
+    // For GET requests, redirect to app ROOT in Shopify Admin (embedded)
+    const redirectUrl = buildShopifyAdminUrl(shop, new URLSearchParams({ installed: 'true', credits: String(creditsToAdd) }));
+    log("Redirecting to Shopify Admin ROOT (embedded)", { url: redirectUrl });
     
     return Response.redirect(redirectUrl, 302);
 

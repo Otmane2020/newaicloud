@@ -726,53 +726,70 @@ function NewAIRoutes() {
 }
 
 // AI Images Routes - with Shopify App Bridge for embedded mode
+// CRITICAL: Shopify Admin does NOT support sub-routes - routing is based on query params
 function AiImagesRoutes() {
   const search = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   
-  console.log('📦 AiImagesRoutes - Params:', { pathname, search: search.toString() });
+  // Query params for routing (Shopify embedded apps MUST use params, not paths)
+  const pendingToken = search.get("pending_token");
+  const installed = search.get("installed");
+  const cancelled = search.get("cancelled");
+  const hasHost = search.has("host");
+  const isEmbedded = search.get("embedded") === "1" || hasHost;
   
-  // PRIORITY 1: If pathname is /setup, always render setup wizard (pricing page after OAuth)
-  if (pathname === "/setup") {
-    console.log('📦 AiImagesRoutes - Rendering /setup (pricing page)');
-    return (
-      <Routes>
-        <Route path="/setup" element={<AiImagesSetupWizard />} />
-        <Route path="*" element={<Navigate to="/setup" replace />} />
-      </Routes>
-    );
-  }
+  console.log('📦 AiImagesRoutes - Params:', { pathname, pendingToken, installed, cancelled, hasHost, isEmbedded });
   
-  // PRIORITY 2: If pathname is /dashboard with success params, render dashboard
-  if (pathname === "/dashboard") {
-    console.log('📦 AiImagesRoutes - Rendering /dashboard');
-    return (
-      <Routes>
-        <Route path="/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    );
-  }
-  
-  // Embedded mode: explicit embedded=1 param OR has host (post-installation)
-  // BUT only if NOT on /setup or /dashboard routes
-  const isEmbedded = search.get("embedded") === "1" || search.has("host");
-  
-  console.log('📦 AiImagesRoutes - Mode:', { isEmbedded });
-  
-  // If embedded, wrap in App Bridge provider and go directly to dashboard
-  if (isEmbedded) {
+  // PRIORITY 1: pending_token → SetupWizard (post-OAuth)
+  if (pendingToken) {
+    console.log('📦 AiImagesRoutes - pending_token detected → SetupWizard');
     return (
       <AiImagesAppBridgeProvider>
         <Routes>
-          <Route path="/shopify/success" element={<AiImagesShopifySuccess />} />
-          <Route path="*" element={<AiImagesDashboard />} />
+          <Route path="*" element={<AiImagesSetupWizard />} />
         </Routes>
       </AiImagesAppBridgeProvider>
     );
   }
   
-  // Standalone mode (landing page, auth, etc.)
+  // PRIORITY 2: cancelled → SetupWizard (user cancelled billing)
+  if (cancelled) {
+    console.log('📦 AiImagesRoutes - cancelled detected → SetupWizard');
+    return (
+      <AiImagesAppBridgeProvider>
+        <Routes>
+          <Route path="*" element={<AiImagesSetupWizard />} />
+        </Routes>
+      </AiImagesAppBridgeProvider>
+    );
+  }
+  
+  // PRIORITY 3: installed=true → Dashboard (post-billing success)
+  if (installed) {
+    console.log('📦 AiImagesRoutes - installed=true → Dashboard');
+    return (
+      <AiImagesAppBridgeProvider>
+        <Routes>
+          <Route path="*" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
+        </Routes>
+      </AiImagesAppBridgeProvider>
+    );
+  }
+  
+  // PRIORITY 4: Embedded mode (host param) → Dashboard
+  if (isEmbedded) {
+    console.log('📦 AiImagesRoutes - Embedded mode (host) → Dashboard');
+    return (
+      <AiImagesAppBridgeProvider>
+        <Routes>
+          <Route path="/shopify/success" element={<AiImagesShopifySuccess />} />
+          <Route path="*" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
+        </Routes>
+      </AiImagesAppBridgeProvider>
+    );
+  }
+  
+  // FALLBACK: Standalone mode (landing page, auth, etc.)
   console.log('📦 AiImagesRoutes - Standalone mode:', { pathname });
   
   return (
@@ -781,11 +798,8 @@ function AiImagesRoutes() {
       <Route path="/shopify/success" element={<AiImagesShopifySuccess />} />
       <Route path="/" element={<AiImagesLanding />} />
       <Route path="/auth" element={<AiImagesAuth />} />
-      {/* Setup wizard for post-OAuth pricing selection */}
       <Route path="/setup" element={<AiImagesSetupWizard />} />
-      {/* Dashboard routes */}
       <Route path="/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
-      <Route path="/app/dashboard" element={<AiImagesProtectedLayout><AiImagesDashboard /></AiImagesProtectedLayout>} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="*" element={<Navigate to="/" replace />} />
