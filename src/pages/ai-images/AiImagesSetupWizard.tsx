@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAiImagesAppBridge, useAiImagesIsEmbedded } from "@/components/ai-images/AiImagesAppBridgeProvider";
 
 // App colors
 const PRIMARY_COLOR = "#0891b2"; // Cyan-600
@@ -84,6 +85,8 @@ const AppHeader = ({ shopName }: { shopName?: string }) => (
 export default function AiImagesSetupWizard() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const shopify = useAiImagesAppBridge();
+  const isEmbedded = useAiImagesIsEmbedded();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -283,7 +286,15 @@ export default function AiImagesSetupWizard() {
 
       if (data?.confirmationUrl) {
         console.log("🔗 Redirecting to Shopify billing:", data.confirmationUrl);
-        window.location.href = data.confirmationUrl;
+        
+        // Use App Bridge redirect for embedded apps (required by Shopify security)
+        if (isEmbedded && shopify) {
+          // @ts-ignore - App Bridge v4 navigation
+          await shopify.idToken?.(); // Ensure token is fresh
+          window.open(data.confirmationUrl, '_top');
+        } else {
+          window.location.href = data.confirmationUrl;
+        }
       } else if (data?.status === 'ACTIVE') {
         toast.success(isFr ? "Abonnement déjà actif !" : "Subscription already active!");
         navigate(`/dashboard?shop=${encodeURIComponent(normalizedShop)}`, { replace: true });
