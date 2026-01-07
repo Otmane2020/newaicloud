@@ -198,17 +198,18 @@ serve(async (req) => {
     await supabase.from("oauth_states").delete().eq("state_token", state);
 
     // ============================================
-    // Build redirect URL - WITH pending_token (like NewAI)
+    // Build redirect URL - EMBEDDED in Shopify Admin
     // ============================================
-    const redirectUrl = `${AI_IMAGES_APP_URL}/setup?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}`;
+    // Redirect to Shopify Admin embedded app URL (stays within Shopify)
+    const embeddedRedirectUrl = `https://${shop}/admin/apps/ai-product-shot/setup?pending_token=${pendingToken}`;
     
-    log("Final redirect to setup wizard with pending_token", { redirectUrl });
+    log("Final redirect to EMBEDDED setup wizard", { embeddedRedirectUrl, shop });
     
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        Location: redirectUrl,
+        Location: embeddedRedirectUrl,
       },
     });
   } catch (error) {
