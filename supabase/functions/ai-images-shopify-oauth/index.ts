@@ -199,14 +199,13 @@ serve(async (req) => {
     await supabase.from("oauth_states").delete().eq("state_token", state);
 
     // ============================================
-    // Build redirect URL - STAY IN SHOPIFY ADMIN (embedded app)
+    // Build redirect URL - Go to app domain with host for App Bridge bounce
     // ============================================
-    // Redirect to Shopify Admin ROOT - no sub-routes allowed!
-    // Shopify Admin does NOT support sub-routes like /setup or /dashboard
-    // Use query params to control routing in the app
-    const redirectUrl = `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}?pending_token=${pendingToken}`;
+    // Shopify blocks direct redirects to admin from external domains
+    // We redirect to our app domain, which will use App Bridge to navigate
+    const redirectUrl = `${AI_IMAGES_APP_URL}/shopify/bounce?pending_token=${pendingToken}&shop=${encodeURIComponent(shop)}&host=${encodeURIComponent(host || "")}`;
     
-    log("Final redirect to Shopify Admin ROOT (embedded)", { redirectUrl, shop });
+    log("Redirecting to app domain for App Bridge bounce", { redirectUrl, shop, host });
     
     return new Response(null, {
       status: 302,
