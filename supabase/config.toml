@@ -375,6 +375,9 @@ verify_jwt = false
 [functions.ai-images-auto-auth]
 verify_jwt = false
 
+[functions.ai-images-gdpr-webhook]
+verify_jwt = false
+
 [functions.sync-deleted-resources]
 verify_jwt = false
 
