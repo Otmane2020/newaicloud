@@ -201,11 +201,12 @@ serve(async (req) => {
     // ============================================
     // Build redirect URL - STAY IN SHOPIFY ADMIN (embedded app)
     // ============================================
-    // Redirect to Shopify Admin which will load the app in iframe
-    // Format: https://{shop}/admin/apps/{app-handle}/setup?pending_token=xxx
-    const redirectUrl = `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}/setup?pending_token=${pendingToken}`;
+    // Redirect to Shopify Admin ROOT - no sub-routes allowed!
+    // Shopify Admin does NOT support sub-routes like /setup or /dashboard
+    // Use query params to control routing in the app
+    const redirectUrl = `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}?pending_token=${pendingToken}`;
     
-    log("Final redirect to Shopify Admin (embedded)", { redirectUrl, shop });
+    log("Final redirect to Shopify Admin ROOT (embedded)", { redirectUrl, shop });
     
     return new Response(null, {
       status: 302,
