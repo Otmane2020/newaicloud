@@ -168,11 +168,25 @@ serve(async (req) => {
       }
     }
 
-    // 7. Update ai_images_shopify_connections with user_id
-    await supabase
+    // 7. Create ai_images_shopify_connections entry (with user_id now available)
+    const { error: aiConnError } = await supabase
       .from("ai_images_shopify_connections")
-      .update({ user_id: userId, updated_at: new Date().toISOString() })
-      .eq("shop_domain", shop);
+      .upsert({
+        user_id: userId,
+        shop_domain: shop,
+        shop_name: pendingConnection.commercial_name || shop,
+        access_token: pendingConnection.access_token,
+        scope: pendingConnection.scope || "write_products,write_files",
+        is_active: true,
+        installed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "shop_domain" });
+
+    if (aiConnError) {
+      log("Error creating ai_images_shopify_connections", { error: aiConnError });
+    } else {
+      log("AI Images connection created successfully");
+    }
 
     // 8. Also create shopify_connections entry for StoreContext compatibility
     const storeUrl = `https://${shop}`;

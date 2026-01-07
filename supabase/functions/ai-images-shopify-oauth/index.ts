@@ -172,28 +172,8 @@ serve(async (req) => {
       log("Pending connection created", { pendingToken });
     }
 
-    // ============================================
-    // Also store in ai_images_shopify_connections (for quick lookup)
-    // ============================================
-    const connectionData: Record<string, unknown> = {
-      shop_domain: shop,
-      shop_name: shopName,
-      access_token: accessToken,
-      scope: scope,
-      is_active: true,
-      installed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    const { error: upsertError } = await supabase
-      .from("ai_images_shopify_connections")
-      .upsert(connectionData, { onConflict: "shop_domain" });
-
-    if (upsertError) {
-      log("Error storing AI Images connection", { error: upsertError });
-    } else {
-      log("AI Images connection stored successfully");
-    }
+    // NOTE: ai_images_shopify_connections is created by ai-images-auto-auth
+    // after the user is created (user_id is required and NOT NULL)
 
     // Clean up oauth_states
     await supabase.from("oauth_states").delete().eq("state_token", state);
