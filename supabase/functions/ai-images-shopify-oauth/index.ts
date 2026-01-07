@@ -198,18 +198,28 @@ serve(async (req) => {
     await supabase.from("oauth_states").delete().eq("state_token", state);
 
     // ============================================
-    // Build redirect URL - EMBEDDED in Shopify Admin
+    // Build redirect URL - App URL with host for embedding
     // ============================================
-    // Redirect to Shopify Admin embedded app URL (stays within Shopify)
-    const embeddedRedirectUrl = `https://${shop}/admin/apps/ai-product-shot/setup?pending_token=${pendingToken}`;
+    // Shopify will embed the app via the host parameter
+    const redirectParams = new URLSearchParams({
+      shop,
+      pending_token: pendingToken,
+    });
     
-    log("Final redirect to EMBEDDED setup wizard", { embeddedRedirectUrl, shop });
+    // Add host parameter for embedded context
+    if (host) {
+      redirectParams.set("host", host);
+    }
+    
+    const redirectUrl = `${AI_IMAGES_APP_URL}/setup?${redirectParams.toString()}`;
+    
+    log("Final redirect to setup wizard", { redirectUrl, shop, hasHost: !!host });
     
     return new Response(null, {
       status: 302,
       headers: {
         ...corsHeaders,
-        Location: embeddedRedirectUrl,
+        Location: redirectUrl,
       },
     });
   } catch (error) {
