@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera, Sparkles, Loader2, Check, Zap, Package, Crown } from "lucide-react";
+import { Camera, Sparkles, Loader2, Check, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,47 +11,15 @@ import { Badge } from "@/components/ui/badge";
 const PRIMARY_COLOR = "#0891b2"; // Cyan-600
 const DARK_BG = "#0f172a";
 
-// Credit packages for AI Images
-const CREDIT_PACKAGES = [
-  {
-    id: "starter",
-    name: "Starter",
-    credits: 50,
-    price: 9.99,
-    description: {
-      en: "Perfect for trying out",
-      fr: "Parfait pour essayer"
-    },
-    icon: Zap,
-    color: "from-blue-500 to-cyan-500",
-    trialDays: 7,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    credits: 200,
-    price: 29.99,
-    description: {
-      en: "Best value for regular use",
-      fr: "Meilleur rapport qualité-prix"
-    },
-    icon: Package,
-    color: "from-purple-500 to-pink-500",
-    popular: true,
-  },
-  {
-    id: "business",
-    name: "Business",
-    credits: 500,
-    price: 59.99,
-    description: {
-      en: "For growing stores",
-      fr: "Pour les boutiques en croissance"
-    },
-    icon: Crown,
-    color: "from-amber-500 to-orange-500",
-  },
-];
+// Hybrid pricing model - single plan
+const HYBRID_PLAN = {
+  id: "hybrid",
+  name: "AI Product Image Shot",
+  basePrice: 2.99,
+  usagePrice: 0.15,
+  cappedAmount: 2000, // $2000/month cap
+  freeCredits: 5,
+};
 
 // Retry configuration
 const MAX_RETRIES = 3;
@@ -117,7 +85,6 @@ export default function AiImagesSetupWizard() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -142,6 +109,31 @@ export default function AiImagesSetupWizard() {
     connected: isFr ? "Connexion réussie !" : "Connected successfully!",
     retrying: isFr ? "Nouvelle tentative..." : "Retrying...",
     retry: isFr ? "Réessayer" : "Retry",
+    title: isFr ? "Commencez à générer des images" : "Start Generating Images",
+    subtitle: isFr 
+      ? "Créez des images produit professionnelles avec l'IA. Payez uniquement ce que vous utilisez."
+      : "Create professional product images with AI. Pay only for what you use.",
+    freeCredits: isFr ? "5 crédits gratuits inclus" : "5 free credits included",
+    monthlyBase: isFr ? "Base mensuelle" : "Monthly base",
+    perImage: isFr ? "par image générée" : "per generated image",
+    monthlyCap: isFr ? "Plafond mensuel" : "Monthly cap",
+    startNow: isFr ? "Commencer maintenant" : "Start Now",
+    skipFree: isFr ? "Utiliser mes 5 crédits gratuits" : "Use my 5 free credits",
+    features: isFr ? [
+      "5 crédits gratuits pour commencer",
+      "Paiement à l'usage : $0.15 / image",
+      "Plafond mensuel de $2000",
+      "Images HD professionnelles",
+      "Tous types de produits",
+      "Annulez quand vous voulez"
+    ] : [
+      "5 free credits to start",
+      "Pay-as-you-go: $0.15 / image",
+      "Monthly cap of $2,000",
+      "Professional HD images",
+      "All product types",
+      "Cancel anytime"
+    ]
   };
 
   // Auth function with retry logic (like NewAI)
@@ -269,23 +261,21 @@ export default function AiImagesSetupWizard() {
     }
   };
 
-  const handleSelectPlan = async (planId: string) => {
+  const handleSubscribe = async () => {
     if (!normalizedShop) {
       toast.error(isFr ? "Boutique non trouvée" : "Shop not found");
       return;
     }
 
-    setSelectedPlan(planId);
     setIsLoading(true);
 
     try {
-      console.log(`[AiImagesSetupWizard] Creating subscription for plan: ${planId}`);
+      console.log(`[AiImagesSetupWizard] Creating hybrid subscription`);
       
       const { data, error } = await supabase.functions.invoke('ai-images-create-subscription', {
         body: {
-          planId,
+          planId: "hybrid",
           shopDomain: normalizedShop,
-          isRecurring: true,
         }
       });
 
@@ -305,7 +295,6 @@ export default function AiImagesSetupWizard() {
       toast.error(isFr ? "Erreur lors de la création de l'abonnement" : "Error creating subscription");
     } finally {
       setIsLoading(false);
-      setSelectedPlan(null);
     }
   };
 
@@ -404,105 +393,91 @@ export default function AiImagesSetupWizard() {
       )}
       
       <div className="flex-1 py-12 px-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-lg mx-auto">
           {/* Header */}
-          <div className="text-center mb-10">
+          <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 bg-cyan-100 text-cyan-700 px-4 py-1.5 rounded-full text-sm font-medium mb-4">
               <Sparkles size={14} />
-              {isFr ? "5 crédits gratuits inclus" : "5 free credits included"}
+              {t.freeCredits}
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-3">
-              {isFr ? "Choisissez votre forfait" : "Choose Your Plan"}
+              {t.title}
             </h1>
-            <p className="text-gray-600 max-w-xl mx-auto">
-              {isFr 
-                ? "Générez des images produit professionnelles avec l'IA. Chaque crédit = 1 image générée."
-                : "Generate professional product images with AI. Each credit = 1 generated image."
-              }
+            <p className="text-gray-600">
+              {t.subtitle}
             </p>
           </div>
 
-          {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {CREDIT_PACKAGES.map((pkg) => {
-              const Icon = pkg.icon;
-              const isSelected = selectedPlan === pkg.id;
+          {/* Single Hybrid Pricing Card */}
+          <Card className="p-8 shadow-lg border-2 border-cyan-500 relative overflow-hidden">
+            <Badge className="absolute -top-0 right-4 bg-gradient-to-r from-cyan-500 to-teal-500 text-white px-3 py-1">
+              {isFr ? "Recommandé" : "Recommended"}
+            </Badge>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center mb-4 shadow-lg">
+                <ImageIcon className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">{HYBRID_PLAN.name}</h2>
+            </div>
+
+            {/* Pricing breakdown */}
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <span className="text-gray-600">{t.monthlyBase}</span>
+                <span className="text-2xl font-bold text-gray-900">${HYBRID_PLAN.basePrice}<span className="text-sm font-normal text-gray-500">/mo</span></span>
+              </div>
               
-              return (
-                <Card 
-                  key={pkg.id}
-                  className={`relative p-6 transition-all cursor-pointer hover:shadow-lg ${
-                    pkg.popular ? 'ring-2 ring-purple-500 shadow-lg' : ''
-                  } ${isSelected ? 'ring-2 ring-cyan-500' : ''}`}
-                  onClick={() => !isLoading && handleSelectPlan(pkg.id)}
-                >
-                  {pkg.popular && (
-                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500">
-                      {isFr ? "Populaire" : "Popular"}
-                    </Badge>
-                  )}
+              <div className="flex items-center justify-between p-4 bg-cyan-50 rounded-xl border border-cyan-200">
+                <span className="text-cyan-700 font-medium">{t.perImage}</span>
+                <span className="text-2xl font-bold text-cyan-700">${HYBRID_PLAN.usagePrice}</span>
+              </div>
+              
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <span className="text-gray-600">{t.monthlyCap}</span>
+                <span className="text-lg font-semibold text-gray-700">${HYBRID_PLAN.cappedAmount.toLocaleString()}</span>
+              </div>
+            </div>
 
-                  {pkg.trialDays && (
-                    <Badge variant="outline" className="absolute -top-3 right-4 bg-white">
-                      {isFr ? `${pkg.trialDays}j essai` : `${pkg.trialDays}-day trial`}
-                    </Badge>
-                  )}
-
-                  <div className="text-center">
-                    <div className={`w-14 h-14 mx-auto rounded-xl bg-gradient-to-br ${pkg.color} flex items-center justify-center mb-4`}>
-                      <Icon className="w-7 h-7 text-white" />
-                    </div>
-                    
-                    <h3 className="text-xl font-bold mb-1">{pkg.name}</h3>
-                    <p className="text-sm text-gray-500 mb-4">
-                      {isFr ? pkg.description.fr : pkg.description.en}
-                    </p>
-
-                    <div className="mb-4">
-                      <span className="text-3xl font-bold">${pkg.price}</span>
-                      <span className="text-gray-500">/mo</span>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                      <div className="text-2xl font-bold text-cyan-600">{pkg.credits}</div>
-                      <div className="text-sm text-gray-600">
-                        {isFr ? "crédits / mois" : "credits / month"}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        ${(pkg.price / pkg.credits).toFixed(2)} / {isFr ? "image" : "image"}
-                      </div>
-                    </div>
-
-                    <Button 
-                      className={`w-full ${pkg.popular ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
-                      disabled={isLoading}
-                    >
-                      {isLoading && isSelected ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <Check className="w-4 h-4 mr-2" />
-                      )}
-                      {isLoading && isSelected 
-                        ? (isFr ? "Redirection..." : "Redirecting...") 
-                        : (isFr ? "Choisir" : "Select")
-                      }
-                    </Button>
+            {/* Features list */}
+            <div className="space-y-3 mb-8">
+              {t.features.map((feature, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3 h-3 text-cyan-600" />
                   </div>
-                </Card>
-              );
-            })}
-          </div>
+                  <span className="text-gray-700 text-sm">{feature}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA Button */}
+            <Button 
+              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white shadow-lg"
+              onClick={handleSubscribe}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  {isFr ? "Redirection..." : "Redirecting..."}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  {t.startNow}
+                </>
+              )}
+            </Button>
+          </Card>
 
           {/* Skip option */}
-          <div className="text-center">
+          <div className="text-center mt-6">
             <button
               onClick={handleSkipToDashboard}
-              className="text-sm text-gray-500 hover:text-gray-700 underline"
+              className="text-sm text-gray-500 hover:text-cyan-600 transition-colors"
             >
-              {isFr 
-                ? "Continuer avec les 5 crédits gratuits →" 
-                : "Continue with 5 free credits →"
-              }
+              {t.skipFree} →
             </button>
           </div>
         </div>

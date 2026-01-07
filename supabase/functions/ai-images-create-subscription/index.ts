@@ -15,12 +15,13 @@ const log = (step: string, details?: unknown) => {
   console.log(`[AI-IMAGES-CREATE-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
-// AI Images credit packages
-const AI_IMAGES_PLANS: Record<string, { name: string; credits: number; price: number }> = {
-  "starter": { name: "Starter Pack", credits: 50, price: 9.99 },
-  "pro": { name: "Pro Pack", credits: 200, price: 29.99 },
-  "business": { name: "Business Pack", credits: 500, price: 59.99 },
-  "enterprise": { name: "Enterprise Pack", credits: 1500, price: 149.99 },
+// Hybrid pricing model: $2.99/month base + $0.15/image usage-based, $2000 cap
+const HYBRID_PLAN = {
+  name: "AI Product Image Shot",
+  basePrice: 2.99,
+  usagePrice: 0.15,
+  cappedAmount: 2000, // $2000/month cap
+  usageTerms: "$0.15 per AI-generated image",
 };
 
 serve(async (req) => {
@@ -33,13 +34,13 @@ serve(async (req) => {
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
-    const { planId, shopDomain, isRecurring } = await req.json();
+    const { planId, shopDomain } = await req.json();
     
-    log("Request received", { planId, shopDomain, isRecurring });
+    log("Request received", { planId, shopDomain });
     
-    if (!planId || !shopDomain) {
+    if (!shopDomain) {
       return new Response(
-        JSON.stringify({ error: "Missing planId or shopDomain" }),
+        JSON.stringify({ error: "Missing shopDomain" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -50,16 +51,7 @@ serve(async (req) => {
       .replace(/\/+$/, "")
       .toLowerCase();
 
-    // Get plan details
-    const plan = AI_IMAGES_PLANS[planId];
-    if (!plan) {
-      return new Response(
-        JSON.stringify({ error: `Unknown plan: ${planId}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    log("Plan selected", { planId, plan });
+    log("Hybrid plan selected", { plan: HYBRID_PLAN });
 
     // Get shop connection
     const { data: connection, error: connError } = await supabase
@@ -100,6 +92,22 @@ serve(async (req) => {
                   status
                   test
                   currentPeriodEnd
+                  lineItems {
+                    id
+                    plan {
+                      pricingDetails {
+                        __typename
+                        ... on AppRecurringPricing {
+                          price { amount currencyCode }
+                          interval
+                        }
+                        ... on AppUsagePricing {
+                          terms
+                          cappedAmount { amount currencyCode }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -111,21 +119,21 @@ serve(async (req) => {
     if (checkRes.ok) {
       const checkJson = await checkRes.json();
       const subs = checkJson?.data?.currentAppInstallation?.activeSubscriptions || [];
-      const activeSubscription = subs.find((s: { status: string }) => ["ACTIVE", "ACCEPTED"].includes(s.status));
+      const activeSubscription = subs.find((s: { status: string; name: string }) => 
+        ["ACTIVE", "ACCEPTED"].includes(s.status) && 
+        s.name?.includes("AI Product Image Shot")
+      );
 
       if (activeSubscription) {
-        // Check if same plan
-        if (activeSubscription.name?.toLowerCase().includes(plan.name.toLowerCase())) {
-          log("Same plan already active", activeSubscription);
-          return new Response(
-            JSON.stringify({
-              status: "ACTIVE",
-              subscription: activeSubscription,
-              message: "Subscription already active - no payment needed"
-            }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
+        log("Active subscription already exists", activeSubscription);
+        return new Response(
+          JSON.stringify({
+            status: "ACTIVE",
+            subscription: activeSubscription,
+            message: "Subscription already active - no payment needed"
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
     }
 
@@ -142,86 +150,64 @@ serve(async (req) => {
     
     log("Test mode detection", { isDevStore, testMode });
 
-    // Create app purchase (one-time) or subscription (recurring)
-    const returnUrl = `${SUPABASE_URL}/functions/v1/ai-images-billing-callback?shop=${encodeURIComponent(normalizedShop)}&plan=${encodeURIComponent(planId)}`;
+    // Build return URL for billing callback
+    const returnUrl = `${SUPABASE_URL}/functions/v1/ai-images-billing-callback?shop=${encodeURIComponent(normalizedShop)}&plan=hybrid`;
 
-    let mutation: string;
-    let variables: Record<string, unknown>;
-
-    if (isRecurring) {
-      // Recurring subscription for credit packs
-      mutation = `
-        mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int, $test: Boolean) {
-          appSubscriptionCreate(
-            name: $name
-            returnUrl: $returnUrl
-            trialDays: $trialDays
-            lineItems: $lineItems
-            test: $test
-          ) {
-            userErrors {
-              field
-              message
-            }
-            confirmationUrl
-            appSubscription {
+    // Create hybrid subscription with 2 lineItems: recurring base + usage-based
+    const mutation = `
+      mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $test: Boolean) {
+        appSubscriptionCreate(
+          name: $name
+          returnUrl: $returnUrl
+          lineItems: $lineItems
+          test: $test
+        ) {
+          userErrors {
+            field
+            message
+          }
+          confirmationUrl
+          appSubscription {
+            id
+            status
+            lineItems {
               id
-              status
+              plan {
+                pricingDetails {
+                  __typename
+                }
+              }
             }
           }
         }
-      `;
-      
-      variables = {
-        name: `AI Product Shot - ${plan.name}`,
-        returnUrl,
-        test: testMode,
-        lineItems: [{
+      }
+    `;
+    
+    const variables = {
+      name: HYBRID_PLAN.name,
+      returnUrl,
+      test: testMode,
+      lineItems: [
+        {
           plan: {
             appRecurringPricingDetails: {
-              price: { amount: plan.price, currencyCode: "USD" },
+              price: { amount: HYBRID_PLAN.basePrice, currencyCode: "USD" },
               interval: "EVERY_30_DAYS"
             }
           }
-        }]
-      };
-
-      // Starter includes a free trial period
-      if (planId === "starter") {
-        variables.trialDays = 7;
-      }
-    } else {
-      // One-time purchase for credits
-      mutation = `
-        mutation AppPurchaseOneTimeCreate($name: String!, $price: MoneyInput!, $returnUrl: URL!, $test: Boolean) {
-          appPurchaseOneTimeCreate(
-            name: $name
-            price: $price
-            returnUrl: $returnUrl
-            test: $test
-          ) {
-            userErrors {
-              field
-              message
-            }
-            confirmationUrl
-            appPurchaseOneTime {
-              id
-              status
+        },
+        {
+          plan: {
+            appUsagePricingDetails: {
+              terms: HYBRID_PLAN.usageTerms,
+              cappedAmount: { amount: HYBRID_PLAN.cappedAmount, currencyCode: "USD" }
             }
           }
         }
-      `;
-      
-      variables = {
-        name: `AI Product Shot - ${plan.name} (${plan.credits} credits)`,
-        price: { amount: plan.price, currencyCode: "USD" },
-        returnUrl,
-        test: testMode,
-      };
-    }
+      ]
+    };
 
-    log("Creating Shopify purchase", { mutation: isRecurring ? "subscription" : "one-time", variables });
+    log("Creating hybrid Shopify subscription", { variables });
 
     const shopifyResponse = await fetch(
       `https://${normalizedShop}/admin/api/2025-01/graphql.json`,
@@ -247,14 +233,12 @@ serve(async (req) => {
     const shopifyData = await shopifyResponse.json();
     log("Shopify API response", shopifyData);
 
-    const result = isRecurring 
-      ? shopifyData.data?.appSubscriptionCreate 
-      : shopifyData.data?.appPurchaseOneTimeCreate;
+    const result = shopifyData.data?.appSubscriptionCreate;
 
     if (result?.userErrors?.length > 0) {
-      log("Shopify purchase errors", result.userErrors);
+      log("Shopify subscription errors", result.userErrors);
       return new Response(
-        JSON.stringify({ error: "Shopify purchase error", details: result.userErrors }),
+        JSON.stringify({ error: "Shopify subscription error", details: result.userErrors }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -267,31 +251,40 @@ serve(async (req) => {
       );
     }
 
-    // Store pending purchase info
-    const purchaseData = isRecurring ? result.appSubscription : result.appPurchaseOneTime;
+    // Store pending subscription info
+    const subscriptionData = result.appSubscription;
     
+    // Find the usage lineItem ID for future usage recording
+    const usageLineItem = subscriptionData?.lineItems?.find(
+      (item: { plan: { pricingDetails: { __typename: string } } }) => 
+        item.plan?.pricingDetails?.__typename === "AppUsagePricing"
+    );
+
     await supabase.from("ai_images_credit_transactions").insert({
       user_id: connection.user_id || "pending",
-      transaction_type: "pending_purchase",
-      credits_amount: plan.credits,
-      description: `Pending: ${plan.name}`,
-      shopify_charge_id: purchaseData?.id,
+      transaction_type: "pending_subscription",
+      credits_amount: 0, // No upfront credits with usage-based
+      description: `Pending: ${HYBRID_PLAN.name} (Hybrid)`,
+      shopify_charge_id: subscriptionData?.id,
       metadata: {
-        plan_id: planId,
+        plan_type: "hybrid",
         shop_domain: normalizedShop,
-        is_recurring: isRecurring,
-        price: plan.price,
+        base_price: HYBRID_PLAN.basePrice,
+        usage_price: HYBRID_PLAN.usagePrice,
+        capped_amount: HYBRID_PLAN.cappedAmount,
+        usage_line_item_id: usageLineItem?.id,
       },
     });
 
-    log("Purchase initiated successfully", { confirmationUrl: result.confirmationUrl });
+    log("Subscription initiated successfully", { confirmationUrl: result.confirmationUrl });
 
     return new Response(
       JSON.stringify({ 
         status: "PENDING",
         success: true, 
         confirmationUrl: result.confirmationUrl,
-        purchaseId: purchaseData?.id
+        subscriptionId: subscriptionData?.id,
+        usageLineItemId: usageLineItem?.id,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
