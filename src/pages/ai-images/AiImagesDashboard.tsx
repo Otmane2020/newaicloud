@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BulkAIImagesDialog } from "@/components/seo/BulkAIImagesDialog";
 import { AIImagesCreditsDisplay, AIImagesCreditsPurchaseDialog } from "@/components/seo/AIImagesCreditsPurchase";
+import { AiImagesAutoSyncDialog } from "@/components/ai-images/AiImagesAutoSyncDialog";
 import { format } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 import {
@@ -120,9 +121,11 @@ export default function AiImagesDashboard() {
   const [filterProductType, setFilterProductType] = useState<string>("all");
   const [filterVendor, setFilterVendor] = useState<string>("all");
   
-  // Auto-import state
+  // Auto-import state with progress
   const [isAutoImporting, setIsAutoImporting] = useState(false);
-  const [autoImportProgress, setAutoImportProgress] = useState<string | null>(null);
+  const [autoImportProgress, setAutoImportProgress] = useState(0);
+  const [autoImportStep, setAutoImportStep] = useState<'products' | 'images' | 'completed'>('products');
+  const [autoImportCount, setAutoImportCount] = useState(0);
   
   // Image statistics
   const [imageStats, setImageStats] = useState({
@@ -164,7 +167,9 @@ export default function AiImagesDashboard() {
       });
       
       setIsAutoImporting(true);
-      setAutoImportProgress(isFr ? "Connexion à Shopify..." : "Connecting to Shopify...");
+      setAutoImportProgress(5);
+      setAutoImportStep('products');
+      setAutoImportCount(0);
       
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -182,6 +187,8 @@ export default function AiImagesDashboard() {
           console.log("[AiImagesDashboard] No AI Images connection found, trying main connections...");
         }
         
+        setAutoImportProgress(15);
+        
         // Get store from shopify_connections
         const { data: storeConn } = await supabase
           .from("shopify_connections")
@@ -190,6 +197,8 @@ export default function AiImagesDashboard() {
           .eq("is_active", true)
           .ilike("store_url", `%${shopifyParams.shop}%`)
           .single();
+        
+        let storeId = storeConn?.id;
         
         if (!storeConn) {
           // Try without the .myshopify.com suffix
@@ -206,42 +215,36 @@ export default function AiImagesDashboard() {
             throw new Error("Store not found in connections");
           }
           
-          setAutoImportProgress(isFr ? "Import des produits..." : "Importing products...");
-          
-          const { data, error } = await supabase.functions.invoke("ai-images-sync-products", {
-            body: {
-              shopDomain: shopifyParams.shop,
-              storeId: storeConn2.id,
-              userId: user.id
-            }
-          });
-          
-          if (error) throw error;
-          
-          toast.success(
-            isFr 
-              ? `${data.productsImported || 0} produits importés avec succès !` 
-              : `${data.productsImported || 0} products imported successfully!`
-          );
-        } else {
-          setAutoImportProgress(isFr ? "Import des produits..." : "Importing products...");
-          
-          const { data, error } = await supabase.functions.invoke("ai-images-sync-products", {
-            body: {
-              shopDomain: shopifyParams.shop,
-              storeId: storeConn.id,
-              userId: user.id
-            }
-          });
-          
-          if (error) throw error;
-          
-          toast.success(
-            isFr 
-              ? `${data.productsImported || 0} produits importés avec succès !` 
-              : `${data.productsImported || 0} products imported successfully!`
-          );
+          storeId = storeConn2.id;
         }
+
+        setAutoImportProgress(25);
+        setAutoImportStep('products');
+        
+        // Call sync with progress simulation
+        const { data, error } = await supabase.functions.invoke("ai-images-sync-products", {
+          body: {
+            shopDomain: shopifyParams.shop,
+            storeId: storeId,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        
+        setAutoImportProgress(75);
+        setAutoImportStep('images');
+        setAutoImportCount(data?.productsImported || 0);
+        
+        // Brief delay for visual feedback
+        await new Promise(r => setTimeout(r, 500));
+        
+        setAutoImportProgress(95);
+        setAutoImportStep('completed');
+        
+        await new Promise(r => setTimeout(r, 800));
+        
+        setAutoImportProgress(100);
         
         // Reload products
         await loadProducts();
@@ -251,12 +254,15 @@ export default function AiImagesDashboard() {
         const newUrl = window.location.pathname;
         window.history.replaceState({}, '', newUrl);
         
+        // Close after showing 100%
+        await new Promise(r => setTimeout(r, 1200));
+        
       } catch (err: any) {
         console.error("[AiImagesDashboard] Auto-import error:", err);
         toast.error(isFr ? "Erreur lors de l'import automatique" : "Error during auto-import");
       } finally {
         setIsAutoImporting(false);
-        setAutoImportProgress(null);
+        setAutoImportProgress(0);
       }
     };
     
@@ -1055,6 +1061,15 @@ export default function AiImagesDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Auto-import progress dialog */}
+      <AiImagesAutoSyncDialog
+        visible={isAutoImporting}
+        progress={autoImportProgress}
+        currentStep={autoImportStep}
+        itemsSynced={autoImportCount}
+        storeName={shopifyParams.shop || undefined}
+      />
     </div>
   );
 }
