@@ -255,15 +255,55 @@ export default function AiImagesSetupWizard() {
   return (
     <div style={{
       minHeight: "100vh",
-      backgroundColor: "white",
+      backgroundColor: "#f6f6f7",
       fontFamily: SHOPIFY_FONT,
       display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "20px"
+      flexDirection: "column"
     }}>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+
+      {/* Shopify-style header banner */}
+      <div style={{
+        backgroundColor: "white",
+        borderBottom: "1px solid #e1e3e5",
+        padding: "16px 24px",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px"
+      }}>
+        <div style={{
+          width: "40px",
+          height: "40px",
+          borderRadius: "8px",
+          backgroundColor: "#5E35B1",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </div>
+        <span style={{ 
+          fontSize: "16px", 
+          fontWeight: 600, 
+          color: "#1a1a1a"
+        }}>
+          AI Product Image Shot
+        </span>
+      </div>
+
+      {/* Content area */}
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px"
+      }}>
 
       {/* Auth error - Expired token */}
       {authError && authError.includes(isFr ? "expiré" : "expired") && (
@@ -520,6 +560,7 @@ export default function AiImagesSetupWizard() {
           {t.skipFree}
         </button>
       )}
+      </div>
     </div>
   );
 }
