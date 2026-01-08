@@ -68,10 +68,16 @@ export function isAeoreplyDomain(): boolean {
 export function isAiImagesDomain(): boolean {
   if (typeof window === 'undefined') return false;
   
-  const hostname = window.location.hostname;
+  const hostname = window.location.hostname.toLowerCase();
   const searchParams = new URLSearchParams(window.location.search);
   
-  const isAiImagesHost = hostname.includes('ai-images');
+  // Support multiple detection methods:
+  // 1. Subdomain ai-images.newai.sale
+  // 2. Exact hostname match
+  // 3. Query param fallback
+  const isAiImagesHost = hostname.includes('ai-images') || 
+                         hostname === 'ai-images.newai.sale' ||
+                         hostname.startsWith('ai-images.');
   const isAiImagesMode = searchParams.get('mode') === 'ai-images';
   
   console.log('🖼️ AI Images Domain detection:', { hostname, isAiImagesHost, isAiImagesMode, result: isAiImagesHost || isAiImagesMode });
