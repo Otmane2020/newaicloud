@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Helmet } from "react-helmet-async";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTranslation } from "@/lib/language";
 import { useStore } from "@/contexts/StoreContext";
 import { useAiImagesStore } from "@/hooks/useAiImagesStore";
@@ -32,6 +33,8 @@ import {
   Images,
   AlertTriangle,
   ExternalLink,
+  Filter,
+  Loader2,
 } from "lucide-react";
 
 interface Product {
@@ -41,6 +44,8 @@ interface Product {
   status: string;
   shopify_id: number | null;
   handle: string | null;
+  product_type: string | null;
+  vendor: string | null;
 }
 
 interface HistoryItem {
@@ -69,14 +74,17 @@ export default function AiImagesDashboard() {
   const { selectedStore, stores } = useStore();
   const { shopifyStore, aiImagesStore, loading: storeLoading, syncProducts, shopDomain } = useAiImagesStore();
   const isFr = language === "fr";
+  const hasAutoImportedRef = useRef(false);
 
-  // Detect Shopify embedded mode
+  // Detect Shopify embedded mode and install params
   const shopifyParams = useMemo(() => {
     const search = new URLSearchParams(window.location.search);
     return {
       shop: search.get("shop"),
       host: search.get("host"),
       isEmbedded: search.get("embedded") === "1" || search.has("host"),
+      justInstalled: search.get("installed") === "true",
+      credits: search.get("credits"),
     };
   }, []);
 
@@ -108,6 +116,14 @@ export default function AiImagesDashboard() {
   const [productsWithDuplicates, setProductsWithDuplicates] = useState<DuplicateProductInfo[]>([]);
   const [showDuplicatesDialog, setShowDuplicatesDialog] = useState(false);
   
+  // Filters
+  const [filterProductType, setFilterProductType] = useState<string>("all");
+  const [filterVendor, setFilterVendor] = useState<string>("all");
+  
+  // Auto-import state
+  const [isAutoImporting, setIsAutoImporting] = useState(false);
+  const [autoImportProgress, setAutoImportProgress] = useState<string | null>(null);
+  
   // Image statistics
   const [imageStats, setImageStats] = useState({
     shopifyImages: 0,
@@ -116,6 +132,95 @@ export default function AiImagesDashboard() {
     totalImages: 0,
     loadingStats: true
   });
+  
+  // Extract unique product types and vendors for filters
+  const productTypes = useMemo(() => {
+    const types = new Set(products.map(p => p.product_type).filter(Boolean));
+    return Array.from(types).sort() as string[];
+  }, [products]);
+  
+  const vendors = useMemo(() => {
+    const v = new Set(products.map(p => p.vendor).filter(Boolean));
+    return Array.from(v).sort() as string[];
+  }, [products]);
+
+  // Auto-import products after installation
+  useEffect(() => {
+    const runAutoImport = async () => {
+      if (!shopifyParams.justInstalled || !shopifyParams.shop || hasAutoImportedRef.current) return;
+      hasAutoImportedRef.current = true;
+      
+      console.log("[AiImagesDashboard] Just installed, triggering auto-import...");
+      setIsAutoImporting(true);
+      setAutoImportProgress(isFr ? "Connexion à Shopify..." : "Connecting to Shopify...");
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+        
+        // Get AI Images store connection
+        const { data: aiConnection } = await supabase
+          .from("ai_images_shopify_connections")
+          .select("id")
+          .eq("shop_domain", shopifyParams.shop)
+          .eq("user_id", user.id)
+          .single();
+        
+        if (!aiConnection) {
+          console.log("[AiImagesDashboard] No AI Images connection found, trying main connections...");
+        }
+        
+        // Get store from shopify_connections
+        const { data: storeConn } = await supabase
+          .from("shopify_connections")
+          .select("id, store_url")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .ilike("store_url", `%${shopifyParams.shop}%`)
+          .single();
+        
+        if (!storeConn) {
+          throw new Error("Store not found");
+        }
+        
+        setAutoImportProgress(isFr ? "Import des produits..." : "Importing products...");
+        
+        // Call sync function
+        const { data, error } = await supabase.functions.invoke("ai-images-sync-products", {
+          body: {
+            shopDomain: shopifyParams.shop,
+            storeId: storeConn.id,
+            userId: user.id
+          }
+        });
+        
+        if (error) throw error;
+        
+        toast.success(
+          isFr 
+            ? `${data.productsImported || 0} produits importés avec succès !` 
+            : `${data.productsImported || 0} products imported successfully!`
+        );
+        
+        // Reload products
+        await loadProducts();
+        await loadImageStats();
+        
+        // Clean URL params
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+        
+      } catch (err: any) {
+        console.error("[AiImagesDashboard] Auto-import error:", err);
+        toast.error(isFr ? "Erreur lors de l'import automatique" : "Error during auto-import");
+      } finally {
+        setIsAutoImporting(false);
+        setAutoImportProgress(null);
+      }
+    };
+    
+    runAutoImport();
+  }, [shopifyParams.justInstalled, shopifyParams.shop]);
 
   useEffect(() => {
     loadProducts();
@@ -248,7 +353,7 @@ export default function AiImagesDashboard() {
     try {
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, image_url, status, shopify_id, handle")
+        .select("id, title, image_url, status, shopify_id, handle, product_type, vendor")
         .eq("store_id", activeStore.id)
         .order("title", { ascending: true });
 
@@ -332,9 +437,14 @@ export default function AiImagesDashboard() {
     }
   };
 
-  const filteredProducts = products.filter(p =>
-    p.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = filterProductType === "all" || p.product_type === filterProductType;
+      const matchesVendor = filterVendor === "all" || p.vendor === filterVendor;
+      return matchesSearch && matchesType && matchesVendor;
+    });
+  }, [products, searchQuery, filterProductType, filterVendor]);
 
   const filteredHistory = history.filter(h =>
     h.product_title?.toLowerCase().includes(historySearchQuery.toLowerCase()) ||
@@ -447,6 +557,21 @@ export default function AiImagesDashboard() {
           </Card>
         </div>
 
+        {/* Auto-import banner */}
+        {isAutoImporting && (
+          <Card className="p-4 mb-6 bg-primary/5 border-primary/20">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <div>
+                <p className="font-medium text-primary">
+                  {isFr ? "Import automatique en cours..." : "Auto-import in progress..."}
+                </p>
+                <p className="text-sm text-muted-foreground">{autoImportProgress}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
             <TabsTrigger value="products" className="gap-2">
@@ -461,8 +586,9 @@ export default function AiImagesDashboard() {
 
           {/* Products Tab */}
           <TabsContent value="products" className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="relative w-full sm:w-80">
+            {/* Filters Row */}
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder={isFr ? "Rechercher produits..." : "Search products..."}
@@ -471,7 +597,64 @@ export default function AiImagesDashboard() {
                   className="pl-10"
                 />
               </div>
+              
+              {/* Product Type Filter */}
+              {productTypes.length > 0 && (
+                <Select value={filterProductType} onValueChange={setFilterProductType}>
+                  <SelectTrigger className="w-[180px]">
+                    <Filter className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder={isFr ? "Type produit" : "Product type"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{isFr ? "Tous les types" : "All types"}</SelectItem>
+                    {productTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {/* Vendor Filter */}
+              {vendors.length > 0 && (
+                <Select value={filterVendor} onValueChange={setFilterVendor}>
+                  <SelectTrigger className="w-[180px]">
+                    <Filter className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder={isFr ? "Fournisseur" : "Vendor"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{isFr ? "Tous les vendors" : "All vendors"}</SelectItem>
+                    {vendors.map(v => (
+                      <SelectItem key={v} value={v}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {/* Clear Filters */}
+              {(filterProductType !== "all" || filterVendor !== "all") && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setFilterProductType("all");
+                    setFilterVendor("all");
+                  }}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  {isFr ? "Effacer filtres" : "Clear filters"}
+                </Button>
+              )}
+            </div>
 
+            {/* Action buttons */}
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm text-muted-foreground">
+                {filteredProducts.length} {isFr ? "produits" : "products"}
+                {(filterProductType !== "all" || filterVendor !== "all" || searchQuery) && (
+                  <span> ({isFr ? "filtrés" : "filtered"})</span>
+                )}
+              </p>
+              
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={handleSelectAll}>
                   {selectedProducts.length === filteredProducts.length
