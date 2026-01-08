@@ -24,13 +24,13 @@ const AI_IMAGES_PLANS: Record<string, { name: string; credits: number; price: nu
   "enterprise": { name: "Enterprise Pack", credits: 1500, price: 149.99 },
 };
 
-// Helper to build Shopify Admin embedded URL - NO sub-routes allowed!
-const buildShopifyAdminUrl = (shop: string, params?: URLSearchParams) => {
+// STANDALONE MODE: Build app URL (not Shopify Admin embedded)
+const buildDashboardUrl = (shop: string, params?: URLSearchParams) => {
   const queryString = params ? `?${params.toString()}` : '';
-  return `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}${queryString}`;
+  return `${AI_IMAGES_APP_URL}/app/dashboard${queryString}`;
 };
 
-// Helper to return error - JSON for POST, redirect for GET (embedded in Shopify Admin)
+// Helper to return error - JSON for POST, redirect for GET
 const returnError = (req: Request, shop: string | null, errorCode: string, message: string) => {
   if (req.method === "POST") {
     return new Response(JSON.stringify({ success: false, error: message }), {
@@ -38,11 +38,11 @@ const returnError = (req: Request, shop: string | null, errorCode: string, messa
       status: 400,
     });
   }
-  // Redirect to Shopify Admin ROOT with error param
+  // STANDALONE: Redirect to app setup with error param
   if (shop) {
-    return Response.redirect(buildShopifyAdminUrl(shop, new URLSearchParams({ error: errorCode })), 302);
+    return Response.redirect(`${AI_IMAGES_APP_URL}/app/setup-wizard?shop=${encodeURIComponent(shop)}&error=${errorCode}`, 302);
   }
-  return Response.redirect(`${AI_IMAGES_APP_URL}/setup?error=${errorCode}`, 302);
+  return Response.redirect(`${AI_IMAGES_APP_URL}/app/setup-wizard?error=${errorCode}`, 302);
 };
 
 serve(async (req) => {
@@ -174,8 +174,8 @@ serve(async (req) => {
           status: 400,
         });
       }
-      // Redirect back to app ROOT in Shopify Admin with cancelled param
-      return Response.redirect(buildShopifyAdminUrl(shop, new URLSearchParams({ cancelled: 'true' })), 302);
+      // STANDALONE: Redirect to setup wizard with cancelled param
+      return Response.redirect(`${AI_IMAGES_APP_URL}/app/setup-wizard?shop=${encodeURIComponent(shop)}&cancelled=true`, 302);
     }
 
     log("Active purchase found", purchase);
@@ -237,8 +237,8 @@ serve(async (req) => {
             status: 200,
           });
         }
-        // Redirect to app ROOT in Shopify Admin with installed param
-        return Response.redirect(buildShopifyAdminUrl(shop, new URLSearchParams({ installed: 'true', credits: String(creditsToAdd) })), 302);
+        // STANDALONE: Redirect to dashboard
+        return Response.redirect(buildDashboardUrl(shop, new URLSearchParams({ shop, installed: 'true', credits: String(creditsToAdd) })), 302);
       }
 
       // Add credits using the database function
@@ -315,9 +315,9 @@ serve(async (req) => {
       });
     }
 
-    // For GET requests, redirect to app ROOT in Shopify Admin (embedded)
-    const redirectUrl = buildShopifyAdminUrl(shop, new URLSearchParams({ installed: 'true', credits: String(creditsToAdd) }));
-    log("Redirecting to Shopify Admin ROOT (embedded)", { url: redirectUrl });
+    // STANDALONE: Redirect to dashboard
+    const redirectUrl = buildDashboardUrl(shop, new URLSearchParams({ shop, installed: 'true', credits: String(creditsToAdd) }));
+    log("Redirecting to standalone dashboard", { url: redirectUrl });
     
     return Response.redirect(redirectUrl, 302);
 
