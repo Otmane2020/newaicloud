@@ -24,16 +24,24 @@ export default function AiImagesAuth() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Get shop param for redirect
+  const shop = searchParams.get("shop");
+
+  // Build redirect URL with shop param
+  const getDashboardUrl = () => {
+    return shop ? `/app/dashboard?shop=${encodeURIComponent(shop)}` : "/app/dashboard";
+  };
+
   // Check if already logged in
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/app/dashboard");
+        navigate(getDashboardUrl());
       }
     };
     checkAuth();
-  }, [navigate]);
+  }, [navigate, shop]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +53,7 @@ export default function AiImagesAuth() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/app/dashboard`,
+            emailRedirectTo: `${window.location.origin}${getDashboardUrl()}`,
           },
         });
         if (error) throw error;
@@ -56,7 +64,7 @@ export default function AiImagesAuth() {
           password,
         });
         if (error) throw error;
-        navigate("/app/dashboard");
+        navigate(getDashboardUrl());
       }
     } catch (err: any) {
       console.error("Auth error:", err);

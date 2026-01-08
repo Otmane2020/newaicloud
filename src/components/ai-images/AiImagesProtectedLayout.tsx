@@ -89,10 +89,10 @@ export function AiImagesProtectedLayout({ children }: AiImagesProtectedLayoutPro
   }
 
   if (!isAuthenticated) {
-    // Preserve shop param in redirect
+    // Preserve shop param in redirect - use AI Images auth page
     const params = new URLSearchParams(window.location.search);
     const shop = params.get("shop");
-    const authUrl = shop ? `/auth?shop=${encodeURIComponent(shop)}` : "/auth";
+    const authUrl = shop ? `/ai-images/auth?shop=${encodeURIComponent(shop)}` : "/ai-images/auth";
     return <Navigate to={authUrl} state={{ from: location }} replace />;
   }
 
