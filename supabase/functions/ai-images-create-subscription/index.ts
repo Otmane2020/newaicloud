@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyShopifySessionToken, extractSessionToken } from "../_shared/verify-shopify-session-token.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,6 +8,7 @@ const corsHeaders = {
 };
 
 const AI_IMAGES_APP_URL = "https://ai-images.newai.sale";
+const AI_IMAGES_CLIENT_ID = "47fe9e78f7a16bb0ffe6f31929c7a44e";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -34,11 +36,33 @@ serve(async (req) => {
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
+    // Try to verify Shopify session token (for embedded apps)
+    const authHeader = req.headers.get("Authorization");
+    const sessionToken = extractSessionToken(authHeader);
+    let verifiedShop: string | null = null;
+    
+    if (sessionToken) {
+      const apiSecret = Deno.env.get("AI_IMAGES_SHOPIFY_API_SECRET");
+      if (apiSecret) {
+        const result = await verifyShopifySessionToken(sessionToken, apiSecret, AI_IMAGES_CLIENT_ID);
+        if (result.valid && result.shop) {
+          log("✅ Shopify session token verified", { shop: result.shop, userId: result.userId });
+          verifiedShop = result.shop;
+        } else {
+          log("⚠️ Session token verification failed", { error: result.error });
+          // Continue anyway - will use shopDomain from body
+        }
+      }
+    }
+    
     const { planId, shopDomain } = await req.json();
     
-    log("Request received", { planId, shopDomain });
+    // Use verified shop from session token if available, otherwise use body param
+    const effectiveShop = verifiedShop || shopDomain;
     
-    if (!shopDomain) {
+    log("Request received", { planId, shopDomain, verifiedShop, effectiveShop });
+    
+    if (!effectiveShop) {
       return new Response(
         JSON.stringify({ error: "Missing shopDomain" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -46,7 +70,7 @@ serve(async (req) => {
     }
 
     // Normalize shop domain
-    const normalizedShop = shopDomain
+    const normalizedShop = effectiveShop
       .replace(/^https?:\/\//, "")
       .replace(/\/+$/, "")
       .toLowerCase();

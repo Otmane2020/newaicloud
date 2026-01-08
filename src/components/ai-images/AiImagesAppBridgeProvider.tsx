@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState, createContext, useContext } from "react";
+import React, { useEffect, useMemo, useState, createContext, useContext, useCallback } from "react";
 
 type ShopifyGlobal = {
   config?: { shop?: string; host?: string };
   toast?: (opts: { message: string; isError?: boolean }) => void;
+  idToken?: () => Promise<string>;
 };
 
 interface AiImagesAppBridgeContextValue {
@@ -11,6 +12,7 @@ interface AiImagesAppBridgeContextValue {
   host: string | null;
   shop: string | null;
   ready: boolean;
+  getSessionToken: () => Promise<string | null>;
 }
 
 const AiImagesAppBridgeContext = createContext<AiImagesAppBridgeContextValue>({
@@ -19,6 +21,7 @@ const AiImagesAppBridgeContext = createContext<AiImagesAppBridgeContextValue>({
   host: null,
   shop: null,
   ready: false,
+  getSessionToken: async () => null,
 });
 
 interface Props {
@@ -137,6 +140,23 @@ export const AiImagesAppBridgeProvider: React.FC<Props> = ({ children }) => {
     };
   }, [isEmbedded, host]);
 
+  // Session token getter using App Bridge v4 idToken()
+  const getSessionToken = useCallback(async (): Promise<string | null> => {
+    if (!shopify?.idToken) {
+      console.warn("[AI-Images-AppBridge] No idToken() available - not in embedded context or App Bridge not ready");
+      return null;
+    }
+    
+    try {
+      const token = await shopify.idToken();
+      console.log("[AI-Images-AppBridge] ✅ Session token obtained");
+      return token;
+    } catch (err) {
+      console.error("[AI-Images-AppBridge] ❌ Failed to get session token:", err);
+      return null;
+    }
+  }, [shopify]);
+
   // While bouncing / initializing, render a loading state
   if (isEmbedded && !ready) {
     return (
@@ -150,7 +170,7 @@ export const AiImagesAppBridgeProvider: React.FC<Props> = ({ children }) => {
   }
 
   return (
-    <AiImagesAppBridgeContext.Provider value={{ shopify, isEmbedded, host, shop, ready }}>
+    <AiImagesAppBridgeContext.Provider value={{ shopify, isEmbedded, host, shop, ready, getSessionToken }}>
       {children}
     </AiImagesAppBridgeContext.Provider>
   );
@@ -162,3 +182,4 @@ export const useAiImagesIsEmbedded = () => useContext(AiImagesAppBridgeContext).
 export const useAiImagesHost = () => useContext(AiImagesAppBridgeContext).host;
 export const useAiImagesShop = () => useContext(AiImagesAppBridgeContext).shop;
 export const useAiImagesBridgeReady = () => useContext(AiImagesAppBridgeContext).ready;
+export const useAiImagesSessionToken = () => useContext(AiImagesAppBridgeContext).getSessionToken;
