@@ -739,7 +739,40 @@ function AiImagesRoutes() {
   const hasHost = search.has("host");
   const isEmbedded = search.get("embedded") === "1" || hasHost;
   
-  console.log('📦 AiImagesRoutes - Params:', { pathname, pendingToken, installed, cancelled, hasHost, isEmbedded });
+  // Detect Shopify install request (has hmac + shop + timestamp but NOT pending_token/installed)
+  const hmac = search.get("hmac");
+  const shop = search.get("shop");
+  const timestamp = search.get("timestamp");
+  const isInstallRequest = hmac && shop && timestamp && !pendingToken && !installed;
+  
+  console.log('📦 AiImagesRoutes - Params:', { pathname, pendingToken, installed, cancelled, hasHost, isEmbedded, isInstallRequest });
+  
+  // PRIORITY 0: Install request → Redirect to OAuth edge function
+  if (isInstallRequest) {
+    console.log('📦 AiImagesRoutes - Install request detected → Redirecting to OAuth edge function');
+    
+    // Build edge function URL with all params
+    const edgeFunctionUrl = new URL(
+      "https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/ai-images-shopify-install"
+    );
+    search.forEach((value, key) => {
+      edgeFunctionUrl.searchParams.set(key, value);
+    });
+    
+    // Redirect immediately
+    window.location.href = edgeFunctionUrl.toString();
+    
+    // Show loading while redirecting
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-12 h-12 animate-spin text-primary mx-auto mb-4 border-4 border-current border-t-transparent rounded-full" />
+          <h1 className="text-xl font-semibold mb-2">Connecting to Shopify...</h1>
+          <p className="text-muted-foreground">Please wait while we set up AI Product Image Shot.</p>
+        </div>
+      </div>
+    );
+  }
   
   
   // PRIORITY 1: pending_token → SetupWizard (post-OAuth)
