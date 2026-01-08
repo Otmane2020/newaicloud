@@ -155,7 +155,7 @@ import AiImagesShopifySuccess from "./pages/ai-images/AiImagesShopifySuccess";
 import AiImagesSetupWizard from "./pages/ai-images/AiImagesSetupWizard";
 import { AiImagesProtectedLayout } from "./components/ai-images/AiImagesProtectedLayout";
 import { AiImagesAppBridgeProvider } from "./components/ai-images/AiImagesAppBridgeProvider";
-import ShopifyBounce from "./pages/ai-images/ShopifyBounce";
+
 
 const queryClient = new QueryClient();
 
@@ -741,15 +741,6 @@ function AiImagesRoutes() {
   
   console.log('📦 AiImagesRoutes - Params:', { pathname, pendingToken, installed, cancelled, hasHost, isEmbedded });
   
-  // PRIORITY 0: /shopify/bounce route MUST run first (OAuth redirect handler)
-  if (pathname === '/shopify/bounce') {
-    console.log('📦 AiImagesRoutes - ShopifyBounce page');
-    return (
-      <Routes>
-        <Route path="/shopify/bounce" element={<ShopifyBounce />} />
-      </Routes>
-    );
-  }
   
   // PRIORITY 1: pending_token → SetupWizard (post-OAuth)
   if (pendingToken) {
@@ -807,7 +798,7 @@ function AiImagesRoutes() {
     <Routes>
       <Route path="/shopify/install" element={<AiImagesShopifyInstall />} />
       <Route path="/shopify/success" element={<AiImagesShopifySuccess />} />
-      <Route path="/shopify/bounce" element={<ShopifyBounce />} />
+      
       <Route path="/" element={<AiImagesLanding />} />
       <Route path="/auth" element={<AiImagesAuth />} />
       <Route path="/setup" element={<AiImagesSetupWizard />} />

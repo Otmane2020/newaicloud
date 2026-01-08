@@ -179,13 +179,29 @@ serve(async (req) => {
     await supabase.from("oauth_states").delete().eq("state_token", state);
 
     // ============================================
-    // Build redirect URL - Go to app domain with host for App Bridge bounce
+    // Build redirect URL - Direct to Shopify Admin embedded app URL
     // ============================================
-    // Shopify blocks direct redirects to admin from external domains
-    // We redirect to our app domain, which will use App Bridge to navigate
-    const redirectUrl = `${AI_IMAGES_APP_URL}/shopify/bounce?pending_token=${pendingToken}&shop=${encodeURIComponent(shop)}&host=${encodeURIComponent(host || "")}`;
+    // For embedded apps, we decode the host parameter to get the admin URL
+    // host = base64("admin.shopify.com/store/shop-name")
+    let redirectUrl: string;
     
-    log("Redirecting to app domain for App Bridge bounce", { redirectUrl, shop, host });
+    if (host) {
+      try {
+        // Decode host to get admin base URL
+        const decodedHost = atob(host);
+        // Format: https://admin.shopify.com/store/{shop}/apps/{app_handle}?pending_token=xxx
+        redirectUrl = `https://${decodedHost}/apps/${AI_IMAGES_APP_HANDLE}?pending_token=${pendingToken}`;
+        log("Redirecting to Shopify Admin (decoded host)", { redirectUrl, decodedHost });
+      } catch (e) {
+        // Fallback if host decode fails
+        redirectUrl = `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}?pending_token=${pendingToken}`;
+        log("Redirecting to Shopify Admin (fallback)", { redirectUrl, shop });
+      }
+    } else {
+      // Fallback: use shop domain directly
+      redirectUrl = `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}?pending_token=${pendingToken}`;
+      log("Redirecting to Shopify Admin (no host)", { redirectUrl, shop });
+    }
     
     return new Response(null, {
       status: 302,
