@@ -54,7 +54,6 @@ export default function AiImagesSetupWizard() {
       ? "*Ce sous-total ne comprend que vos frais d'abonnement. Vous serez également facturé en fonction de l'utilisation, qui est variable et apparaîtra sur vos factures."
       : "*This subtotal contains only your subscription fee. You will also be charged based on usage, which is variable and will appear on your invoices.",
     approve: isFr ? "Approuver" : "Approve",
-    skipFree: isFr ? "Utiliser mes 5 crédits gratuits →" : "Use my 5 free credits →",
     checkingAccount: isFr ? "Vérification de votre compte..." : "Checking your account...",
   };
 
@@ -212,11 +211,6 @@ export default function AiImagesSetupWizard() {
     }
   };
 
-  const handleSkipToDashboard = () => {
-    if (normalizedShop) {
-      navigate(`/app/dashboard?shop=${encodeURIComponent(normalizedShop)}`, { replace: true });
-    }
-  };
 
   // Get today's date formatted
   const today = new Date();
@@ -541,25 +535,6 @@ export default function AiImagesSetupWizard() {
         </div>
       )}
 
-      {/* Skip option */}
-      {!authError?.includes(isFr ? "expiré" : "expired") && (
-        <button
-          onClick={handleSkipToDashboard}
-          style={{
-            marginTop: "20px",
-            background: "none",
-            border: "none",
-            fontSize: "13px",
-            color: "#6b7280",
-            cursor: "pointer",
-            padding: "8px 16px"
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#111")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#6b7280")}
-        >
-          {t.skipFree}
-        </button>
-      )}
       </div>
     </div>
   );
