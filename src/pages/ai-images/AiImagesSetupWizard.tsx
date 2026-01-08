@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAiImagesIsEmbedded } from "@/components/ai-images/AiImagesAppBridgeProvider";
+import { useAiImagesIsEmbedded, useAiImagesSessionToken } from "@/components/ai-images/AiImagesAppBridgeProvider";
 import createApp from "@shopify/app-bridge";
 import { Redirect } from "@shopify/app-bridge/actions";
 
@@ -88,6 +88,7 @@ export default function AiImagesSetupWizard() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isEmbedded = useAiImagesIsEmbedded();
+  const getSessionToken = useAiImagesSessionToken();
   const hostParam = searchParams.get("host");
   
   // Debug: Log all URL params for embedded app troubleshooting
@@ -321,11 +322,22 @@ export default function AiImagesSetupWizard() {
     try {
       console.log(`[AiImagesSetupWizard] Creating hybrid subscription`);
       
+      // Get session token for authentication (Shopify compliance)
+      const sessionToken = await getSessionToken();
+      console.log("[AiImagesSetupWizard] Session token:", sessionToken ? "obtained" : "not available");
+      
+      // Build headers with session token if available
+      const headers: Record<string, string> = {};
+      if (sessionToken) {
+        headers["Authorization"] = `Bearer ${sessionToken}`;
+      }
+      
       const { data, error } = await supabase.functions.invoke('ai-images-create-subscription', {
         body: {
           planId: "hybrid",
           shopDomain: normalizedShop,
-        }
+        },
+        headers,
       });
 
       if (error) throw error;
