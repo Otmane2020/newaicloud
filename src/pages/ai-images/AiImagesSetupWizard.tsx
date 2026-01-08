@@ -90,18 +90,35 @@ export default function AiImagesSetupWizard() {
   const isEmbedded = useAiImagesIsEmbedded();
   const hostParam = searchParams.get("host");
   
+  // Debug: Log all URL params for embedded app troubleshooting
+  useEffect(() => {
+    console.log("[AiImagesSetupWizard] 🔍 URL params debug:", {
+      host: hostParam,
+      shop: searchParams.get("shop"),
+      embedded: searchParams.get("embedded"),
+      pending_token: searchParams.get("pending_token") ? "present" : "missing",
+      isEmbedded,
+      fullUrl: window.location.href,
+    });
+  }, [hostParam, searchParams, isEmbedded]);
+  
   // Initialize App Bridge v3 for billing redirects (required by Shopify security)
   const appBridge = useMemo(() => {
-    if (!hostParam) return null;
+    if (!hostParam) {
+      console.warn("[AiImagesSetupWizard] ⚠️ No host param - App Bridge cannot initialize. Billing redirect will use fallback.");
+      return null;
+    }
     
     try {
-      return createApp({
+      const app = createApp({
         apiKey: "47fe9e78f7a16bb0ffe6f31929c7a44e", // AI Images Client ID
         host: hostParam,
         forceRedirect: true,
       });
+      console.log("[AiImagesSetupWizard] ✅ App Bridge initialized successfully");
+      return app;
     } catch (err) {
-      console.error("[AiImagesSetupWizard] App Bridge init error:", err);
+      console.error("[AiImagesSetupWizard] ❌ App Bridge init error:", err);
       return null;
     }
   }, [hostParam]);
@@ -315,14 +332,26 @@ export default function AiImagesSetupWizard() {
 
       if (data?.confirmationUrl) {
         console.log("🔗 Redirecting to Shopify billing:", data.confirmationUrl);
+        console.log("[AiImagesSetupWizard] Redirect context:", { isEmbedded, hasAppBridge: !!appBridge, hostParam });
         
         // Use App Bridge v3 Redirect for embedded apps (required by Shopify security)
         if (isEmbedded && appBridge) {
-          console.log("[AiImagesSetupWizard] Using App Bridge Redirect.Action.REMOTE");
+          console.log("[AiImagesSetupWizard] ✅ Using App Bridge Redirect.Action.REMOTE");
           const redirect = Redirect.create(appBridge);
           redirect.dispatch(Redirect.Action.REMOTE, data.confirmationUrl);
+        } else if (isEmbedded && !appBridge) {
+          // Embedded but no App Bridge - try window.top fallback
+          console.warn("[AiImagesSetupWizard] ⚠️ Embedded but no App Bridge - trying window.top redirect");
+          try {
+            // This may fail due to cross-origin restrictions
+            window.top!.location.href = data.confirmationUrl;
+          } catch (e) {
+            console.error("[AiImagesSetupWizard] ❌ window.top redirect blocked, falling back to window.location");
+            window.location.href = data.confirmationUrl;
+          }
         } else {
-          // Fallback for non-embedded
+          // Non-embedded - direct redirect
+          console.log("[AiImagesSetupWizard] Using direct window.location redirect (non-embedded)");
           window.location.href = data.confirmationUrl;
         }
       } else if (data?.status === 'ACTIVE') {
