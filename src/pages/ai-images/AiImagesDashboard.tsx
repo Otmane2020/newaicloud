@@ -144,13 +144,25 @@ export default function AiImagesDashboard() {
     return Array.from(v).sort() as string[];
   }, [products]);
 
-  // Auto-import products after installation
+  // Auto-import products when shop param is present and no products loaded
   useEffect(() => {
     const runAutoImport = async () => {
-      if (!shopifyParams.justInstalled || !shopifyParams.shop || hasAutoImportedRef.current) return;
+      // Trigger auto-import if:
+      // 1. We have a shop param AND
+      // 2. Either justInstalled=true OR products list is empty after loading
+      // 3. Haven't already imported in this session
+      if (!shopifyParams.shop || hasAutoImportedRef.current || isAutoImporting) return;
+      if (!shopifyParams.justInstalled && loadingProducts) return; // Wait for products to load first
+      if (!shopifyParams.justInstalled && products.length > 0) return; // Already have products
+      
       hasAutoImportedRef.current = true;
       
-      console.log("[AiImagesDashboard] Just installed, triggering auto-import...");
+      console.log("[AiImagesDashboard] Triggering auto-import...", { 
+        justInstalled: shopifyParams.justInstalled, 
+        productsCount: products.length,
+        shop: shopifyParams.shop 
+      });
+      
       setIsAutoImporting(true);
       setAutoImportProgress(isFr ? "Connexion à Shopify..." : "Connecting to Shopify...");
       
@@ -161,7 +173,7 @@ export default function AiImagesDashboard() {
         // Get AI Images store connection
         const { data: aiConnection } = await supabase
           .from("ai_images_shopify_connections")
-          .select("id")
+          .select("id, shop_domain")
           .eq("shop_domain", shopifyParams.shop)
           .eq("user_id", user.id)
           .single();
@@ -180,33 +192,62 @@ export default function AiImagesDashboard() {
           .single();
         
         if (!storeConn) {
-          throw new Error("Store not found");
-        }
-        
-        setAutoImportProgress(isFr ? "Import des produits..." : "Importing products...");
-        
-        // Call sync function
-        const { data, error } = await supabase.functions.invoke("ai-images-sync-products", {
-          body: {
-            shopDomain: shopifyParams.shop,
-            storeId: storeConn.id,
-            userId: user.id
+          // Try without the .myshopify.com suffix
+          const shopName = shopifyParams.shop.replace('.myshopify.com', '');
+          const { data: storeConn2 } = await supabase
+            .from("shopify_connections")
+            .select("id, store_url")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .ilike("store_url", `%${shopName}%`)
+            .single();
+          
+          if (!storeConn2) {
+            throw new Error("Store not found in connections");
           }
-        });
-        
-        if (error) throw error;
-        
-        toast.success(
-          isFr 
-            ? `${data.productsImported || 0} produits importés avec succès !` 
-            : `${data.productsImported || 0} products imported successfully!`
-        );
+          
+          setAutoImportProgress(isFr ? "Import des produits..." : "Importing products...");
+          
+          const { data, error } = await supabase.functions.invoke("ai-images-sync-products", {
+            body: {
+              shopDomain: shopifyParams.shop,
+              storeId: storeConn2.id,
+              userId: user.id
+            }
+          });
+          
+          if (error) throw error;
+          
+          toast.success(
+            isFr 
+              ? `${data.productsImported || 0} produits importés avec succès !` 
+              : `${data.productsImported || 0} products imported successfully!`
+          );
+        } else {
+          setAutoImportProgress(isFr ? "Import des produits..." : "Importing products...");
+          
+          const { data, error } = await supabase.functions.invoke("ai-images-sync-products", {
+            body: {
+              shopDomain: shopifyParams.shop,
+              storeId: storeConn.id,
+              userId: user.id
+            }
+          });
+          
+          if (error) throw error;
+          
+          toast.success(
+            isFr 
+              ? `${data.productsImported || 0} produits importés avec succès !` 
+              : `${data.productsImported || 0} products imported successfully!`
+          );
+        }
         
         // Reload products
         await loadProducts();
         await loadImageStats();
         
-        // Clean URL params
+        // Clean URL params (keep only essential ones)
         const newUrl = window.location.pathname;
         window.history.replaceState({}, '', newUrl);
         
@@ -220,7 +261,7 @@ export default function AiImagesDashboard() {
     };
     
     runAutoImport();
-  }, [shopifyParams.justInstalled, shopifyParams.shop]);
+  }, [shopifyParams.justInstalled, shopifyParams.shop, loadingProducts, products.length]);
 
   useEffect(() => {
     loadProducts();
