@@ -1,20 +1,6 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import AeoOnboarding from "./AeoOnboarding";
 
-// AeoPricing redirects to AeoOnboarding for unified Stripe checkout
+// AeoPricing renders AeoOnboarding directly (no redirect, avoids cache issues)
 export default function AeoPricing() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-
-  useEffect(() => {
-    // Redirect to onboarding (single Stripe checkout page)
-    if (user) {
-      navigate("/onboarding", { replace: true });
-    } else {
-      navigate("/auth?authMode=signup&redirect=/onboarding", { replace: true });
-    }
-  }, [user, navigate]);
-
-  return null;
+  return <AeoOnboarding />;
 }
