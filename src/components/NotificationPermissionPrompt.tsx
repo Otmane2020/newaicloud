@@ -15,6 +15,12 @@ export function NotificationPermissionPrompt() {
   const { user } = useAuth();
   
   useEffect(() => {
+    // Disable notifications on AI Images domain
+    const hostname = window.location.hostname;
+    if (hostname.includes('ai-images') || hostname.includes('ai-product')) {
+      return;
+    }
+    
     // Only show prompt for logged in users
     if (!user) return;
     
