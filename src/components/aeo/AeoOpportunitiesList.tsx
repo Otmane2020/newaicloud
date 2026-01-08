@@ -11,7 +11,9 @@ import {
   RefreshCw, 
   Lightbulb,
   Plus,
-  CheckCircle2
+  CheckCircle2,
+  Calendar,
+  CalendarDays
 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +21,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { toast } from "sonner";
 import { AeoArticleGenerationDialog } from "./AeoArticleGenerationDialog";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface AiAnswer {
   id: string;
@@ -37,6 +41,7 @@ interface AiAnswer {
   status: string | null;
   category: string | null;
   created_at: string;
+  scheduled_date: string | null;
 }
 
 interface GeneratedArticle {
@@ -113,6 +118,7 @@ export function AeoOpportunitiesList({ platform }: AeoOpportunitiesListProps) {
   const [opportunities, setOpportunities] = useState<AiAnswer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [generating30Days, setGenerating30Days] = useState(false);
   
   // Article generation state
   const [generationDialogOpen, setGenerationDialogOpen] = useState(false);
@@ -135,29 +141,54 @@ export function AeoOpportunitiesList({ platform }: AeoOpportunitiesListProps) {
     
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      
+      // Fetch ALL opportunities, ordered by scheduled_date
       const { data, error } = await supabase
         .from("ai_answers")
         .select("*")
         .eq("user_id", user.id)
         .eq("store_id", selectedStore.id)
         .eq("platform", platform)
-        .gte("created_at", `${today}T00:00:00`)
+        .order("scheduled_date", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        setOpportunities(data as AiAnswer[]);
-      } else {
-        await generateOpportunities();
-      }
+      setOpportunities((data || []) as AiAnswer[]);
     } catch (error) {
       console.error("Error fetching opportunities:", error);
       toast.error(language === 'fr' ? "Erreur lors du chargement" : "Error loading opportunities");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generate30DaysOpportunities = async () => {
+    if (!user?.id || !selectedStore?.id) return;
+    
+    setGenerating30Days(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-30-days-aeo", {
+        body: {
+          storeId: selectedStore.id,
+          language: language
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success(
+          language === 'fr' 
+            ? `${data.opportunities_created} opportunités générées pour 30 jours!` 
+            : `${data.opportunities_created} opportunities generated for 30 days!`
+        );
+        await fetchOpportunities();
+      }
+    } catch (error) {
+      console.error("Error generating 30 days opportunities:", error);
+      toast.error(language === 'fr' ? "Erreur lors de la génération" : "Error generating opportunities");
+    } finally {
+      setGenerating30Days(false);
     }
   };
 
@@ -304,8 +335,21 @@ export function AeoOpportunitiesList({ platform }: AeoOpportunitiesListProps) {
             </CardTitle>
             <div className="flex gap-2">
               <Button 
+                onClick={generate30DaysOpportunities} 
+                disabled={generating30Days || refreshing}
+                size="sm"
+                variant="default"
+                className="bg-gradient-to-r from-primary to-primary/80"
+              >
+                <CalendarDays className={`h-4 w-4 mr-1 ${generating30Days ? 'animate-pulse' : ''}`} />
+                {generating30Days 
+                  ? (language === 'fr' ? 'Génération...' : 'Generating...')
+                  : (language === 'fr' ? '30 jours' : '30 days')
+                }
+              </Button>
+              <Button 
                 onClick={generateOpportunities} 
-                disabled={refreshing}
+                disabled={refreshing || generating30Days}
                 size="sm"
                 style={{ backgroundColor: config.color }}
               >
@@ -341,6 +385,17 @@ export function AeoOpportunitiesList({ platform }: AeoOpportunitiesListProps) {
                 style={{ borderColor: isTreated ? undefined : `${config.color}30` }}
               >
                 <CardContent className="p-4 space-y-3">
+                  {/* Scheduled Date */}
+                  {opp.scheduled_date && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(opp.scheduled_date), 
+                        language === 'fr' ? "d MMMM yyyy" : "MMMM d, yyyy", 
+                        { locale: language === 'fr' ? fr : undefined }
+                      )}
+                    </div>
+                  )}
+
                   {/* Question */}
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">
