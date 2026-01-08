@@ -741,6 +741,16 @@ function AiImagesRoutes() {
   
   console.log('📦 AiImagesRoutes - Params:', { pathname, pendingToken, installed, cancelled, hasHost, isEmbedded });
   
+  // PRIORITY 0: /shopify/bounce route MUST run first (OAuth redirect handler)
+  if (pathname === '/shopify/bounce') {
+    console.log('📦 AiImagesRoutes - ShopifyBounce page');
+    return (
+      <Routes>
+        <Route path="/shopify/bounce" element={<ShopifyBounce />} />
+      </Routes>
+    );
+  }
+  
   // PRIORITY 1: pending_token → SetupWizard (post-OAuth)
   if (pendingToken) {
     console.log('📦 AiImagesRoutes - pending_token detected → SetupWizard');
