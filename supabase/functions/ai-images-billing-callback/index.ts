@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const AI_IMAGES_APP_URL = "https://ai-images.newai.sale";
-const AI_IMAGES_APP_HANDLE = "ai-product-shot"; // App handle from Shopify Partner Dashboard
+const AI_IMAGES_APP_HANDLE = "ai-product-image-shot"; // App handle from Shopify Partner Dashboard
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 

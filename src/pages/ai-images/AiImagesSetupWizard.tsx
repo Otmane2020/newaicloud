@@ -149,30 +149,22 @@ export default function AiImagesSetupWizard() {
     connected: isFr ? "Connexion réussie !" : "Connected successfully!",
     retrying: isFr ? "Nouvelle tentative..." : "Retrying...",
     retry: isFr ? "Réessayer" : "Retry",
-    title: isFr ? "Commencez à générer des images" : "Start Generating Images",
+    title: isFr ? "Commencez à générer" : "Start Generating",
     subtitle: isFr 
-      ? "Créez des images produit professionnelles avec l'IA. Payez uniquement ce que vous utilisez."
-      : "Create professional product images with AI. Pay only for what you use.",
-    freeCredits: isFr ? "5 crédits gratuits inclus" : "5 free credits included",
+      ? "Images produit professionnelles avec l'IA"
+      : "Professional product images with AI",
+    freeCredits: isFr ? "5 crédits gratuits" : "5 free credits",
     monthlyBase: isFr ? "Base mensuelle" : "Monthly base",
-    perImage: isFr ? "par image générée" : "per generated image",
-    monthlyCap: isFr ? "Plafond mensuel" : "Monthly cap",
-    startNow: isFr ? "Commencer maintenant" : "Start Now",
-    skipFree: isFr ? "Utiliser mes 5 crédits gratuits" : "Use my 5 free credits",
+    startNow: isFr ? "Commencer" : "Start Now",
+    skipFree: isFr ? "Utiliser mes crédits gratuits →" : "Use my free credits →",
     features: isFr ? [
-      "5 crédits gratuits pour commencer",
-      "Paiement à l'usage : $0.15 / image",
-      "Plafond mensuel de $2000",
+      "5 crédits gratuits",
       "Images HD professionnelles",
-      "Tous types de produits",
-      "Annulez quand vous voulez"
+      "Tous types de produits"
     ] : [
-      "5 free credits to start",
-      "Pay-as-you-go: $0.15 / image",
-      "Monthly cap of $2,000",
+      "5 free credits",
       "Professional HD images",
-      "All product types",
-      "Cancel anytime"
+      "All product types"
     ]
   };
 
@@ -534,22 +526,13 @@ export default function AiImagesSetupWizard() {
               <h2 className="text-2xl font-bold text-gray-900">{HYBRID_PLAN.name}</h2>
             </div>
 
-            {/* Pricing breakdown */}
-            <div className="space-y-4 mb-6">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <span className="text-gray-600">{t.monthlyBase}</span>
-                <span className="text-2xl font-bold text-gray-900">${HYBRID_PLAN.basePrice}<span className="text-sm font-normal text-gray-500">/mo</span></span>
+            {/* Pricing - Simplified */}
+            <div className="text-center mb-6">
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-3xl font-bold text-gray-900">${HYBRID_PLAN.basePrice}</span>
+                <span className="text-gray-500">/mo</span>
               </div>
-              
-              <div className="flex items-center justify-between p-4 bg-cyan-50 rounded-xl border border-cyan-200">
-                <span className="text-cyan-700 font-medium">{t.perImage}</span>
-                <span className="text-2xl font-bold text-cyan-700">${HYBRID_PLAN.usagePrice}</span>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <span className="text-gray-600">{t.monthlyCap}</span>
-                <span className="text-lg font-semibold text-gray-700">${HYBRID_PLAN.cappedAmount.toLocaleString()}</span>
-              </div>
+              <p className="text-sm text-gray-500 mt-1">{isFr ? "+ usage" : "+ usage"}</p>
             </div>
 
             {/* Features list */}
