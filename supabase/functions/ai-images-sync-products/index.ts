@@ -181,11 +181,12 @@ serve(async (req) => {
         const shopifyId = parseInt(product.id.replace("gid://shopify/Product/", ""));
         const featuredImageUrl = product.featuredImage?.url || null;
 
-        // Upsert product
+        // Upsert product - using seller_id constraint
         const { error: productError } = await supabase
           .from("shopify_products")
           .upsert({
             shopify_id: shopifyId,
+            seller_id: userId,
             store_id: storeId,
             title: product.title,
             handle: product.handle,
@@ -198,7 +199,7 @@ serve(async (req) => {
             created_at: product.createdAt,
             updated_at: product.updatedAt,
           }, { 
-            onConflict: "shopify_id,store_id",
+            onConflict: "shopify_id,seller_id",
             ignoreDuplicates: false 
           });
 
