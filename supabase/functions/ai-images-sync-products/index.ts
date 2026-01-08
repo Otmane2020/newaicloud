@@ -197,7 +197,6 @@ serve(async (req) => {
             image_url: featuredImageUrl,
             created_at: product.createdAt,
             updated_at: product.updatedAt,
-            last_synced_at: new Date().toISOString(),
           }, { 
             onConflict: "shopify_id,store_id",
             ignoreDuplicates: false 
