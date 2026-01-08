@@ -3,10 +3,12 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
-// Hybrid pricing model
+// Hybrid pricing model with yearly discount
 const HYBRID_PLAN = {
-  basePrice: 2.99,
+  monthlyPrice: 2.99,
+  yearlyPrice: 2.39, // ~20% discount
   freeCredits: 5,
 };
 
@@ -27,6 +29,7 @@ export default function AiImagesSetupWizard() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const authAttemptedRef = useRef(false);
 
   const isFr = navigator.language?.startsWith("fr");
@@ -190,7 +193,7 @@ export default function AiImagesSetupWizard() {
 
     try {
       const { data, error } = await supabase.functions.invoke('ai-images-create-subscription', {
-        body: { planId: "hybrid", shopDomain: normalizedShop },
+        body: { planId: "hybrid", shopDomain: normalizedShop, billingCycle },
       });
 
       if (error) throw error;
@@ -256,38 +259,59 @@ export default function AiImagesSetupWizard() {
     }}>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
-      {/* Shopify-style header banner */}
-      <div style={{
-        backgroundColor: "white",
-        borderBottom: "1px solid #e1e3e5",
-        padding: "16px 24px",
+      {/* Dark Shopify-style header banner */}
+      <header style={{
+        backgroundColor: "#1a1a1a",
+        height: "56px",
         display: "flex",
         alignItems: "center",
-        gap: "12px"
+        justifyContent: "space-between",
+        padding: "0 20px",
+        position: "sticky",
+        top: 0,
+        zIndex: 50
       }}>
-        <div style={{
-          width: "40px",
-          height: "40px",
-          borderRadius: "8px",
-          backgroundColor: "#5E35B1",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21 15 16 10 5 21"/>
-          </svg>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{
+            width: "32px",
+            height: "32px",
+            borderRadius: "8px",
+            background: "linear-gradient(135deg, #5E35B1, #7E57C2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </div>
+          <span style={{ 
+            fontSize: "18px", 
+            fontWeight: 600, 
+            color: "white"
+          }}>
+            AI Product Image Shot
+          </span>
+          <span style={{
+            backgroundColor: "rgba(255,255,255,0.15)",
+            color: "rgba(255,255,255,0.9)",
+            padding: "4px 10px",
+            borderRadius: "12px",
+            fontSize: "12px",
+            fontWeight: 500
+          }}>
+            Pro
+          </span>
         </div>
-        <span style={{ 
-          fontSize: "16px", 
-          fontWeight: 600, 
-          color: "#1a1a1a"
-        }}>
-          AI Product Image Shot
-        </span>
-      </div>
+
+        {normalizedShop && (
+          <div style={{ color: "rgba(255,255,255,0.8)", fontSize: "14px" }}>
+            {normalizedShop.replace('.myshopify.com', '')}
+          </div>
+        )}
+      </header>
 
       {/* Content area */}
       <div style={{
@@ -439,6 +463,52 @@ export default function AiImagesSetupWizard() {
               {t.yourNextBill}
             </h2>
 
+            {/* Billing cycle toggle */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "16px",
+              marginBottom: "24px",
+              padding: "12px",
+              backgroundColor: "#f6f6f7",
+              borderRadius: "8px"
+            }}>
+              <span style={{ 
+                color: billingCycle === "monthly" ? "#202223" : "#6d7175",
+                fontSize: "14px",
+                fontWeight: billingCycle === "monthly" ? 600 : 400
+              }}>
+                {isFr ? "Mensuel" : "Monthly"}
+              </span>
+              
+              <Switch
+                checked={billingCycle === "yearly"}
+                onCheckedChange={(checked) => setBillingCycle(checked ? "yearly" : "monthly")}
+              />
+              
+              <span style={{ 
+                color: billingCycle === "yearly" ? "#202223" : "#6d7175",
+                fontSize: "14px",
+                fontWeight: billingCycle === "yearly" ? 600 : 400,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
+              }}>
+                {isFr ? "Annuel" : "Yearly"}
+                <span style={{
+                  backgroundColor: "#008060",
+                  color: "white",
+                  padding: "2px 8px",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                  fontWeight: 500
+                }}>
+                  -20%
+                </span>
+              </span>
+            </div>
+
             {/* Subtotal row */}
             <div style={{ 
               display: "flex", 
@@ -449,7 +519,7 @@ export default function AiImagesSetupWizard() {
                 {t.subtotal}
               </span>
               <span style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>
-                ${HYBRID_PLAN.basePrice.toFixed(2)}
+                ${billingCycle === "monthly" ? HYBRID_PLAN.monthlyPrice.toFixed(2) : HYBRID_PLAN.yearlyPrice.toFixed(2)}/{billingCycle === "monthly" ? (isFr ? "mois" : "mo") : (isFr ? "mois" : "mo")}
               </span>
             </div>
             <p style={{ 
@@ -475,7 +545,7 @@ export default function AiImagesSetupWizard() {
                 </span>
               </div>
               <span style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>
-                ${HYBRID_PLAN.basePrice.toFixed(2)}
+                ${billingCycle === "monthly" ? HYBRID_PLAN.monthlyPrice.toFixed(2) : HYBRID_PLAN.yearlyPrice.toFixed(2)}
               </span>
             </div>
           </div>
