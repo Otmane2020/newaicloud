@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera, Sparkles, Loader2, Check, ImageIcon } from "lucide-react";
+import { Camera, Loader2, Check, Sparkles, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAiImagesIsEmbedded, useAiImagesSessionToken } from "@/components/ai-images/AiImagesAppBridgeProvider";
-import createApp from "@shopify/app-bridge";
-import { Redirect } from "@shopify/app-bridge/actions";
 
 // App colors
 const PRIMARY_COLOR = "#0891b2"; // Cyan-600
@@ -84,45 +81,21 @@ const AppHeader = ({ shopName }: { shopName?: string }) => (
   </header>
 );
 
+// ============================================
+// STANDALONE MODE - No App Bridge (like NewAI)
+// ============================================
 export default function AiImagesSetupWizard() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const isEmbedded = useAiImagesIsEmbedded();
-  const getSessionToken = useAiImagesSessionToken();
-  const hostParam = searchParams.get("host");
   
-  // Debug: Log all URL params for embedded app troubleshooting
+  // Debug: Log all URL params
   useEffect(() => {
-    console.log("[AiImagesSetupWizard] 🔍 URL params debug:", {
-      host: hostParam,
+    console.log("[AiImagesSetupWizard] 🔍 URL params (STANDALONE mode):", {
       shop: searchParams.get("shop"),
-      embedded: searchParams.get("embedded"),
       pending_token: searchParams.get("pending_token") ? "present" : "missing",
-      isEmbedded,
       fullUrl: window.location.href,
     });
-  }, [hostParam, searchParams, isEmbedded]);
-  
-  // Initialize App Bridge v3 for billing redirects (required by Shopify security)
-  const appBridge = useMemo(() => {
-    if (!hostParam) {
-      console.warn("[AiImagesSetupWizard] ⚠️ No host param - App Bridge cannot initialize. Billing redirect will use fallback.");
-      return null;
-    }
-    
-    try {
-      const app = createApp({
-        apiKey: "47fe9e78f7a16bb0ffe6f31929c7a44e", // AI Images Client ID
-        host: hostParam,
-        forceRedirect: true,
-      });
-      console.log("[AiImagesSetupWizard] ✅ App Bridge initialized successfully");
-      return app;
-    } catch (err) {
-      console.error("[AiImagesSetupWizard] ❌ App Bridge init error:", err);
-      return null;
-    }
-  }, [hostParam]);
+  }, [searchParams]);
   
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
@@ -303,6 +276,9 @@ export default function AiImagesSetupWizard() {
     }
   };
 
+  // ============================================
+  // STANDALONE billing redirect (like NewAI)
+  // ============================================
   const handleSubscribe = async () => {
     if (!normalizedShop) {
       toast.error(isFr ? "Boutique non trouvée" : "Shop not found");
@@ -312,61 +288,29 @@ export default function AiImagesSetupWizard() {
     setIsLoading(true);
 
     try {
-      console.log(`[AiImagesSetupWizard] Creating hybrid subscription`);
-      
-      // Get session token for authentication (Shopify compliance)
-      const sessionToken = await getSessionToken();
-      console.log("[AiImagesSetupWizard] Session token:", sessionToken ? "obtained" : "not available");
-      
-      // Build headers with session token if available
-      const headers: Record<string, string> = {};
-      if (sessionToken) {
-        headers["Authorization"] = `Bearer ${sessionToken}`;
-      }
+      console.log(`[AiImagesSetupWizard] Creating hybrid subscription (STANDALONE mode)`);
       
       const { data, error } = await supabase.functions.invoke('ai-images-create-subscription', {
         body: {
           planId: "hybrid",
           shopDomain: normalizedShop,
         },
-        headers,
       });
 
       if (error) throw error;
 
       if (data?.confirmationUrl) {
-        console.log("🔗 Redirecting to Shopify billing:", data.confirmationUrl);
-        console.log("[AiImagesSetupWizard] Redirect context:", { isEmbedded, hasAppBridge: !!appBridge, hostParam });
-        
-        // Use App Bridge v3 Redirect for embedded apps (required by Shopify security)
-        if (isEmbedded && appBridge) {
-          console.log("[AiImagesSetupWizard] ✅ Using App Bridge Redirect.Action.REMOTE");
-          const redirect = Redirect.create(appBridge);
-          redirect.dispatch(Redirect.Action.REMOTE, data.confirmationUrl);
-        } else if (isEmbedded && !appBridge) {
-          // Embedded but no App Bridge - try window.top fallback
-          console.warn("[AiImagesSetupWizard] ⚠️ Embedded but no App Bridge - trying window.top redirect");
-          try {
-            // This may fail due to cross-origin restrictions
-            window.top!.location.href = data.confirmationUrl;
-          } catch (e) {
-            console.error("[AiImagesSetupWizard] ❌ window.top redirect blocked, falling back to window.location");
-            window.location.href = data.confirmationUrl;
-          }
-        } else {
-          // Non-embedded - direct redirect
-          console.log("[AiImagesSetupWizard] Using direct window.location redirect (non-embedded)");
-          window.location.href = data.confirmationUrl;
-        }
+        console.log("🔗 Redirecting to Shopify billing (direct):", data.confirmationUrl);
+        // STANDALONE: Simple direct redirect (like NewAI)
+        window.location.href = data.confirmationUrl;
       } else if (data?.status === 'ACTIVE') {
         toast.success(isFr ? "Abonnement déjà actif !" : "Subscription already active!");
-        navigate(`/dashboard?shop=${encodeURIComponent(normalizedShop)}`, { replace: true });
+        navigate(`/app/dashboard?shop=${encodeURIComponent(normalizedShop)}`, { replace: true });
       } else {
         throw new Error("No confirmation URL received");
       }
     } catch (err) {
       console.error("Error creating subscription:", err);
-      // Simple user-friendly error without technical details
       toast.error(isFr ? "Erreur de connexion. Veuillez réessayer." : "Connection error. Please try again.");
     } finally {
       setIsLoading(false);
@@ -376,7 +320,7 @@ export default function AiImagesSetupWizard() {
   // Skip pricing and go directly to dashboard (for free trial with credits)
   const handleSkipToDashboard = () => {
     if (normalizedShop) {
-      navigate(`/dashboard?shop=${encodeURIComponent(normalizedShop)}`, { replace: true });
+      navigate(`/app/dashboard?shop=${encodeURIComponent(normalizedShop)}`, { replace: true });
     }
   };
 
