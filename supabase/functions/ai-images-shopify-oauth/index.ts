@@ -189,8 +189,9 @@ serve(async (req) => {
       try {
         // Decode host to get admin base URL
         const decodedHost = atob(host);
-        // Format: https://admin.shopify.com/store/{shop}/apps/{app_handle}?pending_token=xxx
-        redirectUrl = `https://${decodedHost}/apps/${AI_IMAGES_APP_HANDLE}?pending_token=${pendingToken}`;
+        // Format: https://admin.shopify.com/store/{shop}/apps/{app_handle}?pending_token=xxx&host=xxx
+        // CRITICAL: Include host param so App Bridge can initialize in the embedded app
+        redirectUrl = `https://${decodedHost}/apps/${AI_IMAGES_APP_HANDLE}?pending_token=${pendingToken}&host=${encodeURIComponent(host)}`;
         log("Redirecting to Shopify Admin (decoded host)", { redirectUrl, decodedHost });
       } catch (e) {
         // Fallback if host decode fails
