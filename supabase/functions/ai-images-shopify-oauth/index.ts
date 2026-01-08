@@ -179,30 +179,12 @@ serve(async (req) => {
     await supabase.from("oauth_states").delete().eq("state_token", state);
 
     // ============================================
-    // Build redirect URL - Direct to Shopify Admin embedded app URL
+    // Build redirect URL - STANDALONE MODE (like NewAI)
     // ============================================
-    // For embedded apps, we decode the host parameter to get the admin URL
-    // host = base64("admin.shopify.com/store/shop-name")
-    let redirectUrl: string;
-    
-    if (host) {
-      try {
-        // Decode host to get admin base URL
-        const decodedHost = atob(host);
-        // Format: https://admin.shopify.com/store/{shop}/apps/{app_handle}?pending_token=xxx&host=xxx
-        // CRITICAL: Include host param so App Bridge can initialize in the embedded app
-        redirectUrl = `https://${decodedHost}/apps/${AI_IMAGES_APP_HANDLE}?pending_token=${pendingToken}&host=${encodeURIComponent(host)}`;
-        log("Redirecting to Shopify Admin (decoded host)", { redirectUrl, decodedHost });
-      } catch (e) {
-        // Fallback if host decode fails
-        redirectUrl = `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}?pending_token=${pendingToken}`;
-        log("Redirecting to Shopify Admin (fallback)", { redirectUrl, shop });
-      }
-    } else {
-      // Fallback: use shop domain directly
-      redirectUrl = `https://${shop}/admin/apps/${AI_IMAGES_APP_HANDLE}?pending_token=${pendingToken}`;
-      log("Redirecting to Shopify Admin (no host)", { redirectUrl, shop });
-    }
+    // Redirect to standalone app URL instead of embedded Shopify Admin
+    // This avoids iframe/App Bridge issues with billing redirects
+    const redirectUrl = `${AI_IMAGES_APP_URL}/app/setup-wizard?shop=${encodeURIComponent(shop)}&pending_token=${pendingToken}`;
+    log("Redirecting to standalone app (like NewAI)", { redirectUrl, shop });
     
     return new Response(null, {
       status: 302,
