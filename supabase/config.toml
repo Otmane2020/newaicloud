@@ -669,3 +669,6 @@ verify_jwt = false
 
 [functions.generate-aeo-pillar-article]
 verify_jwt = true
+
+[functions.generate-30-days-aeo]
+verify_jwt = true

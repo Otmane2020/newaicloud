@@ -698,6 +698,7 @@ export type Database = {
           published_at: string | null
           query_type: string
           question: string
+          scheduled_date: string | null
           slug: string | null
           source_id: string | null
           source_url: string | null
@@ -728,6 +729,7 @@ export type Database = {
           published_at?: string | null
           query_type: string
           question: string
+          scheduled_date?: string | null
           slug?: string | null
           source_id?: string | null
           source_url?: string | null
@@ -758,6 +760,7 @@ export type Database = {
           published_at?: string | null
           query_type?: string
           question?: string
+          scheduled_date?: string | null
           slug?: string | null
           source_id?: string | null
           source_url?: string | null
