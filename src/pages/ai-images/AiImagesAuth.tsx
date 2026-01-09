@@ -24,24 +24,65 @@ export default function AiImagesAuth() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Get shop param for redirect
+  // Get params for redirect
   const shop = searchParams.get("shop");
+  const installed = searchParams.get("installed");
+  const credits = searchParams.get("credits");
+  const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
 
-  // Build redirect URL with shop param
+  // Build redirect URL with all params
   const getDashboardUrl = () => {
-    return shop ? `/app/dashboard?shop=${encodeURIComponent(shop)}` : "/app/dashboard";
+    const params = new URLSearchParams();
+    if (shop) params.set("shop", shop);
+    if (installed) params.set("installed", installed);
+    if (credits) params.set("credits", credits);
+    const queryString = params.toString();
+    return `/app/dashboard${queryString ? `?${queryString}` : ""}`;
   };
 
-  // Check if already logged in
+  // Check if already logged in OR try auto-login for post-install
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndAutoLogin = async () => {
+      // First check if already authenticated
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
+        console.log("✅ AI Images Auth - Already logged in, redirecting to dashboard");
         navigate(getDashboardUrl());
+        return;
+      }
+
+      // Not authenticated - try auto-login if post-installation
+      if (shop && installed === "true" && !autoLoginAttempted) {
+        setAutoLoginAttempted(true);
+        console.log("🔄 AI Images Auth - Post-install, attempting quick-login for:", shop);
+        setLoading(true);
+
+        try {
+          const { data, error } = await supabase.functions.invoke('ai-images-quick-login', {
+            body: { shop }
+          });
+
+          if (!error && data?.session) {
+            console.log("✅ AI Images Auth - Quick-login successful");
+            await supabase.auth.setSession({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token
+            });
+            navigate(getDashboardUrl());
+            return;
+          } else {
+            console.log("⚠️ AI Images Auth - Quick-login failed, showing login form", error);
+          }
+        } catch (err) {
+          console.error("❌ AI Images Auth - Quick-login error:", err);
+        } finally {
+          setLoading(false);
+        }
       }
     };
-    checkAuth();
-  }, [navigate, shop]);
+    
+    checkAuthAndAutoLogin();
+  }, [navigate, shop, installed, credits, autoLoginAttempted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

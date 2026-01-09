@@ -92,7 +92,19 @@ export function AiImagesProtectedLayout({ children }: AiImagesProtectedLayoutPro
     // Preserve shop param in redirect - use AI Images auth page
     const params = new URLSearchParams(window.location.search);
     const shop = params.get("shop");
-    const authUrl = shop ? `/ai-images/auth?shop=${encodeURIComponent(shop)}` : "/ai-images/auth";
+    const installed = params.get("installed");
+    const credits = params.get("credits");
+    
+    // Build redirect URL with all params
+    const searchParams = new URLSearchParams();
+    if (shop) searchParams.set("shop", shop);
+    if (installed) searchParams.set("installed", installed);
+    if (credits) searchParams.set("credits", credits);
+    
+    const queryString = searchParams.toString();
+    const authUrl = `/auth${queryString ? `?${queryString}` : ""}`;
+    
+    console.log('🔒 AI Images - Redirecting to auth:', authUrl);
     return <Navigate to={authUrl} state={{ from: location }} replace />;
   }
 
