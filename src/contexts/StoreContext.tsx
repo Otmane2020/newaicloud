@@ -87,11 +87,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     
     try {
       console.log('🚨🚨🚨 [STORE_CONTEXT] Loading stores for user:', user.id);
+      // Load all stores (active and inactive) so user can see and switch between them
       const { data, error } = await supabase
         .from('shopify_connections')
         .select('id, store_name, store_url, store_label, is_active, public_domain, access_token, store_language')
         .eq('user_id', user.id)
-        .eq('is_active', true)
+        .order('is_active', { ascending: false }) // Active stores first
         .order('created_at', { ascending: true });
 
       clearTimeout(timeoutId);

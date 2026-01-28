@@ -28,8 +28,8 @@ export function StoreSelector() {
     return null;
   }
 
-  // If only one store OR cannot switch stores, show it in sidebar style (no select)
-  if (stores.length === 1 || !canSwitchStore) {
+  // If cannot switch stores (demo mode restriction), show static label
+  if (!canSwitchStore) {
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 bg-primary/10 rounded-lg">
         {isDemoMode ? (
@@ -37,6 +37,18 @@ export function StoreSelector() {
         ) : (
           <Store className="w-4 h-4 text-primary shrink-0" />
         )}
+        <span className="text-sm text-foreground truncate">
+          {selectedStore?.store_label || selectedStore?.store_name || stores[0]?.store_label || stores[0]?.store_name || stores[0]?.store_url || 'Boutique'}
+        </span>
+      </div>
+    );
+  }
+  
+  // If only one store, show static label (no need for dropdown)
+  if (stores.length === 1) {
+    return (
+      <div className="flex items-center gap-3 px-3 py-2.5 bg-primary/10 rounded-lg">
+        <Store className="w-4 h-4 text-primary shrink-0" />
         <span className="text-sm text-foreground truncate">
           {selectedStore?.store_label || selectedStore?.store_name || stores[0]?.store_label || stores[0]?.store_name || stores[0]?.store_url || 'Boutique'}
         </span>
@@ -85,8 +97,11 @@ export function StoreSelector() {
               className="cursor-pointer hover:bg-accent"
             >
               <div className="flex items-center gap-3">
-                <Store className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="text-sm">{store.store_label || store.store_name || store.store_url}</span>
+                <Store className={`w-4 h-4 shrink-0 ${store.is_active ? 'text-muted-foreground' : 'text-muted-foreground/50'}`} />
+                <span className={`text-sm ${store.is_active ? '' : 'text-muted-foreground'}`}>
+                  {store.store_label || store.store_name || store.store_url}
+                  {!store.is_active && <span className="ml-2 text-xs text-warning">(Inactive)</span>}
+                </span>
               </div>
             </SelectItem>
           ))}
