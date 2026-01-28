@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, FileText, ExternalLink, Sparkles, Monitor, Smartphone, AlertTriangle } from "lucide-react";
+import { Loader2, FileText, ExternalLink, Sparkles, Monitor, Smartphone, AlertTriangle, Copy } from "lucide-react";
 import { responsiveDialogClasses } from "@/lib/dialogUtils";
 import { ShopifyThemeGuide } from "@/components/shopify/ShopifyThemeGuide";
 import { useTranslation } from "@/lib/language";
@@ -170,6 +170,45 @@ ${htmlContent}
     URL.revokeObjectURL(url);
   };
 
+  // Convert HTML to WordPress Gutenberg compatible format
+  const convertToWordPress = (html: string): string => {
+    if (!html) return '';
+    
+    // Extract body content if full HTML document
+    let content = html;
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (bodyMatch) {
+      content = bodyMatch[1];
+    }
+    
+    // Clean up and wrap in WordPress HTML block
+    // Remove any script tags for security
+    content = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    
+    // Wrap in WordPress Custom HTML block format
+    const wordpressBlock = `<!-- wp:html -->
+${content.trim()}
+<!-- /wp:html -->`;
+    
+    return wordpressBlock;
+  };
+
+  const handleCopyWordPress = async () => {
+    if (!currentLandingPage) {
+      toast.error(t.landingGeneration.errors.noContent);
+      return;
+    }
+    
+    try {
+      const wordpressCode = convertToWordPress(currentLandingPage);
+      await navigator.clipboard.writeText(wordpressCode);
+      toast.success(t.landingGeneration.preview.wordpressCopied || "Code WordPress copié !");
+    } catch (error) {
+      console.error("Failed to copy WordPress code:", error);
+      toast.error(t.landingGeneration.preview.wordpressCopyError || "Erreur lors de la copie");
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`${responsiveDialogClasses.xxlarge} max-h-[90vh] p-0`}>
@@ -227,6 +266,22 @@ ${htmlContent}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>{t.landingGeneration.preview.regenerateTooltip || "Régénérer la landing page"}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleCopyWordPress} 
+                        disabled={!currentLandingPage}
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        {t.landingGeneration.preview.copyWordPress}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {t.landingGeneration.preview.copyWordPressTooltip}
+                    </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
                 <Button variant="outline" size="sm" onClick={handleDownload} disabled={!currentLandingPage}>

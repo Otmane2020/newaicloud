@@ -774,6 +774,10 @@ export const translations = {
       mobileOptimized: "Optimisé mobile",
       regenerate: "Régénérer",
       regenerateTooltip: "Régénérer la landing page avec de nouvelles options",
+      copyWordPress: "Copy WordPress",
+      copyWordPressTooltip: "Copier le code optimisé pour WordPress Gutenberg",
+      wordpressCopied: "Code WordPress copié dans le presse-papiers !",
+      wordpressCopyError: "Erreur lors de la copie du code WordPress",
     },
 
     // Progress messages
