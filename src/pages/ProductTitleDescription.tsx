@@ -42,6 +42,8 @@ import {
   X,
   Copy,
   Layers,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -69,7 +71,7 @@ import { SmartBulkLandingDialog } from "@/components/seo/SmartBulkLandingDialog"
 import { AIImagesDialog } from "@/components/seo/AIImagesDialog";
 import { BulkAIImagesDialog } from "@/components/seo/BulkAIImagesDialog";
 import { SyncProgressDialog } from "@/components/seo/SyncProgressDialog";
-
+import { exportProductsToCSV, exportProductsToExcel } from "@/lib/exportProducts";
 import { VariantSelectionConfirmDialog } from "@/components/seo/VariantSelectionConfirmDialog";
 import { ProductGalleryDialog } from "@/components/seo/ProductGalleryDialog";
 import { SmartBackgroundDialog } from "@/components/seo/SmartBackgroundDialog";
@@ -1984,6 +1986,48 @@ export default function ProductTitleDescription() {
               >
                 {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                 {t.contentOptimization.buttons.syncSelected} ({selectedProducts.size})
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (filteredProducts.length === 0) {
+                    toast.error(t.contentOptimization.toasts.noProductToExport);
+                    return;
+                  }
+                  try {
+                    exportProductsToCSV(filteredProducts, language);
+                    toast.success(tf('contentOptimization.toasts.exportSuccess', { count: filteredProducts.length }));
+                  } catch (e) {
+                    toast.error(t.contentOptimization.toasts.exportError);
+                  }
+                }}
+                disabled={filteredProducts.length === 0}
+                size="lg"
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {t.contentOptimization.buttons.exportCSV}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (filteredProducts.length === 0) {
+                    toast.error(t.contentOptimization.toasts.noProductToExport);
+                    return;
+                  }
+                  try {
+                    exportProductsToExcel(filteredProducts, language);
+                    toast.success(tf('contentOptimization.toasts.exportSuccess', { count: filteredProducts.length }));
+                  } catch (e) {
+                    toast.error(t.contentOptimization.toasts.exportError);
+                  }
+                }}
+                disabled={filteredProducts.length === 0}
+                size="lg"
+                className="gap-2"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                {t.contentOptimization.buttons.exportExcel}
               </Button>
             </div>
           </div>

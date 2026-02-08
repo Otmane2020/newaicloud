@@ -939,6 +939,9 @@ export const translations = {
       noSelectedProduct: "No selected product to sync",
       syncError: "Error during synchronization",
       notOptimizedYet: "This product has not been optimized yet",
+      exportSuccess: "{{count}} product(s) exported successfully",
+      exportError: "Error during export",
+      noProductToExport: "No product to export",
     },
 
     templates: {
@@ -972,6 +975,8 @@ export const translations = {
       generating: "Generating...",
       synchronizing: "Synchronizing...",
       generate: "Generate Premium Content",
+      exportCSV: "Export CSV",
+      exportExcel: "Export Excel",
     },
 
     preview: {
