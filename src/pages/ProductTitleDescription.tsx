@@ -89,6 +89,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
+interface ProductImage {
+  id: string;
+  src: string;
+  alt_text: string | null;
+  position: number | null;
+  optimization_count?: number | null;
+}
+
 interface Product {
   id: string;
   title: string;
@@ -135,6 +143,7 @@ interface Product {
   ai_weight_unit?: string | null;
   vision_ai_data?: any;
   variants?: ProductVariant[];
+  gallery_images?: ProductImage[];
   collection_ids?: string[];
 }
 
@@ -153,13 +162,7 @@ interface ProductVariant {
   compare_at_price?: number | null;
 }
 
-interface ProductImage {
-  id: string;
-  src: string;
-  alt_text: string | null;
-  position: number | null;
-  optimization_count?: number | null; // Track AI-generated images
-}
+// ProductImage interface is defined above (line 92)
 
 // Check if product has rich HTML description or landing page
 const hasRichHtmlDescription = (product: Product): boolean => {
@@ -411,33 +414,48 @@ export default function ProductTitleDescription() {
       const rawProductsData = guardStoreData(allProducts, selectedStore.id, "product");
       console.log("🚨🚨🚨 [PRODUCT_TITLE] After guard filter:", rawProductsData.length, "valid products");
 
-      // Charger les variantes pour ces produits par batch pour éviter les URL trop longues
+      // Charger les variantes et images pour ces produits par batch
       if (rawProductsData && rawProductsData.length > 0) {
         const productIds = rawProductsData.map((p) => p.id);
-        console.log("🔍 [PRODUCT_TITLE] Loading variants for products:", productIds.length);
+        console.log("🔍 [PRODUCT_TITLE] Loading variants & images for products:", productIds.length);
 
         let allVariants: any[] = [];
-        const batchSize = 50; // Traiter par batch de 50 produits max
+        let allImages: any[] = [];
+        const batchSize = 50;
 
         for (let i = 0; i < productIds.length; i += batchSize) {
           const batch = productIds.slice(i, i + batchSize);
-          const { data: variantsData, error: variantsError } = await supabase
-            .from("product_variants")
-            .select("id, product_id, title, option1, option2, option3, image_url, sku, price, compare_at_price, cost_price, shopify_variant_id")
-            .in("product_id", batch);
+          const [variantsResult, imagesResult] = await Promise.all([
+            supabase
+              .from("product_variants")
+              .select("id, product_id, title, option1, option2, option3, image_url, sku, price, compare_at_price, cost_price, shopify_variant_id")
+              .in("product_id", batch),
+            supabase
+              .from("product_images")
+              .select("id, product_id, src, alt_text, position")
+              .in("product_id", batch)
+              .order("position", { ascending: true }),
+          ]);
 
-          if (variantsError) {
-            console.error("❌ [PRODUCT_TITLE] Error loading variants batch:", variantsError);
-          } else if (variantsData) {
-            allVariants = [...allVariants, ...variantsData];
+          if (variantsResult.error) {
+            console.error("❌ [PRODUCT_TITLE] Error loading variants batch:", variantsResult.error);
+          } else if (variantsResult.data) {
+            allVariants = [...allVariants, ...variantsResult.data];
+          }
+
+          if (imagesResult.error) {
+            console.error("❌ [PRODUCT_TITLE] Error loading images batch:", imagesResult.error);
+          } else if (imagesResult.data) {
+            allImages = [...allImages, ...imagesResult.data];
           }
         }
 
-        console.log("✅ [PRODUCT_TITLE] Loaded total variants:", allVariants.length);
+        console.log("✅ [PRODUCT_TITLE] Loaded total variants:", allVariants.length, "images:", allImages.length);
 
-        // Associer les variantes aux produits
-        const productsWithVariants = rawProductsData.map((product) => {
+        // Associer les variantes et images aux produits
+        const productsWithData = rawProductsData.map((product) => {
           const productVariants = allVariants.filter((v) => v.product_id === product.id);
+          const productImages = allImages.filter((img) => img.product_id === product.id);
           if (productVariants.length > 0) {
             console.log(
               `🔍 [PRODUCT_TITLE] Product "${product.title}" has ${productVariants.length} variants:`,
@@ -447,14 +465,15 @@ export default function ProductTitleDescription() {
           return {
             ...product,
             variants: productVariants,
+            gallery_images: productImages,
           };
         });
 
-        console.log("📊 [PRODUCT_TITLE] Fetched products with variants:", productsWithVariants.length);
-        setProducts(productsWithVariants as Product[]);
+        console.log("📊 [PRODUCT_TITLE] Fetched products with variants & images:", productsWithData.length);
+        setProducts(productsWithData as Product[]);
 
         // ✅ Vérifier la cohérence après setState
-        verifyStateCoherence(productsWithVariants, selectedStore.id, "ProductTitleDescription", "product");
+        verifyStateCoherence(productsWithData, selectedStore.id, "ProductTitleDescription", "product");
       } else {
         setProducts([]);
       }
