@@ -951,6 +951,9 @@ export const translations = {
       noSelectedProduct: "Aucun produit sélectionné à synchroniser",
       syncError: "Erreur lors de la synchronisation",
       notOptimizedYet: "Ce produit n'a pas encore été optimisé",
+      exportSuccess: "{{count}} produit(s) exporté(s) avec succès",
+      exportError: "Erreur lors de l'export",
+      noProductToExport: "Aucun produit à exporter",
     },
 
     templates: {
@@ -984,6 +987,8 @@ export const translations = {
       generating: "Génération...",
       synchronizing: "Synchronisation...",
       generate: "Générer Contenu Premium",
+      exportCSV: "Export CSV",
+      exportExcel: "Export Excel",
     },
 
     preview: {
