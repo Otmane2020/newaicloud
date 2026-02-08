@@ -42,6 +42,11 @@ interface ExportableProduct {
   seo_synced_to_shopify?: boolean | null;
   shopify_id?: number | null;
   image_url?: string | null;
+  gallery_images?: Array<{
+    src: string;
+    alt_text?: string | null;
+    position?: number | null;
+  }>;
   variants?: Array<{
     price?: number | null;
     sku?: string | null;
@@ -93,8 +98,9 @@ const COLUMN_HEADERS_FR = {
   has_landing_page: "Contenu Premium",
   seo_synced_to_shopify: "Synchro Shopify",
   shopify_id: "Shopify ID",
-  image_url: "URL image",
-  variant_images: "Images variantes",
+  image_url: "Image principale",
+  all_images: "Toutes les images",
+  image_count: "Nb images",
 };
 
 const COLUMN_HEADERS_EN = {
@@ -132,8 +138,9 @@ const COLUMN_HEADERS_EN = {
   has_landing_page: "Premium Content",
   seo_synced_to_shopify: "Shopify Sync",
   shopify_id: "Shopify ID",
-  image_url: "Image URL",
-  variant_images: "Variant Images",
+  image_url: "Main Image",
+  all_images: "All Images",
+  image_count: "Image Count",
 };
 
 function getHeaders(lang: string) {
@@ -177,6 +184,25 @@ function getVariantImages(p: ExportableProduct): string {
   if (!p.variants || p.variants.length === 0) return "";
   const urls = p.variants.map(v => v.image_url).filter(Boolean);
   return [...new Set(urls)].join(", ");
+}
+
+function getAllImageUrls(p: ExportableProduct): string {
+  const urls: string[] = [];
+  // Primary image
+  if (p.image_url) urls.push(p.image_url);
+  // Gallery images (from product_images table)
+  if (p.gallery_images && p.gallery_images.length > 0) {
+    for (const img of p.gallery_images) {
+      if (img.src && !urls.includes(img.src)) urls.push(img.src);
+    }
+  }
+  // Variant images
+  if (p.variants) {
+    for (const v of p.variants) {
+      if (v.image_url && !urls.includes(v.image_url)) urls.push(v.image_url);
+    }
+  }
+  return urls.join(", ");
 }
 
 function stripHtml(html: string | null | undefined): string {
@@ -228,7 +254,8 @@ export function mapProductsToExportRows(products: ExportableProduct[], lang: str
       [headers.seo_synced_to_shopify]: getBoolLabel(p.seo_synced_to_shopify, lang),
       [headers.shopify_id]: p.shopify_id || "",
       [headers.image_url]: p.image_url || "",
-      [headers.variant_images]: getVariantImages(p),
+      [headers.all_images]: getAllImageUrls(p),
+      [headers.image_count]: (p.gallery_images?.length || 0) + (p.image_url ? 1 : 0),
     };
   });
 }
