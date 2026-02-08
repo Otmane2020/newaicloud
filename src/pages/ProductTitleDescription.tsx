@@ -99,11 +99,40 @@ interface Product {
   last_landing_generation_at: string | null;
   seo_title: string | null;
   seo_description: string | null;
+  optimized_title?: string | null;
+  regenerated_title?: string | null;
+  optimized_description?: string | null;
+  body_html?: string | null;
   image_url: string | null;
   shopify_id: number | null;
   vendor: string | null;
   handle: string | null;
   status: string | null;
+  tags?: string | null;
+  product_type?: string | null;
+  category?: string | null;
+  sub_category?: string | null;
+  price?: number | null;
+  compare_at_price?: number | null;
+  cost_price?: number | null;
+  currency?: string | null;
+  inventory_quantity?: number | null;
+  ai_color?: string | null;
+  ai_material?: string | null;
+  ai_pattern?: string | null;
+  ai_shape?: string | null;
+  ai_texture?: string | null;
+  ai_finish?: string | null;
+  style?: string | null;
+  room?: string | null;
+  height?: number | null;
+  height_unit?: string | null;
+  width?: number | null;
+  width_unit?: string | null;
+  length?: number | null;
+  length_unit?: string | null;
+  ai_weight?: number | null;
+  ai_weight_unit?: string | null;
   vision_ai_data?: any;
   variants?: ProductVariant[];
   collection_ids?: string[];
@@ -352,7 +381,7 @@ export default function ProductTitleDescription() {
         const { data: pageData, error: pageError } = await supabase
           .from("shopify_products")
           .select(
-            "id, title, description, landing_page, landing_page_html, has_landing_page, last_landing_generation_at, seo_title, seo_description, image_url, shopify_id, vendor, handle, status, store_id, collection_ids",
+            "id, title, description, landing_page, landing_page_html, has_landing_page, last_landing_generation_at, seo_title, seo_description, optimized_title, regenerated_title, optimized_description, body_html, image_url, shopify_id, vendor, handle, status, tags, product_type, category, sub_category, price, compare_at_price, cost_price, currency, inventory_quantity, ai_color, ai_material, ai_pattern, ai_shape, ai_texture, ai_finish, style, room, height, height_unit, width, width_unit, length, length_unit, ai_weight, ai_weight_unit, store_id, collection_ids",
           )
           .eq("seller_id", user.id)
           .eq("store_id", selectedStore.id)
