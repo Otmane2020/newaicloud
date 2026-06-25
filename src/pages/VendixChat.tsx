@@ -117,6 +117,15 @@ const formatPrice = (price: number | string | null) => {
     : `${price}€`;
 };
 
+const uniqueProducts = (products: ProductCard[]) => {
+  const seen = new Set<string>();
+  return products.filter((product) => {
+    if (seen.has(product.id)) return false;
+    seen.add(product.id);
+    return true;
+  });
+};
+
 /* ---------- Animated Robot Character (Sanbot-style) ---------- */
 function RobotFace({
   state,
@@ -701,7 +710,7 @@ export default function VendixChat() {
       : t.status.idle;
 
   const latestBotMessage = messages.filter((m) => !m.isUser).slice(-1)[0];
-  const displayedProducts = latestBotMessage?.products?.length ? latestBotMessage.products : featuredProducts;
+  const displayedProducts = uniqueProducts(latestBotMessage?.products?.length ? latestBotMessage.products : featuredProducts);
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const cartTotal = cart.reduce((sum, item) => {
     const value = typeof item.price === "number" ? item.price : Number(String(item.price || 0).replace(",", "."));
@@ -824,7 +833,7 @@ export default function VendixChat() {
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {displayedProducts.map((p) => (
-                <ProductTile key={p.id} product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} />
+                <ProductTile key={`stage-${p.id}`} product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} />
               ))}
             </div>
           </div>
@@ -879,7 +888,7 @@ export default function VendixChat() {
                   <div className="grid grid-cols-2 gap-2 pl-1">
                     {m.products.map((p) => (
                       <div
-                        key={p.id}
+                        key={`chat-${m.id}-${p.id}`}
                         className="group rounded-xl overflow-hidden bg-slate-900/70 border border-cyan-500/20 hover:border-cyan-400/60 transition-all shadow-lg"
                       >
                           <ProductTile product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} compact />
