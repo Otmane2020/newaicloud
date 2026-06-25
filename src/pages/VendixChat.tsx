@@ -1,8 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Send, Sparkles, Power, Volume2, VolumeX } from "lucide-react";
+import { Mic, MicOff, Send, Sparkles, Power, Volume2, VolumeX, Camera, ShoppingCart, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useTranslation } from "@/lib/language";
+
+const blobToBase64 = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => {
+      const s = String(r.result || "");
+      const i = s.indexOf(",");
+      resolve(i >= 0 ? s.slice(i + 1) : s);
+    };
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+
 
 interface ProductCard {
   id: string;
@@ -10,6 +22,7 @@ interface ProductCard {
   price: number | string | null;
   image_url: string | null;
   handle: string | null;
+  checkout_url?: string | null;
 }
 
 interface Message {
@@ -18,6 +31,7 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   products?: ProductCard[];
+  image?: string;
 }
 
 const COPY = {
@@ -260,8 +274,8 @@ function RobotFace({
 
 /* ---------- Main page ---------- */
 export default function VendixChat() {
-  const { language } = useTranslation();
-  const t = COPY[language === "fr" ? "fr" : "en"];
+  const language: "fr" = "fr"; // Robot vendeur Vendix — toujours en français
+  const t = COPY.fr;
 
   const [messages, setMessages] = useState<Message[]>([
     { id: "1", text: t.welcome, isUser: false, timestamp: new Date() },
@@ -270,9 +284,16 @@ export default function VendixChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [animated, setAnimated] = useState(true);
-  const [voiceOn, setVoiceOn] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true);
   const [speaking, setSpeaking] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoStreamRef = useRef<MediaStream | null>(null);
 
   const state: "idle" | "thinking" | "speaking" | "listening" = isLoading
     ? "thinking"
@@ -290,29 +311,44 @@ export default function VendixChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  const speak = (text: string) => {
-    if (!voiceOn || typeof window === "undefined" || !window.speechSynthesis) return;
+  // ElevenLabs voice via robot-tts edge function
+  const speak = async (text: string) => {
+    if (!voiceOn || !text) return;
     try {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = language === "fr" ? "fr-FR" : "en-US";
-      u.rate = 1;
-      u.onstart = () => setSpeaking(true);
-      u.onend = () => setSpeaking(false);
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    } catch {
-      /* noop */
+      const clean = text.slice(0, 540);
+      const { data, error } = await supabase.functions.invoke("robot-tts", {
+        body: { text: clean },
+      });
+      if (error) throw error;
+      const audio = (data as any)?.audio;
+      if (!audio) return;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      const a = new Audio(`data:audio/mp3;base64,${audio}`);
+      audioRef.current = a;
+      a.onplay = () => setSpeaking(true);
+      a.onended = () => setSpeaking(false);
+      a.onerror = () => setSpeaking(false);
+      await a.play();
+    } catch (e) {
+      console.warn("TTS failed", e);
+      // Visual speaking fallback
+      setSpeaking(true);
+      setTimeout(() => setSpeaking(false), Math.min(4000, 1200 + text.length * 35));
     }
   };
 
-  const sendMessage = async (textOverride?: string) => {
+  const sendMessage = async (textOverride?: string, imageData?: string) => {
     const text = (textOverride ?? inputText).trim();
-    if (!text || isLoading) return;
+    if ((!text && !imageData) || isLoading) return;
     const userMessage: Message = {
       id: Date.now().toString(),
-      text,
+      text: text || (imageData ? "📷 Identifie ce produit" : ""),
       isUser: true,
       timestamp: new Date(),
+      image: imageData,
     };
     const next = [...messages, userMessage];
     setMessages(next);
@@ -324,6 +360,7 @@ export default function VendixChat() {
         body: {
           system: t.system,
           language,
+          image: imageData,
           messages: next.map((m) => ({
             role: m.isUser ? "user" : "assistant",
             content: m.text,
@@ -341,11 +378,7 @@ export default function VendixChat() {
         ...m,
         { id: (Date.now() + 1).toString(), text: reply, isUser: false, timestamp: new Date(), products },
       ]);
-      if (voiceOn) speak(reply);
-      else {
-        setSpeaking(true);
-        setTimeout(() => setSpeaking(false), Math.min(4000, 1200 + reply.length * 35));
-      }
+      speak(reply);
     } catch (e) {
       console.error(e);
       toast.error(t.error);
@@ -356,6 +389,102 @@ export default function VendixChat() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // === Voice recognition (record → robot-stt) ===
+  const startListening = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+      const rec = new MediaRecorder(stream, { mimeType: mime });
+      mediaRecorderRef.current = rec;
+      audioChunksRef.current = [];
+      rec.ondataavailable = (e) => e.data.size > 0 && audioChunksRef.current.push(e.data);
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+        const blob = new Blob(audioChunksRef.current, { type: mime });
+        if (blob.size < 1500) {
+          toast.message("Aucun son détecté, réessayez.");
+          return;
+        }
+        const b64 = await blobToBase64(blob);
+        setIsLoading(true);
+        try {
+          const { data, error } = await supabase.functions.invoke("robot-stt", {
+            body: { audio: b64, translateTo: "fr" },
+          });
+          if (error) throw error;
+          const transcript = (data as any)?.text?.trim();
+          if (transcript) {
+            await sendMessage(transcript);
+          } else {
+            toast.message("Je n'ai pas saisi, pouvez-vous répéter ?");
+          }
+        } catch (err) {
+          console.error(err);
+          toast.error("Reconnaissance vocale indisponible");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      rec.start();
+      setIsListening(true);
+    } catch (e) {
+      console.error(e);
+      toast.error("Microphone refusé");
+    }
+  };
+
+  const stopListening = () => {
+    setIsListening(false);
+    try {
+      mediaRecorderRef.current?.stop();
+    } catch {
+      /* noop */
+    }
+  };
+
+  const toggleListening = () => (isListening ? stopListening() : startListening());
+
+  // === Visual product detection (webcam) ===
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      videoStreamRef.current = stream;
+      setCameraOpen(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => undefined);
+        }
+      }, 50);
+    } catch (e) {
+      toast.error("Caméra indisponible");
+    }
+  };
+
+  const closeCamera = () => {
+    videoStreamRef.current?.getTracks().forEach((t) => t.stop());
+    videoStreamRef.current = null;
+    setCameraOpen(false);
+  };
+
+  const snapAndSend = async () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.min(video.videoWidth, 1024);
+    canvas.height = (canvas.width / video.videoWidth) * video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    closeCamera();
+    await sendMessage("Identifie ce produit et trouve-le dans le catalogue.", dataUrl);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -485,6 +614,16 @@ export default function VendixChat() {
                         {p.price != null && (
                           <p className="text-sm font-bold text-cyan-300 mt-1">{p.price}€</p>
                         )}
+                        {p.checkout_url && (
+                          <a
+                            href={p.checkout_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 flex items-center justify-center gap-1.5 w-full text-[11px] font-semibold py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-md shadow-cyan-500/30 transition-all"
+                          >
+                            <ShoppingCart className="w-3 h-3" /> Acheter
+                          </a>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -507,6 +646,13 @@ export default function VendixChat() {
                         : "bg-slate-800/80 border border-cyan-500/20 text-cyan-50 rounded-bl-sm"
                     }`}
                   >
+                    {m.image && (
+                      <img
+                        src={m.image}
+                        alt="Capture"
+                        className="mb-2 rounded-lg max-h-40 object-cover"
+                      />
+                    )}
                     {m.text}
                   </div>
                 </div>
@@ -531,6 +677,16 @@ export default function VendixChat() {
                           <p className="text-[11px] text-cyan-50 line-clamp-2 leading-tight">{p.title}</p>
                           {p.price != null && (
                             <p className="text-[11px] font-bold text-cyan-300 mt-1">{p.price}€</p>
+                          )}
+                          {p.checkout_url && (
+                            <a
+                              href={p.checkout_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1.5 flex items-center justify-center gap-1 w-full text-[10px] font-semibold py-1 rounded-md bg-cyan-500/80 hover:bg-cyan-400 text-white transition-all"
+                            >
+                              <ShoppingCart className="w-2.5 h-2.5" /> Acheter
+                            </a>
                           )}
                         </div>
                       </div>
@@ -575,14 +731,22 @@ export default function VendixChat() {
           <div className="p-4 border-t border-cyan-500/10 bg-slate-950/80">
             <div className="flex items-end gap-2">
               <button
-                onClick={() => setIsListening((v) => !v)}
+                onClick={toggleListening}
+                title={isListening ? "Arrêter" : "Parler à Vendix"}
                 className={`p-3 rounded-2xl border transition-all ${
                   isListening
-                    ? "bg-pink-500/20 border-pink-400/60 text-pink-200 shadow-[0_0_20px_rgba(244,114,182,0.4)]"
+                    ? "bg-pink-500/30 border-pink-400 text-pink-100 shadow-[0_0_25px_rgba(244,114,182,0.6)] animate-pulse"
                     : "bg-slate-800/60 border-slate-700 text-slate-300 hover:text-white"
                 }`}
               >
                 {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={openCamera}
+                title="Détection visuelle"
+                className="p-3 rounded-2xl border bg-slate-800/60 border-slate-700 text-slate-300 hover:text-white hover:border-cyan-400/60 transition-all"
+              >
+                <Camera className="w-5 h-5" />
               </button>
               <textarea
                 value={inputText}
@@ -604,6 +768,33 @@ export default function VendixChat() {
           </div>
         </aside>
       </div>
+
+      {/* Camera modal — détection visuelle */}
+      {cameraOpen && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-lg flex flex-col items-center justify-center p-6 animate-fade-in">
+          <button
+            onClick={closeCamera}
+            className="absolute top-6 right-6 p-3 rounded-full bg-slate-800/80 border border-slate-700 text-white hover:bg-slate-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <p className="text-cyan-300 text-sm tracking-[0.3em] mb-4">◤ DÉTECTION VISUELLE ◢</p>
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            className="max-w-2xl w-full rounded-3xl border-2 border-cyan-400/40 shadow-[0_0_60px_rgba(34,211,238,0.4)] aspect-video object-cover bg-black"
+          />
+          <button
+            onClick={snapAndSend}
+            className="mt-6 px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold shadow-lg shadow-cyan-500/40 flex items-center gap-2"
+          >
+            <Camera className="w-5 h-5" />
+            Capturer & identifier
+          </button>
+          <p className="mt-3 text-xs text-slate-400">Pointez le produit, Vendix le reconnaîtra dans votre catalogue.</p>
+        </div>
+      )}
     </div>
   );
 }
