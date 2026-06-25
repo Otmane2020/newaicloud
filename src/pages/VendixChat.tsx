@@ -323,6 +323,7 @@ export default function VendixChat() {
       const { data, error } = await supabase.functions.invoke("vendix-chat", {
         body: {
           system: t.system,
+          language,
           messages: next.map((m) => ({
             role: m.isUser ? "user" : "assistant",
             content: m.text,
@@ -335,13 +336,13 @@ export default function VendixChat() {
         (data as any)?.message ||
         (data as any)?.content ||
         t.welcome;
+      const products: ProductCard[] = (data as any)?.products || [];
       setMessages((m) => [
         ...m,
-        { id: (Date.now() + 1).toString(), text: reply, isUser: false, timestamp: new Date() },
+        { id: (Date.now() + 1).toString(), text: reply, isUser: false, timestamp: new Date(), products },
       ]);
       if (voiceOn) speak(reply);
       else {
-        // Simulate speaking animation briefly
         setSpeaking(true);
         setTimeout(() => setSpeaking(false), Math.min(4000, 1200 + reply.length * 35));
       }
