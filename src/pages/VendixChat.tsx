@@ -131,18 +131,19 @@ export default function VendixChat() {
   const toggleListening = () => setIsListening((v) => !v);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen flex flex-col">
       <div className="flex-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t.title}</h1>
-            <p className="text-gray-600">{t.subtitle}</p>
+            <h1 className="text-3xl font-bold text-white mb-2">{t.title}</h1>
+            <p className="text-cyan-200/80">{t.subtitle}</p>
           </div>
 
           {/* Chat Container */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden">
             {/* Messages */}
             <div className="h-[28rem] overflow-y-auto p-6 space-y-4">
+
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -158,16 +159,16 @@ export default function VendixChat() {
                     )}
 
                     <div
-                      className={`px-4 py-2 rounded-lg ${
+                      className={`px-4 py-2 rounded-2xl ${
                         message.isUser
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-900"
+                          ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30"
+                          : "bg-slate-700/60 text-slate-100 border border-slate-600/50"
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                       <p
                         className={`text-xs mt-1 ${
-                          message.isUser ? "text-blue-100" : "text-gray-500"
+                          message.isUser ? "text-cyan-100" : "text-slate-400"
                         }`}
                       >
                         {message.timestamp.toLocaleTimeString()}
@@ -176,7 +177,7 @@ export default function VendixChat() {
 
                     {message.isUser && (
                       <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center">
                           <User className="w-5 h-5 text-white" />
                         </div>
                       </div>
@@ -188,18 +189,18 @@ export default function VendixChat() {
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center">
                       <Bot className="w-5 h-5 text-white" />
                     </div>
-                    <div className="bg-gray-100 px-4 py-2 rounded-lg">
+                    <div className="bg-slate-700/60 border border-slate-600/50 px-4 py-2 rounded-2xl">
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" />
                         <div
-                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                          className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"
                           style={{ animationDelay: "0.1s" }}
                         />
                         <div
-                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                          className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"
                           style={{ animationDelay: "0.2s" }}
                         />
                       </div>
@@ -211,14 +212,14 @@ export default function VendixChat() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t bg-gray-50 p-4">
+            <div className="border-t border-slate-700/50 bg-slate-900/40 p-4">
               <div className="flex items-center space-x-3">
                 <button
                   onClick={toggleListening}
                   className={`p-2 rounded-full transition-colors ${
                     isListening
-                      ? "bg-red-600 text-white"
-                      : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                      ? "bg-red-500 text-white"
+                      : "bg-slate-700 text-slate-200 hover:bg-slate-600"
                   }`}
                 >
                   {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -230,7 +231,7 @@ export default function VendixChat() {
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder={t.placeholder}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full px-4 py-2 bg-slate-800/60 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 resize-none"
                     rows={1}
                     disabled={isLoading}
                   />
@@ -239,7 +240,7 @@ export default function VendixChat() {
                 <button
                   onClick={() => sendMessage()}
                   disabled={!inputText.trim() || isLoading}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-2 rounded-full transition-colors"
+                  className="bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:from-slate-600 disabled:to-slate-600 text-white p-2 rounded-full transition-all shadow-lg shadow-cyan-500/30"
                 >
                   <Send className="w-5 h-5" />
                 </button>
@@ -253,13 +254,14 @@ export default function VendixChat() {
               <button
                 key={q.title}
                 onClick={() => sendMessage(q.prompt)}
-                className="p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow text-left"
+                className="p-4 bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-xl hover:border-cyan-500/50 hover:bg-slate-800/80 transition-all text-left"
               >
-                <h3 className="font-semibold text-gray-900">{q.title}</h3>
-                <p className="text-sm text-gray-600">{q.desc}</p>
+                <h3 className="font-semibold text-white">{q.title}</h3>
+                <p className="text-sm text-slate-300 mt-1">{q.desc}</p>
               </button>
             ))}
           </div>
+
         </div>
       </div>
     </div>
