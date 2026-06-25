@@ -134,6 +134,9 @@ verify_jwt = false
 [functions.chat-smart]
 verify_jwt = true
 
+[functions.vendix-chat]
+verify_jwt = false
+
 [functions.generate-blog-article]
 verify_jwt = false
 
