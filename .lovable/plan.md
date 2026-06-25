@@ -1,66 +1,36 @@
+# Refonte du robot Vendix selon la maquette
 
+Objectif : remplacer le design actuel du `RobotFace` (tête écran rectangulaire austère + torse blanc avec panneau noir en V + HUD cyan) par le robot mascotte de la maquette : visage carré arrondi bleu, gros yeux orange ronds, sourire, corps rond blanc avec col en V noir et label `VENDIX`.
 
-# Plan : Export CSV et Excel - Optimized Product Content
+## Changements visuels du robot
 
-## Objectif
-Ajouter deux boutons d'export dans la page **Optimized Product Content** (`ProductTitleDescription.tsx`) permettant d'exporter tous les produits filtrés avec leurs champs existants en **CSV** et **Excel (.xlsx)**.
+**Tête (visage écran)**
+- Forme carrée arrondie (`rounded-[2rem]`), proportions plus compactes (env. 200×190).
+- Coque externe gris très foncé fine (pas de gros bord épais actuel).
+- Écran intérieur bleu uni vif (#3B82F6 / #4F8DF7), pas de gradient sombre ni scanlines.
+- Deux gros yeux ronds blancs avec iris orange/ambré dominant et petite pupille noire centrée (œil entier ~45 % de la hauteur).
+- Sourire courbe simple noir épais (pas de bouche rouge ouverte par défaut). Animation de parole : la courbe s'ouvre légèrement.
+- Plus de joues roses ni scanlines.
+- Petit point caméra/LED discret au-dessus du visage.
 
-## Champs exportes
+**Cou**
+- Cou court gris foncé centré, étroit (env. 40 px de large), reliant tête et corps.
 
-Les colonnes suivantes seront incluses dans l'export :
+**Corps**
+- Forme ovoïde / capsule blanche arrondie (`rounded-[2.5rem]`), pas de socle ni d'épaules apparentes.
+- Panneau noir en V au centre haut (col), occupant environ 45 % de la largeur.
+- Petite LED verte centrale dans le V (état idle → cyan en speaking).
+- Label `VENDIX` discret en bas du corps, petit, gris clair, sans cadre cyan lumineux.
+- Suppression des bras latéraux, du socle, de l'ombre cyan au sol, des halos circulaires en rotation.
 
-| Colonne | Champ source |
-|---------|-------------|
-| Titre original | `title` |
-| Titre SEO | `seo_title` |
-| Titre optimise | `optimized_title` |
-| Titre regenere | `regenerated_title` |
-| Description SEO | `seo_description` |
-| Vendeur | `vendor` |
-| Type produit | `product_type` |
-| Handle | `handle` |
-| Statut | `status` |
-| Tags | `tags` |
-| Prix | `price` |
-| Categorie | `category` |
-| Sous-categorie | `sub_category` |
-| Couleur IA | `ai_color` |
-| Materiau IA | `ai_material` |
-| Contenu Premium | `has_landing_page` (Oui/Non) |
-| Synchro Shopify | `seo_synced_to_shopify` (Oui/Non) |
-| Shopify ID | `shopify_id` |
-| URL image | `image_url` |
+**Animations conservées**
+- Clignement des yeux.
+- Wander des yeux (regard).
+- Animation de bouche en parole.
+- Pulsation discrète de la LED de poitrine selon l'état.
 
-## Modifications prevues
+## Fichier touché
 
-### 1. Installer la dependance `xlsx` (SheetJS)
-- Ajouter le package `xlsx` pour generer des fichiers Excel natifs (.xlsx) directement cote client, sans serveur.
+- `src/pages/VendixChat.tsx` → composant `RobotFace` réécrit (uniquement le JSX/styles, signatures et props inchangées).
 
-### 2. Creer un utilitaire d'export : `src/lib/exportProducts.ts`
-- Fonction `exportProductsToCSV(products, filename)` : genere un fichier CSV avec BOM UTF-8 (compatibilite Excel) et le telecharge automatiquement.
-- Fonction `exportProductsToExcel(products, filename)` : genere un fichier .xlsx avec mise en forme (en-tetes en gras, colonnes auto-dimensionnees) et le telecharge.
-- Fonction partagee `mapProductsToExportRows(products)` : transforme les produits en lignes avec les colonnes definies ci-dessus. Traduit les booleens en "Oui"/"Non".
-
-### 3. Modifier `src/pages/ProductTitleDescription.tsx`
-- Ajouter deux boutons dans la zone d'actions du hero banner (a cote des boutons existants "Optimiser tout", "Synchroniser tout", etc.) :
-  - **Export CSV** : icone Download, appelle `exportProductsToCSV(filteredProducts)`
-  - **Export Excel** : icone FileSpreadsheet, appelle `exportProductsToExcel(filteredProducts)`
-- Les exports porteront sur les produits **filtres** (respectant la recherche, filtre collection, filtre statut actifs).
-
-### 4. Ajouter les traductions FR et EN
-- **Francais** (`src/lib/translations/fr.ts`) : dans `contentOptimization.buttons`
-  - `exportCSV: "Export CSV"`
-  - `exportExcel: "Export Excel"`
-- Dans `contentOptimization.toasts` :
-  - `exportSuccess: "{{count}} produit(s) exporte(s) avec succes"`
-  - `exportError: "Erreur lors de l'export"`
-  - `noProductToExport: "Aucun produit a exporter"`
-- **Anglais** (`src/lib/translations/en.ts`) : traductions equivalentes en anglais
-
-## Details techniques
-
-- L'export CSV utilisera un BOM UTF-8 (`\uFEFF`) pour garantir l'affichage correct des accents dans Excel.
-- L'export Excel utilisera la librairie `xlsx` (SheetJS) qui fonctionne entierement cote client sans necessite de serveur.
-- Les deux exports sont bases sur `filteredProducts` (les produits apres application des filtres de recherche, collection et statut).
-- Le nom du fichier genere inclura la date : `products-export-2026-02-08.csv` / `.xlsx`
-
+Aucun changement sur le chat, le panier, les produits, ou les edge functions. Les corrections précédentes (échelle, max 2 produits, label "Featured Products") restent en place.
