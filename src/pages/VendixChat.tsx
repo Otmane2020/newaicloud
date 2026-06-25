@@ -726,8 +726,8 @@ export default function VendixChat() {
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-32 bg-gradient-to-t from-cyan-500/10 to-transparent blur-2xl pointer-events-none" />
 
           {/* Hero robot */}
-          <div className="relative flex h-[320px] w-full items-center justify-center overflow-visible">
-            <div className="origin-center scale-[0.55] md:scale-[0.62] xl:scale-[0.7]">
+          <div className="relative flex h-[380px] w-full items-center justify-center overflow-visible">
+            <div className="origin-center scale-[0.85] md:scale-[0.95] xl:scale-[1.05]">
               <RobotFace state={state} animated={animated} />
             </div>
           </div>
@@ -744,15 +744,16 @@ export default function VendixChat() {
 
           <div className="relative mx-auto mt-6 w-full max-w-5xl pb-8">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold tracking-tight text-white/95">{latestBotMessage?.products?.length ? t.recommendations : t.featured}</h2>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-white/70">{displayedProducts.length} {t.productCount}</span>
+              <h2 className="text-lg font-semibold tracking-tight text-white/95">{t.featured}</h2>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-white/70">{Math.min(displayedProducts.length, 2)} / {displayedProducts.length}</span>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {displayedProducts.map((p) => (
+              {displayedProducts.slice(0, 2).map((p) => (
                 <ProductTile key={`stage-${p.id}`} product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} variant="stage" />
               ))}
             </div>
           </div>
+
         </section>
 
         {/* Chat panel */}
