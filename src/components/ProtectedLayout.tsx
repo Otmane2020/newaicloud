@@ -174,7 +174,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
                 <NoStoreConnectedPrompt />
               </div>
             )}
-            <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-full">
+            <div className="dark text-foreground p-3 sm:p-4 md:p-6 lg:p-8 max-w-full">
               {children}
             </div>
           </main>
