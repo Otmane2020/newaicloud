@@ -4,11 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
 
+interface ProductCard {
+  id: string;
+  title: string;
+  price: number | string | null;
+  image_url: string | null;
+  handle: string | null;
+}
+
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;
+  products?: ProductCard[];
 }
 
 const COPY = {
