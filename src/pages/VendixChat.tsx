@@ -4,11 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
 
+interface ProductCard {
+  id: string;
+  title: string;
+  price: number | string | null;
+  image_url: string | null;
+  handle: string | null;
+}
+
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;
+  products?: ProductCard[];
 }
 
 const COPY = {
@@ -314,6 +323,7 @@ export default function VendixChat() {
       const { data, error } = await supabase.functions.invoke("vendix-chat", {
         body: {
           system: t.system,
+          language,
           messages: next.map((m) => ({
             role: m.isUser ? "user" : "assistant",
             content: m.text,
@@ -326,13 +336,13 @@ export default function VendixChat() {
         (data as any)?.message ||
         (data as any)?.content ||
         t.welcome;
+      const products: ProductCard[] = (data as any)?.products || [];
       setMessages((m) => [
         ...m,
-        { id: (Date.now() + 1).toString(), text: reply, isUser: false, timestamp: new Date() },
+        { id: (Date.now() + 1).toString(), text: reply, isUser: false, timestamp: new Date(), products },
       ]);
       if (voiceOn) speak(reply);
       else {
-        // Simulate speaking animation briefly
         setSpeaking(true);
         setTimeout(() => setSpeaking(false), Math.min(4000, 1200 + reply.length * 35));
       }
@@ -443,25 +453,90 @@ export default function VendixChat() {
               {messages.filter((m) => !m.isUser).slice(-1)[0]?.text}
             </p>
           </div>
+
+          {/* Featured products carousel from latest bot reply */}
+          {(() => {
+            const last = messages.filter((m) => !m.isUser).slice(-1)[0];
+            const prods = last?.products || [];
+            if (!prods.length) return null;
+            return (
+              <div className="mt-6 w-full max-w-3xl">
+                <p className="text-[10px] tracking-[0.4em] text-cyan-400/70 mb-3 text-center">
+                  ◤ {language === "fr" ? "RECOMMANDATIONS" : "RECOMMENDED"} ◢
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {prods.map((p) => (
+                    <div
+                      key={p.id}
+                      className="group rounded-2xl overflow-hidden bg-slate-900/70 border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all"
+                    >
+                      {p.image_url && (
+                        <div className="aspect-square overflow-hidden bg-slate-800">
+                          <img
+                            src={p.image_url}
+                            alt={p.title}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                        </div>
+                      )}
+                      <div className="p-2.5">
+                        <p className="text-xs text-cyan-50 line-clamp-2 leading-tight">{p.title}</p>
+                        {p.price != null && (
+                          <p className="text-sm font-bold text-cyan-300 mt-1">{p.price}€</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </section>
 
         {/* Chat panel */}
         <aside className="w-full lg:w-[440px] flex flex-col bg-slate-950/60 backdrop-blur-xl">
           <div className="flex-1 overflow-y-auto p-5 space-y-3">
             {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`flex ${m.isUser ? "justify-end" : "justify-start"} animate-fade-in`}
-              >
-                <div
-                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    m.isUser
-                      ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-br-sm shadow-lg shadow-cyan-500/30"
-                      : "bg-slate-800/80 border border-cyan-500/20 text-cyan-50 rounded-bl-sm"
-                  }`}
-                >
-                  {m.text}
+              <div key={m.id} className="space-y-2 animate-fade-in">
+                <div className={`flex ${m.isUser ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                      m.isUser
+                        ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-br-sm shadow-lg shadow-cyan-500/30"
+                        : "bg-slate-800/80 border border-cyan-500/20 text-cyan-50 rounded-bl-sm"
+                    }`}
+                  >
+                    {m.text}
+                  </div>
                 </div>
+                {!m.isUser && m.products && m.products.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 pl-1">
+                    {m.products.map((p) => (
+                      <div
+                        key={p.id}
+                        className="group rounded-xl overflow-hidden bg-slate-900/70 border border-cyan-500/20 hover:border-cyan-400/60 transition-all shadow-lg"
+                      >
+                        {p.image_url && (
+                          <div className="aspect-square overflow-hidden bg-slate-800">
+                            <img
+                              src={p.image_url}
+                              alt={p.title}
+                              loading="lazy"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          </div>
+                        )}
+                        <div className="p-2">
+                          <p className="text-[11px] text-cyan-50 line-clamp-2 leading-tight">{p.title}</p>
+                          {p.price != null && (
+                            <p className="text-[11px] font-bold text-cyan-300 mt-1">{p.price}€</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             {isLoading && (
