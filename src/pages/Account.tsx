@@ -96,10 +96,15 @@ export default function Account() {
         </TabsContent>
 
         <TabsContent value="integrations" className="mt-6">
-          <div className="bg-white rounded-lg border p-4 md:p-6">
-            <ShopifyIntegrationTabs />
+          <div className="space-y-4">
+            <div className="bg-white rounded-lg border p-4 md:p-6">
+              <ShopifyIntegrationTabs />
+            </div>
+            <WooCommerceIntegration />
+            <CsvCatalogImport />
           </div>
         </TabsContent>
+
 
         <TabsContent value="subscription" className="mt-6">
           <div className="space-y-4 md:space-y-6">
