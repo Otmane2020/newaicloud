@@ -93,9 +93,9 @@ export function AppSidebar() {
   // Check if user is the test account
   const isTestAccount = user?.email === "sweet.deco.meubles@gmail.com";
   
-  // Email with full access to all features
+  // Full access enabled for all users
   const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
-  const hasFullAccess = user?.email === FULL_ACCESS_EMAIL;
+  const hasFullAccess = true;
   
   console.log('🔐 [AppSidebar] userEmail:', user?.email, '| hasFullAccess:', hasFullAccess);
 
