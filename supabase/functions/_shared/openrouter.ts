@@ -1,4 +1,4 @@
-// Shared OpenRouter helper with free-model fallback chain.
+// Shared OpenRouter helper with sequential free-model fallback.
 // All AI text generation in this project routes through here.
 
 export const FREE_MODELS_FALLBACK = [
@@ -23,44 +23,61 @@ export interface OpenRouterOptions {
 }
 
 /**
- * Call OpenRouter with automatic free-model fallback.
- * Returns the assistant text content.
+ * Call OpenRouter, iterating manually through the free-model chain on
+ * 429 / 402 / 5xx errors (upstream rate-limit, quota, provider failure).
  */
 export async function callOpenRouter(opts: OpenRouterOptions): Promise<string> {
   const key = Deno.env.get("OPENROUTER_API_KEY");
   if (!key) throw new Error("Missing OPENROUTER_API_KEY");
 
-  // OpenRouter limits the `models` array to 3 entries (primary + 2 fallbacks).
   const chain = opts.model
     ? [opts.model, ...FREE_MODELS_FALLBACK.filter((m) => m !== opts.model)]
-    : FREE_MODELS_FALLBACK;
-  const models = chain.slice(0, 3);
+    : [...FREE_MODELS_FALLBACK];
 
-  const body: Record<string, unknown> = {
-    model: models[0],
-    models, // OpenRouter native multi-model fallback (max 3)
-    messages: opts.messages,
-  };
-  if (opts.temperature !== undefined) body.temperature = opts.temperature;
-  if (opts.max_tokens !== undefined) body.max_tokens = opts.max_tokens;
-  if (opts.response_format) body.response_format = opts.response_format;
+  let lastErr = "";
+  for (const model of chain) {
+    const body: Record<string, unknown> = { model, messages: opts.messages };
+    if (opts.temperature !== undefined) body.temperature = opts.temperature;
+    if (opts.max_tokens !== undefined) body.max_tokens = opts.max_tokens;
+    if (opts.response_format) body.response_format = opts.response_format;
 
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://vendix.sale",
-      "X-Title": "Vendix",
-    },
-    body: JSON.stringify(body),
-  });
+    let res: Response;
+    try {
+      res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://vendix.sale",
+          "X-Title": "Vendix",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      lastErr = `network ${model}: ${(e as Error).message}`;
+      console.warn(`[openrouter] ${lastErr}`);
+      continue;
+    }
 
-  if (!res.ok) {
+    if (res.ok) {
+      const data = await res.json();
+      const content = data?.choices?.[0]?.message?.content;
+      if (content && typeof content === "string" && content.trim()) {
+        return content;
+      }
+      lastErr = `empty content from ${model}`;
+      console.warn(`[openrouter] ${lastErr}`);
+      continue;
+    }
+
     const text = await res.text();
-    throw new Error(`OpenRouter ${res.status}: ${text}`);
+    lastErr = `OpenRouter ${res.status} on ${model}: ${text.slice(0, 300)}`;
+    if (res.status === 429 || res.status === 402 || res.status >= 500) {
+      console.warn(`[openrouter] ${model} ${res.status} -> trying next model`);
+      continue;
+    }
+    throw new Error(lastErr);
   }
 
-  const data = await res.json();
-  return data?.choices?.[0]?.message?.content ?? "";
+  throw new Error(`All free models exhausted. Last error: ${lastErr}`);
 }
