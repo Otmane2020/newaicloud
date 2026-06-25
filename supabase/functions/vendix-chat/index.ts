@@ -1,4 +1,5 @@
-// Vendix Chat - OpenRouter free-model fallback
+// Vendix Chat - OpenRouter free-model fallback + catalog awareness
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { callOpenRouter } from "../_shared/openrouter.ts";
 
 const corsHeaders = {
@@ -7,26 +8,109 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+interface CatalogProduct {
+  id: string;
+  title: string;
+  price: number | string | null;
+  image_url: string | null;
+  handle: string | null;
+  product_type: string | null;
+  vendor: string | null;
+  description: string | null;
+}
+
+async function loadCatalog(authHeader: string | null): Promise<{ products: CatalogProduct[]; sellerId: string | null }> {
+  if (!authHeader) return { products: [], sellerId: null };
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+  const token = authHeader.replace("Bearer ", "");
+  const { data: userData } = await supabase.auth.getUser(token);
+  const user = userData?.user;
+  if (!user) return { products: [], sellerId: null };
+
+  const { data: rows } = await supabase
+    .from("shopify_products")
+    .select("id,title,price,image_url,handle,product_type,vendor,body_html")
+    .eq("seller_id", user.id)
+    .not("image_url", "is", null)
+    .order("updated_at", { ascending: false })
+    .limit(150);
+
+  const products: CatalogProduct[] = (rows || []).map((r: any) => ({
+    id: r.id,
+    title: r.title,
+    price: r.price,
+    image_url: r.image_url,
+    handle: r.handle,
+    product_type: r.product_type,
+    vendor: r.vendor,
+    description: r.body_html ? String(r.body_html).replace(/<[^>]+>/g, " ").slice(0, 200) : null,
+  }));
+  return { products, sellerId: user.id };
+}
+
+function buildCatalogPrompt(products: CatalogProduct[], lang: "fr" | "en"): string {
+  if (!products.length) return "";
+  const lines = products
+    .map((p, i) => `${i + 1}. [ID:${p.id}] ${p.title}${p.price ? ` — ${p.price}€` : ""}${p.product_type ? ` (${p.product_type})` : ""}`)
+    .join("\n");
+  return lang === "fr"
+    ? `\n\nCATALOGUE DU SHOWROOM (${products.length} produits disponibles, tu as accès aux images):\n${lines}\n\nIMPORTANT: Quand tu recommandes des produits, termine TOUJOURS ta réponse par une ligne au format exact:\n[PRODUCTS:id1,id2,id3]\nMaximum 4 IDs. Ne mentionne pas les IDs dans le texte. Sois chaleureux et propose des produits pertinents du catalogue ci-dessus.`
+    : `\n\nSHOWROOM CATALOG (${products.length} products available, you have access to images):\n${lines}\n\nIMPORTANT: When you recommend products, ALWAYS end your reply with one line exactly:\n[PRODUCTS:id1,id2,id3]\nMaximum 4 IDs. Do not mention IDs in the prose. Be warm and recommend relevant products from the catalog above.`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { messages, system } = await req.json();
+    const { messages, system, language } = await req.json();
+    const lang: "fr" | "en" = language === "en" ? "en" : "fr";
 
-    const reply = await callOpenRouter({
+    const { products } = await loadCatalog(req.headers.get("Authorization"));
+    const catalogPrompt = buildCatalogPrompt(products, lang);
+
+    const systemFinal = `${system || ""}${catalogPrompt}`.trim();
+
+    const raw = await callOpenRouter({
       messages: [
-        ...(system ? [{ role: "system" as const, content: system }] : []),
+        ...(systemFinal ? [{ role: "system" as const, content: systemFinal }] : []),
         ...((messages || []) as Array<{ role: "user" | "assistant"; content: string }>),
       ],
       temperature: 0.7,
     });
 
-    return new Response(JSON.stringify({ reply }), {
+    // Parse [PRODUCTS:...] tag
+    let reply = raw;
+    let productIds: string[] = [];
+    const match = raw.match(/\[PRODUCTS:\s*([^\]]+)\]/i);
+    if (match) {
+      productIds = match[1]
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 4);
+      reply = raw.replace(match[0], "").trim();
+    }
+
+    const recommended = productIds
+      .map((id) => products.find((p) => p.id === id))
+      .filter(Boolean)
+      .map((p) => ({
+        id: p!.id,
+        title: p!.title,
+        price: p!.price,
+        image_url: p!.image_url,
+        handle: p!.handle,
+      }));
+
+    return new Response(JSON.stringify({ reply, products: recommended }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("vendix-chat error:", e);
     const msg = String(e?.message || e);
     const status = msg.includes("429") ? 429 : msg.includes("402") ? 402 : 500;
