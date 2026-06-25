@@ -77,20 +77,39 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { messages, system, language } = await req.json();
+    const { messages, system, language, image } = await req.json();
     const lang: "fr" | "en" = language === "en" ? "en" : "fr";
 
-    const { products } = await loadCatalog(req.headers.get("Authorization"));
+    const { products, storeUrl } = await loadCatalog(req.headers.get("Authorization"));
     const catalogPrompt = buildCatalogPrompt(products, lang);
 
     const systemFinal = `${system || ""}${catalogPrompt}`.trim();
 
+    // Build user message - support optional image (visual product detection)
+    const chatMessages: any[] = systemFinal
+      ? [{ role: "system", content: systemFinal }]
+      : [];
+    const history = (messages || []) as Array<{ role: "user" | "assistant"; content: string }>;
+    if (image && history.length > 0) {
+      // Replace last user message with multimodal version
+      const last = history[history.length - 1];
+      chatMessages.push(...history.slice(0, -1));
+      chatMessages.push({
+        role: last.role,
+        content: [
+          { type: "text", text: last.content || (lang === "fr" ? "Identifie le produit sur cette image et trouve-le dans le catalogue." : "Identify the product in this image and find it in the catalog.") },
+          { type: "image_url", image_url: { url: image } },
+        ],
+      });
+    } else {
+      chatMessages.push(...history);
+    }
+
     const raw = await callOpenRouter({
-      messages: [
-        ...(systemFinal ? [{ role: "system" as const, content: systemFinal }] : []),
-        ...((messages || []) as Array<{ role: "user" | "assistant"; content: string }>),
-      ],
+      messages: chatMessages,
       temperature: 0.7,
+      // Prefer vision-capable model when an image is provided
+      model: image ? "qwen/qwen-2.5-vl-72b-instruct:free" : undefined,
     });
 
     // Parse [PRODUCTS:...] tag
@@ -115,9 +134,10 @@ Deno.serve(async (req) => {
         price: p!.price,
         image_url: p!.image_url,
         handle: p!.handle,
+        checkout_url: storeUrl && p!.handle ? `https://${storeUrl.replace(/^https?:\/\//, "")}/products/${p!.handle}` : null,
       }));
 
-    return new Response(JSON.stringify({ reply, products: recommended }), {
+    return new Response(JSON.stringify({ reply, products: recommended, storeUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
