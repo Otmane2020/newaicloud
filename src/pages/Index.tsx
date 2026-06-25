@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useTranslation } from "@/lib/language";
 import { useNavigate } from "react-router-dom";
 import {
   Bot,
@@ -23,143 +22,123 @@ import {
 } from "lucide-react";
 import robotHero from "@/assets/robot-hero.jpg";
 
-// Bilingual content (FR / EN). Project rule: always translate FR + EN.
-const COPY = {
-  fr: {
-    nav: { features: "Fonctionnalités", integrations: "Intégrations", testimonials: "Témoignages", pricing: "Tarifs", demo: "Demander une démo" },
-    hero: {
-      badge: "Nouveau · Robot commercial IA",
-      title1: "Le robot qui",
-      title2: "vend à votre place",
-      sub: "Votre assistant commercial IA 24/7 pour magasins et hôtels. Accueil, conseil expert, vitrine virtuelle et orientation clients — sans recruter une seule personne de plus.",
-      cta1: "Voir une démo",
-      cta2: "Essai gratuit 30 jours",
-      trust: "Déjà adopté par des boutiques, hôtels, pharmacies et showrooms",
-      stat: "+34% de ventes en moyenne",
-    },
-    why: {
-      kicker: "Pourquoi Robot Conseiller",
-      title: "Un vendeur qui ne dort jamais.",
-      sub: "Trois superpouvoirs que vos meilleurs vendeurs n'auront jamais.",
-      items: [
-        { icon: Clock, title: "Disponible 24/7", desc: "Il accueille, répond et conseille — même quand vos vendeurs sont occupés ou que le magasin est fermé." },
-        { icon: TrendingUp, title: "Augmente vos ventes", desc: "Conseils personnalisés, recommandations produits et passage en caisse direct sur votre catalogue." },
-        { icon: Languages, title: "Multilingue", desc: "Français, Anglais, Espagnol, Arabe… Idéal pour le tourisme et la clientèle internationale." },
-      ],
-    },
-    features: {
-      kicker: "Ce qu'il sait faire",
-      title: "Un collaborateur, neuf compétences.",
-      items: [
-        { icon: Bot, title: "Accueil automatique", desc: "Détection de présence et salutation immédiate." },
-        { icon: Sparkles, title: "Conseil expert", desc: "Aligné sur votre catalogue Shopify ou WooCommerce." },
-        { icon: Store, title: "Vitrine virtuelle", desc: "Photos HD et visualisation produits en direct." },
-        { icon: MapPin, title: "Orientation en magasin", desc: "Plan interactif pour guider chaque client." },
-        { icon: Calendar, title: "Prise de rendez-vous", desc: "Réservations directes avec un vendeur humain." },
-        { icon: BarChart3, title: "Statistiques temps réel", desc: "Pilotez vos ventes et vos interactions à distance." },
-      ],
-    },
-    integrations: {
-      kicker: "Intégrations natives",
-      title: "Branché directement à votre commerce.",
-      sub: "Synchronisation automatique du catalogue, des stocks et des promotions. Aucun travail manuel.",
-      list: ["Shopify", "WooCommerce", "Stripe", "Cal.com", "Google Sheets", "Mailchimp"],
-    },
-    testimonials: {
-      kicker: "Témoignages",
-      title: "Ils ont laissé le robot s'occuper du reste.",
-      items: [
-        { quote: "Depuis l'installation, notre boutique tourne même quand on est seul en caisse. Les clients adorent.", author: "Camille R.", role: "Concept store, Lyon" },
-        { quote: "Mes touristes anglophones et espagnols sont enfin conseillés correctement. +41% de panier moyen.", author: "Hakim B.", role: "Hôtel boutique, Marseille" },
-        { quote: "Installation en 24h, ROI atteint en 6 semaines. Honnêtement, je ne reviens plus en arrière.", author: "Sophie M.", role: "Pharmacie, Bordeaux" },
-      ],
-    },
-    advantages: {
-      title: "Pensé pour le commerce français.",
-      items: [
-        "Installation en moins de 48h",
-        "Abonnement tout compris (maintenance + mises à jour IA)",
-        "Compatible Shopify & WooCommerce",
-        "100% conforme RGPD",
-        "Voix et personnalité adaptées à votre marque",
-        "Support humain basé en France",
-      ],
-    },
-    cta: {
-      title: "Prêt à avoir votre propre vendeur IA ?",
-      sub: "Commencez avec un essai gratuit de 30 jours. Sans carte bancaire.",
-      btn: "Demander une démo gratuite",
-    },
-    footer: "© 2026 Robot Conseiller — Solution française · RGPD compliant · Made in France",
+const t = {
+  nav: { features: "Fonctionnalités", integrations: "Intégrations", testimonials: "Témoignages", pricing: "Tarifs", demo: "Demander une démo" },
+  hero: {
+    badge: "Nouveau · Robot commercial IA",
+    title1: "Vendix, le robot qui",
+    title2: "vend à votre place",
+    sub: "Votre assistant commercial IA 24/7 pour magasins et hôtels. Accueil, conseil expert, vitrine virtuelle et orientation clients — sans recruter une seule personne de plus.",
+    cta1: "Voir une démo",
+    cta2: "Essai gratuit 30 jours",
+    trust: "Déjà adopté par des boutiques, hôtels, pharmacies et showrooms",
+    stat: "+34% de ventes en moyenne",
   },
-  en: {
-    nav: { features: "Features", integrations: "Integrations", testimonials: "Testimonials", pricing: "Pricing", demo: "Request a demo" },
-    hero: {
-      badge: "New · AI sales robot",
-      title1: "The robot that",
-      title2: "sells for you",
-      sub: "Your 24/7 AI sales assistant for shops and hotels. Greeting, expert advice, virtual showroom and in-store guidance — without hiring a single extra person.",
-      cta1: "Watch a demo",
-      cta2: "Free 30-day trial",
-      trust: "Already trusted by shops, hotels, pharmacies and showrooms",
-      stat: "+34% sales on average",
-    },
-    why: {
-      kicker: "Why Robot Conseiller",
-      title: "A salesperson that never sleeps.",
-      sub: "Three superpowers your best salespeople will never have.",
-      items: [
-        { icon: Clock, title: "Available 24/7", desc: "Greets, answers and advises — even when your team is busy or the store is closed." },
-        { icon: TrendingUp, title: "Grows your revenue", desc: "Personalised advice, product recommendations and direct checkout on your catalogue." },
-        { icon: Languages, title: "Multilingual", desc: "French, English, Spanish, Arabic… Perfect for tourism and international customers." },
-      ],
-    },
-    features: {
-      kicker: "What it can do",
-      title: "One teammate, nine skills.",
-      items: [
-        { icon: Bot, title: "Automatic greeting", desc: "Presence detection and instant welcome." },
-        { icon: Sparkles, title: "Expert advice", desc: "Aligned with your Shopify or WooCommerce catalogue." },
-        { icon: Store, title: "Virtual showroom", desc: "HD photos and live product previews." },
-        { icon: MapPin, title: "In-store wayfinding", desc: "Interactive map to guide every customer." },
-        { icon: Calendar, title: "Appointment booking", desc: "Direct bookings with a human salesperson." },
-        { icon: BarChart3, title: "Real-time analytics", desc: "Run your sales and interactions from anywhere." },
-      ],
-    },
-    integrations: {
-      kicker: "Native integrations",
-      title: "Plugged straight into your business.",
-      sub: "Automatic sync for catalogue, stock and promotions. Zero manual work.",
-      list: ["Shopify", "WooCommerce", "Stripe", "Cal.com", "Google Sheets", "Mailchimp"],
-    },
-    testimonials: {
-      kicker: "Testimonials",
-      title: "They let the robot handle the rest.",
-      items: [
-        { quote: "Since we installed it, the shop keeps running even when there's just one of us at the till. Customers love it.", author: "Camille R.", role: "Concept store, Lyon" },
-        { quote: "My English and Spanish-speaking tourists finally get proper advice. +41% average basket size.", author: "Hakim B.", role: "Boutique hotel, Marseille" },
-        { quote: "Set up in 24h, ROI in 6 weeks. Honestly — never going back.", author: "Sophie M.", role: "Pharmacy, Bordeaux" },
-      ],
-    },
-    advantages: {
-      title: "Built for modern retail.",
-      items: [
-        "Set up in less than 48h",
-        "All-inclusive subscription (maintenance + AI updates)",
-        "Compatible with Shopify & WooCommerce",
-        "100% GDPR compliant",
-        "Brand-aligned voice and personality",
-        "Human support based in France",
-      ],
-    },
-    cta: {
-      title: "Ready to have your own AI salesperson?",
-      sub: "Start with a free 30-day trial. No credit card required.",
-      btn: "Request a free demo",
-    },
-    footer: "© 2026 Robot Conseiller — French solution · GDPR compliant · Made in France",
+  why: {
+    kicker: "Pourquoi Vendix",
+    title: "Un vendeur qui ne dort jamais.",
+    sub: "Trois superpouvoirs que vos meilleurs vendeurs n'auront jamais.",
+    items: [
+      { icon: Clock, title: "Disponible 24/7", desc: "Il accueille, répond et conseille — même quand vos vendeurs sont occupés ou que le magasin est fermé." },
+      { icon: TrendingUp, title: "Augmente vos ventes", desc: "Conseils personnalisés, recommandations produits et passage en caisse direct sur votre catalogue." },
+      { icon: Languages, title: "Multilingue", desc: "Français, Anglais, Espagnol, Arabe… Idéal pour le tourisme et la clientèle internationale." },
+    ],
   },
-} as const;
+  features: {
+    kicker: "Ce qu'il sait faire",
+    title: "Un collaborateur, neuf compétences.",
+    items: [
+      { icon: Bot, title: "Accueil automatique", desc: "Détection de présence et salutation immédiate." },
+      { icon: Sparkles, title: "Conseil expert", desc: "Aligné sur votre catalogue Shopify ou WooCommerce." },
+      { icon: Store, title: "Vitrine virtuelle", desc: "Photos HD et visualisation produits en direct." },
+      { icon: MapPin, title: "Orientation en magasin", desc: "Plan interactif pour guider chaque client." },
+      { icon: Calendar, title: "Prise de rendez-vous", desc: "Réservations directes avec un vendeur humain." },
+      { icon: BarChart3, title: "Statistiques temps réel", desc: "Pilotez vos ventes et vos interactions à distance." },
+    ],
+  },
+  integrations: {
+    kicker: "Intégrations natives",
+    title: "Branché directement à votre commerce.",
+    sub: "Synchronisation automatique du catalogue, des stocks et des promotions. Aucun travail manuel.",
+    list: ["Shopify", "WooCommerce", "Stripe", "Cal.com", "Google Sheets", "Mailchimp"],
+  },
+  testimonials: {
+    kicker: "Témoignages",
+    title: "Ils ont laissé Vendix s'occuper du reste.",
+    items: [
+      { quote: "Depuis l'installation de Vendix, notre boutique tourne même quand on est seul en caisse. Les clients adorent.", author: "Camille R.", role: "Concept store, Lyon" },
+      { quote: "Mes touristes anglophones et espagnols sont enfin conseillés correctement. +41% de panier moyen.", author: "Hakim B.", role: "Hôtel boutique, Marseille" },
+      { quote: "Installation en 24h, ROI atteint en 6 semaines. Honnêtement, je ne reviens plus en arrière.", author: "Sophie M.", role: "Pharmacie, Bordeaux" },
+    ],
+  },
+  pricing: {
+    kicker: "Tarifs",
+    title: "Choisissez le plan qui vous ressemble.",
+    sub: "Tous les plans incluent l'installation, la maintenance et les mises à jour IA. Sans engagement.",
+    monthly: "/ mois",
+    cta: "Choisir ce plan",
+    popular: "Le plus populaire",
+    plans: [
+      {
+        name: "Starter",
+        price: "149€",
+        desc: "Idéal pour les petites boutiques qui démarrent avec un vendeur IA.",
+        features: [
+          "1 robot Vendix (1 magasin)",
+          "Jusqu'à 500 interactions / mois",
+          "2 langues au choix",
+          "Intégration Shopify ou WooCommerce",
+          "Support par email",
+        ],
+        highlight: false,
+      },
+      {
+        name: "Pro",
+        price: "349€",
+        desc: "Pour les commerces qui veulent vraiment booster leurs ventes.",
+        features: [
+          "Jusqu'à 3 robots Vendix",
+          "Interactions illimitées",
+          "4 langues (FR/EN/ES/AR)",
+          "Vitrine virtuelle HD + recommandations IA",
+          "Statistiques temps réel",
+          "Support prioritaire 7j/7",
+        ],
+        highlight: true,
+      },
+      {
+        name: "Entreprise",
+        price: "Sur devis",
+        desc: "Réseaux de magasins, chaînes d'hôtels et déploiements multi-sites.",
+        features: [
+          "Robots illimités, multi-sites",
+          "Personnalisation voix & personnalité",
+          "Intégrations sur mesure (ERP, CRM…)",
+          "SLA et conformité RGPD avancée",
+          "Account manager dédié en France",
+        ],
+        highlight: false,
+      },
+    ],
+  },
+  advantages: {
+    title: "Pensé pour le commerce français.",
+    items: [
+      "Installation en moins de 48h",
+      "Abonnement tout compris (maintenance + mises à jour IA)",
+      "Compatible Shopify & WooCommerce",
+      "100% conforme RGPD",
+      "Voix et personnalité adaptées à votre marque",
+      "Support humain basé en France",
+    ],
+  },
+  cta: {
+    title: "Prêt à avoir votre propre Vendix ?",
+    sub: "Commencez avec un essai gratuit de 30 jours. Sans carte bancaire.",
+    btn: "Demander une démo gratuite",
+  },
+  footer: "© 2026 Vendix — Solution française · RGPD compliant · Made in France",
+};
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -167,21 +146,15 @@ const fadeUp = {
 };
 
 export default function Index() {
-  const { language, setLanguage } = useTranslation();
   const navigate = useNavigate();
-  const t = COPY[language === "fr" ? "fr" : "en"];
 
   useEffect(() => {
-    document.title = language === "fr"
-      ? "Robot Conseiller — Le robot qui vend à votre place"
-      : "Robot Conseiller — The robot that sells for you";
-    const desc = language === "fr"
-      ? "Assistant commercial IA 24/7 pour magasins et hôtels. Accueil, conseil et vitrine virtuelle. Compatible Shopify & WooCommerce."
-      : "24/7 AI sales assistant for shops and hotels. Greeting, advice and virtual showroom. Shopify & WooCommerce ready.";
+    document.title = "Vendix — Le robot qui vend à votre place";
+    const desc = "Vendix, l'assistant commercial IA 24/7 pour magasins et hôtels. Accueil, conseil et vitrine virtuelle. Compatible Shopify & WooCommerce.";
     let m = document.querySelector('meta[name="description"]');
     if (!m) { m = document.createElement("meta"); m.setAttribute("name", "description"); document.head.appendChild(m); }
     m.setAttribute("content", desc);
-  }, [language]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden font-sans">
@@ -192,20 +165,15 @@ export default function Index() {
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-rose-500 shadow-[0_0_30px_rgba(255,90,50,0.5)]">
               <Bot className="h-5 w-5 text-white" />
             </span>
-            <span className="text-base">Robot<span className="text-orange-400">Conseiller</span></span>
+            <span className="text-base">Ven<span className="text-orange-400">dix</span></span>
           </a>
           <nav className="hidden md:flex items-center gap-8 text-sm text-white/70">
             <a href="#features" className="hover:text-white transition">{t.nav.features}</a>
             <a href="#integrations" className="hover:text-white transition">{t.nav.integrations}</a>
+            <a href="#pricing" className="hover:text-white transition">{t.nav.pricing}</a>
             <a href="#testimonials" className="hover:text-white transition">{t.nav.testimonials}</a>
           </nav>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setLanguage(language === "fr" ? "en" : "fr")}
-              className="text-xs uppercase tracking-widest text-white/60 hover:text-white transition"
-            >
-              {language === "fr" ? "EN" : "FR"}
-            </button>
             <Button
               onClick={() => navigate("/auth")}
               className="bg-white text-black hover:bg-orange-300 hover:text-black rounded-full px-5"
@@ -218,7 +186,6 @@ export default function Index() {
 
       {/* HERO */}
       <section className="relative pt-32 pb-24 md:pt-40 md:pb-32">
-        {/* ambient blobs */}
         <div className="absolute -top-40 -left-20 h-[500px] w-[500px] rounded-full bg-orange-500/20 blur-[120px]" />
         <div className="absolute top-20 right-0 h-[400px] w-[400px] rounded-full bg-rose-500/10 blur-[120px]" />
 
@@ -282,7 +249,7 @@ export default function Index() {
             <div className="relative rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl">
               <img
                 src={robotHero}
-                alt="Robot Conseiller IA en magasin"
+                alt="Vendix, robot conseiller IA en magasin"
                 width={1536}
                 height={1536}
                 className="w-full h-auto object-cover"
@@ -290,7 +257,7 @@ export default function Index() {
               <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 p-4 flex items-center gap-3">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-sm text-white/80">
-                  {language === "fr" ? "En service · 412 clients accueillis aujourd'hui" : "Live · 412 customers greeted today"}
+                  En service · 412 clients accueillis aujourd'hui
                 </span>
               </div>
             </div>
@@ -365,13 +332,72 @@ export default function Index() {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {t.integrations.list.map((name, i) => (
+            {t.integrations.list.map((name) => (
               <div
                 key={name}
                 className="aspect-square rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-center text-sm font-semibold text-white/80 hover:border-orange-400/40 hover:bg-white/[0.06] transition"
               >
                 {name}
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING */}
+      <section id="pricing" className="py-24 border-t border-white/5 bg-gradient-to-b from-transparent via-orange-500/[0.04] to-transparent">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="max-w-2xl mb-16">
+            <div className="text-xs uppercase tracking-[0.3em] text-orange-400 mb-4">{t.pricing.kicker}</div>
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight">{t.pricing.title}</h2>
+            <p className="mt-4 text-white/60 text-lg">{t.pricing.sub}</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {t.pricing.plans.map((plan, i) => (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className={`relative p-8 rounded-3xl border transition flex flex-col ${
+                  plan.highlight
+                    ? "bg-gradient-to-b from-orange-500/15 to-rose-500/5 border-orange-400/40 shadow-[0_10px_60px_-10px_rgba(255,90,50,0.35)]"
+                    : "bg-gradient-to-b from-white/[0.04] to-transparent border-white/10 hover:border-orange-400/30"
+                }`}
+              >
+                {plan.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg whitespace-nowrap">
+                    {t.pricing.popular}
+                  </div>
+                )}
+                <h3 className="text-xl font-bold">{plan.name}</h3>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-5xl font-black tracking-tight">{plan.price}</span>
+                  {plan.price !== "Sur devis" && (
+                    <span className="text-white/50 text-sm">{t.pricing.monthly}</span>
+                  )}
+                </div>
+                <p className="mt-3 text-white/60 text-sm leading-relaxed">{plan.desc}</p>
+                <ul className="mt-6 space-y-3 flex-1">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-white/80">
+                      <CheckCircle2 className="h-4 w-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  onClick={() => navigate("/auth")}
+                  className={`mt-8 rounded-full h-12 ${
+                    plan.highlight
+                      ? "bg-gradient-to-r from-orange-400 to-rose-500 hover:opacity-90 text-white"
+                      : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
+                  }`}
+                >
+                  {t.pricing.cta}
+                </Button>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -439,7 +465,7 @@ export default function Index() {
           </Button>
           <div className="mt-8 flex items-center justify-center gap-2 text-sm text-white/50">
             <ShieldCheck className="h-4 w-4" />
-            <span>{language === "fr" ? "Sans carte bancaire · Sans engagement" : "No credit card · No commitment"}</span>
+            <span>Sans carte bancaire · Sans engagement</span>
           </div>
         </div>
       </section>
@@ -452,8 +478,8 @@ export default function Index() {
             <span>{t.footer}</span>
           </div>
           <div className="flex items-center gap-6">
-            <a href="/privacy" className="hover:text-white transition">Privacy</a>
-            <a href="/terms" className="hover:text-white transition">Terms</a>
+            <a href="/privacy" className="hover:text-white transition">Confidentialité</a>
+            <a href="/terms" className="hover:text-white transition">Conditions</a>
           </div>
         </div>
       </footer>
