@@ -107,30 +107,37 @@ Deno.serve(async (req) => {
     const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
     if (!OPENROUTER_API_KEY) throw new Error("Missing OPENROUTER_API_KEY");
 
-    const model = image
-      ? "google/gemma-4-31b-it:free"
-      : "meta-llama/llama-3.3-70b:free";
+    const modelChain = image
+      ? ["google/gemma-4-31b-it:free", "qwen/qwen3-vl-72b:free", "meta-llama/llama-3.3-70b:free"]
+      : ["meta-llama/llama-3.3-70b:free", "openai/gpt-oss-120b:free", "qwen/qwen3-coder:free", "deepseek/deepseek-r1:free"];
 
-    const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://vendix.sale",
-        "X-Title": "Vendix",
-      },
-      body: JSON.stringify({
-        model,
-        messages: chatMessages,
-        temperature: 0.6,
-        max_tokens: 280,
-      }),
-    });
+    let aiRes: Response | null = null;
+    let lastErr = "";
+    for (const model of modelChain) {
+      aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://vendix.sale",
+          "X-Title": "Vendix",
+        },
+        body: JSON.stringify({
+          model,
+          messages: chatMessages,
+          temperature: 0.6,
+          max_tokens: 280,
+        }),
+      });
+      if (aiRes.ok) break;
+      lastErr = await aiRes.text();
+      // 404 = model unavailable, try next. Otherwise bail.
+      if (aiRes.status !== 404 && aiRes.status !== 400) break;
+    }
 
-    if (!aiRes.ok) {
-      const txt = await aiRes.text();
-      const status = aiRes.status === 429 ? 429 : aiRes.status === 402 ? 402 : 500;
-      return new Response(JSON.stringify({ error: `OpenRouter ${aiRes.status}: ${txt.slice(0, 300)}` }), {
+    if (!aiRes || !aiRes.ok) {
+      const status = aiRes?.status === 429 ? 429 : aiRes?.status === 402 ? 402 : 500;
+      return new Response(JSON.stringify({ error: `OpenRouter ${aiRes?.status}: ${lastErr.slice(0, 300)}` }), {
         status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
