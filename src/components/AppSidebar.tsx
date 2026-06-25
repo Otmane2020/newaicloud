@@ -305,21 +305,22 @@ export function AppSidebar() {
   const isProductOptimizationActive = currentPath.startsWith("/products") || productOptimizationSubItems.some((item) => isActive(item.url));
 
   return (
-    <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
+    <Sidebar collapsible={isMobile ? "offcanvas" : "icon"} className="dark">
       {/* Logo Header */}
-      <div className="border-b p-3 sm:p-4 space-y-3">
+      <div className="border-b border-sidebar-border p-3 sm:p-4 space-y-3">
         <NavLink to="/dashboard" onClick={handleNavClick} className="flex items-center gap-2 group transition-transform hover:scale-105">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           {state === "expanded" && (
-            <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              NewAI
+            <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+              Vendix
             </span>
           )}
         </NavLink>
         {state === "expanded" && <StoreSelector />}
       </div>
+
 
       <SidebarContent>
         <SidebarGroup>
