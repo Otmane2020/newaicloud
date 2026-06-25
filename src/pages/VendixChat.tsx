@@ -131,18 +131,19 @@ export default function VendixChat() {
   const toggleListening = () => setIsListening((v) => !v);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen flex flex-col">
       <div className="flex-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t.title}</h1>
-            <p className="text-gray-600">{t.subtitle}</p>
+            <h1 className="text-3xl font-bold text-white mb-2">{t.title}</h1>
+            <p className="text-cyan-200/80">{t.subtitle}</p>
           </div>
 
           {/* Chat Container */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden">
             {/* Messages */}
             <div className="h-[28rem] overflow-y-auto p-6 space-y-4">
+
               {messages.map((message) => (
                 <div
                   key={message.id}
