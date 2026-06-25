@@ -104,17 +104,23 @@ Deno.serve(async (req) => {
       chatMessages.push(...trimmed);
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
+    const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+    if (!OPENROUTER_API_KEY) throw new Error("Missing OPENROUTER_API_KEY");
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const model = image
+      ? "qwen/qwen-2.5-vl-72b-instruct:free"
+      : "deepseek/deepseek-chat-v3.1:free";
+
+    const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        "HTTP-Referer": "https://vendix.sale",
+        "X-Title": "Vendix",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages: chatMessages,
         temperature: 0.6,
         max_tokens: 280,
@@ -124,11 +130,12 @@ Deno.serve(async (req) => {
     if (!aiRes.ok) {
       const txt = await aiRes.text();
       const status = aiRes.status === 429 ? 429 : aiRes.status === 402 ? 402 : 500;
-      return new Response(JSON.stringify({ error: `AI ${aiRes.status}: ${txt.slice(0, 300)}` }), {
+      return new Response(JSON.stringify({ error: `OpenRouter ${aiRes.status}: ${txt.slice(0, 300)}` }), {
         status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     const data = await aiRes.json();
     const raw: string = data?.choices?.[0]?.message?.content || "";
