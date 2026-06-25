@@ -99,14 +99,14 @@ serve(async (req) => {
       .eq('id', user.id)
       .maybeSingle();
 
-    const planId = profile?.current_plan_id || freePlanId;
+    const freeModePlanId = profile?.current_plan_id || freePlanId;
 
     await supabaseAdmin
       .from('subscriptions')
       .upsert(
         {
           seller_id: user.id,
-          plan_id: planId,
+          plan_id: freeModePlanId,
           status: 'active',
           billing_period: 'monthly',
           current_period_start: now.toISOString(),
@@ -120,17 +120,17 @@ serve(async (req) => {
       .from('profiles')
       .update({
         subscription_status: 'active',
-        current_plan_id: planId,
+        current_plan_id: freeModePlanId,
         onboarding_completed: true,
         updated_at: now.toISOString(),
       })
       .eq('id', user.id);
 
-    logStep('Free mode active - Stripe check bypassed', { userId: user.id, planId });
+    logStep('Free mode active - Stripe check bypassed', { userId: user.id, planId: freeModePlanId });
     return new Response(JSON.stringify({
       subscribed: true,
       status: 'active',
-      plan_id: planId,
+      plan_id: freeModePlanId,
       subscription_end: periodEnd.toISOString(),
       source: 'free_mode',
     }), {
