@@ -647,11 +647,11 @@ export default function Products() {
 
     try {
       // @ts-ignore - Avoid deep type inference
-      const { data: store, error } = await supabase
-        .from('shopify_connections')
+      const { data: store, error } = await (supabase
+        .from('shopify_connections') as any)
         .select('id, store_url, store_name')
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();

@@ -69,7 +69,7 @@ export default function NotificationTemplates() {
     try {
       const { error } = await supabase
         .from('notification_templates')
-        .update({ [channel]: value })
+        .update({ [channel]: value } as any)
         .eq('id', templateId);
 
       if (error) throw error;
