@@ -6,90 +6,68 @@ import {
   ShoppingBag,
   Users,
   TrendingUp,
+  DollarSign,
+  CheckCircle,
   Sparkles,
   ArrowRight,
   Activity,
-  Globe,
-  Zap,
+  Package,
 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 
 const COPY = {
   fr: {
-    title: "Tableau de bord Vendix",
-    subtitle:
-      "Pilotez vos robots vendeurs IA déployés en magasin et en hôtel — en temps réel.",
+    title: "Tableau de bord",
+    subtitle: "Interface de gestion Vendix",
+    storeName: "Decora Home",
+    storeEmail: "demo@decorahome.fr",
     kpis: [
-      { label: "Conversations 24h", value: "1 248", icon: MessageSquare, trend: "+18%" },
-      { label: "Ventes assistées", value: "€ 7 320", icon: TrendingUp, trend: "+12%" },
-      { label: "Robots actifs", value: "6 / 8", icon: Bot, trend: "75%" },
-      { label: "Clients servis", value: "412", icon: Users, trend: "+34" },
+      { label: "Produits Actifs", value: "0", hint: "Shopify connecté", icon: Package, color: "from-cyan-500 to-blue-600" },
+      { label: "Conversations", value: "1 234", hint: "+23% ce mois", icon: MessageSquare, color: "from-purple-500 to-pink-600" },
+      { label: "Taux Conversion", value: "28%", hint: "+5% ce mois", icon: TrendingUp, color: "from-emerald-500 to-teal-600" },
+      { label: "Revenus", value: "€2 450", hint: "+12% ce mois", icon: DollarSign, color: "from-amber-500 to-orange-600" },
     ],
-    quickTitle: "Accès rapide",
-    quick: [
-      {
-        title: "Tester Vendix",
-        desc: "Ouvrir l'interface assistant",
-        href: "/vendix-chat",
-        icon: Sparkles,
-      },
-      {
-        title: "Catalogue produits",
-        desc: "Gérer le catalogue connecté",
-        href: "/products",
-        icon: ShoppingBag,
-      },
-      {
-        title: "Mon compte",
-        desc: "Abonnement et intégrations",
-        href: "/account?tab=integrations",
-        icon: Users,
-      },
-    ],
+    shopifyTitle: "Connexion Shopify réussie !",
+    shopifyFields: { shop: "Boutique", domain: "Domaine", plan: "Plan", currency: "Devise" },
+    importedSuffix: "produits importés",
     activityTitle: "Activité récente",
     activity: [
-      { who: "Robot Lyon — Centre", what: "12 conversations clôturées", when: "il y a 5 min", icon: MessageSquare },
-      { who: "Robot Paris — Marais", what: "Recommandé 3 articles canapé", when: "il y a 12 min", icon: ShoppingBag },
-      { who: "Robot Hôtel Riviera", what: "Demande conciergerie traitée", when: "il y a 28 min", icon: Globe },
-      { who: "Robot Lyon — Confluence", what: "Synchronisé 184 produits", when: "il y a 1 h", icon: Activity },
+      { text: "Shopify connecté avec succès — 0 produits importés", when: "Maintenant" },
+      { text: "Robot Vendix entraîné avec nouveau catalogue", when: "Il y a 2 min" },
+      { text: "15 nouvelles conversations client", when: "Il y a 1 h" },
     ],
-    integrationsTitle: "Intégrations e-commerce",
-    integrations: [
-      { name: "Shopify", status: "Connecté", color: "bg-green-100 text-green-700" },
-      { name: "WooCommerce", status: "Connecté", color: "bg-green-100 text-green-700" },
-      { name: "Prestashop", status: "À configurer", color: "bg-amber-100 text-amber-700" },
-    ],
+    testVendix: "Tester Vendix",
   },
   en: {
-    title: "Vendix Dashboard",
-    subtitle:
-      "Run your AI sales robots in shops and hotels — in real time.",
+    title: "Dashboard",
+    subtitle: "Vendix management interface",
+    storeName: "Decora Home",
+    storeEmail: "demo@decorahome.fr",
     kpis: [
-      { label: "Conversations 24h", value: "1,248", icon: MessageSquare, trend: "+18%" },
-      { label: "Assisted sales", value: "€7,320", icon: TrendingUp, trend: "+12%" },
-      { label: "Active robots", value: "6 / 8", icon: Bot, trend: "75%" },
-      { label: "Customers served", value: "412", icon: Users, trend: "+34" },
+      { label: "Active Products", value: "0", hint: "Shopify connected", icon: Package, color: "from-cyan-500 to-blue-600" },
+      { label: "Conversations", value: "1,234", hint: "+23% this month", icon: MessageSquare, color: "from-purple-500 to-pink-600" },
+      { label: "Conversion Rate", value: "28%", hint: "+5% this month", icon: TrendingUp, color: "from-emerald-500 to-teal-600" },
+      { label: "Revenue", value: "€2,450", hint: "+12% this month", icon: DollarSign, color: "from-amber-500 to-orange-600" },
     ],
-    quickTitle: "Quick access",
-    quick: [
-      { title: "Try Vendix", desc: "Open the assistant interface", href: "/vendix-chat", icon: Sparkles },
-      { title: "Product catalogue", desc: "Manage your connected catalogue", href: "/products", icon: ShoppingBag },
-      { title: "My account", desc: "Subscription and integrations", href: "/account?tab=integrations", icon: Users },
-    ],
+    shopifyTitle: "Shopify successfully connected!",
+    shopifyFields: { shop: "Store", domain: "Domain", plan: "Plan", currency: "Currency" },
+    importedSuffix: "products imported",
     activityTitle: "Recent activity",
     activity: [
-      { who: "Robot Lyon — Center", what: "12 conversations closed", when: "5 min ago", icon: MessageSquare },
-      { who: "Robot Paris — Marais", what: "Recommended 3 sofa items", when: "12 min ago", icon: ShoppingBag },
-      { who: "Robot Hotel Riviera", what: "Concierge request handled", when: "28 min ago", icon: Globe },
-      { who: "Robot Lyon — Confluence", what: "Synced 184 products", when: "1 h ago", icon: Activity },
+      { text: "Shopify connected successfully — 0 products imported", when: "Now" },
+      { text: "Vendix robot trained with new catalogue", when: "2 min ago" },
+      { text: "15 new customer conversations", when: "1 h ago" },
     ],
-    integrationsTitle: "E-commerce integrations",
-    integrations: [
-      { name: "Shopify", status: "Connected", color: "bg-green-100 text-green-700" },
-      { name: "WooCommerce", status: "Connected", color: "bg-green-100 text-green-700" },
-      { name: "Prestashop", status: "To configure", color: "bg-amber-100 text-amber-700" },
-    ],
+    testVendix: "Try Vendix",
   },
+};
+
+const shopify = {
+  shop_name: "Decora Home",
+  shop_domain: "decora-home.fr",
+  plan: "basic",
+  currency: "EUR",
+  products_count: 0,
 };
 
 export default function Dashboard() {
@@ -97,103 +75,105 @@ export default function Dashboard() {
   const t = COPY[language === "fr" ? "fr" : "en"];
 
   useEffect(() => {
-    document.title = t.title;
+    document.title = `${t.title} — Vendix`;
   }, [t.title]);
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Hero */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-lg">
-            <Bot className="w-5 h-5 text-white" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t.title}</h1>
+    <div className="max-w-7xl mx-auto text-white">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-8 gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-bold text-white">{t.title}</h1>
+          <p className="text-cyan-200/80 mt-1">{t.subtitle}</p>
         </div>
-        <p className="text-gray-600 ml-13">{t.subtitle}</p>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-cyan-500/30">
+            D
+          </div>
+          <div>
+            <p className="font-semibold text-white">{t.storeName}</p>
+            <p className="text-xs text-cyan-200/70">{t.storeEmail}</p>
+          </div>
+          <Link
+            to="/vendix-chat"
+            className="ml-2 inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white px-4 py-2 rounded-xl font-semibold shadow-lg shadow-cyan-500/30 transition-all hover:scale-105"
+          >
+            <Sparkles className="w-4 h-4" />
+            {t.testVendix}
+          </Link>
+        </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {t.kpis.map((k) => (
           <div
             key={k.label}
-            className="bg-white rounded-xl shadow-lg p-5 hover:shadow-xl transition-shadow"
+            className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5 hover:border-cyan-500/50 transition-all hover:-translate-y-0.5"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <k.icon className="w-5 h-5 text-blue-600" />
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="text-sm text-slate-400">{k.label}</p>
+                <p className="text-3xl font-bold text-white mt-1">{k.value}</p>
+                <p className="text-xs text-cyan-300/80 mt-1">{k.hint}</p>
               </div>
-              <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                {k.trend}
-              </span>
+              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${k.color} flex items-center justify-center shadow-lg`}>
+                <k.icon className="w-5 h-5 text-white" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{k.value}</p>
-            <p className="text-sm text-gray-600 mt-1">{k.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Quick actions */}
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">{t.quickTitle}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {t.quick.map((q) => (
-          <Link
-            key={q.title}
-            to={q.href}
-            className="group bg-white rounded-xl shadow-lg p-5 hover:shadow-xl transition-all hover:-translate-y-0.5"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow">
-                <q.icon className="w-5 h-5 text-white" />
-              </div>
-              <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+      {/* Shopify Connection */}
+      <div className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 border border-emerald-400/30 rounded-2xl p-6 mb-8 backdrop-blur-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle className="w-6 h-6 text-emerald-400" />
+              <h3 className="text-lg font-bold text-white">{t.shopifyTitle}</h3>
             </div>
-            <h3 className="font-semibold text-gray-900">{q.title}</h3>
-            <p className="text-sm text-gray-600 mt-1">{q.desc}</p>
-          </Link>
-        ))}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-slate-400">{t.shopifyFields.shop}</p>
+                <p className="font-semibold text-white">{shopify.shop_name}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">{t.shopifyFields.domain}</p>
+                <p className="font-semibold text-white">{shopify.shop_domain}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">{t.shopifyFields.plan}</p>
+                <p className="font-semibold text-white capitalize">{shopify.plan}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">{t.shopifyFields.currency}</p>
+                <p className="font-semibold text-white">{shopify.currency}</p>
+              </div>
+            </div>
+          </div>
+          <div className="text-center lg:text-right">
+            <p className="text-4xl font-bold text-emerald-400">{shopify.products_count}</p>
+            <p className="text-sm text-slate-300">{t.importedSuffix}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Activity + Integrations */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="border-b border-gray-100 px-5 py-4 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-blue-600" />
-            <h2 className="font-semibold text-gray-900">{t.activityTitle}</h2>
-          </div>
-          <ul className="divide-y divide-gray-100">
-            {t.activity.map((a, i) => (
-              <li key={i} className="flex items-start gap-3 px-5 py-4 hover:bg-gray-50 transition-colors">
-                <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
-                  <a.icon className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">{a.who}</p>
-                  <p className="text-sm text-gray-600">{a.what}</p>
-                </div>
-                <span className="text-xs text-gray-500 flex-shrink-0">{a.when}</span>
-              </li>
-            ))}
-          </ul>
+      {/* Recent Activity */}
+      <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl overflow-hidden">
+        <div className="border-b border-slate-700/50 px-6 py-4 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-cyan-400" />
+          <h2 className="font-bold text-white">{t.activityTitle}</h2>
         </div>
-
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="border-b border-gray-100 px-5 py-4 flex items-center gap-2">
-            <Globe className="w-5 h-5 text-purple-600" />
-            <h2 className="font-semibold text-gray-900">{t.integrationsTitle}</h2>
-          </div>
-          <ul className="divide-y divide-gray-100">
-            {t.integrations.map((i) => (
-              <li key={i.name} className="flex items-center justify-between px-5 py-4">
-                <span className="font-medium text-gray-900">{i.name}</span>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${i.color}`}>
-                  {i.status}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ul className="divide-y divide-slate-700/50">
+          {t.activity.map((a, i) => (
+            <li key={i} className="flex items-center gap-3 px-6 py-4 hover:bg-slate-700/30 transition-colors">
+              <div className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
+              <p className="flex-1 text-slate-200 text-sm">{a.text}</p>
+              <span className="text-xs text-slate-400 flex-shrink-0">{a.when}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
