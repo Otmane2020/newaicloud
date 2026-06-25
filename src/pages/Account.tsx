@@ -4,6 +4,8 @@ import { AccountSettings } from '@/components/dashboard/AccountSettings';
 import { CurrentPlanCard } from '@/components/dashboard/CurrentPlanCard';
 import { BillingPortal } from '@/components/dashboard/BillingPortal';
 import { ShopifyIntegrationTabs } from '@/components/integration/ShopifyIntegrationTabs';
+import { WooCommerceIntegration } from '@/components/integration/WooCommerceIntegration';
+import { CsvCatalogImport } from '@/components/integration/CsvCatalogImport';
 import { UsageLimits } from '@/components/dashboard/UsageLimits';
 import { SubscriptionPlans } from '@/components/dashboard/SubscriptionPlans';
 import { UsageWidget } from '@/components/dashboard/UsageWidget';
