@@ -30,10 +30,10 @@ const COPY = {
     error: "Connexion à Vendix interrompue.",
     status: { idle: "EN LIGNE", thinking: "RÉFLEXION…", speaking: "EN DIRECT", listening: "ÉCOUTE" },
     quick: [
-      { title: "🛋️ Nos collections", prompt: "Montre-moi vos collections phares." },
-      { title: "🎁 Idée cadeau", prompt: "J'ai besoin d'une idée cadeau." },
-      { title: "📍 Le showroom", prompt: "Présente-moi le showroom et les horaires." },
-      { title: "💬 Conseil déco", prompt: "J'ai besoin de conseils déco." },
+      { title: "👋 Accueil proactif", prompt: "Salue-moi et présente-toi en tant que vendeur du showroom." },
+      { title: "🏛️ Visite du showroom", prompt: "Fais-moi visiter le showroom et présente les zones et collections principales." },
+      { title: "🧭 Guide intelligent", prompt: "Aide-moi à naviguer dans le catalogue et recommande des produits selon mes besoins." },
+      { title: "👁️ Reconnaissance produit", prompt: "Identifie les produits phares et explique pourquoi ils sont populaires." },
     ],
     system:
       "Tu es Vendix, un robot vendeur IA déployé sur une tablette Android dans un showroom. Réponds en français, sois chaleureux, concis (2-3 phrases), et guide le client comme un vendeur humain expert.",
