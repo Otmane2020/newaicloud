@@ -340,13 +340,55 @@ function ProductTile({
   onAdd,
   onOpen,
   compact = false,
+  variant = "stage",
 }: {
   product: ProductCard;
   t: typeof COPY.fr;
   onAdd: (p: ProductCard) => void;
   onOpen: (p: ProductCard) => void;
   compact?: boolean;
+  variant?: "stage" | "chat";
 }) {
+  if (variant === "stage") {
+    // Showroom tile: image left, info right, single "Ajouter au panier" button (matches reference design)
+    return (
+      <article
+        onClick={() => onOpen(product)}
+        className="group flex cursor-pointer gap-4 overflow-hidden rounded-2xl border border-white/8 bg-white/[0.04] p-3 backdrop-blur-md transition-all hover:border-cyan-300/40 hover:bg-white/[0.06]"
+      >
+        {product.image_url && (
+          <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-white/5">
+            <img
+              src={product.image_url}
+              alt={product.title}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          </div>
+        )}
+        <div className="min-w-0 flex-1 flex flex-col justify-between py-0.5">
+          <div>
+            <h3 className="line-clamp-2 text-sm font-medium leading-snug text-white/95">
+              {product.title}
+            </h3>
+            {product.price != null && (
+              <p className="mt-1.5 text-base font-semibold text-cyan-300">
+                {formatPrice(product.price)}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); onAdd(product); }}
+            className="mt-2 inline-flex items-center gap-1.5 self-start rounded-lg px-2.5 py-1.5 text-xs font-medium text-white/85 transition hover:bg-white/10 hover:text-white"
+          >
+            <Plus className="h-3.5 w-3.5" /> {t.addToCart} au panier
+          </button>
+        </div>
+      </article>
+    );
+  }
+
+  // Chat tile (compact, keeps both buttons)
   return (
     <article className={`group flex overflow-hidden rounded-[10px] bg-slate-900/62 border border-cyan-100/15 shadow-[0_18px_45px_rgba(0,0,0,0.24)] transition-all hover:border-cyan-200/55 ${compact ? "gap-3 p-2" : "gap-4 p-3"}`}>
       {product.image_url && (
