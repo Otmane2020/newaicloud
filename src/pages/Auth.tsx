@@ -30,7 +30,7 @@ export default function Auth() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [facebookLoading, setFacebookLoading] = useState(false);
   const [serverOffline, setServerOffline] = useState(false);
-  const { signIn, signUp, signInWithGoogle, signInWithFacebook, user, serverStatus } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithFacebook, user, serverStatus, markManualSignOut } = useAuth();
   const { t, language } = useTranslation();
   const navigate = useNavigate();
   
@@ -55,8 +55,13 @@ export default function Auth() {
         if (roleData) {
           // Admin detected - sign out and redirect to superadmin login
           console.log('🔒 Admin detected on /auth, redirecting to /superadmin-login');
+          markManualSignOut(); // ✅ Prevent "session expired" toast & redirect loop
           await supabase.auth.signOut();
-          toast.error("Administrateurs : connectez-vous via /superadmin-login");
+          toast.error(
+            language === 'fr'
+              ? "Administrateurs : connectez-vous via /superadmin-login"
+              : "Admins: please sign in via /superadmin-login"
+          );
           navigate('/superadmin-login');
           return;
         }

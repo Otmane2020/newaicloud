@@ -50,6 +50,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: any }>;
   signInWithFacebook: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  markManualSignOut: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -283,8 +284,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = '/';
   };
 
+  const markManualSignOut = () => {
+    manualSignOutRef.current = true;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, serverStatus, signUp, signIn, signInWithGoogle, signInWithFacebook, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, serverStatus, signUp, signIn, signInWithGoogle, signInWithFacebook, signOut, markManualSignOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -307,6 +312,7 @@ export function useAuth() {
       signOut: async () => {
         console.warn('[Auth] signOut called while AuthProvider is not mounted');
       },
+      markManualSignOut: () => {},
     } satisfies AuthContextType;
   }
   return context;
