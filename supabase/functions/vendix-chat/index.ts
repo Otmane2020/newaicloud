@@ -43,15 +43,30 @@ async function loadCatalog(authHeader: string | null): Promise<{ products: Catal
     .from("shopify_products")
     .select("id,title,price,image_url,handle,product_type,vendor,body_html")
     .eq("seller_id", user.id)
-    .not("image_url", "is", null)
     .order("updated_at", { ascending: false })
     .limit(200);
+
+  const productIds = (rows || []).map((r: any) => r.id).filter(Boolean);
+  const missingImageIds = (rows || []).filter((r: any) => !r.image_url).map((r: any) => r.id);
+  const imageByProduct = new Map<string, string>();
+  if (missingImageIds.length) {
+    const { data: imageRows } = await supabase
+      .from("product_images")
+      .select("product_id,src,position")
+      .in("product_id", productIds)
+      .order("position", { ascending: true });
+    for (const img of imageRows || []) {
+      if (img?.product_id && img?.src && !imageByProduct.has(img.product_id)) {
+        imageByProduct.set(img.product_id, img.src);
+      }
+    }
+  }
 
   const products: CatalogProduct[] = (rows || []).map((r: any) => ({
     id: r.id,
     title: r.title,
     price: r.price,
-    image_url: r.image_url,
+    image_url: r.image_url || imageByProduct.get(r.id) || null,
     handle: r.handle,
     product_type: r.product_type,
     vendor: r.vendor,
