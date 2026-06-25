@@ -731,14 +731,22 @@ export default function VendixChat() {
           <div className="p-4 border-t border-cyan-500/10 bg-slate-950/80">
             <div className="flex items-end gap-2">
               <button
-                onClick={() => setIsListening((v) => !v)}
+                onClick={toggleListening}
+                title={isListening ? "Arrêter" : "Parler à Vendix"}
                 className={`p-3 rounded-2xl border transition-all ${
                   isListening
-                    ? "bg-pink-500/20 border-pink-400/60 text-pink-200 shadow-[0_0_20px_rgba(244,114,182,0.4)]"
+                    ? "bg-pink-500/30 border-pink-400 text-pink-100 shadow-[0_0_25px_rgba(244,114,182,0.6)] animate-pulse"
                     : "bg-slate-800/60 border-slate-700 text-slate-300 hover:text-white"
                 }`}
               >
                 {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={openCamera}
+                title="Détection visuelle"
+                className="p-3 rounded-2xl border bg-slate-800/60 border-slate-700 text-slate-300 hover:text-white hover:border-cyan-400/60 transition-all"
+              >
+                <Camera className="w-5 h-5" />
               </button>
               <textarea
                 value={inputText}
@@ -760,6 +768,33 @@ export default function VendixChat() {
           </div>
         </aside>
       </div>
+
+      {/* Camera modal — détection visuelle */}
+      {cameraOpen && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-lg flex flex-col items-center justify-center p-6 animate-fade-in">
+          <button
+            onClick={closeCamera}
+            className="absolute top-6 right-6 p-3 rounded-full bg-slate-800/80 border border-slate-700 text-white hover:bg-slate-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <p className="text-cyan-300 text-sm tracking-[0.3em] mb-4">◤ DÉTECTION VISUELLE ◢</p>
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            className="max-w-2xl w-full rounded-3xl border-2 border-cyan-400/40 shadow-[0_0_60px_rgba(34,211,238,0.4)] aspect-video object-cover bg-black"
+          />
+          <button
+            onClick={snapAndSend}
+            className="mt-6 px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold shadow-lg shadow-cyan-500/40 flex items-center gap-2"
+          >
+            <Camera className="w-5 h-5" />
+            Capturer & identifier
+          </button>
+          <p className="mt-3 text-xs text-slate-400">Pointez le produit, Vendix le reconnaîtra dans votre catalogue.</p>
+        </div>
+      )}
     </div>
   );
 }
