@@ -453,6 +453,45 @@ export default function VendixChat() {
               {messages.filter((m) => !m.isUser).slice(-1)[0]?.text}
             </p>
           </div>
+
+          {/* Featured products carousel from latest bot reply */}
+          {(() => {
+            const last = messages.filter((m) => !m.isUser).slice(-1)[0];
+            const prods = last?.products || [];
+            if (!prods.length) return null;
+            return (
+              <div className="mt-6 w-full max-w-3xl">
+                <p className="text-[10px] tracking-[0.4em] text-cyan-400/70 mb-3 text-center">
+                  ◤ {language === "fr" ? "RECOMMANDATIONS" : "RECOMMENDED"} ◢
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {prods.map((p) => (
+                    <div
+                      key={p.id}
+                      className="group rounded-2xl overflow-hidden bg-slate-900/70 border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all"
+                    >
+                      {p.image_url && (
+                        <div className="aspect-square overflow-hidden bg-slate-800">
+                          <img
+                            src={p.image_url}
+                            alt={p.title}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                        </div>
+                      )}
+                      <div className="p-2.5">
+                        <p className="text-xs text-cyan-50 line-clamp-2 leading-tight">{p.title}</p>
+                        {p.price != null && (
+                          <p className="text-sm font-bold text-cyan-300 mt-1">{p.price}€</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </section>
 
         {/* Chat panel */}
