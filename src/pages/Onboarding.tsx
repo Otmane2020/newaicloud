@@ -864,88 +864,56 @@ export default function Onboarding() {
 
     setLoading(true);
     try {
-      console.log("🚀 [BILLING] Creating subscription for plan:", planId, "billing:", billingCycle, "isShopifyUser:", isShopifyUser, "billingProvider:", billingProvider);
+      console.log("🆓 [FREE-MODE] Activating free plan:", planId);
 
-      // Vérifier que le plan existe
       const selectedPlan = plans.find((p) => p.id === planId);
       if (!selectedPlan) {
-        console.error("❌ Plan not found:", planId);
-        toast.error(`Plan "${planId}" not found. Please try again or contact support.`);
+        toast.error(`Plan "${planId}" not found.`);
         return;
       }
 
-      console.log("✅ Selected plan found:", { id: selectedPlan.id, name: selectedPlan.name });
+      toast.loading(
+        language === "fr" ? "Activation de votre accès gratuit..." : "Activating free access...",
+        { id: "billing-checkout" }
+      );
 
-      // 🔥 DUAL BILLING: Shopify users → Shopify Billing, Web users → Stripe
-      if (isShopifyUser || billingProvider === "shopify") {
-        console.log("🛍 [SHOPIFY-BILLING] Using Shopify Billing");
-        toast.loading(
-          language === "fr" ? "Création de l'abonnement Shopify..." : "Creating Shopify subscription...", 
-          { id: "billing-checkout" }
-        );
-        
-        const result = await createShopifySubscription(planId, billingCycle);
-        
-        if (result?.confirmationUrl) {
-          console.log("✅ [SHOPIFY-BILLING] Redirecting to Shopify for payment approval:", result.confirmationUrl);
-          toast.dismiss("billing-checkout");
-          // For embedded apps: redirect the top-level window (Shopify Admin)
-          if (window.top) {
-            window.top.location.href = result.confirmationUrl;
-          } else {
-            window.location.href = result.confirmationUrl;
-          }
-          return;
-        } else {
-          toast.dismiss("billing-checkout");
-          toast.error(
-            language === "fr" 
-              ? "Échec de la création de l'abonnement Shopify" 
-              : "Failed to create Shopify subscription"
-          );
-        }
-      } else {
-        // 🌍 Web users → Stripe Checkout
-        console.log("💳 [STRIPE] Using Stripe Checkout");
-        toast.loading(
-          language === "fr" ? "Redirection vers le paiement..." : "Redirecting to payment...", 
-          { id: "billing-checkout" }
-        );
+      // Bypass Stripe/Shopify billing — create a free active subscription directly
+      const now = new Date();
+      const periodEnd = new Date(now);
+      periodEnd.setFullYear(periodEnd.getFullYear() + 10);
 
-        const { data, error } = await supabase.functions.invoke("create-checkout", {
-          body: {
+      const { error: subError } = await supabase
+        .from("subscriptions")
+        .upsert(
+          {
+            seller_id: user.id,
             plan_id: planId,
+            status: "active",
             billing_period: billingCycle,
-            currency: language === "fr" ? "EUR" : "USD",
-            success_url: `${window.location.origin}/onboarding?checkout=success`,
-            cancel_url: `${window.location.origin}/onboarding?checkout=cancel`,
-          },
-        });
+            current_period_start: now.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+            cancel_at_period_end: false,
+          } as any,
+          { onConflict: "seller_id" }
+        );
 
-        if (error) {
-          console.error("❌ [STRIPE] Checkout error:", error);
-          toast.dismiss("billing-checkout");
-          toast.error(
-            language === "fr" 
-              ? "Échec de la création du paiement" 
-              : "Failed to create payment session"
-          );
-          return;
-        }
-
-        if (data?.url) {
-          toast.dismiss("billing-checkout");
-          window.location.href = data.url;
-          return;
-        }
+      if (subError) {
+        console.error("❌ [FREE-MODE] Subscription upsert error:", subError);
       }
+
+      toast.dismiss("billing-checkout");
+      toast.success(
+        language === "fr" ? "Accès gratuit activé !" : "Free access activated!"
+      );
+      window.location.href = "/dashboard";
+      return;
     } catch (error) {
-      console.error("💥 [BILLING] Error creating subscription:", error);
+      console.error("💥 [FREE-MODE] Error:", error);
       toast.dismiss("billing-checkout");
       toast.error(
-        language === "fr" 
-          ? "Erreur lors de la création de l'abonnement" 
-          : "Error creating subscription"
+        language === "fr"
+          ? "Erreur lors de l'activation"
+          : "Error activating access"
       );
     } finally {
       setLoading(false);
