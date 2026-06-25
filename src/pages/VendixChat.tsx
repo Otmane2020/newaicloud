@@ -303,6 +303,8 @@ export default function VendixChat() {
   const audioChunksRef = useRef<Blob[]>([]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const sendMessageRef = useRef<(t?: string, i?: string) => Promise<void>>();
 
   const state: "idle" | "thinking" | "speaking" | "listening" = isLoading
     ? "thinking"
@@ -319,6 +321,23 @@ export default function VendixChat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  // Auto-activate camera (vision) on tablets — touch device + landscape orientation
+  useEffect(() => {
+    const isTouch =
+      typeof window !== "undefined" &&
+      ("ontouchstart" in window || (navigator as any).maxTouchPoints > 0);
+    const isTablet = isTouch && window.innerWidth >= 768;
+    if (!isTablet) return;
+    // Need a user gesture for getUserMedia → arm on first interaction
+    const onFirstTap = () => {
+      window.removeEventListener("pointerdown", onFirstTap);
+      openCamera();
+    };
+    window.addEventListener("pointerdown", onFirstTap, { once: true });
+    return () => window.removeEventListener("pointerdown", onFirstTap);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ElevenLabs voice via robot-tts edge function
   const speak = async (text: string) => {
@@ -399,9 +418,47 @@ export default function VendixChat() {
       setIsLoading(false);
     }
   };
+  // Keep latest sendMessage accessible from native speech recognition callback
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  });
 
-  // === Voice recognition (record → robot-stt) ===
+  // === Voice recognition — Web Speech API (instant, native) with MediaRecorder fallback ===
   const startListening = async () => {
+    // 1) Try native Web Speech API first (instant, no upload)
+    const SR: any =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SR) {
+      try {
+        const rec = new SR();
+        rec.lang = "fr-FR";
+        rec.interimResults = false;
+        rec.continuous = false;
+        rec.maxAlternatives = 1;
+        recognitionRef.current = rec;
+        rec.onresult = (e: any) => {
+          const transcript = e.results?.[0]?.[0]?.transcript?.trim();
+          if (transcript) sendMessageRef.current?.(transcript);
+        };
+        rec.onerror = (e: any) => {
+          console.warn("SpeechRecognition error", e?.error);
+          if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+            toast.error("Microphone refusé — autorisez-le dans le navigateur");
+          } else if (e?.error === "no-speech") {
+            toast.message("Aucun son détecté, réessayez.");
+          }
+          setIsListening(false);
+        };
+        rec.onend = () => setIsListening(false);
+        rec.start();
+        setIsListening(true);
+        return;
+      } catch (err) {
+        console.warn("SpeechRecognition unavailable, fallback to recorder", err);
+      }
+    }
+
+    // 2) Fallback: record → robot-stt edge function
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
@@ -440,20 +497,30 @@ export default function VendixChat() {
       };
       rec.start();
       setIsListening(true);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error("Microphone refusé");
+      if (e?.name === "NotAllowedError") {
+        toast.error("Microphone refusé — autorisez-le dans le navigateur");
+      } else {
+        toast.error("Microphone indisponible");
+      }
     }
   };
 
   const stopListening = () => {
     setIsListening(false);
     try {
+      recognitionRef.current?.stop?.();
+    } catch {
+      /* noop */
+    }
+    try {
       mediaRecorderRef.current?.stop();
     } catch {
       /* noop */
     }
   };
+
 
   const toggleListening = () => (isListening ? stopListening() : startListening());
 
@@ -641,8 +708,30 @@ export default function VendixChat() {
         </section>
 
         {/* Chat panel */}
-        <aside className="w-full lg:w-[440px] flex flex-col bg-slate-950/60 backdrop-blur-xl">
-          <div className="flex-1 overflow-y-auto p-5 space-y-3">
+        <aside className="w-full lg:w-[440px] flex flex-col bg-slate-950/60 backdrop-blur-xl min-h-0">
+          {/* Sticky chat header */}
+          <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 border-b border-cyan-500/20 bg-slate-950/90 backdrop-blur-md">
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/40">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-950 animate-pulse" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-cyan-50 leading-tight">Vendix · Chat</p>
+                <p className="text-[10px] uppercase tracking-widest text-emerald-400/90">{statusLabel}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setMessages([{ id: "1", text: t.welcome, isUser: false, timestamp: new Date() }])}
+              className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-cyan-500/20 text-cyan-300/80 hover:text-cyan-100 hover:border-cyan-400/60 transition-all"
+              title="Réinitialiser la conversation"
+            >
+              Reset
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-3 min-h-0">
             {messages.map((m) => (
               <div key={m.id} className="space-y-2 animate-fade-in">
                 <div className={`flex ${m.isUser ? "justify-end" : "justify-start"}`}>

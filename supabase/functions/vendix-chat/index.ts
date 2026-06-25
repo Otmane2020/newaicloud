@@ -1,6 +1,5 @@
-// Vendix Chat - OpenRouter free-model fallback + catalog awareness
+// Vendix Chat - Lovable AI Gateway (fast Gemini Flash, vision-capable)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { callOpenRouter } from "../_shared/openrouter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +45,7 @@ async function loadCatalog(authHeader: string | null): Promise<{ products: Catal
     .eq("seller_id", user.id)
     .not("image_url", "is", null)
     .order("updated_at", { ascending: false })
-    .limit(150);
+    .limit(200);
 
   const products: CatalogProduct[] = (rows || []).map((r: any) => ({
     id: r.id,
@@ -56,7 +55,7 @@ async function loadCatalog(authHeader: string | null): Promise<{ products: Catal
     handle: r.handle,
     product_type: r.product_type,
     vendor: r.vendor,
-    description: r.body_html ? String(r.body_html).replace(/<[^>]+>/g, " ").slice(0, 200) : null,
+    description: r.body_html ? String(r.body_html).replace(/<[^>]+>/g, " ").slice(0, 160) : null,
   }));
   return { products, sellerId: user.id, storeUrl };
 }
@@ -64,11 +63,11 @@ async function loadCatalog(authHeader: string | null): Promise<{ products: Catal
 function buildCatalogPrompt(products: CatalogProduct[], lang: "fr" | "en"): string {
   if (!products.length) return "";
   const lines = products
-    .map((p, i) => `${i + 1}. [ID:${p.id}] ${p.title}${p.price ? ` — ${p.price}€` : ""}${p.product_type ? ` (${p.product_type})` : ""}`)
+    .map((p) => `- [ID:${p.id}] ${p.title}${p.price ? ` — ${p.price}€` : ""}${p.product_type ? ` · ${p.product_type}` : ""}`)
     .join("\n");
   return lang === "fr"
-    ? `\n\nCATALOGUE DU SHOWROOM (${products.length} produits disponibles, tu as accès aux images):\n${lines}\n\nIMPORTANT: Quand tu recommandes des produits, termine TOUJOURS ta réponse par une ligne au format exact:\n[PRODUCTS:id1,id2,id3]\nMaximum 4 IDs. Ne mentionne pas les IDs dans le texte. Sois chaleureux et propose des produits pertinents du catalogue ci-dessus.`
-    : `\n\nSHOWROOM CATALOG (${products.length} products available, you have access to images):\n${lines}\n\nIMPORTANT: When you recommend products, ALWAYS end your reply with one line exactly:\n[PRODUCTS:id1,id2,id3]\nMaximum 4 IDs. Do not mention IDs in the prose. Be warm and recommend relevant products from the catalog above.`;
+    ? `\n\nCATALOGUE DU SHOWROOM (${products.length} produits, chaque produit a déjà une image et un prix accessibles via son ID):\n${lines}\n\nRÈGLES STRICTES — Vendix, robot vendeur :\n• Réponses TRÈS COURTES (1-2 phrases max), chaleureuses et naturelles, comme un vrai vendeur.\n• N'utilise JAMAIS de markdown, d'astérisques, de listes à puces ou de tirets dans ta réponse.\n• Ne dis JAMAIS "cliquez sur les IDs" ou "interface du showroom" — les images apparaissent automatiquement sous ta réponse.\n• Quand le client cherche un produit OU demande des photos/images/exemples, recommande 2 à 4 produits pertinents et termine par EXACTEMENT cette ligne (sur sa propre ligne) :\n[PRODUCTS:id1,id2,id3]\n• Ne mentionne JAMAIS les IDs dans la prose. La ligne [PRODUCTS:...] est invisible pour le client.\n• Pose des questions ouvertes pour mieux conseiller (matière, style, budget, pièce).`
+    : `\n\nSHOWROOM CATALOG (${products.length} products, each one has an image and price linked to its ID):\n${lines}\n\nSTRICT RULES — Vendix sales robot:\n• VERY SHORT replies (1-2 sentences max), warm and natural like a real seller.\n• NEVER use markdown, asterisks, bullet lists or dashes.\n• NEVER say "click the IDs" or "showroom interface" — images appear automatically below your reply.\n• When the customer asks for a product OR for pictures/photos, recommend 2 to 4 relevant products and end with EXACTLY this line on its own:\n[PRODUCTS:id1,id2,id3]\n• Never mention IDs in prose. The [PRODUCTS:...] line is invisible to the customer.\n• Ask open questions to advise better (material, style, budget, room).`;
 }
 
 Deno.serve(async (req) => {
@@ -82,37 +81,58 @@ Deno.serve(async (req) => {
 
     const { products, storeUrl } = await loadCatalog(req.headers.get("Authorization"));
     const catalogPrompt = buildCatalogPrompt(products, lang);
-
     const systemFinal = `${system || ""}${catalogPrompt}`.trim();
 
-    // Build user message - support optional image (visual product detection)
     const chatMessages: any[] = systemFinal
       ? [{ role: "system", content: systemFinal }]
       : [];
     const history = (messages || []) as Array<{ role: "user" | "assistant"; content: string }>;
-    if (image && history.length > 0) {
-      // Replace last user message with multimodal version
-      const last = history[history.length - 1];
-      chatMessages.push(...history.slice(0, -1));
+    // Keep only last 12 turns to keep latency low
+    const trimmed = history.slice(-12);
+
+    if (image && trimmed.length > 0) {
+      const last = trimmed[trimmed.length - 1];
+      chatMessages.push(...trimmed.slice(0, -1));
       chatMessages.push({
         role: last.role,
         content: [
-          { type: "text", text: last.content || (lang === "fr" ? "Identifie le produit sur cette image et trouve-le dans le catalogue." : "Identify the product in this image and find it in the catalog.") },
+          { type: "text", text: last.content || (lang === "fr" ? "Identifie ce produit dans le catalogue." : "Identify this product in the catalog.") },
           { type: "image_url", image_url: { url: image } },
         ],
       });
     } else {
-      chatMessages.push(...history);
+      chatMessages.push(...trimmed);
     }
 
-    const raw = await callOpenRouter({
-      messages: chatMessages,
-      temperature: 0.7,
-      // Prefer vision-capable model when an image is provided
-      model: image ? "qwen/qwen-2.5-vl-72b-instruct:free" : undefined,
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("Missing LOVABLE_API_KEY");
+
+    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: chatMessages,
+        temperature: 0.6,
+        max_tokens: 280,
+      }),
     });
 
-    // Parse [PRODUCTS:...] tag
+    if (!aiRes.ok) {
+      const txt = await aiRes.text();
+      const status = aiRes.status === 429 ? 429 : aiRes.status === 402 ? 402 : 500;
+      return new Response(JSON.stringify({ error: `AI ${aiRes.status}: ${txt.slice(0, 300)}` }), {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const data = await aiRes.json();
+    const raw: string = data?.choices?.[0]?.message?.content || "";
+
     let reply = raw;
     let productIds: string[] = [];
     const match = raw.match(/\[PRODUCTS:\s*([^\]]+)\]/i);
@@ -124,6 +144,8 @@ Deno.serve(async (req) => {
         .slice(0, 4);
       reply = raw.replace(match[0], "").trim();
     }
+    // Strip any stray markdown markers the model may still emit
+    reply = reply.replace(/\*\*/g, "").replace(/^\s*[-*]\s+/gm, "").trim();
 
     const recommended = productIds
       .map((id) => products.find((p) => p.id === id))
@@ -134,7 +156,9 @@ Deno.serve(async (req) => {
         price: p!.price,
         image_url: p!.image_url,
         handle: p!.handle,
-        checkout_url: storeUrl && p!.handle ? `https://${storeUrl.replace(/^https?:\/\//, "")}/products/${p!.handle}` : null,
+        checkout_url: storeUrl && p!.handle
+          ? `https://${storeUrl.replace(/^https?:\/\//, "")}/products/${p!.handle}`
+          : null,
       }));
 
     return new Response(JSON.stringify({ reply, products: recommended, storeUrl }), {
@@ -143,9 +167,8 @@ Deno.serve(async (req) => {
   } catch (e: any) {
     console.error("vendix-chat error:", e);
     const msg = String(e?.message || e);
-    const status = msg.includes("429") ? 429 : msg.includes("402") ? 402 : 500;
     return new Response(JSON.stringify({ error: msg }), {
-      status,
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
