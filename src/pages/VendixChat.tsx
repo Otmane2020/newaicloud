@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Send, Sparkles, Power, Volume2, VolumeX, Camera, ShoppingCart, X } from "lucide-react";
+import { Mic, MicOff, Send, Sparkles, Power, Volume2, VolumeX, Camera, ShoppingCart, X, QrCode, Trash2, Plus, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import CheckoutFlow, { type CheckoutProduct } from "@/components/vendix/CheckoutFlow";
+import LocalQrCode from "@/components/vendix/LocalQrCode";
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -45,7 +46,7 @@ const COPY = {
     error: "Connexion à Vendix interrompue.",
     status: { idle: "EN LIGNE", thinking: "RÉFLEXION…", speaking: "EN DIRECT", listening: "ÉCOUTE" },
     quick: [
-      { title: "👋 Accueil proactif", prompt: "Salue-moi et présente-toi en tant que vendeur du showroom." },
+      { title: "🛍️ Produits", prompt: "Montre-moi 4 produits du showroom avec photos et prix." },
       { title: "🏛️ Visite du showroom", prompt: "Fais-moi visiter le showroom et présente les zones et collections principales." },
       { title: "🧭 Guide intelligent", prompt: "Aide-moi à naviguer dans le catalogue et recommande des produits selon mes besoins." },
       { title: "👁️ Reconnaissance produit", prompt: "Identifie les produits phares et explique pourquoi ils sont populaires." },
@@ -54,6 +55,20 @@ const COPY = {
       "Tu es Vendix, un robot vendeur IA déployé sur une tablette Android dans un showroom. Réponds en français, sois chaleureux, concis (2-3 phrases), et guide le client comme un vendeur humain expert.",
     animOn: "Animation",
     animOff: "Statique",
+    featured: "Produits disponibles",
+    recommendations: "Recommandations",
+    addToCart: "Ajouter",
+    viewMore: "Voir plus",
+    cart: "Panier",
+    emptyCart: "Panier vide",
+    total: "Total",
+    checkoutQr: "QR paiement",
+    openCart: "Ouvrir le panier",
+    added: "Ajouté au panier",
+    reset: "Reset",
+    visualDetection: "Détection visuelle",
+    captureIdentify: "Capturer & identifier",
+    visualHint: "Pointez le produit, Vendix le reconnaîtra dans votre catalogue.",
   },
   en: {
     title: "VENDIX",
@@ -64,7 +79,7 @@ const COPY = {
     error: "Connection to Vendix interrupted.",
     status: { idle: "ONLINE", thinking: "THINKING…", speaking: "LIVE", listening: "LISTENING" },
     quick: [
-      { title: "👋 Proactive greeting", prompt: "Greet me and introduce yourself as the showroom sales assistant." },
+      { title: "🛍️ Products", prompt: "Show me 4 showroom products with photos and prices." },
       { title: "🏛️ Showroom tour", prompt: "Give me a tour of the showroom and showcase the main zones and collections." },
       { title: "🧭 Smart guide", prompt: "Help me navigate the catalogue and recommend products based on my needs." },
       { title: "👁️ Product recognition", prompt: "Identify the flagship products and explain why they are popular." },
@@ -73,7 +88,29 @@ const COPY = {
       "You are Vendix, an AI sales robot on an Android tablet in a showroom. Reply in English, warm, concise (2-3 sentences), guide the customer like an expert human seller.",
     animOn: "Animation",
     animOff: "Static",
+    featured: "Available products",
+    recommendations: "Recommended",
+    addToCart: "Add",
+    viewMore: "View more",
+    cart: "Cart",
+    emptyCart: "Empty cart",
+    total: "Total",
+    checkoutQr: "Payment QR",
+    openCart: "Open cart",
+    added: "Added to cart",
+    reset: "Reset",
+    visualDetection: "Visual detection",
+    captureIdentify: "Capture & identify",
+    visualHint: "Point at the product and Vendix will match it in your catalog.",
   },
+};
+
+const formatPrice = (price: number | string | null) => {
+  if (price == null || price === "") return "";
+  const numeric = typeof price === "number" ? price : Number(String(price).replace(",", "."));
+  return Number.isFinite(numeric)
+    ? new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(numeric)
+    : `${price}€`;
 };
 
 /* ---------- Animated Robot Character (Sanbot-style) ---------- */
@@ -280,6 +317,59 @@ function RobotFace({
   );
 }
 
+function ProductTile({
+  product,
+  t,
+  onAdd,
+  onOpen,
+  compact = false,
+}: {
+  product: ProductCard;
+  t: typeof COPY.fr;
+  onAdd: (p: ProductCard) => void;
+  onOpen: (p: ProductCard) => void;
+  compact?: boolean;
+}) {
+  return (
+    <article className={`group overflow-hidden rounded-2xl bg-slate-900/72 border border-cyan-200/18 shadow-[0_16px_45px_rgba(0,0,0,0.28)] transition-all hover:border-cyan-300/70 ${compact ? "flex gap-3 p-2" : "p-3"}`}>
+      {product.image_url && (
+        <div className={`${compact ? "h-20 w-20" : "aspect-square w-full"} shrink-0 overflow-hidden rounded-xl bg-slate-800`}>
+          <img
+            src={product.image_url}
+            alt={product.title}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        </div>
+      )}
+      <div className={`${compact ? "min-w-0 flex-1" : "pt-3"}`}>
+        <h3 className={`${compact ? "text-xs" : "text-sm"} line-clamp-2 font-semibold leading-snug text-slate-50`}>
+          {product.title}
+        </h3>
+        {product.price != null && (
+          <p className={`${compact ? "text-xs" : "text-base"} mt-1 font-black text-cyan-200`}>
+            {formatPrice(product.price)}
+          </p>
+        )}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            onClick={() => onOpen(product)}
+            className="rounded-lg border border-cyan-200/25 bg-slate-950/50 px-2 py-2 text-[11px] font-semibold text-cyan-50 transition hover:border-cyan-200/70"
+          >
+            {t.viewMore}
+          </button>
+          <button
+            onClick={() => onAdd(product)}
+            className="inline-flex items-center justify-center gap-1 rounded-lg bg-cyan-50 px-2 py-2 text-[11px] font-black text-slate-950 transition hover:bg-white"
+          >
+            <ShoppingCart className="h-3 w-3" /> {t.addToCart}
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 /* ---------- Main page ---------- */
 export default function VendixChat() {
   const language: "fr" = "fr"; // Robot vendeur Vendix — toujours en français
@@ -296,7 +386,11 @@ export default function VendixChat() {
   const [speaking, setSpeaking] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [checkoutProduct, setCheckoutProduct] = useState<CheckoutProduct | null>(null);
+  const [featuredProducts, setFeaturedProducts] = useState<ProductCard[]>([]);
+  const [cart, setCart] = useState<Array<ProductCard & { qty: number }>>([]);
+  const [cartOpen, setCartOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const bootstrappedRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -321,6 +415,29 @@ export default function VendixChat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("vendix-chat", {
+          body: {
+            system: t.system,
+            language,
+            messages: [{ role: "user", content: "Montre les produits du showroom avec photos et prix." }],
+          },
+        });
+        const products: ProductCard[] = (data as any)?.products || [];
+        if (products.length) {
+          setFeaturedProducts(products);
+          setMessages((current) => current.map((message, index) => index === 0 ? { ...message, products } : message));
+        }
+      } catch (error) {
+        console.warn("Vendix product bootstrap failed", error);
+      }
+    })();
+  }, [language, t.system]);
 
   // Auto-activate camera (vision) on tablets — touch device + landscape orientation
   useEffect(() => {
@@ -402,6 +519,7 @@ export default function VendixChat() {
         (data as any)?.content ||
         t.welcome;
       const products: ProductCard[] = (data as any)?.products || [];
+      if (products.length) setFeaturedProducts(products);
       setMessages((m) => [
         ...m,
         { id: (Date.now() + 1).toString(), text: reply, isUser: false, timestamp: new Date(), products },
@@ -579,15 +697,39 @@ export default function VendixChat() {
       ? t.status.listening
       : t.status.idle;
 
+  const latestBotMessage = messages.filter((m) => !m.isUser).slice(-1)[0];
+  const displayedProducts = latestBotMessage?.products?.length ? latestBotMessage.products : featuredProducts;
+  const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
+  const cartTotal = cart.reduce((sum, item) => {
+    const value = typeof item.price === "number" ? item.price : Number(String(item.price || 0).replace(",", "."));
+    return sum + (Number.isFinite(value) ? value * item.qty : 0);
+  }, 0);
+  const cartQrValue = cart.length
+    ? `VENDIX_CART:${cart.map((item) => `${item.id}x${item.qty}`).join("|")}|TOTAL:${cartTotal.toFixed(2)}`
+    : "VENDIX_CART:EMPTY";
+
+  const addToCart = (product: ProductCard) => {
+    setCart((items) => {
+      const exists = items.find((item) => item.id === product.id);
+      if (exists) return items.map((item) => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+      return [...items, { ...product, qty: 1 }];
+    });
+    setCartOpen(true);
+    toast.success(`${product.title} · ${t.added}`);
+  };
+
+  const updateQty = (productId: string, delta: number) => {
+    setCart((items) => items
+      .map((item) => item.id === productId ? { ...item, qty: Math.max(0, item.qty + delta) } : item)
+      .filter((item) => item.qty > 0));
+  };
+
   return (
-    <div className="fixed inset-0 z-40 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-black text-white">
+    <div className="fixed inset-0 z-40 overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.18),transparent_30%),linear-gradient(135deg,#10172a,#17152a_48%,#080b15)] text-white">
       {/* Background grid + glows */}
       <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(34,211,238,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.08)_1px,transparent_1px)] [background-size:48px_48px]" />
-      <div className="pointer-events-none absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-cyan-500/20 blur-3xl animate-pulse" />
-      <div className="pointer-events-none absolute -bottom-32 -right-32 w-[28rem] h-[28rem] rounded-full bg-purple-500/20 blur-3xl animate-pulse" />
-
       {/* Top bar */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-cyan-500/10 backdrop-blur-md">
+      <header className="relative z-10 flex items-center justify-between px-6 py-3 border-b border-cyan-500/10 bg-slate-950/45 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/40">
             <Sparkles className="w-5 h-5 text-white" />
@@ -613,6 +755,15 @@ export default function VendixChat() {
               {statusLabel}
             </span>
           </div>
+
+          <button
+            onClick={() => setCartOpen(true)}
+            title={t.openCart}
+            className="relative inline-flex items-center gap-2 rounded-xl border border-cyan-200/25 bg-slate-900/70 px-3 py-2 text-xs font-bold text-cyan-50 transition hover:border-cyan-200/70"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            {cartCount} items
+          </button>
 
           <button
             onClick={() => setVoiceOn((v) => !v)}
@@ -642,69 +793,38 @@ export default function VendixChat() {
       </header>
 
       {/* Main split */}
-      <div className="relative z-10 flex flex-col lg:flex-row h-[calc(100vh-73px)]">
+      <div className="relative z-10 flex h-[calc(100vh-65px)] flex-col overflow-hidden rounded-t-[2rem] border-t border-cyan-100/10 bg-slate-950/22 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] lg:flex-row">
         {/* Robot stage */}
-        <section className="relative flex-1 flex flex-col items-center justify-center p-6 lg:p-10 border-b lg:border-b-0 lg:border-r border-cyan-500/10 overflow-hidden">
+        <section className="relative flex-1 overflow-y-auto border-b border-cyan-500/10 p-4 lg:border-b-0 lg:border-r lg:p-7">
           {/* Floor reflection */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-32 bg-gradient-to-t from-cyan-500/10 to-transparent blur-2xl" />
-          <RobotFace state={state} animated={animated} />
+          <div className="relative h-44 w-full overflow-visible">
+            <div className="absolute left-1/2 top-0 origin-top -translate-x-1/2 scale-[0.32] md:scale-[0.36] xl:scale-[0.4]">
+              <RobotFace state={state} animated={animated} />
+            </div>
+          </div>
 
           {/* Live caption (last bot message) */}
-          <div className="mt-10 max-w-xl text-center min-h-[4rem]">
+          <div className="mx-auto mt-2 max-w-3xl text-center min-h-[3.25rem]">
             <p className="text-[10px] tracking-[0.4em] text-cyan-400/70 mb-2">
               ◤ {statusLabel} ◢
             </p>
-            <p className="text-lg md:text-xl text-cyan-50/90 font-light leading-relaxed">
+            <p className="text-sm md:text-base text-cyan-50/90 font-light leading-relaxed">
               {messages.filter((m) => !m.isUser).slice(-1)[0]?.text}
             </p>
           </div>
 
-          {/* Featured products carousel from latest bot reply */}
-          {(() => {
-            const last = messages.filter((m) => !m.isUser).slice(-1)[0];
-            const prods = last?.products || [];
-            if (!prods.length) return null;
-            return (
-              <div className="mt-6 w-full max-w-3xl">
-                <p className="text-[10px] tracking-[0.4em] text-cyan-400/70 mb-3 text-center">
-                  ◤ {language === "fr" ? "RECOMMANDATIONS" : "RECOMMENDED"} ◢
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {prods.map((p) => (
-                    <div
-                      key={p.id}
-                      className="group rounded-2xl overflow-hidden bg-slate-900/70 border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] transition-all"
-                    >
-                      {p.image_url && (
-                        <div className="aspect-square overflow-hidden bg-slate-800">
-                          <img
-                            src={p.image_url}
-                            alt={p.title}
-                            loading="lazy"
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          />
-                        </div>
-                      )}
-                      <div className="p-2.5">
-                        <p className="text-xs text-cyan-50 line-clamp-2 leading-tight">{p.title}</p>
-                        {p.price != null && (
-                          <p className="text-sm font-bold text-cyan-300 mt-1">{p.price}€</p>
-                        )}
-                        {p.checkout_url && (
-                          <button
-                            onClick={() => setCheckoutProduct(p)}
-                            className="mt-2 flex items-center justify-center gap-1.5 w-full text-[11px] font-semibold py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-md shadow-cyan-500/30 transition-all"
-                          >
-                            <ShoppingCart className="w-3 h-3" /> Acheter
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
+          <div className="relative mx-auto mt-5 w-full max-w-5xl pb-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-50">{latestBotMessage?.products?.length ? t.recommendations : t.featured}</h2>
+              <span className="rounded-full border border-cyan-200/20 bg-slate-950/45 px-3 py-1 text-[11px] text-cyan-100">{displayedProducts.length} produits</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {displayedProducts.map((p) => (
+                <ProductTile key={p.id} product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} />
+              ))}
+            </div>
+          </div>
         </section>
 
         {/* Chat panel */}
@@ -728,7 +848,7 @@ export default function VendixChat() {
               className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-cyan-500/20 text-cyan-300/80 hover:text-cyan-100 hover:border-cyan-400/60 transition-all"
               title="Réinitialiser la conversation"
             >
-              Reset
+              {t.reset}
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-5 space-y-3 min-h-0">
@@ -759,30 +879,7 @@ export default function VendixChat() {
                         key={p.id}
                         className="group rounded-xl overflow-hidden bg-slate-900/70 border border-cyan-500/20 hover:border-cyan-400/60 transition-all shadow-lg"
                       >
-                        {p.image_url && (
-                          <div className="aspect-square overflow-hidden bg-slate-800">
-                            <img
-                              src={p.image_url}
-                              alt={p.title}
-                              loading="lazy"
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                          </div>
-                        )}
-                        <div className="p-2">
-                          <p className="text-[11px] text-cyan-50 line-clamp-2 leading-tight">{p.title}</p>
-                          {p.price != null && (
-                            <p className="text-[11px] font-bold text-cyan-300 mt-1">{p.price}€</p>
-                          )}
-                          {p.checkout_url && (
-                            <button
-                              onClick={() => setCheckoutProduct(p)}
-                              className="mt-1.5 flex items-center justify-center gap-1 w-full text-[10px] font-semibold py-1 rounded-md bg-cyan-500/80 hover:bg-cyan-400 text-white transition-all"
-                            >
-                              <ShoppingCart className="w-2.5 h-2.5" /> Acheter
-                            </button>
-                          )}
-                        </div>
+                          <ProductTile product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} compact />
                       </div>
                     ))}
                   </div>
@@ -872,7 +969,7 @@ export default function VendixChat() {
           >
             <X className="w-5 h-5" />
           </button>
-          <p className="text-cyan-300 text-sm tracking-[0.3em] mb-4">◤ DÉTECTION VISUELLE ◢</p>
+          <p className="text-cyan-300 text-sm tracking-[0.3em] mb-4">◤ {t.visualDetection} ◢</p>
           <video
             ref={videoRef}
             playsInline
@@ -884,9 +981,62 @@ export default function VendixChat() {
             className="mt-6 px-8 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold shadow-lg shadow-cyan-500/40 flex items-center gap-2"
           >
             <Camera className="w-5 h-5" />
-            Capturer & identifier
+            {t.captureIdentify}
           </button>
-          <p className="mt-3 text-xs text-slate-400">Pointez le produit, Vendix le reconnaîtra dans votre catalogue.</p>
+          <p className="mt-3 text-xs text-slate-400">{t.visualHint}</p>
+        </div>
+      )}
+
+      {cartOpen && (
+        <div className="fixed inset-0 z-[55] flex justify-end bg-black/55 backdrop-blur-sm" onClick={() => setCartOpen(false)}>
+          <aside className="h-full w-full max-w-md overflow-y-auto border-l border-cyan-200/20 bg-slate-950 p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.35em] text-cyan-300/75">Vendix</p>
+                <h2 className="text-xl font-black text-white">{t.cart}</h2>
+              </div>
+              <button onClick={() => setCartOpen(false)} className="rounded-xl border border-slate-700 p-2 text-slate-200 hover:border-cyan-300/60">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {!cart.length ? (
+              <div className="grid h-48 place-items-center rounded-2xl border border-dashed border-cyan-200/20 text-slate-400">
+                {t.emptyCart}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {cart.map((item) => (
+                  <div key={item.id} className="flex gap-3 rounded-2xl border border-cyan-200/15 bg-slate-900/70 p-3">
+                    {item.image_url && <img src={item.image_url} alt={item.title} className="h-16 w-16 rounded-xl object-cover" />}
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-semibold text-white">{item.title}</p>
+                      <p className="mt-1 text-sm font-black text-cyan-200">{formatPrice(item.price)}</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <button onClick={() => updateQty(item.id, -1)} className="rounded-lg border border-slate-700 p-1 text-slate-200"><Minus className="h-3 w-3" /></button>
+                        <span className="w-8 text-center text-sm font-bold">{item.qty}</span>
+                        <button onClick={() => updateQty(item.id, 1)} className="rounded-lg border border-slate-700 p-1 text-slate-200"><Plus className="h-3 w-3" /></button>
+                        <button onClick={() => updateQty(item.id, -item.qty)} className="ml-auto rounded-lg border border-slate-700 p-1 text-slate-400 hover:text-red-300"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="rounded-2xl border border-cyan-200/20 bg-slate-900/80 p-4">
+                  <div className="mb-4 flex items-center justify-between text-lg font-black">
+                    <span>{t.total}</span>
+                    <span className="text-cyan-200">{formatPrice(cartTotal)}</span>
+                  </div>
+                  <div className="flex flex-col items-center rounded-2xl bg-white p-4">
+                    <LocalQrCode value={cartQrValue} size={210} alt={t.checkoutQr} />
+                  </div>
+                  <p className="mt-3 flex items-center justify-center gap-2 text-xs font-semibold text-cyan-200">
+                    <QrCode className="h-4 w-4" /> {t.checkoutQr}
+                  </p>
+                </div>
+              </div>
+            )}
+          </aside>
         </div>
       )}
 
