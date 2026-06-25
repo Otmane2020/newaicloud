@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, Send, Sparkles, Power, Volume2, VolumeX, Camera, ShoppingCart, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import CheckoutFlow, { type CheckoutProduct } from "@/components/vendix/CheckoutFlow";
 
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -243,21 +244,28 @@ function RobotFace({
 
         {/* Body shell */}
         <div className="relative w-56 md:w-64 h-44 md:h-52 bg-gradient-to-b from-white via-slate-50 to-slate-200 rounded-t-[3rem] rounded-b-[1.5rem] border border-slate-300 shadow-2xl overflow-hidden">
-          {/* Black chest panel (V shape) */}
+          {/* Black chest panel (V shape) with cyan trim */}
           <div
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-[78%] h-[78%] bg-gradient-to-b from-slate-900 to-black"
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-[78%] h-[78%] bg-gradient-to-b from-slate-900 via-slate-950 to-black"
             style={{ clipPath: "polygon(0 0, 100% 0, 50% 100%)" }}
           >
             {/* Chest indicator light */}
             <div
-              className={`absolute top-6 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full ${
+              className={`absolute top-6 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full ${
                 animated ? "animate-pulse" : ""
               }`}
               style={{
                 background: state === "speaking" ? "#22d3ee" : state === "thinking" ? "#a78bfa" : "#10b981",
-                boxShadow: `0 0 12px ${state === "speaking" ? "#22d3ee" : state === "thinking" ? "#a78bfa" : "#10b981"}`,
+                boxShadow: `0 0 18px ${state === "speaking" ? "#22d3ee" : state === "thinking" ? "#a78bfa" : "#10b981"}`,
               }}
             />
+            {/* HUD lines */}
+            <div className="absolute top-12 left-1/2 -translate-x-1/2 w-16 h-px bg-cyan-400/40" />
+            <div className="absolute top-14 left-1/2 -translate-x-1/2 w-10 h-px bg-cyan-400/30" />
+          </div>
+          {/* Belly screen mini */}
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-24 h-7 rounded-lg bg-gradient-to-br from-cyan-500/80 to-blue-600/80 border border-cyan-300/60 shadow-[0_0_18px_rgba(34,211,238,0.5)] flex items-center justify-center">
+            <span className="text-[9px] tracking-[0.3em] font-mono text-white/90">VENDIX</span>
           </div>
         </div>
 
@@ -287,6 +295,7 @@ export default function VendixChat() {
   const [voiceOn, setVoiceOn] = useState(true);
   const [speaking, setSpeaking] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [checkoutProduct, setCheckoutProduct] = useState<CheckoutProduct | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -615,14 +624,12 @@ export default function VendixChat() {
                           <p className="text-sm font-bold text-cyan-300 mt-1">{p.price}€</p>
                         )}
                         {p.checkout_url && (
-                          <a
-                            href={p.checkout_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={() => setCheckoutProduct(p)}
                             className="mt-2 flex items-center justify-center gap-1.5 w-full text-[11px] font-semibold py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-md shadow-cyan-500/30 transition-all"
                           >
                             <ShoppingCart className="w-3 h-3" /> Acheter
-                          </a>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -679,14 +686,12 @@ export default function VendixChat() {
                             <p className="text-[11px] font-bold text-cyan-300 mt-1">{p.price}€</p>
                           )}
                           {p.checkout_url && (
-                            <a
-                              href={p.checkout_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={() => setCheckoutProduct(p)}
                               className="mt-1.5 flex items-center justify-center gap-1 w-full text-[10px] font-semibold py-1 rounded-md bg-cyan-500/80 hover:bg-cyan-400 text-white transition-all"
                             >
                               <ShoppingCart className="w-2.5 h-2.5" /> Acheter
-                            </a>
+                            </button>
                           )}
                         </div>
                       </div>
@@ -794,6 +799,13 @@ export default function VendixChat() {
           </button>
           <p className="mt-3 text-xs text-slate-400">Pointez le produit, Vendix le reconnaîtra dans votre catalogue.</p>
         </div>
+      )}
+
+      {checkoutProduct && (
+        <CheckoutFlow
+          product={checkoutProduct}
+          onClose={() => setCheckoutProduct(null)}
+        />
       )}
     </div>
   );
