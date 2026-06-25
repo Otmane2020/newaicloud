@@ -184,6 +184,7 @@ export function AppSidebar() {
   ];
 
   const chatSubItems = [
+    { title: "Vendix", url: "/vendix-chat", icon: Sparkles, key: "vendix" },
     { title: t.chat.submenu.assistant, url: "/chat", icon: MessageSquare, key: "assistant" },
     { title: t.chat.submenu.robot, url: "/chat-robot", icon: Bot, key: "robot" },
     { title: t.chat.submenu.orders, url: "/chat-orders", icon: Package, key: "orders" },
@@ -192,6 +193,7 @@ export function AppSidebar() {
     { title: t.chat.submenu.productSource, url: "/product-source", icon: Database, key: "productSource" },
     { title: t.chat.submenu.settings, url: "/chat-settings", icon: Settings, key: "settings" },
   ];
+
 
   // Build account items dynamically based on user plan and access
   const accountSubItems = [
