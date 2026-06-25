@@ -793,6 +793,13 @@ export default function VendixChat() {
           <p className="mt-3 text-xs text-slate-400">Pointez le produit, Vendix le reconnaîtra dans votre catalogue.</p>
         </div>
       )}
+
+      {checkoutProduct && (
+        <CheckoutFlow
+          product={checkoutProduct}
+          onClose={() => setCheckoutProduct(null)}
+        />
+      )}
     </div>
   );
 }
