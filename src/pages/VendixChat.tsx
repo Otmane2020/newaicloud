@@ -783,15 +783,16 @@ export default function VendixChat() {
   };
 
   return (
-    <div className="fixed inset-0 z-40 overflow-hidden bg-[linear-gradient(135deg,#252238,#0c1222_52%,#070b15)] p-3 text-white">
-      <div className="relative z-10 flex h-full flex-col overflow-hidden rounded-[28px] border border-cyan-100/10 bg-[radial-gradient(circle_at_30%_8%,rgba(148,210,210,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(7,11,21,0.48))] shadow-[0_26px_80px_rgba(0,0,0,0.55)] lg:flex-row">
+    <div className="fixed inset-0 z-40 overflow-hidden bg-[radial-gradient(circle_at_30%_20%,#2a2547_0%,#15132a_45%,#0a0a18_100%)] p-3 text-white">
+      <div className="relative z-10 flex h-full flex-col overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_25%_15%,rgba(167,139,250,0.18),transparent_45%),radial-gradient(circle_at_75%_85%,rgba(56,189,248,0.12),transparent_50%),linear-gradient(135deg,rgba(255,255,255,0.04),rgba(10,10,24,0.6))] shadow-[0_26px_80px_rgba(0,0,0,0.55)] lg:flex-row">
         {/* Robot stage */}
-        <section className="relative flex-[1.65] overflow-y-auto border-b border-cyan-500/10 p-5 lg:border-b-0 lg:border-r lg:p-8">
+        <section className="relative flex-[1.65] overflow-y-auto p-5 lg:p-8">
           {/* Floor reflection */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-32 bg-gradient-to-t from-cyan-500/10 to-transparent blur-2xl" />
-          <h1 className="mb-1 text-center text-2xl font-semibold tracking-[0.36em] text-cyan-50">{t.title}</h1>
-          <div className="relative h-40 w-full overflow-visible">
-            <div className="absolute left-1/2 top-[-10px] origin-top -translate-x-1/2 scale-[0.28] md:scale-[0.32] xl:scale-[0.35]">
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-32 bg-gradient-to-t from-cyan-500/10 to-transparent blur-2xl pointer-events-none" />
+
+          {/* Hero robot */}
+          <div className="relative flex h-[320px] w-full items-center justify-center overflow-visible">
+            <div className="origin-center scale-[0.55] md:scale-[0.62] xl:scale-[0.7]">
               <RobotFace state={state} animated={animated} />
             </div>
           </div>
@@ -806,14 +807,14 @@ export default function VendixChat() {
             </p>
           </div>
 
-          <div className="relative mx-auto mt-2 w-full max-w-5xl pb-8">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-slate-50">{latestBotMessage?.products?.length ? t.recommendations : t.featured}</h2>
-              <span className="rounded-full border border-cyan-200/20 bg-slate-950/45 px-3 py-1 text-[11px] text-cyan-100">{displayedProducts.length} {t.productCount}</span>
+          <div className="relative mx-auto mt-6 w-full max-w-5xl pb-8">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold tracking-tight text-white/95">{latestBotMessage?.products?.length ? t.recommendations : t.featured}</h2>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-white/70">{displayedProducts.length} {t.productCount}</span>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {displayedProducts.map((p) => (
-                <ProductTile key={`stage-${p.id}`} product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} />
+                <ProductTile key={`stage-${p.id}`} product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} variant="stage" />
               ))}
             </div>
           </div>
