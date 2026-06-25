@@ -46,16 +46,16 @@ const COPY = {
     error: "Connexion à Vendix interrompue.",
     status: { idle: "EN LIGNE", thinking: "RÉFLEXION…", speaking: "EN DIRECT", listening: "ÉCOUTE" },
     quick: [
-      { title: "🛍️ Produits", prompt: "Montre-moi 4 produits du showroom avec photos et prix." },
+      { title: "👋 Accueil proactif", prompt: "Salue-moi et présente-toi en tant que vendeur du showroom." },
       { title: "🏛️ Visite du showroom", prompt: "Fais-moi visiter le showroom et présente les zones et collections principales." },
-      { title: "🧭 Guide intelligent", prompt: "Aide-moi à naviguer dans le catalogue et recommande des produits selon mes besoins." },
+      { title: "🧭 Guide Intelligent", prompt: "Aide-moi à naviguer dans le catalogue et recommande des produits selon mes besoins." },
       { title: "👁️ Reconnaissance produit", prompt: "Identifie les produits phares et explique pourquoi ils sont populaires." },
     ],
     system:
       "Tu es Vendix, un robot vendeur IA déployé sur une tablette Android dans un showroom. Réponds en français, sois chaleureux, concis (2-3 phrases), et guide le client comme un vendeur humain expert.",
     animOn: "Animation",
     animOff: "Statique",
-    featured: "Produits disponibles",
+    featured: "Featured Products",
     recommendations: "Recommandations",
     addToCart: "Ajouter",
     viewMore: "Voir plus",
@@ -64,6 +64,8 @@ const COPY = {
     total: "Total",
     checkoutQr: "QR paiement",
     openCart: "Ouvrir le panier",
+    chatTitle: "Vendix • Chat",
+    online: "En ligne",
     items: "articles",
     productCount: "produits",
     added: "Ajouté au panier",
@@ -81,7 +83,7 @@ const COPY = {
     error: "Connection to Vendix interrupted.",
     status: { idle: "ONLINE", thinking: "THINKING…", speaking: "LIVE", listening: "LISTENING" },
     quick: [
-      { title: "🛍️ Products", prompt: "Show me 4 showroom products with photos and prices." },
+      { title: "👋 Proactive greeting", prompt: "Greet me and introduce yourself as the showroom sales assistant." },
       { title: "🏛️ Showroom tour", prompt: "Give me a tour of the showroom and showcase the main zones and collections." },
       { title: "🧭 Smart guide", prompt: "Help me navigate the catalogue and recommend products based on my needs." },
       { title: "👁️ Product recognition", prompt: "Identify the flagship products and explain why they are popular." },
@@ -99,6 +101,8 @@ const COPY = {
     total: "Total",
     checkoutQr: "Payment QR",
     openCart: "Open cart",
+    chatTitle: "Vendix • Chat",
+    online: "Online",
     items: "items",
     productCount: "products",
     added: "Added to cart",
@@ -344,9 +348,9 @@ function ProductTile({
   compact?: boolean;
 }) {
   return (
-    <article className={`group overflow-hidden rounded-2xl bg-slate-900/72 border border-cyan-200/18 shadow-[0_16px_45px_rgba(0,0,0,0.28)] transition-all hover:border-cyan-300/70 ${compact ? "flex gap-3 p-2" : "p-3"}`}>
+    <article className={`group flex overflow-hidden rounded-[10px] bg-slate-900/62 border border-cyan-100/15 shadow-[0_18px_45px_rgba(0,0,0,0.24)] transition-all hover:border-cyan-200/55 ${compact ? "gap-3 p-2" : "gap-4 p-3"}`}>
       {product.image_url && (
-        <div className={`${compact ? "h-20 w-20" : "aspect-square w-full"} shrink-0 overflow-hidden rounded-xl bg-slate-800`}>
+        <div className={`${compact ? "h-20 w-20" : "h-24 w-24"} shrink-0 overflow-hidden rounded-[9px] bg-slate-800`}>
           <img
             src={product.image_url}
             alt={product.title}
@@ -355,7 +359,7 @@ function ProductTile({
           />
         </div>
       )}
-      <div className={`${compact ? "min-w-0 flex-1" : "pt-3"}`}>
+      <div className="min-w-0 flex-1 py-1">
         <h3 className={`${compact ? "text-xs" : "text-sm"} line-clamp-2 font-semibold leading-snug text-slate-50`}>
           {product.title}
         </h3>
@@ -367,13 +371,13 @@ function ProductTile({
         <div className="mt-3 grid grid-cols-2 gap-2">
           <button
             onClick={() => onOpen(product)}
-            className="rounded-lg border border-cyan-200/25 bg-slate-950/50 px-2 py-2 text-[11px] font-semibold text-cyan-50 transition hover:border-cyan-200/70"
+            className="rounded-[8px] border border-cyan-100/20 bg-slate-950/45 px-2 py-2 text-[11px] font-semibold text-cyan-50 transition hover:border-cyan-100/60"
           >
             {t.viewMore}
           </button>
           <button
             onClick={() => onAdd(product)}
-            className="inline-flex items-center justify-center gap-1 rounded-lg bg-cyan-50 px-2 py-2 text-[11px] font-black text-slate-950 transition hover:bg-white"
+            className="inline-flex items-center justify-center gap-1 rounded-[8px] bg-cyan-50 px-2 py-2 text-[11px] font-black text-slate-950 transition hover:bg-white"
           >
             <ShoppingCart className="h-3 w-3" /> {t.addToCart}
           </button>
@@ -737,87 +741,21 @@ export default function VendixChat() {
   };
 
   return (
-    <div className="fixed inset-0 z-40 overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.18),transparent_30%),linear-gradient(135deg,#10172a,#17152a_48%,#080b15)] text-white">
-      {/* Background grid + glows */}
-      <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(34,211,238,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.08)_1px,transparent_1px)] [background-size:48px_48px]" />
-      {/* Top bar */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-3 border-b border-cyan-500/10 bg-slate-950/45 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/40">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black tracking-[0.3em] bg-gradient-to-r from-cyan-300 via-white to-purple-300 bg-clip-text text-transparent">
-              {t.title}
-            </h1>
-            <p className="text-[10px] uppercase tracking-widest text-cyan-300/70">
-              {t.subtitle}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/60 border border-cyan-500/30">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                state === "idle" ? "bg-emerald-400" : "bg-cyan-400"
-              } animate-pulse`}
-            />
-            <span className="text-[11px] tracking-widest font-mono text-cyan-200">
-              {statusLabel}
-            </span>
-          </div>
-
-          <button
-            onClick={() => setCartOpen(true)}
-            title={t.openCart}
-            className="relative inline-flex items-center gap-2 rounded-xl border border-cyan-200/25 bg-slate-900/70 px-3 py-2 text-xs font-bold text-cyan-50 transition hover:border-cyan-200/70"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            {cartCount} {t.items}
-          </button>
-
-          <button
-            onClick={() => setVoiceOn((v) => !v)}
-            title={voiceOn ? "Voix activée" : "Voix coupée"}
-            className={`p-2 rounded-xl border transition-all ${
-              voiceOn
-                ? "bg-cyan-500/20 border-cyan-400/60 text-cyan-200"
-                : "bg-slate-900/60 border-slate-700 text-slate-400 hover:text-white"
-            }`}
-          >
-            {voiceOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-          </button>
-
-          <button
-            onClick={() => setAnimated((v) => !v)}
-            title={animated ? t.animOn : t.animOff}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
-              animated
-                ? "bg-gradient-to-r from-cyan-500/30 to-purple-500/30 border-cyan-400/60 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.3)]"
-                : "bg-slate-900/60 border-slate-700 text-slate-400 hover:text-white"
-            }`}
-          >
-            <Power className={`w-3.5 h-3.5 ${animated ? "animate-pulse" : ""}`} />
-            {animated ? t.animOn : t.animOff}
-          </button>
-        </div>
-      </header>
-
-      {/* Main split */}
-      <div className="relative z-10 flex h-[calc(100vh-65px)] flex-col overflow-hidden rounded-t-[2rem] border-t border-cyan-100/10 bg-slate-950/22 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] lg:flex-row">
+    <div className="fixed inset-0 z-40 overflow-hidden bg-[linear-gradient(135deg,#252238,#0c1222_52%,#070b15)] p-3 text-white">
+      <div className="relative z-10 flex h-full flex-col overflow-hidden rounded-[28px] border border-cyan-100/10 bg-[radial-gradient(circle_at_30%_8%,rgba(148,210,210,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(7,11,21,0.48))] shadow-[0_26px_80px_rgba(0,0,0,0.55)] lg:flex-row">
         {/* Robot stage */}
-        <section className="relative flex-1 overflow-y-auto border-b border-cyan-500/10 p-4 lg:border-b-0 lg:border-r lg:p-7">
+        <section className="relative flex-[1.65] overflow-y-auto border-b border-cyan-500/10 p-5 lg:border-b-0 lg:border-r lg:p-8">
           {/* Floor reflection */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-32 bg-gradient-to-t from-cyan-500/10 to-transparent blur-2xl" />
-          <div className="relative h-44 w-full overflow-visible">
-            <div className="absolute left-1/2 top-0 origin-top -translate-x-1/2 scale-[0.32] md:scale-[0.36] xl:scale-[0.4]">
+          <h1 className="mb-1 text-center text-2xl font-semibold tracking-[0.36em] text-cyan-50">{t.title}</h1>
+          <div className="relative h-40 w-full overflow-visible">
+            <div className="absolute left-1/2 top-[-10px] origin-top -translate-x-1/2 scale-[0.28] md:scale-[0.32] xl:scale-[0.35]">
               <RobotFace state={state} animated={animated} />
             </div>
           </div>
 
           {/* Live caption (last bot message) */}
-          <div className="mx-auto mt-2 max-w-3xl text-center min-h-[3.25rem]">
+          <div className="sr-only mx-auto mt-2 max-w-3xl text-center min-h-[3.25rem]">
             <p className="text-[10px] tracking-[0.4em] text-cyan-400/70 mb-2">
               ◤ {statusLabel} ◢
             </p>
@@ -826,12 +764,12 @@ export default function VendixChat() {
             </p>
           </div>
 
-          <div className="relative mx-auto mt-5 w-full max-w-5xl pb-8">
+          <div className="relative mx-auto mt-2 w-full max-w-5xl pb-8">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-50">{latestBotMessage?.products?.length ? t.recommendations : t.featured}</h2>
+              <h2 className="text-base font-semibold text-slate-50">{latestBotMessage?.products?.length ? t.recommendations : t.featured}</h2>
               <span className="rounded-full border border-cyan-200/20 bg-slate-950/45 px-3 py-1 text-[11px] text-cyan-100">{displayedProducts.length} {t.productCount}</span>
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {displayedProducts.map((p) => (
                 <ProductTile key={`stage-${p.id}`} product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} />
               ))}
@@ -840,9 +778,9 @@ export default function VendixChat() {
         </section>
 
         {/* Chat panel */}
-        <aside className="w-full lg:w-[440px] flex flex-col bg-slate-950/60 backdrop-blur-xl min-h-0">
+        <aside className="w-full min-h-0 flex flex-col bg-slate-950/72 backdrop-blur-xl lg:w-[365px] xl:w-[390px]">
           {/* Sticky chat header */}
-          <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 border-b border-cyan-500/20 bg-slate-950/90 backdrop-blur-md">
+          <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-cyan-500/20 bg-slate-950/90 backdrop-blur-md">
             <div className="flex items-center gap-2.5">
               <div className="relative">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/40">
@@ -851,16 +789,16 @@ export default function VendixChat() {
                 <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-950 animate-pulse" />
               </div>
               <div>
-                <p className="text-sm font-bold text-cyan-50 leading-tight">Vendix · Chat</p>
-                <p className="text-[10px] uppercase tracking-widest text-emerald-400/90">{statusLabel}</p>
+                <p className="text-sm font-bold text-cyan-50 leading-tight">{t.chatTitle}</p>
+                <p className="text-[10px] uppercase tracking-widest text-emerald-400/90">{t.online}</p>
               </div>
             </div>
             <button
-              onClick={() => setMessages([{ id: "1", text: t.welcome, isUser: false, timestamp: new Date() }])}
-              className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-cyan-500/20 text-cyan-300/80 hover:text-cyan-100 hover:border-cyan-400/60 transition-all"
-              title="Réinitialiser la conversation"
+              onClick={() => setCartOpen(true)}
+              className="inline-flex items-center gap-2 rounded-[9px] border border-cyan-100/20 bg-slate-900/75 px-3 py-2 text-xs font-semibold text-cyan-50 transition hover:border-cyan-100/60"
+              title={t.openCart}
             >
-              {t.reset}
+              <ShoppingCart className="h-4 w-4" /> {cartCount} {t.items}
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-5 space-y-3 min-h-0">
@@ -868,10 +806,10 @@ export default function VendixChat() {
               <div key={m.id} className="space-y-2 animate-fade-in">
                 <div className={`flex ${m.isUser ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                    className={`max-w-[86%] px-4 py-3 rounded-[12px] text-sm leading-relaxed ${
                       m.isUser
-                        ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-br-sm shadow-lg shadow-cyan-500/30"
-                        : "bg-slate-800/80 border border-cyan-500/20 text-cyan-50 rounded-bl-sm"
+                        ? "bg-cyan-500 text-slate-950 rounded-br-sm shadow-lg shadow-cyan-500/20"
+                        : "bg-slate-800/88 border border-cyan-100/15 text-cyan-50 rounded-bl-sm"
                     }`}
                   >
                     {m.image && (
@@ -885,11 +823,11 @@ export default function VendixChat() {
                   </div>
                 </div>
                 {!m.isUser && m.products && m.products.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2 pl-1">
+                  <div className="grid grid-cols-1 gap-3 pl-1">
                     {m.products.map((p) => (
                       <div
                         key={`chat-${m.id}-${p.id}`}
-                        className="group rounded-xl overflow-hidden bg-slate-900/70 border border-cyan-500/20 hover:border-cyan-400/60 transition-all shadow-lg"
+                        className="overflow-hidden"
                       >
                           <ProductTile product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} compact />
                       </div>
@@ -923,7 +861,7 @@ export default function VendixChat() {
                 key={q.title}
                 onClick={() => sendMessage(q.prompt)}
                 disabled={isLoading}
-                className="text-xs px-3 py-1.5 rounded-full bg-slate-800/60 border border-cyan-500/20 text-cyan-100 hover:border-cyan-400/60 hover:bg-cyan-500/10 transition-all"
+                className="text-[11px] px-3 py-1.5 rounded-full bg-slate-800/70 border border-cyan-100/15 text-cyan-50 hover:border-cyan-100/55 hover:bg-cyan-500/10 transition-all"
               >
                 {q.title}
               </button>
@@ -931,7 +869,7 @@ export default function VendixChat() {
           </div>
 
           {/* Composer */}
-          <div className="p-4 border-t border-cyan-500/10 bg-slate-950/80">
+          <div className="p-3 border-t border-cyan-500/10 bg-slate-950/90">
             <div className="flex items-end gap-2">
               <button
                 onClick={toggleListening}
@@ -939,7 +877,7 @@ export default function VendixChat() {
                 className={`p-3 rounded-2xl border transition-all ${
                   isListening
                     ? "bg-pink-500/30 border-pink-400 text-pink-100 shadow-[0_0_25px_rgba(244,114,182,0.6)] animate-pulse"
-                    : "bg-slate-800/60 border-slate-700 text-slate-300 hover:text-white"
+                    : "bg-slate-800/70 border-slate-700 text-slate-300 hover:text-white"
                 }`}
               >
                 {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -947,7 +885,7 @@ export default function VendixChat() {
               <button
                 onClick={openCamera}
                 title="Détection visuelle"
-                className="p-3 rounded-2xl border bg-slate-800/60 border-slate-700 text-slate-300 hover:text-white hover:border-cyan-400/60 transition-all"
+                className="p-3 rounded-2xl border bg-slate-800/70 border-slate-700 text-slate-300 hover:text-white hover:border-cyan-400/60 transition-all"
               >
                 <Camera className="w-5 h-5" />
               </button>
@@ -958,7 +896,7 @@ export default function VendixChat() {
                 placeholder={t.placeholder}
                 rows={1}
                 disabled={isLoading}
-                className="flex-1 resize-none px-4 py-3 rounded-2xl bg-slate-900/80 border border-cyan-500/20 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-500/20"
+                className="flex-1 resize-none px-4 py-3 rounded-2xl bg-slate-900/85 border border-cyan-100/15 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-500/20"
               />
               <button
                 onClick={() => sendMessage()}
