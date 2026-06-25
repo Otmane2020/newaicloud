@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   ShoppingBag,
 } from "lucide-react";
+import LocalQrCode from "./LocalQrCode";
 
 export interface CheckoutProduct {
   id: string;
@@ -32,11 +33,6 @@ interface Props {
   onClose: () => void;
 }
 
-const qrSrc = (data: string, size = 260) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=10&data=${encodeURIComponent(
-    data,
-  )}`;
-
 const genOrderNumber = () =>
   "VDX-" +
   Math.random().toString(36).slice(2, 6).toUpperCase() +
@@ -53,7 +49,7 @@ export default function CheckoutFlow({ product, onClose }: Props) {
     product.checkout_url ||
     `https://newai.sale/product/${product.id}`;
 
-  const stripeQrUrl = productUrl; // lien checkout Shopify/Stripe encodé en QR
+  const checkoutQrUrl = productUrl;
 
   const back = () => {
     if (step === "qr") setStep("payment");
@@ -198,7 +194,7 @@ export default function CheckoutFlow({ product, onClose }: Props) {
               <div className="grid grid-cols-1 gap-3">
                 <ChoiceCard
                   icon={<CreditCard className="w-6 h-6" />}
-                  title="Payer en ligne (QR Stripe)"
+                  title="Payer en ligne (QR)"
                   desc="Scannez le QR code avec votre téléphone pour payer en sécurité."
                   onClick={() => {
                     setPayment("online");
@@ -237,19 +233,18 @@ export default function CheckoutFlow({ product, onClose }: Props) {
               </h3>
               <p className="text-sm text-slate-400 mb-4">
                 {payment === "online"
-                  ? "Ouvrez l'appareil photo et scannez ce QR code Stripe sécurisé."
+                  ? "Ouvrez l'appareil photo et scannez ce QR code de paiement sécurisé."
                   : "Pointez l'appareil photo de votre téléphone vers ce QR code."}
               </p>
               <div className="p-4 bg-white rounded-2xl shadow-[0_0_50px_rgba(34,211,238,0.35)]">
-                <img
-                  src={qrSrc(stripeQrUrl, 260)}
+                <LocalQrCode
+                  value={checkoutQrUrl}
                   alt="QR code"
-                  width={260}
-                  height={260}
+                  size={260}
                 />
               </div>
               <p className="text-[11px] text-cyan-300/70 mt-3 break-all max-w-xs">
-                {stripeQrUrl}
+                {checkoutQrUrl}
               </p>
               {payment === "online" && (
                 <button
@@ -294,14 +289,10 @@ export default function CheckoutFlow({ product, onClose }: Props) {
                   <Receipt className="w-3 h-3" /> TICKET DE CAISSE
                 </p>
                 <div className="p-3 bg-white rounded-xl">
-                  <img
-                    src={qrSrc(
-                      `ORDER:${orderNumber}|PRODUCT:${product.id}|PRICE:${product.price}|PAY:${payment}|MODE:${fulfillment ?? "n/a"}`,
-                      180,
-                    )}
+                  <LocalQrCode
+                    value={`ORDER:${orderNumber}|PRODUCT:${product.id}|PRICE:${product.price}|PAY:${payment}|MODE:${fulfillment ?? "n/a"}`}
                     alt="QR ticket"
-                    width={180}
-                    height={180}
+                    size={180}
                   />
                 </div>
                 <p className="text-[10px] text-slate-500 mt-2">

@@ -1,4 +1,4 @@
-// Vendix Chat - Lovable AI Gateway (fast Gemini Flash, vision-capable)
+// Vendix Chat - OpenRouter models with deterministic showroom fallback
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -43,15 +43,30 @@ async function loadCatalog(authHeader: string | null): Promise<{ products: Catal
     .from("shopify_products")
     .select("id,title,price,image_url,handle,product_type,vendor,body_html")
     .eq("seller_id", user.id)
-    .not("image_url", "is", null)
     .order("updated_at", { ascending: false })
     .limit(200);
+
+  const productIds = (rows || []).map((r: any) => r.id).filter(Boolean);
+  const missingImageIds = (rows || []).filter((r: any) => !r.image_url).map((r: any) => r.id);
+  const imageByProduct = new Map<string, string>();
+  if (missingImageIds.length) {
+    const { data: imageRows } = await supabase
+      .from("product_images")
+      .select("product_id,src,position")
+      .in("product_id", productIds)
+      .order("position", { ascending: true });
+    for (const img of imageRows || []) {
+      if (img?.product_id && img?.src && !imageByProduct.has(img.product_id)) {
+        imageByProduct.set(img.product_id, img.src);
+      }
+    }
+  }
 
   const products: CatalogProduct[] = (rows || []).map((r: any) => ({
     id: r.id,
     title: r.title,
     price: r.price,
-    image_url: r.image_url,
+    image_url: r.image_url || imageByProduct.get(r.id) || null,
     handle: r.handle,
     product_type: r.product_type,
     vendor: r.vendor,
@@ -68,6 +83,77 @@ function buildCatalogPrompt(products: CatalogProduct[], lang: "fr" | "en"): stri
   return lang === "fr"
     ? `\n\nCATALOGUE DU SHOWROOM (${products.length} produits, chaque produit a déjà une image et un prix accessibles via son ID):\n${lines}\n\nRÈGLES STRICTES — Vendix, robot vendeur :\n• Réponses TRÈS COURTES (1-2 phrases max), chaleureuses et naturelles, comme un vrai vendeur.\n• N'utilise JAMAIS de markdown, d'astérisques, de listes à puces ou de tirets dans ta réponse.\n• Ne dis JAMAIS "cliquez sur les IDs" ou "interface du showroom" — les images apparaissent automatiquement sous ta réponse.\n• Quand le client cherche un produit OU demande des photos/images/exemples, recommande 2 à 4 produits pertinents et termine par EXACTEMENT cette ligne (sur sa propre ligne) :\n[PRODUCTS:id1,id2,id3]\n• Ne mentionne JAMAIS les IDs dans la prose. La ligne [PRODUCTS:...] est invisible pour le client.\n• Pose des questions ouvertes pour mieux conseiller (matière, style, budget, pièce).`
     : `\n\nSHOWROOM CATALOG (${products.length} products, each one has an image and price linked to its ID):\n${lines}\n\nSTRICT RULES — Vendix sales robot:\n• VERY SHORT replies (1-2 sentences max), warm and natural like a real seller.\n• NEVER use markdown, asterisks, bullet lists or dashes.\n• NEVER say "click the IDs" or "showroom interface" — images appear automatically below your reply.\n• When the customer asks for a product OR for pictures/photos, recommend 2 to 4 relevant products and end with EXACTLY this line on its own:\n[PRODUCTS:id1,id2,id3]\n• Never mention IDs in prose. The [PRODUCTS:...] line is invisible to the customer.\n• Ask open questions to advise better (material, style, budget, room).`;
+}
+
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function lastUserText(messages: Array<{ role: "user" | "assistant"; content: string }>): string {
+  return [...messages].reverse().find((m) => m.role === "user")?.content || "";
+}
+
+function isProductIntent(text: string, hasImage: boolean): boolean {
+  if (hasImage) return true;
+  const n = normalizeText(text);
+  return /\b(produit|produits|article|articles|catalogue|photo|photos|image|images|montre|montrez|voir|affiche|afficher|propose|proposer|recommande|acheter|achat|panier|prix|casque|chaise|table|lampe|canape|bureau|decor|decoration)\b/.test(n);
+}
+
+function pickProducts(products: CatalogProduct[], text: string, max = 4): CatalogProduct[] {
+  if (!products.length) return [];
+  const query = normalizeText(text);
+  const tokens = query.split(" ").filter((w) => w.length > 2);
+  const scored = products.map((p, index) => {
+    const haystack = normalizeText([
+      p.title,
+      p.product_type,
+      p.vendor,
+      p.description,
+    ].filter(Boolean).join(" "));
+    const score = tokens.reduce((sum, token) => sum + (haystack.includes(token) ? 3 : 0), 0) + (products.length - index) / 1000;
+    return { p, score };
+  });
+  const best = scored.sort((a, b) => b.score - a.score).slice(0, max).map((s) => s.p);
+  return best.length ? best : products.slice(0, max);
+}
+
+function toClientProducts(items: CatalogProduct[], storeUrl: string | null) {
+  const seen = new Set<string>();
+  return items.filter((p) => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  }).map((p) => ({
+    id: p.id,
+    title: p.title,
+    price: p.price,
+    image_url: p.image_url,
+    handle: p.handle,
+    checkout_url: storeUrl && p.handle
+      ? `https://${storeUrl.replace(/^https?:\/\//, "")}/products/${p.handle}`
+      : null,
+  }));
+}
+
+function fallbackReply(lang: "fr" | "en", count: number, hasImage: boolean): string {
+  if (lang === "en") {
+    return hasImage
+      ? `I found the closest showroom matches for this photo.`
+      : count > 0
+        ? `Here are ${Math.min(count, 4)} products I recommend from the showroom.`
+        : `I can help you choose, but I don't see any synced products yet.`;
+  }
+  return hasImage
+    ? `J'ai trouvé les produits du showroom les plus proches de cette photo.`
+    : count > 0
+      ? `Voici ${Math.min(count, 4)} produits que je vous recommande dans le showroom.`
+      : `Je peux vous guider, mais je ne vois aucun produit synchronisé pour le moment.`;
 }
 
 Deno.serve(async (req) => {
@@ -87,6 +173,9 @@ Deno.serve(async (req) => {
       ? [{ role: "system", content: systemFinal }]
       : [];
     const history = (messages || []) as Array<{ role: "user" | "assistant"; content: string }>;
+    const userText = lastUserText(history);
+    const wantsProducts = isProductIntent(userText, Boolean(image));
+    const deterministicProducts = pickProducts(products, userText, 4);
     // Keep only last 12 turns to keep latency low
     const trimmed = history.slice(-12);
 
@@ -137,9 +226,14 @@ Deno.serve(async (req) => {
     }
 
     if (!aiRes || !aiRes.ok) {
-      const status = aiRes?.status === 429 ? 429 : aiRes?.status === 402 ? 402 : 500;
-      return new Response(JSON.stringify({ error: `OpenRouter ${aiRes?.status}: ${lastErr.slice(0, 300)}` }), {
-        status,
+      const fallbackProducts = wantsProducts ? toClientProducts(deterministicProducts, storeUrl) : [];
+      return new Response(JSON.stringify({
+        reply: fallbackReply(lang, products.length, Boolean(image)),
+        products: fallbackProducts,
+        storeUrl,
+        fallback: true,
+      }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -162,19 +256,19 @@ Deno.serve(async (req) => {
     // Strip any stray markdown markers the model may still emit
     reply = reply.replace(/\*\*/g, "").replace(/^\s*[-*]\s+/gm, "").trim();
 
-    const recommended = productIds
+    const aiRecommended = productIds
       .map((id) => products.find((p) => p.id === id))
-      .filter(Boolean)
-      .map((p) => ({
-        id: p!.id,
-        title: p!.title,
-        price: p!.price,
-        image_url: p!.image_url,
-        handle: p!.handle,
-        checkout_url: storeUrl && p!.handle
-          ? `https://${storeUrl.replace(/^https?:\/\//, "")}/products/${p!.handle}`
-          : null,
-      }));
+      .filter(Boolean) as CatalogProduct[];
+    const recommendedSource = aiRecommended.length > 0
+      ? aiRecommended
+      : wantsProducts
+        ? deterministicProducts
+        : [];
+    const recommended = toClientProducts(recommendedSource, storeUrl);
+
+    if (!reply && wantsProducts) {
+      reply = fallbackReply(lang, products.length, Boolean(image));
+    }
 
     return new Response(JSON.stringify({ reply, products: recommended, storeUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
