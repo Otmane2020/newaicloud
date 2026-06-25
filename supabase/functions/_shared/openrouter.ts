@@ -30,13 +30,15 @@ export async function callOpenRouter(opts: OpenRouterOptions): Promise<string> {
   const key = Deno.env.get("OPENROUTER_API_KEY");
   if (!key) throw new Error("Missing OPENROUTER_API_KEY");
 
-  // Prefer the provided model first, then fall back through the free chain.
-  const models = opts.model
+  // OpenRouter limits the `models` array to 3 entries (primary + 2 fallbacks).
+  const chain = opts.model
     ? [opts.model, ...FREE_MODELS_FALLBACK.filter((m) => m !== opts.model)]
     : FREE_MODELS_FALLBACK;
+  const models = chain.slice(0, 3);
 
   const body: Record<string, unknown> = {
-    models, // OpenRouter native multi-model fallback
+    model: models[0],
+    models, // OpenRouter native multi-model fallback (max 3)
     messages: opts.messages,
   };
   if (opts.temperature !== undefined) body.temperature = opts.temperature;
