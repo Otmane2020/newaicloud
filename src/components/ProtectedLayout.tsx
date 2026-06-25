@@ -24,6 +24,8 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const { limits } = useUsageLimits();
   const { language } = useTranslation();
+  const location = useLocation();
+  const isRobotMode = location.pathname.startsWith("/vendix-chat");
   
   // ✅ Global 10s timeout state
   const [globalTimeout, setGlobalTimeout] = useState(false);
