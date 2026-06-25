@@ -446,6 +446,15 @@ function NewAIRoutes() {
               }
             />
             <Route
+              path="/vendix-chat"
+              element={
+                <ProtectedLayout>
+                  <VendixChat />
+                </ProtectedLayout>
+              }
+            />
+
+            <Route
               path="/chat-orders"
               element={
                 <ProtectedLayout>
