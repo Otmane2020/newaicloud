@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -8,7 +8,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NoStoreConnectedPrompt } from "@/components/NoStoreConnectedPrompt";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Sparkles, Coins, RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
+import { Sparkles, Coins, RefreshCw, ExternalLink, AlertTriangle, Settings } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStore } from "@/contexts/StoreContext";
 import { useAutoSyncProgress } from "@/contexts/AutoSyncContext";
