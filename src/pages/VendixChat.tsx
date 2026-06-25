@@ -3,6 +3,19 @@ import { Mic, MicOff, Send, Sparkles, Power, Volume2, VolumeX, Camera, ShoppingC
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const blobToBase64 = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onloadend = () => {
+      const s = String(r.result || "");
+      const i = s.indexOf(",");
+      resolve(i >= 0 ? s.slice(i + 1) : s);
+    };
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+
+
 interface ProductCard {
   id: string;
   title: string;
