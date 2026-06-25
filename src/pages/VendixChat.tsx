@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Send, Sparkles, Power, Volume2, VolumeX } from "lucide-react";
+import { Mic, MicOff, Send, Sparkles, Power, Volume2, VolumeX, Camera, ShoppingCart, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useTranslation } from "@/lib/language";
 
 interface ProductCard {
   id: string;
@@ -10,6 +9,7 @@ interface ProductCard {
   price: number | string | null;
   image_url: string | null;
   handle: string | null;
+  checkout_url?: string | null;
 }
 
 interface Message {
@@ -18,6 +18,7 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   products?: ProductCard[];
+  image?: string;
 }
 
 const COPY = {
