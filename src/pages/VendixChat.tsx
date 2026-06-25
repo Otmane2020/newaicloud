@@ -614,6 +614,16 @@ export default function VendixChat() {
                         {p.price != null && (
                           <p className="text-sm font-bold text-cyan-300 mt-1">{p.price}€</p>
                         )}
+                        {p.checkout_url && (
+                          <a
+                            href={p.checkout_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 flex items-center justify-center gap-1.5 w-full text-[11px] font-semibold py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-md shadow-cyan-500/30 transition-all"
+                          >
+                            <ShoppingCart className="w-3 h-3" /> Acheter
+                          </a>
+                        )}
                       </div>
                     </div>
                   ))}
