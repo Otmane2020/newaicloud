@@ -1597,7 +1597,7 @@ export const translations = {
     main: "Navigation",
     dashboard: "Dashboard",
     products: "Products",
-    productOptimization: "Product Optimization",
+    productOptimization: "Product Catalogue",
     titleDescription: "Optimized Product Content",
     seoOptimization: "SEO Optimization",
     blog: "SEO Blog",
