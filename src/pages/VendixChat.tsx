@@ -130,7 +130,7 @@ const uniqueProducts = (products: ProductCard[]) => {
   });
 };
 
-/* ---------- Animated Robot Character (Sanbot-style) ---------- */
+/* ---------- Vendix mascot robot (matches reference) ---------- */
 function RobotFace({
   state,
   animated,
@@ -142,197 +142,132 @@ function RobotFace({
   const [blink, setBlink] = useState(false);
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
 
-  // Mouth talking animation
   useEffect(() => {
-    if (!animated || state !== "speaking") {
-      setMouthOpen(0);
-      return;
-    }
-    const id = setInterval(() => setMouthOpen(Math.random()), 110);
+    if (!animated || state !== "speaking") { setMouthOpen(0); return; }
+    const id = setInterval(() => setMouthOpen(Math.random()), 120);
     return () => clearInterval(id);
   }, [state, animated]);
 
-  // Blink
   useEffect(() => {
     if (!animated) return;
     const id = setInterval(() => {
       setBlink(true);
-      setTimeout(() => setBlink(false), 150);
-    }, 3000 + Math.random() * 2000);
+      setTimeout(() => setBlink(false), 140);
+    }, 3200 + Math.random() * 2000);
     return () => clearInterval(id);
   }, [animated]);
 
-  // Eye wander
   useEffect(() => {
     if (!animated) return;
     const id = setInterval(() => {
-      setEyeOffset({
-        x: (Math.random() - 0.5) * 8,
-        y: (Math.random() - 0.5) * 4,
-      });
-    }, 2200);
+      setEyeOffset({ x: (Math.random() - 0.5) * 6, y: (Math.random() - 0.5) * 3 });
+    }, 2400);
     return () => clearInterval(id);
   }, [animated]);
 
-  const screenBg =
-    state === "thinking"
-      ? "from-purple-500 to-indigo-700"
-      : state === "listening"
-      ? "from-pink-400 to-rose-600"
-      : "from-sky-400 to-blue-600";
+  const screenColor =
+    state === "thinking" ? "#6366f1"
+    : state === "listening" ? "#ec4899"
+    : "#4f8df7";
 
-  const glow =
-    state === "speaking"
-      ? "shadow-[0_0_120px_30px_rgba(56,189,248,0.55)]"
-      : state === "thinking"
-      ? "shadow-[0_0_100px_25px_rgba(168,85,247,0.5)]"
-      : state === "listening"
-      ? "shadow-[0_0_100px_25px_rgba(244,114,182,0.45)]"
-      : "shadow-[0_0_70px_15px_rgba(56,189,248,0.3)]";
-
-  // Mouth path: morph between smile and "O" shape
-  const mouthH = 14 + mouthOpen * 22;
-  const mouthW = 70 - mouthOpen * 18;
+  const ledColor =
+    state === "speaking" ? "#22d3ee"
+    : state === "thinking" ? "#a78bfa"
+    : state === "listening" ? "#f472b6"
+    : "#10b981";
 
   return (
-    <div className="relative flex flex-col items-center justify-center select-none">
-      {/* Halo rings */}
-      {animated && (
-        <>
-          <div className="absolute top-8 w-[22rem] h-[22rem] rounded-full border border-cyan-500/15 animate-[spin_22s_linear_infinite]" />
-          <div className="absolute top-8 w-[26rem] h-[26rem] rounded-full border border-purple-500/10 animate-[spin_36s_linear_infinite_reverse]" />
-        </>
-      )}
-
-      {/* HEAD (screen) */}
+    <div className="relative flex flex-col items-center select-none">
+      {/* HEAD */}
       <div className="relative">
-        {/* Camera dot */}
-        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-slate-700 z-10" />
-        {/* Head shell */}
+        {/* tiny camera dot */}
+        <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-slate-600/80 z-10" />
+        {/* outer shell */}
         <div
-          className={`relative w-64 h-56 md:w-72 md:h-64 rounded-[2.2rem] bg-gradient-to-b from-slate-900 to-black border-[6px] border-slate-900 ${glow} transition-shadow duration-500 overflow-hidden`}
+          className="relative w-[210px] h-[195px] rounded-[2rem] bg-[#1d1f24] p-[6px] shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
         >
-          {/* Inner blue face screen */}
-          <div className={`absolute inset-3 rounded-[1.6rem] bg-gradient-to-b ${screenBg} overflow-hidden`}>
-            {/* Subtle scanlines */}
-            {animated && (
-              <div className="absolute inset-0 opacity-20 bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.15)_0px,rgba(255,255,255,0.15)_1px,transparent_1px,transparent_3px)]" />
-            )}
-            {/* Cheek blush */}
-            <div className="absolute bottom-[28%] left-[10%] w-10 h-5 rounded-full bg-pink-400/50 blur-sm" />
-            <div className="absolute bottom-[28%] right-[10%] w-10 h-5 rounded-full bg-pink-400/50 blur-sm" />
-
-            {/* Eyes */}
-            <div className="absolute top-[28%] left-0 right-0 flex justify-center gap-10">
+          {/* inner blue screen */}
+          <div
+            className="relative w-full h-full rounded-[1.6rem] overflow-hidden"
+            style={{ background: screenColor, transition: "background 400ms ease" }}
+          >
+            {/* eyes */}
+            <div className="absolute top-[26%] left-0 right-0 flex justify-center gap-7">
               {[0, 1].map((i) => (
                 <div
                   key={i}
-                  className="relative flex items-center justify-center rounded-full bg-white"
+                  className="relative flex items-center justify-center rounded-full bg-white shadow-[0_3px_0_rgba(0,0,0,0.12)]"
                   style={{
-                    width: 56,
-                    height: blink ? 4 : 56,
+                    width: 58,
+                    height: blink ? 6 : 58,
                     transition: "height 110ms ease",
-                    boxShadow: "0 4px 0 rgba(0,0,0,0.15)",
                   }}
                 >
-                  {/* Orange iris */}
                   <div
-                    className="rounded-full bg-gradient-to-b from-amber-300 to-orange-500 flex items-center justify-center"
+                    className="rounded-full flex items-center justify-center"
                     style={{
-                      width: 38,
-                      height: 38,
+                      width: 42,
+                      height: 42,
+                      background: "radial-gradient(circle at 35% 30%, #fbbf24 0%, #f59e0b 55%, #d97706 100%)",
                       transform: `translate(${eyeOffset.x}px, ${eyeOffset.y}px)`,
                       transition: "transform 600ms ease",
                       opacity: blink ? 0 : 1,
                     }}
                   >
-                    {/* Pupil */}
-                    <div className="w-4 h-4 rounded-full bg-slate-900" />
-                    {/* Highlight */}
-                    <div className="absolute w-2.5 h-2.5 rounded-full bg-white -translate-x-2 -translate-y-2" />
+                    {/* pupil */}
+                    <div className="w-3 h-3 rounded-full bg-[#0b1220]" />
+                    {/* highlight */}
+                    <div className="absolute w-2 h-2 rounded-full bg-white/95 -translate-x-1.5 -translate-y-1.5" />
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Smile / mouth */}
-            <div className="absolute bottom-[18%] left-0 right-0 flex justify-center">
-              <svg width={mouthW + 20} height={mouthH + 14} viewBox={`0 0 ${mouthW + 20} ${mouthH + 14}`}>
+            {/* smile */}
+            <div className="absolute bottom-[20%] left-0 right-0 flex justify-center">
+              <svg width="78" height={20 + mouthOpen * 14} viewBox={`0 0 78 ${20 + mouthOpen * 14}`}>
                 <path
                   d={
                     state === "speaking"
-                      ? `M 10 ${(mouthH + 14) / 2} Q ${(mouthW + 20) / 2} ${mouthH + 10} ${mouthW + 10} ${(mouthH + 14) / 2} Q ${(mouthW + 20) / 2} 4 10 ${(mouthH + 14) / 2} Z`
-                      : `M 10 6 Q ${(mouthW + 20) / 2} ${mouthH + 8} ${mouthW + 10} 6`
+                      ? `M 6 6 Q 39 ${20 + mouthOpen * 14} 72 6`
+                      : `M 6 4 Q 39 ${18 + mouthOpen * 8} 72 4`
                   }
-                  fill={state === "speaking" ? "#ef4444" : "none"}
-                  stroke="#b91c1c"
+                  fill="none"
+                  stroke="#0b1220"
                   strokeWidth="5"
                   strokeLinecap="round"
                 />
-                {/* Tongue when speaking */}
-                {state === "speaking" && (
-                  <ellipse
-                    cx={(mouthW + 20) / 2}
-                    cy={mouthH + 4}
-                    rx={mouthW / 4}
-                    ry={mouthH / 4}
-                    fill="#f87171"
-                  />
-                )}
               </svg>
             </div>
           </div>
-          {/* Bottom chin sensor */}
-          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-slate-700" />
         </div>
-
-        {/* Neck */}
-        <div className="mx-auto w-20 h-3 bg-slate-800 rounded-b-md" />
       </div>
 
-      {/* TORSO */}
-      <div className="relative mt-1">
-        {/* Shoulders / arms */}
-        <div className="absolute -left-3 top-6 w-3 h-24 rounded-l-2xl bg-gradient-to-b from-slate-200 to-white border border-slate-300 shadow-md" />
-        <div className="absolute -right-3 top-6 w-3 h-24 rounded-r-2xl bg-gradient-to-b from-slate-200 to-white border border-slate-300 shadow-md" />
+      {/* NECK */}
+      <div className="w-10 h-3 bg-[#1d1f24] rounded-b-md" />
 
-        {/* Body shell */}
-        <div className="relative w-56 md:w-64 h-44 md:h-52 bg-gradient-to-b from-white via-slate-50 to-slate-200 rounded-t-[3rem] rounded-b-[1.5rem] border border-slate-300 shadow-2xl overflow-hidden">
-          {/* Black chest panel (V shape) with cyan trim */}
+      {/* BODY (capsule) */}
+      <div className="relative -mt-0.5 w-[200px] h-[150px] bg-gradient-to-b from-white to-[#e9edf3] rounded-[2.5rem] shadow-[0_22px_50px_rgba(0,0,0,0.4)] overflow-hidden">
+        {/* black V collar */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[58%] h-[62%] bg-[#15171c]"
+          style={{ clipPath: "polygon(0 0, 100% 0, 50% 100%)" }}
+        >
+          {/* central LED */}
           <div
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-[78%] h-[78%] bg-gradient-to-b from-slate-900 via-slate-950 to-black"
-            style={{ clipPath: "polygon(0 0, 100% 0, 50% 100%)" }}
-          >
-            {/* Chest indicator light */}
-            <div
-              className={`absolute top-6 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full ${
-                animated ? "animate-pulse" : ""
-              }`}
-              style={{
-                background: state === "speaking" ? "#22d3ee" : state === "thinking" ? "#a78bfa" : "#10b981",
-                boxShadow: `0 0 18px ${state === "speaking" ? "#22d3ee" : state === "thinking" ? "#a78bfa" : "#10b981"}`,
-              }}
-            />
-            {/* HUD lines */}
-            <div className="absolute top-12 left-1/2 -translate-x-1/2 w-16 h-px bg-cyan-400/40" />
-            <div className="absolute top-14 left-1/2 -translate-x-1/2 w-10 h-px bg-cyan-400/30" />
-          </div>
-          {/* Belly screen mini */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-24 h-7 rounded-lg bg-gradient-to-br from-cyan-500/80 to-blue-600/80 border border-cyan-300/60 shadow-[0_0_18px_rgba(34,211,238,0.5)] flex items-center justify-center">
-            <span className="text-[9px] tracking-[0.3em] font-mono text-white/90">VENDIX</span>
-          </div>
+            className={`absolute top-5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full ${animated ? "animate-pulse" : ""}`}
+            style={{ background: ledColor, boxShadow: `0 0 14px ${ledColor}` }}
+          />
         </div>
-
-        {/* Base / stand */}
-        <div className="mx-auto w-72 h-3 bg-slate-300 rounded-full -mt-1 shadow-lg" />
-        <div className="mx-auto w-80 h-6 bg-gradient-to-b from-slate-200 to-slate-400 rounded-[40%] mt-1" />
+        {/* vendix label */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[8px] tracking-[0.35em] font-semibold text-slate-400">
+          VENDIX
+        </div>
       </div>
-
-      {/* Floor shadow */}
-      <div className="mt-3 w-72 h-3 bg-cyan-500/30 rounded-full blur-xl" />
     </div>
   );
 }
+
 
 function ProductTile({
   product,
