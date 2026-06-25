@@ -2,11 +2,13 @@
 // All AI text generation in this project routes through here.
 
 export const FREE_MODELS_FALLBACK = [
-  "google/gemini-2.0-flash-exp:free",
   "deepseek/deepseek-chat-v3.1:free",
   "meta-llama/llama-3.3-70b-instruct:free",
   "qwen/qwen-2.5-72b-instruct:free",
   "mistralai/mistral-small-3.2-24b-instruct:free",
+  "z-ai/glm-4.5-air:free",
+  "nvidia/nemotron-nano-9b-v2:free",
+  "google/gemma-2-9b-it:free",
 ];
 
 export interface ChatMessage {
