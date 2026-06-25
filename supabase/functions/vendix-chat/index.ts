@@ -1,4 +1,6 @@
-// Vendix Chat - Simple AI assistant via Lovable AI Gateway
+// Vendix Chat - OpenRouter free-model fallback
+import { callOpenRouter } from "../_shared/openrouter.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -12,61 +14,24 @@ Deno.serve(async (req) => {
 
   try {
     const { messages, system } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "Missing LOVABLE_API_KEY" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
-    const payload = {
-      model: "google/gemini-2.5-flash",
+    const reply = await callOpenRouter({
       messages: [
-        ...(system ? [{ role: "system", content: system }] : []),
-        ...(messages || []),
+        ...(system ? [{ role: "system" as const, content: system }] : []),
+        ...((messages || []) as Array<{ role: "user" | "assistant"; content: string }>),
       ],
-    };
-
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+      temperature: 0.7,
     });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("AI Gateway error:", res.status, errText);
-      if (res.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit, please retry shortly." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (res.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ error: "AI error", details: errText }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const data = await res.json();
-    const reply = data?.choices?.[0]?.message?.content ?? "";
     return new Response(JSON.stringify({ reply }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("vendix-chat error:", e);
-    return new Response(JSON.stringify({ error: String(e) }), {
-      status: 500,
+    const msg = String(e?.message || e);
+    const status = msg.includes("429") ? 429 : msg.includes("402") ? 402 : 500;
+    return new Response(JSON.stringify({ error: msg }), {
+      status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
