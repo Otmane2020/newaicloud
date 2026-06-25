@@ -49,10 +49,10 @@ const COPY = {
     error: "Connection to Vendix interrupted.",
     status: { idle: "ONLINE", thinking: "THINKING…", speaking: "LIVE", listening: "LISTENING" },
     quick: [
-      { title: "🛋️ Collections", prompt: "Show me your top collections." },
-      { title: "🎁 Gift idea", prompt: "I need a gift idea." },
-      { title: "📍 Showroom", prompt: "Tell me about the showroom & hours." },
-      { title: "💬 Decor advice", prompt: "I need decor advice." },
+      { title: "👋 Proactive greeting", prompt: "Greet me and introduce yourself as the showroom sales assistant." },
+      { title: "🏛️ Showroom tour", prompt: "Give me a tour of the showroom and showcase the main zones and collections." },
+      { title: "🧭 Smart guide", prompt: "Help me navigate the catalogue and recommend products based on my needs." },
+      { title: "👁️ Product recognition", prompt: "Identify the flagship products and explain why they are popular." },
     ],
     system:
       "You are Vendix, an AI sales robot on an Android tablet in a showroom. Reply in English, warm, concise (2-3 sentences), guide the customer like an expert human seller.",
