@@ -227,7 +227,6 @@ Deno.serve(async (req) => {
         products: fallbackProducts,
         storeUrl,
         fallback: true,
-        provider_error: lastErr.slice(0, 160),
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
