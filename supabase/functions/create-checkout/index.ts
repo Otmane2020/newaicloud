@@ -68,6 +68,39 @@ serve(async (req) => {
 
     console.log('✅ User authenticated:', user.id);
 
+    // 🆓 FREE MODE: bypass Stripe entirely — grant active subscription and return dashboard URL
+    {
+      const now = new Date();
+      const periodEnd = new Date(now);
+      periodEnd.setFullYear(periodEnd.getFullYear() + 10);
+
+      const { error: upsertErr } = await supabase
+        .from('subscriptions')
+        .upsert(
+          {
+            seller_id: user.id,
+            plan_id: plan_id,
+            status: 'active',
+            billing_period: billing_period || 'monthly',
+            current_period_start: now.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+            cancel_at_period_end: false,
+          },
+          { onConflict: 'seller_id' }
+        );
+
+      if (upsertErr) {
+        console.error('⚠️ Free-mode subscription upsert error:', upsertErr);
+      }
+
+      const origin = req.headers.get('origin') || '';
+      const redirectUrl = success_url || `${origin}/dashboard`;
+      return new Response(
+        JSON.stringify({ url: redirectUrl, free: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get user's product count to determine appropriate plan
     const { data: usage } = await supabase
       .from('usage_tracking')
