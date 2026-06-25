@@ -184,6 +184,7 @@ export function AppSidebar() {
   ];
 
   const chatSubItems = [
+    { title: "Vendix", url: "/vendix-chat", icon: Sparkles, key: "vendix" },
     { title: t.chat.submenu.assistant, url: "/chat", icon: MessageSquare, key: "assistant" },
     { title: t.chat.submenu.robot, url: "/chat-robot", icon: Bot, key: "robot" },
     { title: t.chat.submenu.orders, url: "/chat-orders", icon: Package, key: "orders" },
@@ -192,6 +193,7 @@ export function AppSidebar() {
     { title: t.chat.submenu.productSource, url: "/product-source", icon: Database, key: "productSource" },
     { title: t.chat.submenu.settings, url: "/chat-settings", icon: Settings, key: "settings" },
   ];
+
 
   // Build account items dynamically based on user plan and access
   const accountSubItems = [
@@ -362,15 +364,33 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Chat - Vendix AI Assistant */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={currentPath === "/vendix-chat"}>
-                  <NavLink to="/vendix-chat" onClick={handleNavClick}>
-                    <MessageSquare className="h-4 w-4" />
-                    <span>{t.navigation.chat}</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {/* Chat Menu with Submenu */}
+              <Collapsible defaultOpen={isChatActive || currentPath === "/vendix-chat"} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isChatActive || currentPath === "/vendix-chat"}>
+                      <MessageSquare className="h-4 w-4" />
+                      <span>{t.navigation.chat}</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {chatSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url} onClick={handleNavClick}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
 
 
               <Collapsible defaultOpen={isAccountActive} className="group/collapsible">
