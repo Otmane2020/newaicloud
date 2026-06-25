@@ -303,6 +303,8 @@ export default function VendixChat() {
   const audioChunksRef = useRef<Blob[]>([]);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const videoStreamRef = useRef<MediaStream | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const sendMessageRef = useRef<(t?: string, i?: string) => Promise<void>>();
 
   const state: "idle" | "thinking" | "speaking" | "listening" = isLoading
     ? "thinking"
@@ -399,9 +401,47 @@ export default function VendixChat() {
       setIsLoading(false);
     }
   };
+  // Keep latest sendMessage accessible from native speech recognition callback
+  useEffect(() => {
+    sendMessageRef.current = sendMessage;
+  });
 
-  // === Voice recognition (record → robot-stt) ===
+  // === Voice recognition — Web Speech API (instant, native) with MediaRecorder fallback ===
   const startListening = async () => {
+    // 1) Try native Web Speech API first (instant, no upload)
+    const SR: any =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SR) {
+      try {
+        const rec = new SR();
+        rec.lang = "fr-FR";
+        rec.interimResults = false;
+        rec.continuous = false;
+        rec.maxAlternatives = 1;
+        recognitionRef.current = rec;
+        rec.onresult = (e: any) => {
+          const transcript = e.results?.[0]?.[0]?.transcript?.trim();
+          if (transcript) sendMessageRef.current?.(transcript);
+        };
+        rec.onerror = (e: any) => {
+          console.warn("SpeechRecognition error", e?.error);
+          if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
+            toast.error("Microphone refusé — autorisez-le dans le navigateur");
+          } else if (e?.error === "no-speech") {
+            toast.message("Aucun son détecté, réessayez.");
+          }
+          setIsListening(false);
+        };
+        rec.onend = () => setIsListening(false);
+        rec.start();
+        setIsListening(true);
+        return;
+      } catch (err) {
+        console.warn("SpeechRecognition unavailable, fallback to recorder", err);
+      }
+    }
+
+    // 2) Fallback: record → robot-stt edge function
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
@@ -440,20 +480,30 @@ export default function VendixChat() {
       };
       rec.start();
       setIsListening(true);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error("Microphone refusé");
+      if (e?.name === "NotAllowedError") {
+        toast.error("Microphone refusé — autorisez-le dans le navigateur");
+      } else {
+        toast.error("Microphone indisponible");
+      }
     }
   };
 
   const stopListening = () => {
     setIsListening(false);
     try {
+      recognitionRef.current?.stop?.();
+    } catch {
+      /* noop */
+    }
+    try {
       mediaRecorderRef.current?.stop();
     } catch {
       /* noop */
     }
   };
+
 
   const toggleListening = () => (isListening ? stopListening() : startListening());
 
