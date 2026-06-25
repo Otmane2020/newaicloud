@@ -64,6 +64,8 @@ const COPY = {
     total: "Total",
     checkoutQr: "QR paiement",
     openCart: "Ouvrir le panier",
+    items: "articles",
+    productCount: "produits",
     added: "Ajouté au panier",
     reset: "Reset",
     visualDetection: "Détection visuelle",
@@ -97,6 +99,8 @@ const COPY = {
     total: "Total",
     checkoutQr: "Payment QR",
     openCart: "Open cart",
+    items: "items",
+    productCount: "products",
     added: "Added to cart",
     reset: "Reset",
     visualDetection: "Visual detection",
@@ -594,7 +598,6 @@ export default function VendixChat() {
           return;
         }
         const b64 = await blobToBase64(blob);
-        setIsLoading(true);
         try {
           const { data, error } = await supabase.functions.invoke("robot-stt", {
             body: { audio: b64, translateTo: "fr" },
@@ -762,12 +765,12 @@ export default function VendixChat() {
             className="relative inline-flex items-center gap-2 rounded-xl border border-cyan-200/25 bg-slate-900/70 px-3 py-2 text-xs font-bold text-cyan-50 transition hover:border-cyan-200/70"
           >
             <ShoppingCart className="h-4 w-4" />
-            {cartCount} items
+            {cartCount} {t.items}
           </button>
 
           <button
             onClick={() => setVoiceOn((v) => !v)}
-            title="Voice"
+            title={voiceOn ? "Voix activée" : "Voix coupée"}
             className={`p-2 rounded-xl border transition-all ${
               voiceOn
                 ? "bg-cyan-500/20 border-cyan-400/60 text-cyan-200"
@@ -779,7 +782,7 @@ export default function VendixChat() {
 
           <button
             onClick={() => setAnimated((v) => !v)}
-            title="Animation"
+            title={animated ? t.animOn : t.animOff}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
               animated
                 ? "bg-gradient-to-r from-cyan-500/30 to-purple-500/30 border-cyan-400/60 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.3)]"
@@ -817,7 +820,7 @@ export default function VendixChat() {
           <div className="relative mx-auto mt-5 w-full max-w-5xl pb-8">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-50">{latestBotMessage?.products?.length ? t.recommendations : t.featured}</h2>
-              <span className="rounded-full border border-cyan-200/20 bg-slate-950/45 px-3 py-1 text-[11px] text-cyan-100">{displayedProducts.length} produits</span>
+              <span className="rounded-full border border-cyan-200/20 bg-slate-950/45 px-3 py-1 text-[11px] text-cyan-100">{displayedProducts.length} {t.productCount}</span>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {displayedProducts.map((p) => (
