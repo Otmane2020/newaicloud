@@ -30,10 +30,10 @@ const COPY = {
     error: "Connexion à Vendix interrompue.",
     status: { idle: "EN LIGNE", thinking: "RÉFLEXION…", speaking: "EN DIRECT", listening: "ÉCOUTE" },
     quick: [
-      { title: "🛋️ Nos collections", prompt: "Montre-moi vos collections phares." },
-      { title: "🎁 Idée cadeau", prompt: "J'ai besoin d'une idée cadeau." },
-      { title: "📍 Le showroom", prompt: "Présente-moi le showroom et les horaires." },
-      { title: "💬 Conseil déco", prompt: "J'ai besoin de conseils déco." },
+      { title: "👋 Accueil proactif", prompt: "Salue-moi et présente-toi en tant que vendeur du showroom." },
+      { title: "🏛️ Visite du showroom", prompt: "Fais-moi visiter le showroom et présente les zones et collections principales." },
+      { title: "🧭 Guide intelligent", prompt: "Aide-moi à naviguer dans le catalogue et recommande des produits selon mes besoins." },
+      { title: "👁️ Reconnaissance produit", prompt: "Identifie les produits phares et explique pourquoi ils sont populaires." },
     ],
     system:
       "Tu es Vendix, un robot vendeur IA déployé sur une tablette Android dans un showroom. Réponds en français, sois chaleureux, concis (2-3 phrases), et guide le client comme un vendeur humain expert.",
@@ -49,10 +49,10 @@ const COPY = {
     error: "Connection to Vendix interrupted.",
     status: { idle: "ONLINE", thinking: "THINKING…", speaking: "LIVE", listening: "LISTENING" },
     quick: [
-      { title: "🛋️ Collections", prompt: "Show me your top collections." },
-      { title: "🎁 Gift idea", prompt: "I need a gift idea." },
-      { title: "📍 Showroom", prompt: "Tell me about the showroom & hours." },
-      { title: "💬 Decor advice", prompt: "I need decor advice." },
+      { title: "👋 Proactive greeting", prompt: "Greet me and introduce yourself as the showroom sales assistant." },
+      { title: "🏛️ Showroom tour", prompt: "Give me a tour of the showroom and showcase the main zones and collections." },
+      { title: "🧭 Smart guide", prompt: "Help me navigate the catalogue and recommend products based on my needs." },
+      { title: "👁️ Product recognition", prompt: "Identify the flagship products and explain why they are popular." },
     ],
     system:
       "You are Vendix, an AI sales robot on an Android tablet in a showroom. Reply in English, warm, concise (2-3 sentences), guide the customer like an expert human seller.",
