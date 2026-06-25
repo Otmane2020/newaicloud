@@ -261,8 +261,8 @@ function RobotFace({
 
 /* ---------- Main page ---------- */
 export default function VendixChat() {
-  const { language } = useTranslation();
-  const t = COPY[language === "fr" ? "fr" : "en"];
+  const language: "fr" = "fr"; // Robot vendeur Vendix — toujours en français
+  const t = COPY.fr;
 
   const [messages, setMessages] = useState<Message[]>([
     { id: "1", text: t.welcome, isUser: false, timestamp: new Date() },
