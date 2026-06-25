@@ -303,7 +303,7 @@ export function GoogleSearchConsoleInsights({ selectedDomain }: GoogleSearchCons
       const { error } = await supabase.from("gsc_sync_config").upsert({
         user_id: user.id,
         [field]: value,
-      });
+      } as any);
 
       if (error) throw error;
 

@@ -347,7 +347,7 @@ export function GoogleSearchConsole() {
         .upsert({
           user_id: user.id,
           [field]: value,
-        });
+        } as any);
 
       if (error) throw error;
 

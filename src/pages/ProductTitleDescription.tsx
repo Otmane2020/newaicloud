@@ -1503,7 +1503,7 @@ export default function ProductTitleDescription() {
             src: preview.generatedUrl,
             alt_text: `${preview.productTitle} - ${preview.variantTitle} - Fond blanc IA`,
             position: nextPosition,
-          }).select().single();
+          } as any).select().single();
           
           // Save to history for variant image
           if (variantImage) {
@@ -1708,7 +1708,7 @@ export default function ProductTitleDescription() {
                 src: preview.originalUrl,
                 position: 1,
                 seller_id: user.id,
-              })
+              } as any)
               .select("id")
               .single();
 

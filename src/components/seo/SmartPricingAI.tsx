@@ -434,7 +434,7 @@ export function SmartPricingAI() {
     try {
       const { error } = await supabase
         .from("shopify_products")
-        .update({ [field]: numValue })
+        .update({ [field]: numValue } as any)
         .eq("id", productId);
 
       if (error) {
@@ -578,7 +578,7 @@ export function SmartPricingAI() {
     try {
       const { error } = await supabase
         .from("product_variants")
-        .update({ [field]: value })
+        .update({ [field]: value } as any)
         .eq("id", variantId);
 
       if (error) {

@@ -129,7 +129,7 @@ const useSyncData = (storeId?: string) => {
             ...defaultSettings, 
             user_id: user.id,
             store_id: storeId,
-          })
+          } as any)
           .select()
           .single();
 
@@ -588,7 +588,7 @@ export function ShopifySyncSettings({ onSyncTrigger }: { onSyncTrigger?: (syncin
           ...settings, 
           import_types: selectedTypes,
           store_id: storeId,
-        })
+        } as any)
         .eq("user_id", user.id)
         .eq("store_id", storeId);
 
