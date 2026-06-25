@@ -271,9 +271,16 @@ export default function VendixChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [animated, setAnimated] = useState(true);
-  const [voiceOn, setVoiceOn] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true);
   const [speaking, setSpeaking] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoStreamRef = useRef<MediaStream | null>(null);
 
   const state: "idle" | "thinking" | "speaking" | "listening" = isLoading
     ? "thinking"
@@ -291,29 +298,44 @@ export default function VendixChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  const speak = (text: string) => {
-    if (!voiceOn || typeof window === "undefined" || !window.speechSynthesis) return;
+  // ElevenLabs voice via robot-tts edge function
+  const speak = async (text: string) => {
+    if (!voiceOn || !text) return;
     try {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = language === "fr" ? "fr-FR" : "en-US";
-      u.rate = 1;
-      u.onstart = () => setSpeaking(true);
-      u.onend = () => setSpeaking(false);
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    } catch {
-      /* noop */
+      const clean = text.slice(0, 540);
+      const { data, error } = await supabase.functions.invoke("robot-tts", {
+        body: { text: clean },
+      });
+      if (error) throw error;
+      const audio = (data as any)?.audio;
+      if (!audio) return;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      const a = new Audio(`data:audio/mp3;base64,${audio}`);
+      audioRef.current = a;
+      a.onplay = () => setSpeaking(true);
+      a.onended = () => setSpeaking(false);
+      a.onerror = () => setSpeaking(false);
+      await a.play();
+    } catch (e) {
+      console.warn("TTS failed", e);
+      // Visual speaking fallback
+      setSpeaking(true);
+      setTimeout(() => setSpeaking(false), Math.min(4000, 1200 + text.length * 35));
     }
   };
 
-  const sendMessage = async (textOverride?: string) => {
+  const sendMessage = async (textOverride?: string, imageData?: string) => {
     const text = (textOverride ?? inputText).trim();
-    if (!text || isLoading) return;
+    if ((!text && !imageData) || isLoading) return;
     const userMessage: Message = {
       id: Date.now().toString(),
-      text,
+      text: text || (imageData ? "📷 Identifie ce produit" : ""),
       isUser: true,
       timestamp: new Date(),
+      image: imageData,
     };
     const next = [...messages, userMessage];
     setMessages(next);
@@ -325,6 +347,7 @@ export default function VendixChat() {
         body: {
           system: t.system,
           language,
+          image: imageData,
           messages: next.map((m) => ({
             role: m.isUser ? "user" : "assistant",
             content: m.text,
@@ -342,11 +365,7 @@ export default function VendixChat() {
         ...m,
         { id: (Date.now() + 1).toString(), text: reply, isUser: false, timestamp: new Date(), products },
       ]);
-      if (voiceOn) speak(reply);
-      else {
-        setSpeaking(true);
-        setTimeout(() => setSpeaking(false), Math.min(4000, 1200 + reply.length * 35));
-      }
+      speak(reply);
     } catch (e) {
       console.error(e);
       toast.error(t.error);
@@ -357,6 +376,102 @@ export default function VendixChat() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // === Voice recognition (record → robot-stt) ===
+  const startListening = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const mime = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+      const rec = new MediaRecorder(stream, { mimeType: mime });
+      mediaRecorderRef.current = rec;
+      audioChunksRef.current = [];
+      rec.ondataavailable = (e) => e.data.size > 0 && audioChunksRef.current.push(e.data);
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+        const blob = new Blob(audioChunksRef.current, { type: mime });
+        if (blob.size < 1500) {
+          toast.message("Aucun son détecté, réessayez.");
+          return;
+        }
+        const b64 = await blobToBase64(blob);
+        setIsLoading(true);
+        try {
+          const { data, error } = await supabase.functions.invoke("robot-stt", {
+            body: { audio: b64, translateTo: "fr" },
+          });
+          if (error) throw error;
+          const transcript = (data as any)?.text?.trim();
+          if (transcript) {
+            await sendMessage(transcript);
+          } else {
+            toast.message("Je n'ai pas saisi, pouvez-vous répéter ?");
+          }
+        } catch (err) {
+          console.error(err);
+          toast.error("Reconnaissance vocale indisponible");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      rec.start();
+      setIsListening(true);
+    } catch (e) {
+      console.error(e);
+      toast.error("Microphone refusé");
+    }
+  };
+
+  const stopListening = () => {
+    setIsListening(false);
+    try {
+      mediaRecorderRef.current?.stop();
+    } catch {
+      /* noop */
+    }
+  };
+
+  const toggleListening = () => (isListening ? stopListening() : startListening());
+
+  // === Visual product detection (webcam) ===
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      videoStreamRef.current = stream;
+      setCameraOpen(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => undefined);
+        }
+      }, 50);
+    } catch (e) {
+      toast.error("Caméra indisponible");
+    }
+  };
+
+  const closeCamera = () => {
+    videoStreamRef.current?.getTracks().forEach((t) => t.stop());
+    videoStreamRef.current = null;
+    setCameraOpen(false);
+  };
+
+  const snapAndSend = async () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.min(video.videoWidth, 1024);
+    canvas.height = (canvas.width / video.videoWidth) * video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    closeCamera();
+    await sendMessage("Identifie ce produit et trouve-le dans le catalogue.", dataUrl);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
