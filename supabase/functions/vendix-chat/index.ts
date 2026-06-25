@@ -108,8 +108,8 @@ Deno.serve(async (req) => {
     if (!OPENROUTER_API_KEY) throw new Error("Missing OPENROUTER_API_KEY");
 
     const model = image
-      ? "qwen/qwen-2.5-vl-72b-instruct:free"
-      : "deepseek/deepseek-chat-v3.1:free";
+      ? "google/gemma-4-31b-it:free"
+      : "meta-llama/llama-3.3-70b:free";
 
     const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
