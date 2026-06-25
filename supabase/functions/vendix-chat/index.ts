@@ -124,7 +124,12 @@ function pickProducts(products: CatalogProduct[], text: string, max = 4): Catalo
 }
 
 function toClientProducts(items: CatalogProduct[], storeUrl: string | null) {
-  return items.map((p) => ({
+  const seen = new Set<string>();
+  return items.filter((p) => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  }).map((p) => ({
     id: p.id,
     title: p.title,
     price: p.price,
