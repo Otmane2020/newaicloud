@@ -161,7 +161,7 @@ export default function ChatSettings() {
           embed_product_recommendations: settings.embed_product_recommendations,
           embed_order_support: settings.embed_order_support,
           updated_at: new Date().toISOString(),
-        });
+        } as any);
 
       if (error) throw error;
       toast.success(t.chatSettings.settingsSaved);
