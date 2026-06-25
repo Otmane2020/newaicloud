@@ -288,6 +288,7 @@ export default function VendixChat() {
   const [voiceOn, setVoiceOn] = useState(true);
   const [speaking, setSpeaking] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [checkoutProduct, setCheckoutProduct] = useState<CheckoutProduct | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
