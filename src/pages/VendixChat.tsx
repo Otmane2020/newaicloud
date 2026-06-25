@@ -73,7 +73,7 @@ export default function VendixChat() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("ai-chat", {
+      const { data, error } = await supabase.functions.invoke("vendix-chat", {
         body: {
           messages: next.map((m) => ({ role: m.role, content: m.content })),
           system:
