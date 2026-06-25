@@ -202,7 +202,6 @@ export default function AeoOnboarding() {
         ),
         supabase.from("profiles").update({
           subscription_status: "active",
-          plan_id: planId,
           current_plan_id: planId,
           onboarding_completed: true,
           updated_at: new Date().toISOString(),

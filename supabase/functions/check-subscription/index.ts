@@ -88,6 +88,56 @@ serve(async (req) => {
     
     logStep('User authenticated', { userId: user.id, email: user.email });
 
+    const now = new Date();
+    const freePlanId = 'enterprise-2000';
+    const periodEnd = new Date(now);
+    periodEnd.setFullYear(periodEnd.getFullYear() + 10);
+
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('current_plan_id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    const planId = profile?.current_plan_id || freePlanId;
+
+    await supabaseAdmin
+      .from('subscriptions')
+      .upsert(
+        {
+          seller_id: user.id,
+          plan_id: planId,
+          status: 'active',
+          billing_period: 'monthly',
+          current_period_start: now.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+          cancel_at_period_end: false,
+        },
+        { onConflict: 'seller_id' }
+      );
+
+    await supabaseAdmin
+      .from('profiles')
+      .update({
+        subscription_status: 'active',
+        current_plan_id: planId,
+        onboarding_completed: true,
+        updated_at: now.toISOString(),
+      })
+      .eq('id', user.id);
+
+    logStep('Free mode active - Stripe check bypassed', { userId: user.id, planId });
+    return new Response(JSON.stringify({
+      subscribed: true,
+      status: 'active',
+      plan_id: planId,
+      subscription_end: periodEnd.toISOString(),
+      source: 'free_mode',
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     

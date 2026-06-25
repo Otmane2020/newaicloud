@@ -93,6 +93,20 @@ serve(async (req) => {
         console.error('⚠️ Free-mode subscription upsert error:', upsertErr);
       }
 
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .update({
+          subscription_status: 'active',
+          current_plan_id: plan_id,
+          onboarding_completed: true,
+          updated_at: now.toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (profileErr) {
+        console.error('⚠️ Free-mode profile update error:', profileErr);
+      }
+
       const origin = req.headers.get('origin') || '';
       const redirectUrl = success_url || `${origin}/dashboard`;
       return new Response(
