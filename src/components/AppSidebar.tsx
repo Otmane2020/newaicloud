@@ -364,15 +364,33 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Chat - Vendix AI Assistant */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={currentPath === "/vendix-chat"}>
-                  <NavLink to="/vendix-chat" onClick={handleNavClick}>
-                    <MessageSquare className="h-4 w-4" />
-                    <span>{t.navigation.chat}</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {/* Chat Menu with Submenu */}
+              <Collapsible defaultOpen={isChatActive || currentPath === "/vendix-chat"} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isChatActive || currentPath === "/vendix-chat"}>
+                      <MessageSquare className="h-4 w-4" />
+                      <span>{t.navigation.chat}</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {chatSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url} onClick={handleNavClick}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+
 
 
               <Collapsible defaultOpen={isAccountActive} className="group/collapsible">
