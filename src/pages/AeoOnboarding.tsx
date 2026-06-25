@@ -178,30 +178,43 @@ export default function AeoOnboarding() {
   const handleSelectPlan = async (planId: string) => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        toast.error(language === 'fr' ? "Session expirée" : "Session expired");
+      if (!user) {
         navigate("/auth");
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: {
-          plan_id: planId,
-          billing_period: billingCycle,
-          success_url: `${window.location.origin}/onboarding?checkout=success`,
-          cancel_url: `${window.location.origin}/onboarding`,
-        },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const now = new Date();
+      const periodEnd = new Date(now);
+      periodEnd.setFullYear(periodEnd.getFullYear() + 10);
 
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      }
+      const [{ error: subError }, { error: profileError }] = await Promise.all([
+        supabase.from("subscriptions").upsert(
+          {
+            seller_id: user.id,
+            plan_id: planId,
+            status: "active",
+            billing_period: billingCycle,
+            current_period_start: now.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+            cancel_at_period_end: false,
+          } as any,
+          { onConflict: "seller_id" }
+        ),
+        supabase.from("profiles").update({
+          subscription_status: "active",
+          current_plan_id: planId,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        } as any).eq("id", user.id),
+      ]);
+
+      if (subError || profileError) throw subError || profileError;
+
+      toast.success(language === 'fr' ? "Accès gratuit activé !" : "Free access activated!");
+      navigate("/dashboard");
     } catch (error: any) {
-      console.error("Error creating checkout:", error);
-      toast.error(error.message || (language === 'fr' ? "Erreur lors du paiement" : "Payment error"));
+      console.error("Error activating free access:", error);
+      toast.error(error.message || (language === 'fr' ? "Erreur lors de l'activation" : "Activation error"));
     } finally {
       setLoading(false);
     }

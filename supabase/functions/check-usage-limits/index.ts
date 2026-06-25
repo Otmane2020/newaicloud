@@ -103,6 +103,55 @@ serve(async (req) => {
       );
     }
 
+    const unlimitedUsage = {
+      optimizations_count: 0,
+      articles_count: 0,
+      chat_responses_count: 0,
+      shopify_requests_count: 0,
+      products_count: 0,
+      shopify_stores_count: 0,
+      campaigns_count: 0,
+    };
+    const unlimitedLimits = {
+      max_optimizations: 999999,
+      max_articles: 999999,
+      max_chat_responses: 999999,
+      max_shopify_requests: 999999,
+      max_products: 999999,
+      max_shopify_stores: 999999,
+      max_campaigns: 999999,
+    };
+
+    return new Response(
+      JSON.stringify({
+        canUseOptimizations: true,
+        canUseArticles: true,
+        canUseChat: true,
+        canUseShopifySearch: true,
+        canAddProducts: true,
+        canAddShopifyStore: true,
+        canUseCampaigns: true,
+        limitReached: {
+          optimizations: false,
+          articles: false,
+          chat: false,
+          shopifySearch: false,
+          products: false,
+          shopifyStores: false,
+          campaigns: false,
+        },
+        usage: unlimitedUsage,
+        limits: unlimitedLimits,
+        isTrialing: false,
+        isPaid: true,
+        planId: 'free-unlimited',
+        billingProvider: 'free',
+        shouldForcePayment: false,
+        forcePaymentReason: '',
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
     // 🎮 DEMO ACCOUNT: Return unlimited access for demo user
     if (isDemoAccount(user.email, user.id)) {
       console.log('[LIMITS] 🎮 DEMO ACCOUNT detected - returning unlimited access');

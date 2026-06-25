@@ -901,6 +901,20 @@ export default function Onboarding() {
         console.error("❌ [FREE-MODE] Subscription upsert error:", subError);
       }
 
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          subscription_status: "active",
+          current_plan_id: planId,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+
+      if (profileError) {
+        console.error("❌ [FREE-MODE] Profile update error:", profileError);
+      }
+
       toast.dismiss("billing-checkout");
       toast.success(
         language === "fr" ? "Accès gratuit activé !" : "Free access activated!"

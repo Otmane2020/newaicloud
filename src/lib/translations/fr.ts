@@ -4851,7 +4851,7 @@ export const translations = {
     signUpWithGoogle: "S'inscrire avec Google",
     continueWithGoogle: "Continuer avec Google",
     sessionExpired: "Votre session a expiré. Veuillez vous reconnecter.",
-    registrationSuccess: "Inscription réussie ! Choisissez votre plan...",
+    registrationSuccess: "Inscription réussie ! Accès gratuit activé.",
     loginSuccess: "Connexion réussie !",
     logoutSuccess: "Déconnexion réussie",
     notAuthenticated: "Non authentifié",

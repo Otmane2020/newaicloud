@@ -159,7 +159,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       redirectParams.set('shop', currentParams.get('shop')!);
     }
     
-    const redirectUrl = `${window.location.origin}/onboarding${redirectParams.toString() ? '?' + redirectParams.toString() : ''}`;
+    const redirectPath = redirectParams.toString()
+      ? `/onboarding?${redirectParams.toString()}`
+      : '/dashboard';
+    const redirectUrl = `${window.location.origin}${redirectPath}`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -189,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const lang = localStorage.getItem('app-language') || 'en';
       const message = lang === 'fr' ? fr.auth.registrationSuccess : en.auth.registrationSuccess;
       toast.success(message);
-      // Ne pas rediriger, l'utilisateur restera sur la page onboarding après connexion
+      // L'utilisateur connecté sera redirigé vers le dashboard par la page Auth.
     }
 
     return { error };
@@ -247,7 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithFacebook = async () => {
-    const redirectUrl = `${window.location.origin}/onboarding`;
+    const redirectUrl = `${window.location.origin}/dashboard`;
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
