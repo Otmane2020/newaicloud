@@ -130,26 +130,35 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <SubscriptionGuard>
       <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-gradient-to-br from-blue-50 to-purple-50 overflow-x-hidden">
+        <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 overflow-x-hidden relative">
+          {/* Background glow effects */}
+          <div className="pointer-events-none absolute inset-0 opacity-30">
+            <div className="absolute top-20 left-20 w-72 h-72 bg-cyan-500/30 rounded-full blur-3xl animate-pulse" />
+            <div
+              className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"
+              style={{ animationDelay: "2s" }}
+            />
+          </div>
+
           <AppSidebar />
-          <main className="flex-1 min-w-0 max-w-full overflow-x-hidden">
+          <main className="flex-1 min-w-0 max-w-full overflow-x-hidden relative z-10">
             {/* Sticky Header */}
-            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-blue-100">
+            <div className="sticky top-0 z-50 bg-slate-900/70 backdrop-blur-xl border-b border-slate-700/50">
               <div className="flex h-12 sm:h-14 items-center justify-between px-2 sm:px-4 gap-2">
                 <div className="flex items-center gap-1 sm:gap-3 min-w-0">
-                  <SidebarTrigger className="flex-shrink-0" />
+                  <SidebarTrigger className="flex-shrink-0 text-slate-200 hover:text-white" />
                   <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-md">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
-                    <span className="font-bold text-sm sm:text-lg truncate bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Vendix Admin</span>
+                    <span className="font-bold text-sm sm:text-lg truncate text-white">Vendix Admin</span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 dark:from-violet-500/20 dark:to-fuchsia-500/20 rounded-full border border-violet-300/50 dark:border-violet-500/30">
-                    <Coins className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
-                    <span className="text-xs font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-cyan-500/20 rounded-full border border-cyan-400/40">
+                    <Coins className="w-3.5 h-3.5 text-cyan-300" />
+                    <span className="text-xs font-bold text-cyan-200">
                       {String(remainingCredits)}
                     </span>
                   </div>
@@ -158,6 +167,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
             </div>
+
             <LimitWarningBanner />
             {!storesLoading && !isSyncing && stores.length === 0 && (
               <div className="px-3 sm:px-4 md:px-6 lg:px-8 mt-3">
