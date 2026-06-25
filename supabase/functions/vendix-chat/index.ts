@@ -132,7 +132,8 @@ Deno.serve(async (req) => {
       if (aiRes.ok) break;
       lastErr = await aiRes.text();
       // 404 = model unavailable, try next. Otherwise bail.
-      if (aiRes.status !== 404 && aiRes.status !== 400) break;
+      // 404 = model gone, 429 = rate-limited, 400/503 = provider hiccup → try next.
+      if (![400, 404, 429, 502, 503].includes(aiRes.status)) break;
     }
 
     if (!aiRes || !aiRes.ok) {
