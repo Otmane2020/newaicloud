@@ -1,47 +1,46 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, Send, Sparkles, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { useTranslation } from "@/lib/language";
+import { Bot, Mic, MicOff, Send, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language";
 
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
+interface Message {
+  id: string;
+  text: string;
+  isUser: boolean;
+  timestamp: Date;
+}
 
 const COPY = {
   fr: {
-    title: "Vendix — Assistant Commercial IA",
-    subtitle: "Votre robot vendeur multilingue, prêt à conseiller vos clients 24/7.",
-    placeholder: "Posez une question à Vendix…",
-    send: "Envoyer",
+    title: "Démo Assistant Vendix",
+    subtitle: "Testez votre robot vendeur IA en temps réel — prêt pour tablette Android",
     welcome:
-      "Bonjour 👋 Je suis Vendix, votre assistant commercial IA. Que souhaitez-vous savoir aujourd'hui ?",
-    suggestions: [
-      "Quels produits recommandez-vous pour un cadeau ?",
-      "Avez-vous cet article en stock ?",
-      "Quels sont vos horaires d'ouverture ?",
-    ],
+      "Bonjour 👋 Je suis Vendix, votre robot vendeur intelligent. Comment puis-je vous aider aujourd'hui ?",
+    placeholder: "Tapez votre message…",
     error: "Impossible de joindre Vendix pour le moment.",
-    sending: "Vendix réfléchit…",
+    quick: [
+      { title: "Produits", desc: "Découvrez nos meilleures ventes", prompt: "Quels sont vos produits phares ?" },
+      { title: "Conseils", desc: "Obtenez un conseil personnalisé", prompt: "J'ai besoin d'un conseil pour choisir un cadeau." },
+      { title: "Magasin", desc: "Horaires et informations", prompt: "Quels sont vos horaires d'ouverture ?" },
+    ],
+    system:
+      "Tu es Vendix, un robot vendeur IA déployé sur une tablette Android dans des magasins et hôtels. Réponds en français, sois chaleureux, concis, et oriente le client vers la meilleure solution. Utilise un ton commercial naturel et humain.",
   },
   en: {
-    title: "Vendix — AI Sales Assistant",
-    subtitle: "Your multilingual sales robot, ready to advise your customers 24/7.",
-    placeholder: "Ask Vendix a question…",
-    send: "Send",
+    title: "Vendix Assistant Demo",
+    subtitle: "Test your AI sales robot in real time — ready for Android tablets",
     welcome:
-      "Hi 👋 I'm Vendix, your AI sales assistant. What would you like to know today?",
-    suggestions: [
-      "Which products do you recommend as a gift?",
-      "Do you have this item in stock?",
-      "What are your opening hours?",
-    ],
+      "Hi 👋 I'm Vendix, your smart sales robot. How can I help you today?",
+    placeholder: "Type your message…",
     error: "Unable to reach Vendix right now.",
-    sending: "Vendix is thinking…",
+    quick: [
+      { title: "Products", desc: "Discover our best sellers", prompt: "What are your top products?" },
+      { title: "Advice", desc: "Get personalized guidance", prompt: "I need help choosing a gift." },
+      { title: "Store", desc: "Hours and information", prompt: "What are your opening hours?" },
+    ],
+    system:
+      "You are Vendix, an AI sales robot deployed on an Android tablet in shops and hotels. Reply in English, be warm, concise, and guide the customer to the best option. Use a natural, human sales tone.",
   },
 };
 
@@ -50,36 +49,44 @@ export default function VendixChat() {
   const t = COPY[language === "fr" ? "fr" : "en"];
 
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: t.welcome },
+    { id: "1", text: t.welcome, isUser: false, timestamp: new Date() },
   ]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [inputText, setInputText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.title = t.title;
   }, [t.title]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
-  const send = async (text?: string) => {
-    const content = (text ?? input).trim();
-    if (!content || loading) return;
-    setInput("");
-    const next = [...messages, { role: "user" as const, content }];
+  const sendMessage = async (textOverride?: string) => {
+    const text = (textOverride ?? inputText).trim();
+    if (!text || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text,
+      isUser: true,
+      timestamp: new Date(),
+    };
+    const next = [...messages, userMessage];
     setMessages(next);
-    setLoading(true);
+    setInputText("");
+    setIsLoading(true);
 
     try {
       const { data, error } = await supabase.functions.invoke("vendix-chat", {
         body: {
-          messages: next.map((m) => ({ role: m.role, content: m.content })),
-          system:
-            language === "fr"
-              ? "Tu es Vendix, un robot vendeur IA pour magasins et hôtels. Réponds en français, sois chaleureux, concis et orienté conseil commercial."
-              : "You are Vendix, an AI sales robot for retail stores and hotels. Reply in English, be warm, concise and sales-oriented.",
+          system: t.system,
+          messages: next.map((m) => ({
+            role: m.isUser ? "user" : "assistant",
+            content: m.text,
+          })),
         },
       });
       if (error) throw error;
@@ -87,104 +94,173 @@ export default function VendixChat() {
         (data as any)?.reply ||
         (data as any)?.message ||
         (data as any)?.content ||
-        (typeof data === "string" ? data : "");
+        t.welcome;
       setMessages((m) => [
         ...m,
-        { role: "assistant", content: reply || t.welcome },
+        {
+          id: (Date.now() + 1).toString(),
+          text: reply,
+          isUser: false,
+          timestamp: new Date(),
+        },
       ]);
     } catch (e) {
       console.error(e);
       toast.error(t.error);
-      setMessages((m) => [...m, { role: "assistant", content: t.error }]);
+      setMessages((m) => [
+        ...m,
+        {
+          id: (Date.now() + 1).toString(),
+          text: t.error,
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <header className="mb-6 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-lg">
-            <Bot className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
-            <p className="text-sm text-muted-foreground">{t.subtitle}</p>
-          </div>
-        </header>
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
 
-        <Card className="flex h-[70vh] flex-col overflow-hidden">
-          <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4">
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`flex gap-3 ${m.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {m.role === "assistant" && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                  </div>
-                )}
+  const toggleListening = () => setIsListening((v) => !v);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="flex-1">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t.title}</h1>
+            <p className="text-gray-600">{t.subtitle}</p>
+          </div>
+
+          {/* Chat Container */}
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            {/* Messages */}
+            <div className="h-[28rem] overflow-y-auto p-6 space-y-4">
+              {messages.map((message) => (
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
-                    m.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
+                  key={message.id}
+                  className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}
+                >
+                  <div className="flex items-start space-x-3 max-w-xs lg:max-w-md">
+                    {!message.isUser && (
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                          <Bot className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div
+                      className={`px-4 py-2 rounded-lg ${
+                        message.isUser
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 text-gray-900"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                      <p
+                        className={`text-xs mt-1 ${
+                          message.isUser ? "text-blue-100" : "text-gray-500"
+                        }`}
+                      >
+                        {message.timestamp.toLocaleTimeString()}
+                      </p>
+                    </div>
+
+                    {message.isUser && (
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="bg-gray-100 px-4 py-2 rounded-lg">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                        <div
+                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.1s" }}
+                        />
+                        <div
+                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="border-t bg-gray-50 p-4">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={toggleListening}
+                  className={`p-2 rounded-full transition-colors ${
+                    isListening
+                      ? "bg-red-600 text-white"
+                      : "bg-gray-200 text-gray-600 hover:bg-gray-300"
                   }`}
                 >
-                  {m.content}
+                  {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </button>
+
+                <div className="flex-1">
+                  <textarea
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={t.placeholder}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    rows={1}
+                    disabled={isLoading}
+                  />
                 </div>
-                {m.role === "user" && (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <User className="h-4 w-4" />
-                  </div>
-                )}
+
+                <button
+                  onClick={() => sendMessage()}
+                  disabled={!inputText.trim() || isLoading}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white p-2 rounded-full transition-colors"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
               </div>
-            ))}
-            {loading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Sparkles className="h-4 w-4 animate-pulse text-primary" />
-                {t.sending}
-              </div>
-            )}
+            </div>
           </div>
 
-          {messages.length <= 1 && (
-            <div className="flex flex-wrap gap-2 border-t p-3">
-              {t.suggestions.map((s) => (
-                <Button
-                  key={s}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => send(s)}
-                  className="rounded-full text-xs"
-                >
-                  {s}
-                </Button>
-              ))}
-            </div>
-          )}
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              send();
-            }}
-            className="flex gap-2 border-t p-3"
-          >
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t.placeholder}
-              disabled={loading}
-            />
-            <Button type="submit" disabled={loading || !input.trim()}>
-              <Send className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">{t.send}</span>
-            </Button>
-          </form>
-        </Card>
+          {/* Quick Actions */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {t.quick.map((q) => (
+              <button
+                key={q.title}
+                onClick={() => sendMessage(q.prompt)}
+                className="p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow text-left"
+              >
+                <h3 className="font-semibold text-gray-900">{q.title}</h3>
+                <p className="text-sm text-gray-600">{q.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
