@@ -708,8 +708,30 @@ export default function VendixChat() {
         </section>
 
         {/* Chat panel */}
-        <aside className="w-full lg:w-[440px] flex flex-col bg-slate-950/60 backdrop-blur-xl">
-          <div className="flex-1 overflow-y-auto p-5 space-y-3">
+        <aside className="w-full lg:w-[440px] flex flex-col bg-slate-950/60 backdrop-blur-xl min-h-0">
+          {/* Sticky chat header */}
+          <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3 border-b border-cyan-500/20 bg-slate-950/90 backdrop-blur-md">
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/40">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-950 animate-pulse" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-cyan-50 leading-tight">Vendix · Chat</p>
+                <p className="text-[10px] uppercase tracking-widest text-emerald-400/90">{statusLabel}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setMessages([{ id: "1", text: t.welcome, isUser: false, timestamp: new Date() }])}
+              className="text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-md border border-cyan-500/20 text-cyan-300/80 hover:text-cyan-100 hover:border-cyan-400/60 transition-all"
+              title="Réinitialiser la conversation"
+            >
+              Reset
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 space-y-3 min-h-0">
             {messages.map((m) => (
               <div key={m.id} className="space-y-2 animate-fade-in">
                 <div className={`flex ${m.isUser ? "justify-end" : "justify-start"}`}>
