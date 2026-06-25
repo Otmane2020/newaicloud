@@ -646,6 +646,13 @@ export default function VendixChat() {
                         : "bg-slate-800/80 border border-cyan-500/20 text-cyan-50 rounded-bl-sm"
                     }`}
                   >
+                    {m.image && (
+                      <img
+                        src={m.image}
+                        alt="Capture"
+                        className="mb-2 rounded-lg max-h-40 object-cover"
+                      />
+                    )}
                     {m.text}
                   </div>
                 </div>
