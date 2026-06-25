@@ -63,6 +63,7 @@ import CronMonitoring from "./pages/CronMonitoring";
 import SEO from "./pages/SEO";
 import Integration from "./pages/Integration";
 import Chat from "./pages/Chat";
+import VendixChat from "./pages/VendixChat";
 import ChatOrders from "./pages/ChatOrders";
 import ChatLearning from "./pages/ChatLearning";
 import ProductEnrichment from "./pages/ProductEnrichment";
