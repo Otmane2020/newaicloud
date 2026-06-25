@@ -96,21 +96,39 @@ const AeoSubscription = () => {
 
     setCheckoutLoading(planId);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          plan_id: planId,
-          billing_period: billingCycle,
-        },
-      });
+      const now = new Date();
+      const periodEnd = new Date(now);
+      periodEnd.setFullYear(periodEnd.getFullYear() + 10);
 
-      if (error) throw error;
+      const [{ error: subError }, { error: profileError }] = await Promise.all([
+        supabase.from('subscriptions').upsert(
+          {
+            seller_id: user.id,
+            plan_id: planId,
+            status: 'active',
+            billing_period: billingCycle,
+            current_period_start: now.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+            cancel_at_period_end: false,
+          } as any,
+          { onConflict: 'seller_id' }
+        ),
+        supabase.from('profiles').update({
+          subscription_status: 'active',
+          current_plan_id: planId,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        }).eq('id', user.id),
+      ]);
 
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
+      if (subError || profileError) throw subError || profileError;
+
+      setCurrentPlan(plans.find((p) => p.id === planId) || null);
+      toast.success(language === 'fr' ? 'Accès gratuit activé !' : 'Free access activated!');
+      navigate('/dashboard');
     } catch (error) {
-      console.error('Error creating checkout:', error);
-      toast.error(language === 'fr' ? 'Erreur lors de la création du paiement' : 'Error creating checkout');
+      console.error('Error activating free access:', error);
+      toast.error(language === 'fr' ? "Erreur lors de l'activation" : 'Activation error');
     } finally {
       setCheckoutLoading(null);
     }
