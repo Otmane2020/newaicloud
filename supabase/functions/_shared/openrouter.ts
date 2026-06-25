@@ -74,7 +74,7 @@ export async function callOpenRouter(opts: OpenRouterOptions): Promise<string> {
 
     const text = await res.text();
     lastErr = `OpenRouter ${res.status} on ${model}: ${text.slice(0, 300)}`;
-    if (res.status === 429 || res.status === 402 || res.status >= 500) {
+    if (res.status === 429 || res.status === 402 || res.status === 404 || res.status === 410 || res.status >= 500) {
       console.warn(`[openrouter] ${model} ${res.status} -> trying next model`);
       continue;
     }
