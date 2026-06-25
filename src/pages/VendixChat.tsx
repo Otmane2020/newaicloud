@@ -679,14 +679,12 @@ export default function VendixChat() {
                             <p className="text-[11px] font-bold text-cyan-300 mt-1">{p.price}€</p>
                           )}
                           {p.checkout_url && (
-                            <a
-                              href={p.checkout_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={() => setCheckoutProduct(p)}
                               className="mt-1.5 flex items-center justify-center gap-1 w-full text-[10px] font-semibold py-1 rounded-md bg-cyan-500/80 hover:bg-cyan-400 text-white transition-all"
                             >
                               <ShoppingCart className="w-2.5 h-2.5" /> Acheter
-                            </a>
+                            </button>
                           )}
                         </div>
                       </div>
