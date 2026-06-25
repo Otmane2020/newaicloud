@@ -459,19 +459,45 @@ export default function VendixChat() {
         <aside className="w-full lg:w-[440px] flex flex-col bg-slate-950/60 backdrop-blur-xl">
           <div className="flex-1 overflow-y-auto p-5 space-y-3">
             {messages.map((m) => (
-              <div
-                key={m.id}
-                className={`flex ${m.isUser ? "justify-end" : "justify-start"} animate-fade-in`}
-              >
-                <div
-                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    m.isUser
-                      ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-br-sm shadow-lg shadow-cyan-500/30"
-                      : "bg-slate-800/80 border border-cyan-500/20 text-cyan-50 rounded-bl-sm"
-                  }`}
-                >
-                  {m.text}
+              <div key={m.id} className="space-y-2 animate-fade-in">
+                <div className={`flex ${m.isUser ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                      m.isUser
+                        ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-br-sm shadow-lg shadow-cyan-500/30"
+                        : "bg-slate-800/80 border border-cyan-500/20 text-cyan-50 rounded-bl-sm"
+                    }`}
+                  >
+                    {m.text}
+                  </div>
                 </div>
+                {!m.isUser && m.products && m.products.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 pl-1">
+                    {m.products.map((p) => (
+                      <div
+                        key={p.id}
+                        className="group rounded-xl overflow-hidden bg-slate-900/70 border border-cyan-500/20 hover:border-cyan-400/60 transition-all shadow-lg"
+                      >
+                        {p.image_url && (
+                          <div className="aspect-square overflow-hidden bg-slate-800">
+                            <img
+                              src={p.image_url}
+                              alt={p.title}
+                              loading="lazy"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          </div>
+                        )}
+                        <div className="p-2">
+                          <p className="text-[11px] text-cyan-50 line-clamp-2 leading-tight">{p.title}</p>
+                          {p.price != null && (
+                            <p className="text-[11px] font-bold text-cyan-300 mt-1">{p.price}€</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             {isLoading && (
