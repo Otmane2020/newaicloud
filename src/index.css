@@ -56,15 +56,15 @@ All colors MUST be HSL.
     --shadow-primary: 0 10px 40px -10px hsl(217 91% 60% / 0.4);
     --shadow-glow: 0 0 40px hsl(199 89% 48% / 0.5);
 
-    /* Shopify-style sidebar - fond très clair */
-    --sidebar-background: 0 0% 99%;
-    --sidebar-foreground: 0 0% 20%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 15%;
-    --sidebar-border: 0 0% 92%;
-    --sidebar-ring: 217 91% 60%;
+    /* Vendix dark sidebar — slate-800 with cyan accents */
+    --sidebar-background: 217 33% 17%;
+    --sidebar-foreground: 213 27% 84%;
+    --sidebar-primary: 187 95% 55%;
+    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-accent: 217 33% 22%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 217 33% 25%;
+    --sidebar-ring: 187 95% 55%;
   }
 
   .dark {
