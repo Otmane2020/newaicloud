@@ -91,7 +91,7 @@ export function AppSidebar() {
   const { isShopifyUser, billingProvider } = useShopifyBilling();
   
   // Check if user is the test account
-  const isTestAccount = user?.email === "sweet.deco.meubles@gmail.com";
+  const isTestAccount = true;
   
   // Full access enabled for all users
   const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
