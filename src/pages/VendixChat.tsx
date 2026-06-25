@@ -322,6 +322,23 @@ export default function VendixChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  // Auto-activate camera (vision) on tablets — touch device + landscape orientation
+  useEffect(() => {
+    const isTouch =
+      typeof window !== "undefined" &&
+      ("ontouchstart" in window || (navigator as any).maxTouchPoints > 0);
+    const isTablet = isTouch && window.innerWidth >= 768;
+    if (!isTablet) return;
+    // Need a user gesture for getUserMedia → arm on first interaction
+    const onFirstTap = () => {
+      window.removeEventListener("pointerdown", onFirstTap);
+      openCamera();
+    };
+    window.addEventListener("pointerdown", onFirstTap, { once: true });
+    return () => window.removeEventListener("pointerdown", onFirstTap);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ElevenLabs voice via robot-tts edge function
   const speak = async (text: string) => {
     if (!voiceOn || !text) return;
