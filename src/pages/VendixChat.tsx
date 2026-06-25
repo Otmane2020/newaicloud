@@ -872,7 +872,7 @@ export default function VendixChat() {
                         key={`chat-${m.id}-${p.id}`}
                         className="overflow-hidden"
                       >
-                          <ProductTile product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} compact />
+                          <ProductTile product={p} t={t} onAdd={addToCart} onOpen={setCheckoutProduct} compact variant="chat" />
                       </div>
                     ))}
                   </div>
