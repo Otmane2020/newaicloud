@@ -100,52 +100,30 @@ export default function ProductEnrichment() {
 
   return (
     <div className="space-y-6">
-      {/* Sticky Progress Bar */}
-      {enriching && (
-        <div className="sticky top-0 z-50 -mx-6 px-6 py-3 bg-slate-950/95 backdrop-blur-md border-b border-cyan-500/40 shadow-[0_4px_24px_-8px_rgba(34,211,238,0.5)]">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-              <span className="font-medium text-cyan-100">Enrichissement Vendix en cours…</span>
-            </div>
-            <span className="text-sm text-cyan-300 font-mono">
-              {progress.current} / {progress.total}
-            </span>
-          </div>
-          <Progress
-            value={(progress.current / Math.max(progress.total, 1)) * 100}
-            className="h-2 bg-slate-800 [&>div]:bg-gradient-to-r [&>div]:from-cyan-400 [&>div]:to-blue-500"
-          />
-        </div>
-      )}
-
-      {/* Header — Vendix theme */}
-      <Card className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border border-cyan-500/30 p-8 shadow-[0_8px_32px_-8px_rgba(34,211,238,0.3)]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.15),transparent_60%)] pointer-events-none" />
-        <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      {/* Header */}
+      <Card className="bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 border-2 border-purple-200 p-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex-1 space-y-3">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-                <Zap className="w-5 h-5 text-cyan-400" />
-              </div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-300 via-cyan-100 to-blue-300 bg-clip-text text-transparent">
-                Enrichissement Vendix IA
+              <Zap className="w-6 h-6 text-purple-600" />
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                Enrichissement Produit IA
               </h2>
             </div>
-            <p className="text-slate-300 text-lg max-w-2xl">
-              Détectez automatiquement les attributs (couleur, matériau, forme) pour booster le chat et la recherche du showroom.
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              Détectez automatiquement les attributs IA (couleur, matériau, forme) pour améliorer les données de chat et recherche.
             </p>
           </div>
           <div className="flex flex-col gap-3 items-center">
             <div className="text-center">
-              <div className="text-4xl font-bold text-cyan-300">{enrichmentRate}%</div>
-              <div className="text-sm text-slate-400">Produits enrichis</div>
+              <div className="text-4xl font-bold text-purple-600">{enrichmentRate}%</div>
+              <div className="text-sm text-muted-foreground">Produits enrichis</div>
             </div>
             <Button
               size="lg"
               onClick={handleEnrichAll}
               disabled={enriching || pendingProducts === 0}
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 gap-2 shadow-[0_4px_16px_-4px_rgba(34,211,238,0.6)] text-white border-0"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 gap-2 shadow-lg"
             >
               <Sparkles className="w-5 h-5" />
               Enrichir tout ({pendingProducts})
@@ -181,6 +159,18 @@ export default function ProductEnrichment() {
         </Card>
       </div>
 
+      {/* Progress */}
+      {enriching && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-medium">Enrichissement en cours...</span>
+            <span className="text-sm text-muted-foreground">
+              {progress.current} / {progress.total}
+            </span>
+          </div>
+          <Progress value={(progress.current / progress.total) * 100} className="h-2" />
+        </Card>
+      )}
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

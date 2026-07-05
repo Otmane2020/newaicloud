@@ -184,7 +184,6 @@ export function AppSidebar() {
   ];
 
   const chatSubItems = [
-    { title: "Vendix", url: "/vendix-chat", icon: Sparkles, key: "vendix" },
     { title: t.chat.submenu.assistant, url: "/chat", icon: MessageSquare, key: "assistant" },
     { title: t.chat.submenu.robot, url: "/chat-robot", icon: Bot, key: "robot" },
     { title: t.chat.submenu.orders, url: "/chat-orders", icon: Package, key: "orders" },
@@ -193,7 +192,6 @@ export function AppSidebar() {
     { title: t.chat.submenu.productSource, url: "/product-source", icon: Database, key: "productSource" },
     { title: t.chat.submenu.settings, url: "/chat-settings", icon: Settings, key: "settings" },
   ];
-
 
   // Build account items dynamically based on user plan and access
   const accountSubItems = [
@@ -305,22 +303,21 @@ export function AppSidebar() {
   const isProductOptimizationActive = currentPath.startsWith("/products") || productOptimizationSubItems.some((item) => isActive(item.url));
 
   return (
-    <Sidebar collapsible={isMobile ? "offcanvas" : "icon"} className="dark">
+    <Sidebar collapsible={isMobile ? "offcanvas" : "icon"}>
       {/* Logo Header */}
-      <div className="border-b border-sidebar-border p-3 sm:p-4 space-y-3">
+      <div className="border-b p-3 sm:p-4 space-y-3">
         <NavLink to="/dashboard" onClick={handleNavClick} className="flex items-center gap-2 group transition-transform hover:scale-105">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
           </div>
           {state === "expanded" && (
-            <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-              Vendix
+            <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              NewAI
             </span>
           )}
         </NavLink>
         {state === "expanded" && <StoreSelector />}
       </div>
-
 
       <SidebarContent>
         <SidebarGroup>
@@ -338,7 +335,53 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {/* Product Catalogue Menu with Submenu */}
+              {/* AEO AI Answers - Main tab with always visible sub-tabs */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isAeoAnswersActive}>
+                  <NavLink to="/aeo-chatgpt" onClick={handleNavClick}>
+                    <MessageSquare className="h-4 w-4" />
+                    <span>{language === 'fr' ? "AEO Réponses IA" : "AEO AI Answers"}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+                {/* Sub-tabs always visible */}
+                <SidebarMenuSub className="mt-1">
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-chatgpt'}>
+                      <NavLink to="/aeo-chatgpt" onClick={handleNavClick}>
+                        <img src={logoChatgpt} alt="ChatGPT" className="h-4 w-4 rounded" />
+                        <span>ChatGPT</span>
+                      </NavLink>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-gemini'}>
+                      <NavLink to="/aeo-gemini" onClick={handleNavClick}>
+                        <img src={logoGemini} alt="Gemini" className="h-4 w-4" />
+                        <span>Gemini</span>
+                      </NavLink>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-copilot'}>
+                      <NavLink to="/aeo-copilot" onClick={handleNavClick}>
+                        <img src={logoCopilot} alt="Copilot" className="h-4 w-4" />
+                        <span>Copilot</span>
+                      </NavLink>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={currentPath === '/aeo-calendar'}>
+                      <NavLink to="/aeo-calendar" onClick={handleNavClick}>
+                        <CalendarClock className="h-4 w-4" />
+                        <span>{language === 'fr' ? 'Calendrier' : 'Calendar'}</span>
+                      </NavLink>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </SidebarMenuItem>
+
+              {/* Product Optimization Menu with Submenu - restricted */}
+              {hasFullAccess && (
               <Collapsible defaultOpen={isProductOptimizationActive} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -352,6 +395,34 @@ export function AppSidebar() {
                     <SidebarMenuSub>
                       {productOptimizationSubItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
+                        <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                          <NavLink to={subItem.url} onClick={handleNavClick}>
+                            <subItem.icon className="h-4 w-4" />
+                            <span>{subItem.title}</span>
+                          </NavLink>
+                        </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+              )}
+
+              {/* SEO Menu with Submenu */}
+              <Collapsible defaultOpen={isSeoActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isSeoActive}>
+                      <Sparkles className="h-4 w-4" />
+                      <span>{t.navigation.seoOptimization}</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {seoSubItems.filter(subItem => subItem.key !== "automation" || isTestAccount).map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url} onClick={handleNavClick}>
                               <subItem.icon className="h-4 w-4" />
@@ -360,24 +431,61 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}
+
+                      {/* Nested Audit SEO submenu - restricted */}
+                      {hasFullAccess && (
+                      <Collapsible defaultOpen={isAuditActive} className="group/audit">
+                        <SidebarMenuSubItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuSubButton isActive={isAuditActive}>
+                              <FileSearch className="h-4 w-4" />
+                              <span>{t.seo.submenu.auditSeo}</span>
+                              <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/audit:rotate-90" />
+                            </SidebarMenuSubButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="ml-4 border-l-2 border-border pl-2 space-y-1">
+                              {auditSubItems.map((auditItem) => (
+                                <SidebarMenuSubButton key={auditItem.title} asChild isActive={isActive(auditItem.url)} className="pl-2">
+                                  <NavLink to={auditItem.url} onClick={handleNavClick}>
+                                    <auditItem.icon className="h-3 w-3" />
+                                    <span>{auditItem.title}</span>
+                                  </NavLink>
+                                </SidebarMenuSubButton>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </SidebarMenuSubItem>
+                      </Collapsible>
+                      )}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
 
-              {/* Chat Menu with Submenu */}
-              <Collapsible defaultOpen={isChatActive || currentPath === "/vendix-chat"} className="group/collapsible">
+              {/* Google Search Console Menu - visible to all users */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive('/seo?tab=google-console')}>
+                  <NavLink to="/seo?tab=google-console">
+                    <TrendingUp className="h-4 w-4" />
+                    <span>{t.adminSidebar.googleSearchConsole}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              {/* Blog Menu with Submenu */}
+              <Collapsible defaultOpen={isBlogActive} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isChatActive || currentPath === "/vendix-chat"}>
-                      <MessageSquare className="h-4 w-4" />
-                      <span>{t.navigation.chat}</span>
+                    <SidebarMenuButton isActive={isBlogActive}>
+                      <FileText className="h-4 w-4" />
+                      <span>{t.navigation.blog}</span>
                       <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {chatSubItems.map((subItem) => (
+                      {blogSubItems.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                             <NavLink to={subItem.url} onClick={handleNavClick}>
@@ -392,8 +500,205 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               </Collapsible>
 
+              {/* AEO (Answer Engine Optimization) Menu with settings - restricted to oben.rockman only */}
+              {hasFullAccess && (
+              <Collapsible defaultOpen={isAeoActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isAeoActive}>
+                      <Sparkles className="h-4 w-4" />
+                      <span>Aeoreply</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {aeoSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url} onClick={handleNavClick}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+              )}
 
+              {/* Social Media - Onglet principal séparé - restricted */}
+              {hasFullAccess && (
+              <Collapsible defaultOpen={isSocialMediaActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isSocialMediaActive}>
+                      <Share2 className="h-4 w-4" />
+                      <span>{t.navigation.socialMedia || "Social Media"}</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {/* Creative avec sous-sous-menu */}
+                      <Collapsible defaultOpen={isSocialMediaCreativeActive} className="group/creative">
+                        <SidebarMenuSubItem>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuSubButton isActive={isSocialMediaCreativeActive}>
+                              <Edit3 className="h-4 w-4" />
+                              <span>{t.navigation.socialMediaSubmenu?.creative || "Créatif"}</span>
+                              <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/creative:rotate-90" />
+                            </SidebarMenuSubButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="ml-4 border-l-2 border-border pl-2 space-y-1">
+                              {socialMediaSubItems.map((subItem) => (
+                                <SidebarMenuSubButton key={subItem.key} asChild isActive={isActive(subItem.url)} className="pl-2">
+                                  <NavLink to={subItem.url} onClick={handleNavClick}>
+                                    <subItem.icon className="h-3 w-3" />
+                                    <span>{subItem.title}</span>
+                                  </NavLink>
+                                </SidebarMenuSubButton>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </SidebarMenuSubItem>
+                      </Collapsible>
+                      
+                      {/* Autres sous-menus Social Media */}
+                      {socialMediaMainItems.filter(item => !item.hasSubItems).map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.key}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url} onClick={handleNavClick}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+              )}
 
+              {/* Bottom Menu Items */}
+              {bottomMenuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                    <NavLink to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {/* Google Merchant Menu with Submenu - restricted */}
+              {hasFullAccess && (
+              <Collapsible defaultOpen={isMerchantActive} className="group/collapsible">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isMerchantActive}>
+                      <Package className="h-4 w-4" />
+                      <span>{t.navigation.googleMerchant}</span>
+                      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {merchantSubItems.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                            <NavLink to={subItem.url} onClick={handleNavClick}>
+                              <subItem.icon className="h-4 w-4" />
+                              <span>{subItem.title}</span>
+                            </NavLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+              )}
+
+              {/* Google Ads Menu with Submenu */}
+              {isTestAccount && (
+                <Collapsible defaultOpen={isGoogleAdsActive} className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton isActive={isGoogleAdsActive}>
+                        <Megaphone className="h-4 w-4" />
+                        <span>Google Ads</span>
+                        <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {googleAdsSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                              <NavLink to={subItem.url} onClick={handleNavClick}>
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
+
+              {/* Chat Menu with Submenu */}
+              {isTestAccount && (
+                <Collapsible defaultOpen={isChatActive} className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton isActive={isChatActive}>
+                        <MessageSquare className="h-4 w-4" />
+                        <span>{t.navigation.chat}</span>
+                        <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {chatSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                              <NavLink to={subItem.url} onClick={handleNavClick}>
+                                <subItem.icon className="h-4 w-4" />
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
+
+              {/* Smart Pricing AI - Main Menu Item - restricted */}
+              {hasFullAccess && (
+              <SidebarMenuItem>
+        <SidebarMenuButton asChild isActive={isPricingActive}>
+          <NavLink to="/pricing" className="relative" onClick={handleNavClick}>
+                    <CreditCard className="h-4 w-4" />
+                    <span>Smart Pricing AI</span>
+                    <Badge className="ml-auto bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-[10px] px-1.5 py-0 h-4 animate-pulse">
+                      NEW
+                    </Badge>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              )}
+
+              {/* Account Menu with Submenu */}
               <Collapsible defaultOpen={isAccountActive} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>

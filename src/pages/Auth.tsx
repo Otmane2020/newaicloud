@@ -251,49 +251,36 @@ export default function Auth() {
   };
 
   return (
-    <div className="dark min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 relative overflow-hidden flex items-center justify-center py-12 px-4">
-      {/* Background glow effects */}
-      <div className="pointer-events-none absolute inset-0 opacity-30">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-cyan-500/30 rounded-full blur-3xl animate-pulse" />
-        <div
-          className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        />
-      </div>
-
-      <div className="container mx-auto px-4 max-w-md relative z-10">
-        <Card className="p-8 bg-slate-800/60 backdrop-blur-xl border border-cyan-500/30 shadow-2xl shadow-cyan-500/10 text-slate-100">
+    <div className="min-h-screen bg-gradient-subtle pt-24 pb-12">
+      <div className="container mx-auto px-4 max-w-md">
+        <Card className="p-8 shadow-elegant">
           {/* Language Switcher */}
           <div className="flex justify-end mb-4">
             <LanguageSwitcher />
           </div>
-
+          
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/40">
-                <Sparkles className="w-7 h-7 text-white" />
+            <div className="flex items-center gap-2">
+              <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
+                <Sparkles className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <span className="block text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent leading-none">
-                  Vendix
-                </span>
-                <span className="block text-xs text-cyan-200/70 mt-1">Interface Revendeur</span>
-              </div>
+              <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                NewAI
+              </span>
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold text-center mb-2 text-white">
+          <h1 className="text-3xl font-bold text-center mb-2">
             {mode === 'login' ? t.auth.login : t.auth.signup}
           </h1>
-          <p className="text-center text-slate-300 mb-8">
+          <p className="text-center text-muted-foreground mb-8">
             {mode === 'login'
               ? t.auth.login
-              : referralCode
+              : referralCode 
                 ? t.toasts.success.welcomeBonusMessage
                 : t.auth.signup}
           </p>
-
 
           {/* Server Offline Alert */}
           {(serverOffline || serverStatus === 'offline') && (

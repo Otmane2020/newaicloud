@@ -58,10 +58,9 @@ serve(async (req) => {
 
     /* ---------------------------------------
        🔥 ElevenLabs Request
-       Voice: George (JBFqnCBsd6RMkjVDRZzb) — preset, no clone permission required
+       Voice: 9Qd2dAu97Sqnt7S88BrY (male voice)
     ---------------------------------------- */
-    const VOICE_ID = body?.voiceId || "JBFqnCBsd6RMkjVDRZzb";
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_128`, {
+    const res = await fetch("https://api.elevenlabs.io/v1/text-to-speech/9Qd2dAu97Sqnt7S88BrY", {
       method: "POST",
       headers: {
         "xi-api-key": API_KEY,
@@ -69,14 +68,12 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         text,
-        // Turbo v2.5 = ~3x faster, still multilingual incl. French
         model_id: "eleven_turbo_v2_5",
         voice_settings: {
-          stability: 0.45,
-          similarity_boost: 0.85,
-          style: 0.35,
+          stability: 0.52,
+          similarity_boost: 0.78,
+          style: 0.23,
           use_speaker_boost: true,
-          speed: 1.05,
         },
       }),
     });

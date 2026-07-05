@@ -4,8 +4,6 @@ import { AccountSettings } from '@/components/dashboard/AccountSettings';
 import { CurrentPlanCard } from '@/components/dashboard/CurrentPlanCard';
 import { BillingPortal } from '@/components/dashboard/BillingPortal';
 import { ShopifyIntegrationTabs } from '@/components/integration/ShopifyIntegrationTabs';
-import { WooCommerceIntegration } from '@/components/integration/WooCommerceIntegration';
-import { CsvCatalogImport } from '@/components/integration/CsvCatalogImport';
 import { UsageLimits } from '@/components/dashboard/UsageLimits';
 import { SubscriptionPlans } from '@/components/dashboard/SubscriptionPlans';
 import { UsageWidget } from '@/components/dashboard/UsageWidget';
@@ -98,15 +96,10 @@ export default function Account() {
         </TabsContent>
 
         <TabsContent value="integrations" className="mt-6">
-          <div className="space-y-4">
-            <div className="bg-white rounded-lg border p-4 md:p-6">
-              <ShopifyIntegrationTabs />
-            </div>
-            <WooCommerceIntegration />
-            <CsvCatalogImport />
+          <div className="bg-white rounded-lg border p-4 md:p-6">
+            <ShopifyIntegrationTabs />
           </div>
         </TabsContent>
-
 
         <TabsContent value="subscription" className="mt-6">
           <div className="space-y-4 md:space-y-6">

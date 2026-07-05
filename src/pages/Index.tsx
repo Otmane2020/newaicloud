@@ -1,488 +1,722 @@
-import { useEffect } from "react";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Footer } from "@/components/Footer";
+import { PublicHeader } from "@/components/PublicHeader";
+import PricingComparison from "@/components/PricingComparison";
+import { AnnouncementBar } from "@/components/AnnouncementBar";
+import { DemoSeoComparison } from "@/components/demo/DemoSeoComparison";
+import { CalBookingEmbed } from "@/components/CalBookingEmbed";
+
+import { ReferralSystem } from "@/components/dashboard/ReferralSystem";
+import { ContactForm } from "@/components/ContactForm";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/lib/language";
+import { formatPrice } from "@/lib/formatUtils";
+import { useEffect, useState } from "react";
+import { AIAssistant } from "@/components/AIAssistant";
+import { LandingPageVisionShowcase } from "@/components/landing/LandingPageVisionShowcase";
+import { SHOW_TRIAL_PLAN } from "@/config/features";
+import { GoogleTrafficGrowth } from "@/components/landing/GoogleTrafficGrowth";
+import { GoogleShoppingSection } from "@/components/landing/GoogleShoppingSection";
+import { GooglePhoneMockups } from "@/components/landing/GooglePhoneMockups";
+import { SHOPIFY_APP_STORE_URL } from "@/components/integration/ShopifyConnectionDialog";
 import {
-  Bot,
-  Clock,
-  TrendingUp,
-  Languages,
-  MapPin,
-  Calendar,
-  BarChart3,
-  Sparkles,
-  ShieldCheck,
   Zap,
-  ArrowRight,
-  Quote,
-  Store,
   ShoppingBag,
+  BarChart3,
+  FileText,
+  MessageSquare,
+  Sparkles,
+  ArrowRight,
   CheckCircle2,
+  Globe,
+  Star,
+  ImageIcon,
+  Tags,
+  TrendingUp,
+  Play,
+  Clock,
+  Shield,
+  Loader2,
+  ExternalLink,
 } from "lucide-react";
-import robotHero from "@/assets/robot-hero.jpg";
 
-const t = {
-  nav: { features: "Fonctionnalités", integrations: "Intégrations", testimonials: "Témoignages", pricing: "Tarifs", demo: "Demander une démo" },
-  hero: {
-    badge: "Nouveau · Robot commercial IA",
-    title1: "Vendix, le robot qui",
-    title2: "vend à votre place",
-    sub: "Votre assistant commercial IA 24/7 pour magasins et hôtels. Accueil, conseil expert, vitrine virtuelle et orientation clients — sans recruter une seule personne de plus.",
-    cta1: "Voir une démo",
-    cta2: "Essai gratuit 30 jours",
-    trust: "Déjà adopté par des boutiques, hôtels, pharmacies et showrooms",
-    stat: "+34% de ventes en moyenne",
-  },
-  why: {
-    kicker: "Pourquoi Vendix",
-    title: "Un vendeur qui ne dort jamais.",
-    sub: "Trois superpouvoirs que vos meilleurs vendeurs n'auront jamais.",
-    items: [
-      { icon: Clock, title: "Disponible 24/7", desc: "Il accueille, répond et conseille — même quand vos vendeurs sont occupés ou que le magasin est fermé." },
-      { icon: TrendingUp, title: "Augmente vos ventes", desc: "Conseils personnalisés, recommandations produits et passage en caisse direct sur votre catalogue." },
-      { icon: Languages, title: "Multilingue", desc: "Français, Anglais, Espagnol, Arabe… Idéal pour le tourisme et la clientèle internationale." },
-    ],
-  },
-  features: {
-    kicker: "Ce qu'il sait faire",
-    title: "Un collaborateur, neuf compétences.",
-    items: [
-      { icon: Bot, title: "Accueil automatique", desc: "Détection de présence et salutation immédiate." },
-      { icon: Sparkles, title: "Conseil expert", desc: "Aligné sur votre catalogue Shopify ou WooCommerce." },
-      { icon: Store, title: "Vitrine virtuelle", desc: "Photos HD et visualisation produits en direct." },
-      { icon: MapPin, title: "Orientation en magasin", desc: "Plan interactif pour guider chaque client." },
-      { icon: Calendar, title: "Prise de rendez-vous", desc: "Réservations directes avec un vendeur humain." },
-      { icon: BarChart3, title: "Statistiques temps réel", desc: "Pilotez vos ventes et vos interactions à distance." },
-    ],
-  },
-  integrations: {
-    kicker: "Intégrations natives",
-    title: "Branché directement à votre commerce.",
-    sub: "Synchronisation automatique du catalogue, des stocks et des promotions. Aucun travail manuel.",
-    list: ["Shopify", "WooCommerce", "Stripe", "Cal.com", "Google Sheets", "Mailchimp"],
-  },
-  testimonials: {
-    kicker: "Témoignages",
-    title: "Ils ont laissé Vendix s'occuper du reste.",
-    items: [
-      { quote: "Depuis l'installation de Vendix, notre boutique tourne même quand on est seul en caisse. Les clients adorent.", author: "Camille R.", role: "Concept store, Lyon" },
-      { quote: "Mes touristes anglophones et espagnols sont enfin conseillés correctement. +41% de panier moyen.", author: "Hakim B.", role: "Hôtel boutique, Marseille" },
-      { quote: "Installation en 24h, ROI atteint en 6 semaines. Honnêtement, je ne reviens plus en arrière.", author: "Sophie M.", role: "Pharmacie, Bordeaux" },
-    ],
-  },
-  pricing: {
-    kicker: "Tarifs",
-    title: "Choisissez le plan qui vous ressemble.",
-    sub: "Tous les plans incluent l'installation, la maintenance et les mises à jour IA. Sans engagement.",
-    monthly: "/ mois",
-    cta: "Choisir ce plan",
-    popular: "Le plus populaire",
-    plans: [
-      {
-        name: "Starter",
-        price: "149€",
-        desc: "Idéal pour les petites boutiques qui démarrent avec un vendeur IA.",
-        features: [
-          "1 robot Vendix (1 magasin)",
-          "Jusqu'à 500 interactions / mois",
-          "2 langues au choix",
-          "Intégration Shopify ou WooCommerce",
-          "Support par email",
-        ],
-        highlight: false,
-      },
-      {
-        name: "Pro",
-        price: "349€",
-        desc: "Pour les commerces qui veulent vraiment booster leurs ventes.",
-        features: [
-          "Jusqu'à 3 robots Vendix",
-          "Interactions illimitées",
-          "4 langues (FR/EN/ES/AR)",
-          "Vitrine virtuelle HD + recommandations IA",
-          "Statistiques temps réel",
-          "Support prioritaire 7j/7",
-        ],
-        highlight: true,
-      },
-      {
-        name: "Entreprise",
-        price: "Sur devis",
-        desc: "Réseaux de magasins, chaînes d'hôtels et déploiements multi-sites.",
-        features: [
-          "Robots illimités, multi-sites",
-          "Personnalisation voix & personnalité",
-          "Intégrations sur mesure (ERP, CRM…)",
-          "SLA et conformité RGPD avancée",
-          "Account manager dédié en France",
-        ],
-        highlight: false,
-      },
-    ],
-  },
-  advantages: {
-    title: "Pensé pour le commerce français.",
-    items: [
-      "Installation en moins de 48h",
-      "Abonnement tout compris (maintenance + mises à jour IA)",
-      "Compatible Shopify & WooCommerce",
-      "100% conforme RGPD",
-      "Voix et personnalité adaptées à votre marque",
-      "Support humain basé en France",
-    ],
-  },
-  cta: {
-    title: "Prêt à avoir votre propre Vendix ?",
-    sub: "Commencez avec un essai gratuit de 30 jours. Sans carte bancaire.",
-    btn: "Demander une démo gratuite",
-  },
-  footer: "© 2026 Vendix — Solution française · RGPD compliant · Made in France",
-};
+// Official Integration Logos
+const ShopifyLogo = () => (
+  <svg viewBox="0 0 109 124" className="w-6 h-6">
+    <path
+      fill="#95BF47"
+      d="M95.6 28.4c-.1-.6-.6-1-1.1-1-.5 0-10.7-.7-10.7-.7s-7.1-6.9-7.9-7.7c-.8-.8-2.3-.5-2.9-.4-.1 0-1.5.5-4 1.2-2.4-6.9-6.6-13.2-14-13.2h-.6c-2.1-2.8-4.7-4-7-4-17.3 0-25.6 21.6-28.2 32.6-6.8 2.1-11.6 3.6-12.2 3.8-3.8 1.2-3.9 1.3-4.4 4.9-.4 2.7-10.3 79.4-10.3 79.4l77.7 14.6 42-9.1S95.7 29 95.6 28.4zM67.3 21.8l-6.5 2c0-1.6 0-3.3-.2-5.2 4.1.6 6.3 3 6.7 3.2zm-11.2-7.4c.2 2.5.2 5.2.1 7.7l-16.8 5.2c3.2-12.6 9.3-18.8 16.7-12.9zm-5.3-7.8c1.1 0 2.1.4 3.1 1.1-8 3.8-16.5 13.3-20.1 32.4l-13.3 4.1C24.8 31.4 34.5 6.6 50.8 6.6z"
+    />
+    <path
+      fill="#5E8E3E"
+      d="M94.5 27.4c-.5 0-10.7-.7-10.7-.7s-7.1-6.9-7.9-7.7c-.3-.3-.7-.4-1.1-.5l-5.9 120.1 42-9.1S95.7 29 95.6 28.4c-.1-.6-.6-1-1.1-1z"
+    />
+    <path
+      fill="#FFF"
+      d="M58 45.8l-5 14.9s-4.4-2.3-9.8-2.3c-7.9.1-8.3 5-8.3 6.2 0 6.8 17.8 9.4 17.8 25.4 0 12.6-8 20.7-18.7 20.7-12.9 0-19.5-8-19.5-8l3.5-11.4s6.8 5.8 12.5 5.8c3.7 0 5.2-2.9 5.2-5.1 0-8.9-14.6-9.3-14.6-23.9 0-12.3 8.8-24.2 26.6-24.2 6.9.1 10.3 1.9 10.3 1.9z"
+    />
+  </svg>
+);
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-};
+const GoogleLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
+    <path
+      fill="#4285F4"
+      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+    />
+    <path
+      fill="#34A853"
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+    />
+    <path
+      fill="#EA4335"
+      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+    />
+  </svg>
+);
 
-export default function Index() {
+const FacebookLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
+    <path
+      fill="#1877F2"
+      d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
+    />
+  </svg>
+);
+
+const InstagramLogo = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6">
+    <defs>
+      <linearGradient id="ig-gradient-index" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#FFDC80" />
+        <stop offset="25%" stopColor="#FCAF45" />
+        <stop offset="50%" stopColor="#F77737" />
+        <stop offset="75%" stopColor="#F56040" />
+        <stop offset="100%" stopColor="#C13584" />
+      </linearGradient>
+    </defs>
+    <path
+      fill="url(#ig-gradient-index)"
+      d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"
+    />
+  </svg>
+);
+
+const INTEGRATIONS = [
+  { name: "Shopify", logo: <ShopifyLogo /> },
+  { name: "Google", logo: <GoogleLogo /> },
+  { name: "Facebook", logo: <FacebookLogo /> },
+  { name: "Instagram", logo: <InstagramLogo /> },
+];
+
+const TESTIMONIALS = [
+  {
+    name: "Sarah M.",
+    role: "Shopify Merchant",
+    text: "NewAI doubled my organic traffic in just 2 months. The AI SEO is incredible!",
+    rating: 5,
+  },
+  {
+    name: "Marc D.",
+    role: "E-commerce Owner",
+    text: "The smart backgrounds saved me $500/month in photo editing costs. Game changer!",
+    rating: 5,
+  },
+  {
+    name: "Julie P.",
+    role: "Store Manager",
+    text: "Setup took 5 minutes and I saw ROI within 2 weeks. Highly recommend!",
+    rating: 5,
+  },
+];
+
+const Index = () => {
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { language, t } = useTranslation();
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [isInstalling, setIsInstalling] = useState(false);
 
-  useEffect(() => {
-    document.title = "Vendix — Le robot qui vend à votre place";
-    const desc = "Vendix, l'assistant commercial IA 24/7 pour magasins et hôtels. Accueil, conseil et vitrine virtuelle. Compatible Shopify & WooCommerce.";
-    let m = document.querySelector('meta[name="description"]');
-    if (!m) { m = document.createElement("meta"); m.setAttribute("name", "description"); document.head.appendChild(m); }
-    m.setAttribute("content", desc);
-  }, []);
+  const handleInstallClick = () => {
+    setIsInstalling(true);
+    window.open(SHOPIFY_APP_STORE_URL, "_blank");
+    // Reset after a short delay since the page stays open
+    setTimeout(() => setIsInstalling(false), 2000);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden font-sans">
-      {/* NAV */}
-      <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-[#0a0a0f]/70 border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2 font-bold tracking-tight">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-rose-500 shadow-[0_0_30px_rgba(255,90,50,0.5)]">
-              <Bot className="h-5 w-5 text-white" />
-            </span>
-            <span className="text-base">Ven<span className="text-orange-400">dix</span></span>
-          </a>
-          <nav className="hidden md:flex items-center gap-8 text-sm text-white/70">
-            <a href="#features" className="hover:text-white transition">{t.nav.features}</a>
-            <a href="#integrations" className="hover:text-white transition">{t.nav.integrations}</a>
-            <a href="#pricing" className="hover:text-white transition">{t.nav.pricing}</a>
-            <a href="#testimonials" className="hover:text-white transition">{t.nav.testimonials}</a>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => navigate("/auth")}
-              className="bg-white text-black hover:bg-orange-300 hover:text-black rounded-full px-5"
-            >
-              {t.nav.demo}
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background">
+      <AnnouncementBar />
+      <PublicHeader />
 
-      {/* HERO */}
-      <section className="relative pt-32 pb-24 md:pt-40 md:pb-32">
-        <div className="absolute -top-40 -left-20 h-[500px] w-[500px] rounded-full bg-orange-500/20 blur-[120px]" />
-        <div className="absolute top-20 right-0 h-[400px] w-[400px] rounded-full bg-rose-500/10 blur-[120px]" />
+      {/* Hero Section - Impact First */}
+      <section id="hero" className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
 
-        <div className="relative max-w-7xl mx-auto px-6 grid lg:grid-cols-[1.1fr_1fr] gap-14 items-center">
-          <motion.div initial="hidden" animate="show" variants={fadeUp}>
-            <Badge className="bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 rounded-full px-4 py-1.5 mb-6">
-              <Sparkles className="h-3.5 w-3.5 mr-1.5 text-orange-400" />
-              {t.hero.badge}
-            </Badge>
-            <h1 className="text-5xl md:text-7xl font-black leading-[0.95] tracking-tight">
-              {t.hero.title1}
-              <br />
-              <span className="bg-gradient-to-r from-orange-300 via-orange-400 to-rose-500 bg-clip-text text-transparent">
-                {t.hero.title2}
-              </span>
+        <div className="container relative mx-auto px-4 py-16 sm:py-24">
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+            {/* Badges Row */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Badge className="bg-primary/20 text-primary-foreground border-primary/30 px-4 py-1.5">
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                {t.landing.hero.badge}
+              </Badge>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                <span className="text-xs text-white/80">Built for</span>
+                <img src="/shopify-logo.svg" alt="Shopify e-commerce platform logo" className="h-5 brightness-0 invert" />
+              </div>
+            </div>
+
+            {/* Main Title - Stronger Message */}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
+              {t.landing.hero.title}{" "}
+              <span className="bg-gradient-to-r from-primary-light via-primary to-primary-dark bg-clip-text text-transparent">
+                {t.landing.hero.titleHighlight}
+              </span>{" "}
+              {t.landing.hero.titleEnd}
             </h1>
-            <p className="mt-7 text-lg md:text-xl text-white/65 max-w-xl leading-relaxed">
-              {t.hero.sub}
-            </p>
-            <div className="mt-9 flex flex-wrap gap-4">
+
+            {/* Subtitle - More Direct */}
+            <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto">{t.landing.hero.subtitle}</p>
+
+            {/* CTA Buttons - Result-Oriented */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
               <Button
                 size="lg"
-                onClick={() => navigate("/auth")}
-                className="rounded-full px-8 h-14 text-base bg-gradient-to-r from-orange-400 to-rose-500 hover:opacity-90 shadow-[0_10px_40px_-10px_rgba(255,90,50,0.6)]"
+                className="group bg-success hover:bg-success/90 shadow-lg shadow-success/30 text-success-foreground w-full sm:w-auto"
+                onClick={handleInstallClick}
+                disabled={isInstalling}
               >
-                {t.hero.cta1}
-                <ArrowRight className="ml-2 h-4 w-4" />
+                {isInstalling ? (
+                  <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                ) : (
+                  <ShoppingBag className="mr-2 w-4 h-4" />
+                )}
+                {language === "fr" ? "Installer sur Shopify" : "Install on Shopify"}
+                {!isInstalling && (
+                  <ExternalLink className="ml-2 w-4 h-4" />
+                )}
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => navigate("/auth")}
-                className="rounded-full px-8 h-14 text-base border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                className="text-white border-white/30 hover:bg-white/10 w-full sm:w-auto"
+                onClick={() => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" })}
               >
-                {t.hero.cta2}
+                <Play className="mr-2 w-4 h-4" />
+                {t.demo?.button?.label || "Demo"}
               </Button>
             </div>
-            <div className="mt-10 flex flex-wrap items-center gap-6 text-sm text-white/50">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="h-9 w-9 rounded-full border-2 border-[#0a0a0f] bg-gradient-to-br from-orange-300 to-rose-500"
-                  />
-                ))}
-              </div>
-              <div>
-                <div className="text-white font-semibold text-base">{t.hero.stat}</div>
-                <div className="text-xs">{t.hero.trust}</div>
-              </div>
-            </div>
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.9, ease: "easeOut" }}
-            className="relative"
-          >
-            <div className="absolute -inset-6 bg-gradient-to-br from-orange-500/30 to-rose-500/20 blur-3xl rounded-[3rem]" />
-            <div className="relative rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl">
-              <img
-                src={robotHero}
-                alt="Vendix, robot conseiller IA en magasin"
-                width={1536}
-                height={1536}
-                className="w-full h-auto object-cover"
-              />
-              <div className="absolute bottom-5 left-5 right-5 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 p-4 flex items-center gap-3">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-sm text-white/80">
-                  En service · 412 clients accueillis aujourd'hui
-                </span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* WHY */}
-      <section className="py-24 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="max-w-2xl mb-16">
-            <div className="text-xs uppercase tracking-[0.3em] text-orange-400 mb-4">{t.why.kicker}</div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">{t.why.title}</h2>
-            <p className="mt-4 text-white/60 text-lg">{t.why.sub}</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {t.why.items.map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="group relative p-8 rounded-3xl bg-gradient-to-b from-white/[0.04] to-transparent border border-white/10 hover:border-orange-400/30 transition"
-              >
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 mb-6">
-                  <item.icon className="h-6 w-6 text-white" />
+            {/* Trust Badges */}
+            <div className="flex flex-col items-center gap-3 pt-2">
+              <div className="flex items-center gap-4 text-xs text-gray-400">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                  <span>{t.landing.hero.setupTime}</span>
                 </div>
-                <h3 className="text-2xl font-bold mb-3">{item.title}</h3>
-                <p className="text-white/60 leading-relaxed">{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section id="features" className="py-24 border-t border-white/5 bg-gradient-to-b from-transparent via-orange-500/[0.03] to-transparent">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="max-w-2xl mb-16">
-            <div className="text-xs uppercase tracking-[0.3em] text-orange-400 mb-4">{t.features.kicker}</div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">{t.features.title}</h2>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/5 rounded-3xl overflow-hidden border border-white/10">
-            {t.features.items.map((item, i) => (
-              <div key={i} className="bg-[#0a0a0f] p-8 hover:bg-white/[0.03] transition group">
-                <item.icon className="h-7 w-7 text-orange-400 mb-5 group-hover:scale-110 transition" />
-                <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-                <p className="text-white/55 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* INTEGRATIONS */}
-      <section id="integrations" className="py-24 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <div className="text-xs uppercase tracking-[0.3em] text-orange-400 mb-4">{t.integrations.kicker}</div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">{t.integrations.title}</h2>
-            <p className="mt-5 text-white/60 text-lg">{t.integrations.sub}</p>
-            <div className="mt-8 flex items-center gap-4">
-              <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#95BF47]/10 border border-[#95BF47]/30">
-                <ShoppingBag className="h-5 w-5 text-[#95BF47]" />
-                <span className="font-semibold">Shopify</span>
-              </div>
-              <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-[#7F54B3]/10 border border-[#7F54B3]/30">
-                <Store className="h-5 w-5 text-[#7F54B3]" />
-                <span className="font-semibold">WooCommerce</span>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                  <span>{t.landing.hero.noCommitment}</span>
+                </div>
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            {t.integrations.list.map((name) => (
-              <div
-                key={name}
-                className="aspect-square rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-center text-sm font-semibold text-white/80 hover:border-orange-400/40 hover:bg-white/[0.06] transition"
-              >
-                {name}
+        </div>
+
+        {/* Subtle gradient orbs */}
+        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/15 rounded-full blur-3xl pointer-events-none" />
+      </section>
+
+      {/* Issues Detected Section - Problem Showing */}
+      <section className="py-10 bg-gradient-to-b from-slate-900 to-background">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <p className="text-sm text-muted-foreground mb-2">
+                {language === "fr" ? "La plupart des boutiques Shopify souffrent de :" : "Most Shopify stores suffer from:"}
+              </p>
+            </div>
+            
+            <div className="grid sm:grid-cols-2 gap-3 mb-8">
+              {[
+                language === "fr" ? "Titres et descriptions manquants" : "Missing meta titles & descriptions",
+                language === "fr" ? "Images sans texte ALT" : "Images without ALT text",
+                language === "fr" ? "Produits non éligibles Google Shopping" : "Products not eligible for Google Shopping",
+                language === "fr" ? "Structure SEO interne défaillante" : "Poor internal SEO structure",
+              ].map((issue, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <span className="text-destructive text-lg">✗</span>
+                  <span className="text-sm text-foreground">{issue}</span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="text-center">
+              <p className="text-lg font-semibold text-primary">
+                {language === "fr" ? "NewAI corrige tout ça automatiquement." : "NewAI fixes all of this automatically."}
+              </p>
+            </div>
+          </div>
+          
+          {/* Social Proof - Compact */}
+          <div className="flex items-center justify-center gap-6 sm:gap-10 mt-10 flex-wrap">
+            <div className="text-center">
+              <div className="text-lg font-bold text-foreground">+180%</div>
+              <div className="text-[10px] text-muted-foreground">
+                {language === "fr" ? "Trafic organique" : "Organic Traffic"}
               </div>
-            ))}
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-foreground">10K+</div>
+              <div className="text-[10px] text-muted-foreground">
+                {language === "fr" ? "Produits optimisés" : "Products Optimized"}
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-foreground">500+</div>
+              <div className="text-[10px] text-muted-foreground">
+                {language === "fr" ? "Boutiques actives" : "Active Stores"}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* PRICING */}
-      <section id="pricing" className="py-24 border-t border-white/5 bg-gradient-to-b from-transparent via-orange-500/[0.04] to-transparent">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="max-w-2xl mb-16">
-            <div className="text-xs uppercase tracking-[0.3em] text-orange-400 mb-4">{t.pricing.kicker}</div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">{t.pricing.title}</h2>
-            <p className="mt-4 text-white/60 text-lg">{t.pricing.sub}</p>
+      {/* Google Phone Mockups - Visual Impact */}
+      <GooglePhoneMockups />
+
+      {/* Google Shopping Ready */}
+      <GoogleShoppingSection />
+
+      {/* Google Traffic Growth */}
+      <GoogleTrafficGrowth />
+
+      {/* How It Works - Clean Steps */}
+      <section className="py-16 sm:py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12 space-y-3">
+            <Badge variant="outline" className="border-primary text-primary">
+              {t.landing.howItWorks.badge}
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.howItWorks.title}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">{t.landing.howItWorks.subtitle}</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {t.pricing.plans.map((plan, i) => (
-              <motion.div
-                key={plan.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className={`relative p-8 rounded-3xl border transition flex flex-col ${
-                  plan.highlight
-                    ? "bg-gradient-to-b from-orange-500/15 to-rose-500/5 border-orange-400/40 shadow-[0_10px_60px_-10px_rgba(255,90,50,0.35)]"
-                    : "bg-gradient-to-b from-white/[0.04] to-transparent border-white/10 hover:border-orange-400/30"
-                }`}
-              >
-                {plan.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-orange-400 to-rose-500 text-white shadow-lg whitespace-nowrap">
-                    {t.pricing.popular}
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            {t.landing.howItWorks.steps.map((step: any, index: number) => {
+              const icons = [ShoppingBag, Zap, Sparkles, TrendingUp];
+              const StepIcon = icons[index];
+              return (
+                <div key={index} className="relative group">
+                  <div className="text-center p-6 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all">
+                    <div className="relative inline-block mb-4">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-lg shadow-primary/20">
+                        <StepIcon className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                        {index + 1}
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">{step.title}</h3>
+                    <p className="text-sm text-muted-foreground">{step.description}</p>
                   </div>
-                )}
-                <h3 className="text-xl font-bold">{plan.name}</h3>
-                <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-5xl font-black tracking-tight">{plan.price}</span>
-                  {plan.price !== "Sur devis" && (
-                    <span className="text-white/50 text-sm">{t.pricing.monthly}</span>
+                  {index < 3 && (
+                    <div className="hidden lg:block absolute top-1/2 -right-3 w-6 h-0.5 bg-gradient-to-r from-primary/50 to-transparent" />
                   )}
                 </div>
-                <p className="mt-3 text-white/60 text-sm leading-relaxed">{plan.desc}</p>
-                <ul className="mt-6 space-y-3 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm text-white/80">
-                      <CheckCircle2 className="h-4 w-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  onClick={() => navigate("/auth")}
-                  className={`mt-8 rounded-full h-12 ${
-                    plan.highlight
-                      ? "bg-gradient-to-r from-orange-400 to-rose-500 hover:opacity-90 text-white"
-                      : "bg-white/10 hover:bg-white/20 text-white border border-white/10"
-                  }`}
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Key Features - Clean Cards */}
+      <section id="features" className="py-16 sm:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12 space-y-3">
+            <Badge variant="outline" className="border-primary text-primary">
+              {t.landing.features.badge}
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.features.title}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">{t.landing.features.subtitle}</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto">
+            {t.landing.features.items.map((feature: any, index: number) => {
+              const icons = [Zap, ImageIcon, FileText, Tags, BarChart3, Sparkles];
+              const FeatureIcon = icons[index];
+              return (
+                <Card
+                  key={index}
+                  className="p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-2 border-transparent hover:border-primary/20"
                 >
-                  {t.pricing.cta}
-                </Button>
-              </motion.div>
-            ))}
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center mb-4 shadow-md shadow-primary/20">
+                    <FeatureIcon className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{feature.description}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {feature.tags.map((tag: string, i: number) => (
+                      <Badge key={i} variant="secondary" className="text-[10px]">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
-      <section id="testimonials" className="py-24 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="max-w-2xl mb-16">
-            <div className="text-xs uppercase tracking-[0.3em] text-orange-400 mb-4">{t.testimonials.kicker}</div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tight">{t.testimonials.title}</h2>
+      {/* Demo SEO Comparison Section */}
+      <DemoSeoComparison />
+
+      {/* Landing Page Vision AI Showcase */}
+      <LandingPageVisionShowcase />
+
+      {/* Book a Demo Section */}
+      <section id="demo" className="py-12 sm:py-16 bg-gradient-to-b from-background to-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-6 space-y-2">
+            <Badge variant="outline" className="border-primary text-primary">
+              {language === "fr" ? "Découvrir NewAI" : "Discover NewAI"}
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl font-bold">
+              {language === "fr" ? "Réservez votre démo gratuite" : "Book your free demo"}
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+              {language === "fr"
+                ? "30 minutes pour découvrir comment NewAI peut transformer votre boutique"
+                : "30 minutes to discover how NewAI can transform your store"}
+            </p>
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <Clock className="w-3.5 h-3.5" />
+              <span>{language === "fr" ? "Lun-Ven, 10h30-16h30 " : "Mon-Fri, 10:30AM-4:30PM"}</span>
+            </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {t.testimonials.items.map((tm, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="p-8 rounded-3xl bg-gradient-to-b from-white/[0.05] to-transparent border border-white/10"
-              >
-                <Quote className="h-8 w-8 text-orange-400 mb-5" />
-                <p className="text-white/85 leading-relaxed text-[15px]">"{tm.quote}"</p>
-                <div className="mt-6 pt-6 border-t border-white/10">
-                  <div className="font-semibold">{tm.author}</div>
-                  <div className="text-sm text-white/50">{tm.role}</div>
-                </div>
-              </motion.div>
-            ))}
+          <div className="max-w-2xl mx-auto">
+            <CalBookingEmbed minimal />
           </div>
         </div>
       </section>
 
-      {/* ADVANTAGES */}
-      <section className="py-24 border-t border-white/5">
-        <div className="max-w-5xl mx-auto px-6">
-          <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-12 text-center">{t.advantages.title}</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {t.advantages.items.map((a, i) => (
-              <div key={i} className="flex items-start gap-3 p-5 rounded-2xl bg-white/[0.03] border border-white/10">
-                <CheckCircle2 className="h-5 w-5 text-orange-400 mt-0.5 flex-shrink-0" />
-                <span className="text-white/85">{a}</span>
+      {/* Benefits Section - Side by Side */}
+      <section id="benefits" className="py-16 sm:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-10 items-center max-w-6xl mx-auto">
+            <div className="space-y-5">
+              <Badge variant="outline" className="border-success text-success">
+                {t.landing.benefits.badge}
+              </Badge>
+              <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.benefits.title}</h2>
+              <p className="text-muted-foreground">{t.landing.benefits.subtitle}</p>
+
+              <div className="space-y-3 pt-2">
+                {t.landing.benefits.items.map((benefit: any, index: number) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-background transition-colors"
+                  >
+                    <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-sm">{benefit.title}</p>
+                      <p className="text-xs text-muted-foreground">{benefit.description}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
+
+              <Button size="lg" className="mt-4" onClick={() => navigate("/auth?mode=signup")}>
+                {t.landing.benefits.cta}
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-3xl blur-2xl" />
+              <Card className="relative p-6 border-2 border-primary/20">
+                <div className="grid grid-cols-2 gap-6">
+                  {t.landing.benefits.stats.map((stat: any, index: number) => (
+                    <div key={index} className="text-center p-4 rounded-xl bg-muted/50">
+                      <p className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+                        {stat.value}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials - Clean Design */}
+      <section className="py-16 sm:py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12 space-y-3">
+            <Badge variant="outline" className="border-success text-success">
+              {t.landing.testimonials.badge}
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.testimonials.title}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">{t.landing.testimonials.subtitle}</p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
+            {t.landing.testimonials.items.map((testimonial: any, index: number) => (
+              <Card key={index} className="p-5 hover:shadow-lg transition-shadow">
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-primary text-primary" />
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground italic mb-4">"{testimonial.quote}"</p>
+                <div className="flex items-center gap-3 pt-3 border-t border-border/50">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-white font-bold text-sm">
+                    {testimonial.author[0]}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{testimonial.author}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                  </div>
+                </div>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="py-32 relative overflow-hidden border-t border-white/5">
-        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 via-rose-500/10 to-transparent" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-orange-500/20 blur-[150px]" />
-        <div className="relative max-w-3xl mx-auto px-6 text-center">
-          <Zap className="h-12 w-12 text-orange-400 mx-auto mb-6" />
-          <h2 className="text-4xl md:text-6xl font-black tracking-tight">{t.cta.title}</h2>
-          <p className="mt-5 text-lg text-white/70">{t.cta.sub}</p>
-          <Button
-            size="lg"
-            onClick={() => navigate("/auth")}
-            className="mt-10 rounded-full px-10 h-14 text-base bg-gradient-to-r from-orange-400 to-rose-500 hover:opacity-90 shadow-[0_10px_40px_-10px_rgba(255,90,50,0.6)]"
-          >
-            {t.cta.btn}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          <div className="mt-8 flex items-center justify-center gap-2 text-sm text-white/50">
-            <ShieldCheck className="h-4 w-4" />
-            <span>Sans carte bancaire · Sans engagement</span>
+      {/* Integrations Bar */}
+      <section className="py-8 border-y border-border/50">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+            <span className="text-sm font-medium">{language === "fr" ? "Intégrations" : "Integrations"}:</span>
+            <div className="flex items-center gap-6">
+              {INTEGRATIONS.map((int, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  {int.logo}
+                  <span className="text-sm font-medium hidden sm:inline">{int.name}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="py-10 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row gap-4 items-center justify-between text-sm text-white/40">
-          <div className="flex items-center gap-2">
-            <Bot className="h-4 w-4 text-orange-400" />
-            <span>{t.footer}</span>
+      {/* Pricing Section */}
+      <section id="pricing" className="py-16 sm:py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12 space-y-3">
+            <Badge variant="outline" className="border-primary text-primary">
+              <Globe className="w-3.5 h-3.5 mr-1.5" />
+              {t.landing.pricing.badge}
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold">{t.landing.pricing.title}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">{t.landing.pricing.subtitle}</p>
+
+            {/* Billing Toggle */}
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <button
+                onClick={() => setBillingCycle("monthly")}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  billingCycle === "monthly"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.landing.pricing.monthly}
+              </button>
+              <button
+                onClick={() => setBillingCycle("yearly")}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors relative ${
+                  billingCycle === "yearly"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.landing.pricing.yearly}
+                <Badge className="absolute -top-2 -right-2 bg-success text-[10px] px-1.5">
+                  -20%
+                </Badge>
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-6">
-            <a href="/privacy" className="hover:text-white transition">Confidentialité</a>
-            <a href="/terms" className="hover:text-white transition">Conditions</a>
+
+          <div className={`grid sm:grid-cols-2 ${SHOW_TRIAL_PLAN ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5 max-w-6xl mx-auto mb-12`}>
+            {[
+              ...(SHOW_TRIAL_PLAN ? [{
+                key: "trial",
+                priceMonthly: 0,
+                priceYearly: 0,
+                yearlyTotal: 0,
+                icon: "🎁",
+                featured: false,
+                isTrial: true,
+                hasPromo: false,
+              }] : []),
+              {
+                key: "starter",
+                priceMonthly: 9.99,
+                priceYearly: 7.99,
+                yearlyTotal: 96.00,
+                icon: "🟢",
+                featured: false,
+                hasPromo: false,
+              },
+              {
+                key: "pro",
+                priceMonthly: 49,
+                priceYearly: 39,
+                yearlyTotal: 468,
+                icon: "🟠",
+                featured: true,
+                hasPromo: false,
+              },
+              {
+                key: "enterprise",
+                priceMonthly: 199,
+                priceYearly: 159,
+                yearlyTotal: 1908,
+                icon: "🔵",
+                featured: false,
+                hasPromo: false,
+              },
+            ].map((planConfig, index) => {
+              const plan = t.landing.pricing.plans[planConfig.key as "trial" | "starter" | "pro" | "enterprise"];
+              const price = billingCycle === "monthly" ? planConfig.priceMonthly : planConfig.priceYearly;
+
+              return (
+                <Card
+                  key={index}
+                  className={`p-5 relative ${planConfig.featured ? "border-2 border-primary shadow-lg shadow-primary/10 lg:scale-105" : "border border-border"}`}
+                >
+                  {plan.badge && (
+                    <Badge
+                      className={`absolute -top-3 left-1/2 -translate-x-1/2 text-xs ${planConfig.featured ? "bg-primary" : "bg-gradient-to-r from-primary to-primary-dark"}`}
+                    >
+                      {plan.badge}
+                    </Badge>
+                  )}
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-bold">
+                        {planConfig.icon} {plan.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1">{plan.description}</p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-bold">{formatPrice(price, language)}</span>
+                        <span className="text-xs text-muted-foreground">{t.landing.pricing.perMonth}</span>
+                      </div>
+                      {!planConfig.isTrial && billingCycle === "yearly" && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t.onboarding.billedAnnually} ({formatPrice(planConfig.yearlyTotal, language)}/{language === 'fr' ? 'an' : 'year'})
+                        </p>
+                      )}
+                      {planConfig.isTrial && (
+                        <p className="text-xs text-success mt-1 font-semibold">{t.trial.duration}</p>
+                      )}
+                    </div>
+
+                    <Button
+                      className="w-full"
+                      variant={planConfig.featured ? "default" : "outline"}
+                      onClick={() =>
+                        navigate(planConfig.isTrial ? "/auth?mode=signup&plan=trial" : "/auth?mode=signup")
+                      }
+                    >
+                      {plan.cta}
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+
+                    <div className="space-y-2 pt-4 border-t border-border/50">
+                      <p className="font-semibold text-xs">{language === "fr" ? "Inclus" : "Included"}:</p>
+                      {plan.features.slice(0, 5).map((feature: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
+                          <span className="text-xs">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Detailed Pricing Comparison */}
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-10">
+              <h3 className="text-2xl font-bold mb-2">{t.landing.pricing.comparisonTitle || "Compare Plans"}</h3>
+              <p className="text-sm text-muted-foreground">
+                {t.landing.pricing.comparisonSubtitle || "See all features"}
+              </p>
+            </div>
+            <PricingComparison />
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-16 sm:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <ContactForm />
+        </div>
+      </section>
+
+      {/* Referral Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-4">
+          <ReferralSystem />
+        </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+        <div className="container relative mx-auto px-4 py-16 sm:py-20">
+          <div className="max-w-2xl mx-auto text-center space-y-6">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white">{t.landing.cta.title}</h2>
+            <p className="text-gray-400">{t.landing.cta.subtitle}</p>
+            <Button
+              size="lg"
+              className="bg-white text-primary hover:bg-white/90"
+              onClick={() => navigate("/auth?mode=signup")}
+            >
+              {t.landing.cta.button}
+              <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+
+      {/* AI Assistant */}
+      <AIAssistant />
     </div>
   );
-}
+};
+
+export default Index;

@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const { productId }: EnrichmentRequest = body as EnrichmentRequest;
+    const { productId }: EnrichmentRequest = await req.json();
 
     if (!productId) {
       throw new Error("Missing productId");

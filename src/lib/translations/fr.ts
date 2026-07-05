@@ -1609,7 +1609,7 @@ export const translations = {
     main: "Navigation",
     dashboard: "Tableau de bord",
     products: "Produits",
-    productOptimization: "Catalogue Produits",
+    productOptimization: "Optimisation Produit",
     titleDescription: "Contenu Produit Optimisé",
     seoOptimization: "Optimisation SEO",
     blog: "SEO Blog",
