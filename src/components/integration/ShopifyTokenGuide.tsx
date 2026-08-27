@@ -2,262 +2,151 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ExternalLink, Copy, Check, Key, Shield, AlertTriangle, Info } from "lucide-react";
+import { ExternalLink, Copy, Key, Shield, AlertTriangle, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
 
-export function ShopifyTokenGuide() {
-  const { t } = useTranslation();
+const DEV_DASHBOARD_URL = "https://dev.shopify.com/dashboard";
+const SHOPIFY_GUIDE_URL = "https://shopify.dev/docs/apps/build/dev-dashboard/create-apps-using-dev-dashboard";
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(t.shopifyApiGuide.toasts.copied.replace("{{label}}", label));
+export function ShopifyTokenGuide() {
+  const { language } = useTranslation();
+  const fr = language === "fr";
+
+  const copyToClipboard = async (text: string, label: string) => {
+    await navigator.clipboard.writeText(text);
+    toast.success(fr ? `${label} copié` : `${label} copied`);
   };
 
-  const requiredScopes = [
-    { scope: "read_products, write_products", descKey: "products" },
-    { scope: "read_content, write_content", descKey: "content" },
-    { scope: "read_script_tags, write_script_tags", descKey: "scriptTags" },
-    { scope: "read_customer_events", descKey: "customerEvents" },
-    { scope: "read_locations, write_locations", descKey: "locations" },
-    { scope: "read_shipping, write_shipping", descKey: "shipping" },
-    { scope: "read_product_listings, write_product_listings", descKey: "productListings" },
-    { scope: "read_files, write_files", descKey: "files" },
-    { scope: "read_product_feeds, write_product_feeds", descKey: "productFeeds" },
-    { scope: "read_online_store_pages, write_online_store_pages", descKey: "pages" },
-    { scope: "read_reports, write_reports", descKey: "reports" },
-    { scope: "read_inventory, write_inventory", descKey: "inventory" },
-    { scope: "read_inventory_shipments, write_inventory_shipments", descKey: "inventoryShipments" },
-    { scope: "read_inventory_transfers, write_inventory_transfers", descKey: "inventoryTransfers" },
+  const scopes = [
+    "read_products", "write_products",
+    "read_inventory", "write_inventory",
+    "read_content", "write_content",
+    "read_files", "write_files",
+    "read_online_store_pages", "write_online_store_pages",
   ];
+
+  const scopeValue = scopes.join(",");
+  const steps = fr
+    ? [
+        ["Créer l’application", "Dans le Dev Dashboard, cliquez sur Create app → Start from Dev Dashboard. Nommez-la « Decora Home API »."],
+        ["Créer une version", "Ouvrez Versions, indiquez l’URL de l’application, choisissez la version d’API la plus récente et ajoutez les permissions ci-dessous."],
+        ["Publier la configuration", "Cliquez sur Release. Les changements de permissions ne sont actifs qu’après publication de la version."],
+        ["Installer sur Decora Home", "Dans Home → Install app, sélectionnez votre boutique Decora Home puis confirmez l’installation."],
+        ["Récupérer les identifiants", "Dans Settings, copiez le Client ID et le Client secret. NewAI les utilisera côté serveur pour obtenir automatiquement un token valable 24 heures."],
+        ["Connecter dans NewAI", "Saisissez le domaine myshopify.com, le Client ID et le Client secret. Ne partagez jamais le Client secret par e-mail ou dans une conversation."],
+      ]
+    : [
+        ["Create the app", "In the Dev Dashboard, click Create app → Start from Dev Dashboard. Name it “Decora Home API”."],
+        ["Create a version", "Open Versions, set the app URL, select the latest API version and add the scopes listed below."],
+        ["Release the configuration", "Click Release. Scope changes only become active after the version is released."],
+        ["Install on Decora Home", "From Home → Install app, select your Decora Home store and confirm installation."],
+        ["Get the credentials", "In Settings, copy the Client ID and Client secret. NewAI uses them server-side to obtain a 24-hour access token automatically."],
+        ["Connect in NewAI", "Enter the myshopify.com domain, Client ID and Client secret. Never share the Client secret by email or chat."],
+      ];
 
   return (
     <Card className="border-2 shadow-sm">
-      <CardHeader className="space-y-1 pb-4">
+      <CardHeader>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <Info className="w-4 h-4 text-primary" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+            <Info className="h-4 w-4 text-primary" />
           </div>
-          <CardTitle className="text-lg">{t.shopifyApiGuide.title}</CardTitle>
+          <CardTitle className="text-lg">
+            {fr ? "Connecter une nouvelle application Shopify (Dev Dashboard)" : "Connect a new Shopify app (Dev Dashboard)"}
+          </CardTitle>
         </div>
-        <CardDescription className="text-xs">
-          {t.shopifyApiGuide.subtitle}
+        <CardDescription>
+          {fr
+            ? "Guide à jour pour les applications créées depuis le 1er janvier 2026."
+            : "Current flow for apps created from January 1, 2026."}
         </CardDescription>
       </CardHeader>
+
       <CardContent className="space-y-6">
-        {/* Store Info */}
         <Alert>
           <Info className="h-4 w-4" />
-          <AlertDescription className="text-xs space-y-2">
-            <p>
-              <strong>{t.shopifyApiGuide.storeInfo.storeName}</strong> <code className="bg-muted px-1.5 py-0.5 rounded text-xs">HBxv99-2F</code>.myshopify.com
-            </p>
-            <p>
-              {t.shopifyApiGuide.storeInfo.findInUrl}{" "}
-              <code className="bg-muted px-1 py-0.5 rounded text-xs break-all">
-                admin.shopify.com/store/<strong>HBxv99-2F</strong>
-              </code>
-            </p>
+          <AlertDescription className="text-xs">
+            {fr
+              ? "Shopify ne fournit plus de token Admin permanent à copier pour une nouvelle application. Le Client ID et le Client secret servent à générer automatiquement un token qui expire après 24 heures."
+              : "Shopify no longer provides a permanent Admin token to copy for new apps. The Client ID and Client secret are used to generate an access token that expires after 24 hours."}
           </AlertDescription>
         </Alert>
 
-        {/* Step 1 */}
-        <div className="flex items-start gap-3">
-          <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-1">
-            <Check className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex-1 space-y-2">
-            <h4 className="font-semibold text-sm">{t.shopifyApiGuide.steps.step1.title}</h4>
-            <p className="text-xs text-muted-foreground">
-              {t.shopifyApiGuide.steps.step1.description}
-            </p>
-            <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
-              <a href="https://admin.shopify.com/settings/apps/development" target="_blank" rel="noopener noreferrer">
-                {t.shopifyApiGuide.steps.step1.link} <ExternalLink className="ml-1 h-3 w-3" />
-              </a>
-            </Button>
-          </div>
-        </div>
+        <Button variant="outline" size="sm" asChild>
+          <a href={DEV_DASHBOARD_URL} target="_blank" rel="noopener noreferrer">
+            {fr ? "Ouvrir le Dev Dashboard" : "Open Dev Dashboard"}
+            <ExternalLink className="ml-2 h-4 w-4" />
+          </a>
+        </Button>
 
-        {/* Step 2 */}
-        <div className="flex items-start gap-3">
-          <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-1">
-            <Check className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex-1 space-y-2">
-            <h4 className="font-semibold text-sm">{t.shopifyApiGuide.steps.step2.title}</h4>
-            <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-              {t.shopifyApiGuide.steps.step2.items.map((item, index) => (
-                <li key={index} dangerouslySetInnerHTML={{ __html: item.replace(/"([^"]+)"/g, '<strong>"$1"</strong>') }} />
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Step 3 */}
-        <div className="flex items-start gap-3">
-          <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-1">
-            <Check className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex-1 space-y-2">
-            <h4 className="font-semibold text-sm">{t.shopifyApiGuide.steps.step3.title}</h4>
-            <p className="text-xs text-muted-foreground">
-              {t.shopifyApiGuide.steps.step3.description}
-            </p>
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="scopes" className="border rounded-lg px-3">
-                <AccordionTrigger className="text-xs hover:no-underline py-3">
-                  <span className="flex items-center gap-2">
-                    📋 {t.shopifyApiGuide.steps.step3.scopesTitle} ({requiredScopes.length})
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-2 pt-2">
-                    {requiredScopes.map((item, index) => (
-                      <div key={index} className="flex items-start justify-between gap-2 p-2 bg-muted/50 rounded-md">
-                        <div className="flex-1 min-w-0">
-                          <code className="text-xs font-mono block break-all">{item.scope}</code>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {t.shopifyApiGuide.scopes[item.descKey as keyof typeof t.shopifyApiGuide.scopes]}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 flex-shrink-0"
-                          onClick={() => copyToClipboard(item.scope, "Permission")}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        </div>
-
-        {/* Step 4 */}
-        <div className="flex items-start gap-3">
-          <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-1">
-            <Check className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex-1 space-y-2">
-            <h4 className="font-semibold text-sm">{t.shopifyApiGuide.steps.step4.title}</h4>
-            <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-              {t.shopifyApiGuide.steps.step4.items.map((item, index) => (
-                <li key={index} dangerouslySetInnerHTML={{ __html: item.replace(/"([^"]+)"/g, '<strong>"$1"</strong>') }} />
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Step 5 */}
-        <div className="flex items-start gap-3">
-          <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-1">
-            <Check className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex-1 space-y-3">
-            <h4 className="font-semibold text-sm">{t.shopifyApiGuide.steps.step5.title}</h4>
-            
-            {/* API Key */}
-            <div className="p-3 bg-muted rounded-lg space-y-2">
-              <div className="flex items-center gap-2">
-                <Key className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm">{t.shopifyApiGuide.steps.step5.apiKey.label}</span>
+        <div className="space-y-5">
+          {steps.map(([title, description], index) => (
+            <div className="flex items-start gap-3" key={title}>
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                {index + 1}
               </div>
-              <p className="text-xs text-muted-foreground">
-                {t.shopifyApiGuide.steps.step5.apiKey.description}
-              </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-background p-2 rounded text-xs font-mono block overflow-x-auto">
-                  abc123def456ghi789jkl012mno345pq
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 flex-shrink-0"
-                  onClick={() => copyToClipboard("abc123def456ghi789jkl012mno345pq", "API Key")}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>✓ {t.shopifyApiGuide.steps.step5.apiKey.format}</p>
-                <p>✓ {t.shopifyApiGuide.steps.step5.apiKey.location}</p>
+              <div>
+                <h4 className="text-sm font-semibold">{title}</h4>
+                <p className="mt-1 text-xs text-muted-foreground">{description}</p>
               </div>
             </div>
-
-            {/* Admin API Access Token */}
-            <div className="p-3 bg-orange-50 dark:bg-orange-950/20 border-2 border-orange-200 dark:border-orange-800 rounded-lg space-y-2">
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                <span className="font-semibold text-sm">{t.shopifyApiGuide.steps.step5.accessToken.label}</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t.shopifyApiGuide.steps.step5.accessToken.description}
-              </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-background p-2 rounded text-xs font-mono block overflow-x-auto">
-                  shpat_xx11yy22zz33aa44bb55cc66dd77ee88
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 flex-shrink-0"
-                  onClick={() => copyToClipboard("shpat_xx11yy22zz33aa44bb55cc66dd77ee88", "Token")}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-              <Alert className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800">
-                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                <AlertDescription className="text-xs text-red-900 dark:text-red-200">
-                  <strong>{t.shopifyApiGuide.steps.step5.accessToken.warning}</strong>
-                </AlertDescription>
-              </Alert>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>✓ {t.shopifyApiGuide.steps.step5.accessToken.format} <code className="bg-background px-1.5 py-0.5 rounded font-mono">shpat_</code></p>
-                <p>✓ {t.shopifyApiGuide.steps.step5.accessToken.location}</p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Step 6 */}
-        <div className="flex items-start gap-3">
-          <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-1">
-            <Check className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex-1 space-y-2">
-            <h4 className="font-semibold text-sm">{t.shopifyApiGuide.steps.step6.title}</h4>
+        <Accordion type="single" collapsible>
+          <AccordionItem value="scopes" className="rounded-lg border px-3">
+            <AccordionTrigger className="text-xs hover:no-underline">
+              {fr ? "Permissions recommandées pour NewAI" : "Recommended NewAI scopes"}
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-3 pt-2">
+                <code className="block break-all rounded-md bg-muted p-3 text-xs">{scopeValue}</code>
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(scopeValue, fr ? "Permissions" : "Scopes")}>
+                  <Copy className="mr-2 h-3 w-3" />
+                  {fr ? "Copier les permissions" : "Copy scopes"}
+                </Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border bg-muted/40 p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <Key className="h-4 w-4 text-primary" />
+              <strong className="text-sm">Client ID</strong>
+            </div>
             <p className="text-xs text-muted-foreground">
-              {t.shopifyApiGuide.steps.step6.description}
+              {fr ? "Identifiant public disponible dans Settings." : "Public identifier available in Settings."}
+            </p>
+          </div>
+          <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-800 dark:bg-orange-950/20">
+            <div className="mb-2 flex items-center gap-2">
+              <Shield className="h-4 w-4 text-orange-600" />
+              <strong className="text-sm">Client secret</strong>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {fr ? "Secret confidentiel utilisé uniquement côté serveur." : "Confidential secret used only server-side."}
             </p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="pt-4 border-t space-y-2">
-          <p className="text-xs text-muted-foreground flex items-start gap-1">
-            <span>💡</span>
-            <span>
-              <strong>{t.shopifyApiGuide.footer.help}</strong>{" "}
-              <Button variant="link" className="h-auto p-0 text-xs inline" asChild>
-                <a href="https://help.shopify.com/en/manual/apps/app-types/custom-apps" target="_blank" rel="noopener noreferrer">
-                  {t.shopifyApiGuide.footer.helpLink} <ExternalLink className="ml-1 h-3 w-3 inline" />
-                </a>
-              </Button>
-            </span>
-          </p>
-          <p className="text-xs text-muted-foreground flex items-start gap-1">
-            <span>🔒</span>
-            <span>
-              <strong>{t.shopifyApiGuide.footer.security}</strong> {t.shopifyApiGuide.footer.securityWarning}
-            </span>
-          </p>
-        </div>
+        <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-xs text-red-900 dark:text-red-200">
+            {fr
+              ? "Les anciennes connexions utilisant un token shpat_ continuent de fonctionner. Ne les supprimez pas uniquement pour suivre ce nouveau guide."
+              : "Existing connections using a shpat_ token continue to work. Do not remove them only to follow this new guide."}
+          </AlertDescription>
+        </Alert>
+
+        <Button variant="link" className="h-auto p-0 text-xs" asChild>
+          <a href={SHOPIFY_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+            {fr ? "Documentation officielle Shopify" : "Official Shopify documentation"}
+            <ExternalLink className="ml-1 h-3 w-3" />
+          </a>
+        </Button>
       </CardContent>
     </Card>
   );
