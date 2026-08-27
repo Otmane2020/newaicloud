@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { AppSidebar } from "@/components/AppSidebar";
+import { CatalogOptimizeSidebar } from "@/components/CatalogOptimizeSidebar";
 import { SubscriptionGuard } from "@/components/SubscriptionGuard";
 import { LimitWarningBanner } from "@/components/LimitWarningBanner";
 import { NotificationCenter } from "@/components/NotificationCenter";
@@ -131,7 +131,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
     <SubscriptionGuard>
       <SidebarProvider>
         <div className="min-h-screen flex w-full bg-gray-50 overflow-x-hidden">
-          <AppSidebar />
+          <CatalogOptimizeSidebar />
           <main className="flex-1 min-w-0 max-w-full overflow-x-hidden">
             {/* Sticky Header */}
             <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b">
@@ -140,7 +140,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
                   <SidebarTrigger className="flex-shrink-0" />
                   <div className="flex items-center gap-1 sm:gap-2 min-w-0">
                     <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
-                    <span className="font-bold text-sm sm:text-lg truncate">NewAI</span>
+                    <span className="font-bold text-sm sm:text-lg truncate">Catalog Optimize</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
