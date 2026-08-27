@@ -49,12 +49,46 @@ serve(async (req) => {
   }
 
   try {
-    const { shopDomain, apiKey, accessToken } = await req.json();
+    const { shopDomain, apiKey, accessToken, clientId, clientSecret } = await req.json();
+
+    const storeUrl = shopDomain.replace(/^https?:\\/\\//, '').replace(/\\/$/, '');
+    let resolvedAccessToken = accessToken || '';
+    let expiresIn: number | null = null;
+
+    // New Dev Dashboard apps use the client credentials grant.
+    if (clientId && clientSecret) {
+      const tokenResponse = await fetch(`https://${storeUrl}/admin/oauth/access_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: clientId,
+          client_secret: clientSecret,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        const details = await tokenResponse.text();
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Unable to exchange Client ID and Secret for a Shopify access token',
+          details,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      }
+
+      const tokenData = await tokenResponse.json();
+      resolvedAccessToken = tokenData.access_token;
+      expiresIn = tokenData.expires_in || 86399;
+    }
+
+    if (!resolvedAccessToken) {
+      return new Response(JSON.stringify({ success: false, error: 'Missing Shopify credentials' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200,
+      });
+    }
 
     console.log('🔍 Testing Shopify credentials via GraphQL for:', shopDomain);
 
-    const storeUrl = shopDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    
     // Test shop access via GraphQL
     console.log('📞 Testing shop access via GraphQL...');
     
@@ -66,7 +100,7 @@ serve(async (req) => {
           myshopifyDomain: string;
           email: string;
         };
-      }>(storeUrl, accessToken, SHOP_QUERY);
+      }>(storeUrl, resolvedAccessToken, SHOP_QUERY);
     } catch (error) {
       console.error('❌ GraphQL shop access failed:', error);
       return new Response(
@@ -96,7 +130,7 @@ serve(async (req) => {
 
     // Test products
     try {
-      await shopifyGraphQL(storeUrl, accessToken, PRODUCTS_TEST_QUERY);
+      await shopifyGraphQL(storeUrl, resolvedAccessToken, PRODUCTS_TEST_QUERY);
       permissions.products = true;
       console.log(`Products access: ✅`);
     } catch (e) {
@@ -105,7 +139,7 @@ serve(async (req) => {
 
     // Test collections
     try {
-      await shopifyGraphQL(storeUrl, accessToken, COLLECTIONS_TEST_QUERY);
+      await shopifyGraphQL(storeUrl, resolvedAccessToken, COLLECTIONS_TEST_QUERY);
       permissions.collections = true;
       console.log(`Collections access: ✅`);
     } catch (e) {
@@ -115,7 +149,7 @@ serve(async (req) => {
     // Test pages (REST - not deprecated)
     try {
       const pagesRes = await fetch(`https://${storeUrl}/admin/api/2025-01/pages.json?limit=1`, {
-        headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' }
+        headers: { 'X-Shopify-Access-Token': resolvedAccessToken, 'Content-Type': 'application/json' }
       });
       permissions.pages = pagesRes.ok;
       console.log(`Pages access: ${pagesRes.ok ? '✅' : '❌'}`);
@@ -126,7 +160,7 @@ serve(async (req) => {
     // Test articles (REST - not deprecated)
     try {
       const blogsRes = await fetch(`https://${storeUrl}/admin/api/2025-01/blogs.json?limit=1`, {
-        headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' }
+        headers: { 'X-Shopify-Access-Token': resolvedAccessToken, 'Content-Type': 'application/json' }
       });
       permissions.articles = blogsRes.ok;
       console.log(`Articles access: ${blogsRes.ok ? '✅' : '❌'}`);
@@ -145,7 +179,10 @@ serve(async (req) => {
           domain: shopData.shop?.myshopifyDomain,
           email: shopData.shop?.email,
         },
-        permissions
+        permissions,
+        accessToken: resolvedAccessToken,
+        expiresIn,
+        authType: clientId && clientSecret ? 'client_credentials' : 'legacy_token'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
