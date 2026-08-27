@@ -172,8 +172,8 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       const { data: testData, error: testError } = await supabase.functions.invoke('test-shopify-credentials', {
         body: {
           shopDomain,
-          apiKey: savedApiKey,
-          accessToken: savedApiSecret
+          clientId: savedApiKey,
+          clientSecret: savedApiSecret
         }
       });
       
@@ -187,6 +187,24 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       console.log('✅ Credentials valid for shop:', testData.shop?.name);
       const verifiedShopDomain = testData.shop?.domain || shopDomain;
       const commercialShopName = testData.shop?.name || savedShopName;
+
+      if (!testData.accessToken) {
+        toast.dismiss(loadingToastId);
+        toast.error('Shopify did not return an access token');
+        return;
+      }
+
+      // Encrypt the Client secret before it is persisted.
+      const { data: encryptedSecret, error: encryptionError } = await supabase.functions.invoke('encrypt-shopify-token', {
+        body: { action: 'encrypt', token: savedApiSecret }
+      });
+
+      if (encryptionError || !encryptedSecret?.encrypted || !encryptedSecret?.iv) {
+        console.error('❌ Client secret encryption failed:', encryptionError);
+        toast.dismiss(loadingToastId);
+        toast.error('Impossible de sécuriser le Client secret');
+        return;
+      }
 
       // Check permissions
       const permissions = testData.permissions || {};
@@ -205,9 +223,16 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
           store_url: verifiedShopDomain,
           store_name: commercialShopName,
           api_key: savedApiKey,
-          access_token: savedApiSecret,
-          connection_type: "api_keys",
-          available_scopes: permissions,
+          access_token: testData.accessToken,
+          encrypted_token: encryptedSecret.encrypted,
+          token_iv: encryptedSecret.iv,
+          is_encrypted: true,
+          connection_type: "client_credentials",
+          available_scopes: {
+            ...permissions,
+            auth_type: "client_credentials",
+            token_expires_at: new Date(Date.now() + (testData.expiresIn || 86399) * 1000).toISOString()
+          },
         })
         .select()
         .single();
@@ -308,7 +333,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                 className="w-full h-12 text-base rounded-lg"
                 size="lg"
               >
-                {t.shopifyConnection.apiKeysConnection}
+                Dev Dashboard credentials
               </Button>
 
               <p className="text-xs text-center text-muted-foreground">
@@ -393,7 +418,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <DialogTitle className="text-xl">
-                {t.shopifyConnection.apiKeysConnection}
+                Client ID & Secret
               </DialogTitle>
             </div>
 
@@ -436,33 +461,33 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
 
               <div>
                 <Label htmlFor="apiKey" className="text-base font-semibold">
-                  2️⃣ {t.shopifyConnection.apiKey}
+                  2️⃣ Client ID
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  {t.shopifyConnection.yourApiKey}
+                  Copiez le Client ID depuis Dev Dashboard → Settings
                 </p>
                 <Input
                   id="apiKey"
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="abc123def456ghi789jkl012mno345pq"
+                  placeholder="Client ID"
                 />
               </div>
 
               <div>
                 <Label htmlFor="apiSecret" className="text-base font-semibold">
-                  3️⃣ {t.shopifyConnection.adminApiAccessToken}
+                  3️⃣ Client secret
                 </Label>
                 <p className="text-xs text-muted-foreground mb-2">
-                  {t.shopifyConnection.yourAdminToken}
+                  Copiez le Secret depuis Dev Dashboard → Settings
                 </p>
                 <Input
                   id="apiSecret"
                   type="password"
                   value={apiSecret}
                   onChange={(e) => setApiSecret(e.target.value)}
-                  placeholder="shpat_xx11yy22zz33aa44bb55cc66dd77ee88"
+                  placeholder="Client secret"
                 />
               </div>
             </div>
@@ -472,7 +497,7 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
               className="w-full"
             >
               <Key className="mr-2 h-4 w-4" />
-              {t.shopifyConnection.connectWithApiKeys}
+              Connecter avec Client ID & Secret
             </Button>
           </div>
         )}
