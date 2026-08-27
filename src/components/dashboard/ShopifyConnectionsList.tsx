@@ -16,6 +16,7 @@ import { SimpleSyncProgress } from '@/components/integration/SyncProgressDialog'
 import { SyncResultDialog } from '@/components/integration/SyncResultDialog';
 import { useTranslation } from '@/lib/language';
 import { useDemoMode } from '@/hooks/useDemoMode';
+import { ShopifyConnectionWizard } from '@/components/integration/ShopifyConnectionWizard';
 
 import {
   AlertDialog,
@@ -44,6 +45,7 @@ export default function ShopifyConnectionsList() {
   const { isDemoMode } = useDemoMode();
   const dateLocale = language === 'fr' ? fr : enUS;
   const [connections, setConnections] = useState<ShopifyConnection[]>([]);
+  const [showConnectionWizard, setShowConnectionWizard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [importingStoreId, setImportingStoreId] = useState<string | null>(null);
   const [syncingStoreId, setSyncingStoreId] = useState<string | null>(null);
@@ -643,15 +645,27 @@ export default function ShopifyConnectionsList() {
 
   if (connections.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <Store className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">No stores connected</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Connect your Shopify store to get started
-          </p>
-        </CardContent>
-      </Card>
+      <>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Store className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">No stores connected</p>
+            <p className="text-sm text-muted-foreground mt-2 mb-6">
+              Connect your Shopify store to get started
+            </p>
+            <Button onClick={() => setShowConnectionWizard(true)} size="lg">
+              <Store className="mr-2 h-5 w-5" />
+              Connect Shopify
+            </Button>
+          </CardContent>
+        </Card>
+
+        <ShopifyConnectionWizard
+          open={showConnectionWizard}
+          onOpenChange={setShowConnectionWizard}
+          onSuccess={loadConnections}
+        />
+      </>
     );
   }
 
