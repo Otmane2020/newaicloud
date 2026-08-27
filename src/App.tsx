@@ -34,7 +34,7 @@ import { AuthOnlyLayout } from "./components/AuthOnlyLayout";
 import { AdminLayout } from "./components/AdminLayout";
 import { SuperAdminLayout } from "./components/SuperAdminLayout";
 import { ShopifyEmbeddedLayout } from "./layouts/ShopifyEmbeddedLayout";
-import Index from "./pages/Index";
+import CatalogOptimizeLanding from "./pages/CatalogOptimizeLanding";
 import TranslationAudit from "./pages/TranslationAudit";
 import Admin from "./pages/Admin";
 import SuperAdmin from "./pages/SuperAdmin";
@@ -43,8 +43,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import Onboarding from "./pages/Onboarding";
-import Dashboard from "./pages/Dashboard";
-import DashboardLight from "./pages/DashboardLight";
+import CatalogOptimizeDashboard from "./pages/CatalogOptimizeDashboard";
 import Products from "./pages/Products";
 import ProductTitleDescription from "./pages/ProductTitleDescription";
 import MediaHistory from "./pages/MediaHistory";
@@ -218,7 +217,7 @@ function AeoreplyRoutes() {
 function NewAIRoutes() {
   return (
     <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<CatalogOptimizeLanding />} />
             <Route path="/sitemap.xml" element={<SitemapXml />} />
             <Route path="/demo" element={<Demo />} />
             <Route path="/mobileads" element={<MobileAds />} />
@@ -271,7 +270,7 @@ function NewAIRoutes() {
               path="/dashboard"
               element={
                 <ProtectedLayout>
-                  <Dashboard />
+                  <CatalogOptimizeDashboard />
                 </ProtectedLayout>
               }
             />
@@ -279,7 +278,7 @@ function NewAIRoutes() {
               path="/dashboard-light"
               element={
                 <ProtectedLayout>
-                  <DashboardLight />
+                  <CatalogOptimizeDashboard />
                 </ProtectedLayout>
               }
             />
