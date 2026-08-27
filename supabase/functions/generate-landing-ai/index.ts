@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { sanitizeGeneratedHTML, validateHTML } from "../_shared/html-normalizer.ts";
 import { resolveLanguage, getLanguageInstructions, getLanguageName, getGenerationLanguage } from "../_shared/language-detector.ts";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -2669,107 +2670,23 @@ ${selectedIcon}
     
     console.log("🔑 API Key configured:", !!LOVABLE_API_KEY);
     
-    const aiController = new AbortController();
-    const aiTimeout = setTimeout(() => aiController.abort(), 60000);
+    const systemPrompt = detectedLanguage === "en"
+      ? "You are a professional content writer for product landing pages. Create complete, engaging HTML focused on accurate product features, specifications and benefits. Never include purchase buttons or navigation. Use every reliable enriched attribute provided."
+      : "Tu es un rédacteur professionnel de landing pages produit. Crée un HTML complet, engageant et fidèle aux caractéristiques, spécifications et avantages réels. N'inclus jamais de bouton d'achat ni de navigation. Utilise tous les attributs enrichis fiables fournis.";
 
-    let aiResponse;
-    try {
-      aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content:
-                detectedLanguage === "en"
-                  ? "You are a professional content writer for product landing pages. You create informative, engaging HTML content that describes products in detail. Focus on product features, specifications, and benefits. NEVER include purchase buttons, navigation menus, or call-to-action elements. When enriched product attributes are provided, you MUST create comprehensive Technical Specifications and Materials sections with all available data."
-                  : "Tu es un rédacteur professionnel de contenu pour des landing pages produit. Tu crées du contenu HTML informatif et engageant qui décrit les produits en détail. Concentre-toi sur les caractéristiques, spécifications et avantages du produit. N'inclus JAMAIS de boutons d'achat, menus de navigation ou éléments call-to-action. Quand des attributs produit enrichis sont fournis, tu DOIS créer des sections Caractéristiques Techniques et Matériaux complètes avec toutes les données disponibles.",
-            },
-            { role: "user", content: prompt },
-          ],
-          max_tokens: lengthConfig.maxTokens,
-          temperature: 0.7,
-        }),
-        signal: aiController.signal,
-      });
-      
-      console.log("🔄 Request sent to Lovable AI Gateway");
-    } catch (fetchError) {
-      clearTimeout(aiTimeout);
-      console.error("❌ Fetch error:", fetchError);
-      
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        return new Response(
-          JSON.stringify({ 
-            error: "La génération a pris trop de temps (timeout 60s). Réessayez.",
-          }), 
-          {
-            status: 504,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-      
-      throw fetchError;
-    }
-    
-    clearTimeout(aiTimeout);
-
-    console.log("📡 API Response status:", aiResponse.status);
-
-    if (!aiResponse.ok) {
-      const text = await aiResponse.text();
-      console.error("❌ Lovable API Error:", {
-        status: aiResponse.status,
-        statusText: aiResponse.statusText,
-        response: text.substring(0, 500),
-      });
-      
-      // Retourner un message d'erreur clair selon le statut
-      let errorMessage = `Erreur API Lovable (${aiResponse.status})`;
-      if (aiResponse.status === 429) {
-        errorMessage = "Limite de taux dépassée. Réessayez dans quelques instants.";
-      } else if (aiResponse.status === 402) {
-        errorMessage = "Crédits Lovable AI épuisés. Ajoutez des crédits dans Settings → Workspace → Usage.";
-      } else if (aiResponse.status === 401 || aiResponse.status === 403) {
-        errorMessage = "Erreur d'authentification API. Contactez le support.";
-      }
-      
-      return new Response(
-        JSON.stringify({ 
-          error: errorMessage,
-          details: text,
-          status: aiResponse.status
-        }), 
-        {
-          status: aiResponse.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-    
-    console.log("✅ AI generation completed successfully");
-
-    const data = await aiResponse.json();
-    
-    // 🔍 Debug: Log the complete API response structure
-    console.log("🔍 API Response structure:", {
-      hasChoices: !!data?.choices,
-      choicesLength: data?.choices?.length || 0,
-      hasMessage: !!data?.choices?.[0]?.message,
-      messageKeys: data?.choices?.[0]?.message ? Object.keys(data.choices[0].message) : [],
-      hasContent: !!data?.choices?.[0]?.message?.content,
-      contentLength: data?.choices?.[0]?.message?.content?.length || 0,
-      hasUsage: !!data?.usage,
-      fullResponse: JSON.stringify(data).substring(0, 1000) // First 1000 chars
+    const routedAI = await routeAI({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt },
+      ],
+      maxTokens: lengthConfig.maxTokens,
+      temperature: 0.7,
     });
-    
-    let rawHtml = data?.choices?.[0]?.message?.content?.trim() || "";
+
+    console.log(`[generate-landing-ai] Provider: ${routedAI.provider}, model: ${routedAI.model}`);
+    const aiResponse = { status: 200 };
+    const data = { choices: [{ message: { content: routedAI.content } }], usage: {} };
+    let rawHtml = routedAI.content.trim();
     
     // If content is empty, check for errors in response
     if (!rawHtml) {
