@@ -26,6 +26,16 @@ const readStorage = (storage: 'local' | 'session', key: string) => {
   if (typeof window === 'undefined') return '';
   return (storage === 'local' ? window.localStorage : window.sessionStorage).getItem(key) || '';
 };
+
+const normalizeShopifyDomain = (value: string) => {
+  const input = value.trim();
+  const adminMatch = input.match(/^(?:https?:\/\/)?admin\.shopify\.com\/store\/([^/?#]+)/i);
+  const host = adminMatch
+    ? adminMatch[1]
+    : input.replace(/^https?:\/\//i, '').split(/[/?#]/, 1)[0];
+
+  return host.endsWith('.myshopify.com') ? host.toLowerCase() : `${host.toLowerCase()}.myshopify.com`;
+};
 interface ShopifyConnectionWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -166,8 +176,9 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       }
 
       // 2. Tester les credentials via edge function (pour éviter CORS)
-      // The Edge Function accepts a store slug, myshopify.com domain, or admin.shopify.com/store URL.
-      const shopDomain = savedShopName;
+      // Always send the canonical myshopify.com host because the deployed legacy Edge Function
+      // doesn't normalize short store names or Shopify Admin URLs.
+      const shopDomain = normalizeShopifyDomain(savedShopName);
 
       console.log('📞 Testing credentials for:', shopDomain);
       
