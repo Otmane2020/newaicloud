@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, HelpCircle, Key, Loader2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, HelpCircle, Key, Loader2 } from "lucide-react";
 import { ShopifyTokenGuide } from "./ShopifyTokenGuide";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 // Email autorisé à tester OAuth pendant la validation Shopify
 const OAUTH_TEST_EMAIL = 'sweet.deco.meubles@gmail.com';
+const SHOPIFY_APP_STORE_URL = 'https://apps.shopify.com/newai-seo-and-marketing-scale';
 interface ShopifyConnectionWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,6 +39,10 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
   const [manualLoading, setManualLoading] = useState(false);
+
+  const handleAppInstall = () => {
+    window.location.assign(SHOPIFY_APP_STORE_URL);
+  };
 
   const handleOAuthConnect = async () => {
     if (!shopName.trim()) {
@@ -277,24 +282,38 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
             </h2>
 
             <div className="w-full max-w-sm space-y-3">
+              <Button
+                onClick={handleAppInstall}
+                className="w-full h-14 text-lg bg-[#008060] text-white hover:bg-[#006e52] rounded-lg"
+                size="lg"
+              >
+                <ExternalLink className="mr-2 h-5 w-5" />
+                Install the Shopify app
+              </Button>
+
               {canUseOAuth && (
                 <Button
                   onClick={() => setView('oauth')}
-                  className="w-full h-14 text-lg bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
+                  variant="outline"
+                  className="w-full h-14 text-lg border-2 rounded-lg"
                   size="lg"
                 >
-                  {t.shopifyConnection.connectStore}
+                  {t.shopifyConnection.connectStore} (OAuth)
                 </Button>
               )}
 
               <Button
                 onClick={() => setView('api')}
-                variant={canUseOAuth ? "outline" : "default"}
-                className={`w-full h-14 text-lg ${canUseOAuth ? 'border-2' : ''} rounded-lg`}
+                variant="ghost"
+                className="w-full h-12 text-base rounded-lg"
                 size="lg"
               >
                 {t.shopifyConnection.apiKeysConnection}
               </Button>
+
+              <p className="text-xs text-center text-muted-foreground">
+                Installing the app securely connects the store with Shopify OAuth and makes it appear here automatically.
+              </p>
             </div>
           </div>
         ) : view === 'oauth' ? (
