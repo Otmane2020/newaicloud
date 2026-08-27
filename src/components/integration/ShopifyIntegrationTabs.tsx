@@ -10,24 +10,20 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useDemoMode } from "@/hooks/useDemoMode";
 import { useTranslation } from "@/lib/language";
 import { useShopifyBilling } from "@/hooks/useShopifyBilling";
-import { useAuth } from "@/contexts/AuthContext";
 
 const ShopifyConnectionsList = lazy(() => import("@/components/dashboard/ShopifyConnectionsList"));
 
-// Only this email can add stores
-const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
 
 export function ShopifyIntegrationTabs() {
   const { isDemoMode } = useDemoMode();
   const { isShopifyUser, loading: shopifyLoading } = useShopifyBilling();
   const { t, tf } = useTranslation();
-  const { user } = useAuth();
   const [showDialog, setShowDialog] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Only oben.rockman@gmail.com can add stores
-  const canAddStore = !isDemoMode && user?.email === FULL_ACCESS_EMAIL;
+  // Every authenticated non-demo user can connect a Shopify store.
+  const canAddStore = !isDemoMode;
 
   // Handle OAuth callback messages
   useEffect(() => {
@@ -101,7 +97,7 @@ export function ShopifyIntegrationTabs() {
                 {t.integration?.shopify?.description || 'Connect and manage your Shopify stores'}
               </CardDescription>
             </div>
-            {/* Add Store button - only for oben.rockman@gmail.com */}
+            {/* Shopify connection actions */}
             {canAddStore && (
               <div className="flex gap-2">
                 <Button
