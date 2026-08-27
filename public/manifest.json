@@ -1,7 +1,7 @@
 {
-  "name": "Shopify SEO Optimizer",
-  "short_name": "SEO Optimizer",
-  "description": "Optimisez le SEO de votre boutique Shopify avec l'IA",
+  "name": "Catalog Optimize",
+  "short_name": "Catalog Optimize",
+  "description": "Gérez, enrichissez et synchronisez votre catalogue Shopify avec l'IA",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
