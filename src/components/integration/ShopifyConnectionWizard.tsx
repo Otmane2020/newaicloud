@@ -18,6 +18,14 @@ import { useAuth } from "@/contexts/AuthContext";
 // Email autorisé à tester OAuth pendant la validation Shopify
 const OAUTH_TEST_EMAIL = 'sweet.deco.meubles@gmail.com';
 const SHOPIFY_APP_STORE_URL = 'https://apps.shopify.com/newai-seo-and-marketing-scale';
+const SHOPIFY_SHOP_STORAGE_KEY = 'newai_shopify_shop';
+const SHOPIFY_CLIENT_ID_STORAGE_KEY = 'newai_shopify_client_id';
+const SHOPIFY_CLIENT_SECRET_SESSION_KEY = 'newai_shopify_client_secret';
+
+const readStorage = (storage: 'local' | 'session', key: string) => {
+  if (typeof window === 'undefined') return '';
+  return (storage === 'local' ? window.localStorage : window.sessionStorage).getItem(key) || '';
+};
 interface ShopifyConnectionWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,9 +43,9 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
   const canUseOAuth = user?.email === OAUTH_TEST_EMAIL;
 
   const [view, setView] = useState<'initial' | 'oauth' | 'api'>('initial');
-  const [shopName, setShopName] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [apiSecret, setApiSecret] = useState("");
+  const [shopName, setShopName] = useState(() => readStorage('local', SHOPIFY_SHOP_STORAGE_KEY));
+  const [apiKey, setApiKey] = useState(() => readStorage('local', SHOPIFY_CLIENT_ID_STORAGE_KEY));
+  const [apiSecret, setApiSecret] = useState(() => readStorage('session', SHOPIFY_CLIENT_SECRET_SESSION_KEY));
   const [manualLoading, setManualLoading] = useState(false);
 
   const handleAppInstall = () => {
@@ -257,6 +265,9 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       setShopName("");
       setApiKey("");
       setApiSecret("");
+      window.localStorage.removeItem(SHOPIFY_SHOP_STORAGE_KEY);
+      window.localStorage.removeItem(SHOPIFY_CLIENT_ID_STORAGE_KEY);
+      window.sessionStorage.removeItem(SHOPIFY_CLIENT_SECRET_SESSION_KEY);
       setView('initial');
       onOpenChange(false);
 
@@ -293,9 +304,6 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       onOpenChange(open);
       if (!open) {
         setView('initial');
-        setShopName("");
-        setApiKey("");
-        setApiSecret("");
       }
     }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -374,7 +382,11 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                   <Input
                     id="oauthShopName"
                     value={shopName}
-                    onChange={(e) => setShopName(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setShopName(value);
+                      window.localStorage.setItem(SHOPIFY_SHOP_STORAGE_KEY, value);
+                    }}
                     placeholder="ma-boutique"
                     className="flex-1"
                     onKeyDown={(e) => {
@@ -449,7 +461,11 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                   <Input
                     id="shopName"
                     value={shopName}
-                    onChange={(e) => setShopName(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setShopName(value);
+                      window.localStorage.setItem(SHOPIFY_SHOP_STORAGE_KEY, value);
+                    }}
                     placeholder="ma-boutique"
                     className="flex-1"
                   />
@@ -475,7 +491,11 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                   id="apiKey"
                   type="password"
                   value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setApiKey(value);
+                    window.localStorage.setItem(SHOPIFY_CLIENT_ID_STORAGE_KEY, value);
+                  }}
                   placeholder="Client ID"
                 />
               </div>
@@ -491,7 +511,11 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
                   id="apiSecret"
                   type="password"
                   value={apiSecret}
-                  onChange={(e) => setApiSecret(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setApiSecret(value);
+                    window.sessionStorage.setItem(SHOPIFY_CLIENT_SECRET_SESSION_KEY, value);
+                  }}
                   placeholder="Client secret"
                 />
               </div>
