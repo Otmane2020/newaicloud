@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveLanguage, getGenerationLanguage } from "../_shared/language-detector.ts";
+import { routeVision } from "../_shared/ai-router.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -265,47 +266,23 @@ serve(async (req) => {
     // 4. Improved prompt - Language-aware
     const prompt = getAltTextPrompt(lang, product.title, product.product_type, product.category, cleanDescription);
 
-    // ---- DeepSeek first pass
-    const deepseekRes = await fetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${Deno.env.get("DEEPSEEK_API_KEY")}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-
-    const deepseekTextResult = (await deepseekRes.json())?.choices?.[0]?.message?.content?.trim() || "";
-
-    // ---- Gemini Vision refinement
+    // ---- Free-first multimodal routing: Kimi free -> Gemini fallback
     const buffer = await fetch(image.src).then((r) => r.arrayBuffer());
     const base64 = arrayBufferToBase64(buffer);
+    const visionRefinePrompt = getVisionRefinePrompt(lang, prompt);
 
-    const visionRefinePrompt = getVisionRefinePrompt(lang, deepseekTextResult);
-
-    const geminiRes = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
-        Deno.env.get("GOOGLE_GEMINI_API_KEY"),
+    const routedVision = await routeVision([
       {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: visionRefinePrompt },
-                { inline_data: { mime_type: "image/jpeg", data: base64 } },
-              ],
-            },
-          ],
-        }),
+        role: "user",
+        content: [
+          { type: "text", text: visionRefinePrompt },
+          { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64}` } },
+        ],
       },
-    );
+    ]);
 
-    let geminiText = (await geminiRes.json())?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || deepseekTextResult || "Image produit";
+    console.log(`[generate-alt-texts-vision] Provider: ${routedVision.provider}, model: ${routedVision.model}`);
+    let geminiText = routedVision.content?.trim() || "Image produit";
     
     // Nettoyer: prendre seulement la première ligne si multiple options retournées
     geminiText = geminiText
