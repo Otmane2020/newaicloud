@@ -1056,8 +1056,8 @@ export default function Onboarding() {
             </Badge>
           )}
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 sm:mb-3 px-2">
-            {t.onboarding.title.split("NewAI")[0]}
-            <span className="bg-gradient-primary bg-clip-text text-transparent">NewAI</span>
+            {language === "fr" ? "Configurez " : "Set up "}
+            <span className="bg-gradient-primary bg-clip-text text-transparent">Catalog Optimize</span>
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
             {t.onboarding.subtitle}
