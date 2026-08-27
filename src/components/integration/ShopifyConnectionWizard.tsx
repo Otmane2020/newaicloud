@@ -101,18 +101,12 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       return;
     }
 
-    // Fermer le dialog immédiatement et afficher un toast de chargement
+    // Keep the form open and populated until the connection succeeds.
     const savedShopName = shopName.trim();
     const savedApiKey = apiKey.trim();
     const savedApiSecret = apiSecret.trim();
-    
-    onOpenChange(false);
-    setShopName("");
-    setApiKey("");
-    setApiSecret("");
-    setView('initial');
 
-    // Afficher le toast de connexion en cours
+    setManualLoading(true);
     const loadingToastId = toast.loading(t.shopifyConnection.connecting);
 
     try {
@@ -164,9 +158,9 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       }
 
       // 2. Tester les credentials via edge function (pour éviter CORS)
-      const cleanShopName = savedShopName.replace('.myshopify.com', '');
-      const shopDomain = `${cleanShopName}.myshopify.com`;
-      
+      // The Edge Function accepts a store slug, myshopify.com domain, or admin.shopify.com/store URL.
+      const shopDomain = savedShopName;
+
       console.log('📞 Testing credentials for:', shopDomain);
       
       const { data: testData, error: testError } = await supabase.functions.invoke('test-shopify-credentials', {
@@ -180,7 +174,10 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       if (testError || !testData?.success) {
         console.error('❌ Credential test failed:', testError || testData?.error);
         toast.dismiss(loadingToastId);
-        toast.error(testData?.error || t.wizards.shopify.invalidCredentials);
+        toast.error(testData?.error || t.wizards.shopify.invalidCredentials, {
+          description: testData?.details || undefined,
+          duration: 10000,
+        });
         return;
       }
 
@@ -257,6 +254,12 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       toast.success(t.shopifyConnection.storeConnectedSuccess);
       toast.info(t.shopifyConnection.autoSyncStarted, { duration: 5000 });
 
+      setShopName("");
+      setApiKey("");
+      setApiSecret("");
+      setView('initial');
+      onOpenChange(false);
+
       // 4. Rafraîchir les limites d'usage et le contexte du store
       await refreshLimits();
       await refreshStores();
@@ -280,6 +283,8 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       console.error("Error during manual connection:", error);
       toast.dismiss(loadingToastId);
       toast.error(error.message || t.shopifyConnection.connectionFailed);
+    } finally {
+      setManualLoading(false);
     }
   };
 
@@ -494,10 +499,15 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
 
             <Button
               onClick={handleManualConnect}
+              disabled={manualLoading}
               className="w-full"
             >
-              <Key className="mr-2 h-4 w-4" />
-              Connecter avec Client ID & Secret
+              {manualLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Key className="mr-2 h-4 w-4" />
+              )}
+              {manualLoading ? t.shopifyConnection.connectionInProgress : 'Connecter avec Client ID & Secret'}
             </Button>
           </div>
         )}
