@@ -627,15 +627,73 @@ Qualité = OBLIGATOIRE.
       }
     }
 
-    // Helper function to try DeepSeek
-    async function tryDeepSeek(): Promise<{ imageUrl: string; model: string } | null> {
-      // DeepSeek doesn't support image generation
-      console.log("⚠️ DeepSeek doesn't support image generation");
-      return null;
+    // Cloudflare Workers AI img2img. This route is used first when credentials exist.
+    async function tryCloudflareAI(): Promise<{ imageUrl: string; model: string; error?: string } | null> {
+      const accountId = Deno.env.get("CLOUDFLARE_ACCOUNT_ID");
+      const apiToken = Deno.env.get("CLOUDFLARE_AI_API_TOKEN");
+      if (!accountId || !apiToken) return null;
+
+      try {
+        const sourceResponse = await fetch(imageUrl);
+        if (!sourceResponse.ok) throw new Error(`Source image HTTP ${sourceResponse.status}`);
+        const sourceBytes = new Uint8Array(await sourceResponse.arrayBuffer());
+        let binary = "";
+        for (const byte of sourceBytes) binary += String.fromCharCode(byte);
+        const imageB64 = btoa(binary);
+
+        const model = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
+        const response = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              prompt: finalPrompt,
+              negative_prompt: "different product, altered product shape, wrong color, text, watermark, monochrome, low quality",
+              image_b64: imageB64,
+              strength: 0.35,
+              guidance: 9,
+              num_steps: 20,
+              width: targetDims.width,
+              height: targetDims.height,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          const details = await response.text();
+          return { imageUrl: "", model, error: `Cloudflare ${response.status}: ${details.slice(0, 200)}` };
+        }
+
+        const contentType = response.headers.get("content-type") || "";
+        let outputBase64 = "";
+        if (contentType.includes("application/json")) {
+          const json = await response.json();
+          outputBase64 = json?.result?.image || json?.image || "";
+        } else {
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          let outputBinary = "";
+          for (const byte of bytes) outputBinary += String.fromCharCode(byte);
+          outputBase64 = btoa(outputBinary);
+        }
+
+        if (!outputBase64) return { imageUrl: "", model, error: "Cloudflare returned no image" };
+        return { imageUrl: `data:image/png;base64,${outputBase64}`, model: `${model} (Cloudflare Workers AI)` };
+      } catch (error) {
+        return {
+          imageUrl: "",
+          model: "cloudflare-workers-ai",
+          error: error instanceof Error ? error.message : "Cloudflare image generation failed",
+        };
+      }
     }
 
-    // Try providers in order: Lovable AI only (OpenAI removed)
-    const result = await tryLovableAI();
+    // Prefer Cloudflare's low/zero-cost route, then use Gemini image editing.
+    const cloudflareResult = await tryCloudflareAI();
+    const result = cloudflareResult?.imageUrl ? cloudflareResult : await tryLovableAI();
 
     if (!result || !result.imageUrl || result.error) {
       const errorMsg = result?.error || "Service indisponible";
