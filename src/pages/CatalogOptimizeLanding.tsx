@@ -17,23 +17,23 @@ const pillars = [
 
 const plans = [
   {
-    name: "Free", price: "$0", description: "See what is holding your catalog back.",
-    features: ["Full catalog scan", "25 imported products", "10 content corrections", "Shopping readiness preview"],
+    name: "Free scan", price: "$0", description: "See what is holding your catalog back before choosing a plan.",
+    features: ["Catalog health scan", "Issue prioritization", "Shopping readiness preview", "No credit card required"],
     cta: "Scan my catalog", href: "/auth",
   },
   {
-    name: "Starter", price: "$19", description: "For smaller stores building a clean catalog.",
-    features: ["1 store · up to 250 products", "150 content credits / month", "10 landing pages · 20 image credits", "Shopping feed · weekly audit"],
+    name: "Starter", price: "$9.99", description: "For smaller stores building a clean catalog.",
+    features: ["Up to 100 analyzed products", "100 AI optimizations / month", "1 AI article / month", "20 AI product searches / month"],
     cta: "Start optimizing", href: "/auth",
   },
   {
     name: "Growth", price: "$49", description: "Automate product operations as your store grows.", popular: true,
-    features: ["Up to 2,000 products", "750 content · 100 image credits", "Smart Pricing & Merchant Center", "Daily sync · CSV/XLSX export"],
+    features: ["Up to 1,000 analyzed products", "500 AI optimizations / month", "5 AI articles / month", "3 automated campaigns / month"],
     cta: "Automate my catalog", href: "/auth",
   },
   {
-    name: "Scale", price: "$149", description: "For large catalogs and multi-store operators.",
-    features: ["3 stores · up to 20,000 products", "3,000 content credits", "Rules, API and priority sync", "Priority support"],
+    name: "Enterprise", price: "$199", description: "For large catalogs and multi-store operators.",
+    features: ["Unlimited analyzed products", "2,000 AI optimizations / month", "20 AI articles / month", "10 automated campaigns / month"],
     cta: "Scale operations", href: "/auth",
   },
 ];
@@ -180,7 +180,7 @@ export default function CatalogOptimizeLanding() {
           <div className="mx-auto max-w-7xl px-5">
             <div className="mx-auto max-w-3xl text-center">
               <h2 className="text-4xl font-semibold tracking-tight">Start with the scan. Upgrade when the value is clear.</h2>
-              <p className="mt-4 text-slate-600">Content credits cover copy and catalog enrichment. Image credits cover generated product visuals.</p>
+              <p className="mt-4 text-slate-600">The existing billing plans stay unchanged; the packaging now explains them around catalog operations.</p>
             </div>
             <div className="mt-10 grid gap-4 lg:grid-cols-4">
               {plans.map((plan) => (
