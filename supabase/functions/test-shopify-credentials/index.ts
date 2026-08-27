@@ -6,6 +6,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function normalizeShopDomain(value: unknown): string {
+  const input = String(value ?? '').trim();
+  if (!input) throw new Error('Shop domain is required');
+
+  const adminMatch = input.match(/^(?:https?:\/\/)?admin\.shopify\.com\/store\/([^/?#]+)/i);
+  const candidate = adminMatch
+    ? `${adminMatch[1]}.myshopify.com`
+    : input.replace(/^https?:\/\//i, '').split(/[/?#]/, 1)[0];
+
+  const domain = candidate.includes('.')
+    ? candidate.toLowerCase()
+    : `${candidate.toLowerCase()}.myshopify.com`;
+
+  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(domain)) {
+    throw new Error('Use your myshopify.com domain or Shopify admin store URL');
+  }
+
+  return domain;
+}
+
 // GraphQL query to test shop access and permissions
 const SHOP_QUERY = `
   query {
@@ -51,19 +71,19 @@ serve(async (req) => {
   try {
     const { shopDomain, apiKey, accessToken, clientId, clientSecret } = await req.json();
 
-    const storeUrl = shopDomain.replace(/^https?:\\/\\//, '').replace(/\\/$/, '');
+    const storeUrl = normalizeShopDomain(shopDomain);
     let resolvedAccessToken = accessToken || '';
     let expiresIn: number | null = null;
 
-    // New Dev Dashboard apps use the client credentials grant.
+    // Client credentials are supported only when the app and shop share the same Shopify organization.
     if (clientId && clientSecret) {
       const tokenResponse = await fetch(`https://${storeUrl}/admin/oauth/access_token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           grant_type: 'client_credentials',
-          client_id: clientId,
-          client_secret: clientSecret,
+          client_id: String(clientId).trim(),
+          client_secret: String(clientSecret).trim(),
         }),
       });
 
@@ -87,7 +107,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('🔍 Testing Shopify credentials via GraphQL for:', shopDomain);
+    console.log('🔍 Testing Shopify credentials via GraphQL for:', storeUrl);
 
     // Test shop access via GraphQL
     console.log('📞 Testing shop access via GraphQL...');
