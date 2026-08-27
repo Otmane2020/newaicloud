@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sanitizeGeneratedHTML, validateHTML } from "../_shared/html-normalizer.ts";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -907,68 +908,14 @@ ${product.body_html.replace(/<[^>]*>/g, ' ').substring(0, 2000)}`;
     console.log(`🤖 DeepSeek generating HTML (exclusive mode)...`);
     console.log(`📏 Prompt: ${prompt.length} chars (${promptSizeKB} KB)`);
 
-    let deepseekResponse;
-    try {
-      // 🔥 PHASE 1: DEEPSEEK EXCLUSIF - Plus de Gemini
-      console.log("🤖 Using DeepSeek EXCLUSIVELY (no Gemini)");
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.error("❌ [TIMEOUT] DeepSeek API call exceeded 120 seconds");
-        controller.abort();
-      }, 120000); // Reduced to 120s (2 min)
-
-      const deepseekStartTime = Date.now();
-      console.log(`[DEEPSEEK] Starting API call at ${new Date().toISOString()}`);
-
-      deepseekResponse = await fetch("https://api.deepseek.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: (() => {
-          const maxTokens = contentLength === "short" ? 3000 : 5000; // Reduced for faster response
-          console.log(`[DEEPSEEK] Using max_tokens=${maxTokens} for contentLength=${contentLength}`);
-          return JSON.stringify({
-            model: "deepseek-chat",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.7,
-            max_tokens: maxTokens,
-          });
-        })(),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-      const deepseekDuration = ((Date.now() - deepseekStartTime) / 1000).toFixed(2);
-      console.log(`[DEEPSEEK] API call completed in ${deepseekDuration}s`);
-
-      if (!deepseekResponse.ok) {
-        const errorBody = await deepseekResponse.text();
-        console.error("❌ DeepSeek API error:", deepseekResponse.status, errorBody);
-        
-        if (deepseekResponse.status === 429) {
-          throw new Error("RATE_LIMIT: DeepSeek API rate limit exceeded. Please try again later.");
-        } else if (deepseekResponse.status === 402) {
-          throw new Error("PAYMENT_REQUIRED: DeepSeek API credits exhausted. Please add credits.");
-        } else if (deepseekResponse.status === 413) {
-          throw new Error("PAYLOAD_TOO_LARGE: Prompt exceeds DeepSeek limits. Try reducing product data.");
-        }
-        
-        throw new Error(`DeepSeek API error: ${deepseekResponse.status} - ${errorBody}`);
-      }
-    } catch (error) {
-      console.error("❌ DeepSeek API fetch error:", error);
-      const err = error as Error;
-      if (err.name === 'AbortError') {
-        console.error("❌ [TIMEOUT] DeepSeek took more than 2 minutes to respond");
-        throw new Error("TIMEOUT: La génération a pris plus de 2 minutes. Essayez le mode 'Short' ou réduisez le nombre d'images.");
-      }
-      throw new Error(`DeepSeek API fetch failed: ${err.message}`);
-    }
-
-    const deepseekJson = await deepseekResponse.json();
-    let rawHtml = deepseekJson.choices[0].message.content;
+    const maxTokens = contentLength === "short" ? 3000 : 5000;
+    const routedAI = await routeAI({
+      messages: [{ role: "user", content: prompt }],
+      maxTokens,
+      temperature: 0.7,
+    });
+    console.log(`[generate-landing-deepseek] Provider: ${routedAI.provider}, model: ${routedAI.model}`);
+    let rawHtml = routedAI.content;
 
     console.log("🔍 HTML preview (début):", rawHtml.slice(0, 500));
 
