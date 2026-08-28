@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
 import BlogNewAI from "@/pages/BlogNewAI";
 import StudioHub from "@/pages/StudioHub";
+import ContentSeoHub from "@/pages/ContentSeoHub";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -57,7 +58,6 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
     };
   }, [isLoading, globalTimeout]);
 
-  // Public editorial route: never gate published articles behind account state.
   if (pathname === "/blog") {
     return <BlogNewAI />;
   }
@@ -121,7 +121,11 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
     return <Navigate to={authUrl} replace />;
   }
 
-  const workspaceContent = pathname === "/ai-creative-studio" ? <StudioHub /> : children;
+  const workspaceContent = pathname === "/ai-creative-studio"
+    ? <StudioHub />
+    : pathname === "/seo"
+      ? <ContentSeoHub />
+      : children;
 
   return (
     <SubscriptionGuard>
