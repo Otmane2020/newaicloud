@@ -25,6 +25,7 @@ const groups: NavGroup[] = [
   ]},
   { label: "Content", icon: FileText, items: [
     { label: "Product content", to: "/products/title-description", icon: FileText },
+    { label: "SEO metadata", to: "/seo?tab=products", icon: FileText },
     { label: "Landing pages", to: "/products/title-description?view=landing", icon: FileText },
     { label: "Categories & tags", to: "/seo?tab=tags", icon: Tags },
   ]},
