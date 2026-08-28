@@ -1,5 +1,6 @@
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { CatalogActionCard } from '@/components/CatalogActionCard';
 import { Loader2, X } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
 
@@ -15,30 +16,28 @@ export function ProgressBanner({ current, total, label, onCancel }: ProgressBann
   const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
 
   return (
-    <div className="text-center space-y-3 w-full max-w-md">
-      <div className="flex items-center justify-center gap-2 mb-2">
-        <Loader2 className="w-5 h-5 animate-spin text-primary" />
-        <span className="font-semibold text-lg">{tf('progressBanner.inProgress', { label })}</span>
-      </div>
-      <Progress value={percentage} className="h-3" />
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>{current} / {total}</span>
-        <span className="font-bold text-primary">{percentage}%</span>
-      </div>
-      {onCancel && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onCancel}
-          className="gap-2"
-        >
-          <X className="w-4 h-4" />
-          {t.progressBanner.cancel}
-        </Button>
-      )}
-      <p className="text-xs text-muted-foreground mt-2">
-        {t.progressBanner.backgroundProcessing}
-      </p>
-    </div>
+    <CatalogActionCard
+      icon={Loader2}
+      title={tf('progressBanner.inProgress', { label })}
+      description={t.progressBanner.backgroundProcessing}
+      compact
+      meta={
+        <div className="w-full max-w-md">
+          <Progress value={percentage} className="h-2 [&>div]:bg-violet-600" />
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+            <span>{current} / {total}</span>
+            <span className="font-semibold text-violet-600">{percentage}%</span>
+          </div>
+        </div>
+      }
+      action={
+        onCancel ? (
+          <Button variant="outline" size="sm" onClick={onCancel} className="rounded-lg border-slate-200">
+            <X className="mr-2 h-4 w-4" />
+            {t.progressBanner.cancel}
+          </Button>
+        ) : undefined
+      }
+    />
   );
 }
