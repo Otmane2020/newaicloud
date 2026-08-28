@@ -45,7 +45,7 @@ const plans = [
     description: "See what is holding your catalog back before choosing a plan.",
     features: ["Catalog health scan", "Issue prioritization", "Shopping readiness preview", "Read-only preview — no sync or AI generation", "No credit card required"],
     cta: "Scan my catalog",
-    href: "/auth",
+    href: "/auth?redirect=%2Fdashboard-light%3Fscan%3D1",
   },
   {
     name: "Starter",
@@ -125,7 +125,7 @@ export default function CatalogOptimizeLanding() {
           <div className="flex items-center gap-2">
             <Button variant="ghost" asChild><Link to="/auth">Log in</Link></Button>
             <Button asChild className="bg-slate-950 text-white hover:bg-slate-800">
-              <Link to="/auth">Scan my catalog free <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Link to="/auth?redirect=%2Fdashboard-light%3Fscan%3D1">Scan my catalog free <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function CatalogOptimizeLanding() {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button size="lg" asChild className="bg-violet-600 hover:bg-violet-700">
-                  <Link to="/auth">Scan my Shopify catalog <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  <Link to="/auth?redirect=%2Fdashboard-light%3Fscan%3D1">Scan my Shopify catalog <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild><Link to="/demo">Watch the demo</Link></Button>
               </div>
@@ -454,7 +454,7 @@ export default function CatalogOptimizeLanding() {
           <div className="mx-auto max-w-5xl rounded-3xl bg-gradient-to-br from-violet-600 to-blue-600 px-6 py-14 text-center text-white sm:px-12">
             <h2 className="text-4xl font-semibold tracking-tight">Ready to understand your catalog?</h2>
             <p className="mx-auto mt-4 max-w-2xl text-white/80">Connect Shopify, see every issue and review the first recommended fixes before you commit.</p>
-            <Button size="lg" variant="secondary" asChild className="mt-7"><Link to="/auth">Scan my catalog free <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+            <Button size="lg" variant="secondary" asChild className="mt-7"><Link to="/auth?redirect=%2Fdashboard-light%3Fscan%3D1">Scan my catalog free <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
           </div>
         </section>
       </main>
