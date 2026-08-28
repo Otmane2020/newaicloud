@@ -176,7 +176,9 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('[ENCRYPT-TOKEN] Service role authentication successful');
     }
 
-    const { action, token, encrypted, iv } = await req.json();
+    // Le body a déjà été lu plus haut (health check) : on le réutilise.
+    const { action, token, encrypted, iv } = body ?? {};
+
 
     if (action === 'encrypt') {
       if (!token) {
