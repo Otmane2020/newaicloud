@@ -835,41 +835,43 @@ export function GoogleShopping() {
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: 'Catalog products', value: products.length, detail: 'Imported from Shopify', icon: Package, tone: 'bg-blue-50 text-blue-700' },
-          { label: 'Shopping readiness', value: `${optimizationScore}%`, detail: 'Category · MPN · condition · media · GTIN', icon: TrendingUp, tone: 'bg-violet-50 text-violet-700' },
-          { label: 'Complete records', value: productsOptimized, detail: `${completionRate}% of the catalog`, icon: CheckCircle, tone: 'bg-emerald-50 text-emerald-700' },
-          { label: 'Ready to sync', value: productsToSync, detail: 'Approved catalog updates', icon: Upload, tone: 'bg-amber-50 text-amber-700' },
-        ].map(({ label, value, detail, icon: Icon, tone }) => (
-          <Card key={label} className="border-slate-200 p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></div>
-              <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tone}`}><Icon className="h-5 w-5" /></span>
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+          {[
+            { label: 'Catalog products', value: products.length, detail: 'Imported from Shopify', color: 'text-slate-950', bar: null },
+            { label: 'Shopping readiness', value: `${optimizationScore}%`, detail: 'Product data completeness', color: optimizationScore >= 80 ? 'text-emerald-700' : optimizationScore >= 50 ? 'text-amber-700' : 'text-rose-700', bar: optimizationScore },
+            { label: 'Complete records', value: productsOptimized, detail: `${completionRate}% of catalog`, color: completionRate >= 80 ? 'text-emerald-700' : completionRate >= 50 ? 'text-amber-700' : 'text-rose-700', bar: completionRate },
+            { label: 'Ready to sync', value: productsToSync, detail: productsToSync > 0 ? 'Approved updates' : 'Nothing approved yet', color: productsToSync > 0 ? 'text-emerald-700' : 'text-slate-950', bar: null },
+          ].map(({ label, value, detail, color, bar }) => (
+            <div key={label} className="min-w-0 p-4 sm:p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <p className={`text-2xl font-semibold tracking-tight ${color}`}>{value}</p>
+                <p className="truncate text-xs text-slate-500">{detail}</p>
+              </div>
+              {bar !== null && (
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full ${bar >= 80 ? 'bg-emerald-500' : bar >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                    style={{ width: `${Math.max(2, bar)}%` }}
+                  />
+                </div>
+              )}
             </div>
-          </Card>
-        ))}
+          ))}
+        </div>
       </section>
 
-      <section className="rounded-3xl border border-violet-100 bg-gradient-to-r from-violet-50/80 via-white to-blue-50/70 p-5 sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
-          <div className="lg:w-64">
-            <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100">READINESS WORKFLOW</Badge>
-            <h2 className="mt-3 text-lg font-semibold">From imported to eligible</h2>
-          </div>
-          <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              ['01', 'Classify', 'Google category'],
-              ['02', 'Identify', 'GTIN and MPN'],
-              ['03', 'Improve media', 'AI white background'],
-              ['04', 'Publish', 'Review and sync'],
-            ].map(([step, title, detail]) => (
-              <div key={step} className="rounded-2xl border border-white bg-white/80 p-4 shadow-sm">
-                <span className="text-xs font-semibold text-violet-600">{step}</span><p className="mt-2 text-sm font-semibold">{title}</p><p className="mt-1 text-xs text-slate-500">{detail}</p>
-              </div>
-            ))}
-          </div>
-          <Button variant="outline" onClick={() => setShowGuide(true)} className="border-violet-200 text-violet-700 hover:bg-violet-50">
+      <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900">Improve Shopping readiness</p>
+          <p className="mt-1 text-xs text-slate-500">Category → identifiers → media → review and sync</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+          {['1 · Classify', '2 · Identify', '3 · Improve media', '4 · Publish'].map((step) => (
+            <span key={step} className="rounded-full bg-slate-100 px-3 py-1.5 font-medium">{step}</span>
+          ))}
+          <Button variant="ghost" size="sm" onClick={() => setShowGuide(true)} className="text-violet-700 hover:bg-violet-50 hover:text-violet-800">
             <BookOpen className="mr-2 h-4 w-4" /> Open guide
           </Button>
         </div>
