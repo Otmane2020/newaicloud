@@ -208,13 +208,13 @@ async function tryDeepSeek(options: RouteOptions): Promise<AIRouteResult | null>
 }
 
 /**
- * Resilient text routing:
- * 1. OpenAI
+ * Resilient text routing, cost-first:
+ * 1. OpenRouter free
  * 2. Gemini
  * 3. Kimi (Moonshot directly, or through OpenRouter)
  * 4. DeepSeek
  *
- * Vision keeps OpenRouter first because the text-only providers are skipped.
+ * Vision keeps OpenRouter/Kimi free first, then Gemini fallback.
  */
 export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
   const attempts = options.vision
@@ -223,7 +223,7 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
         () => tryGemini(options),
       ]
     : [
-        () => tryOpenAI(options),
+        () => tryOpenRouter(options),
         () => tryGemini(options),
         () => tryKimi(options),
         () => tryDeepSeek(options),
@@ -238,7 +238,7 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
     }
   }
 
-  throw new Error("No AI provider is available. Configure OPENAI_API_KEY, GOOGLE_GEMINI_API_KEY, KIMI_API_KEY/MOONSHOT_API_KEY, OPENROUTER_API_KEY, or DEEPSEEK_API_KEY.");
+  throw new Error("No AI provider is available. Configure OPENROUTER_API_KEY, GOOGLE_GEMINI_API_KEY, KIMI_API_KEY/MOONSHOT_API_KEY, or DEEPSEEK_API_KEY.");
 }
 
 export async function routeVision(messages: AIMessage[], maxTokens = 600): Promise<AIRouteResult> {
