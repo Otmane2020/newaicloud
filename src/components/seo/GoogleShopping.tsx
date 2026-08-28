@@ -116,25 +116,28 @@ export function GoogleShopping() {
     return () => window.removeEventListener('show-upgrade-dialog', handleShowUpgrade);
   }, []);
 
-  // Calculate optimization score with partial credit
+  // Shopping readiness is calculated from catalog data, never from a fixed placeholder.
+  // GTIN improves eligibility but remains optional for products that legitimately do not have one.
+  const productReadiness = (product: Product) => {
+    const checks = [
+      { passed: Boolean(product.google_product_category?.trim()), weight: 30 },
+      { passed: Boolean(product.google_mpn?.trim()), weight: 20 },
+      { passed: Boolean(product.google_condition?.trim()), weight: 15 },
+      { passed: Boolean(product.image_url || product.google_white_background), weight: 20 },
+      { passed: Boolean(product.google_gtin?.trim()), weight: 15 },
+    ];
+    const score = checks.reduce((total, check) => total + (check.passed ? check.weight : 0), 0);
+    const ready = checks.slice(0, 4).every((check) => check.passed);
+    return { score, ready };
+  };
+
   const calculateOptimizationScore = (productsList: Product[]) => {
     if (productsList.length === 0) {
       setOptimizationScore(0);
       return;
     }
-    
-    // Give partial credit: 33.33% for each attribute (category, GTIN, white background)
-    let totalScore = 0;
-    productsList.forEach(p => {
-      let productScore = 0;
-      if (p.google_product_category) productScore += 33.33;
-      if (p.google_gtin) productScore += 33.33;
-      if (p.google_white_background) productScore += 33.34; // 33.34 to round to 100%
-      totalScore += productScore;
-    });
-    
-    const averageScore = totalScore / productsList.length;
-    setOptimizationScore(Math.round(averageScore));
+    const average = productsList.reduce((total, product) => total + productReadiness(product).score, 0) / productsList.length;
+    setOptimizationScore(Math.round(average));
   };
 
   const fetchProducts = async () => {
@@ -806,46 +809,44 @@ export function GoogleShopping() {
     );
   }
 
-  const productsOptimized = products.filter(p => 
-    p.google_product_category && p.google_gtin && p.google_white_background
-  ).length;
-  const productsToSync = products.filter(p => 
-    p.google_product_category && p.google_gtin && !p.seo_synced_to_shopify
-  ).length;
+  const productsOptimized = products.filter((product) => productReadiness(product).ready).length;
+  const productsToSync = products.filter((product) => productReadiness(product).ready && !product.seo_synced_to_shopify).length;
   const completionRate = products.length > 0 ? Math.round((productsOptimized / products.length) * 100) : 0;
 
   return (
     <div className="space-y-6 pb-10">
-      <section className="overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
-        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-violet-200">
-              <span>Channels</span><span className="text-white/30">/</span><span>Google Shopping</span>
-              <Badge className="ml-1 border border-white/10 bg-white/10 text-white hover:bg-white/10">{products.length} products</Badge>
+      <Card className="border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-violet-50 p-2.5 text-violet-700"><ShoppingBag className="h-5 w-5" /></div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-semibold text-slate-950">Google Shopping readiness</h1>
+                <Badge variant="secondary">{products.length} products</Badge>
+              </div>
+              <p className="mt-1 max-w-2xl text-sm text-slate-600">
+                Complete required identifiers and media, review the result, then synchronize approved changes.
+              </p>
             </div>
-            <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">Make every product Shopping-ready</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-              Complete the product data Google needs, improve media with AI and synchronize approved changes back to Shopify.
-            </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleOptimizeAll} disabled={isOptimizing || products.length === 0} className="bg-violet-500 text-white hover:bg-violet-400">
-              {isOptimizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />} Optimize catalog
+            <Button onClick={handleOptimizeAll} disabled={isOptimizing || products.length === 0}>
+              {isOptimizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />} Fix missing data
             </Button>
-            <Button variant="outline" onClick={() => navigate('/merchant?tab=feed')} className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
+            <Button variant="outline" onClick={() => navigate("/merchant?tab=feed")}>
               <Download className="mr-2 h-4 w-4" /> Product feed
             </Button>
-            <Button variant="ghost" onClick={fetchProducts} disabled={loading} className="text-white hover:bg-white/10 hover:text-white">
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            <Button variant="ghost" size="icon" onClick={fetchProducts} disabled={loading} aria-label="Refresh products">
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
         </div>
-      </section>
+      </Card>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: 'Catalog products', value: products.length, detail: 'Imported from Shopify', icon: Package, tone: 'bg-blue-50 text-blue-700' },
-          { label: 'Shopping readiness', value: `${optimizationScore}%`, detail: 'Category · GTIN · media', icon: TrendingUp, tone: 'bg-violet-50 text-violet-700' },
+          { label: 'Shopping readiness', value: `${optimizationScore}%`, detail: 'Category · MPN · condition · media · GTIN', icon: TrendingUp, tone: 'bg-violet-50 text-violet-700' },
           { label: 'Complete records', value: productsOptimized, detail: `${completionRate}% of the catalog`, icon: CheckCircle, tone: 'bg-emerald-50 text-emerald-700' },
           { label: 'Ready to sync', value: productsToSync, detail: 'Approved catalog updates', icon: Upload, tone: 'bg-amber-50 text-amber-700' },
         ].map(({ label, value, detail, icon: Icon, tone }) => (
