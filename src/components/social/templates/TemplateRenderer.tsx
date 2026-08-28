@@ -163,7 +163,7 @@ export function TemplateRenderer({ template, data, size = 'full' }: TemplateRend
           ) : (
             <div className="text-center p-4">
               <span className="text-6xl">✅</span>
-              <p className="text-white/60 mt-4 text-sm">Optimisé par NewAI</p>
+              <p className="text-white/60 mt-4 text-sm">Optimisé par CatalogueOptimize AI</p>
             </div>
           )}
         </div>
@@ -229,7 +229,7 @@ export function TemplateRenderer({ template, data, size = 'full' }: TemplateRend
       {/* Logo */}
       {template.elements.showLogo && (
         <div className="absolute bottom-8 text-white/60 font-semibold">
-          {data.brandName || 'NewAI'}
+          {data.brandName || 'CatalogueOptimize AI'}
         </div>
       )}
     </div>
@@ -256,7 +256,7 @@ export function TemplateRenderer({ template, data, size = 'full' }: TemplateRend
           fontSize: '2rem'
         }}
       >
-        {data.testimonialText || "J'ai doublé mon trafic SEO en 2 semaines avec NewAI."}
+        {data.testimonialText || "J'ai doublé mon trafic SEO en 2 semaines avec CatalogueOptimize AI."}
       </blockquote>
 
       {/* Author */}
@@ -286,7 +286,7 @@ export function TemplateRenderer({ template, data, size = 'full' }: TemplateRend
           className="absolute bottom-8"
           style={{ color: template.colors.accent }}
         >
-          {data.brandName || 'NewAI'}
+          {data.brandName || 'CatalogueOptimize AI'}
         </div>
       )}
     </div>
@@ -315,7 +315,7 @@ export function TemplateRenderer({ template, data, size = 'full' }: TemplateRend
 
       {/* Subtitle */}
       <p className="text-white/80 text-2xl text-center mb-2">
-        {data.productDescription || 'Sur tous les plans NewAI'}
+        {data.productDescription || 'Sur tous les plans CatalogueOptimize AI'}
       </p>
       <p className="text-white/60 text-lg mb-8">
         Aujourd'hui seulement !
@@ -399,7 +399,7 @@ export function TemplateRenderer({ template, data, size = 'full' }: TemplateRend
               color: '#fff'
             }}
           >
-            {data.ctaText || 'Essayer NewAI'}
+            {data.ctaText || 'Essayer CatalogueOptimize AI'}
           </button>
         </div>
       )}
