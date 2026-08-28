@@ -41,7 +41,16 @@ type ProductRow = {
   ai_pattern: string | null;
   ai_finish: string | null;
   ai_design_elements: string | null;
+  ai_background_style: string | null;
+  ai_lighting_type: string | null;
+  ai_condition_notes: string | null;
+  ai_craftsmanship_level: string | null;
+  ai_presentation_quality: number | null;
+  ai_vision_confidence: number | null;
   style: string | null;
+  room: string | null;
+  functionality: string | null;
+  characteristics: string | null;
   category: string | null;
   sub_category: string | null;
   smart_length: number | null;
@@ -100,9 +109,18 @@ function buildMetafields(product: ProductRow, overrides: AttributeOverride) {
     { key: "pattern", value: cleanSingleLine(readValue(product, overrides, "ai_pattern")) },
     { key: "finish", value: cleanSingleLine(readValue(product, overrides, "ai_finish")) },
     { key: "design_elements", value: cleanSingleLine(readValue(product, overrides, "ai_design_elements")) },
+    { key: "background_style", value: cleanSingleLine(readValue(product, overrides, "ai_background_style")) },
+    { key: "lighting", value: cleanSingleLine(readValue(product, overrides, "ai_lighting_type")) },
+    { key: "condition_notes", value: cleanSingleLine(readValue(product, overrides, "ai_condition_notes")) },
+    { key: "craftsmanship", value: cleanSingleLine(readValue(product, overrides, "ai_craftsmanship_level")) },
+    { key: "presentation_quality", value: cleanSingleLine(readValue(product, overrides, "ai_presentation_quality")) },
+    { key: "vision_confidence", value: cleanSingleLine(readValue(product, overrides, "ai_vision_confidence")) },
     { key: "style", value: cleanSingleLine(readValue(product, overrides, "style")) },
     { key: "category", value: cleanSingleLine(readValue(product, overrides, "category")) },
     { key: "sub_category", value: cleanSingleLine(readValue(product, overrides, "sub_category")) },
+    { key: "room", value: cleanSingleLine(readValue(product, overrides, "room")) },
+    { key: "functionality", value: cleanSingleLine(readValue(product, overrides, "functionality")) },
+    { key: "characteristics", value: cleanSingleLine(readValue(product, overrides, "characteristics")) },
     {
       key: "length",
       value: withUnit(readValue(product, overrides, "smart_length"), readValue(product, overrides, "smart_length_unit")),
@@ -230,7 +248,9 @@ Deno.serve(async (req: Request) => {
       .select(`
         id, shopify_id, title, store_id,
         ai_color, ai_material, ai_shape, ai_texture, ai_pattern, ai_finish, ai_design_elements,
-        style, category, sub_category,
+        ai_background_style, ai_lighting_type, ai_condition_notes, ai_craftsmanship_level,
+        ai_presentation_quality, ai_vision_confidence,
+        style, room, functionality, characteristics, category, sub_category,
         smart_length, smart_length_unit, smart_width, smart_width_unit,
         smart_height, smart_height_unit, smart_depth, smart_depth_unit,
         smart_diameter, smart_diameter_unit, smart_weight, smart_weight_unit,
