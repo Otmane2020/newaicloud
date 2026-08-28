@@ -647,162 +647,98 @@ export function TagOptimization() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner */}
-      <Card className="bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-950 dark:via-amber-950 dark:to-yellow-950 border-2 border-orange-200 p-6 md:p-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                <Tags className="w-6 h-6 text-orange-600" />
-              </div>
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
-                Tag Optimization
-              </h1>
+      {/* Compact workspace summary */}
+      <Card className="border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-violet-50 p-2.5 text-violet-700">
+              <Tags className="h-5 w-5" />
             </div>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              Organize your products with relevant tags. Improve discoverability and increase conversions by 30%.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-2">
-              <div className="flex items-center gap-2 text-sm">
-                <Target className="w-4 h-4 text-orange-600" />
-                <span className="font-medium">Optimal organization</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="font-medium">+30% discoverability</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Hash className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">Smart tags</span>
-              </div>
+            <div>
+              <h1 className="text-xl font-semibold text-slate-950">Categories & Tags</h1>
+              <p className="mt-1 max-w-2xl text-sm text-slate-600">
+                Structure product discovery with consistent Shopify tags. Generate missing tags first; re-optimization remains optional.
+              </p>
             </div>
           </div>
-          <div className="flex flex-col gap-4 items-center">
-            {isTypeRunning('tags') ? (
-              <ProgressBanner
-                current={optimizationState.current}
-                total={optimizationState.total}
-                label={optimizationState.operation === 'syncing' ? 'Synchronisation des tags' : 'Optimisation des tags'}
-              />
-            ) : (
-              <>
-                <div className="text-center">
-                  <div className={`text-3xl md:text-4xl font-bold ${
-                    tagSeoScore >= 80 ? 'text-green-600' : 
-                    tagSeoScore >= 60 ? 'text-orange-600' : 
-                    'text-red-600'
-                  }`}>
-                    {tagSeoScore}/100
-                  </div>
-                  <div className="text-sm text-muted-foreground">SEO Score</div>
-                </div>
-                <Button
-                  size="lg"
-                  onClick={productsNotOptimized > 0 ? handleGenerateAll : handleReoptimizeAll}
-                  disabled={isTypeRunning('tags') || products.length === 0}
-                  className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 gap-2 shadow-lg"
-                >
-                  <Sparkles className="w-5 h-5" />
-                  {productsNotOptimized > 0 ? 'Start Optimization' : 'Ré-optimiser tout'}
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </>
-            )}
-          </div>
+          {isTypeRunning("tags") ? (
+            <ProgressBanner
+              current={optimizationState.current}
+              total={optimizationState.total}
+              label={optimizationState.operation === "syncing" ? "Synchronisation des tags" : "Optimisation des tags"}
+            />
+          ) : (
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Tag health</p>
+                <p className="text-2xl font-semibold text-slate-950">{tagSeoScore}/100</p>
+              </div>
+              <Button onClick={handleGenerateAllTags} disabled={productsNotOptimized === 0 || products.length === 0}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate missing ({productsNotOptimized})
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
 
-      {/* Clickable Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card 
-          className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleToOptimizeClick}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">{t.seo.tags.status.notOptimized}</p>
-              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{productsNotOptimized}</p>
-              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                {t.seo.tags.stats.toOptimize}
-              </p>
-            </div>
-            <Clock className="w-8 h-8 text-orange-600" />
-          </div>
-          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
-        </Card>
-        
-        <Card 
-          className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={handleOptimizedClick}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">{t.seo.tags.status.optimized}</p>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{productsOptimized}</p>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                {t.seo.tags.stats.byAI}
-              </p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-600" />
-          </div>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.altImage.stats.clickToView}</p>
-        </Card>
-        
+      <div className="grid gap-3 sm:grid-cols-3">
+        <button type="button" onClick={handleToOptimizeClick} className="rounded-xl border bg-white p-4 text-left transition hover:border-violet-300 hover:shadow-sm">
+          <p className="text-sm text-slate-500">Needs tags</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-950">{productsNotOptimized}</p>
+        </button>
+        <button type="button" onClick={handleOptimizedClick} className="rounded-xl border bg-white p-4 text-left transition hover:border-violet-300 hover:shadow-sm">
+          <p className="text-sm text-slate-500">Optimized</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-950">{productsOptimized}</p>
+        </button>
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-sm text-slate-500">Products in view</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-950">{filteredProducts.length}</p>
+        </div>
       </div>
 
-      {/* Sticky Action Bar */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          {/* Selection Counter */}
-          <div className="flex items-center gap-3">
-            <Checkbox 
+      <Card className="sticky top-0 z-20 border-slate-200 bg-white/95 p-3 shadow-sm backdrop-blur">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="flex items-center gap-3 text-sm font-medium">
+            <Checkbox
               checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0}
               onCheckedChange={handleSelectAll}
             />
-            <span className="text-sm font-medium">
-              {selectedProducts.size > 0 ? (
-                <span className="text-primary">{selectedProducts.size} produit(s) sélectionné(s)</span>
-              ) : (
-                <span className="text-muted-foreground">Sélectionner tout</span>
-              )}
-            </span>
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            {selectedProducts.size > 0 ? `${selectedProducts.size} selected` : "Select visible products"}
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
             <Button
-              onClick={() => {
-                const ids = Array.from(selectedProducts);
-                handleBulkGenerate(ids, true);
-              }}
-              disabled={selectedProducts.size === 0 || isTypeRunning('tags')}
               size="sm"
-              className="flex-1 sm:flex-none"
+              onClick={() => handleGenerateSelected(false)}
+              disabled={selectedProducts.size === 0 || isTypeRunning("tags")}
             >
-              <Sparkles className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Générer Tags</span>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Optimize selected ({selectedProducts.size})
             </Button>
-            <Button
-              onClick={productsNotOptimized > 0 ? handleGenerateAllTags : handleReoptimizeAll}
-              disabled={isTypeRunning('tags') || products.length === 0}
-              variant="outline"
-              size="sm"
-              className="flex-1 sm:flex-none"
-            >
-              <Sparkles className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">{productsNotOptimized > 0 ? 'Générer tout' : 'Ré-optimiser tout'}</span>
-            </Button>
-            <Button
-              onClick={fetchProducts}
-              disabled={loading}
-              variant="ghost"
-              size="sm"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
+            <details className="relative">
+              <summary className="list-none cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted">
+                More
+              </summary>
+              <div className="absolute right-0 z-30 mt-2 grid min-w-56 gap-1 rounded-xl border bg-background p-2 shadow-xl">
+                <Button variant="ghost" size="sm" className="justify-start" onClick={handleReoptimizeAll} disabled={isTypeRunning("tags") || products.length === 0}>
+                  <RefreshCw className="mr-2 h-4 w-4" /> Re-optimize all
+                </Button>
+                <Button variant="ghost" size="sm" className="justify-start" onClick={fetchProducts} disabled={loading}>
+                  <RefreshCw className="mr-2 h-4 w-4" /> Refresh data
+                </Button>
+              </div>
+            </details>
+            <div className="flex overflow-hidden rounded-lg border">
+              <Button variant={viewMode === "list" ? "secondary" : "ghost"} size="sm" className="rounded-none" onClick={() => setViewMode("list")} aria-label="List view">
+                <List className="h-4 w-4" />
+              </Button>
+              <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="sm" className="rounded-none" onClick={() => setViewMode("grid")} aria-label="Grid view">
+                <Grid3x3 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Controls Section */}
       <Card className="p-4 bg-background/50">
@@ -883,112 +819,6 @@ export function TagOptimization() {
           </div>
         </div>
       </Card>
-
-      {/* Action Buttons Section */}
-      <Card className="p-4">
-        <div className="flex flex-col gap-4">
-          {/* Action Buttons Row */}
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                className="flex items-center gap-2"
-              >
-                {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
-                <span className="hidden sm:inline">{viewMode === 'grid' ? 'List' : 'Grid'}</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMobileFilters(!showMobileFilters)}
-                className="lg:hidden flex items-center gap-2"
-              >
-                <Filter className="w-4 h-4" />
-                <span>Filters</span>
-              </Button>
-            </div>
-
-            {/* Bulk Actions */}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerateAll}
-                disabled={isTypeRunning('tags') || productsNotOptimized === 0}
-                className="flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span className="hidden sm:inline">Optimize All</span>
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleGenerateSelected(false)}
-                disabled={isTypeRunning('tags') || selectedProducts.size === 0}
-                className="flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span className="hidden sm:inline">Optimize ({selectedProducts.size})</span>
-              </Button>
-              
-              
-              <Button variant="outline" size="icon" onClick={fetchProducts}>
-                <RefreshCw className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Mobile Filters */}
-          {showMobileFilters && (
-            <div className="lg:hidden mt-4 p-4 bg-muted/50 rounded-lg">
-              <div className="grid grid-cols-2 gap-2">
-                {filters.map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setFilter(f.id)}
-                    className={`flex items-center justify-between p-3 rounded-md text-sm font-medium transition ${
-                      filter === f.id
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'bg-background text-muted-foreground hover:bg-muted'
-                    }`}
-                  >
-                    {f.label}
-                    <Badge variant={filter === f.id ? 'secondary' : 'outline'}>
-                      {f.count}
-                    </Badge>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Desktop Filters */}
-      <div className="hidden lg:flex bg-background border rounded-lg p-1 gap-1">
-        {filters.map((f) => (
-          <button
-            key={f.id}
-            onClick={() => setFilter(f.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition flex-1 justify-center ${
-              filter === f.id
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {f.label}
-            <Badge variant={filter === f.id ? 'secondary' : 'outline'}>
-              {f.count}
-            </Badge>
-          </button>
-        ))}
-      </div>
-
-      {/* Progress Indicator - removed, using ProgressDialog instead */}
 
       {/* Products Display */}
       {viewMode === 'list' ? (
