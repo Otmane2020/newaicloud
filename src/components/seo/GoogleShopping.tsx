@@ -48,7 +48,6 @@ import { ShopifyOptimizationGuide } from './ShopifyOptimizationGuide';
 import { OptimizeAllDialog } from './OptimizeAllDialog';
 import { GoogleCategoryImport } from './GoogleCategoryImport';
 import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/lib/language';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
@@ -789,6 +788,28 @@ export function GoogleShopping() {
     );
   }
 
+  if (!selectedStore) {
+    return (
+      <div className="mx-auto max-w-5xl py-8">
+        <div className="overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-8 text-white shadow-2xl shadow-violet-950/15 sm:p-12">
+          <div className="max-w-2xl">
+            <Badge className="border border-white/10 bg-white/10 text-violet-100 hover:bg-white/10">CHANNELS · GOOGLE SHOPPING</Badge>
+            <span className="mt-8 grid h-14 w-14 place-items-center rounded-2xl bg-violet-500/20 text-violet-200">
+              <ShoppingBag className="h-7 w-7" />
+            </span>
+            <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">Connect your Shopify catalog first</h1>
+            <p className="mt-4 max-w-xl text-base leading-7 text-slate-300">
+              Import products, variants, collections and images before checking Google categories, identifiers, media and feed readiness.
+            </p>
+            <Button onClick={() => navigate('/app/setup-wizard')} className="mt-8 bg-white text-slate-950 hover:bg-violet-50" size="lg">
+              <ShoppingBag className="mr-2 h-5 w-5" /> Connect Shopify
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const productsOptimized = products.filter(p => 
     p.google_product_category && p.google_gtin && p.google_white_background
   ).length;
@@ -798,257 +819,112 @@ export function GoogleShopping() {
   const completionRate = products.length > 0 ? Math.round((productsOptimized / products.length) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-lg bg-gradient-primary p-8 text-white shadow-xl">
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-                <Sparkles className="w-8 h-8" />
-                Google Shopping - Optimisation IA
-              </h1>
-              <p className="text-white/90 text-lg">
-                Optimisez vos produits avec l'IA pour maximiser leur visibilité sur Google Shopping
-              </p>
+    <div className="space-y-6 pb-10">
+      <section className="overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-violet-200">
+              <span>Channels</span><span className="text-white/30">/</span><span>Google Shopping</span>
+              <Badge className="ml-1 border border-white/10 bg-white/10 text-white hover:bg-white/10">{products.length} products</Badge>
             </div>
-            <div className="text-right">
-              <Badge className="bg-white/20 text-white border-white/30 text-lg px-4 py-2">
-                {products.length} produits
-              </Badge>
-            </div>
+            <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">Make every product Shopping-ready</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
+              Complete the product data Google needs, improve media with AI and synchronize approved changes back to Shopify.
+            </p>
           </div>
-
-          {/* Optimization Score */}
-          <div className="bg-white/20 backdrop-blur-md rounded-lg p-5 mb-4 border border-white/30">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-base font-semibold text-white">Score d'optimisation Google Shopping</span>
-              <span className="text-3xl font-bold text-white">{optimizationScore}%</span>
-            </div>
-            <Progress value={optimizationScore} className="h-3 bg-white/30" />
-            <div className="mt-3 pt-3 border-t border-white/20">
-              <p className="text-sm text-white/90 font-medium">
-                {products.length > 0 
-                  ? `Basé sur 3 critères : Catégorie Google (33%) • GTIN (33%) • Fond blanc IA (34%)`
-                  : 'Aucun produit à optimiser'
-                }
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3 mt-6">
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={handleOptimizeAll}
-              disabled={isOptimizing}
-              className="bg-white text-primary hover:bg-white/90"
-            >
-              {isOptimizing ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Optimisation...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-5 h-5 mr-2" />
-                  Optimiser tout
-                </>
-              )}
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={handleOptimizeAll} disabled={isOptimizing || products.length === 0} className="bg-violet-500 text-white hover:bg-violet-400">
+              {isOptimizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />} Optimize catalog
             </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => setShowGuide(true)}
-              className="bg-white/90 text-primary hover:bg-white"
-            >
-              <BookOpen className="w-5 h-5 mr-2" />
-              Guide Shopify
+            <Button variant="outline" onClick={() => navigate('/merchant?tab=feed')} className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
+              <Download className="mr-2 h-4 w-4" /> Product feed
             </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => navigate('/merchant?tab=feed')}
-              className="bg-white/80 text-primary hover:bg-white/90"
-            >
-              <BookOpen className="w-5 h-5 mr-2" />
-              Voir le flux XML
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={fetchProducts}
-              disabled={loading}
-              className="border-white text-white hover:bg-white/10"
-            >
-              <RefreshCw className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Actualiser
+            <Button variant="ghost" onClick={fetchProducts} disabled={loading} className="text-white hover:bg-white/10 hover:text-white">
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
             </Button>
           </div>
         </div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24" />
-      </div>
+      </section>
 
-      {/* Quick Guide Alert */}
-      <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-        <Sparkles className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-        <AlertDescription className="text-blue-800 dark:text-blue-200">
-          <div className="flex items-center justify-between">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: 'Catalog products', value: products.length, detail: 'Imported from Shopify', icon: Package, tone: 'bg-blue-50 text-blue-700' },
+          { label: 'Shopping readiness', value: `${optimizationScore}%`, detail: 'Category · GTIN · media', icon: TrendingUp, tone: 'bg-violet-50 text-violet-700' },
+          { label: 'Complete records', value: productsOptimized, detail: `${completionRate}% of the catalog`, icon: CheckCircle, tone: 'bg-emerald-50 text-emerald-700' },
+          { label: 'Ready to sync', value: productsToSync, detail: 'Approved catalog updates', icon: Upload, tone: 'bg-amber-50 text-amber-700' },
+        ].map(({ label, value, detail, icon: Icon, tone }) => (
+          <Card key={label} className="border-slate-200 p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{value}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></div>
+              <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tone}`}><Icon className="h-5 w-5" /></span>
+            </div>
+          </Card>
+        ))}
+      </section>
+
+      <section className="rounded-3xl border border-violet-100 bg-gradient-to-r from-violet-50/80 via-white to-blue-50/70 p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
+          <div className="lg:w-64">
+            <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100">READINESS WORKFLOW</Badge>
+            <h2 className="mt-3 text-lg font-semibold">From imported to eligible</h2>
+          </div>
+          <div className="grid flex-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              ['01', 'Classify', 'Google category'],
+              ['02', 'Identify', 'GTIN and MPN'],
+              ['03', 'Improve media', 'AI white background'],
+              ['04', 'Publish', 'Review and sync'],
+            ].map(([step, title, detail]) => (
+              <div key={step} className="rounded-2xl border border-white bg-white/80 p-4 shadow-sm">
+                <span className="text-xs font-semibold text-violet-600">{step}</span><p className="mt-2 text-sm font-semibold">{title}</p><p className="mt-1 text-xs text-slate-500">{detail}</p>
+              </div>
+            ))}
+          </div>
+          <Button variant="outline" onClick={() => setShowGuide(true)} className="border-violet-200 text-violet-700 hover:bg-violet-50">
+            <BookOpen className="mr-2 h-4 w-4" /> Open guide
+          </Button>
+        </div>
+      </section>
+
+      <details className="group rounded-2xl border border-slate-200 bg-white">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-medium text-slate-700">
+          Google taxonomy tools <span className="text-xs text-slate-400 group-open:hidden">Advanced</span>
+        </summary>
+        <div className="border-t border-slate-100 p-5"><GoogleCategoryImport /></div>
+      </details>
+
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <strong className="font-semibold">Guide d'optimisation rapide</strong>
-              <p className="mt-1 text-sm">
-                1. Sélectionnez les produits → 2. Générer GTINs → 3. Générer Catégories IA → 4. Fond blanc IA → 5. Synchroniser
-              </p>
+              <h2 className="text-xl font-semibold tracking-tight">Product readiness workspace</h2>
+              <p className="mt-1 text-sm text-slate-500">Select products, apply a focused action and review every result before synchronization.</p>
             </div>
-          </div>
-        </AlertDescription>
-      </Alert>
-
-      {/* Import Google Taxonomy */}
-      <GoogleCategoryImport />
-
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-bold mb-2 flex items-center gap-2">
-          <ShoppingBag className="w-8 h-8 text-primary" />
-          Google Shopping
-        </h2>
-        <p className="text-muted-foreground">
-          Gérez et optimisez vos attributs Google Shopping pour améliorer la visibilité de vos produits
-        </p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-muted-foreground">Total Produits</h3>
-            <Package className="w-5 h-5 text-blue-600" />
-          </div>
-          <p className="text-3xl font-bold">{products.length}</p>
-          <p className="text-sm text-muted-foreground mt-1">Dans votre catalogue</p>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-green-900 dark:text-green-100">Optimisés</h3>
-            <TrendingUp className="w-5 h-5 text-green-600" />
-          </div>
-          <p className="text-3xl font-bold text-green-900 dark:text-green-100">{productsOptimized}</p>
-          <p className="text-sm text-green-700 dark:text-green-300 mt-1">{completionRate}% complétés (Catégorie + GTIN + Fond blanc)</p>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 border-orange-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-orange-900 dark:text-orange-100">À synchroniser</h3>
-            <AlertCircle className="w-5 h-5 text-orange-600" />
-          </div>
-          <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">{productsToSync}</p>
-          <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">Prêts pour Shopify</p>
-        </Card>
-      </div>
-
-      {/* Search & Actions */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex-1 w-full sm:w-auto">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Rechercher un produit..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="relative w-full xl:w-80">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input type="text" placeholder="Search products…" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="border-slate-200 bg-slate-50 pl-9" />
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={handleGenerateGTINs}
-              disabled={generatingGtins || selectedProducts.size === 0}
-              variant="outline"
-              className="gap-2"
-            >
-              {generatingGtins ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Génération GTINs...
-                </>
-              ) : (
-                <>
-                  <Hash className="w-4 h-4" />
-                  Générer GTINs ({selectedProducts.size})
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={handleWhiteBackground}
-              disabled={processingImages || selectedProducts.size === 0}
-              variant="outline"
-              className="gap-2"
-            >
-              {processingImages ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Génération IA...
-                </>
-              ) : (
-                <>
-                  <ImageIcon className="w-4 h-4" />
-                  Fond blanc IA ({selectedProducts.size})
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={handleGenerateCategories}
-              disabled={generatingCategories || selectedProducts.size === 0}
-              variant="outline"
-              className="gap-2"
-            >
-              {generatingCategories ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Génération catégories...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Générer Catégories AI ({selectedProducts.size})
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={handleSyncSelected}
-              disabled={syncing || selectedProducts.size === 0}
-              className="gap-2"
-            >
-              {syncing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Synchronisation...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  Synchroniser ({selectedProducts.size})
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={fetchProducts}
-              disabled={loading}
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
           </div>
         </div>
-      </Card>
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/70 px-5 py-3">
+          <span className="mr-2 text-xs font-medium text-slate-500">{selectedProducts.size} selected</span>
+          <Button size="sm" variant="outline" onClick={handleGenerateCategories} disabled={generatingCategories || selectedProducts.size === 0}>
+            {generatingCategories ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4 text-violet-600" />} Generate categories
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleGenerateGTINs} disabled={generatingGtins || selectedProducts.size === 0}>
+            {generatingGtins ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Hash className="mr-2 h-4 w-4" />} Generate GTINs
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleWhiteBackground} disabled={processingImages || selectedProducts.size === 0}>
+            {processingImages ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />} White background
+          </Button>
+          <Button size="sm" onClick={handleSyncSelected} disabled={syncing || selectedProducts.size === 0} className="bg-violet-600 hover:bg-violet-700">
+            {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />} Sync to Shopify
+          </Button>
+        </div>
+      </section>
 
       {/* Products Table */}
-      <Card>
+      <Card className="overflow-hidden rounded-3xl border-slate-200 shadow-sm">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-background z-10">
@@ -1061,11 +937,11 @@ export function GoogleShopping() {
                 </TableHead>
                 <TableHead>Image</TableHead>
                 <TableHead>Titre</TableHead>
-                <TableHead>Catégorie Produit</TableHead>
+                <TableHead>Google category</TableHead>
                 <TableHead>MPN</TableHead>
                 <TableHead>Condition</TableHead>
                 <TableHead>GTIN</TableHead>
-                <TableHead>Statut</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -1305,30 +1181,6 @@ export function GoogleShopping() {
         </div>
       )}
 
-      {/* Info Card */}
-      <Card className="p-6 bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800">
-        <h3 className="text-lg font-semibold mb-3">
-          Champs Google Shopping Simplifiés
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <h4 className="font-medium mb-2">Champs Essentiels :</h4>
-            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>Catégorie de produit (obligatoire)</li>
-              <li>MPN = Marque ou Référence (auto-rempli)</li>
-              <li>Condition = Neuf par défaut</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-medium mb-2">Champ Optionnel :</h4>
-            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>GTIN (code-barres international)</li>
-              <li>Améliore la visibilité si disponible</li>
-            </ul>
-          </div>
-        </div>
-      </Card>
-      
       <WhiteBackgroundPreviewDialog
         open={showPreview}
         onOpenChange={setShowPreview}
