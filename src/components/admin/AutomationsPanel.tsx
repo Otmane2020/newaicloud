@@ -40,7 +40,7 @@ interface AutomationRule {
 // Email templates (same as edge function)
 const EMAIL_TEMPLATES = {
   onboarding_abandoned: {
-    subject: "🎁 Votre essai gratuit vous attend - NewAI",
+    subject: "🎁 Votre essai gratuit vous attend - CatalogueOptimize AI",
     html: `
 <!DOCTYPE html>
 <html>
@@ -62,7 +62,7 @@ const EMAIL_TEMPLATES = {
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">NewAI</div>
+      <div class="logo">CatalogueOptimize AI</div>
     </div>
     <div class="content">
       <h1>Vous êtes si proche de booster vos ventes ! 🚀</h1>
@@ -81,7 +81,7 @@ const EMAIL_TEMPLATES = {
       </center>
     </div>
     <div class="footer">
-      <p>NewAI - L'IA au service de votre e-commerce</p>
+      <p>CatalogueOptimize AI - L'IA au service de votre e-commerce</p>
     </div>
   </div>
 </body>
@@ -89,7 +89,7 @@ const EMAIL_TEMPLATES = {
     `
   },
   cart_abandoned: {
-    subject: "🛒 Votre panier vous attend - NewAI",
+    subject: "🛒 Votre panier vous attend - CatalogueOptimize AI",
     html: `
 <!DOCTYPE html>
 <html>
@@ -109,7 +109,7 @@ const EMAIL_TEMPLATES = {
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">NewAI</div>
+      <div class="logo">CatalogueOptimize AI</div>
     </div>
     <div class="content">
       <h1>Vous avez oublié quelque chose ! 🛒</h1>
@@ -123,7 +123,7 @@ const EMAIL_TEMPLATES = {
       </center>
     </div>
     <div class="footer">
-      <p>NewAI - L'IA au service de votre e-commerce</p>
+      <p>CatalogueOptimize AI - L'IA au service de votre e-commerce</p>
     </div>
   </div>
 </body>
@@ -131,7 +131,7 @@ const EMAIL_TEMPLATES = {
     `
   },
   reminder_24h: {
-    subject: "⏰ Plus que 24h pour profiter de -50% - NewAI",
+    subject: "⏰ Plus que 24h pour profiter de -50% - CatalogueOptimize AI",
     html: `
 <!DOCTYPE html>
 <html>
@@ -152,7 +152,7 @@ const EMAIL_TEMPLATES = {
 <body>
   <div class="container">
     <div class="header">
-      <div class="logo">NewAI</div>
+      <div class="logo">CatalogueOptimize AI</div>
     </div>
     <div class="content">
       <h1>🎉 Offre spéciale pour vous !</h1>
@@ -168,7 +168,7 @@ const EMAIL_TEMPLATES = {
       </center>
     </div>
     <div class="footer">
-      <p>NewAI - L'IA au service de votre e-commerce</p>
+      <p>CatalogueOptimize AI - L'IA au service de votre e-commerce</p>
     </div>
   </div>
 </body>
