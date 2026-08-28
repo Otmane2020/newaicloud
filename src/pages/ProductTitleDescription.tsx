@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -203,6 +203,9 @@ interface PreviewImage {
 
 export default function ProductTitleDescription() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedView = searchParams.get("view") || "content";
+  const workspace = requestedView === "landing" ? "landing" : requestedView === "images" || requestedView === "gallery" ? "images" : requestedView === "bulk" ? "bulk" : "content";
   const { t, tf, language } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { selectedStore } = useStore();
@@ -1965,121 +1968,74 @@ export default function ProductTitleDescription() {
               </h1>
               <p className="max-w-2xl text-sm text-violet-100 sm:text-base">{t.contentOptimization.hero.description}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 onClick={() => {
                   if (!canDoAction("optimizations")) {
-                    toast.error("Limite d'optimisations atteinte");
+                    toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
+                    return;
+                  }
+                  if (workspace === "images") {
+                    setSelectedProducts(new Set(filteredProducts.map((product) => product.id)));
+                    setShowBulkAIImagesDialog(true);
+                    return;
+                  }
+                  if (workspace === "landing") {
+                    setSelectedProducts(new Set(filteredProducts.map((product) => product.id)));
+                    setShowBulkLandingConfigDialog(true);
                     return;
                   }
                   handleOptimizeAll();
                 }}
                 disabled={generating || filteredProducts.length === 0}
-                size="lg"
-                className="gap-2"
+                className="bg-white text-violet-950 hover:bg-violet-50"
               >
-                {generating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t.contentOptimization.buttons.optimizing}
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="h-4 w-4" />
-                    {t.contentOptimization.buttons.optimizeAll}
-                  </>
-                )}
+                {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : workspace === "images" ? <Images className="mr-2 h-4 w-4" /> : workspace === "landing" ? <FileText className="mr-2 h-4 w-4" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                {workspace === "images" ? "Generate images" : workspace === "landing" ? "Generate landing pages" : t.contentOptimization.buttons.optimizeAll}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => {
-                  const productsToSync = filteredProducts.filter(
-                    (p) => p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title),
-                  );
-
+                  const productsToSync = filteredProducts.filter((product) => product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title));
                   if (productsToSync.length === 0) {
                     toast.error(t.contentOptimization.toasts.noProductToSync);
                     return;
                   }
-
                   setSyncProducts(productsToSync);
                   setShowSyncProgressDialog(true);
                 }}
                 disabled={syncingToShopify}
-                size="lg"
-                className="gap-2"
+                className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
               >
-                {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {syncingToShopify ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                 {t.contentOptimization.buttons.syncAll}
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const productsToSync = Array.from(selectedProducts)
-                    .map((id) => products.find((p) => p.id === id))
-                    .filter((p) => p && p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title)) as Product[];
-
-                  if (productsToSync.length === 0) {
-                    toast.error(t.contentOptimization.toasts.noSelectedProduct);
-                    return;
-                  }
-
-                  setSyncProducts(productsToSync);
-                  setShowSyncProgressDialog(true);
-                }}
-                disabled={syncingToShopify || selectedProducts.size === 0}
-                size="lg"
-                className="gap-2"
-              >
-                {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                {t.contentOptimization.buttons.syncSelected} ({selectedProducts.size})
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (filteredProducts.length === 0) {
-                    toast.error(t.contentOptimization.toasts.noProductToExport);
-                    return;
-                  }
-                  try {
-                    exportProductsToCSV(filteredProducts, language);
-                    toast.success(tf('contentOptimization.toasts.exportSuccess', { count: filteredProducts.length }));
-                  } catch (e) {
-                    toast.error(t.contentOptimization.toasts.exportError);
-                  }
-                }}
-                disabled={filteredProducts.length === 0}
-                size="lg"
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                {t.contentOptimization.buttons.exportCSV}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (filteredProducts.length === 0) {
-                    toast.error(t.contentOptimization.toasts.noProductToExport);
-                    return;
-                  }
-                  try {
-                    exportProductsToExcel(filteredProducts, language);
-                    toast.success(tf('contentOptimization.toasts.exportSuccess', { count: filteredProducts.length }));
-                  } catch (e) {
-                    toast.error(t.contentOptimization.toasts.exportError);
-                  }
-                }}
-                disabled={filteredProducts.length === 0}
-                size="lg"
-                className="gap-2"
-              >
-                <FileSpreadsheet className="h-4 w-4" />
-                {t.contentOptimization.buttons.exportExcel}
-              </Button>
+              <details className="relative">
+                <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium text-white hover:bg-white/10">
+                  <Download className="mr-2 h-4 w-4" /> Export
+                </summary>
+                <div className="absolute right-0 z-30 mt-2 grid w-48 gap-1 rounded-xl border bg-white p-2 shadow-xl">
+                  <Button variant="ghost" className="justify-start text-slate-700" onClick={() => exportProductsToCSV(filteredProducts, language)}><Download className="mr-2 h-4 w-4" /> CSV</Button>
+                  <Button variant="ghost" className="justify-start text-slate-700" onClick={() => exportProductsToExcel(filteredProducts, language)}><FileSpreadsheet className="mr-2 h-4 w-4" /> Excel</Button>
+                </div>
+              </details>
             </div>
           </div>
         </Card>
+
+        <nav className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm lg:grid-cols-4" aria-label="Product workspace">
+          {[
+            { id: "content", label: language === "fr" ? "Contenu" : "Content", icon: FileText },
+            { id: "landing", label: "Landing pages", icon: Sparkles },
+            { id: "images", label: language === "fr" ? "Images" : "Images", icon: Images },
+            { id: "bulk", label: language === "fr" ? "Actions groupées" : "Bulk actions", icon: Layers },
+          ].map(({ id, label, icon: Icon }) => (
+            <Button key={id} type="button" variant={workspace === id ? "default" : "ghost"} onClick={() => setSearchParams({ view: id })} className="justify-start gap-2">
+              <Icon className="h-4 w-4" />{label}
+            </Button>
+          ))}
+        </nav>
 
         {/* Total Products Header */}
         <div className="flex items-center gap-3 mb-4">
@@ -2214,226 +2170,157 @@ export default function ProductTitleDescription() {
           )}
         </div>
 
-        {/* Actions Bar */}
-        <Card className="p-4">
-          <div className="flex flex-wrap gap-2 justify-end">
-              <div className="flex items-center border rounded-md overflow-hidden">
-                <Button
-                  variant={viewMode === "table" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("table")}
-                  className="rounded-none h-8 px-3"
-                >
-                  <List className="w-4 h-4" />
+        {/* Contextual actions: each workspace only exposes relevant workflows. */}
+        <Card className="p-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold">
+                {workspace === "content" && (language === "fr" ? "Optimiser les fiches" : "Optimize product content")}
+                {workspace === "images" && (language === "fr" ? "Créer et améliorer les visuels" : "Create and improve visuals")}
+                {workspace === "landing" && (language === "fr" ? "Créer des pages produit enrichies" : "Create enriched product pages")}
+                {workspace === "bulk" && (language === "fr" ? "Traiter plusieurs produits" : "Process multiple products")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {selectedProducts.size > 0
+                  ? `${selectedProducts.size} ${language === "fr" ? "produit(s) sélectionné(s)" : "product(s) selected"}`
+                  : language === "fr" ? "Sélectionnez des produits pour activer les actions." : "Select products to enable actions."}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center overflow-hidden rounded-lg border bg-background" aria-label={language === "fr" ? "Mode d’affichage" : "Display mode"}>
+                <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="sm" onClick={() => setViewMode("table")} className="rounded-none px-3">
+                  <List className="h-4 w-4" />
+                  <span className="sr-only">{language === "fr" ? "Tableau" : "Table"}</span>
                 </Button>
-                <Button
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => {
-                    if (viewMode === "grid") {
-                      // Cycle through 2, 3, 4 columns
-                      setGridColumns((prev) => {
-                        if (prev === 2) return 3;
-                        if (prev === 3) return 4;
-                        return 2;
-                      });
-                    } else {
-                      setViewMode("grid");
-                    }
-                  }}
-                  className="rounded-none h-8 px-3 relative"
-                >
-                  <Grid3x3 className="w-4 h-4" />
-                  {viewMode === "grid" && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-bold">
-                      {gridColumns}
-                    </span>
-                  )}
+                <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="sm" onClick={() => setViewMode("grid")} className="rounded-none px-3">
+                  <Grid3x3 className="h-4 w-4" />
+                  <span className="sr-only">{language === "fr" ? "Grille" : "Grid"}</span>
                 </Button>
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  handleOptimizeSelected();
-                }}
-                disabled={generating || selectedProducts.size === 0}
-              >
-                <Wand2 className="h-4 w-4 mr-2" />
-                {t.contentOptimization.buttons.optimize} ({selectedProducts.size})
-              </Button>
+              {(workspace === "content" || workspace === "bulk") && (
+                <Button
+                  variant={workspace === "content" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    if (!canDoAction("optimizations")) {
+                      toast.error(t.contentOptimization.toasts.limitReached);
+                      setShowUpgradeDialog(true);
+                      return;
+                    }
+                    handleOptimizeSelected();
+                  }}
+                  disabled={generating || selectedProducts.size === 0}
+                >
+                  {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                  {language === "fr" ? "Optimiser le contenu" : "Optimize content"} ({selectedProducts.size})
+                </Button>
+              )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  // Auto-détecter si les produits ont des variantes
-                  const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
-                  const hasVariants = selectedProductsList.some((p) => {
-                    if (!p.variants || p.variants.length === 0) return false;
-                    // Ignorer produits simples avec variante "Default Title"
-                    if (p.variants.length === 1 && p.variants[0].title === "Default Title") return false;
-                    return true;
-                  });
-                  setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
-                  setShowWhiteBgConfigDialog(true);
-                  loadGalleryImages(Array.from(selectedProducts), true); // Pré-sélection intelligente (non-AI)
-                }}
-                disabled={generatingWhiteBg || selectedProducts.size === 0}
-              >
-                {generatingWhiteBg ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Square className="h-4 w-4 mr-2" />
-                )}
-                {t.contentOptimization.buttons.whiteBg} ({selectedProducts.size})
-              </Button>
+              {workspace === "images" && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!canDoAction("optimizations")) {
+                        toast.error(t.contentOptimization.toasts.limitReached);
+                        setShowUpgradeDialog(true);
+                        return;
+                      }
+                      const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
+                      const hasVariants = selectedProductsList.some((p) => p.variants?.length > 1 || (p.variants?.[0] && p.variants[0].title !== "Default Title"));
+                      setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
+                      setShowWhiteBgConfigDialog(true);
+                      loadGalleryImages(Array.from(selectedProducts), true);
+                    }}
+                    disabled={generatingWhiteBg || selectedProducts.size === 0}
+                  >
+                    <Square className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Fond blanc" : "White background"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      if (!canDoAction("optimizations")) {
+                        toast.error(t.contentOptimization.toasts.limitReached);
+                        setShowUpgradeDialog(true);
+                        return;
+                      }
+                      await loadGalleryImages(Array.from(selectedProducts));
+                      setShowAiConfigDialog(true);
+                    }}
+                    disabled={generatingAiBg || selectedProducts.size === 0}
+                  >
+                    <Palette className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Créer un décor IA" : "Create AI background"}
+                  </Button>
+                  <details className="relative">
+                    <summary className="list-none cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted">
+                      {language === "fr" ? "Plus d’outils" : "More tools"}
+                    </summary>
+                    <div className="absolute right-0 z-30 mt-2 grid min-w-56 gap-1 rounded-xl border bg-background p-2 shadow-xl">
+                      <Button variant="ghost" size="sm" className="justify-start" onClick={() => setShowSmartBgDialog(true)} disabled={selectedProducts.size === 0}>
+                        <Wand2 className="mr-2 h-4 w-4" /> Smart Background
+                      </Button>
+                      <Button variant="ghost" size="sm" className="justify-start" onClick={() => setShowBulkAIImagesDialog(true)} disabled={selectedProducts.size === 0}>
+                        <Layers className="mr-2 h-4 w-4" /> AI Images Bulk
+                      </Button>
+                    </div>
+                  </details>
+                </>
+              )}
 
-              <Button
-                variant="default"
-                size="sm"
-                onClick={async () => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  // Charger les images AVANT d'ouvrir le dialogue
-                  await loadGalleryImages(Array.from(selectedProducts));
-                  setShowAiConfigDialog(true);
-                }}
-                disabled={generatingAiBg || selectedProducts.size === 0}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
-              >
-                {generatingAiBg ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Palette className="h-4 w-4 mr-2" />
-                )}
-                {t.contentOptimization.buttons.aiBg} ({selectedProducts.size})
-              </Button>
+              {workspace === "landing" && (
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (!canDoAction("optimizations")) {
+                        toast.error(t.contentOptimization.toasts.limitReached);
+                        setShowUpgradeDialog(true);
+                        return;
+                      }
+                      setShowBulkLandingConfigDialog(true);
+                    }}
+                    disabled={generatingBulkLanding || selectedProducts.size === 0}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Créer les pages" : "Create pages"} ({selectedProducts.size})
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowSmartBulkLandingConfig(true)} disabled={selectedProducts.size === 0}>
+                    <Zap className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Configuration intelligente" : "Smart configuration"}
+                  </Button>
+                </>
+              )}
 
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  setShowSmartBgDialog(true);
-                }}
-                disabled={selectedProducts.size === 0}
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
-              >
-                <Wand2 className="h-4 w-4 mr-2" />
-                Smart Background ({selectedProducts.size})
-              </Button>
-
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  setShowBulkAIImagesDialog(true);
-                }}
-                disabled={selectedProducts.size === 0}
-                className="bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white border-0"
-              >
-                <Layers className="h-4 w-4 mr-2" />
-                AI Images Bulk ({selectedProducts.size})
-              </Button>
-
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  setShowBulkLandingConfigDialog(true);
-                }}
-                disabled={generatingBulkLanding || selectedProducts.size === 0}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
-              >
-                {generatingBulkLanding ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4 mr-2" />
-                )}
-                Landing Pages ({selectedProducts.size})
-              </Button>
-
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  setShowSmartBulkLandingConfig(true);
-                }}
-                disabled={selectedProducts.size === 0}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white border-0"
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                Smart Bulk Landing ({selectedProducts.size})
-              </Button>
-
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  // Select ALL filtered products then open config
-                  setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
-                  setShowBulkLandingConfigDialog(true);
-                }}
-                disabled={generatingBulkLanding || filteredProducts.length === 0}
-                className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white border-0"
-              >
-                {generatingBulkLanding ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4 mr-2" />
-                )}
-                Bulk Landing ({filteredProducts.length})
-              </Button>
+              {workspace === "bulk" && (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setShowBulkAIImagesDialog(true)} disabled={selectedProducts.size === 0}>
+                    <Images className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Images en lot" : "Bulk images"}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowBulkLandingConfigDialog(true)} disabled={selectedProducts.size === 0}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Pages en lot" : "Bulk pages"}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </Card>
 
-        {/* Info Alert */}
-        <Alert className="bg-gradient-to-r from-primary/5 to-background border-primary/20">
-          <ImageIcon className="h-4 w-4" />
-          <AlertDescription>
-            <strong>{t.contentOptimization.tooltips.whiteBg}:</strong> {t.contentOptimization.alerts.whiteBg.split(': ')[1]}{' '}
-            <strong>{t.contentOptimization.tooltips.aiBg}:</strong> {t.contentOptimization.alerts.aiBg.split(': ')[1]}
-          </AlertDescription>
-        </Alert>
+        {workspace === "images" && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <ImageIcon className="h-4 w-4" />
+            <AlertDescription>
+              <strong>{t.contentOptimization.tooltips.whiteBg}:</strong> {t.contentOptimization.alerts.whiteBg.split(": ")[1]}{" "}
+              <strong>{t.contentOptimization.tooltips.aiBg}:</strong> {t.contentOptimization.alerts.aiBg.split(": ")[1]}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Products Table/Grid */}
         <Card className="overflow-hidden">
