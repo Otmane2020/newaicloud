@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
 };
 
-const APP_URL = Deno.env.get("APP_URL") || "https://newai.sale";
+const APP_URL = (Deno.env.get("APP_URL") || "https://catalogoptimize.com").replace(/\/$/, "");
 const SHOPIFY_API_KEY = Deno.env.get("SHOPIFY_API_KEY")!;
 const SHOPIFY_API_SECRET = Deno.env.get("SHOPIFY_API_SECRET")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -359,8 +359,8 @@ serve(async (req) => {
         });
       }
 
-      // ✅ NON-EMBEDDED APP: Rediriger vers l'app externe
-      const redirectUrl = `${APP_URL}/dashboard?shop=${shop}`;
+      // ✅ NON-EMBEDDED APP: finish onboarding in the CatalogueOptimize AI wizard
+      const redirectUrl = `${APP_URL}/app/setup-wizard?shop=${encodeURIComponent(shop)}&connected=1`;
       return new Response(null, { status: 302, headers: { Location: redirectUrl, ...corsHeaders } });
     }
 
