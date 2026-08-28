@@ -436,6 +436,14 @@ function NewAIRoutes() {
               }
             />
             <Route
+              path="/storefront-assistant"
+              element={
+                <ProtectedLayout>
+                  <Chat />
+                </ProtectedLayout>
+              }
+            />
+            <Route
               path="/chat"
               element={
                 <ProtectedLayout>
