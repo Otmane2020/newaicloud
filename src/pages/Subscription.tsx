@@ -496,9 +496,11 @@ const Subscription = () => {
     return (
       <div className="container mx-auto px-4 py-6 sm:p-6 md:p-8 space-y-6">
         <div className="space-y-2 sm:space-y-3 md:space-y-4">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">{t.seo.subscription.title}</h1>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">{language === "fr" ? "Choisissez votre capacité catalogue" : "Choose your catalog capacity"}</h1>
           <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
-            {t.seo.subscription.subtitle}
+            {language === "fr"
+              ? "Les fonctionnalités restent les mêmes. Le plan détermine le volume de produits, de contenus et d'automatisations inclus."
+              : "The feature set stays the same. Your plan determines the included product, content and automation capacity."}
           </p>
         </div>
         
@@ -518,7 +520,7 @@ const Subscription = () => {
   return (
     <div className="container mx-auto px-4 py-6 sm:p-6 md:p-8 space-y-6 sm:space-y-8 md:space-y-12">
       <div className="space-y-2 sm:space-y-3 md:space-y-4">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">{t.seo.subscription.title}</h1>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">{language === "fr" ? "Choisissez votre capacité catalogue" : "Choose your catalog capacity"}</h1>
         <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
           {t.seo.subscription.subtitle}
         </p>
