@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
@@ -11,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
-import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity, Loader2, ImageOff, Wand2, Sparkles, Home } from "lucide-react";
+import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity, Loader2, ImageOff, Wand2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -701,38 +702,35 @@ export default function Products() {
     <div className="space-y-6 pb-10">
       <SimpleSyncProgress open={isSyncing} currentType={currentSyncType} />
 
-      <section className="workspace-hero overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
-        <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border border-white/10 bg-white/10 text-violet-100 hover:bg-white/10">CATALOG · PRODUCTS</Badge>
-              <Badge className="border border-white/10 bg-white/5 text-white hover:bg-white/5">
-                {totalCount} / {limits?.limits?.max_products && limits.limits.max_products >= 999999 ? '∞' : (limits?.limits?.max_products || '…')}
-              </Badge>
-            </div>
-            <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">{t.products.title}</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Review, organize and improve every Shopify product from one catalog workspace.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {user?.email === 'oben.rockman@gmail.com' && (
-              <Button size="sm" onClick={() => navigate("/products/homepage")} variant="outline" className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
-                <Home className="mr-2 h-4 w-4" /> Homepage
-              </Button>
-            )}
-            <Button size="sm" onClick={async () => {
-              if (!selectedStore) { toast.error("Aucune boutique sélectionnée"); return; }
-              await syncShopifyStore(selectedStore); await loadProducts(); await refreshLimits();
-            }} variant="outline" disabled={isSyncing || !selectedStore} className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
-              <RefreshCw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} /> Synchroniser
+      <WorkspacePageHeader
+        section="Catalog"
+        page="Products"
+        count={totalCount}
+        title={t.products.title}
+        description="Review, organize and improve every Shopify product from one catalog workspace."
+        actions={
+          <>
+            <Button
+              size="sm"
+              onClick={async () => {
+                if (!selectedStore) { toast.error("Aucune boutique sélectionnée"); return; }
+                await syncShopifyStore(selectedStore);
+                await loadProducts();
+                await refreshLimits();
+              }}
+              variant="outline"
+              disabled={isSyncing || !selectedStore}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} /> Synchroniser
             </Button>
             {totalCount === 0 && (
-              <Button size="sm" onClick={() => navigate("/app/setup-wizard")} className="bg-violet-500 hover:bg-violet-400">
+              <Button size="sm" onClick={() => navigate("/app/setup-wizard")}>
                 <Plus className="mr-2 h-4 w-4" /> {t.products.importProducts}
               </Button>
             )}
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center">

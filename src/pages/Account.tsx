@@ -10,6 +10,7 @@ import { UsageWidget } from '@/components/dashboard/UsageWidget';
 import { ReferralSystem } from '@/components/dashboard/ReferralSystem';
 
 import { Badge } from '@/components/ui/badge';
+import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Activity, CreditCard, ReceiptText, Settings, Sparkles, Store, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,23 +75,18 @@ export default function Account() {
 
   return (
     <div className="space-y-6 pb-10">
-      <section className="workspace-hero overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
-        <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-          <div>
-            <Badge className="border border-white/10 bg-white/10 text-violet-100 hover:bg-white/10">
-              <Settings className="mr-1.5 h-3.5 w-3.5" /> SETTINGS
-            </Badge>
-            <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">{t.account.title}</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Manage your identity, connected stores, plan, billing and workspace usage.</p>
-          </div>
-          {planName && (
-            <Badge className="w-fit border border-white/10 bg-white/10 px-3 py-1.5 text-white hover:bg-white/10">
-              <Sparkles className="mr-1.5 h-3.5 w-3.5 text-violet-300" />
-              {isTrialing ? t.trial.title : planName}
-            </Badge>
-          )}
-        </div>
-      </section>
+      <WorkspacePageHeader
+        section="Settings"
+        page={accountTabs.find((tab) => tab.value === activeTab)?.label || t.account.title}
+        title={t.account.title}
+        description="Manage your profile, connected stores, subscription and workspace usage."
+        actions={planName ? (
+          <Badge variant="secondary" className="px-3 py-2 text-violet-700">
+            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+            {isTrialing ? t.trial.title : planName}
+          </Badge>
+        ) : undefined}
+      />
 
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })}>
         {hasFullAccess && (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { GoogleMerchant } from "@/components/seo/GoogleMerchant";
 import { GoogleMerchantSettings } from "@/components/seo/GoogleMerchantSettings";
@@ -73,20 +74,17 @@ export default function Merchant() {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-5">
-      <section className="workspace-hero overflow-hidden bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 text-white">
-        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-violet-100">
-              <ShoppingCart className="h-3.5 w-3.5" /> Google channel
-            </div>
-            <h1>{t.merchant.title}</h1>
-            <p className="max-w-2xl">{t.merchant.description}</p>
-          </div>
-          <a href="https://business.google.com/fr/merchant-center/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-medium text-white hover:bg-white/15">
+      <WorkspacePageHeader
+        section="Channels"
+        page={activeTabData?.label || "Merchant Center"}
+        title={t.merchant.title}
+        description={activeTabData?.description || t.merchant.description}
+        actions={
+          <a href="https://business.google.com/fr/merchant-center/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 items-center rounded-lg border px-3 text-sm font-medium hover:bg-muted">
             {t.merchant.openMerchantCenter}<ArrowRight className="ml-2 h-4 w-4" />
           </a>
-        </div>
-      </section>
+        }
+      />
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">

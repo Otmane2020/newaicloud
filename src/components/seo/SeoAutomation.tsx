@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,8 @@ import {
   AlertCircle,
   Calendar,
   TrendingUp,
-  Target
+  Target,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -128,56 +130,17 @@ export function SeoAutomation() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner */}
-      <Card className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-950 dark:via-blue-950 dark:to-indigo-950 border-2 border-purple-200 p-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-2">
-              <Settings className="w-6 h-6 text-purple-600" />
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Automatisation SEO
-              </h2>
-            </div>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              Configurez l'optimisation et la synchronisation automatique de vos produits
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <div className="flex items-center gap-2 text-sm">
-                <Zap className="w-4 h-4 text-yellow-600" />
-                <span className="font-medium">Optimisation automatique</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-blue-600" />
-                <span className="font-medium">Planification flexible</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="font-medium">Gain de temps</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col gap-3 items-center">
-            <Button
-              size="lg"
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 gap-2 shadow-lg"
-            >
-              {saving ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Sauvegarde...
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  Sauvegarder
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </Card>
+      <WorkspacePageHeader
+        section="Automation"
+        page="Optimization Rules"
+        title="Automation Rules"
+        description="Choose what may run automatically. Disabled rules never modify your catalog."
+        actions={
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : <><Save className="mr-2 h-4 w-4" />Save changes</>}
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* SEO Title/Description Automation */}

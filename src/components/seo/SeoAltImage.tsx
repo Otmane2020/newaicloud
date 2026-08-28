@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useStore } from '@/contexts/StoreContext';
@@ -870,36 +871,23 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
 
   return (
     <div className="space-y-6">
-      <Card className="border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-violet-50 p-2.5 text-violet-700">
-              <ImageIcon className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-slate-950">{t.seo.altImage.banner.title}</h2>
-              <p className="mt-1 max-w-2xl text-sm text-slate-600">{t.seo.altImage.banner.description}</p>
-            </div>
+      <WorkspacePageHeader
+        section="Media"
+        page="ALT Text"
+        count={imagesFilteredByType.length}
+        title={t.seo.altImage.banner.title}
+        description="Generate accessible, descriptive ALT text only for images that still need it."
+        actions={showProgressDialog ? (
+          <div className="w-64 space-y-2">
+            <div className="flex justify-between text-xs"><span>{t.seo.altImage.progress.optimizing}</span><span>{progress.current}/{progress.total}</span></div>
+            <Progress value={progress.total > 0 ? (progress.current / progress.total) * 100 : 0} className="h-2" />
           </div>
-          {showProgressDialog ? (
-            <div className="w-full max-w-sm space-y-2">
-              <div className="flex justify-between text-sm"><span>{t.seo.altImage.progress.optimizing}</span><span>{progress.current}/{progress.total}</span></div>
-              <Progress value={progress.total > 0 ? (progress.current / progress.total) * 100 : 0} className="h-2" />
-            </div>
-          ) : (
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t.seo.altImage.stats.seoScore}</p>
-                <p className="text-2xl font-semibold text-slate-950">{altSeoScore}/100</p>
-              </div>
-              <Button onClick={handleOptimizeAllImages} disabled={isTypeRunning("alt") || limitsLoading || imagesNotOptimized === 0}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Optimize missing ({imagesNotOptimized})
-              </Button>
-            </div>
-          )}
-        </div>
-      </Card>
+        ) : (
+          <Button onClick={handleOptimizeAllImages} disabled={isTypeRunning("alt") || limitsLoading || imagesNotOptimized === 0}>
+            <Sparkles className="mr-2 h-4 w-4" /> Optimize missing ({imagesNotOptimized})
+          </Button>
+        )}
+      />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <button type="button" onClick={() => setActiveTab("needs-alt")} className="rounded-xl border bg-white p-4 text-left transition hover:border-violet-300 hover:shadow-sm">

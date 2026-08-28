@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -647,40 +648,25 @@ export function TagOptimization() {
 
   return (
     <div className="space-y-6">
-      {/* Compact workspace summary */}
-      <Card className="border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-violet-50 p-2.5 text-violet-700">
-              <Tags className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-slate-950">Categories & Tags</h1>
-              <p className="mt-1 max-w-2xl text-sm text-slate-600">
-                Structure product discovery with consistent Shopify tags. Generate missing tags first; re-optimization remains optional.
-              </p>
-            </div>
-          </div>
-          {isTypeRunning("tags") ? (
-            <ProgressBanner
-              current={optimizationState.current}
-              total={optimizationState.total}
-              label={optimizationState.operation === "syncing" ? "Synchronisation des tags" : "Optimisation des tags"}
-            />
-          ) : (
-            <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Tag health</p>
-                <p className="text-2xl font-semibold text-slate-950">{tagSeoScore}/100</p>
-              </div>
-              <Button onClick={handleGenerateAllTags} disabled={productsNotOptimized === 0 || products.length === 0}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate missing ({productsNotOptimized})
-              </Button>
-            </div>
-          )}
-        </div>
-      </Card>
+      <WorkspacePageHeader
+        section="Content"
+        page="Categories & Tags"
+        count={products.length}
+        title="Categories & Tags"
+        description="Generate consistent Shopify tags for products that still need them."
+        actions={isTypeRunning("tags") ? (
+          <ProgressBanner
+            current={optimizationState.current}
+            total={optimizationState.total}
+            label={optimizationState.operation === "syncing" ? "Synchronisation" : "Optimisation"}
+          />
+        ) : (
+          <Button onClick={handleGenerateAllTags} disabled={productsNotOptimized === 0 || products.length === 0}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Generate missing ({productsNotOptimized})
+          </Button>
+        )}
+      />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <button type="button" onClick={handleToOptimizeClick} className="rounded-xl border bg-white p-4 text-left transition hover:border-violet-300 hover:shadow-sm">

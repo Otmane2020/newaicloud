@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -1958,17 +1959,22 @@ export default function ProductTitleDescription() {
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="mx-auto w-full max-w-[1600px] space-y-6">
-        {/* Hero Banner */}
-        <Card className="workspace-hero overflow-hidden rounded-3xl border-white/10 bg-gradient-to-br from-slate-950 via-violet-950 to-violet-700 p-6 text-white shadow-2xl shadow-violet-950/15 sm:p-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-2">
-              <h1 className="flex items-center gap-2 text-3xl font-bold text-white sm:text-4xl">
-                <Sparkles className="h-7 w-7 text-violet-200 sm:h-8 sm:w-8" />
-                {t.contentOptimization.hero.title}
-              </h1>
-              <p className="max-w-2xl text-sm text-violet-100 sm:text-base">{t.contentOptimization.hero.description}</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
+        <WorkspacePageHeader
+          section="Content"
+          page={workspace === "content" ? "Titles & Descriptions" : workspace === "landing" ? "Landing Pages" : workspace === "images" ? "AI Images" : "Bulk Actions"}
+          count={products.length}
+          title={workspace === "content" ? "Titles & Descriptions" : workspace === "landing" ? "Product Landing Pages" : workspace === "images" ? "AI Image Studio" : "Bulk Optimization"}
+          description={
+            workspace === "content"
+              ? "Improve titles and descriptions for selected Shopify products."
+              : workspace === "landing"
+                ? "Create richer product pages from your existing catalog data."
+                : workspace === "images"
+                  ? "Create or improve product visuals without changing the product itself."
+                  : "Apply one controlled operation to several selected products."
+          }
+          actions={
+            <>
               <Button
                 onClick={() => {
                   if (!canDoAction("optimizations")) {
@@ -1989,40 +1995,26 @@ export default function ProductTitleDescription() {
                   handleOptimizeAll();
                 }}
                 disabled={generating || filteredProducts.length === 0}
-                className="bg-white text-violet-950 hover:bg-violet-50"
               >
                 {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : workspace === "images" ? <Images className="mr-2 h-4 w-4" /> : workspace === "landing" ? <FileText className="mr-2 h-4 w-4" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                {workspace === "images" ? "Generate images" : workspace === "landing" ? "Generate landing pages" : t.contentOptimization.buttons.optimizeAll}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const productsToSync = filteredProducts.filter((product) => product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title));
-                  if (productsToSync.length === 0) {
-                    toast.error(t.contentOptimization.toasts.noProductToSync);
-                    return;
-                  }
-                  setSyncProducts(productsToSync);
-                  setShowSyncProgressDialog(true);
-                }}
-                disabled={syncingToShopify}
-                className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-              >
-                {syncingToShopify ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                {t.contentOptimization.buttons.syncAll}
+                {workspace === "images" ? "Generate images" : workspace === "landing" ? "Generate pages" : t.contentOptimization.buttons.optimizeAll}
               </Button>
               <details className="relative">
-                <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium text-white hover:bg-white/10">
-                  <Download className="mr-2 h-4 w-4" /> Export
-                </summary>
-                <div className="absolute right-0 z-30 mt-2 grid w-48 gap-1 rounded-xl border bg-white p-2 shadow-xl">
-                  <Button variant="ghost" className="justify-start text-slate-700" onClick={() => exportProductsToCSV(filteredProducts, language)}><Download className="mr-2 h-4 w-4" /> CSV</Button>
-                  <Button variant="ghost" className="justify-start text-slate-700" onClick={() => exportProductsToExcel(filteredProducts, language)}><FileSpreadsheet className="mr-2 h-4 w-4" /> Excel</Button>
+                <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-lg border px-3 text-sm font-medium hover:bg-muted">More</summary>
+                <div className="absolute right-0 z-30 mt-2 grid w-56 gap-1 rounded-xl border bg-white p-2 shadow-xl">
+                  <Button variant="ghost" className="justify-start" onClick={() => {
+                    const productsToSync = filteredProducts.filter((product) => product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title));
+                    if (productsToSync.length === 0) { toast.error(t.contentOptimization.toasts.noProductToSync); return; }
+                    setSyncProducts(productsToSync);
+                    setShowSyncProgressDialog(true);
+                  }} disabled={syncingToShopify}><Upload className="mr-2 h-4 w-4" />{t.contentOptimization.buttons.syncAll}</Button>
+                  <Button variant="ghost" className="justify-start" onClick={() => exportProductsToCSV(filteredProducts, language)}><Download className="mr-2 h-4 w-4" />Export CSV</Button>
+                  <Button variant="ghost" className="justify-start" onClick={() => exportProductsToExcel(filteredProducts, language)}><FileSpreadsheet className="mr-2 h-4 w-4" />Export Excel</Button>
                 </div>
               </details>
-            </div>
-          </div>
-        </Card>
+            </>
+          }
+        />
 
         <nav className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm lg:grid-cols-4" aria-label="Product workspace">
           {[
