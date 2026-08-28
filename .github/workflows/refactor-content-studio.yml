@@ -1,0 +1,66 @@
+name: Wire content studio routes
+
+on:
+  push:
+    branches:
+      - refactor/content-studio
+
+permissions:
+  contents: write
+
+jobs:
+  patch-routes:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/content-studio
+          fetch-depth: 0
+      - name: Patch App routes
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          app = Path('src/App.tsx')
+          text = app.read_text()
+
+          import_marker = 'import ProductTitleDescription from "./pages/ProductTitleDescription";'
+          imports = import_marker + '\nimport ContentWorkspace from "./pages/ContentWorkspace";\nimport ImageStudio from "./pages/ImageStudio";'
+          if 'import ContentWorkspace from "./pages/ContentWorkspace";' not in text:
+              text = text.replace(import_marker, imports)
+
+          route_marker = '''            <Route
+              path="/products/title-description"'''
+          routes = '''            <Route
+              path="/content"
+              element={
+                <ProtectedLayout>
+                  <ContentWorkspace />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/studio"
+              element={
+                <ProtectedLayout>
+                  <ImageStudio />
+                </ProtectedLayout>
+              }
+            />
+'''
+          if 'path="/content"' not in text:
+              text = text.replace(route_marker, routes + route_marker)
+
+          app.write_text(text)
+          PY
+      - name: Remove temporary workflow and commit
+        run: |
+          rm .github/workflows/refactor-content-studio.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Wire content workspace and studio routes"
+            git push origin HEAD:refactor/content-studio
+          fi
