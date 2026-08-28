@@ -169,7 +169,7 @@ export function AIAssistant() {
         body: {
           name: contactName,
           email: contactEmail,
-          subject: `[NewAI Support Chat] Message de ${contactName}`,
+          subject: `[CatalogueOptimize AI Support Chat] Message de ${contactName}`,
           message: contactMessage,
         }
       });
