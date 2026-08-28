@@ -33,16 +33,16 @@ export function ShopifyTokenGuide() {
         ["Créer une version", "Ouvrez Versions, indiquez l’URL de l’application, choisissez la version d’API la plus récente et ajoutez les permissions ci-dessous."],
         ["Publier la configuration", "Cliquez sur Release. Les changements de permissions ne sont actifs qu’après publication de la version."],
         ["Installer sur Decora Home", "Dans Home → Install app, sélectionnez votre boutique Decora Home puis confirmez l’installation."],
-        ["Récupérer les identifiants", "Dans Settings, copiez le Client ID et le Client secret. NewAI les utilisera côté serveur pour obtenir automatiquement un token valable 24 heures."],
-        ["Connecter dans NewAI", "Saisissez le domaine myshopify.com, le Client ID et le Client secret. Ne partagez jamais le Client secret par e-mail ou dans une conversation."],
+        ["Récupérer les identifiants", "Dans Settings, copiez le Client ID et le Client secret. CatalogueOptimize AI les utilisera côté serveur pour obtenir automatiquement un token valable 24 heures."],
+        ["Connecter dans CatalogueOptimize AI", "Saisissez le domaine myshopify.com, le Client ID et le Client secret. Ne partagez jamais le Client secret par e-mail ou dans une conversation."],
       ]
     : [
         ["Create the app", "In the Dev Dashboard, click Create app → Start from Dev Dashboard. Name it “Decora Home API”."],
         ["Create a version", "Open Versions, set the app URL, select the latest API version and add the scopes listed below."],
         ["Release the configuration", "Click Release. Scope changes only become active after the version is released."],
         ["Install on Decora Home", "From Home → Install app, select your Decora Home store and confirm installation."],
-        ["Get the credentials", "In Settings, copy the Client ID and Client secret. NewAI uses them server-side to obtain a 24-hour access token automatically."],
-        ["Connect in NewAI", "Enter the myshopify.com domain, Client ID and Client secret. Never share the Client secret by email or chat."],
+        ["Get the credentials", "In Settings, copy the Client ID and Client secret. CatalogueOptimize AI uses them server-side to obtain a 24-hour access token automatically."],
+        ["Connect in CatalogueOptimize AI", "Enter the myshopify.com domain, Client ID and Client secret. Never share the Client secret by email or chat."],
       ];
 
   return (
@@ -97,7 +97,7 @@ export function ShopifyTokenGuide() {
         <Accordion type="single" collapsible>
           <AccordionItem value="scopes" className="rounded-lg border px-3">
             <AccordionTrigger className="text-xs hover:no-underline">
-              {fr ? "Permissions recommandées pour NewAI" : "Recommended NewAI scopes"}
+              {fr ? "Permissions recommandées pour CatalogueOptimize AI" : "Recommended CatalogueOptimize AI scopes"}
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-3 pt-2">
