@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { routeVision } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,194 +23,134 @@ function cleanJSON(text: string): string {
     .trim();
 }
 
-// ---------------------------------------------------------
-//  🔥 VISION VIA LOVABLE AI (Gemini 2.5 Pro)
-// ---------------------------------------------------------
-async function callLovableVision(prompt: string, imageData: string, apiKey: string) {
-  const url = "https://ai.gateway.lovable.dev/v1/chat/completions";
+async function toDataUrl(imageUrl: string): Promise<string> {
+  if (imageUrl.startsWith("data:image")) return imageUrl;
 
-  const body = {
-    model: "google/gemini-2.5-pro",
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          {
-            type: "image_url",
-            image_url: { url: `data:image/jpeg;base64,${imageData}` },
-          },
-        ],
-      },
-    ],
-    modalities: ["image", "text"],
-    temperature: 0.1,
-  };
+  const response = await fetch(imageUrl);
+  if (!response.ok) throw new Error(`Cannot fetch image: ${response.status}`);
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
+  const mimeType = response.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  let binary = "";
+  const chunkSize = 0x8000;
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error("Lovable Vision Error:", res.status, errorText);
-
-    let isRegionRestricted = false;
-    try {
-      const parsedError = JSON.parse(errorText);
-      const raw = parsedError?.error?.metadata?.raw;
-      if (typeof raw === "string" && raw.includes("Image generation is not available in your country")) {
-        isRegionRestricted = true;
-      }
-    } catch {
-      // Ignore JSON parsing issues and fall back to generic error handling
-    }
-
-    if (isRegionRestricted) {
-      throw new Error("VISION_REGION_RESTRICTED");
-    }
-
-    throw new Error(`VISION_FAILED_${res.status}`);
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
   }
 
-  const json = await res.json();
-  return json?.choices?.[0]?.message?.content || null;
+  return `data:${mimeType};base64,${btoa(binary)}`;
 }
 
-// ---------------------------------------------------------
-//  MAIN FUNCTION
-// ---------------------------------------------------------
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Safe HealthCheck handler
   const body = await req.json().catch(() => ({}));
   if (body?.healthCheck === true) {
-    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
-    const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
-    const { imageUrl, productContext } = body;
+    const { imageUrl, productContext } = body as VisionRequest;
     if (!imageUrl) throw new Error("imageUrl is required");
 
-    // ----------------------------------------------
-    // Convert to Base64
-    // ----------------------------------------------
-    let imageData = "";
-
-    if (imageUrl.startsWith("data:image")) {
-      imageData = imageUrl.split(",")[1];
-    } else {
-      const r = await fetch(imageUrl);
-      if (!r.ok) throw new Error("Cannot fetch image");
-
-      const buf = await r.arrayBuffer();
-      const bytes = new Uint8Array(buf);
-
-      let binary = "";
-      const chunk = 0x8000;
-      for (let i = 0; i < bytes.length; i += chunk) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-      }
-      imageData = btoa(binary);
-    }
-
-    const ctx = productContext
+    const dataUrl = await toDataUrl(imageUrl);
+    const context = productContext
       ? `Contexte produit: ${productContext.title || ""} ${productContext.category || ""} ${productContext.type || ""}`
       : "";
 
-    // ----------------------------------------------
-    // Prompt JSON strict
-    // ----------------------------------------------
     const prompt = `
-Analyse cette image d'un produit ecommerce et retourne STRICTEMENT un JSON.
+Analyse cette image d'un produit e-commerce. Observe réellement l'image : n'invente pas un attribut invisible.
+${context}
 
-${ctx}
-
-JSON attendu :
-
+Retourne STRICTEMENT un JSON valide sous cette forme :
 {
   "visualAttributes": {
-    "primaryColor": "string",
+    "primaryColor": "string | null",
     "secondaryColors": ["string"],
     "materials": ["string"],
     "style": ["string"],
-    "finish": "string",
-    "texture": "string",
+    "finish": "string | null",
+    "texture": "string | null",
     "roomType": ["string"],
     "features": ["string"],
     "technicalDimensions": {
-      "length": number | null,
-      "length_unit": "string" | null,
-      "width": number | null,
-      "width_unit": "string" | null,
-      "height": number | null,
-      "height_unit": "string" | null,
-      "diameter": number | null,
-      "diameter_unit": "string" | null,
-      "depth": number | null,
-      "depth_unit": "string" | null,
-      "weight": number | null,
-      "weight_unit": "string" | null
+      "length": "number | null",
+      "lengthUnit": "string | null",
+      "width": "number | null",
+      "widthUnit": "string | null",
+      "height": "number | null",
+      "heightUnit": "string | null",
+      "diameter": "number | null",
+      "diameterUnit": "string | null",
+      "depth": "number | null",
+      "depthUnit": "string | null",
+      "weight": "number | null",
+      "weightUnit": "string | null",
+      "seatHeight": "number | null",
+      "seatHeightUnit": "string | null"
     }
   },
   "visualContext": {
-    "hasTechnicalSchema": boolean,
-    "presentationQuality": number,
-    "craftmanshipLevel": "standard" | "premium" | "luxury",
-    "lightingType": "string",
-    "backgroundStyle": "string"
+    "hasTechnicalSchema": false,
+    "dimensionSource": "visible | estimated | none",
+    "presentationQuality": 0.0,
+    "craftmanshipLevel": "standard | premium | luxury",
+    "lightingType": "string | null",
+    "backgroundStyle": "white | neutral | contextualized | lifestyle | other",
+    "whiteBackground": false,
+    "shoppingImageReady": false
   },
-  "confidence": number
+  "confidence": 0.0
 }
 
-Retourne uniquement du JSON valide.
+Règles :
+- whiteBackground=true seulement si le fond principal est réellement blanc ou quasi blanc et propre autour du produit.
+- shoppingImageReady=true seulement si l'image principale est exploitable pour un flux Shopping (produit visible, pas de montage trompeur, qualité suffisante).
+- hasTechnicalSchema=true uniquement si des cotes/dimensions sont lisibles sur l'image.
+- Les dimensions visibles ont dimensionSource="visible". N'estime pas de dimensions à partir de la photo seule.
+- confidence est compris entre 0 et 1.
+- Retourne uniquement le JSON, sans Markdown.
 `;
 
-    // ----------------------------------------------
-    // CALL LOVABLE VISION (Gemini 2.5 Pro)
-    // ----------------------------------------------
-    const raw = await callLovableVision(prompt, imageData, LOVABLE_KEY);
-    if (!raw) throw new Error("No analysis returned from Lovable Vision");
+    const routedVision = await routeVision([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: { url: dataUrl } },
+        ],
+      },
+    ], 1200);
 
-    let parsed;
+    console.log(`[analyze-image-with-vision] provider=${routedVision.provider} model=${routedVision.model}`);
+
+    let parsed: any;
     try {
-      parsed = JSON.parse(cleanJSON(raw));
-    } catch (err) {
-      console.error("❌ Invalid JSON from Lovable Vision:", raw);
-      throw new Error("Lovable Vision returned invalid JSON");
+      parsed = JSON.parse(cleanJSON(routedVision.content));
+    } catch {
+      console.error("❌ Invalid JSON from vision router:", routedVision.content.substring(0, 500));
+      throw new Error("Vision provider returned invalid JSON");
     }
 
-    return new Response(JSON.stringify({ success: true, ...parsed }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        ...parsed,
+        ai_provider: routedVision.provider,
+        ai_model: routedVision.model,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   } catch (err: any) {
     const message = err?.message || "Unknown error";
-
-    // Gracefully handle known region restriction errors without breaking the UI
-    if (message === "VISION_REGION_RESTRICTED") {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "VISION_REGION_RESTRICTED",
-          message: "Image analysis is not available in your region.",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
+    console.error("❌ analyze-image-with-vision failed:", message);
 
     return new Response(JSON.stringify({ success: false, error: message }), {
       status: 500,
