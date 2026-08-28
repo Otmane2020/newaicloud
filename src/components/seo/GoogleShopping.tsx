@@ -27,7 +27,6 @@ import {
   ShoppingBag, 
   TrendingUp, 
   Package, 
-  AlertCircle,
   Search,
   Loader2,
   Upload,
@@ -47,11 +46,9 @@ import { WhiteBackgroundPreviewDialog } from './WhiteBackgroundPreviewDialog';
 import { ShopifyOptimizationGuide } from './ShopifyOptimizationGuide';
 import { OptimizeAllDialog } from './OptimizeAllDialog';
 import { GoogleCategoryImport } from './GoogleCategoryImport';
-import { Progress } from '@/components/ui/progress';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '@/lib/language';
 import { usePaginatedSeo } from '@/hooks/usePaginatedSeo';
-import { useGoogleTaxonomyImport } from '@/hooks/useGoogleTaxonomyImport';
 import { useUsageLimits } from '@/hooks/useUsageLimits';
 import {
   Pagination,
@@ -87,7 +84,6 @@ export function GoogleShopping() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { selectedStore } = useStore();
-  const { isImporting, importTaxonomy } = useGoogleTaxonomyImport();
   const { limits } = useUsageLimits();
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
