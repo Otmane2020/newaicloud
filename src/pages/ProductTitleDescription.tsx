@@ -2170,226 +2170,157 @@ export default function ProductTitleDescription() {
           )}
         </div>
 
-        {/* Actions Bar */}
-        <Card className="p-4">
-          <div className="flex flex-wrap gap-2 justify-end">
-              <div className="flex items-center border rounded-md overflow-hidden">
-                <Button
-                  variant={viewMode === "table" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("table")}
-                  className="rounded-none h-8 px-3"
-                >
-                  <List className="w-4 h-4" />
+        {/* Contextual actions: each workspace only exposes relevant workflows. */}
+        <Card className="p-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold">
+                {workspace === "content" && (language === "fr" ? "Optimiser les fiches" : "Optimize product content")}
+                {workspace === "images" && (language === "fr" ? "Créer et améliorer les visuels" : "Create and improve visuals")}
+                {workspace === "landing" && (language === "fr" ? "Créer des pages produit enrichies" : "Create enriched product pages")}
+                {workspace === "bulk" && (language === "fr" ? "Traiter plusieurs produits" : "Process multiple products")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {selectedProducts.size > 0
+                  ? `${selectedProducts.size} ${language === "fr" ? "produit(s) sélectionné(s)" : "product(s) selected"}`
+                  : language === "fr" ? "Sélectionnez des produits pour activer les actions." : "Select products to enable actions."}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center overflow-hidden rounded-lg border bg-background" aria-label={language === "fr" ? "Mode d’affichage" : "Display mode"}>
+                <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="sm" onClick={() => setViewMode("table")} className="rounded-none px-3">
+                  <List className="h-4 w-4" />
+                  <span className="sr-only">{language === "fr" ? "Tableau" : "Table"}</span>
                 </Button>
-                <Button
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => {
-                    if (viewMode === "grid") {
-                      // Cycle through 2, 3, 4 columns
-                      setGridColumns((prev) => {
-                        if (prev === 2) return 3;
-                        if (prev === 3) return 4;
-                        return 2;
-                      });
-                    } else {
-                      setViewMode("grid");
-                    }
-                  }}
-                  className="rounded-none h-8 px-3 relative"
-                >
-                  <Grid3x3 className="w-4 h-4" />
-                  {viewMode === "grid" && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-bold">
-                      {gridColumns}
-                    </span>
-                  )}
+                <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="sm" onClick={() => setViewMode("grid")} className="rounded-none px-3">
+                  <Grid3x3 className="h-4 w-4" />
+                  <span className="sr-only">{language === "fr" ? "Grille" : "Grid"}</span>
                 </Button>
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  handleOptimizeSelected();
-                }}
-                disabled={generating || selectedProducts.size === 0}
-              >
-                <Wand2 className="h-4 w-4 mr-2" />
-                {t.contentOptimization.buttons.optimize} ({selectedProducts.size})
-              </Button>
+              {(workspace === "content" || workspace === "bulk") && (
+                <Button
+                  variant={workspace === "content" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    if (!canDoAction("optimizations")) {
+                      toast.error(t.contentOptimization.toasts.limitReached);
+                      setShowUpgradeDialog(true);
+                      return;
+                    }
+                    handleOptimizeSelected();
+                  }}
+                  disabled={generating || selectedProducts.size === 0}
+                >
+                  {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                  {language === "fr" ? "Optimiser le contenu" : "Optimize content"} ({selectedProducts.size})
+                </Button>
+              )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  // Auto-détecter si les produits ont des variantes
-                  const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
-                  const hasVariants = selectedProductsList.some((p) => {
-                    if (!p.variants || p.variants.length === 0) return false;
-                    // Ignorer produits simples avec variante "Default Title"
-                    if (p.variants.length === 1 && p.variants[0].title === "Default Title") return false;
-                    return true;
-                  });
-                  setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
-                  setShowWhiteBgConfigDialog(true);
-                  loadGalleryImages(Array.from(selectedProducts), true); // Pré-sélection intelligente (non-AI)
-                }}
-                disabled={generatingWhiteBg || selectedProducts.size === 0}
-              >
-                {generatingWhiteBg ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Square className="h-4 w-4 mr-2" />
-                )}
-                {t.contentOptimization.buttons.whiteBg} ({selectedProducts.size})
-              </Button>
+              {workspace === "images" && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!canDoAction("optimizations")) {
+                        toast.error(t.contentOptimization.toasts.limitReached);
+                        setShowUpgradeDialog(true);
+                        return;
+                      }
+                      const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
+                      const hasVariants = selectedProductsList.some((p) => p.variants?.length > 1 || (p.variants?.[0] && p.variants[0].title !== "Default Title"));
+                      setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
+                      setShowWhiteBgConfigDialog(true);
+                      loadGalleryImages(Array.from(selectedProducts), true);
+                    }}
+                    disabled={generatingWhiteBg || selectedProducts.size === 0}
+                  >
+                    <Square className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Fond blanc" : "White background"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      if (!canDoAction("optimizations")) {
+                        toast.error(t.contentOptimization.toasts.limitReached);
+                        setShowUpgradeDialog(true);
+                        return;
+                      }
+                      await loadGalleryImages(Array.from(selectedProducts));
+                      setShowAiConfigDialog(true);
+                    }}
+                    disabled={generatingAiBg || selectedProducts.size === 0}
+                  >
+                    <Palette className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Créer un décor IA" : "Create AI background"}
+                  </Button>
+                  <details className="relative">
+                    <summary className="list-none cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted">
+                      {language === "fr" ? "Plus d’outils" : "More tools"}
+                    </summary>
+                    <div className="absolute right-0 z-30 mt-2 grid min-w-56 gap-1 rounded-xl border bg-background p-2 shadow-xl">
+                      <Button variant="ghost" size="sm" className="justify-start" onClick={() => setShowSmartBgDialog(true)} disabled={selectedProducts.size === 0}>
+                        <Wand2 className="mr-2 h-4 w-4" /> Smart Background
+                      </Button>
+                      <Button variant="ghost" size="sm" className="justify-start" onClick={() => setShowBulkAIImagesDialog(true)} disabled={selectedProducts.size === 0}>
+                        <Layers className="mr-2 h-4 w-4" /> AI Images Bulk
+                      </Button>
+                    </div>
+                  </details>
+                </>
+              )}
 
-              <Button
-                variant="default"
-                size="sm"
-                onClick={async () => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  // Charger les images AVANT d'ouvrir le dialogue
-                  await loadGalleryImages(Array.from(selectedProducts));
-                  setShowAiConfigDialog(true);
-                }}
-                disabled={generatingAiBg || selectedProducts.size === 0}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0"
-              >
-                {generatingAiBg ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Palette className="h-4 w-4 mr-2" />
-                )}
-                {t.contentOptimization.buttons.aiBg} ({selectedProducts.size})
-              </Button>
+              {workspace === "landing" && (
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (!canDoAction("optimizations")) {
+                        toast.error(t.contentOptimization.toasts.limitReached);
+                        setShowUpgradeDialog(true);
+                        return;
+                      }
+                      setShowBulkLandingConfigDialog(true);
+                    }}
+                    disabled={generatingBulkLanding || selectedProducts.size === 0}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Créer les pages" : "Create pages"} ({selectedProducts.size})
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowSmartBulkLandingConfig(true)} disabled={selectedProducts.size === 0}>
+                    <Zap className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Configuration intelligente" : "Smart configuration"}
+                  </Button>
+                </>
+              )}
 
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  setShowSmartBgDialog(true);
-                }}
-                disabled={selectedProducts.size === 0}
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0"
-              >
-                <Wand2 className="h-4 w-4 mr-2" />
-                Smart Background ({selectedProducts.size})
-              </Button>
-
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  setShowBulkAIImagesDialog(true);
-                }}
-                disabled={selectedProducts.size === 0}
-                className="bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white border-0"
-              >
-                <Layers className="h-4 w-4 mr-2" />
-                AI Images Bulk ({selectedProducts.size})
-              </Button>
-
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  setShowBulkLandingConfigDialog(true);
-                }}
-                disabled={generatingBulkLanding || selectedProducts.size === 0}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
-              >
-                {generatingBulkLanding ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4 mr-2" />
-                )}
-                Landing Pages ({selectedProducts.size})
-              </Button>
-
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  setShowSmartBulkLandingConfig(true);
-                }}
-                disabled={selectedProducts.size === 0}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white border-0"
-              >
-                <Zap className="h-4 w-4 mr-2" />
-                Smart Bulk Landing ({selectedProducts.size})
-              </Button>
-
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => {
-                  if (!canDoAction("optimizations")) {
-                    toast.error(t.contentOptimization.toasts.limitReached);
-                    setShowUpgradeDialog(true);
-                    return;
-                  }
-                  // Select ALL filtered products then open config
-                  setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
-                  setShowBulkLandingConfigDialog(true);
-                }}
-                disabled={generatingBulkLanding || filteredProducts.length === 0}
-                className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white border-0"
-              >
-                {generatingBulkLanding ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileText className="h-4 w-4 mr-2" />
-                )}
-                Bulk Landing ({filteredProducts.length})
-              </Button>
+              {workspace === "bulk" && (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setShowBulkAIImagesDialog(true)} disabled={selectedProducts.size === 0}>
+                    <Images className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Images en lot" : "Bulk images"}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setShowBulkLandingConfigDialog(true)} disabled={selectedProducts.size === 0}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Pages en lot" : "Bulk pages"}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </Card>
 
-        {/* Info Alert */}
-        <Alert className="bg-gradient-to-r from-primary/5 to-background border-primary/20">
-          <ImageIcon className="h-4 w-4" />
-          <AlertDescription>
-            <strong>{t.contentOptimization.tooltips.whiteBg}:</strong> {t.contentOptimization.alerts.whiteBg.split(': ')[1]}{' '}
-            <strong>{t.contentOptimization.tooltips.aiBg}:</strong> {t.contentOptimization.alerts.aiBg.split(': ')[1]}
-          </AlertDescription>
-        </Alert>
+        {workspace === "images" && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <ImageIcon className="h-4 w-4" />
+            <AlertDescription>
+              <strong>{t.contentOptimization.tooltips.whiteBg}:</strong> {t.contentOptimization.alerts.whiteBg.split(": ")[1]}{" "}
+              <strong>{t.contentOptimization.tooltips.aiBg}:</strong> {t.contentOptimization.alerts.aiBg.split(": ")[1]}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Products Table/Grid */}
         <Card className="overflow-hidden">
