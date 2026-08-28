@@ -5,11 +5,11 @@ import {
   Tags, Sparkles, Image, Images, History, BadgeDollarSign, Store,
   ShoppingCart, RefreshCw, Settings, User, CreditCard, Key, Code,
   ChevronDown, LogOut, FlaskConical, Bot, Megaphone, Search, Newspaper,
-  WandSparkles, Activity
+  WandSparkles, Activity, Camera
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -44,17 +44,19 @@ export function CatalogOptimizeSidebar() {
       label: fr ? "Contenu" : "Content",
       icon: FileText,
       items: [
-        { label: fr ? "Contenu produit" : "Product Content", href: "/products/title-description", icon: FileText },
+        { label: fr ? "Vue d’ensemble" : "Overview", href: "/content", icon: FileText },
+        { label: fr ? "Titres & descriptions" : "Titles & Descriptions", href: "/products/title-description?view=content", icon: FileText },
         { label: fr ? "Landing pages" : "Landing Pages", href: "/products/title-description?view=landing", icon: FileSpreadsheet },
         { label: fr ? "Catégories & tags" : "Categories & Tags", href: "/seo?tab=tags", icon: Tags },
         { label: fr ? "Actions groupées" : "Bulk Actions", href: "/products/title-description?view=bulk", icon: Sparkles },
       ],
     },
     {
-      label: fr ? "Médias" : "Media",
+      label: "Studio",
       icon: Images,
       items: [
-        { label: fr ? "Studio images" : "Image Studio", href: "/products/title-description?view=images", icon: WandSparkles },
+        { label: "Product Shot AI", href: "/studio", icon: Camera, badge: "AI" },
+        { label: fr ? "Outils images" : "Image Tools", href: "/products/title-description?view=images", icon: WandSparkles },
         { label: fr ? "Textes ALT" : "ALT Text", href: "/seo?tab=alt", icon: Image },
         { label: fr ? "Historique" : "History", href: "/products/media-history", icon: History },
       ],
@@ -109,6 +111,7 @@ export function CatalogOptimizeSidebar() {
   const closeMobile = () => {
     if (isMobile && openMobile) toggleSidebar();
   };
+
   const active = (href: string) => {
     const [path, query] = href.split("?");
     if (pathname !== path) return false;
