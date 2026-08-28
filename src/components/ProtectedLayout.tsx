@@ -170,7 +170,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
                 <NoStoreConnectedPrompt />
               </div>
             )}
-            <div className="catalog-workspace mx-auto max-w-[1600px] p-3 sm:p-4 md:p-6 lg:p-8">
+            <div className="catalog-workspace mx-auto max-w-[1600px] p-3 sm:p-4 md:p-5 lg:p-6">
               {children}
             </div>
           </main>
