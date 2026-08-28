@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
 import { resolveLanguage } from "../_shared/language-detector.ts";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,40 +12,6 @@ const corsHeaders = {
 interface TagGenerationRequest {
   productId: string;
   force?: boolean;
-}
-
-async function callLovableAI(messages: any[], maxTokens = 500) {
-  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-
-  if (!lovableApiKey) {
-    throw new Error('Lovable API key not configured');
-  }
-
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${lovableApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages,
-      max_tokens: maxTokens,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    if (response.status === 429) {
-      throw new Error('Rate limit exceeded. Please try again later.');
-    }
-    if (response.status === 402) {
-      throw new Error('AI credits exhausted. Please add credits to continue.');
-    }
-    throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
-  }
-
-  return await response.json();
 }
 
 Deno.serve(async (req: Request) => {
@@ -93,7 +60,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check optimization limits using RPC
+    // Check optimization limits using the canonical DB entitlement.
+    // The internal tester account is provisioned as an active pro-500 profile in DB,
+    // so no per-function payment bypass is needed here.
     const { data: checkResult, error: checkError } = await supabaseClient
       .rpc('check_optimization_allowed', {
         p_user_id: user.id,
@@ -110,11 +79,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!checkResult.allowed) {
+    if (!checkResult?.allowed) {
       return new Response(
         JSON.stringify({
-          error: checkResult.reason,
-          message: checkResult.message,
+          error: checkResult?.reason || 'optimization_not_allowed',
+          message: checkResult?.message || 'Optimization is not allowed for this account.',
           limitReached: true
         }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -168,8 +137,6 @@ Deno.serve(async (req: Request) => {
     });
     console.log(`🛡️ LANGUAGE GUARD: tags - detected=${language}, store=${rawStoreLanguage}, product="${product.title?.substring(0,30)}..."`);
 
-    console.log(`Generating tags with Lovable AI for product: ${product.title} (language: ${language})`);
-
     const tagPrompt = getSeoPrompt(language, 'tags', {
       title: product.title,
       description: product.description,
@@ -183,18 +150,26 @@ Deno.serve(async (req: Request) => {
 
     const systemRole = getSystemRole(language, 'tags');
 
-    const tagResponse = await callLovableAI([
-      {
-        role: "system",
-        content: systemRole,
-      },
-      {
-        role: "user",
-        content: tagPrompt,
-      },
-    ]);
+    // Cost-first AI routing: Kimi/OpenRouter free first, then Gemini, then DeepSeek.
+    // This prevents Lovable workspace credits from breaking product tag generation.
+    const tagResponse = await routeAI({
+      messages: [
+        {
+          role: "system",
+          content: systemRole,
+        },
+        {
+          role: "user",
+          content: tagPrompt,
+        },
+      ],
+      maxTokens: 500,
+      temperature: 0.2,
+      preferredFreeModel: "moonshotai/kimi-k2.6:free",
+    });
 
-    const tagContent = tagResponse.choices[0].message.content;
+    const tagContent = tagResponse.content;
+    console.log(`[TAGS] AI provider=${tagResponse.provider}, model=${tagResponse.model}`);
 
     let tags = "";
     try {
@@ -235,7 +210,7 @@ Deno.serve(async (req: Request) => {
       throw updateError;
     }
 
-    console.log(`Tags generated with Lovable AI for product ${productId}: ${tags}`);
+    console.log(`Tags generated for product ${productId}: ${tags}`);
 
     // Track usage - 1 optimization
     await supabaseClient.rpc('increment_usage', {
@@ -286,6 +261,8 @@ Deno.serve(async (req: Request) => {
         data: {
           product_id: productId,
           tags: tags,
+          ai_provider: tagResponse.provider,
+          ai_model: tagResponse.model,
         },
         shopifySync: syncResult
       }),
