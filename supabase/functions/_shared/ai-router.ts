@@ -5,7 +5,7 @@ export type AIMessage = {
 
 export type AIRouteResult = {
   content: string;
-  provider: "openrouter-free" | "gemini" | "deepseek";
+  provider: "openai" | "openrouter-free" | "gemini" | "kimi" | "deepseek";
   model: string;
 };
 
@@ -35,6 +35,35 @@ function toGeminiParts(content: AIMessage["content"]): any[] {
     if (match) return [{ inline_data: { mime_type: match[1], data: match[2] } }];
     return [{ file_data: { mime_type: "image/jpeg", file_uri: url } }];
   });
+}
+
+async function tryOpenAI(options: RouteOptions): Promise<AIRouteResult | null> {
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey || options.vision) return null;
+
+  const model = Deno.env.get("OPENAI_TEXT_MODEL") || "gpt-4o-mini";
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: options.messages,
+      max_tokens: options.maxTokens || 4096,
+      temperature: options.temperature ?? 0.3,
+    }),
+  });
+
+  if (!response.ok) {
+    console.warn(`[ai-router] OpenAI ${model} failed: ${response.status}`);
+    return null;
+  }
+
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content?.trim();
+  return content ? { content, provider: "openai", model: data?.model || model } : null;
 }
 
 async function tryOpenRouter(options: RouteOptions): Promise<AIRouteResult | null> {
@@ -106,6 +135,49 @@ async function tryGemini(options: RouteOptions): Promise<AIRouteResult | null> {
   return content ? { content, provider: "gemini", model } : null;
 }
 
+async function tryKimi(options: RouteOptions): Promise<AIRouteResult | null> {
+  if (options.vision) return null;
+
+  const directKey = Deno.env.get("KIMI_API_KEY") || Deno.env.get("MOONSHOT_API_KEY");
+  const openRouterKey = Deno.env.get("OPENROUTER_API_KEY");
+  if (!directKey && !openRouterKey) return null;
+
+  const direct = Boolean(directKey);
+  const model = direct
+    ? (Deno.env.get("KIMI_TEXT_MODEL") || "moonshot-v1-8k")
+    : (Deno.env.get("KIMI_OPENROUTER_MODEL") || "moonshotai/kimi-k2.5");
+
+  const response = await fetch(
+    direct ? "https://api.moonshot.ai/v1/chat/completions" : "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${directKey || openRouterKey}`,
+        "Content-Type": "application/json",
+        ...(!direct ? {
+          "HTTP-Referer": Deno.env.get("PUBLIC_SITE_URL") || "https://catalogoptimize.com",
+          "X-Title": "CatalogueOptimize AI",
+        } : {}),
+      },
+      body: JSON.stringify({
+        model,
+        messages: options.messages,
+        max_tokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0.3,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    console.warn(`[ai-router] Kimi ${model} failed: ${response.status}`);
+    return null;
+  }
+
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content?.trim();
+  return content ? { content, provider: "kimi", model: data?.model || model } : null;
+}
+
 async function tryDeepSeek(options: RouteOptions): Promise<AIRouteResult | null> {
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
   if (!apiKey || options.vision) return null;
@@ -136,17 +208,26 @@ async function tryDeepSeek(options: RouteOptions): Promise<AIRouteResult | null>
 }
 
 /**
- * Cost-first routing:
- * 1. OpenRouter free model/router
- * 2. Gemini free quota
- * 3. DeepSeek paid fallback for text
+ * Resilient text routing:
+ * 1. OpenAI
+ * 2. Gemini
+ * 3. Kimi (Moonshot directly, or through OpenRouter)
+ * 4. DeepSeek
+ *
+ * Vision keeps OpenRouter first because the text-only providers are skipped.
  */
 export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
-  const attempts = [
-    () => tryOpenRouter(options),
-    () => tryGemini(options),
-    () => tryDeepSeek(options),
-  ];
+  const attempts = options.vision
+    ? [
+        () => tryOpenRouter(options),
+        () => tryGemini(options),
+      ]
+    : [
+        () => tryOpenAI(options),
+        () => tryGemini(options),
+        () => tryKimi(options),
+        () => tryDeepSeek(options),
+      ];
 
   for (const attempt of attempts) {
     try {
@@ -157,7 +238,7 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
     }
   }
 
-  throw new Error("No AI provider is available. Configure OPENROUTER_API_KEY, GOOGLE_GEMINI_API_KEY or DEEPSEEK_API_KEY.");
+  throw new Error("No AI provider is available. Configure OPENAI_API_KEY, GOOGLE_GEMINI_API_KEY, KIMI_API_KEY/MOONSHOT_API_KEY, OPENROUTER_API_KEY, or DEEPSEEK_API_KEY.");
 }
 
 export async function routeVision(messages: AIMessage[], maxTokens = 600): Promise<AIRouteResult> {
