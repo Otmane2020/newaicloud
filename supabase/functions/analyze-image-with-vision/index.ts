@@ -23,6 +23,38 @@ function cleanJSON(text: string): string {
     .trim();
 }
 
+function jsonResponse(payload: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function normalizeVisionError(message: string): { error: string; message: string } {
+  const lower = message.toLowerCase();
+
+  if (lower.includes("429") || lower.includes("rate limit")) {
+    return { error: "VISION_RATE_LIMITED", message: "Image analysis is temporarily rate limited. Please retry shortly." };
+  }
+  if (lower.includes("402") || lower.includes("payment") || lower.includes("billing")) {
+    return { error: "VISION_PAYMENT_REQUIRED", message: "Image analysis is temporarily unavailable because provider billing is required." };
+  }
+  if (lower.includes("401") || lower.includes("403") || lower.includes("access denied") || lower.includes("unauthorized")) {
+    return { error: "VISION_ACCESS_DENIED", message: "The image analysis provider rejected the request." };
+  }
+  if (lower.includes("cannot fetch image") || lower.includes("image fetch")) {
+    return { error: "VISION_IMAGE_FETCH_FAILED", message: "The product image could not be downloaded for analysis." };
+  }
+  if (lower.includes("invalid json")) {
+    return { error: "VISION_INVALID_RESPONSE", message: "The image analysis provider returned an invalid response." };
+  }
+  if (lower.includes("no ai provider is available")) {
+    return { error: "VISION_PROVIDER_UNAVAILABLE", message: "No configured vision provider is currently available." };
+  }
+
+  return { error: "VISION_FAILED", message: "Image analysis could not be completed." };
+}
+
 async function toDataUrl(imageUrl: string): Promise<string> {
   if (imageUrl.startsWith("data:image")) return imageUrl;
 
@@ -30,6 +62,8 @@ async function toDataUrl(imageUrl: string): Promise<string> {
   if (!response.ok) throw new Error(`Cannot fetch image: ${response.status}`);
 
   const mimeType = response.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+  if (!mimeType.startsWith("image/")) throw new Error("Cannot fetch image: invalid content type");
+
   const bytes = new Uint8Array(await response.arrayBuffer());
   let binary = "";
   const chunkSize = 0x8000;
@@ -48,17 +82,28 @@ serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   if (body?.healthCheck === true) {
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ ok: true });
   }
 
   try {
     const { imageUrl, productContext } = body as VisionRequest;
-    if (!imageUrl) throw new Error("imageUrl is required");
+    if (!imageUrl) {
+      return jsonResponse({
+        success: false,
+        error: "VISION_IMAGE_REQUIRED",
+        message: "An image is required for analysis.",
+      });
+    }
 
-    const dataUrl = await toDataUrl(imageUrl);
+    let dataUrl: string;
+    try {
+      dataUrl = await toDataUrl(imageUrl);
+    } catch (error: any) {
+      const normalized = normalizeVisionError(error?.message || "Cannot fetch image");
+      console.error("❌ analyze-image-with-vision image fetch failed:", error);
+      return jsonResponse({ success: false, ...normalized });
+    }
+
     const context = productContext
       ? `Contexte produit: ${productContext.title || ""} ${productContext.category || ""} ${productContext.type || ""}`
       : "";
@@ -117,44 +162,47 @@ Règles :
 - Retourne uniquement le JSON, sans Markdown.
 `;
 
-    const routedVision = await routeVision([
-      {
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          { type: "image_url", image_url: { url: dataUrl } },
-        ],
-      },
-    ], 1200);
+    let routedVision;
+    try {
+      routedVision = await routeVision([
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: dataUrl } },
+          ],
+        },
+      ], 1200);
+    } catch (error: any) {
+      const normalized = normalizeVisionError(error?.message || "Vision provider unavailable");
+      console.error("❌ analyze-image-with-vision provider failed:", error);
+      return jsonResponse({ success: false, ...normalized });
+    }
 
     console.log(`[analyze-image-with-vision] provider=${routedVision.provider} model=${routedVision.model}`);
 
-    let parsed: any;
     try {
-      parsed = JSON.parse(cleanJSON(routedVision.content));
-    } catch {
-      console.error("❌ Invalid JSON from vision router:", routedVision.content.substring(0, 500));
-      throw new Error("Vision provider returned invalid JSON");
-    }
-
-    return new Response(
-      JSON.stringify({
+      const parsed = JSON.parse(cleanJSON(routedVision.content));
+      return jsonResponse({
         success: true,
         ...parsed,
         ai_provider: routedVision.provider,
         ai_model: routedVision.model,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
-  } catch (err: any) {
-    const message = err?.message || "Unknown error";
-    console.error("❌ analyze-image-with-vision failed:", message);
+      });
+    } catch (error) {
+      console.error("❌ Invalid JSON from vision router:", routedVision.content.substring(0, 500), error);
+      return jsonResponse({
+        success: false,
+        error: "VISION_INVALID_RESPONSE",
+        message: "The image analysis provider returned an invalid response.",
+      });
+    }
+  } catch (error: any) {
+    const normalized = normalizeVisionError(error?.message || "Unknown error");
+    console.error("❌ analyze-image-with-vision failed:", error);
 
-    return new Response(JSON.stringify({ success: false, error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Provider failures are application-level failures, not Edge runtime failures.
+    // Always return HTTP 200 so Supabase/Lovable does not surface a blank-screen runtime error.
+    return jsonResponse({ success: false, ...normalized });
   }
 });
