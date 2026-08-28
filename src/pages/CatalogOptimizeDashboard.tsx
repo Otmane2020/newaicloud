@@ -106,7 +106,6 @@ export default function CatalogOptimizeDashboard() {
         const missingSeo = products.filter((p) => !p.seo_title?.trim() || !p.seo_description?.trim()).length;
         const missingImages = products.filter((p) => !p.image_url?.trim()).length;
         const missingTags = products.filter((p) => !p.tags || (Array.isArray(p.tags) ? p.tags.length === 0 : !String(p.tags).trim())).length;
-        const incomplete = products.filter((p) => !p.title?.trim() || !p.seo_description?.trim() || !p.image_url?.trim()).length;
         const enriched = products.filter((p) => ["completed", "optimized", "enriched"].includes((p.enrichment_status || "").toLowerCase())).length;
         const missingGoogleCategory = products.filter((p) => !p.google_product_category?.trim()).length;
         const missingGtin = products.filter((p) => !p.google_gtin?.trim()).length;
@@ -114,6 +113,14 @@ export default function CatalogOptimizeDashboard() {
         const missingCondition = products.filter((p) => !p.google_condition?.trim()).length;
         const missingWhiteBackground = products.filter((p) => !p.google_white_background).length;
         const notSyncedToShopify = products.filter((p) => !p.seo_synced_to_shopify).length;
+        const incomplete = products.filter((p) =>
+          !p.title?.trim() || !p.image_url?.trim() ||
+          !p.seo_title?.trim() || !p.seo_description?.trim() ||
+          !p.tags || (Array.isArray(p.tags) ? p.tags.length === 0 : !String(p.tags).trim()) ||
+          !p.google_product_category?.trim() || !p.google_mpn?.trim() ||
+          !p.google_condition?.trim() || !p.google_white_background ||
+          !p.seo_synced_to_shopify
+        ).length;
 
         if (mounted) setStats({
           total: countResult.count || products.length,
@@ -184,23 +191,37 @@ export default function CatalogOptimizeDashboard() {
     return Math.round(parts.reduce((sum, part) => sum + part.value * part.weight, 0) / totalWeight);
   }, [productSeoScore, resourceSeo]);
 
-  // Catalog health is an explainable composite: 60% catalog content + 40% SEO.
-  const health = useMemo(() => {
-    if (contentScore === null || seoScore === null) return null;
-    return Math.round(contentScore * 0.6 + seoScore * 0.4);
-  }, [contentScore, seoScore]);
-
   const shoppingReadiness = useMemo(() => {
     if (!stats.total) return null;
     const totalChecks = stats.total * 5;
-    const failedChecks =
-      stats.missingGoogleCategory +
-      stats.missingGtin +
-      stats.missingMpn +
-      stats.missingCondition +
-      stats.missingWhiteBackground;
+    const failedChecks = stats.missingGoogleCategory + stats.missingGtin + stats.missingMpn + stats.missingCondition + stats.missingWhiteBackground;
     return Math.max(0, Math.round(((totalChecks - failedChecks) / totalChecks) * 100));
   }, [stats]);
+
+  // Honest overall health: catalog content 40%, SEO 35%, Google Shopping 25%.
+  const health = useMemo(() => {
+    if (contentScore === null || seoScore === null || shoppingReadiness === null) return null;
+    return Math.round(contentScore * 0.4 + seoScore * 0.35 + shoppingReadiness * 0.25);
+  }, [contentScore, seoScore, shoppingReadiness]);
+
+  const scoreTone = (value: number | null) => {
+    if (value === null) return { color: "#94a3b8", text: "text-slate-600", bg: "bg-slate-50", border: "border-slate-200", label: fr ? "À analyser" : "Not scanned" };
+    if (value >= 80) return { color: "#16a34a", text: "text-green-700", bg: "bg-green-50", border: "border-green-200", label: fr ? "Bon" : "Good" };
+    if (value >= 50) return { color: "#d97706", text: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200", label: fr ? "À améliorer" : "Needs improvement" };
+    return { color: "#dc2626", text: "text-red-700", bg: "bg-red-50", border: "border-red-200", label: fr ? "Prioritaire" : "Critical" };
+  };
+
+  const ScoreGauge = ({ value, size = 88 }: { value: number | null; size?: number }) => {
+    const tone = scoreTone(value);
+    const safeValue = value ?? 0;
+    return (
+      <div className="relative grid shrink-0 place-items-center rounded-full" style={{ width: size, height: size, background: `conic-gradient(${tone.color} ${safeValue * 3.6}deg, #e2e8f0 0deg)` }}>
+        <div className="grid h-[76%] w-[76%] place-items-center rounded-full bg-white">
+          <strong className={`text-lg ${tone.text}`}>{value === null ? "—" : `${value}%`}</strong>
+        </div>
+      </div>
+    );
+  };
 
   const issues = [
     { label: fr ? "Titres produit manquants" : "Missing product titles", value: stats.missingTitles, href: "/products/title-description", icon: FileText },
@@ -273,20 +294,19 @@ export default function CatalogOptimizeDashboard() {
         </div>
       )}
 
-      <section className="grid gap-3 border-b border-slate-200 pb-6 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p className="text-sm text-slate-500">{fr ? "Santé globale" : "Overall health"}</p>
-          <div className="mt-2 flex items-end gap-3"><strong className="text-3xl text-slate-950">{loading || health === null ? "—" : `${health}%`}</strong><Progress value={health ?? 0} className="mb-2 h-1.5 w-24" /></div>
-          <p className="mt-1 text-xs text-slate-500">{fr ? "60 % contenu · 40 % SEO" : "60% content · 40% SEO"}</p>
+      <section className="grid gap-3 border-b border-slate-200 pb-6 lg:grid-cols-[1.25fr_.75fr]">
+        <div className={`flex items-center gap-5 rounded-xl border p-5 ${scoreTone(health).bg} ${scoreTone(health).border}`}>
+          <ScoreGauge value={health} size={112} />
+          <div>
+            <div className="flex items-center gap-2"><h2 className="text-base font-semibold text-slate-950">{fr ? "Performance globale" : "Overall performance"}</h2><span className={`rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium ${scoreTone(health).text}`}>{scoreTone(health).label}</span></div>
+            <p className="mt-2 text-sm text-slate-600">{fr ? "40 % contenu · 35 % SEO · 25 % Google Shopping" : "40% content · 35% SEO · 25% Google Shopping"}</p>
+            <Button asChild size="sm" className="mt-4 bg-violet-600 hover:bg-violet-700"><Link to={shoppingReadiness !== null && shoppingReadiness < 50 ? "/shopping" : "/products/title-description"}>{fr ? "Améliorer le score" : "Improve score"}<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+          </div>
         </div>
-        <div><p className="text-sm text-slate-500">{fr ? "Produits analysés" : "Products analyzed"}</p><strong className="mt-2 block text-3xl text-slate-950">{loading ? "—" : stats.total}</strong></div>
-        <div><p className="text-sm text-slate-500">{fr ? "Produits à corriger" : "Products to fix"}</p><strong className="mt-2 block text-3xl text-amber-700">{loading ? "—" : stats.incomplete}</strong></div>
-        <div>
-          <p className="text-sm text-slate-500">{fr ? "Dernière synchronisation" : "Last sync"}</p>
-          <strong className="mt-2 block text-lg text-slate-950">{stats.lastSync ? new Date(stats.lastSync).toLocaleDateString(language) : "—"}</strong>
-          <Button type="button" variant="link" className="mt-1 h-auto p-0 text-violet-700" onClick={async () => { if (!selectedStore) return; await syncShopifyStore(selectedStore); setScanNonce((value) => value + 1); }} disabled={loading || isSyncing}>
-            {loading || isSyncing ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-2 h-3.5 w-3.5" />}{fr ? "Analyser maintenant" : "Scan now"}
-          </Button>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-sm text-slate-500">{fr ? "Produits analysés" : "Products analyzed"}</p><strong className="mt-2 block text-2xl text-slate-950">{loading ? "—" : stats.total}</strong></div>
+          <div className={`rounded-xl border p-4 ${stats.incomplete > 0 ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"}`}><p className="text-sm text-slate-500">{fr ? "Produits à corriger" : "Products to fix"}</p><strong className={`mt-2 block text-2xl ${stats.incomplete > 0 ? "text-red-700" : "text-green-700"}`}>{loading ? "—" : stats.incomplete}</strong></div>
+          <div className="col-span-2 flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4"><div><p className="text-sm text-slate-500">{fr ? "Dernière synchronisation" : "Last sync"}</p><strong className="mt-1 block text-sm text-slate-950">{stats.lastSync ? new Date(stats.lastSync).toLocaleString(language) : "—"}</strong></div><Button type="button" variant="outline" size="sm" onClick={async () => { if (!selectedStore) return; await syncShopifyStore(selectedStore); setScanNonce((value) => value + 1); }} disabled={loading || isSyncing}>{loading || isSyncing ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-2 h-3.5 w-3.5" />}{fr ? "Analyser" : "Scan now"}</Button></div>
         </div>
       </section>
 
@@ -307,17 +327,23 @@ export default function CatalogOptimizeDashboard() {
         </div>
       </section>
 
-      <section className="grid gap-3 border-t border-slate-200 pt-5 sm:grid-cols-3">
-        {[
-          { label: fr ? "Contenu" : "Content", value: contentScore },
-          { label: "SEO", value: seoScore },
-          { label: "Google Shopping", value: shoppingReadiness },
-        ].map((score) => (
-          <Link key={score.label} to={score.label === "Google Shopping" ? "/shopping" : score.label === "SEO" ? "/seo?tab=products" : "/products/title-description"} className="rounded-lg border border-slate-200 bg-white p-4 transition hover:border-violet-300">
-            <div className="flex items-center justify-between"><span className="text-sm font-medium text-slate-700">{score.label}</span><strong>{score.value === null ? "—" : `${score.value}%`}</strong></div>
-            <Progress value={score.value ?? 0} className="mt-3 h-1.5" />
-          </Link>
-        ))}
+      <section>
+        <div className="mb-3"><h2 className="text-lg font-semibold text-slate-950">{fr ? "Performance par domaine" : "Performance by area"}</h2><p className="text-sm text-slate-500">{fr ? "Vert : bon · Orange : à améliorer · Rouge : prioritaire." : "Green: good · Amber: improve · Red: priority."}</p></div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            { label: fr ? "Contenu" : "Content", value: contentScore, href: "/products/title-description", cta: fr ? "Améliorer le contenu" : "Improve content" },
+            { label: "SEO", value: seoScore, href: "/seo?tab=products", cta: fr ? "Améliorer le SEO" : "Improve SEO" },
+            { label: "Google Shopping", value: shoppingReadiness, href: "/shopping", cta: fr ? "Corriger Shopping" : "Fix Shopping" },
+          ].map((score) => {
+            const tone = scoreTone(score.value);
+            return (
+              <div key={score.label} className={`rounded-xl border p-4 ${tone.bg} ${tone.border}`}>
+                <div className="flex items-center gap-4"><ScoreGauge value={score.value} /><div><h3 className="font-semibold text-slate-950">{score.label}</h3><p className={`mt-1 text-xs font-medium ${tone.text}`}>{tone.label}</p></div></div>
+                <Button asChild variant="outline" size="sm" className="mt-4 w-full justify-between bg-white/80"><Link to={score.href}>{score.cta}<ArrowRight className="h-4 w-4" /></Link></Button>
+              </div>
+            );
+          })}
+        </div>
       </section>
       <section>
         <div className="mb-3"><h2 className="text-lg font-semibold text-slate-950">{fr ? "Score SEO détaillé" : "SEO score breakdown"}</h2><p className="text-sm text-slate-500">{fr ? "Titres et descriptions SEO de chaque type de contenu." : "SEO titles and descriptions for every content type."}</p></div>
@@ -327,12 +353,16 @@ export default function CatalogOptimizeDashboard() {
             { label: "Collections", value: resourceSeo.collections, count: resourceSeo.collectionCount, weight: "20%", href: "/seo?tab=collections" },
             { label: "Pages", value: resourceSeo.pages, count: resourceSeo.pageCount, weight: "15%", href: "/seo?tab=pages" },
             { label: "Articles", value: resourceSeo.articles, count: resourceSeo.articleCount, weight: "15%", href: "/seo?tab=articles" },
-          ].map((item) => (
-            <Link key={item.href} to={item.href} className="rounded-lg border border-slate-200 bg-white p-3 transition hover:border-violet-300">
-              <div className="flex items-center justify-between"><span className="text-sm font-medium">{item.label}</span><strong>{item.value === null ? "—" : `${item.value}%`}</strong></div>
-              <p className="mt-1 text-xs text-slate-500">{item.count} {fr ? "éléments" : "items"} · {fr ? "poids" : "weight"} {item.weight}</p>
-            </Link>
-          ))}
+          ].map((item) => {
+            const tone = scoreTone(item.value);
+            return (
+              <Link key={item.href} to={item.href} className={`rounded-lg border p-3 transition hover:shadow-sm ${tone.bg} ${tone.border}`}>
+                <div className="flex items-center justify-between"><span className="text-sm font-medium">{item.label}</span><strong className={tone.text}>{item.value === null ? "—" : `${item.value}%`}</strong></div>
+                <p className="mt-1 text-xs text-slate-500">{item.count} {fr ? "éléments" : "items"} · {fr ? "poids" : "weight"} {item.weight}</p>
+                <span className={`mt-3 flex items-center justify-between text-xs font-medium ${tone.text}`}>{item.value !== null && item.value < 100 ? (fr ? "Améliorer" : "Improve") : (fr ? "Voir" : "View")}<ArrowRight className="h-3.5 w-3.5" /></span>
+              </Link>
+            );
+          })}
         </div>
       </section>
     </div>
