@@ -1,8 +1,8 @@
-# Sitemap accessibility - proxy to dynamic edge function
-/sitemap.xml https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/generate-sitemap 200!
-
 # Shopping feed proxy
 /shoppingfeed/* https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/:splat 200!
+
+# sitemap.xml is served directly from public/sitemap.xml.
+# Keeping it static avoids a dependency on the Supabase Edge Function for SEO crawling.
 
 # SPA fallback - must be last
 /* /index.html 200
