@@ -153,14 +153,16 @@ export function ShopifyConnectionWizard({ open, onOpenChange, onSuccess }: Shopi
       const currentStoreCount = currentStores?.length || 0;
       const maxStores = limits?.limits?.max_shopify_stores || 1;
 
-      // Vérifier la limite du plan
-      if (!limits?.canAddShopifyStore || currentStoreCount >= maxStores) {
+      // Le nombre réel de boutiques en base est la seule source de vérité.
+      // (les compteurs `usage_tracking` peuvent être désynchronisés / indisponibles)
+      if (currentStoreCount >= maxStores) {
         toast.dismiss(loadingToastId);
         toast.error(t.wizards.shopify.storeLimit, {
           description: `${t.wizards.shopify.storeLimitDescription} (${currentStoreCount}/${maxStores})`,
         });
         return;
       }
+
 
       // 1. Vérifier si le store n'existe pas déjà
       const { data: existingStore } = await supabase
