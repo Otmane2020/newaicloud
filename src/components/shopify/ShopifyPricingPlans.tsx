@@ -153,7 +153,7 @@ export default function ShopifyPricingPlans({
     subtitle: language === "fr" 
       ? "Sélectionnez le plan qui correspond à vos besoins" 
       : "Select the plan that fits your needs",
-    loadingTitle: language === "fr" ? "Préparation de votre espace NewAI…" : "Preparing your NewAI workspace...",
+    loadingTitle: language === "fr" ? "Préparation de votre espace CatalogueOptimize AI…" : "Preparing your CatalogueOptimize AI workspace...",
     loadingSubtitle: language === "fr" 
       ? "Nous finalisons les plans adaptés à votre boutique" 
       : "Finalizing plans for your store",

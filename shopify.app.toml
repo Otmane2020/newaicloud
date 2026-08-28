@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "a57869f9e856fc6af974670ab5dcd6a2"
-name = "NewAI - AI SEO and Marketing"
+name = "CatalogueOptimize AI - Product Operations"
 application_url = "https://newai.sale"
 embedded = true
 

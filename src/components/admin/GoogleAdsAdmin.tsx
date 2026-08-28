@@ -463,7 +463,7 @@ export function GoogleAdsAdmin() {
             {t.superAdmin.googleAds?.title || "Google Ads Optimizer"}
           </h1>
           <p className="text-muted-foreground">
-            {t.superAdmin.googleAds?.description || "AI-powered campaign optimization for NewAI"}
+            {t.superAdmin.googleAds?.description || "AI-powered campaign optimization for CatalogueOptimize AI"}
           </p>
         </div>
         
@@ -530,7 +530,7 @@ export function GoogleAdsAdmin() {
             {t.superAdmin.googleAds?.title || "Google Ads Optimizer"}
           </h1>
           <p className="text-muted-foreground">
-            {t.superAdmin.googleAds?.description || "AI-powered campaign optimization for NewAI"}
+            {t.superAdmin.googleAds?.description || "AI-powered campaign optimization for CatalogueOptimize AI"}
           </p>
         </div>
         <div className="flex gap-2">

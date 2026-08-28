@@ -82,7 +82,7 @@ const TESTIMONIALS = [
   {
     name: "Sarah M.",
     role: "Shopify Merchant",
-    text: "NewAI doubled my organic traffic in just 2 months. The AI SEO is incredible!",
+    text: "CatalogueOptimize AI doubled my organic traffic in just 2 months. The AI SEO is incredible!",
     rating: 5,
   },
   {
@@ -107,7 +107,7 @@ const STATS = [
   { value: "Top 10", label: "Google Ranking", sublabel: "Structured data & optimized feeds" },
 ];
 
-// Real NewAI integration logos
+// Real CatalogueOptimize AI integration logos
 const ShopifyLogo = () => (
   <svg viewBox="0 0 109 124" className="w-6 h-6">
     <path
@@ -162,7 +162,7 @@ const InstagramLogo = () => (
   </svg>
 );
 
-// Only integrations that NewAI actually supports
+// Only integrations that CatalogueOptimize AI actually supports
 const INTEGRATIONS = [
   { name: "Shopify", logo: <ShopifyLogo /> },
   { name: "Google Merchant", logo: <GoogleMerchantLogo /> },
@@ -270,7 +270,7 @@ export default function MobileAds() {
               </div>
             </div>
             <span className="text-lg font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-500 bg-clip-text text-transparent">
-              NewAI
+              CatalogueOptimize AI
             </span>
           </button>
           <Badge className="bg-yellow-400 text-black font-bold text-xs px-2 py-1">70% OFF</Badge>
@@ -303,7 +303,7 @@ export default function MobileAds() {
         </h1>
 
         <p className="text-gray-600 text-base max-w-md mx-auto">
-          NewAI automatically optimizes your Shopify store so Google can rank you faster — without SEO knowledge.
+          CatalogueOptimize AI automatically optimizes your Shopify store so Google can rank you faster — without SEO knowledge.
         </p>
       </section>
 
@@ -312,7 +312,7 @@ export default function MobileAds() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-6">
             <p className="text-gray-600 text-sm mb-4">
-              Stores using NewAI see traffic increases in weeks, not months.
+              Stores using CatalogueOptimize AI see traffic increases in weeks, not months.
             </p>
             <h2 className="text-2xl sm:text-3xl font-black mb-2 text-gray-900">
               Proven{" "}
@@ -463,7 +463,7 @@ export default function MobileAds() {
           {/* Before/After comparison */}
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="bg-gray-100 rounded-xl p-4 text-center">
-              <div className="text-xs text-gray-500 mb-1">Before NewAI</div>
+              <div className="text-xs text-gray-500 mb-1">Before CatalogueOptimize AI</div>
               <div className="text-2xl font-black text-gray-400">~200</div>
               <div className="text-xs text-gray-500">visits/month</div>
             </div>
@@ -500,7 +500,7 @@ export default function MobileAds() {
         <div className="relative max-w-lg mx-auto">
           {/* Phone Mockup - Hand holding phone */}
           <div className="relative mx-auto w-[280px] sm:w-[320px] mb-8">
-            <img src={phoneHandMockup} alt="NewAI App Dashboard" className="w-full drop-shadow-2xl" />
+            <img src={phoneHandMockup} alt="CatalogueOptimize AI App Dashboard" className="w-full drop-shadow-2xl" />
             <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[200px] h-[80px] bg-violet-400/30 blur-3xl rounded-full" />
           </div>
 
@@ -576,7 +576,7 @@ export default function MobileAds() {
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center">
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
-                  <span className="font-bold text-gray-900 text-sm">NewAI</span>
+                  <span className="font-bold text-gray-900 text-sm">CatalogueOptimize AI</span>
                 </div>
 
                 <h4 className="font-semibold text-gray-900 text-xs mb-3">Integrations</h4>
@@ -712,7 +712,7 @@ export default function MobileAds() {
               <div className="absolute -top-3 left-4 z-10">
                 <Badge className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white border-0 shadow-lg text-xs">
                   <Sparkles className="w-3 h-3 mr-1" />
-                  After NewAI
+                  After CatalogueOptimize AI
                 </Badge>
               </div>
               <div className="rounded-xl border-2 border-violet-300 bg-white shadow-xl overflow-hidden h-full ring-4 ring-violet-100">
@@ -798,7 +798,7 @@ export default function MobileAds() {
         </div>
 
         <div className="relative max-w-4xl mx-auto">
-          <img src={laptopDashboardMockup} alt="NewAI Dashboard" className="w-full rounded-lg shadow-2xl" />
+          <img src={laptopDashboardMockup} alt="CatalogueOptimize AI Dashboard" className="w-full rounded-lg shadow-2xl" />
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent pointer-events-none" />
         </div>
       </section>
@@ -886,13 +886,13 @@ export default function MobileAds() {
         <DialogContent className="bg-white text-gray-900 max-w-md mx-auto rounded-t-3xl sm:rounded-2xl p-0 border-0 max-h-[95vh] overflow-y-auto gap-0">
           <VisuallyHidden>
             <DialogTitle>Choose Plan</DialogTitle>
-            <DialogDescription>Select a subscription plan for NewAI</DialogDescription>
+            <DialogDescription>Select a subscription plan for CatalogueOptimize AI</DialogDescription>
           </VisuallyHidden>
           {/* Header */}
           <div className="sticky top-0 bg-white z-10 px-5 pt-5 pb-4 border-b">
             <div className="flex justify-between items-center">
               <div>
-                <span className="text-lg font-bold text-violet-600">NewAI</span>
+                <span className="text-lg font-bold text-violet-600">CatalogueOptimize AI</span>
                 <span className="text-gray-400 ml-2">Choose Plan</span>
               </div>
               <button onClick={() => setShowPricing(false)} className="text-gray-400 hover:text-gray-600">
@@ -1020,7 +1020,7 @@ export default function MobileAds() {
         <DialogContent className="bg-white text-gray-900 max-w-md mx-auto rounded-t-3xl sm:rounded-2xl p-0 border-0 max-h-[95vh] overflow-hidden gap-0">
           <VisuallyHidden>
             <DialogTitle>Checkout</DialogTitle>
-            <DialogDescription>Complete your NewAI subscription</DialogDescription>
+            <DialogDescription>Complete your CatalogueOptimize AI subscription</DialogDescription>
           </VisuallyHidden>
 
           {plans[selectedPlan] && (

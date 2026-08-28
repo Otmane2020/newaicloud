@@ -14,6 +14,7 @@ import { useTranslation } from '@/lib/language';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { supabase } from '@/integrations/supabase/client';
 import { ServerStatusAlert } from '@/components/ServerStatusAlert';
+import { CatalogOptimizeLogo } from '@/components/CatalogOptimizeLogo';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -261,14 +262,7 @@ export default function Auth() {
           
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-2">
-              <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Catalog Optimize
-              </span>
-            </div>
+            <CatalogOptimizeLogo />
           </div>
 
           <h1 className="text-3xl font-bold text-center mb-2">

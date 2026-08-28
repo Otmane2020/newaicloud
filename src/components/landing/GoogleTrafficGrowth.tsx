@@ -109,7 +109,7 @@ export const GoogleTrafficGrowth = () => {
           <div className="grid grid-cols-2 gap-4 mb-6 lg:mb-0">
             <div className="bg-muted/50 rounded-2xl p-5 lg:p-6 text-center border border-border">
               <p className="text-xs lg:text-sm text-muted-foreground mb-2">
-                {language === 'fr' ? "Avant NewAI" : "Before NewAI"}
+                {language === 'fr' ? "Avant CatalogueOptimize AI" : "Before CatalogueOptimize AI"}
               </p>
               <p className="text-3xl lg:text-4xl font-bold text-muted-foreground">~200</p>
               <p className="text-xs lg:text-sm text-muted-foreground">{language === 'fr' ? "visites/mois" : "visits/month"}</p>

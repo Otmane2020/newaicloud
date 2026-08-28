@@ -1,6 +1,6 @@
 {
-  "name": "Catalog Optimize",
-  "short_name": "Catalog Optimize",
+  "name": "CatalogueOptimize",
+  "short_name": "CatalogueOptimize",
   "description": "Gérez, enrichissez et synchronisez votre catalogue Shopify avec l'IA",
   "start_url": "/",
   "display": "standalone",

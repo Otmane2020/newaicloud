@@ -120,7 +120,7 @@ const TESTIMONIALS = [
   {
     name: "Sarah M.",
     role: "Shopify Merchant",
-    text: "NewAI doubled my organic traffic in just 2 months. The AI SEO is incredible!",
+    text: "CatalogueOptimize AI doubled my organic traffic in just 2 months. The AI SEO is incredible!",
     rating: 5,
   },
   {
@@ -271,7 +271,7 @@ const Index = () => {
             
             <div className="text-center">
               <p className="text-lg font-semibold text-primary">
-                {language === "fr" ? "NewAI corrige tout ça automatiquement." : "NewAI fixes all of this automatically."}
+                {language === "fr" ? "CatalogueOptimize AI corrige tout ça automatiquement." : "CatalogueOptimize AI fixes all of this automatically."}
               </p>
             </div>
           </div>
@@ -398,15 +398,15 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-6 space-y-2">
             <Badge variant="outline" className="border-primary text-primary">
-              {language === "fr" ? "Découvrir NewAI" : "Discover NewAI"}
+              {language === "fr" ? "Découvrir CatalogueOptimize AI" : "Discover CatalogueOptimize AI"}
             </Badge>
             <h2 className="text-2xl sm:text-3xl font-bold">
               {language === "fr" ? "Réservez votre démo gratuite" : "Book your free demo"}
             </h2>
             <p className="text-sm text-muted-foreground max-w-xl mx-auto">
               {language === "fr"
-                ? "30 minutes pour découvrir comment NewAI peut transformer votre boutique"
-                : "30 minutes to discover how NewAI can transform your store"}
+                ? "30 minutes pour découvrir comment CatalogueOptimize AI peut transformer votre boutique"
+                : "30 minutes to discover how CatalogueOptimize AI can transform your store"}
             </p>
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
               <Clock className="w-3.5 h-3.5" />

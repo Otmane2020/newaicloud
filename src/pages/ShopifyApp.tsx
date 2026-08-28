@@ -96,11 +96,28 @@ export default function ShopifyApp() {
         const session = sessionResult.data?.session;
         const connection = connectionResult.data;
         
-        // Si session active → dashboard-light immédiat
+        // Si une session existe, vérifier l'abonnement avant de choisir la destination.
+        // Un utilisateur authentifié mais sans plan doit toujours voir le wizard Shopify.
         if (session?.user) {
-          console.log('✅ [ShopifyApp] User authenticated, redirecting to dashboard-light');
+          const { data: sessionProfile } = await supabase
+            .from("profiles")
+            .select("subscription_status")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          const sessionHasPlan = isDemoStore ||
+            sessionProfile?.subscription_status === "active" ||
+            sessionProfile?.subscription_status === "trialing";
+
           setStatus("processed");
-          navigate("/dashboard-light", { replace: true });
+          if (sessionHasPlan) {
+            console.log("✅ [ShopifyApp] Authenticated subscriber, redirecting to dashboard");
+            navigate("/dashboard-light", { replace: true });
+          } else {
+            console.log("🧭 [ShopifyApp] Authenticated user without plan, redirecting to Shopify wizard");
+            sessionStorage.setItem("shopify_auth_redirect", "true");
+            navigate(`/app/setup-wizard?shop=${encodeURIComponent(shop)}`, { replace: true });
+          }
           return;
         }
         

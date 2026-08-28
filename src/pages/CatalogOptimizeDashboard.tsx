@@ -121,7 +121,7 @@ export default function CatalogOptimizeDashboard() {
             <div>
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-600 text-white"><Store className="h-6 w-6" /></span>
               <h2 className="mt-5 text-2xl font-semibold">{fr ? "Votre catalogue commence avec Shopify" : "Your catalog starts with Shopify"}</h2>
-              <p className="mt-2 max-w-2xl text-muted-foreground">{fr ? "Une fois connecté, Catalog Optimize importe vos produits, variantes, collections et images, puis affiche uniquement les problèmes réellement détectés." : "Once connected, Catalog Optimize imports products, variants, collections and images, then reports only the issues it actually detects."}</p>
+              <p className="mt-2 max-w-2xl text-muted-foreground">{fr ? "Une fois connecté, CatalogueOptimize importe vos produits, variantes, collections et images, puis affiche uniquement les problèmes réellement détectés." : "Once connected, CatalogueOptimize imports products, variants, collections and images, then reports only the issues it actually detects."}</p>
               <div className="mt-5 flex flex-wrap gap-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4 text-emerald-600" />{fr ? "Installation Shopify" : "Shopify app install"}</span>
                 <span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4 text-emerald-600" />{fr ? "Connexion OAuth manuelle" : "Manual OAuth connection"}</span>

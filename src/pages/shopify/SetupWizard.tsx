@@ -46,14 +46,14 @@ const ShopifyHeader = ({ shopName }: { shopName?: string }) => (
           width: "32px",
           height: "32px",
           borderRadius: "8px",
-          background: `linear-gradient(135deg, ${SHOPIFY_GREEN}, #00a07a)`,
+          background: "linear-gradient(135deg, #7c3aed, #2563eb)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center"
         }}>
           <Sparkles size={18} color="white" />
         </div>
-        <span>NewAI</span>
+        <span>CatalogueOptimize <strong style={{ color: "#a78bfa" }}>AI</strong></span>
       </div>
       
       <span style={{
@@ -64,7 +64,7 @@ const ShopifyHeader = ({ shopName }: { shopName?: string }) => (
         fontSize: "12px",
         fontWeight: 500
       }}>
-        SEO Pro
+        AI Catalog
       </span>
     </div>
 

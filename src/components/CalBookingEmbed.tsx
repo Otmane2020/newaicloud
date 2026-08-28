@@ -22,8 +22,8 @@ export function CalBookingEmbed({ className = "", minimal = false }: CalBookingE
   const title = language === "fr" ? "Réserver une démo" : "Book a Demo";
   const subtitle =
     language === "fr"
-      ? "Découvrez comment NewAI peut transformer votre boutique Shopify"
-      : "Discover how NewAI can transform your Shopify store";
+      ? "Découvrez comment CatalogueOptimize AI peut transformer votre boutique Shopify"
+      : "Discover how CatalogueOptimize AI can transform your Shopify store";
   const duration = language === "fr" ? "30 minutes" : "30 minutes";
   const availability = language === "fr" ? "Lun-Ven" : "Mon-Fri";
   const buttonText = language === "fr" ? "Réserver maintenant" : "Book now";

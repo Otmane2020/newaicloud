@@ -1483,9 +1483,9 @@ export const translations = {
   },
 
   aiAssistant: {
-    title: "NewAI Support",
+    title: "CatalogueOptimize AI Support",
     subtitle: "Online and ready to help",
-    welcome: "Hello! I'm your NewAI Support assistant. How can I help you today?",
+    welcome: "Hello! I'm your CatalogueOptimize AI Support assistant. How can I help you today?",
     placeholder: "Type your message...",
     error: "Sorry, I encountered an error. Please try again.",
     contactForm: "Contact Form",
@@ -2490,7 +2490,7 @@ export const translations = {
     },
     googleAds: {
       title: "Google Ads Optimizer",
-      description: "AI-powered campaign optimization for NewAI",
+      description: "AI-powered campaign optimization for CatalogueOptimize AI",
       refresh: "Refresh",
       importData: "Import Data",
       totalSpend: "Total Spend",
@@ -3435,7 +3435,7 @@ export const translations = {
       },
     },
     chatRobot: {
-      title: "NewAI Robot",
+      title: "CatalogueOptimize AI Robot",
       home: "Home",
       listeningEnabled: "🎤 Listening enabled",
       microphoneError: "Unable to access microphone",
@@ -4823,7 +4823,7 @@ export const translations = {
   },
 
   onboarding: {
-    title: "Choose your NewAI plan",
+    title: "Choose your CatalogueOptimize AI plan",
     subtitle: "Choose the plan that fits your needs • Immediate access to all features",
     monthly: "Monthly",
     yearly: "Yearly",
@@ -6177,7 +6177,7 @@ export const translations = {
       title: "General Notifications",
       subtitle: "Enable or disable in-app and email notifications",
       inApp: "In-app notifications",
-      inAppDesc: "Receive notifications in the NewAI interface",
+      inAppDesc: "Receive notifications in the CatalogueOptimize AI interface",
       email: "Email notifications",
       emailDesc: "Receive a daily summary of your SEO tasks by email",
       digest: "Daily digest",
@@ -6385,7 +6385,7 @@ export const translations = {
     },
     installGuide: {
       title: "Connect your Shopify store",
-      subtitle: "One last step before enjoying NewAI to optimize your SEO",
+      subtitle: "One last step before enjoying CatalogueOptimize AI to optimize your SEO",
       storeDetected: "Store detected",
       autoFilled: "Your information will be automatically pre-filled",
       step1: {
@@ -6730,7 +6730,7 @@ export const translations = {
   },
 
   footer: {
-    brand: "NewAI",
+    brand: "CatalogueOptimize AI",
     tagline: "AI-powered SEO for Shopify stores",
     product: "Product",
     features: "Features",
@@ -7035,10 +7035,10 @@ export const translations = {
     },
     comparison: {
       badge: "See the Difference",
-      title: "Before & After NewAI",
-      subtitle: "See how NewAI transforms your Shopify store's SEO scores in minutes",
+      title: "Before & After CatalogueOptimize AI",
+      subtitle: "See how CatalogueOptimize AI transforms your Shopify store's SEO scores in minutes",
       before: "Before",
-      after: "After NewAI",
+      after: "After CatalogueOptimize AI",
       globalScore: "Global SEO Score",
       poorSeo: "Poor SEO",
       improvement: "improvement",
@@ -7173,7 +7173,7 @@ export const translations = {
     testimonials: {
       badge: "Testimonials",
       title: "Trusted by E-commerce Stores",
-      subtitle: "See what store owners say about NewAI",
+      subtitle: "See what store owners say about CatalogueOptimize AI",
       items: [
         {
           quote: "Our organic traffic increased by 180% in just 2 months. The AI does all the heavy lifting!",
@@ -7472,9 +7472,9 @@ export const translations = {
     lastUpdated: "Last updated",
     acceptance: "Acceptance of Terms",
     acceptanceDesc:
-      "By accessing and using NewAI, you agree to be bound by these terms of service. If you do not agree to these terms, please do not use our services. Your continued use of the platform constitutes your acceptance of any modifications to these terms.",
+      "By accessing and using CatalogueOptimize AI, you agree to be bound by these terms of service. If you do not agree to these terms, please do not use our services. Your continued use of the platform constitutes your acceptance of any modifications to these terms.",
     services: "Services Provided",
-    servicesDesc: "NewAI provides an AI-powered SEO optimization platform for Shopify stores, including:",
+    servicesDesc: "CatalogueOptimize AI provides an AI-powered SEO optimization platform for Shopify stores, including:",
     service1: "Automated generation of optimized product descriptions",
     service2: "Meta tags and alt text optimization",
     service3: "Creation of SEO-friendly blog articles",
@@ -7495,10 +7495,10 @@ export const translations = {
     prohibited5: "Reproduce, duplicate or copy our technology",
     limitation: "Limitation of Liability",
     limitationDesc:
-      'NewAI is provided "as is" without warranty of any kind. We do not guarantee that the service will be uninterrupted or error-free. In no event shall we be liable for indirect, consequential or special damages resulting from the use or inability to use our services.',
+      'CatalogueOptimize AI is provided "as is" without warranty of any kind. We do not guarantee that the service will be uninterrupted or error-free. In no event shall we be liable for indirect, consequential or special damages resulting from the use or inability to use our services.',
     intellectual: "Intellectual Property",
     intellectualDesc:
-      "All content generated by NewAI belongs to you. However, we retain all rights to our platform, algorithms, and technology. You grant us a license to use your content solely for the purpose of providing our services.",
+      "All content generated by CatalogueOptimize AI belongs to you. However, we retain all rights to our platform, algorithms, and technology. You grant us a license to use your content solely for the purpose of providing our services.",
     termination: "Termination",
     terminationDesc:
       "You may terminate your account at any time from your settings. We reserve the right to suspend or terminate your account in case of violation of these terms. Upon termination, you will lose access to your data after 30 days.",
@@ -7506,7 +7506,7 @@ export const translations = {
   },
 
   blogPage: {
-    title: "NewAI Blog",
+    title: "CatalogueOptimize AI Blog",
     subtitle: "Discover how AI revolutionizes e-commerce SEO, Google Merchant Center, and intelligent sales assistance",
     searchPlaceholder: "Search articles...",
     allArticles: "All Articles",
@@ -7517,9 +7517,9 @@ export const translations = {
     noArticles: "No articles match your search",
     backToArticles: "Back to Articles",
     ctaTitle: "Ready to Transform Your Store?",
-    ctaDescription: "Join hundreds of merchants using NewAI to automate their SEO and boost their sales.",
+    ctaDescription: "Join hundreds of merchants using CatalogueOptimize AI to automate their SEO and boost their sales.",
     ctaMainTitle: "Ready to Boost Your E-commerce with AI?",
-    ctaMainDescription: "Join hundreds of merchants automating their SEO and multiplying their sales with NewAI",
+    ctaMainDescription: "Join hundreds of merchants automating their SEO and multiplying their sales with CatalogueOptimize AI",
     startTrial: "Start Free Trial",
     learnMore: "Learn More",
     articleNotFound: "Article not found",
@@ -7542,7 +7542,7 @@ export const translations = {
     },
     demo: {
       title: "Complete Demo & Step-by-Step Guides",
-      description: "Discover all NewAI features with detailed guides and practical examples.",
+      description: "Discover all CatalogueOptimize AI features with detailed guides and practical examples.",
       merchant: {
         title: "Google Merchant Center",
         subtitle: "Automatically create and manage your Google Shopping XML feed to increase your visibility.",
@@ -7863,7 +7863,7 @@ export const translations = {
     },
 
     // Actions
-    automatedActions: "NewAI Automated Actions",
+    automatedActions: "CatalogueOptimize AI Automated Actions",
     automatedActionsDesc: "Quick actions optimized by AI",
     elementsToOptimize: "{{count}} elements to optimize",
     optimize: "Optimize",
@@ -9115,7 +9115,7 @@ export const translations = {
   // ============= API Docs =============
   apiDocs: {
     title: "API Documentation",
-    description: "Complete guide to using the NewAI.sale API",
+    description: "Complete guide to using the CatalogueOptimize AI.sale API",
     tabs: {
       intro: "Introduction",
       auth: "Authentication",
@@ -9124,7 +9124,7 @@ export const translations = {
     },
     intro: {
       welcome: "Welcome",
-      welcomeDesc: "The NewAI.sale API allows you to automate all platform features",
+      welcomeDesc: "The CatalogueOptimize AI.sale API allows you to automate all platform features",
       features: "🚀 Main Features",
       featuresList: {
         seo: "Automatic SEO optimization of products",
@@ -9413,7 +9413,7 @@ export const translations = {
 
   // ============= Blog SEO Management =============
   blogSeoManagement: {
-    subtitle: "Manage promotional articles for newai.sale/blog-NewAI",
+    subtitle: "Manage promotional articles for newai.sale/blog-CatalogueOptimize AI",
     suggestTopics: "Suggest Topics",
     createArticle: "Create Article",
     totalArticles: "Total Articles",
@@ -9428,7 +9428,7 @@ export const translations = {
     noArticles: "No articles found",
     createFirstArticle: "Create your first article to improve SEO",
     aiCampaigns: "AI Content Campaigns",
-    campaignsDescription: "Schedule automated article generation for different NewAI features",
+    campaignsDescription: "Schedule automated article generation for different CatalogueOptimize AI features",
     campaignsComingSoon: "AI Campaigns coming soon. Use 'Suggest Topics' to generate article ideas now.",
     generateIdeas: "Generate Article Ideas",
     suggestedTopics: "Suggested Topics",
@@ -9496,7 +9496,7 @@ export const translations = {
         title: "Step 2: Create a custom app",
         items: [
           'Click on "Create an app"',
-          'Name your application (e.g., "NewAI SEO Integration")',
+          'Name your application (e.g., "CatalogueOptimize AI SEO Integration")',
           'Click "Create an app" to confirm',
         ],
       },
@@ -9531,7 +9531,7 @@ export const translations = {
       },
       step6: {
         title: "Step 6: Paste your keys in the form",
-        description: "Use the two keys above in the connection form to connect your store to NewAI.",
+        description: "Use the two keys above in the connection form to connect your store to CatalogueOptimize AI.",
       },
     },
     footer: {

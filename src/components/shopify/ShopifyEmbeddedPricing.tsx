@@ -150,7 +150,7 @@ export default function ShopifyEmbeddedPricing({
           className="text-lg font-semibold tracking-tight"
           style={{ color: '#111111' }}
         >
-          NewAI
+          CatalogueOptimize AI
         </span>
       </div>
 
