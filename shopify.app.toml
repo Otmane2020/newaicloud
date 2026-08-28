@@ -2,8 +2,8 @@
 
 client_id = "a57869f9e856fc6af974670ab5dcd6a2"
 name = "CatalogueOptimize AI - Product Operations"
-application_url = "https://newai.sale"
-embedded = true
+application_url = "https://catalogoptimize.com/app/setup-wizard"
+embedded = false
 
 [build]
 automatically_update_urls_on_dev = true

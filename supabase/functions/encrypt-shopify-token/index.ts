@@ -6,7 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ENCRYPTION_KEY = Deno.env.get('SHOPIFY_TOKEN_ENCRYPTION_KEY');
+// Prefer a dedicated secret. Lovable Cloud always provides the service-role key,
+ // which gives existing projects a stable server-only fallback without exposing it.
+const DEDICATED_ENCRYPTION_KEY = Deno.env.get('SHOPIFY_TOKEN_ENCRYPTION_KEY');
+const ENCRYPTION_KEY = DEDICATED_ENCRYPTION_KEY || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+if (!DEDICATED_ENCRYPTION_KEY) {
+  console.warn('[ENCRYPT-TOKEN] SHOPIFY_TOKEN_ENCRYPTION_KEY missing; using the server-only Supabase key fallback');
+}
 
 // Simple AES-256-GCM encryption using Web Crypto API
 async function encryptToken(token: string): Promise<{ encrypted: string; iv: string }> {
@@ -117,7 +124,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Health check handler
     const body = await req.json().catch(() => ({}));
     if (body?.healthCheck === true) {
-      return new Response(JSON.stringify({ ok: true }), {
+      return new Response(JSON.stringify({ ok: true, encryptionConfigured: Boolean(ENCRYPTION_KEY), keySource: DEDICATED_ENCRYPTION_KEY ? 'dedicated' : 'server-fallback' }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -125,9 +132,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Verify ENCRYPTION_KEY is configured
     if (!ENCRYPTION_KEY) {
-      console.error('[ENCRYPT-TOKEN] SHOPIFY_TOKEN_ENCRYPTION_KEY not configured');
+      console.error('[ENCRYPT-TOKEN] No stable server-side encryption key available');
       return new Response(
-        JSON.stringify({ error: 'Encryption key not configured' }),
+        JSON.stringify({ error: 'Server encryption configuration unavailable' }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
