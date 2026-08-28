@@ -227,17 +227,19 @@ export default function CatalogOptimizeLanding() {
             <Card className="overflow-hidden border-slate-200 shadow-2xl shadow-violet-950/10">
               <CardHeader className="border-b bg-slate-950 text-white">
                 <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-600"><Bot className="h-5 w-5" /></span>
-                  <div><CardTitle className="text-base">Storefront AI</CardTitle><p className="text-xs text-slate-400">Connected to your live catalog</p></div>
+                  <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl bg-white p-1">
+                    <img src="https://decora-home.fr/cdn/shop/files/decora-home-logo-v2.png?v=1787716718&width=160" alt="Decora Home" className="h-full w-full object-contain" />
+                  </span>
+                  <div><CardTitle className="text-base">Decora Home Assistant</CardTitle><p className="text-xs text-slate-400">Connected to the live Shopify catalog</p></div>
                   <span className="ml-auto h-2.5 w-2.5 rounded-full bg-emerald-400" />
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 bg-slate-50 p-6">
-                <div className="ml-auto max-w-[82%] rounded-2xl rounded-br-md bg-violet-600 p-4 text-sm text-white">I need a compact green velvet sofa under €1,000.</div>
-                <div className="max-w-[88%] rounded-2xl rounded-bl-md border bg-white p-4 text-sm text-slate-700">I found three matching products. The emerald 3-seater is the closest fit and is currently available.</div>
-                <div className="grid grid-cols-[72px_1fr] gap-3 rounded-xl border bg-white p-3">
-                  <div className="grid h-[72px] place-items-center rounded-lg bg-violet-50"><ShoppingCart className="h-6 w-6 text-violet-600" /></div>
-                  <div><p className="font-semibold">Emerald Velvet Sofa</p><p className="mt-1 text-xs text-slate-500">In stock · 3 variants</p><Button size="sm" className="mt-3 h-8">Add to cart</Button></div>
+                <div className="ml-auto max-w-[82%] rounded-2xl rounded-br-md bg-violet-600 p-4 text-sm text-white">Je cherche une composition TV murale moderne en bois.</div>
+                <div className="max-w-[88%] rounded-2xl rounded-bl-md border bg-white p-4 text-sm text-slate-700">La composition SWITCH correspond à votre recherche. Elle est disponible en plusieurs finitions dans le catalogue Decora Home.</div>
+                <div className="grid grid-cols-[88px_1fr] gap-3 rounded-xl border bg-white p-3">
+                  <img src="https://decora-home.fr/cdn/shop/files/2c-550x550_ee8d60db-fabb-488b-8564-6d03c338d9a2.jpg?v=1787700971&width=240" alt="Composition TV SWITCH Decora Home" className="h-[88px] w-[88px] rounded-lg object-cover" />
+                  <div><p className="font-semibold">Composition TV SWITCH</p><p className="mt-1 text-xs text-slate-500">Disponible · plusieurs finitions</p><Button size="sm" className="mt-3 h-8">Voir le produit</Button></div>
                 </div>
               </CardContent>
             </Card>
