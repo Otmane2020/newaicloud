@@ -78,7 +78,8 @@ const escapeCsvCell = (value: unknown): string => {
 
 const ProductSource = () => {
   const { user } = useAuth();
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
+  const fr = language === "fr";
   const [products, setProducts] = useState<ProductSourceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -307,10 +308,10 @@ const ProductSource = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-[1600px] space-y-4">
       <WorkspacePageHeader
-        section="Catalog"
-        page="Product Sources"
+        section={fr ? "Catalogue" : "Catalog"}
+        page={fr ? "Données enrichies" : "Enriched Data"}
         count={products.length}
         title={t.seo.productSource.title}
         description={t.seo.productSource.subtitle}
@@ -329,10 +330,10 @@ const ProductSource = () => {
             </Button>
             <details className="relative">
               <summary className="flex min-h-9 cursor-pointer list-none items-center rounded-lg border px-3 text-sm font-medium hover:bg-muted">
-                <Download className="mr-2 h-4 w-4" /> More
+                <Download className="mr-2 h-4 w-4" /> {fr ? "Plus" : "More"}
               </summary>
               <div className="absolute right-0 z-30 mt-2 grid w-56 gap-1 rounded-xl border bg-white p-2 shadow-xl">
-                <Button onClick={loadProducts} disabled={enriching} variant="ghost" className="justify-start">Refresh</Button>
+                <Button onClick={loadProducts} disabled={enriching} variant="ghost" className="justify-start">{fr ? "Actualiser" : "Refresh"}</Button>
                 <Button onClick={exportToCSV} variant="ghost" className="justify-start">{t.seo.productSource.actions.exportCSV}</Button>
                 <Button onClick={exportData} variant="ghost" className="justify-start">{t.seo.productSource.actions.exportJSON}</Button>
                 {selectedProducts.size > 0 && (
@@ -346,178 +347,147 @@ const ProductSource = () => {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Total Produits</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{products.length}</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Taux d'enrichissement</CardTitle></CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{enrichmentRate.toFixed(1)}%</div>
-            <Progress value={enrichmentRate} className="mt-2" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Qualité Moyenne</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{avgQuality.toFixed(1)}/10</div></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-sm font-medium">Vision AI Actif</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{products.filter((product) => product.ai_vision_model).length}</div></CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-4">
-            <div className="flex items-center gap-3">
-              <Checkbox
-                checked={filteredProducts.length > 0 && filteredProducts.every((product) => selectedProducts.has(product.id))}
-                onCheckedChange={toggleSelectAll}
-              />
-              <span className="text-sm font-medium">Tout sélectionner ({selectedProducts.size}/{filteredProducts.length})</span>
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 sm:grid-cols-4 sm:divide-y-0">
+          {[
+            { label: fr ? "Produits" : "Products", value: products.length, tone: "text-slate-950" },
+            { label: fr ? "Enrichissement" : "Enrichment", value: `${enrichmentRate.toFixed(0)}%`, tone: enrichmentRate >= 80 ? "text-emerald-700" : enrichmentRate >= 50 ? "text-amber-700" : "text-rose-700" },
+            { label: fr ? "Qualité moyenne" : "Average quality", value: `${avgQuality.toFixed(1)}/10`, tone: avgQuality >= 8 ? "text-emerald-700" : avgQuality >= 5 ? "text-amber-700" : "text-rose-700" },
+            { label: fr ? "Vision IA" : "Vision AI", value: products.filter((product) => product.ai_vision_model).length, tone: "text-violet-700" },
+          ].map((stat) => (
+            <div key={stat.label} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3">
+              <span className="text-xs font-medium text-slate-500">{stat.label}</span>
+              <strong className={`text-lg tabular-nums ${stat.tone}`}>{stat.value}</strong>
             </div>
-            <Input
-              placeholder="Rechercher un produit..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
+          ))}
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="flex flex-col gap-2 border-b border-slate-100 p-2 sm:flex-row sm:items-center">
+          <label className="flex h-9 items-center gap-2 px-2 text-sm text-slate-600">
+            <Checkbox
+              checked={filteredProducts.length > 0 && filteredProducts.every((product) => selectedProducts.has(product.id))}
+              onCheckedChange={toggleSelectAll}
             />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger><SelectValue placeholder="Statut" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="enriched">Enrichis</SelectItem>
-                <SelectItem value="pending">En attente</SelectItem>
-                <SelectItem value="error">Erreur</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger><SelectValue placeholder="Catégorie" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les catégories</SelectItem>
-                {categories.map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+            <span>{fr ? "Tout sélectionner" : "Select all"} · {selectedProducts.size}/{filteredProducts.length}</span>
+          </label>
+          <Input
+            placeholder={fr ? "Rechercher un produit…" : "Search products…"}
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="h-9 sm:ml-auto sm:max-w-xs"
+          />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 sm:w-40"><SelectValue placeholder={fr ? "Statut" : "Status"} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{fr ? "Tous les statuts" : "All statuses"}</SelectItem>
+              <SelectItem value="enriched">{fr ? "Enrichis" : "Enriched"}</SelectItem>
+              <SelectItem value="pending">{fr ? "En attente" : "Pending"}</SelectItem>
+              <SelectItem value="error">{fr ? "Erreur" : "Error"}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="h-9 sm:w-48"><SelectValue placeholder={fr ? "Catégorie" : "Category"} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{fr ? "Toutes les catégories" : "All categories"}</SelectItem>
+              {categories.map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredProducts.map((product) => (
-          <Card key={product.id} className="relative transition-shadow hover:shadow-lg">
-            <div className="absolute left-4 top-4 z-10">
-              <Checkbox
-                checked={selectedProducts.has(product.id)}
-                onCheckedChange={() => toggleProductSelection(product.id)}
-                className="bg-card"
-              />
-            </div>
-            <CardHeader>
-              {product.image_url && (
-                <img src={product.image_url} alt={product.title} className="mb-4 h-48 w-full rounded-lg object-cover" />
-              )}
-              <CardTitle className="line-clamp-2 text-lg">{product.title}</CardTitle>
-              <div className="mt-2 flex gap-1">
-                <Badge variant={product.enrichment_status === "enriched" ? "default" : "secondary"}>{product.enrichment_status}</Badge>
-                {product.ai_vision_model && <Badge variant="outline"><Eye className="mr-1 h-3 w-3" />Vision AI</Badge>}
+        <div className="divide-y divide-slate-100">
+          {filteredProducts.map((product) => (
+            <div key={product.id} className="grid grid-cols-[auto_48px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 transition hover:bg-slate-50">
+              <Checkbox checked={selectedProducts.has(product.id)} onCheckedChange={() => toggleProductSelection(product.id)} />
+              <div className="h-12 w-12 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                {product.image_url ? <img src={product.image_url} alt={product.title} className="h-full w-full object-cover" /> : <Package className="m-3 h-6 w-6 text-slate-300" />}
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2 text-sm">
-                {product.ai_color && <div><span className="text-muted-foreground">Couleur: </span>{product.ai_color}</div>}
-                {product.ai_material && <div><span className="text-muted-foreground">Matériau: </span>{product.ai_material}</div>}
-                {product.ai_shape && <div><span className="text-muted-foreground">Forme: </span>{product.ai_shape}</div>}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-slate-950">{product.title}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                  <span>{product.category || (fr ? "Sans catégorie" : "Uncategorized")}</span>
+                  {product.ai_material && <span>{product.ai_material}</span>}
+                  {typeof product.ai_presentation_quality === "number" && <span>{fr ? "Qualité" : "Quality"} {product.ai_presentation_quality}/10</span>}
+                  {product.ai_vision_model && <span className="text-violet-600">Vision AI</span>}
+                </div>
               </div>
-
-              {(product.smart_length || product.smart_width || product.smart_height) && (
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  {product.smart_length && <span>L: {product.smart_length}{product.smart_length_unit}</span>}
-                  {product.smart_width && <span>l: {product.smart_width}{product.smart_width_unit}</span>}
-                  {product.smart_height && <span>H: {product.smart_height}{product.smart_height_unit}</span>}
-                </div>
-              )}
-
-              {typeof product.ai_presentation_quality === "number" && (
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Qualité</span><span>{product.ai_presentation_quality}/10</span></div>
-                  <Progress value={product.ai_presentation_quality * 10} />
-                </div>
-              )}
-
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className={product.enrichment_status === "enriched" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : product.enrichment_status === "error" ? "border-rose-200 bg-rose-50 text-rose-700" : "border-amber-200 bg-amber-50 text-amber-700"}>
+                  {product.enrichment_status === "enriched" ? (fr ? "Enrichi" : "Enriched") : product.enrichment_status === "error" ? (fr ? "Erreur" : "Error") : (fr ? "En attente" : "Pending")}
+                </Badge>
                 {product.enrichment_status !== "enriched" && (
-                  <Button size="sm" className="flex-1" onClick={() => handleEnrichProduct(product.id)} disabled={enriching}>
-                    <Sparkles className="mr-1 h-3 w-3" />Enrichir IA
+                  <Button size="sm" variant="outline" onClick={() => handleEnrichProduct(product.id)} disabled={enriching}>
+                    <Sparkles className="h-4 w-4" /><span className="sr-only">{fr ? "Enrichir avec l’IA" : "Enrich with AI"}</span>
                   </Button>
                 )}
-                <Button variant="outline" size="sm" className="flex-1" onClick={() => setSelectedProduct(product)}>
-                  <Eye className="mr-1 h-3 w-3" />Détails
+                <Button variant="ghost" size="sm" onClick={() => setSelectedProduct(product)}>
+                  <Eye className="h-4 w-4" /><span className="sr-only">{fr ? "Détails" : "Details"}</span>
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {filteredProducts.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
             <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium">Aucun produit trouvé</p>
-            <p className="text-sm text-muted-foreground">Essayez de modifier vos filtres de recherche</p>
+            <p className="text-sm font-medium">{fr ? "Aucun produit trouvé" : "No products found"}</p>
+            <p className="text-sm text-muted-foreground">{fr ? "Modifiez les filtres de recherche." : "Try changing the search filters."}</p>
           </CardContent>
         </Card>
       )}
 
       <Dialog open={Boolean(selectedProduct)} onOpenChange={(open) => !open && setSelectedProduct(null)}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
-          <DialogHeader><DialogTitle>{selectedProduct?.title || "Produit"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{selectedProduct?.title || (fr ? "Produit" : "Product")}</DialogTitle></DialogHeader>
           {selectedProduct && (
             <Tabs defaultValue="attributes" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="attributes">Attributs IA</TabsTrigger>
+                <TabsTrigger value="attributes">{fr ? "Attributs IA" : "AI attributes"}</TabsTrigger>
                 <TabsTrigger value="dimensions">Dimensions</TabsTrigger>
                 <TabsTrigger value="vision">Vision AI</TabsTrigger>
-                <TabsTrigger value="category">Catégorie</TabsTrigger>
+                <TabsTrigger value="category">{fr ? "Catégorie" : "Category"}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="attributes" className="space-y-4">
                 {selectedProduct.image_url && <img src={selectedProduct.image_url} alt={selectedProduct.title} className="h-64 w-full rounded-lg object-cover" />}
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><p className="font-medium">Couleur</p><p className="text-muted-foreground">{selectedProduct.ai_color || "N/A"}</p></div>
-                  <div><p className="font-medium">Matériau</p><p className="text-muted-foreground">{selectedProduct.ai_material || "N/A"}</p></div>
-                  <div><p className="font-medium">Forme</p><p className="text-muted-foreground">{selectedProduct.ai_shape || "N/A"}</p></div>
+                  <div><p className="font-medium">{fr ? "Couleur" : "Color"}</p><p className="text-muted-foreground">{selectedProduct.ai_color || "N/A"}</p></div>
+                  <div><p className="font-medium">{fr ? "Matériau" : "Material"}</p><p className="text-muted-foreground">{selectedProduct.ai_material || "N/A"}</p></div>
+                  <div><p className="font-medium">{fr ? "Forme" : "Shape"}</p><p className="text-muted-foreground">{selectedProduct.ai_shape || "N/A"}</p></div>
                   <div><p className="font-medium">Texture</p><p className="text-muted-foreground">{selectedProduct.ai_texture || "N/A"}</p></div>
-                  <div><p className="font-medium">Motif</p><p className="text-muted-foreground">{selectedProduct.ai_pattern || "N/A"}</p></div>
-                  <div><p className="font-medium">Finition</p><p className="text-muted-foreground">{selectedProduct.ai_finish || "N/A"}</p></div>
+                  <div><p className="font-medium">{fr ? "Motif" : "Pattern"}</p><p className="text-muted-foreground">{selectedProduct.ai_pattern || "N/A"}</p></div>
+                  <div><p className="font-medium">{fr ? "Finition" : "Finish"}</p><p className="text-muted-foreground">{selectedProduct.ai_finish || "N/A"}</p></div>
                 </div>
               </TabsContent>
 
               <TabsContent value="dimensions" className="grid grid-cols-2 gap-4 text-sm">
-                <div><p className="font-medium">Longueur</p><p className="text-muted-foreground">{selectedProduct.smart_length ? `${selectedProduct.smart_length} ${selectedProduct.smart_length_unit || ""}` : "N/A"}</p></div>
-                <div><p className="font-medium">Largeur</p><p className="text-muted-foreground">{selectedProduct.smart_width ? `${selectedProduct.smart_width} ${selectedProduct.smart_width_unit || ""}` : "N/A"}</p></div>
-                <div><p className="font-medium">Hauteur</p><p className="text-muted-foreground">{selectedProduct.smart_height ? `${selectedProduct.smart_height} ${selectedProduct.smart_height_unit || ""}` : "N/A"}</p></div>
-                <div><p className="font-medium">Profondeur</p><p className="text-muted-foreground">{selectedProduct.smart_depth ? `${selectedProduct.smart_depth} ${selectedProduct.smart_depth_unit || ""}` : "N/A"}</p></div>
-                <div><p className="font-medium">Diamètre</p><p className="text-muted-foreground">{selectedProduct.smart_diameter ? `${selectedProduct.smart_diameter} ${selectedProduct.smart_diameter_unit || ""}` : "N/A"}</p></div>
-                <div><p className="font-medium">Poids</p><p className="text-muted-foreground">{selectedProduct.smart_weight ? `${selectedProduct.smart_weight} ${selectedProduct.smart_weight_unit || ""}` : "N/A"}</p></div>
+                <div><p className="font-medium">{fr ? "Longueur" : "Length"}</p><p className="text-muted-foreground">{selectedProduct.smart_length ? `${selectedProduct.smart_length} ${selectedProduct.smart_length_unit || ""}` : "N/A"}</p></div>
+                <div><p className="font-medium">{fr ? "Largeur" : "Width"}</p><p className="text-muted-foreground">{selectedProduct.smart_width ? `${selectedProduct.smart_width} ${selectedProduct.smart_width_unit || ""}` : "N/A"}</p></div>
+                <div><p className="font-medium">{fr ? "Hauteur" : "Height"}</p><p className="text-muted-foreground">{selectedProduct.smart_height ? `${selectedProduct.smart_height} ${selectedProduct.smart_height_unit || ""}` : "N/A"}</p></div>
+                <div><p className="font-medium">{fr ? "Profondeur" : "Depth"}</p><p className="text-muted-foreground">{selectedProduct.smart_depth ? `${selectedProduct.smart_depth} ${selectedProduct.smart_depth_unit || ""}` : "N/A"}</p></div>
+                <div><p className="font-medium">{fr ? "Diamètre" : "Diameter"}</p><p className="text-muted-foreground">{selectedProduct.smart_diameter ? `${selectedProduct.smart_diameter} ${selectedProduct.smart_diameter_unit || ""}` : "N/A"}</p></div>
+                <div><p className="font-medium">{fr ? "Poids" : "Weight"}</p><p className="text-muted-foreground">{selectedProduct.smart_weight ? `${selectedProduct.smart_weight} ${selectedProduct.smart_weight_unit || ""}` : "N/A"}</p></div>
               </TabsContent>
 
               <TabsContent value="vision" className="space-y-4 text-sm">
-                <div><p className="font-medium">Analyse Vision AI</p><p className="whitespace-pre-wrap text-muted-foreground">{selectedProduct.ai_vision_analysis || "Aucune analyse disponible"}</p></div>
+                <div><p className="font-medium">{fr ? "Analyse Vision IA" : "Vision AI analysis"}</p><p className="whitespace-pre-wrap text-muted-foreground">{selectedProduct.ai_vision_analysis || (fr ? "Aucune analyse disponible" : "No analysis available")}</p></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><p className="font-medium">Modèle</p><p className="text-muted-foreground">{selectedProduct.ai_vision_model || "N/A"}</p></div>
-                  <div><p className="font-medium">Confiance</p><p className="text-muted-foreground">{selectedProduct.ai_vision_confidence ? `${selectedProduct.ai_vision_confidence}%` : "N/A"}</p></div>
-                  <div><p className="font-medium">Éclairage</p><p className="text-muted-foreground">{selectedProduct.ai_lighting_type || "N/A"}</p></div>
-                  <div><p className="font-medium">Style de fond</p><p className="text-muted-foreground">{selectedProduct.ai_background_style || "N/A"}</p></div>
+                  <div><p className="font-medium">{fr ? "Modèle" : "Model"}</p><p className="text-muted-foreground">{selectedProduct.ai_vision_model || "N/A"}</p></div>
+                  <div><p className="font-medium">{fr ? "Confiance" : "Confidence"}</p><p className="text-muted-foreground">{selectedProduct.ai_vision_confidence ? `${selectedProduct.ai_vision_confidence}%` : "N/A"}</p></div>
+                  <div><p className="font-medium">{fr ? "Éclairage" : "Lighting"}</p><p className="text-muted-foreground">{selectedProduct.ai_lighting_type || "N/A"}</p></div>
+                  <div><p className="font-medium">{fr ? "Style de fond" : "Background style"}</p><p className="text-muted-foreground">{selectedProduct.ai_background_style || "N/A"}</p></div>
                 </div>
               </TabsContent>
 
               <TabsContent value="category" className="grid grid-cols-2 gap-4 text-sm">
-                <div><p className="font-medium">Catégorie</p><p className="text-muted-foreground">{selectedProduct.category || "N/A"}</p></div>
-                <div><p className="font-medium">Sous-catégorie</p><p className="text-muted-foreground">{selectedProduct.sub_category || "N/A"}</p></div>
+                <div><p className="font-medium">{fr ? "Catégorie" : "Category"}</p><p className="text-muted-foreground">{selectedProduct.category || "N/A"}</p></div>
+                <div><p className="font-medium">{fr ? "Sous-catégorie" : "Subcategory"}</p><p className="text-muted-foreground">{selectedProduct.sub_category || "N/A"}</p></div>
                 <div><p className="font-medium">Style</p><p className="text-muted-foreground">{selectedProduct.style || "N/A"}</p></div>
-                <div><p className="font-medium">Pièce</p><p className="text-muted-foreground">{selectedProduct.room || "N/A"}</p></div>
+                <div><p className="font-medium">{fr ? "Pièce" : "Room"}</p><p className="text-muted-foreground">{selectedProduct.room || "N/A"}</p></div>
               </TabsContent>
             </Tabs>
           )}
