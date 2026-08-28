@@ -7,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const VISION_RUNTIME_REVISION = "2026-08-28-openrouter-free-fallback";
+
 interface VisionRequest {
   imageUrl: string;
   productContext?: {
@@ -82,7 +84,7 @@ serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   if (body?.healthCheck === true) {
-    return jsonResponse({ ok: true });
+    return jsonResponse({ ok: true, revision: VISION_RUNTIME_REVISION });
   }
 
   try {
@@ -92,6 +94,7 @@ serve(async (req) => {
         success: false,
         error: "VISION_IMAGE_REQUIRED",
         message: "An image is required for analysis.",
+        revision: VISION_RUNTIME_REVISION,
       });
     }
 
@@ -101,7 +104,7 @@ serve(async (req) => {
     } catch (error: any) {
       const normalized = normalizeVisionError(error?.message || "Cannot fetch image");
       console.error("❌ analyze-image-with-vision image fetch failed:", error);
-      return jsonResponse({ success: false, ...normalized });
+      return jsonResponse({ success: false, ...normalized, revision: VISION_RUNTIME_REVISION });
     }
 
     const context = productContext
@@ -176,7 +179,7 @@ Règles :
     } catch (error: any) {
       const normalized = normalizeVisionError(error?.message || "Vision provider unavailable");
       console.error("❌ analyze-image-with-vision provider failed:", error);
-      return jsonResponse({ success: false, ...normalized });
+      return jsonResponse({ success: false, ...normalized, revision: VISION_RUNTIME_REVISION });
     }
 
     console.log(`[analyze-image-with-vision] provider=${routedVision.provider} model=${routedVision.model}`);
@@ -188,6 +191,7 @@ Règles :
         ...parsed,
         ai_provider: routedVision.provider,
         ai_model: routedVision.model,
+        revision: VISION_RUNTIME_REVISION,
       });
     } catch (error) {
       console.error("❌ Invalid JSON from vision router:", routedVision.content.substring(0, 500), error);
@@ -195,6 +199,7 @@ Règles :
         success: false,
         error: "VISION_INVALID_RESPONSE",
         message: "The image analysis provider returned an invalid response.",
+        revision: VISION_RUNTIME_REVISION,
       });
     }
   } catch (error: any) {
@@ -203,6 +208,6 @@ Règles :
 
     // Provider failures are application-level failures, not Edge runtime failures.
     // Always return HTTP 200 so Supabase/Lovable does not surface a blank-screen runtime error.
-    return jsonResponse({ success: false, ...normalized });
+    return jsonResponse({ success: false, ...normalized, revision: VISION_RUNTIME_REVISION });
   }
 });
