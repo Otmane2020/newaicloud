@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useOptimizationNotifications } from './useOptimizationNotifications';
+import { translateImageGenerationError } from '@/lib/imageUiTranslations';
 
 interface OptimizationResult {
   success: boolean;
@@ -22,6 +23,95 @@ interface SaveHistoryParams {
   qualityScore?: number;
 }
 
+type AppLanguage = 'fr' | 'en';
+
+const getLanguage = (): AppLanguage => {
+  try {
+    return localStorage.getItem('app-language') === 'fr' ? 'fr' : 'en';
+  } catch {
+    return 'en';
+  }
+};
+
+const getCopy = (language: AppLanguage) => language === 'fr'
+  ? {
+      variantsGenerated: '4 variantes générées avec succès',
+      variantsError: 'Erreur lors de la génération des variantes',
+      descriptionGenerated: 'Description HTML générée avec succès',
+      descriptionError: 'Erreur lors de la génération de la description',
+      syncing: 'Synchronisation avec Shopify...',
+      applyingOptimized: "Application de l'image optimisée",
+      shopifySyncError: 'Erreur de synchronisation Shopify',
+      checkShopify: 'Vérifiez votre connexion Shopify dans les paramètres',
+      settings: '⚙️ Paramètres',
+      limitedSync: 'Synchronisation limitée',
+      limitedSyncDescription: 'Image appliquée localement. Passez à un plan supérieur pour synchroniser avec Shopify.',
+      plans: '✨ Voir les plans',
+      localOnly: 'Image appliquée localement uniquement',
+      localOnlyDescription: "Le produit n'est pas encore connecté à Shopify. Les images seront envoyées une fois le produit synchronisé.",
+      partialSync: 'Image appliquée mais synchronisation Shopify partielle',
+      partialSyncDescription: "L'image est mise à jour localement. Certaines images n'ont pas été synchronisées.",
+      synced: 'Image synchronisée avec Shopify',
+      storeUpdated: 'Votre boutique est à jour',
+      syncError: 'Erreur de synchronisation',
+      localApplied: "L'image est appliquée localement seulement",
+      invalidToken: 'Token Shopify invalide',
+      reconnectShopify: 'Veuillez reconnecter votre boutique Shopify dans les paramètres.',
+      applyError: "Erreur lors de l'application de l'image",
+    }
+  : {
+      variantsGenerated: '4 variants generated successfully',
+      variantsError: 'Error generating variants',
+      descriptionGenerated: 'HTML description generated successfully',
+      descriptionError: 'Error generating description',
+      syncing: 'Syncing with Shopify...',
+      applyingOptimized: 'Applying optimized image',
+      shopifySyncError: 'Shopify synchronization error',
+      checkShopify: 'Check your Shopify connection in settings',
+      settings: '⚙️ Settings',
+      limitedSync: 'Limited synchronization',
+      limitedSyncDescription: 'Image applied locally. Upgrade your plan to sync with Shopify.',
+      plans: '✨ View plans',
+      localOnly: 'Image applied locally only',
+      localOnlyDescription: 'The product is not connected to Shopify yet. Images will be sent once the product is synchronized.',
+      partialSync: 'Image applied with partial Shopify sync',
+      partialSyncDescription: 'The image is updated locally. Some images were not synchronized.',
+      synced: 'Image synchronized with Shopify',
+      storeUpdated: 'Your store is up to date',
+      syncError: 'Synchronization error',
+      localApplied: 'The image was applied locally only',
+      invalidToken: 'Invalid Shopify token',
+      reconnectShopify: 'Please reconnect your Shopify store in settings.',
+      applyError: 'Error applying image',
+    };
+
+async function readFunctionError(error: unknown, fallback: string): Promise<Error> {
+  const raw = error as any;
+  let code = '';
+  let message = raw?.message || fallback;
+
+  const context = raw?.context;
+  if (context && typeof context.clone === 'function') {
+    try {
+      const response = context.clone();
+      const payload = await response.json();
+      code = payload?.error || payload?.code || '';
+      message = payload?.message || payload?.error_description || payload?.error || message;
+    } catch {
+      try {
+        const response = context.clone();
+        const text = await response.text();
+        if (text) message = text;
+      } catch {
+        // Keep the original Supabase error message.
+      }
+    }
+  }
+
+  const combined = code && !String(message).includes(code) ? `${code}: ${message}` : String(message || fallback);
+  return new Error(combined);
+}
+
 export const useImageOptimization = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const queryClient = useQueryClient();
@@ -32,27 +122,18 @@ export const useImageOptimization = () => {
     if (!user) throw new Error('User not authenticated');
 
     try {
-      // Get next version number
       const { data: versionData, error: versionError } = await supabase
         .rpc('get_next_image_version', { p_image_id: params.imageId });
-      
-      if (versionError) {
-        console.error('Error getting version number:', versionError);
-      }
-      
+
+      if (versionError) console.error('Error getting version number:', versionError);
       const versionNumber = versionData || 1;
 
-      // Mark all previous versions as not current
       const { error: updateError } = await supabase
         .from('product_image_history')
         .update({ is_current: false })
         .eq('image_id', params.imageId);
-      
-      if (updateError) {
-        console.error('Error updating previous versions:', updateError);
-      }
+      if (updateError) console.error('Error updating previous versions:', updateError);
 
-      // Insert new history entry
       const { error: insertError } = await supabase
         .from('product_image_history')
         .insert({
@@ -67,15 +148,10 @@ export const useImageOptimization = () => {
           ai_prompt: params.aiPrompt,
           resolution: params.resolution,
           quality_score: params.qualityScore,
-          is_current: true
+          is_current: true,
         });
 
-      if (insertError) {
-        console.error('❌ Error saving to history:', insertError);
-        throw insertError;
-      }
-
-      console.log('✅ Successfully saved to product_image_history');
+      if (insertError) throw insertError;
       return versionNumber;
     } catch (error) {
       console.error('❌ Failed to save history:', error);
@@ -84,8 +160,8 @@ export const useImageOptimization = () => {
   };
 
   const generateWhiteBackground = useMutation({
-    mutationFn: async ({ 
-      imageUrl, 
+    mutationFn: async ({
+      imageUrl,
       productTitle,
       resolution = '2000x2000',
       format = 'square',
@@ -96,9 +172,9 @@ export const useImageOptimization = () => {
       product_id,
       backgroundStyle,
       customPrompt,
-      galleryImages // 🆕 All gallery images for AI context
+      galleryImages,
     }: {
-      imageUrl: string; 
+      imageUrl: string;
       productTitle: string;
       resolution?: string;
       format?: 'square' | 'portrait' | 'landscape';
@@ -109,47 +185,51 @@ export const useImageOptimization = () => {
       product_id?: string;
       backgroundStyle?: 'shopping' | 'lifestyle' | 'moderne' | 'living_room' | 'studio' | 'nature' | 'luxury_showroom';
       customPrompt?: string;
-      galleryImages?: string[]; // 🆕 All product gallery images for AI context
+      galleryImages?: string[];
     }): Promise<OptimizationResult> => {
       setIsOptimizing(true);
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('generate-white-background', {
-          body: { imageUrl, productTitle, resolution, format, mode, serpData, visionAiData, productDescription, product_id, backgroundStyle, customPrompt, galleryImages }
-        });
+      const { data, error } = await supabase.functions.invoke('generate-white-background', {
+        body: {
+          imageUrl,
+          productTitle,
+          resolution,
+          format,
+          mode,
+          serpData,
+          visionAiData,
+          productDescription,
+          product_id,
+          backgroundStyle,
+          customPrompt,
+          galleryImages,
+        },
+      });
 
-        if (error) throw error;
-        if (!data.success) throw new Error(data.error || 'Failed to generate white background');
+      if (error) throw await readFunctionError(error, 'WHITE_BACKGROUND_GENERATION_FAILED');
+      if (!data?.success) throw new Error(`${data?.error || 'WHITE_BACKGROUND_GENERATION_FAILED'}: ${data?.message || 'Failed to generate white background'}`);
+      if (!data?.imageUrl) throw new Error('WHITE_BACKGROUND_GENERATION_FAILED: Missing generated image URL');
 
-        return {
-          success: true,
-          imageUrl: data.imageUrl
-        };
-      } catch (error) {
-        setIsOptimizing(false);
-        throw error;
-      }
+      return { success: true, imageUrl: data.imageUrl };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product-images'] });
       queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error generating white background:', error);
       setIsOptimizing(false);
     },
-    onSettled: () => {
-      setIsOptimizing(false);
-    }
+    onSettled: () => setIsOptimizing(false),
   });
 
   const generateAIBackgroundVariants = useMutation({
-    mutationFn: async ({ 
+    mutationFn: async ({
       productTitle,
       productImageUrl,
       basePrompt = '',
       style = 'professional',
-      format = 'square'
-    }: { 
+      format = 'square',
+    }: {
       productTitle: string;
       productImageUrl: string;
       basePrompt?: string;
@@ -157,100 +237,64 @@ export const useImageOptimization = () => {
       format?: string;
     }) => {
       setIsOptimizing(true);
-      
-      try {
-        console.log('🎨 [AI_BG] Starting generation for:', productTitle, 'with image:', productImageUrl?.substring(0, 50));
-        
-        const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
-          body: { productTitle, productImageUrl, basePrompt, style, format }
-        });
+      const { data, error } = await supabase.functions.invoke('generate-ai-background-variants', {
+        body: { productTitle, productImageUrl, basePrompt, style, format },
+      });
 
-        if (error) {
-          console.error('🎨 [AI_BG] Edge function error:', error);
-          throw error;
-        }
-        
-        if (!data.success) {
-          console.error('🎨 [AI_BG] Generation failed:', data.error);
-          throw new Error(data.error || 'Failed to generate variants');
-        }
-
-        console.log('🎨 [AI_BG] API Response:', {
-          success: data.success,
-          totalGenerated: data.totalGenerated,
-          variantsCount: data.variants?.length,
-          firstVariant: {
-            hasImageUrl: !!data.variants?.[0]?.imageUrl,
-            hasImageBase64: !!data.variants?.[0]?.imageBase64,
-            imageUrlLength: data.variants?.[0]?.imageUrl?.length || 0
-          }
-        });
-
-        return data;
-      } catch (error) {
-        setIsOptimizing(false);
-        throw error;
-      }
+      if (error) throw await readFunctionError(error, 'AI_BACKGROUND_VARIANTS_FAILED');
+      if (!data?.success) throw new Error(`${data?.error || 'AI_BACKGROUND_VARIANTS_FAILED'}: ${data?.message || 'Failed to generate variants'}`);
+      return data;
     },
     onSuccess: () => {
-      const language = localStorage.getItem('app-language') || 'fr';
-      toast.success(language === 'fr' ? '4 variantes générées avec succès' : '4 variants generated successfully');
+      const language = getLanguage();
+      toast.success(getCopy(language).variantsGenerated);
     },
     onError: (error) => {
       console.error('Error generating variants:', error);
-      const language = localStorage.getItem('app-language') || 'fr';
-      toast.error(language === 'fr' ? 'Erreur lors de la génération des variantes' : 'Error generating variants');
+      const language = getLanguage();
+      toast.error(getCopy(language).variantsError, {
+        description: translateImageGenerationError(error, language),
+      });
       setIsOptimizing(false);
     },
-    onSettled: () => {
-      setIsOptimizing(false);
-    }
+    onSettled: () => setIsOptimizing(false),
   });
 
   const generateProductDescription = useMutation({
-    mutationFn: async ({ 
-      title, 
+    mutationFn: async ({
+      title,
       existingDescription,
       images,
       visionAnalysis,
-      template = 'ecommerce'
-    }: { 
-      title: string; 
+      template = 'ecommerce',
+    }: {
+      title: string;
       existingDescription?: string;
       images?: string[];
       visionAnalysis?: any;
       template?: 'ecommerce' | 'luxury' | 'technical';
     }) => {
       setIsOptimizing(true);
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('generate-product-description-html', {
-          body: { title, existingDescription, images, visionAnalysis, template }
-        });
+      const { data, error } = await supabase.functions.invoke('generate-product-description-html', {
+        body: { title, existingDescription, images, visionAnalysis, template },
+      });
 
-        if (error) throw error;
-        if (!data.success) throw new Error(data.error || 'Failed to generate description');
-
-        return data;
-      } catch (error) {
-        setIsOptimizing(false);
-        throw error;
-      }
+      if (error) throw await readFunctionError(error, 'PRODUCT_DESCRIPTION_GENERATION_FAILED');
+      if (!data?.success) throw new Error(data?.error || 'Failed to generate description');
+      return data;
     },
     onSuccess: () => {
-      const language = localStorage.getItem('app-language') || 'fr';
-      toast.success(language === 'fr' ? 'Description HTML générée avec succès' : 'HTML description generated successfully');
+      const language = getLanguage();
+      toast.success(getCopy(language).descriptionGenerated);
       queryClient.invalidateQueries({ queryKey: ['products'] });
     },
     onError: (error) => {
       console.error('Error generating description:', error);
-      const language = localStorage.getItem('app-language') || 'fr';
-      toast.error(language === 'fr' ? 'Erreur lors de la génération de la description' : 'Error generating description');
+      const language = getLanguage();
+      toast.error(getCopy(language).descriptionError);
       setIsOptimizing(false);
     },
-    onSettled: () => {
-      setIsOptimizing(false);
-    }
+    onSettled: () => setIsOptimizing(false),
   });
 
   const applyOptimizedImage = useMutation({
@@ -264,288 +308,170 @@ export const useImageOptimization = () => {
       aiPrompt,
       resolution,
       qualityScore,
-      applyAsMain = true // 🆕 New parameter - default to main image
+      applyAsMain = true,
     }: SaveHistoryParams & { imageId: string; applyAsMain?: boolean }) => {
       setIsOptimizing(true);
-      
-      try {
-        let finalUrl = optimizedUrl;
-        
-        // 🔥 CRITICAL FIX: Upload base64 to Storage FIRST before saving to database
-        if (optimizedUrl.startsWith('data:image/')) {
-          console.log('📤 [ImageOptimization] Uploading base64 image to Storage...');
-          try {
-            // Extract base64 data
-            const base64Data = optimizedUrl.split(',')[1];
-            const mimeType = optimizedUrl.split(';')[0].split(':')[1];
-            const extension = mimeType.split('/')[1] || 'png';
-            
-            // Convert base64 to binary
-            const binaryString = atob(base64Data);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
-            }
-            
-            // Generate filename with optimization type
-            const typePrefix = optimizationType === 'ai_background' ? 'ai-bg' : 'optimized';
-            const fileName = `${typePrefix}-${productId}-${imageId}-${Date.now()}.${extension}`;
-            
-            // Upload to Storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('generated-images')
-              .upload(fileName, bytes, {
-                contentType: mimeType,
-                upsert: true
-              });
-            
-            if (uploadError) {
-              console.error('❌ [ImageOptimization] Failed to upload to Storage:', uploadError);
-              throw new Error(`Storage upload failed: ${uploadError.message}`);
-            }
-            
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-              .from('generated-images')
-              .getPublicUrl(fileName);
-            
-            finalUrl = publicUrl;
-            console.log('✅ [ImageOptimization] Image uploaded to Storage:', publicUrl);
-          } catch (uploadErr) {
-            console.error('❌ [ImageOptimization] Base64 upload error:', uploadErr);
-            throw new Error(`Failed to upload image: ${uploadErr instanceof Error ? uploadErr.message : 'Unknown error'}`);
-          }
-        }
+      let finalUrl = optimizedUrl;
 
-        // Check if another image with this URL already exists for this product
-        const { data: existingImage } = await supabase
+      if (optimizedUrl.startsWith('data:image/')) {
+        try {
+          const base64Data = optimizedUrl.split(',')[1];
+          const mimeType = optimizedUrl.split(';')[0].split(':')[1];
+          const extension = mimeType.split('/')[1] || 'png';
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+
+          const typePrefix = optimizationType === 'ai_background' ? 'ai-bg' : 'optimized';
+          const fileName = `${typePrefix}-${productId}-${imageId}-${Date.now()}.${extension}`;
+          const { error: uploadError } = await supabase.storage
+            .from('generated-images')
+            .upload(fileName, bytes, { contentType: mimeType, upsert: true });
+          if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
+
+          finalUrl = supabase.storage.from('generated-images').getPublicUrl(fileName).data.publicUrl;
+        } catch (uploadError) {
+          throw new Error(`Failed to upload image: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
+      }
+
+      const { data: existingImage } = await supabase
+        .from('product_images')
+        .select('id')
+        .eq('product_id', productId)
+        .eq('src', finalUrl)
+        .neq('id', imageId)
+        .maybeSingle();
+      if (existingImage) await supabase.from('product_images').delete().eq('id', existingImage.id);
+
+      const { data: imageData } = await supabase
+        .from('product_images')
+        .select('position')
+        .eq('id', imageId)
+        .single();
+      let imagePosition = imageData?.position || 1;
+
+      if (applyAsMain && imagePosition !== 1) {
+        const { data: allImages } = await supabase
           .from('product_images')
-          .select('id')
+          .select('id, position')
           .eq('product_id', productId)
-          .eq('src', finalUrl)
-          .neq('id', imageId)
-          .maybeSingle();
-        
-        if (existingImage) {
-          console.log(`[ImageOptimization] URL already exists for another image, deleting duplicate`);
-          // Delete the duplicate image
+          .lt('position', imagePosition)
+          .order('position', { ascending: false });
+
+        for (const image of allImages || []) {
           await supabase
             .from('product_images')
-            .delete()
-            .eq('id', existingImage.id);
+            .update({ position: (image.position || 0) + 1 })
+            .eq('id', image.id);
         }
-
-        // Get image position BEFORE updating
-        const { data: imageData } = await supabase
-          .from('product_images')
-          .select('position')
-          .eq('id', imageId)
-          .single();
-        
-        let imagePosition = imageData?.position || 1;
-
-        // 🆕 FIX: If applyAsMain is true, move this image to position 1
-        if (applyAsMain && imagePosition !== 1) {
-          console.log('🔄 [ImageOptimization] Moving image to position 1 (main image)');
-          
-          // First, shift all other images down by 1
-          const { data: allImages } = await supabase
-            .from('product_images')
-            .select('id, position')
-            .eq('product_id', productId)
-            .lt('position', imagePosition)
-            .order('position', { ascending: false });
-          
-          // Increment positions of images that were before this one
-          if (allImages && allImages.length > 0) {
-            for (const img of allImages) {
-              await supabase
-                .from('product_images')
-                .update({ position: (img.position || 0) + 1 })
-                .eq('id', img.id);
-            }
-          }
-          
-          // Set this image to position 1
-          imagePosition = 1;
-        }
-
-        // Update product image locally with public URL and new position
-        const { error: updateError } = await supabase
-          .from('product_images')
-          .update({ 
-            src: finalUrl,
-            position: imagePosition,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', imageId);
-
-        if (updateError) {
-          // If still duplicate error, try upsert approach
-          if (updateError.code === '23505') {
-            console.log('[ImageOptimization] Handling duplicate - checking if same image');
-            // Just continue since the image already has this URL
-          } else {
-            throw updateError;
-          }
-        }
-
-        // 🆕 FIX: Update shopify_products.image_url if this is the main image (position 1 or applyAsMain)
-        if (imagePosition === 1 || applyAsMain) {
-          console.log('🔄 [ImageOptimization] Updating shopify_products.image_url for main image');
-          const { error: productUpdateError } = await supabase
-            .from('shopify_products')
-            .update({ 
-              image_url: finalUrl,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', productId);
-          
-          if (productUpdateError) {
-            console.error('❌ [ImageOptimization] Failed to update shopify_products.image_url:', productUpdateError);
-          } else {
-            console.log('✅ [ImageOptimization] Updated shopify_products.image_url');
-          }
-        }
-
-        // Save to history with public URL (not base64!)
-        await saveToHistory({
-          productId,
-          imageId,
-          optimizationType,
-          originalUrl,
-          optimizedUrl: finalUrl,
-          aiModel,
-          aiPrompt,
-          resolution,
-          qualityScore
-        });
-
-        // 🔥 CRITICAL: Sync with Shopify after applying image
-        // Use allowCreateReplace: true because this is an intentional AI image optimization
-        console.log('🔄 Syncing optimized AI image with Shopify...');
-        const syncToastId = toast.loading('Synchronisation avec Shopify...', {
-          description: 'Application de l\'image optimisée'
-        });
-        
-        try {
-          const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-            body: { 
-              productId,
-              allowCreateReplace: true // 🔐 Explicit intent: this AI image should be pushed to Shopify
-            }
-          });
-
-          // Handle different sync scenarios with detailed feedback
-          if (syncError) {
-            console.error('❌ Shopify sync failed:', syncError);
-            toast.error('Erreur de synchronisation Shopify', {
-              id: syncToastId,
-              description: syncError.message || 'Vérifiez votre connexion Shopify dans les paramètres',
-              action: {
-                label: '⚙️ Paramètres',
-                onClick: () => window.location.href = '/settings/integrations'
-              },
-              duration: 8000
-            });
-          } else if (syncData?.requiresUpgrade || syncData?.error === 'upgrade_required') {
-            console.log('🚫 [OPTIMIZATION] Shopify sync blocked - trial user');
-            toast.warning('Synchronisation limitée', {
-              id: syncToastId,
-              description: 'Image appliquée localement. Upgradez pour synchroniser avec Shopify',
-              action: {
-                label: '✨ Voir les plans',
-                onClick: () => window.location.href = '/subscription'
-              },
-              duration: 10000
-            });
-            return { success: true, shopifySyncBlocked: true };
-          } else if (syncData?.skipped) {
-            console.log('[ImageOptimization] Shopify sync skipped (no shopify_product_id)', syncData);
-            toast.warning('Image appliquée localement uniquement', {
-              id: syncToastId,
-              description: 'Le produit n\'est pas encore connecté à Shopify. Les images seront envoyées une fois le produit synchronisé.',
-              duration: 8000,
-            });
-            return { success: true, shopifySyncSkipped: true };
-          } else if (syncData?.error) {
-            console.error('❌ Shopify sync error:', syncData.error);
-            toast.warning('Image appliquée mais sync Shopify partielle', {
-              id: syncToastId,
-              description: 'L\'image est mise à jour localement. Certaines images n\'ont pas été synchronisées.',
-              duration: 6000
-            });
-          } else {
-            console.log('✅ Shopify sync successful');
-            toast.success('Image synchronisée avec Shopify', {
-              id: syncToastId,
-              description: 'Votre boutique est à jour'
-            });
-          }
-        } catch (syncError) {
-          console.error('❌ Shopify sync exception:', syncError);
-          toast.error('Erreur de synchronisation', {
-            id: syncToastId,
-            description: 'L\'image est appliquée localement seulement',
-            duration: 5000
-          });
-        }
-        
-        return { success: true };
-      } catch (error) {
-        setIsOptimizing(false);
-        throw error;
+        imagePosition = 1;
       }
+
+      const { error: updateError } = await supabase
+        .from('product_images')
+        .update({ src: finalUrl, position: imagePosition, updated_at: new Date().toISOString() })
+        .eq('id', imageId);
+      if (updateError && updateError.code !== '23505') throw updateError;
+
+      if (imagePosition === 1 || applyAsMain) {
+        const { error: productUpdateError } = await supabase
+          .from('shopify_products')
+          .update({ image_url: finalUrl, updated_at: new Date().toISOString() })
+          .eq('id', productId);
+        if (productUpdateError) console.error('Failed to update shopify_products.image_url:', productUpdateError);
+      }
+
+      await saveToHistory({
+        productId,
+        imageId,
+        optimizationType,
+        originalUrl,
+        optimizedUrl: finalUrl,
+        aiModel,
+        aiPrompt,
+        resolution,
+        qualityScore,
+      });
+
+      const language = getLanguage();
+      const copy = getCopy(language);
+      const syncToastId = toast.loading(copy.syncing, { description: copy.applyingOptimized });
+
+      try {
+        const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
+          body: { productId, allowCreateReplace: true },
+        });
+
+        if (syncError) {
+          const detailedError = await readFunctionError(syncError, copy.checkShopify);
+          toast.error(copy.shopifySyncError, {
+            id: syncToastId,
+            description: detailedError.message || copy.checkShopify,
+            action: { label: copy.settings, onClick: () => { window.location.href = '/settings/integrations'; } },
+            duration: 8000,
+          });
+        } else if (syncData?.requiresUpgrade || syncData?.error === 'upgrade_required') {
+          toast.warning(copy.limitedSync, {
+            id: syncToastId,
+            description: copy.limitedSyncDescription,
+            action: { label: copy.plans, onClick: () => { window.location.href = '/subscription'; } },
+            duration: 10000,
+          });
+          return { success: true, shopifySyncBlocked: true };
+        } else if (syncData?.skipped) {
+          toast.warning(copy.localOnly, {
+            id: syncToastId,
+            description: copy.localOnlyDescription,
+            duration: 8000,
+          });
+          return { success: true, shopifySyncSkipped: true };
+        } else if (syncData?.error) {
+          toast.warning(copy.partialSync, {
+            id: syncToastId,
+            description: copy.partialSyncDescription,
+            duration: 6000,
+          });
+        } else {
+          toast.success(copy.synced, { id: syncToastId, description: copy.storeUpdated });
+        }
+      } catch (syncError) {
+        console.error('Shopify sync exception:', syncError);
+        toast.error(copy.syncError, {
+          id: syncToastId,
+          description: copy.localApplied,
+          duration: 5000,
+        });
+      }
+
+      return { success: true };
     },
-    onSuccess: async (result) => {
-      // Invalidate ALL product-related queries to refresh SEO tabs
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['product-images'] });
       await queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
       await queryClient.invalidateQueries({ queryKey: ['image-history'] });
       await queryClient.invalidateQueries({ queryKey: ['shopify-products'] });
       await queryClient.invalidateQueries({ queryKey: ['products'] });
-      
-      // ✅ CRITICAL: Do NOT show success toast here anymore
-      // Toast is already shown conditionally during mutationFn based on Shopify sync result
-      // This prevents duplicate/misleading success messages
-      
-      console.log('✅ [ImageOptimization] Image applied, queries invalidated');
-      
-      // Send optimization notification
+
       const notificationResult = await sendOptimizationNotification(1);
       if (!notificationResult.success && notificationResult.error) {
         console.error('Notification error:', notificationResult.error);
       }
-      
       setIsOptimizing(false);
     },
     onError: (error: Error) => {
       console.error('Error applying image:', error);
-      const language = localStorage.getItem('app-language') || 'fr';
-      
-      // Check if it's a Shopify authentication error
+      const language = getLanguage();
+      const copy = getCopy(language);
+
       if (error.message.includes('401') || error.message.includes('Unauthorized') || error.message.includes('Token Shopify invalide')) {
-        toast.error(language === 'fr' 
-          ? 'Token Shopify invalide' 
-          : 'Invalid Shopify token', 
-        {
-          description: language === 'fr'
-            ? 'Veuillez reconnecter votre boutique Shopify dans les paramètres.'
-            : 'Please reconnect your Shopify store in settings.',
-          duration: 6000,
-        });
+        toast.error(copy.invalidToken, { description: copy.reconnectShopify, duration: 6000 });
       } else {
-        toast.error(language === 'fr' 
-          ? 'Erreur lors de l\'application de l\'image'
-          : 'Error applying image'
-        );
+        toast.error(copy.applyError, { description: translateImageGenerationError(error, language) });
       }
-      
       setIsOptimizing(false);
     },
-    onSettled: () => {
-      setIsOptimizing(false);
-    }
+    onSettled: () => setIsOptimizing(false),
   });
 
   return {
@@ -554,6 +480,6 @@ export const useImageOptimization = () => {
     generateAIBackgroundVariants,
     generateProductDescription,
     applyOptimizedImage,
-    saveToHistory
+    saveToHistory,
   };
 };

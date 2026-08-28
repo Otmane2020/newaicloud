@@ -5,14 +5,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Palette, Check, Sparkles } from "lucide-react";
-import { useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Palette, Check, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { Card } from '@/components/ui/card';
+import { useTranslation } from '@/lib/language';
 
 interface AiBackgroundConfigDialogProps {
   open: boolean;
@@ -27,7 +28,7 @@ export interface AiBackgroundConfig {
   prompt: string;
   format: string;
   similarity: string;
-  imageType: "primary" | "secondary";
+  imageType: 'primary' | 'secondary';
   selectedGalleryImages: Map<string, string>;
 }
 
@@ -39,18 +40,91 @@ export function AiBackgroundConfigDialog({
   selectedProducts,
   products,
 }: AiBackgroundConfigDialogProps) {
+  const { language } = useTranslation();
+  const copy = language === 'fr'
+    ? {
+        title: "Configuration de l'arrière-plan IA",
+        description: (count: number) => `Personnalisez les paramètres de génération pour ${count} produit(s)`,
+        generationSettings: 'Paramètres de génération',
+        imageFormat: "Format d'image",
+        square: 'Carré (1:1)',
+        portrait: 'Portrait (3:4)',
+        landscape: 'Paysage (4:3)',
+        imageType: "Type d'image",
+        mainImage: 'Image principale',
+        mainDescription: 'Produit centré et bien visible',
+        secondaryImage: 'Image secondaire',
+        secondaryDescription: "Photo d'ambiance lifestyle",
+        similarity: "Ressemblance à l'original",
+        veryClose: '🎯 Très proche (90%)',
+        close: '✓ Proche (70%)',
+        balanced: '⚖️ Équilibré (50%)',
+        creative: '🎨 Créatif (30%)',
+        veryCreative: '✨ Très créatif (10%)',
+        selectPhoto: 'Sélection de la photo à retravailler',
+        main: 'Principal',
+        gallery: 'Galerie',
+        presetStyle: 'Style prédéfini',
+        chooseStyle: 'Choisir un style...',
+        presetStudio: '🎬 Studio professionnel',
+        presetCozy: '🛋️ Cozy Lifestyle – Salon moderne',
+        presetPhotoStudio: '📸 Studio professionnel',
+        presetNature: '🌿 Nature luxueuse',
+        presetMinimal: '🧼 Minimaliste moderne',
+        presetUrban: '🏙️ Urbain contemporain',
+        presetClassic: '✨ Élégance classique',
+        customPrompt: 'Ou créez votre propre prompt (en anglais)',
+        promptHelp: "💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance",
+        cancel: 'Annuler',
+        generate: 'Générer les arrière-plans',
+      }
+    : {
+        title: 'AI Background Configuration',
+        description: (count: number) => `Customize generation settings for ${count} product(s)`,
+        generationSettings: 'Generation settings',
+        imageFormat: 'Image format',
+        square: 'Square (1:1)',
+        portrait: 'Portrait (3:4)',
+        landscape: 'Landscape (4:3)',
+        imageType: 'Image type',
+        mainImage: 'Main image',
+        mainDescription: 'Product centered and clearly visible',
+        secondaryImage: 'Secondary image',
+        secondaryDescription: 'Lifestyle scene image',
+        similarity: 'Similarity to original',
+        veryClose: '🎯 Very close (90%)',
+        close: '✓ Close (70%)',
+        balanced: '⚖️ Balanced (50%)',
+        creative: '🎨 Creative (30%)',
+        veryCreative: '✨ Very creative (10%)',
+        selectPhoto: 'Select the photo to rework',
+        main: 'Main',
+        gallery: 'Gallery',
+        presetStyle: 'Preset style',
+        chooseStyle: 'Choose a style...',
+        presetStudio: '🎬 Professional studio',
+        presetCozy: '🛋️ Cozy Lifestyle – Modern living room',
+        presetPhotoStudio: '📸 Professional photo studio',
+        presetNature: '🌿 Luxury nature',
+        presetMinimal: '🧼 Modern minimalist',
+        presetUrban: '🏙️ Contemporary urban',
+        presetClassic: '✨ Classic elegance',
+        customPrompt: 'Or create your own prompt (in English)',
+        promptHelp: '💡 Tip: Describe the desired environment, lighting, and mood',
+        cancel: 'Cancel',
+        generate: 'Generate backgrounds',
+      };
+
   const [config, setConfig] = useState<AiBackgroundConfig>({
-    prompt: "",
-    format: "square",
-    similarity: "medium",
-    imageType: "primary",
+    prompt: '',
+    format: 'square',
+    similarity: 'medium',
+    imageType: 'primary',
     selectedGalleryImages: new Map(),
   });
 
   const handleConfirm = () => {
-    if (!config.prompt.trim()) {
-      return;
-    }
+    if (!config.prompt.trim()) return;
     onConfirm(config);
     onOpenChange(false);
   };
@@ -65,163 +139,129 @@ export function AiBackgroundConfigDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Palette className="h-5 w-5 text-primary" />
-            Configuration de l'arrière-plan IA
+            {copy.title}
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Personnalisez les paramètres de génération pour {selectedProducts.length} produit(s)
+            {copy.description(selectedProducts.length)}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Tableau de sélection des options */}
           <div className="space-y-4">
-            <Label className="text-base font-semibold">Paramètres de génération</Label>
+            <Label className="text-base font-semibold">{copy.generationSettings}</Label>
 
-            {/* Format d'image */}
             <Card className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="format" className="text-sm font-medium">
-                  Format d'image
-                </Label>
+                <Label htmlFor="format" className="text-sm font-medium">{copy.imageFormat}</Label>
                 <Select value={config.format} onValueChange={(value) => setConfig({ ...config, format: value })}>
-                  <SelectTrigger id="format" className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger id="format" className="w-[180px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="square">Carré (1:1)</SelectItem>
-                    <SelectItem value="portrait">Portrait (3:4)</SelectItem>
-                    <SelectItem value="landscape">Paysage (4:3)</SelectItem>
+                    <SelectItem value="square">{copy.square}</SelectItem>
+                    <SelectItem value="portrait">{copy.portrait}</SelectItem>
+                    <SelectItem value="landscape">{copy.landscape}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </Card>
 
-            {/* Type d'image */}
             <Card className="p-4 space-y-3">
-              <Label className="text-sm font-medium">Type d'image</Label>
+              <Label className="text-sm font-medium">{copy.imageType}</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Card
                   className={`p-3 cursor-pointer transition-all ${
-                    config.imageType === "primary"
-                      ? "border-primary bg-primary/5 ring-2 ring-primary"
-                      : "hover:border-primary/50"
+                    config.imageType === 'primary'
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary'
+                      : 'hover:border-primary/50'
                   }`}
-                  onClick={() => setConfig({ ...config, imageType: "primary" })}
+                  onClick={() => setConfig({ ...config, imageType: 'primary' })}
                 >
                   <div className="flex items-start gap-2">
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                        config.imageType === "primary" ? "border-primary bg-primary" : "border-muted-foreground"
-                      }`}
-                    >
-                      {config.imageType === "primary" && <Check className="h-2.5 w-2.5 text-white" />}
+                    <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${config.imageType === 'primary' ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                      {config.imageType === 'primary' && <Check className="h-2.5 w-2.5 text-white" />}
                     </div>
                     <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-xs sm:text-sm">Image Principale</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Produit <strong>centré</strong> et bien visible
-                      </p>
+                      <h4 className="font-semibold text-xs sm:text-sm">{copy.mainImage}</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{copy.mainDescription}</p>
                     </div>
                   </div>
                 </Card>
+
                 <Card
                   className={`p-3 cursor-pointer transition-all ${
-                    config.imageType === "secondary"
-                      ? "border-primary bg-primary/5 ring-2 ring-primary"
-                      : "hover:border-primary/50"
+                    config.imageType === 'secondary'
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary'
+                      : 'hover:border-primary/50'
                   }`}
-                  onClick={() => setConfig({ ...config, imageType: "secondary" })}
+                  onClick={() => setConfig({ ...config, imageType: 'secondary' })}
                 >
                   <div className="flex items-start gap-2">
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                        config.imageType === "secondary" ? "border-primary bg-primary" : "border-muted-foreground"
-                      }`}
-                    >
-                      {config.imageType === "secondary" && <Check className="h-2.5 w-2.5 text-white" />}
+                    <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${config.imageType === 'secondary' ? 'border-primary bg-primary' : 'border-muted-foreground'}`}>
+                      {config.imageType === 'secondary' && <Check className="h-2.5 w-2.5 text-white" />}
                     </div>
                     <div className="flex-1 space-y-1">
-                      <h4 className="font-semibold text-xs sm:text-sm">Image Secondaire</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">Photo d'ambiance lifestyle</p>
+                      <h4 className="font-semibold text-xs sm:text-sm">{copy.secondaryImage}</h4>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{copy.secondaryDescription}</p>
                     </div>
                   </div>
                 </Card>
               </div>
             </Card>
 
-            {/* Ressemblance */}
             <Card className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="similarity" className="text-sm font-medium">
-                  Ressemblance à l'original
-                </Label>
-                <Select
-                  value={config.similarity}
-                  onValueChange={(value) => setConfig({ ...config, similarity: value })}
-                >
-                  <SelectTrigger id="similarity" className="w-[180px]">
-                    <SelectValue />
-                  </SelectTrigger>
+                <Label htmlFor="similarity" className="text-sm font-medium">{copy.similarity}</Label>
+                <Select value={config.similarity} onValueChange={(value) => setConfig({ ...config, similarity: value })}>
+                  <SelectTrigger id="similarity" className="w-[180px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="very-close">🎯 Très proche (90%)</SelectItem>
-                    <SelectItem value="close">✓ Proche (70%)</SelectItem>
-                    <SelectItem value="medium">⚖️ Équilibré (50%)</SelectItem>
-                    <SelectItem value="creative">🎨 Créatif (30%)</SelectItem>
-                    <SelectItem value="very-creative">✨ Très créatif (10%)</SelectItem>
+                    <SelectItem value="very-close">{copy.veryClose}</SelectItem>
+                    <SelectItem value="close">{copy.close}</SelectItem>
+                    <SelectItem value="medium">{copy.balanced}</SelectItem>
+                    <SelectItem value="creative">{copy.creative}</SelectItem>
+                    <SelectItem value="very-creative">{copy.veryCreative}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </Card>
           </div>
 
-          {/* Sélection d'images de galerie */}
           {selectedProducts.length > 0 && (
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Sélection de la photo à retravailler</Label>
+              <Label className="text-base font-semibold">{copy.selectPhoto}</Label>
               {selectedProducts.map((productId) => {
-                const product = products.find((p) => p.id === productId);
+                const product = products.find((item) => item.id === productId);
                 const images = productImages.get(productId) || [];
-
                 if (!product) return null;
 
                 return (
                   <Card key={productId} className="p-3 sm:p-4">
                     <h4 className="font-semibold mb-3 text-xs sm:text-sm line-clamp-1">{product.title}</h4>
                     <div className="grid grid-cols-3 gap-2">
-                      {/* Image principale */}
                       <div
                         className={`relative cursor-pointer rounded-lg border-2 transition-all ${
-                          !config.selectedGalleryImages.get(productId) ||
-                          config.selectedGalleryImages.get(productId) === product.image_url
-                            ? "border-primary ring-2 ring-primary"
-                            : "border-muted hover:border-primary/50"
+                          !config.selectedGalleryImages.get(productId) || config.selectedGalleryImages.get(productId) === product.image_url
+                            ? 'border-primary ring-2 ring-primary'
+                            : 'border-muted hover:border-primary/50'
                         }`}
                         onClick={() => {
+                          if (!product.image_url) return;
                           const newMap = new Map(config.selectedGalleryImages);
-                          newMap.set(productId, product.image_url!);
+                          newMap.set(productId, product.image_url);
                           setConfig({ ...config, selectedGalleryImages: newMap });
                         }}
                       >
                         <div className="aspect-square bg-muted rounded overflow-hidden">
-                          <img
-                            src={product.image_url || ""}
-                            alt="Image principale"
-                            className="w-full h-full object-contain"
-                          />
+                          <img src={product.image_url || ''} alt={copy.mainImage} className="w-full h-full object-contain" />
                         </div>
-                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded">
-                          Principal
-                        </div>
+                        <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded">{copy.main}</div>
                       </div>
 
-                      {/* Images de galerie */}
                       {images.slice(0, 2).map((img, idx) => (
                         <div
                           key={img.id}
                           className={`relative cursor-pointer rounded-lg border-2 transition-all ${
                             config.selectedGalleryImages.get(productId) === img.src
-                              ? "border-primary ring-2 ring-primary"
-                              : "border-muted hover:border-primary/50"
+                              ? 'border-primary ring-2 ring-primary'
+                              : 'border-muted hover:border-primary/50'
                           }`}
                           onClick={() => {
                             const newMap = new Map(config.selectedGalleryImages);
@@ -230,15 +270,9 @@ export function AiBackgroundConfigDialog({
                           }}
                         >
                           <div className="aspect-square bg-muted rounded overflow-hidden">
-                            <img
-                              src={img.src}
-                              alt={img.alt_text || `Galerie ${idx + 1}`}
-                              className="w-full h-full object-contain"
-                            />
+                            <img src={img.src} alt={img.alt_text || `${copy.gallery} ${idx + 1}`} className="w-full h-full object-contain" />
                           </div>
-                          <div className="absolute top-1 right-1 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 rounded">
-                            #{idx + 1}
-                          </div>
+                          <div className="absolute top-1 right-1 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 rounded">#{idx + 1}</div>
                         </div>
                       ))}
                     </div>
@@ -248,70 +282,45 @@ export function AiBackgroundConfigDialog({
             </div>
           )}
 
-          {/* Style Selection */}
           <div className="space-y-2">
-            <Label htmlFor="preset-select">Style prédéfini</Label>
+            <Label htmlFor="preset-select">{copy.presetStyle}</Label>
             <Select value={config.prompt} onValueChange={handlePresetSelect}>
-              <SelectTrigger id="preset-select">
-                <SelectValue placeholder="Choisir un style..." />
-              </SelectTrigger>
+              <SelectTrigger id="preset-select"><SelectValue placeholder={copy.chooseStyle} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Place this product in a professional studio setting with soft lighting and neutral gray backdrop">
-                  🎬 Studio professionnel
-                </SelectItem>
-                <SelectItem value="A cozy lifestyle setting with warm lighting and a comfortable modern living room interior. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce.">
-                  🛋️ Cozy Lifestyle – Salon moderne
-                </SelectItem>
-                <SelectItem value="Professional studio photography with a clean white background and perfect soft lighting. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic.">
-                  📸 Studio professionnel
-                </SelectItem>
-                <SelectItem value="Luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment.">
-                  🌿 Nature luxueuse
-                </SelectItem>
-                <SelectItem value="Modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce.">
-                  🧼 Minimaliste moderne
-                </SelectItem>
-                <SelectItem value="Contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot.">
-                  🏙️ Urbain contemporain
-                </SelectItem>
-                <SelectItem value="Place this product in a contemporary urban setting with industrial elements and modern aesthetics">
-                  🏙️ Urbain contemporain
-                </SelectItem>
-                <SelectItem value="Place this product in an elegant classical setting with refined decorative elements and soft warm lighting">
-                  ✨ Élégance classique
-                </SelectItem>
+                <SelectItem value="Place this product in a professional studio setting with soft lighting and neutral gray backdrop">{copy.presetStudio}</SelectItem>
+                <SelectItem value="A cozy lifestyle setting with warm lighting and a comfortable modern living room interior. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce.">{copy.presetCozy}</SelectItem>
+                <SelectItem value="Professional studio photography with a clean white background and perfect soft lighting. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic.">{copy.presetPhotoStudio}</SelectItem>
+                <SelectItem value="Luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment.">{copy.presetNature}</SelectItem>
+                <SelectItem value="Modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce.">{copy.presetMinimal}</SelectItem>
+                <SelectItem value="Contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot.">{copy.presetUrban}</SelectItem>
+                <SelectItem value="Place this product in an elegant classical setting with refined decorative elements and soft warm lighting">{copy.presetClassic}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Custom Prompt */}
           <div className="space-y-2">
-            <Label htmlFor="custom-prompt">Ou créez votre propre prompt (en anglais)</Label>
+            <Label htmlFor="custom-prompt">{copy.customPrompt}</Label>
             <Textarea
               id="custom-prompt"
               placeholder="Ex: Place this product on a wooden table with natural sunlight..."
               value={config.prompt}
-              onChange={(e) => setConfig({ ...config, prompt: e.target.value })}
+              onChange={(event) => setConfig({ ...config, prompt: event.target.value })}
               rows={4}
               className="resize-none text-xs sm:text-sm"
             />
-            <p className="text-xs text-muted-foreground">
-              💡 Conseil : Décrivez l'environnement souhaité, l'éclairage et l'ambiance
-            </p>
+            <p className="text-xs text-muted-foreground">{copy.promptHelp}</p>
           </div>
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
-            Annuler
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">{copy.cancel}</Button>
           <Button
             onClick={handleConfirm}
             disabled={!config.prompt.trim()}
             className="gap-2 w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
             <Sparkles className="h-4 w-4" />
-            Générer les arrière-plans
+            {copy.generate}
           </Button>
         </DialogFooter>
       </DialogContent>
