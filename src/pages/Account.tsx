@@ -11,7 +11,7 @@ import { ReferralSystem } from '@/components/dashboard/ReferralSystem';
 
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sparkles } from 'lucide-react';
+import { Activity, CreditCard, ReceiptText, Settings, Sparkles, Store, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/language';
@@ -64,77 +64,61 @@ export default function Account() {
     }
   }, [searchParams]);
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">{t.account.title}</h1>
-        {planName && (
-          <Badge variant="secondary" className="mt-2">
-            <Sparkles className="w-3 h-3 mr-1" />
-            {isTrialing ? t.trial.title : planName}
-          </Badge>
-        )}
-      </div>
+  const accountTabs = [
+    { value: 'profile', label: t.account.tabs.profile, icon: User },
+    { value: 'integrations', label: t.account.tabs.integrations, icon: Store },
+    { value: 'subscription', label: t.account.tabs.subscription, icon: CreditCard },
+    { value: 'billing', label: t.account.tabs.billing, icon: ReceiptText },
+    { value: 'usage', label: t.dashboard?.usage?.title || 'Usage', icon: Activity },
+  ];
 
-      {/* Content */}
-      <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })} className="mt-6">
-        {/* Hide horizontal tabs for non-full-access users */}
+  return (
+    <div className="space-y-6 pb-10">
+      <section className="overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
+        <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+          <div>
+            <Badge className="border border-white/10 bg-white/10 text-violet-100 hover:bg-white/10">
+              <Settings className="mr-1.5 h-3.5 w-3.5" /> SETTINGS
+            </Badge>
+            <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">{t.account.title}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Manage your identity, connected stores, plan, billing and workspace usage.</p>
+          </div>
+          {planName && (
+            <Badge className="w-fit border border-white/10 bg-white/10 px-3 py-1.5 text-white hover:bg-white/10">
+              <Sparkles className="mr-1.5 h-3.5 w-3.5 text-violet-300" />
+              {isTrialing ? t.trial.title : planName}
+            </Badge>
+          )}
+        </div>
+      </section>
+
+      <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })}>
         {hasFullAccess && (
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="profile">{t.account.tabs.profile}</TabsTrigger>
-            <TabsTrigger value="integrations">{t.account.tabs.integrations}</TabsTrigger>
-            <TabsTrigger value="subscription">{t.account.tabs.subscription}</TabsTrigger>
-            <TabsTrigger value="billing">{t.account.tabs.billing}</TabsTrigger>
-            <TabsTrigger value="usage">{t.dashboard?.usage?.title || 'Usage'}</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-5">
+            {accountTabs.map(({ value, label, icon: Icon }) => (
+              <TabsTrigger key={value} value={value} className="gap-2">
+                <Icon className="h-4 w-4" /><span>{label}</span>
+              </TabsTrigger>
+            ))}
           </TabsList>
         )}
 
-        <TabsContent value="profile" className="mt-6">
-          <div className="bg-white rounded-lg border p-4 md:p-6">
-            <AccountSettings />
-          </div>
-        </TabsContent>
-
+        <TabsContent value="profile" className="mt-6"><AccountSettings /></TabsContent>
         <TabsContent value="integrations" className="mt-6">
-          <div className="bg-white rounded-lg border p-4 md:p-6">
-            <ShopifyIntegrationTabs />
-          </div>
+          <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><ShopifyIntegrationTabs /></section>
         </TabsContent>
-
         <TabsContent value="subscription" className="mt-6">
-          <div className="space-y-4 md:space-y-6">
-            <div className="bg-white rounded-lg border p-4 md:p-6">
-              <CurrentPlanCard />
-            </div>
-            <div className="bg-white rounded-lg border p-4 md:p-6">
-              <SubscriptionPlans />
-            </div>
-            {/* UsageLimits and ReferralSystem hidden for non-full-access users */}
-            {hasFullAccess && (
-              <>
-                <div className="bg-white rounded-lg border p-4 md:p-6">
-                  <UsageLimits />
-                </div>
-                
-                {/* Referral System */}
-                <ReferralSystem />
-              </>
-            )}
+          <div className="space-y-5">
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><CurrentPlanCard /></section>
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><SubscriptionPlans /></section>
+            {hasFullAccess && <><section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><UsageLimits /></section><ReferralSystem /></>}
           </div>
         </TabsContent>
-
         <TabsContent value="billing" className="mt-6">
-          <div className="bg-white rounded-lg border p-4 md:p-6">
-            <BillingPortal />
-          </div>
+          <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><BillingPortal /></section>
         </TabsContent>
-
         <TabsContent value="usage" className="mt-6">
-          <div className="space-y-4 md:space-y-6">
-            <div className="bg-white rounded-lg border p-4 md:p-6">
-              <UsageWidget />
-            </div>
-          </div>
+          <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><UsageWidget /></section>
         </TabsContent>
       </Tabs>
     </div>
