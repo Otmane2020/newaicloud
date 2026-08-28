@@ -120,7 +120,7 @@ IMPORTANT:
     console.log(`Google category provider: ${categoryResponse.provider}/${categoryResponse.model}`);
     const categoryContent = categoryResponse.content
       .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\\s*\`\`\`$/i, "")
+      .replace(/\s*```$/i, "")
       .trim();
 
     let googleData = {
