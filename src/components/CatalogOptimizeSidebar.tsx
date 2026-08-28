@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Layers3, Database, FileSpreadsheet, FileText,
@@ -175,13 +175,13 @@ export function CatalogOptimizeSidebar() {
                 </Collapsible>
               ))}
 
-              <Collapsible>
+              <Collapsible defaultOpen={labs.some((item) => active(item.href))}>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
                       <FlaskConical className="h-4 w-4" />
-                      <span>{fr ? "Laboratoire & croissance" : "Labs & Growth Tools"}</span>
-                      <Badge variant="outline" className="ml-auto text-[9px]">Legacy</Badge>
+                      <span>{fr ? "Labs & croissance" : "Labs & Growth"}</span>
+                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
