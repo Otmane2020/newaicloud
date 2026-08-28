@@ -1956,7 +1956,7 @@ export default function ProductTitleDescription() {
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="mx-auto w-full max-w-[1600px] space-y-6">
         {/* Hero Banner */}
-        <Card className="overflow-hidden rounded-3xl border-white/10 bg-gradient-to-br from-slate-950 via-violet-950 to-violet-700 p-6 text-white shadow-2xl shadow-violet-950/15 sm:p-8">
+        <Card className="workspace-hero overflow-hidden rounded-3xl border-white/10 bg-gradient-to-br from-slate-950 via-violet-950 to-violet-700 p-6 text-white shadow-2xl shadow-violet-950/15 sm:p-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
               <h1 className="flex items-center gap-2 text-3xl font-bold text-white sm:text-4xl">
