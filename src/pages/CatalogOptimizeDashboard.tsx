@@ -199,84 +199,74 @@ export default function CatalogOptimizeDashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-7">
-      <section className="workspace-hero overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
-        <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
-          <div>
-            <Badge className="border border-white/10 bg-white/10 text-violet-100 hover:bg-white/10">AI PRODUCT OPERATIONS</Badge>
-            <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">{fr ? "Pilotez la santé de votre catalogue" : "Run your catalog from one clear view"}</h1>
-            <p className="mt-3 flex items-center gap-2 text-sm text-slate-300"><Store className="h-4 w-4 text-violet-300" />{selectedStore.store_name || selectedStore.store_url}</p>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
+            <span>Overview</span><span>·</span><span>{selectedStore.store_name || selectedStore.store_url}</span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={async () => {
-              if (!selectedStore) return;
-              await syncShopifyStore(selectedStore);
-              setScanNonce((value) => value + 1);
-            }} disabled={loading || isSyncing} className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
-              {loading || isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ScanSearch className="mr-2 h-4 w-4" />}
-              {fr ? "Scanner maintenant" : "Scan now"}
-            </Button>
-            {stats.total === 0 && <Button variant="outline" asChild className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/products?panel=import"><RefreshCw className="mr-2 h-4 w-4" />{fr ? "Importer" : "Import products"}</Link></Button>}
-            <Button asChild className="bg-violet-500 hover:bg-violet-400"><Link to="/products/title-description"><ScanSearch className="mr-2 h-4 w-4" />{fr ? "Corriger le catalogue" : "Fix catalog issues"}</Link></Button>
-          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-950">{fr ? "Santé du catalogue" : "Catalog health"}</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {stats.total} {fr ? "produits" : "products"} · {fr ? "Dernière analyse" : "Last scan"} {stats.lastSync ? new Date(stats.lastSync).toLocaleString(language) : "—"}
+          </p>
+        </div>
+        <Button asChild className="bg-violet-600 hover:bg-violet-700">
+          <Link to="/products/title-description"><Sparkles className="mr-2 h-4 w-4" />{fr ? "Corriger les problèmes" : "Fix issues"}</Link>
+        </Button>
+      </header>
+
+      {scanError && (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <AlertTriangle className="h-5 w-5" />{fr ? "L'analyse n'a pas pu charger toutes les données." : "The scan could not load all catalog data."}
+        </div>
+      )}
+
+      <section className="grid gap-3 border-b border-slate-200 pb-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <p className="text-sm text-slate-500">{fr ? "Santé globale" : "Overall health"}</p>
+          <div className="mt-2 flex items-end gap-3"><strong className="text-3xl text-slate-950">{loading || health === null ? "—" : `${health}%`}</strong><Progress value={health ?? 0} className="mb-2 h-1.5 w-24" /></div>
+          <p className="mt-1 text-xs text-slate-500">{fr ? "60 % contenu · 40 % SEO" : "60% content · 40% SEO"}</p>
+        </div>
+        <div><p className="text-sm text-slate-500">{fr ? "Produits analysés" : "Products analyzed"}</p><strong className="mt-2 block text-3xl text-slate-950">{loading ? "—" : stats.total}</strong></div>
+        <div><p className="text-sm text-slate-500">{fr ? "Produits à corriger" : "Products to fix"}</p><strong className="mt-2 block text-3xl text-amber-700">{loading ? "—" : stats.incomplete}</strong></div>
+        <div>
+          <p className="text-sm text-slate-500">{fr ? "Dernière synchronisation" : "Last sync"}</p>
+          <strong className="mt-2 block text-lg text-slate-950">{stats.lastSync ? new Date(stats.lastSync).toLocaleDateString(language) : "—"}</strong>
+          <Button type="button" variant="link" className="mt-1 h-auto p-0 text-violet-700" onClick={async () => { if (!selectedStore) return; await syncShopifyStore(selectedStore); setScanNonce((value) => value + 1); }} disabled={loading || isSyncing}>
+            {loading || isSyncing ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-2 h-3.5 w-3.5" />}{fr ? "Analyser maintenant" : "Scan now"}
+          </Button>
         </div>
       </section>
 
-      {scanError && (
-        <Card className="border-amber-200 bg-amber-50"><CardContent className="flex items-center gap-3 p-4 text-sm text-amber-900"><AlertTriangle className="h-5 w-5" />{fr ? "L'audit n'a pas pu charger toutes les données. Réessayez après la prochaine synchronisation." : "The scan could not load all catalog data. Try again after the next sync."}</CardContent></Card>
-      )}
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <Card className="overflow-hidden border-violet-100 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between"><p className="text-sm font-medium text-slate-500">{fr ? "Santé du catalogue" : "Catalog health"}</p><span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-50 text-violet-700"><Sparkles className="h-4 w-4" /></span></div>
-            {loading ? <Loader2 className="mt-5 h-6 w-6 animate-spin text-violet-600" /> : health === null ? <p className="mt-5 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-4 text-3xl font-semibold tracking-tight">{health}%</p><Progress value={health} className="mt-3 h-2" /><p className="mt-2 text-xs text-slate-500">{fr ? `Contenu 60 % (${contentScore ?? 0}) · SEO 40 % (${seoScore ?? 0})` : `Content 60% (${contentScore ?? 0}) · SEO 40% (${seoScore ?? 0})`}</p></>}
-          </CardContent>
-        </Card>
-        {[
-          { label: fr ? "Score SEO" : "SEO score", value: loading ? "—" : (seoScore === null ? "—" : `${seoScore}%`), detail: fr ? "Titres et descriptions SEO" : "SEO titles and descriptions", icon: Sparkles, tone: "bg-fuchsia-50 text-fuchsia-700" },
-          { label: fr ? "Préparation Shopping" : "Shopping readiness", value: loading ? "—" : (shoppingReadiness === null ? "—" : `${shoppingReadiness}%`), detail: fr ? "Score séparé, non inclus dans la santé" : "Separate score, not included in health", icon: ShoppingCart, tone: "bg-violet-50 text-violet-700" },
-          { label: fr ? "Produits analysés" : "Products analyzed", value: loading ? "—" : stats.total, detail: fr ? "Catalogue importé" : "Imported catalog", icon: Package, tone: "bg-blue-50 text-blue-700" },
-          { label: fr ? "Produits incomplets" : "Incomplete products", value: loading ? "—" : stats.incomplete, detail: fr ? "À traiter en priorité" : "Priority work queue", icon: AlertTriangle, tone: "bg-amber-50 text-amber-700" },
-          { label: fr ? "Dernière synchronisation" : "Last Shopify sync", value: stats.lastSync ? new Date(stats.lastSync).toLocaleDateString(language) : "—", detail: stats.lastSync ? new Date(stats.lastSync).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" }) : (fr ? "Aucune synchronisation" : "No sync yet"), icon: RefreshCw, tone: "bg-emerald-50 text-emerald-700" },
-        ].map(({ label, value, detail, icon: Icon, tone }) => (
-          <Card key={label} className="border-slate-200 shadow-sm">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-4 text-3xl font-semibold tracking-tight">{value}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></div><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${tone}`}><Icon className="h-4 w-4" /></span></div>
-            </CardContent>
-          </Card>
-        ))}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <div><h2 className="text-lg font-semibold text-slate-950">{fr ? "À traiter maintenant" : "Needs attention"}</h2><p className="text-sm text-slate-500">{fr ? "Problèmes classés par impact." : "Issues ranked by impact."}</p></div>
+          <span className="text-sm text-slate-500">{issues.filter((item) => item.value > 0).length} {fr ? "types de problèmes" : "issue types"}</span>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          {issues.filter((issue) => issue.value > 0).slice(0, 7).map((issue, index) => (
+            <Link key={issue.label} to={issue.href} className={`grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-3 transition hover:bg-slate-50 ${index ? "border-t border-slate-100" : ""}`}>
+              <span className="flex items-center gap-3 text-sm font-medium text-slate-800"><issue.icon className="h-4 w-4 text-amber-600" />{issue.label}</span>
+              <strong className="text-sm text-slate-950">{loading ? "—" : issue.value}</strong>
+              <ArrowRight className="h-4 w-4 text-slate-400" />
+            </Link>
+          ))}
+          {!loading && issues.every((issue) => issue.value === 0) && <div className="flex items-center gap-3 p-5 text-sm text-emerald-800"><CheckCircle2 className="h-5 w-5" />{fr ? "Aucun problème prioritaire détecté." : "No priority issues detected."}</div>}
+        </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>{fr ? "Priorités" : "Prioritized issues"}</CardTitle><p className="mt-1 text-sm text-muted-foreground">{fr ? "Calculées à partir des données réellement importées." : "Calculated from your imported catalog data."}</p></div><Badge variant="secondary">{issues.reduce((sum, item) => sum + item.value, 0)} {fr ? "signaux" : "signals"}</Badge></CardHeader>
-          <CardContent className="space-y-3">
-            {issues.filter((issue) => issue.value > 0).sort((a, b) => b.value - a.value).map((issue) => (
-              <Link key={issue.label} to={issue.href} className="flex items-center justify-between rounded-xl border p-4 transition-colors hover:bg-muted/50">
-                <span className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-amber-50 text-amber-600"><issue.icon className="h-4 w-4" /></span><span className="font-medium">{issue.label}</span></span>
-                <span className="flex items-center gap-3"><strong>{loading ? "—" : issue.value}</strong><ArrowRight className="h-4 w-4 text-muted-foreground" /></span>
-              </Link>
-            ))}
-            {!loading && issues.every((issue) => issue.value === 0) && <div className="rounded-xl bg-emerald-50 p-5 text-emerald-900"><CheckCircle2 className="mb-2 h-5 w-5" />{fr ? "Aucun problème prioritaire détecté dans les champs analysés." : "No priority issues detected in the analyzed fields."}</div>}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>{fr ? "Actions rapides" : "Quick actions"}</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
-            {[
-              [FileText, fr ? "Optimiser le contenu" : "Optimize content", "/products/title-description"],
-              [Images, fr ? "Améliorer les images" : "Improve images", "/products/title-description?view=images"],
-              [BadgeDollarSign, fr ? "Revoir les prix" : "Review pricing", "/pricing"],
-              [ShoppingCart, fr ? "Corriger le flux Shopping" : "Fix Shopping feed", "/shopping"],
-            ].map(([Icon,label,href]) => {
-              const ActionIcon = Icon as typeof FileText;
-              return <Button key={href as string} variant="outline" asChild className="h-auto w-full justify-start p-3"><Link to={href as string}><ActionIcon className="mr-3 h-4 w-4 text-violet-600" />{label as string}</Link></Button>;
-            })}
-          </CardContent>
-        </Card>
-      </div>
+      <section className="grid gap-3 border-t border-slate-200 pt-5 sm:grid-cols-3">
+        {[
+          { label: fr ? "Contenu" : "Content", value: contentScore },
+          { label: "SEO", value: seoScore },
+          { label: "Google Shopping", value: shoppingReadiness },
+        ].map((score) => (
+          <Link key={score.label} to={score.label === "Google Shopping" ? "/shopping" : score.label === "SEO" ? "/seo?tab=products" : "/products/title-description"} className="rounded-lg border border-slate-200 bg-white p-4 transition hover:border-violet-300">
+            <div className="flex items-center justify-between"><span className="text-sm font-medium text-slate-700">{score.label}</span><strong>{score.value === null ? "—" : `${score.value}%`}</strong></div>
+            <Progress value={score.value ?? 0} className="mt-3 h-1.5" />
+          </Link>
+        ))}
+      </section>
     </div>
   );
 }
