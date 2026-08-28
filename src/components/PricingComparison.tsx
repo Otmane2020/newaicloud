@@ -17,9 +17,9 @@ const PricingComparison = () => {
     {
       category: t.landing.pricing.comparison.features.categories.products,
       items: [
-        { name: t.landing.pricing.comparison.features.items.maximumProducts, trial: "10", starter: "100", pro: "1,000 - 50,000", enterprise: "Unlimited" },
+        { name: t.landing.pricing.comparison.features.items.maximumProducts, trial: "50", starter: "100", pro: "1,000 - 50,000", enterprise: "Unlimited" },
         { name: t.landing.pricing.comparison.features.items.shopifyImport, trial: true, starter: true, pro: true, enterprise: true },
-        { name: t.landing.pricing.comparison.features.items.multiStoreManagement, trial: "1", starter: "1", pro: "3", enterprise: "5 - 500" },
+        { name: t.landing.pricing.comparison.features.items.multiStoreManagement, trial: "1", starter: "1", pro: "1 - 100", enterprise: "5 - 500" },
       ]
     },
     {
@@ -44,7 +44,7 @@ const PricingComparison = () => {
     {
       category: t.landing.pricing.comparison.features.categories.ai,
       items: [
-        { name: t.landing.pricing.comparison.features.items.aiArticlesPerMonth, trial: "1", starter: "5", pro: "10 - 1,000", enterprise: "100 - 10,000" },
+        { name: t.landing.pricing.comparison.features.items.aiArticlesPerMonth, trial: "5", starter: "10", pro: "10 - 1,000", enterprise: "100 - 10,000" },
         { name: t.landing.pricing.comparison.features.items.aiChatPerMonth, trial: "50", starter: "100", pro: "500 - 50,000", enterprise: "2,000 - 200,000" },
         { name: t.landing.pricing.comparison.features.items.aiCampaignsBlog, trial: "0", starter: "0", pro: "3 - 300", enterprise: "10 - 1,000" },
         { name: t.landing.pricing.comparison.features.items.aiVisionImages, trial: true, starter: true, pro: true, enterprise: true },
