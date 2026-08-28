@@ -8,6 +8,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
+import { useShopifySync } from "@/hooks/useShopifySync";
 import { useTranslation } from "@/lib/language";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ const initialStats: CatalogStats = {
 export default function CatalogOptimizeDashboard() {
   const { user } = useAuth();
   const { selectedStore, stores, loading: storesLoading } = useStore();
+  const { isSyncing, syncShopifyStore } = useShopifySync();
   const { language } = useTranslation();
   const fr = language === "fr";
   const [stats, setStats] = useState<CatalogStats>(initialStats);
@@ -121,20 +123,25 @@ export default function CatalogOptimizeDashboard() {
 
   const health = useMemo(() => {
     if (!stats.total) return null;
-    const totalChecks = stats.total * 12;
+    const totalChecks = stats.total * 5;
     const failedChecks =
       stats.missingTitles +
       stats.missingSeoTitles +
       stats.missingSeoDescriptions +
       stats.missingImages +
-      stats.missingTags +
-      Math.max(0, stats.total - stats.enriched) +
+      stats.missingTags;
+    return Math.max(0, Math.round(((totalChecks - failedChecks) / totalChecks) * 100));
+  }, [stats]);
+
+  const shoppingReadiness = useMemo(() => {
+    if (!stats.total) return null;
+    const totalChecks = stats.total * 5;
+    const failedChecks =
       stats.missingGoogleCategory +
       stats.missingGtin +
       stats.missingMpn +
       stats.missingCondition +
-      stats.missingWhiteBackground +
-      stats.notSyncedToShopify;
+      stats.missingWhiteBackground;
     return Math.max(0, Math.round(((totalChecks - failedChecks) / totalChecks) * 100));
   }, [stats]);
 
@@ -193,8 +200,12 @@ export default function CatalogOptimizeDashboard() {
             <p className="mt-3 flex items-center gap-2 text-sm text-slate-300"><Store className="h-4 w-4 text-violet-300" />{selectedStore.store_name || selectedStore.store_url}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" onClick={() => setScanNonce((value) => value + 1)} disabled={loading} className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ScanSearch className="mr-2 h-4 w-4" />}
+            <Button type="button" variant="outline" onClick={async () => {
+              if (!selectedStore) return;
+              await syncShopifyStore(selectedStore);
+              setScanNonce((value) => value + 1);
+            }} disabled={loading || isSyncing} className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
+              {loading || isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ScanSearch className="mr-2 h-4 w-4" />}
               {fr ? "Scanner maintenant" : "Scan now"}
             </Button>
             <Button variant="outline" asChild className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/products?panel=import"><RefreshCw className="mr-2 h-4 w-4" />{fr ? "Importer" : "Import products"}</Link></Button>
@@ -207,14 +218,15 @@ export default function CatalogOptimizeDashboard() {
         <Card className="border-amber-200 bg-amber-50"><CardContent className="flex items-center gap-3 p-4 text-sm text-amber-900"><AlertTriangle className="h-5 w-5" />{fr ? "L'audit n'a pas pu charger toutes les données. Réessayez après la prochaine synchronisation." : "The scan could not load all catalog data. Try again after the next sync."}</CardContent></Card>
       )}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Card className="overflow-hidden border-violet-100 shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center justify-between"><p className="text-sm font-medium text-slate-500">{fr ? "Santé du catalogue" : "Catalog health"}</p><span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-50 text-violet-700"><Sparkles className="h-4 w-4" /></span></div>
-            {loading ? <Loader2 className="mt-5 h-6 w-6 animate-spin text-violet-600" /> : health === null ? <p className="mt-5 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-4 text-3xl font-semibold tracking-tight">{health}%</p><Progress value={health} className="mt-3 h-2" /><p className="mt-2 text-xs text-slate-500">{fr ? "12 contrôles par produit : contenu, enrichissement et Shopping" : "12 checks per product: content, enrichment and Shopping"}</p></>}
+            {loading ? <Loader2 className="mt-5 h-6 w-6 animate-spin text-violet-600" /> : health === null ? <p className="mt-5 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-4 text-3xl font-semibold tracking-tight">{health}%</p><Progress value={health} className="mt-3 h-2" /><p className="mt-2 text-xs text-slate-500">{fr ? "5 contrôles de qualité intrinsèque par produit" : "5 intrinsic quality checks per product"}</p></>}
           </CardContent>
         </Card>
         {[
+          { label: fr ? "Préparation Shopping" : "Shopping readiness", value: loading ? "—" : (shoppingReadiness === null ? "—" : `${shoppingReadiness}%`), detail: fr ? "Score séparé, non inclus dans la santé" : "Separate score, not included in health", icon: ShoppingCart, tone: "bg-violet-50 text-violet-700" },
           { label: fr ? "Produits analysés" : "Products analyzed", value: loading ? "—" : stats.total, detail: fr ? "Catalogue importé" : "Imported catalog", icon: Package, tone: "bg-blue-50 text-blue-700" },
           { label: fr ? "Produits incomplets" : "Incomplete products", value: loading ? "—" : stats.incomplete, detail: fr ? "À traiter en priorité" : "Priority work queue", icon: AlertTriangle, tone: "bg-amber-50 text-amber-700" },
           { label: fr ? "Dernière synchronisation" : "Last Shopify sync", value: stats.lastSync ? new Date(stats.lastSync).toLocaleDateString(language) : "—", detail: stats.lastSync ? new Date(stats.lastSync).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" }) : (fr ? "Aucune synchronisation" : "No sync yet"), icon: RefreshCw, tone: "bg-emerald-50 text-emerald-700" },
