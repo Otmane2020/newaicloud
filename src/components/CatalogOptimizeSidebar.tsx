@@ -37,28 +37,26 @@ export function CatalogOptimizeSidebar() {
       items: [
         { label: fr ? "Produits" : "Products", href: "/products", icon: Package },
         { label: fr ? "Collections" : "Collections", href: "/collections", icon: Layers3 },
-        { label: fr ? "Sources produits" : "Product Sources", href: "/product-source", icon: Database },
-        { label: fr ? "Importer & synchroniser" : "Import & Sync", href: "/products?panel=import", icon: RefreshCw },
+        { label: fr ? "Données enrichies" : "Enriched Data", href: "/product-source", icon: Database },
       ],
     },
     {
       label: fr ? "Contenu" : "Content",
       icon: FileText,
       items: [
-        { label: fr ? "Titres & descriptions" : "Titles & Descriptions", href: "/products/title-description", icon: FileText },
-        { label: fr ? "Landing pages produit" : "Product Landing Pages", href: "/products/title-description?view=landing", icon: FileSpreadsheet },
+        { label: fr ? "Contenu produit" : "Product Content", href: "/products/title-description", icon: FileText },
+        { label: fr ? "Landing pages" : "Landing Pages", href: "/products/title-description?view=landing", icon: FileSpreadsheet },
         { label: fr ? "Catégories & tags" : "Categories & Tags", href: "/seo?tab=tags", icon: Tags },
-        { label: fr ? "Optimisation en masse" : "Bulk Optimization", href: "/products/title-description?view=bulk", icon: Sparkles },
+        { label: fr ? "Actions groupées" : "Bulk Actions", href: "/products/title-description?view=bulk", icon: Sparkles },
       ],
     },
     {
       label: fr ? "Médias" : "Media",
       icon: Images,
       items: [
-        { label: fr ? "Galeries produit" : "Product Galleries", href: "/products/title-description?view=gallery", icon: Images },
-        { label: "AI Image Studio", href: "/products/title-description?view=images", icon: WandSparkles },
-        { label: "ALT Text", href: "/seo?tab=alt", icon: Image },
-        { label: fr ? "Historique médias" : "Media History", href: "/products/media-history", icon: History },
+        { label: fr ? "Studio images" : "Image Studio", href: "/products/title-description?view=images", icon: WandSparkles },
+        { label: fr ? "Textes ALT" : "ALT Text", href: "/seo?tab=alt", icon: Image },
+        { label: fr ? "Historique" : "History", href: "/products/media-history", icon: History },
       ],
     },
     {
@@ -75,10 +73,8 @@ export function CatalogOptimizeSidebar() {
       icon: Store,
       items: [
         { label: fr ? "Assistant vendeur IA" : "AI Sales Assistant", href: "/storefront-assistant", icon: Bot, badge: "AI" },
-        { label: "Shopify", href: "/account?tab=integrations", icon: Store },
         { label: "Google Shopping", href: "/shopping", icon: ShoppingCart },
-        { label: "Merchant Center", href: "/merchant?tab=integration", icon: Store },
-        { label: fr ? "Flux produits" : "Product Feed", href: "/merchant?tab=feed", icon: FileSpreadsheet },
+        { label: "Merchant Center", href: "/merchant?tab=feed", icon: Store },
       ],
     },
     {
@@ -86,7 +82,6 @@ export function CatalogOptimizeSidebar() {
       icon: RefreshCw,
       items: [
         { label: fr ? "Règles d'optimisation" : "Optimization Rules", href: "/seo?tab=automation", icon: Settings },
-        { label: fr ? "Synchronisation" : "Sync Settings", href: "/merchant?tab=sync", icon: RefreshCw },
         { label: fr ? "Tâches & historique" : "Jobs & History", href: "/cron-monitoring", icon: Activity },
       ],
     },
@@ -95,9 +90,8 @@ export function CatalogOptimizeSidebar() {
       icon: Settings,
       items: [
         { label: fr ? "Boutiques & intégrations" : "Stores & Integrations", href: "/account?tab=integrations", icon: Store },
-        { label: fr ? "Profil" : "Profile", href: "/account?tab=profile", icon: User },
+        { label: fr ? "Compte & utilisation" : "Account & Usage", href: "/account?tab=profile", icon: User },
         { label: fr ? "Abonnement" : "Subscription", href: "/subscription", icon: CreditCard },
-        { label: fr ? "Utilisation" : "Usage", href: "/account?tab=usage", icon: Activity },
         { label: "API", href: "/api-keys", icon: Key },
       ],
     },
