@@ -7,6 +7,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const TEST_ACCOUNT_EMAIL = 'oben.rockman@gmail.com';
+const TEST_ACCOUNT_PLAN_ID = 'pro-500';
+
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
@@ -20,10 +23,6 @@ serve(async (req) => {
   try {
     logStep('Function started');
 
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeKey) throw new Error('STRIPE_SECRET_KEY is not set');
-    logStep('Stripe key verified');
-
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('No authorization header provided');
     logStep('Authorization header found');
@@ -32,9 +31,9 @@ serve(async (req) => {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { 
+      {
         global: { headers: { Authorization: authHeader } },
-        auth: { persistSession: false } 
+        auth: { persistSession: false }
       }
     );
 
@@ -44,15 +43,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     );
-    
+
     logStep('Authenticating user');
-    
+
     // Get user from token
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser() as { data: { user: any }, error: any };
-    
+
     // Retry logic to handle race condition during signup
     let retries = 3;
-    
+
     while (retries > 0 && userError) {
       logStep('User not yet available, retrying...', { retriesLeft: retries - 1 });
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -62,102 +61,121 @@ serve(async (req) => {
         break;
       }
     }
-    
+
     // Handle authentication errors
     if (userError || !user) {
       logStep('Authentication failed', { error: userError });
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: 'invalid_session',
-        message: 'Session expired or invalid. Please log in again.' 
+        message: 'Session expired or invalid. Please log in again.'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
     }
-    
+
     if (!user.email) {
       logStep('User missing email');
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: 'invalid_user',
-        message: 'User not authenticated or email not available.' 
+        message: 'User not authenticated or email not available.'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
     }
-    
+
     logStep('User authenticated', { userId: user.id, email: user.email });
 
-    const now = new Date();
-    const freePlanId = 'enterprise-2000';
-    const periodEnd = new Date(now);
-    periodEnd.setFullYear(periodEnd.getFullYear() + 10);
+    // Internal QA entitlement: ONLY this account gets a free Pro plan for testing.
+    if (user.email.toLowerCase() === TEST_ACCOUNT_EMAIL) {
+      const now = new Date();
+      const periodEnd = new Date(now);
+      periodEnd.setFullYear(periodEnd.getFullYear() + 10);
 
-    const { data: profile } = await (supabaseAdmin as any)
-      .from('profiles')
-      .select('current_plan_id')
-      .eq('id', user.id)
-      .maybeSingle();
+      const { data: existingTestSubscription } = await supabaseAdmin
+        .from('subscriptions')
+        .select('id')
+        .eq('seller_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    const freeModePlanId = profile?.current_plan_id || freePlanId;
-
-    await supabaseAdmin
-      .from('subscriptions')
-      .upsert(
-        {
-          seller_id: user.id,
-          plan_id: freeModePlanId,
-          status: 'active',
-          billing_period: 'monthly',
-          current_period_start: now.toISOString(),
-          current_period_end: periodEnd.toISOString(),
-          cancel_at_period_end: false,
-        },
-        { onConflict: 'seller_id' }
-      );
-
-    await supabaseAdmin
-      .from('profiles')
-      .update({
-        subscription_status: 'active',
-        current_plan_id: freeModePlanId,
-        onboarding_completed: true,
+      const testSubscriptionPayload = {
+        seller_id: user.id,
+        plan_id: TEST_ACCOUNT_PLAN_ID,
+        status: 'active',
+        billing_period: 'monthly',
+        current_period_start: now.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+        cancel_at_period_end: false,
+        cancelled_at: null,
         updated_at: now.toISOString(),
-      })
-      .eq('id', user.id);
+      };
 
-    logStep('Free mode active - Stripe check bypassed', { userId: user.id, planId: freeModePlanId });
-    return new Response(JSON.stringify({
-      subscribed: true,
-      status: 'active',
-      plan_id: freeModePlanId,
-      subscription_end: periodEnd.toISOString(),
-      source: 'free_mode',
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
+      if (existingTestSubscription?.id) {
+        await supabaseAdmin
+          .from('subscriptions')
+          .update(testSubscriptionPayload)
+          .eq('id', existingTestSubscription.id);
+      } else {
+        await supabaseAdmin
+          .from('subscriptions')
+          .insert(testSubscriptionPayload);
+      }
+
+      await supabaseAdmin
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          email: user.email,
+          subscription_status: 'active',
+          current_plan_id: TEST_ACCOUNT_PLAN_ID,
+          trial_ends_at: null,
+          onboarding_completed: true,
+          has_used_trial: true,
+          billing_provider: 'stripe',
+          updated_at: now.toISOString(),
+        }, { onConflict: 'id' });
+
+      logStep('Internal QA Pro entitlement active', { userId: user.id, planId: TEST_ACCOUNT_PLAN_ID });
+      return new Response(JSON.stringify({
+        subscribed: true,
+        status: 'active',
+        plan_id: TEST_ACCOUNT_PLAN_ID,
+        subscription_end: periodEnd.toISOString(),
+        source: 'internal_test_entitlement',
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // Real customers must go through the real Stripe/subscription checks below.
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeKey) throw new Error('STRIPE_SECRET_KEY is not set');
+    logStep('Stripe key verified');
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    
+
     if (customers.data.length === 0) {
       logStep('No customer found, checking database profile');
-      
+
       // Check if user has trial or legacy trial-like status in database
       const { data: profile } = await (supabaseAdmin as any)
         .from('profiles')
         .select('subscription_status, trial_ends_at, current_plan_id')
         .eq('id', user.id)
         .single();
-      
+
       // ✅ Standard trial profile (status = trialing) - CONSIDÉRÉ COMME SUBSCRIBED
       if (profile?.subscription_status === 'trialing' && profile.trial_ends_at) {
         try {
           const trialEnd = new Date(profile.trial_ends_at);
           if (!isNaN(trialEnd.getTime()) && trialEnd > new Date()) {
             logStep('Valid trial found in database - treating as subscribed');
-            return new Response(JSON.stringify({ 
+            return new Response(JSON.stringify({
               subscribed: true, // ✅ CRITICAL: Trial = subscribed pour claim Shopify
               status: 'trialing',
               plan_id: profile.current_plan_id || 'trial',
@@ -198,7 +216,7 @@ serve(async (req) => {
           logStep('Invalid legacy trial_ends_at date', { trial_ends_at: profile.trial_ends_at });
         }
       }
-      
+
       return new Response(JSON.stringify({ subscribed: false }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -214,40 +232,40 @@ serve(async (req) => {
       status: 'all',
       limit: 10,
     });
-    
-    logStep('Subscriptions found', { 
+
+    logStep('Subscriptions found', {
       count: subscriptions.data.length,
-      subscriptions: subscriptions.data.map((s: Stripe.Subscription) => ({ 
-        id: s.id, 
+      subscriptions: subscriptions.data.map((s: Stripe.Subscription) => ({
+        id: s.id,
         status: s.status,
         created: s.created ? new Date(s.created * 1000).toISOString() : null,
         current_period_end: s.current_period_end ? new Date(s.current_period_end * 1000).toISOString() : null
       }))
     });
-    
+
     // SECURITY: Accepter UNIQUEMENT 'active' et 'trialing' comme statuts valides
     // past_due et unpaid ne sont PAS des abonnements valides
     const validStatuses = ['active', 'trialing'];
     const activeSubscription = subscriptions.data.find(
       (sub: Stripe.Subscription) => validStatuses.includes(sub.status)
     );
-    
+
     // CRITICAL CHECK: Pour les trials, vérifier que la date de fin n'est pas dépassée
     if (activeSubscription && activeSubscription.status === 'trialing') {
       const trialEnd = activeSubscription.trial_end;
       if (trialEnd && trialEnd * 1000 < Date.now()) {
         logStep('Trial expired but status not updated', { trialEnd: new Date(trialEnd * 1000) });
-        
+
         // Update profile using admin client
         await supabaseAdmin
           .from('profiles')
-          .update({ 
+          .update({
             subscription_status: 'inactive',
             updated_at: new Date().toISOString()
           })
           .eq('id', user.id);
-        
-        return new Response(JSON.stringify({ 
+
+        return new Response(JSON.stringify({
           subscribed: false,
           error: 'trial_expired',
           message: 'Your trial has expired. Please upgrade to continue.'
@@ -256,15 +274,15 @@ serve(async (req) => {
           status: 200,
         });
       }
-      
+
       // ✅ Accept trialing status for paid plans when there's a valid Stripe subscription
       // The SubscriptionGuard handles the case of trialing without stripe_customer_id
-      logStep('Trialing subscription found with valid Stripe customer', { 
+      logStep('Trialing subscription found with valid Stripe customer', {
         subscriptionId: activeSubscription.id,
         status: activeSubscription.status
       });
     }
-    
+
     const hasActiveSub = !!activeSubscription;
     let planId = null;
     let subscriptionEnd = null;
@@ -273,32 +291,32 @@ serve(async (req) => {
     if (hasActiveSub && activeSubscription) {
       const subscription = activeSubscription;
       status = subscription.status;
-      
+
       // Safely handle subscription end date
       if (subscription.current_period_end) {
         subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       }
-      
-      logStep('Active subscription found', { 
-        subscriptionId: subscription.id, 
+
+      logStep('Active subscription found', {
+        subscriptionId: subscription.id,
         status: status,
-        endDate: subscriptionEnd 
+        endDate: subscriptionEnd
       });
-      
+
       const stripePriceId = subscription.items.data[0].price.id;
       logStep('Stripe price ID found', { stripePriceId });
-      
+
       // Find the matching plan_id in our database using the Stripe price ID
       const { data: matchingPlan } = await (supabaseAdmin as any)
         .from('subscription_plans')
         .select('id')
         .or(`stripe_price_id_monthly.eq.${stripePriceId},stripe_price_id_yearly.eq.${stripePriceId}`)
         .single();
-      
+
       if (matchingPlan) {
         planId = matchingPlan.id;
         logStep('Matched to plan in database', { planId });
-        
+
         // Update profile with correct plan_id using admin client
         await supabaseAdmin
           .from('profiles')
@@ -312,19 +330,19 @@ serve(async (req) => {
           .eq('id', user.id);
       } else {
         logStep('WARNING: No matching plan found for Stripe price - fetching from Stripe', { stripePriceId });
-        
+
         // ✅ ENHANCED: Fetch price details from Stripe to determine plan
         try {
           const priceDetails = await stripe.prices.retrieve(stripePriceId);
           const amountInCents = priceDetails.unit_amount || 0;
           const amountInDollars = amountInCents / 100;
-          
-          logStep('Retrieved price details from Stripe', { 
+
+          logStep('Retrieved price details from Stripe', {
             priceId: stripePriceId,
             amount: amountInDollars,
-            currency: priceDetails.currency 
+            currency: priceDetails.currency
           });
-          
+
           // Map amount to plan (based on setup-subscription-plans config)
           if (amountInDollars === 9.99) {
             planId = 'starter';
@@ -343,12 +361,12 @@ serve(async (req) => {
             planId = priceDetails.product as string;
             logStep('No exact match for amount, using product ID', { amount: amountInDollars, productId: planId });
           }
-          
-          logStep('Auto-determined plan from Stripe amount', { 
-            amount: amountInDollars, 
-            determinedPlan: planId 
+
+          logStep('Auto-determined plan from Stripe amount', {
+            amount: amountInDollars,
+            determinedPlan: planId
           });
-          
+
           // Update profile with determined plan
           await supabaseAdmin
             .from('profiles')
@@ -360,39 +378,39 @@ serve(async (req) => {
               updated_at: new Date().toISOString()
             })
             .eq('id', user.id);
-            
+
         } catch (stripeError) {
           logStep('ERROR fetching price from Stripe', { error: stripeError });
           // Final fallback: use product ID
           planId = subscription.items.data[0].price.product as string;
         }
       }
-      
+
       logStep('Profile updated with subscription status');
     } else {
       logStep('No active subscription found in Stripe, checking Supabase profile');
-      
+
       // CRITICAL: Always check Supabase for manual subscriptions or enterprise plans
       const { data: profile } = await (supabaseAdmin as any)
         .from('profiles')
         .select('subscription_status, current_plan_id, stripe_customer_id, trial_ends_at')
         .eq('id', user.id)
         .single();
-      
+
       logStep('Profile data retrieved', {
         subscription_status: profile?.subscription_status,
         current_plan_id: profile?.current_plan_id,
         has_stripe_customer: !!profile?.stripe_customer_id,
         trial_ends_at: profile?.trial_ends_at
       });
-      
+
       // Check for active subscription in Supabase (including enterprise plans)
       if (profile?.subscription_status === 'active' && profile.current_plan_id) {
         logStep('Found active plan in Supabase, returning as subscribed', {
           plan_id: profile.current_plan_id,
           status: profile.subscription_status
         });
-        
+
         return new Response(JSON.stringify({
           subscribed: true,
           status: 'active',
@@ -403,7 +421,7 @@ serve(async (req) => {
           status: 200,
         });
       }
-      
+
       // Check for valid trial in Supabase
       if (profile?.subscription_status === 'trialing' && profile.trial_ends_at) {
         try {
@@ -425,7 +443,7 @@ serve(async (req) => {
           logStep('Invalid trial date in profile', { trial_ends_at: profile.trial_ends_at });
         }
       }
-      
+
       logStep('No active subscription found anywhere');
     }
 
