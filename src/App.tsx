@@ -46,6 +46,8 @@ import Onboarding from "./pages/Onboarding";
 import CatalogOptimizeDashboard from "./pages/CatalogOptimizeDashboard";
 import Products from "./pages/Products";
 import ProductTitleDescription from "./pages/ProductTitleDescription";
+import ContentWorkspace from "./pages/ContentWorkspace";
+import ImageStudio from "./pages/ImageStudio";
 import MediaHistory from "./pages/MediaHistory";
 import Collections from "./pages/Collections";
 import TestGlobale from "./pages/TestGlobale";
@@ -287,6 +289,22 @@ function NewAIRoutes() {
               element={
                 <ProtectedLayout>
                   <Products />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/content"
+              element={
+                <ProtectedLayout>
+                  <ContentWorkspace />
+                </ProtectedLayout>
+              }
+            />
+            <Route
+              path="/studio"
+              element={
+                <ProtectedLayout>
+                  <ImageStudio />
                 </ProtectedLayout>
               }
             />
