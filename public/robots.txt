@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://newai.sale/sitemap.xml
+Sitemap: https://catalogoptimize.com/sitemap.xml
