@@ -22,6 +22,12 @@ type ProductHealthRow = {
   image_url: string | null;
   tags: string[] | string | null;
   enrichment_status: string | null;
+  google_product_category: string | null;
+  google_mpn: string | null;
+  google_condition: string | null;
+  google_gtin: string | null;
+  google_white_background: boolean | null;
+  seo_synced_to_shopify: boolean | null;
 };
 
 type CatalogStats = {
@@ -34,11 +40,17 @@ type CatalogStats = {
   missingSeo: number;
   missingTags: number;
   enriched: number;
+  missingGoogleCategory: number;
+  missingGtin: number;
+  missingMpn: number;
+  missingCondition: number;
+  missingWhiteBackground: number;
+  notSyncedToShopify: number;
   lastSync: string | null;
 };
 
 const initialStats: CatalogStats = {
-  total: 0, incomplete: 0, missingTitles: 0, missingSeoTitles: 0, missingSeoDescriptions: 0, missingImages: 0, missingSeo: 0, missingTags: 0, enriched: 0, lastSync: null,
+  total: 0, incomplete: 0, missingTitles: 0, missingSeoTitles: 0, missingSeoDescriptions: 0, missingImages: 0, missingSeo: 0, missingTags: 0, enriched: 0, missingGoogleCategory: 0, missingGtin: 0, missingMpn: 0, missingCondition: 0, missingWhiteBackground: 0, notSyncedToShopify: 0, lastSync: null,
 };
 
 export default function CatalogOptimizeDashboard() {
@@ -65,7 +77,7 @@ export default function CatalogOptimizeDashboard() {
         const [countResult, productsResult, syncResult] = await Promise.all([
           supabase.from("shopify_products").select("*", { count: "exact", head: true }).eq("store_id", selectedStore.id),
           supabase.from("shopify_products")
-            .select("id,title,seo_title,seo_description,image_url,tags,enrichment_status")
+            .select("id,title,seo_title,seo_description,image_url,tags,enrichment_status,google_product_category,google_mpn,google_condition,google_gtin,google_white_background,seo_synced_to_shopify")
             .eq("store_id", selectedStore.id)
             .range(0, 9999),
           supabase.from("sync_history").select("created_at,status").eq("store_id", selectedStore.id)
@@ -83,10 +95,17 @@ export default function CatalogOptimizeDashboard() {
         const missingTags = products.filter((p) => !p.tags || (Array.isArray(p.tags) ? p.tags.length === 0 : !String(p.tags).trim())).length;
         const incomplete = products.filter((p) => !p.title?.trim() || !p.seo_description?.trim() || !p.image_url?.trim()).length;
         const enriched = products.filter((p) => ["completed", "optimized", "enriched"].includes((p.enrichment_status || "").toLowerCase())).length;
+        const missingGoogleCategory = products.filter((p) => !p.google_product_category?.trim()).length;
+        const missingGtin = products.filter((p) => !p.google_gtin?.trim()).length;
+        const missingMpn = products.filter((p) => !p.google_mpn?.trim()).length;
+        const missingCondition = products.filter((p) => !p.google_condition?.trim()).length;
+        const missingWhiteBackground = products.filter((p) => !p.google_white_background).length;
+        const notSyncedToShopify = products.filter((p) => !p.seo_synced_to_shopify).length;
 
         if (mounted) setStats({
           total: countResult.count || products.length,
           incomplete, missingTitles, missingSeoTitles, missingSeoDescriptions, missingImages, missingSeo, missingTags, enriched,
+          missingGoogleCategory, missingGtin, missingMpn, missingCondition, missingWhiteBackground, notSyncedToShopify,
           lastSync: syncResult.data?.created_at || null,
         });
       } catch (error) {
@@ -102,14 +121,20 @@ export default function CatalogOptimizeDashboard() {
 
   const health = useMemo(() => {
     if (!stats.total) return null;
-    const totalChecks = stats.total * 6;
+    const totalChecks = stats.total * 12;
     const failedChecks =
       stats.missingTitles +
       stats.missingSeoTitles +
       stats.missingSeoDescriptions +
       stats.missingImages +
       stats.missingTags +
-      Math.max(0, stats.total - stats.enriched);
+      Math.max(0, stats.total - stats.enriched) +
+      stats.missingGoogleCategory +
+      stats.missingGtin +
+      stats.missingMpn +
+      stats.missingCondition +
+      stats.missingWhiteBackground +
+      stats.notSyncedToShopify;
     return Math.max(0, Math.round(((totalChecks - failedChecks) / totalChecks) * 100));
   }, [stats]);
 
@@ -117,6 +142,12 @@ export default function CatalogOptimizeDashboard() {
     { label: fr ? "Titres produit manquants" : "Missing product titles", value: stats.missingTitles, href: "/products/title-description", icon: FileText },
     { label: fr ? "Titres SEO manquants" : "Missing SEO titles", value: stats.missingSeoTitles, href: "/seo?tab=products", icon: Sparkles },
     { label: fr ? "Descriptions SEO manquantes" : "Missing SEO descriptions", value: stats.missingSeoDescriptions, href: "/seo?tab=products", icon: FileText },
+    { label: fr ? "Catégories Google manquantes" : "Missing Google categories", value: stats.missingGoogleCategory, href: "/shopping", icon: ShoppingCart },
+    { label: fr ? "GTIN manquants" : "Missing GTINs", value: stats.missingGtin, href: "/shopping", icon: ShoppingCart },
+    { label: fr ? "MPN manquants" : "Missing MPNs", value: stats.missingMpn, href: "/shopping", icon: ShoppingCart },
+    { label: fr ? "État produit manquant" : "Missing product condition", value: stats.missingCondition, href: "/shopping", icon: ShoppingCart },
+    { label: fr ? "Fond blanc Shopping manquant" : "Missing Shopping white background", value: stats.missingWhiteBackground, href: "/shopping", icon: Image },
+    { label: fr ? "Modifications non synchronisées" : "Changes not synced", value: stats.notSyncedToShopify, href: "/products", icon: RefreshCw },
     { label: fr ? "Images principales manquantes" : "Missing primary images", value: stats.missingImages, href: "/products/title-description?view=images", icon: Image },
     { label: fr ? "Tags manquants" : "Missing tags", value: stats.missingTags, href: "/seo?tab=tags", icon: Tags },
   ].sort((a, b) => b.value - a.value);
@@ -180,7 +211,7 @@ export default function CatalogOptimizeDashboard() {
         <Card className="overflow-hidden border-violet-100 shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center justify-between"><p className="text-sm font-medium text-slate-500">{fr ? "Santé du catalogue" : "Catalog health"}</p><span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-50 text-violet-700"><Sparkles className="h-4 w-4" /></span></div>
-            {loading ? <Loader2 className="mt-5 h-6 w-6 animate-spin text-violet-600" /> : health === null ? <p className="mt-5 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-4 text-3xl font-semibold tracking-tight">{health}%</p><Progress value={health} className="mt-3 h-2" /><p className="mt-2 text-xs text-slate-500">{fr ? "6 contrôles par produit" : "6 checks per product"}</p></>}
+            {loading ? <Loader2 className="mt-5 h-6 w-6 animate-spin text-violet-600" /> : health === null ? <p className="mt-5 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-4 text-3xl font-semibold tracking-tight">{health}%</p><Progress value={health} className="mt-3 h-2" /><p className="mt-2 text-xs text-slate-500">{fr ? "12 contrôles par produit : contenu, enrichissement et Shopping" : "12 checks per product: content, enrichment and Shopping"}</p></>}
           </CardContent>
         </Card>
         {[
