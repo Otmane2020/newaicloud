@@ -56,7 +56,7 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token) as { data: { user: any }, error: any };
 
     if (userError || !user) {
       console.error('❌ Authentication error:', userError);
@@ -128,7 +128,7 @@ serve(async (req) => {
     console.log('📊 User product count:', productCount);
 
     // Get all active plans to determine appropriate plan based on product count
-    const { data: allPlans } = await supabase
+    const { data: allPlans } = await (supabase as any)
       .from('subscription_plans')
       .select('*')
       .eq('is_active', true)

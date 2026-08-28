@@ -2685,7 +2685,7 @@ ${selectedIcon}
 
     console.log(`[generate-landing-ai] Provider: ${routedAI.provider}, model: ${routedAI.model}`);
     const aiResponse = { status: 200 };
-    const data = { choices: [{ message: { content: routedAI.content } }], usage: {} };
+    const data: any = { choices: [{ message: { content: routedAI.content } }], usage: {} };
     let rawHtml = routedAI.content.trim();
     
     // If content is empty, check for errors in response

@@ -48,7 +48,7 @@ serve(async (req) => {
     logStep('Authenticating user');
     
     // Get user from token
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser() as { data: { user: any }, error: any };
     
     // Retry logic to handle race condition during signup
     let retries = 3;
@@ -93,7 +93,7 @@ serve(async (req) => {
     const periodEnd = new Date(now);
     periodEnd.setFullYear(periodEnd.getFullYear() + 10);
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await (supabaseAdmin as any)
       .from('profiles')
       .select('current_plan_id')
       .eq('id', user.id)
@@ -145,7 +145,7 @@ serve(async (req) => {
       logStep('No customer found, checking database profile');
       
       // Check if user has trial or legacy trial-like status in database
-      const { data: profile } = await supabaseAdmin
+      const { data: profile } = await (supabaseAdmin as any)
         .from('profiles')
         .select('subscription_status, trial_ends_at, current_plan_id')
         .eq('id', user.id)
@@ -289,7 +289,7 @@ serve(async (req) => {
       logStep('Stripe price ID found', { stripePriceId });
       
       // Find the matching plan_id in our database using the Stripe price ID
-      const { data: matchingPlan } = await supabaseAdmin
+      const { data: matchingPlan } = await (supabaseAdmin as any)
         .from('subscription_plans')
         .select('id')
         .or(`stripe_price_id_monthly.eq.${stripePriceId},stripe_price_id_yearly.eq.${stripePriceId}`)
@@ -373,7 +373,7 @@ serve(async (req) => {
       logStep('No active subscription found in Stripe, checking Supabase profile');
       
       // CRITICAL: Always check Supabase for manual subscriptions or enterprise plans
-      const { data: profile } = await supabaseAdmin
+      const { data: profile } = await (supabaseAdmin as any)
         .from('profiles')
         .select('subscription_status, current_plan_id, stripe_customer_id, trial_ends_at')
         .eq('id', user.id)
