@@ -1,16 +1,15 @@
 import { useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Package, Layers3, Database, FileSpreadsheet, FileText,
-  Tags, Sparkles, Image, Images, History, BadgeDollarSign, Store,
-  ShoppingCart, RefreshCw, Settings, User, CreditCard, Key, Code,
-  ChevronDown, LogOut, FlaskConical, Bot, Megaphone, Search, Newspaper,
-  WandSparkles, Activity
+  LayoutDashboard, Package, Layers3, Database, FileText,
+  Sparkles, BadgeDollarSign, Store, ShoppingCart, RefreshCw, Settings,
+  User, CreditCard, Key, Code, ChevronDown, LogOut, FlaskConical, Bot,
+  Megaphone, Search, Newspaper, WandSparkles, Activity
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub,
+  SidebarMenuSubButton, SidebarMenuSubItem, useSidebar
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/lib/language";
 import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
 
-type NavItem = { label: string; href: string; icon: typeof Package; badge?: string };
+type NavItem = { label: string; href: string; icon: typeof Package; badge?: string; aliases?: string[] };
 type NavSection = { label: string; icon: typeof Package; items: NavItem[] };
 
 export function CatalogOptimizeSidebar() {
@@ -44,19 +43,36 @@ export function CatalogOptimizeSidebar() {
       label: fr ? "Contenu" : "Content",
       icon: FileText,
       items: [
-        { label: fr ? "Contenu produit" : "Product Content", href: "/products/title-description", icon: FileText },
-        { label: fr ? "Landing pages" : "Landing Pages", href: "/products/title-description?view=landing", icon: FileSpreadsheet },
-        { label: fr ? "Catégories & tags" : "Categories & Tags", href: "/seo?tab=tags", icon: Tags },
-        { label: fr ? "Actions groupées" : "Bulk Actions", href: "/products/title-description?view=bulk", icon: Sparkles },
-      ],
-    },
-    {
-      label: fr ? "Médias" : "Media",
-      icon: Images,
-      items: [
-        { label: fr ? "Studio images" : "Image Studio", href: "/products/title-description?view=images", icon: WandSparkles },
-        { label: fr ? "Textes ALT" : "ALT Text", href: "/seo?tab=alt", icon: Image },
-        { label: fr ? "Historique" : "History", href: "/products/media-history", icon: History },
+        {
+          label: fr ? "Contenu produit" : "Product content",
+          href: "/products/title-description",
+          icon: FileText,
+          aliases: ["/products/title-description", "/seo?tab=products", "/seo?tab=tags", "/seo?tab=alt"],
+        },
+        {
+          label: fr ? "Collections & pages" : "Collections & pages",
+          href: "/seo?tab=collections",
+          icon: Layers3,
+          aliases: ["/seo?tab=collections", "/seo?tab=pages"],
+        },
+        {
+          label: "Blog",
+          href: "/blog/management",
+          icon: Newspaper,
+          aliases: ["/blog/management", "/blog-monitoring", "/cron-monitoring"],
+        },
+        {
+          label: "Studio",
+          href: "/ai-creative-studio",
+          icon: WandSparkles,
+          badge: "AI",
+          aliases: [
+            "/ai-creative-studio",
+            "/products/title-description?view=images",
+            "/products/media-history",
+            "/social-media",
+          ],
+        },
       ],
     },
     {
@@ -81,8 +97,8 @@ export function CatalogOptimizeSidebar() {
       label: fr ? "Automatisation" : "Automation",
       icon: RefreshCw,
       items: [
-        { label: fr ? "Règles d'optimisation" : "Optimization Rules", href: "/seo?tab=automation", icon: Settings },
-        { label: fr ? "Tâches & historique" : "Jobs & History", href: "/cron-monitoring", icon: Activity },
+        { label: fr ? "Règles" : "Rules", href: "/seo?tab=automation", icon: Settings },
+        { label: fr ? "Tâches" : "Jobs", href: "/cron-monitoring", icon: Activity },
       ],
     },
     {
@@ -99,8 +115,6 @@ export function CatalogOptimizeSidebar() {
 
   const labs: NavItem[] = [
     { label: "AEO & AI Answers", href: "/aeo-chatgpt", icon: Sparkles },
-    { label: fr ? "Blog & campagnes" : "Blog & Campaigns", href: "/blog", icon: Newspaper },
-    { label: fr ? "Réseaux sociaux" : "Social Media", href: "/social-media", icon: Megaphone },
     { label: "Google Ads", href: "/google-ads", icon: Megaphone },
     { label: fr ? "Assistant commercial" : "Commerce Assistant", href: "/chat", icon: Bot },
     { label: fr ? "Modèles boutique" : "Store Templates", href: "/store-templates", icon: Code },
@@ -109,32 +123,37 @@ export function CatalogOptimizeSidebar() {
   const closeMobile = () => {
     if (isMobile && openMobile) toggleSidebar();
   };
-  const active = (href: string) => {
+
+  const activeHref = (href: string) => {
     const [path, query] = href.split("?");
     if (pathname !== path) return false;
     if (!query) return true;
-    return new URLSearchParams(search).toString().includes(query);
+    const current = new URLSearchParams(search);
+    const expected = new URLSearchParams(query);
+    return Array.from(expected.entries()).every(([key, value]) => current.get(key) === value);
   };
+
+  const active = (item: NavItem) => activeHref(item.href) || (item.aliases || []).some(activeHref);
 
   const navItem = (item: NavItem) => (
     <SidebarMenuSubItem key={item.href}>
-      <SidebarMenuSubButton asChild isActive={active(item.href)}>
+      <SidebarMenuSubButton asChild isActive={active(item)}>
         <NavLink to={item.href} onClick={closeMobile}>
           <item.icon className="h-4 w-4" />
           <span>{item.label}</span>
-          {item.badge && <Badge variant="secondary" className="ml-auto text-[10px]">{item.badge}</Badge>}
+          {item.badge && <Badge variant="secondary" className="ml-auto px-1.5 text-[9px]">{item.badge}</Badge>}
         </NavLink>
       </SidebarMenuSubButton>
     </SidebarMenuSubItem>
   );
 
   return (
-    <Sidebar className="border-r border-slate-200 shadow-[8px_0_30px_rgba(15,23,42,0.04)]">
-      <SidebarContent className="bg-gradient-to-b from-white via-white to-violet-50/40">
+    <Sidebar className="border-r border-slate-200 shadow-[8px_0_30px_rgba(15,23,42,0.03)]">
+      <SidebarContent className="bg-white">
         <div className="border-b border-slate-200 bg-white px-3 py-4">
           <CatalogOptimizeLogo compact={state !== "expanded"} />
           {state === "expanded" && (
-            <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50/70 p-2">
+            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
               <StoreSelector />
             </div>
           )}
@@ -153,7 +172,7 @@ export function CatalogOptimizeSidebar() {
               </SidebarMenuItem>
 
               {sections.map((section) => (
-                <Collapsible key={section.label} defaultOpen={section.items.some((item) => active(item.href))}>
+                <Collapsible key={section.label} defaultOpen={section.items.some(active)}>
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton>
@@ -169,12 +188,12 @@ export function CatalogOptimizeSidebar() {
                 </Collapsible>
               ))}
 
-              <Collapsible defaultOpen={labs.some((item) => active(item.href))}>
+              <Collapsible defaultOpen={labs.some(active)}>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
                       <FlaskConical className="h-4 w-4" />
-                      <span>{fr ? "Labs & croissance" : "Labs & Growth"}</span>
+                      <span>{fr ? "Labs" : "Labs"}</span>
                       <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
