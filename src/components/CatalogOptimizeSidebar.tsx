@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { StoreSelector } from "@/components/StoreSelector";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/lib/language";
+import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
 
 type NavItem = { label: string; href: string; icon: typeof Package; badge?: string };
 type NavSection = { label: string; icon: typeof Package; items: NavItem[] };
@@ -73,6 +74,7 @@ export function CatalogOptimizeSidebar() {
       label: fr ? "Canaux" : "Channels",
       icon: Store,
       items: [
+        { label: fr ? "Assistant vendeur IA" : "AI Sales Assistant", href: "/storefront-assistant", icon: Bot, badge: "AI" },
         { label: "Shopify", href: "/account?tab=integrations", icon: Store },
         { label: "Google Shopping", href: "/shopping", icon: ShoppingCart },
         { label: "Merchant Center", href: "/merchant?tab=integration", icon: Store },
@@ -133,21 +135,15 @@ export function CatalogOptimizeSidebar() {
   );
 
   return (
-    <Sidebar>
-      <SidebarContent>
-        <div className="border-b px-3 py-4">
-          <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 text-white">
-              <Package className="h-5 w-5" />
+    <Sidebar className="border-r border-slate-200 shadow-[8px_0_30px_rgba(15,23,42,0.04)]">
+      <SidebarContent className="bg-gradient-to-b from-white via-white to-violet-50/40">
+        <div className="border-b border-slate-200 bg-white px-3 py-4">
+          <CatalogOptimizeLogo compact={state !== "expanded"} />
+          {state === "expanded" && (
+            <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50/70 p-2">
+              <StoreSelector />
             </div>
-            {state === "expanded" && (
-              <div>
-                <p className="font-semibold leading-tight">Catalog Optimize</p>
-                <p className="text-[11px] text-muted-foreground">AI Product Operations</p>
-              </div>
-            )}
-          </div>
-          {state === "expanded" && <div className="mt-3"><StoreSelector /></div>}
+          )}
         </div>
 
         <SidebarGroup>
@@ -198,7 +194,7 @@ export function CatalogOptimizeSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-slate-200 bg-white">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
