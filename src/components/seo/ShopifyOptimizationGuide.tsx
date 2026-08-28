@@ -22,7 +22,7 @@ export function ShopifyOptimizationGuide({ open, onClose }: ShopifyOptimizationG
         "Accédez à Shopify Admin → Produits",
         "Pour chaque produit, éditez les variantes",
         "Dans la section 'Inventaire', ajoutez le code-barres EAN-13 ou UPC",
-        "Si vous n'avez pas de GTIN, demandez à votre fournisseur ou utilisez NewAI pour générer des GTINs valides",
+        "Si vous n'avez pas de GTIN, demandez à votre fournisseur ou utilisez CatalogueOptimize AI pour générer des GTINs valides",
       ],
       impact: "🚀 Amélioration de 40-60% de la visibilité sur Google Shopping",
       shopifyPath: "Produits → Sélectionner produit → Variantes → Code-barres",
@@ -241,7 +241,7 @@ export function ShopifyOptimizationGuide({ open, onClose }: ShopifyOptimizationG
         <Alert>
           <AlertCircle className="w-4 h-4" />
           <AlertDescription>
-            <strong>Besoin d'aide ?</strong> NewAI peut vous aider à générer des GTINs, optimiser vos descriptions et
+            <strong>Besoin d'aide ?</strong> CatalogueOptimize AI peut vous aider à générer des GTINs, optimiser vos descriptions et
             améliorer vos images automatiquement. Utilisez les fonctionnalités SEO de l'application.
           </AlertDescription>
         </Alert>
