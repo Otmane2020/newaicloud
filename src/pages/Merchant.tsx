@@ -1,30 +1,24 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { GoogleMerchant } from "@/components/seo/GoogleMerchant";
 import { GoogleMerchantSettings } from "@/components/seo/GoogleMerchantSettings";
-import { GoogleShoppingSyncSettings } from "@/components/seo/GoogleShoppingSyncSettings";
 import { GoogleMerchantIntegration } from "@/components/seo/GoogleMerchantIntegration";
 import { GoogleMerchantSyncSettings } from "@/components/seo/GoogleMerchantSyncSettings";
 import { GoogleMerchantMonitoring } from "@/components/seo/GoogleMerchantMonitoring";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Settings, ShoppingCart, ArrowRight, RefreshCw, Globe, BarChart3 } from "lucide-react";
+import { FileText, Settings, ArrowRight, RefreshCw, Globe, BarChart3 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 
 export default function Merchant() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "feed");
-  
+
   useEffect(() => {
     const tab = searchParams.get("tab");
     const validTabs = ["integration", "feed", "settings", "sync", "monitoring"];
-    if (tab && validTabs.includes(tab)) {
-      setActiveTab(tab);
-    } else {
-      setActiveTab("integration");
-    }
+    setActiveTab(tab && validTabs.includes(tab) ? tab : "integration");
   }, [searchParams]);
 
   const handleTabChange = (value: string) => {
@@ -73,42 +67,47 @@ export default function Merchant() {
   const activeTabData = tabs.find((tab) => tab.id === activeTab);
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-5">
+    <div className="mx-auto w-full max-w-[1600px] space-y-4 px-4 py-5 sm:px-6 lg:px-8">
       <WorkspacePageHeader
         section="Channels"
         page={activeTabData?.label || "Merchant Center"}
         title={t.merchant.title}
         description={activeTabData?.description || t.merchant.description}
         actions={
-          <a href="https://business.google.com/fr/merchant-center/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 items-center rounded-lg border px-3 text-sm font-medium hover:bg-muted">
-            {t.merchant.openMerchantCenter}<ArrowRight className="ml-2 h-4 w-4" />
+          <a
+            href="https://business.google.com/fr/merchant-center/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-9 items-center rounded-lg border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            {t.merchant.openMerchantCenter}
+            <ArrowRight className="ml-2 h-4 w-4" />
           </a>
         }
       />
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
-          {tabs.map(({ id, label, icon: Icon }) => (
-            <TabsTrigger key={id} value={id} className="gap-2">
-              <Icon className="h-4 w-4" /><span className="truncate">{label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+        <div className="overflow-x-auto border-b">
+          <TabsList className="h-10 w-max min-w-full justify-start rounded-none bg-transparent p-0">
+            {tabs.map(({ id, label, icon: Icon }) => (
+              <TabsTrigger
+                key={id}
+                value={id}
+                className="h-10 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-xs font-medium data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none sm:text-sm"
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span className="whitespace-nowrap">{label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
-        {activeTabData && (
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-            <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-50 text-violet-700">
-                <activeTabData.icon className="h-4 w-4" />
-              </span>
-              <div>
-                <h2 className="text-lg font-semibold">{activeTabData.label}</h2>
-                <p className="text-sm text-muted-foreground">{activeTabData.description}</p>
-              </div>
-            </div>
-            {activeTabData.component}
-          </section>
-        )}
+        {tabs.map((tab) => (
+          <TabsContent key={tab.id} value={tab.id} className="m-0">
+            {tab.component}
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
-  );}
+  );
+}
