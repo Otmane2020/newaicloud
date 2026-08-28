@@ -1,14 +1,22 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useTranslation } from "@/lib/language";
+import CatalogSeoLanding, { getCatalogSeoSlug } from "@/pages/CatalogSeoLanding";
 
 const NotFound = () => {
   const { t } = useTranslation();
   const location = useLocation();
+  const seoSlug = getCatalogSeoSlug(location.pathname);
 
   useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
+    if (!seoSlug) {
+      console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+    }
+  }, [location.pathname, seoSlug]);
+
+  if (seoSlug) {
+    return <CatalogSeoLanding slug={seoSlug} />;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -18,8 +26,8 @@ const NotFound = () => {
         <p className="text-muted-foreground max-w-md">
           {t.notFound.description}
         </p>
-        <a 
-          href="/" 
+        <a
+          href="/"
           className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
         >
           {t.notFound.backHome}
