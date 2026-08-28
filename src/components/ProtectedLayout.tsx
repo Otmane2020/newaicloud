@@ -8,8 +8,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NoStoreConnectedPrompt } from "@/components/NoStoreConnectedPrompt";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Sparkles, Coins, RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Coins, RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
 import { useAutoSyncProgress } from "@/contexts/AutoSyncContext";
 import { useUsageLimits } from "@/hooks/useUsageLimits";
@@ -22,7 +21,6 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const { stores, loading: storesLoading, serverError: storeServerError } = useStore();
   const { isSyncing } = useAutoSyncProgress();
-  const isMobile = useIsMobile();
   const { limits } = useUsageLimits();
   const { language } = useTranslation();
   
@@ -139,9 +137,9 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
               <div className="flex h-12 sm:h-14 items-center justify-between px-2 sm:px-4 gap-2">
                 <div className="flex items-center gap-1 sm:gap-3 min-w-0">
                   <SidebarTrigger className="flex-shrink-0" />
-                  <div className="min-w-0">
-                    <div className="hidden sm:block"><CatalogOptimizeLogo /></div>
-                    <div className="sm:hidden"><CatalogOptimizeLogo compact /></div>
+                  {/* Sidebar already carries the brand on desktop. Keep a compact logo only on mobile. */}
+                  <div className="sm:hidden min-w-0">
+                    <CatalogOptimizeLogo compact />
                   </div>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
