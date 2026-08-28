@@ -70,6 +70,53 @@ const SCOPES = [
 // Per Shopify Staff (Kellan): "they should be registered as App Specific Webhooks via your app's toml configuration file"
 // The registerGDPRWebhooks and createGDPRWebhook functions have been removed as they are no longer needed.
 
+/**
+ * 🔐 Valide la signature HMAC envoyée par Shopify sur le callback OAuth
+ * Obligatoire (Shopify App Store requirement) : sans cela le callback est falsifiable.
+ */
+async function validateShopifyHmac(url: URL, secret: string): Promise<boolean> {
+  const params: Record<string, string> = {};
+  url.searchParams.forEach((value, key) => {
+    if (key !== "hmac" && key !== "signature") params[key] = value;
+  });
+
+  const hmac = url.searchParams.get("hmac");
+  if (!hmac) {
+    console.error("[SHOPIFY-OAUTH] ❌ HMAC manquant dans le callback");
+    return false;
+  }
+
+  const message = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join("&");
+
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(message));
+  const computed = Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  if (computed.length !== hmac.length) return false;
+  let diff = 0;
+  for (let i = 0; i < computed.length; i++) {
+    diff |= computed.charCodeAt(i) ^ hmac.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+/** Shopify n'autorise que les domaines *.myshopify.com */
+function isValidShopDomain(shop: string): boolean {
+  return /^[a-zA-Z0-9][a-zA-Z0-9-]*\.myshopify\.com$/.test(shop);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -87,7 +134,27 @@ serve(async (req) => {
       const hostFromQuery = url.searchParams.get("host");
       console.log("[SHOPIFY-OAUTH] Callback public reçu de Shopify", { shop, state, hostFromQuery });
 
+      // 🔐 1. Domaine boutique valide
+      if (!isValidShopDomain(shop)) {
+        console.error("[SHOPIFY-OAUTH] ❌ Domaine boutique invalide:", shop);
+        return new Response(JSON.stringify({ error: "invalid_shop_domain" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // 🔐 2. Signature HMAC valide
+      const hmacValid = await validateShopifyHmac(url, SHOPIFY_API_SECRET);
+      if (!hmacValid) {
+        console.error("[SHOPIFY-OAUTH] ❌ HMAC invalide, callback rejeté");
+        return new Response(JSON.stringify({ error: "invalid_hmac" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
 
       // Vérifier si c'est un flow avec user (ancien flow) ou sans user (nouveau flow pre-auth)
       // ✅ Inclure host dans la sélection
