@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { CatalogActionCard } from "@/components/CatalogActionCard";
 import { useTranslation } from "@/lib/language";
 import { Sparkles, ArrowRight, Lock } from "lucide-react";
 
@@ -10,48 +10,35 @@ interface SoftPaywallBannerProps {
 
 export function SoftPaywallBanner({ answersCount, onUpgrade }: SoftPaywallBannerProps) {
   const { language } = useTranslation();
+  const fr = language === "fr";
 
   return (
-    <Card className="bg-gradient-to-r from-violet-500/20 via-blue-500/20 to-cyan-500/20 border-violet-500/30 p-6 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-500/20 to-transparent rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-2xl" />
-      
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center shrink-0">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="font-bold text-white text-lg flex items-center gap-2">
-              {language === 'fr' 
-                ? `${answersCount} réponses AEO générées !`
-                : `${answersCount} AEO answers generated!`}
-            </h3>
-            <p className="text-white/70 mt-1">
-              {language === 'fr' 
-                ? "Passez à un plan payant pour les publier et les rendre visibles aux IA (ChatGPT, Gemini, Perplexity...)"
-                : "Upgrade to publish them and make them visible to AI assistants (ChatGPT, Gemini, Perplexity...)"}
-            </p>
-            <div className="flex items-center gap-2 mt-2 text-white/50 text-sm">
-              <Lock className="w-4 h-4" />
-              <span>
-                {language === 'fr' 
-                  ? "Vos réponses sont prêtes, il ne reste plus qu'à les publier"
-                  : "Your answers are ready, just need to publish them"}
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        <Button 
+    <CatalogActionCard
+      icon={Sparkles}
+      title={fr ? `${answersCount} réponses AEO générées` : `${answersCount} AEO answers generated`}
+      description={
+        fr
+          ? "Passez à un plan payant pour les publier et les rendre visibles aux assistants IA."
+          : "Upgrade to publish them and make them visible to AI assistants."
+      }
+      meta={
+        <span className="inline-flex items-center gap-1.5">
+          <Lock className="h-3.5 w-3.5 text-violet-600" />
+          {fr
+            ? "Vos réponses sont prêtes à être publiées."
+            : "Your answers are ready to publish."}
+        </span>
+      }
+      action={
+        <Button
           onClick={onUpgrade}
-          className="bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 text-white shadow-lg shadow-violet-500/25 shrink-0"
+          size="sm"
+          className="rounded-lg bg-violet-600 px-5 font-semibold text-white shadow-none hover:bg-violet-700"
         >
-          {language === 'fr' ? "Voir les plans" : "View plans"}
-          <ArrowRight className="w-4 h-4 ml-2" />
+          {fr ? "Voir les plans" : "View plans"}
+          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
-      </div>
-    </Card>
+      }
+    />
   );
 }
