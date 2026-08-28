@@ -1,67 +1,45 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
-import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
+import { generateLifestyleContext } from "../_shared/lifestyle-context.ts";
 import { autoSyncImageToShopify } from "../_shared/auto-sync-to-shopify.ts";
-
-/**
- * POST-PROCESSING: Force exact format dimensions
- */
-async function enforceImageFormat(base64Image: string, targetWidth: number, targetHeight: number): Promise<string> {
-  try {
-    console.log(`[POST-PROCESS] 📐 Enforcing: ${targetWidth}x${targetHeight}`);
-    const base64Match = base64Image.match(/data:image\/[^;]+;base64,(.+)/);
-    const base64Data = base64Match ? base64Match[1] : base64Image;
-    const binaryString = atob(base64Data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-    
-    const image = await Image.decode(bytes);
-    const srcAspect = image.width / image.height;
-    const targetAspect = targetWidth / targetHeight;
-    let cropX = 0, cropY = 0, cropWidth = image.width, cropHeight = image.height;
-    
-    if (Math.abs(srcAspect - targetAspect) > 0.01) {
-      if (srcAspect > targetAspect) {
-        cropWidth = Math.round(image.height * targetAspect);
-        cropX = Math.round((image.width - cropWidth) / 2);
-      } else {
-        cropHeight = Math.round(image.width / targetAspect);
-        cropY = Math.round((image.height - cropHeight) / 2);
-      }
-    }
-    
-    const cropped = image.crop(cropX, cropY, cropWidth, cropHeight);
-    const resized = cropped.resize(targetWidth, targetHeight);
-    const outputBytes = await resized.encode();
-    let binary = '';
-    for (let i = 0; i < outputBytes.byteLength; i++) binary += String.fromCharCode(outputBytes[i]);
-    console.log(`[POST-PROCESS] ✅ Done: ${targetWidth}x${targetHeight}`);
-    return `data:image/png;base64,${btoa(binary)}`;
-  } catch (e) { console.error(`[POST-PROCESS] ❌`, e); return base64Image; }
-}
+import { generateCloudflareBackground, CLOUDFLARE_FREE_BACKGROUND_MODEL } from "../_shared/cloudflare-image.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface GenerationRequest {
-  imageUrl: string;
-  productTitle: string;
-  productDescription?: string;
-  seoTitle?: string;
-  seoDescription?: string;
-  visionAiData?: any;
-  serpData?: any; // SERP/competitor inspiration data
-  productId: string;
-  imageId: string;
-  prompt: string;
-  enrichedPrompt?: string;
-  style: "professional" | "lifestyle" | "minimalist" | "creative";
-  format: "square" | "portrait" | "landscape";
-  targetType: "main" | "variant";
-  variantOptions?: string; // e.g., "Red - Large"
+const formats: Record<string, { width: number; height: number; ratio: string }> = {
+  square: { width: 1024, height: 1024, ratio: "1:1" },
+  portrait: { width: 768, height: 1024, ratio: "3:4" },
+  landscape: { width: 1024, height: 768, ratio: "4:3" },
+};
+
+function dataUrlToBytes(dataUrl: string): { bytes: Uint8Array; mime: string } {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) throw new Error("Invalid generated image data URL");
+  const binary = atob(match[2]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return { bytes, mime: match[1] };
+}
+
+async function persistGeneratedImage(supabase: any, dataUrl: string, productId: string, imageId: string): Promise<string> {
+  try {
+    const { bytes, mime } = dataUrlToBytes(dataUrl);
+    const ext = mime.includes("jpeg") || mime.includes("jpg") ? "jpg" : "png";
+    const path = `ai-backgrounds/${productId}/${imageId}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("product-images").upload(path, bytes, {
+      contentType: mime,
+      upsert: false,
+    });
+    if (error) throw error;
+    const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+    return data?.publicUrl || dataUrl;
+  } catch (error) {
+    console.warn("[ai-bg-gen] Could not persist generated image; returning data URL", error);
+    return dataUrl;
+  }
 }
 
 serve(async (req) => {
@@ -69,83 +47,15 @@ serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   if (body?.healthCheck === true) {
-    return new Response(JSON.stringify({ ok: true }), { 
-      status: 200, 
-      headers: { ...corsHeaders, "Content-Type": "application/json" } 
-    });
+    return new Response(JSON.stringify({
+      ok: true,
+      provider: "cloudflare-workers-ai",
+      model: CLOUDFLARE_FREE_BACKGROUND_MODEL,
+      policy: "cloudflare-only",
+    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
   try {
-    // Check usage limits first
-    const authHeader = req.headers.get("Authorization");
-    let authenticatedUserId: string | null = null;
-    
-    if (authHeader) {
-      const supabaseAdmin = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      );
-
-      const token = authHeader.replace("Bearer ", "");
-      const {
-        data: { user },
-      } = await supabaseAdmin.auth.getUser(token);
-
-      if (user) {
-        authenticatedUserId = user.id;
-        const currentMonth = new Date().toISOString().substring(0, 7) + "-01";
-        const { data: usage } = await supabaseAdmin
-          .from("usage_tracking")
-          .select("optimizations_count")
-          .eq("seller_id", user.id)
-          .eq("month", currentMonth)
-          .maybeSingle();
-
-        const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("subscription_status, current_plan_id")
-          .eq("id", user.id)
-          .single();
-
-        const { data: plan } = await supabaseAdmin
-          .from("subscription_plans")
-          .select("max_optimizations_monthly, trial_max_optimizations")
-          .eq("id", profile?.current_plan_id || "trial")
-          .single();
-
-        const currentUsage = usage?.optimizations_count || 0;
-        const maxOptimizations =
-          profile?.subscription_status === "trialing"
-            ? plan?.trial_max_optimizations || 50
-            : plan?.max_optimizations_monthly || 999999;
-
-        console.log(`[ai-bg-gen] Usage: ${currentUsage}/${maxOptimizations}`);
-
-        if (currentUsage >= maxOptimizations) {
-          console.error(`[ai-bg-gen] LIMIT REACHED`);
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: "LIMIT_REACHED",
-              message: "Limite d'optimisations atteinte",
-              usage: currentUsage,
-              limit: maxOptimizations,
-            }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
-        }
-
-        // Increment usage immediately (8 credits per background generation)
-        const AI_BG_COST = 8;
-        await supabaseAdmin.rpc("increment_usage", {
-          p_seller_id: user.id,
-          p_field: "optimizations_count",
-          p_increment: AI_BG_COST,
-        });
-        console.log(`[ai-bg-gen] Usage incremented: +${AI_BG_COST}`);
-      }
-    }
-
     const {
       imageUrl,
       productTitle,
@@ -158,687 +68,166 @@ serve(async (req) => {
       imageId,
       prompt,
       enrichedPrompt,
-      style,
-      format,
-      targetType,
+      style = "lifestyle",
+      format = "square",
+      targetType = "main",
       variantOptions,
-    } = body as GenerationRequest;
+      autoSyncToShopify = true,
+    } = body;
 
-    if (!imageUrl || !productTitle || !prompt || !productId || !imageId) {
+    if (!imageUrl || !productTitle || !productId || !imageId) {
       return new Response(JSON.stringify({ success: false, error: "Missing required parameters" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Construire un contexte produit enrichi
-    let productContext = productTitle;
+    const dims = formats[format] || formats.square;
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
 
-    if (seoTitle && seoTitle !== productTitle) {
-      productContext += `. ${seoTitle}`;
+    const authHeader = req.headers.get("Authorization");
+    let userId: string | null = null;
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
     }
 
-    if (productDescription) {
-      productContext += `. ${productDescription.slice(0, 200)}`;
-    } else if (seoDescription) {
-      productContext += `. ${seoDescription.slice(0, 200)}`;
-    }
-
-    if (visionAiData?.description) {
-      productContext += `. Visual analysis: ${visionAiData.description.slice(0, 150)}`;
-    }
-
-    // Enrich with SERP/competitor data for better context
-    if (serpData) {
-      if (serpData.dimensions) {
-        productContext += `. Dimensions: ${serpData.dimensions}`;
+    // Validate ownership whenever the caller is authenticated.
+    if (userId) {
+      const { data: product } = await supabase
+        .from("shopify_products")
+        .select("seller_id")
+        .eq("id", productId)
+        .maybeSingle();
+      if (product?.seller_id && product.seller_id !== userId) {
+        return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-      if (serpData.materials?.length > 0) {
-        productContext += `. Materials: ${serpData.materials.slice(0, 3).join(", ")}`;
-      }
-      if (serpData.dominantStyles?.length > 0) {
-        productContext += `. Styles inspirants: ${serpData.dominantStyles.slice(0, 2).join(", ")}`;
-      }
-      console.log(`[ai-bg-gen] 🔍 SERP data enrichment applied`);
-    }
-    
-    // 🆕 Build SERP-based orientation instructions  
-    let orientationInstructions = "";
-    if (serpData) {
-      orientationInstructions = `
-🔄 ORIENTATION SELON LES STANDARDS DU MARCHÉ 🔄
-${serpData.dominantStyles?.length ? `📊 Styles de présentation populaires: ${serpData.dominantStyles.slice(0, 3).join(", ")}` : ""}
-${serpData.dimensions ? `📏 Dimensions produit: ${serpData.dimensions} - Orienter le produit pour montrer ces proportions correctement` : ""}
-
-⚠️ NE PAS RETOURNER, INVERSER OU MAL ORIENTER LE PRODUIT
-Le produit doit être présenté dans son orientation NATURELLE comme chez les concurrents.
-Si c'est un canapé → vue de FACE ou légère 3/4
-Si c'est une chaise → légère rotation pour montrer la profondeur  
-Si c'est un lit → angle montrant la tête de lit et la longueur
-Si c'est une table → légère vue plongeante montrant la surface
-`;
     }
 
-    console.log(`🎨 Generating AI background for: ${productTitle} (${targetType})`);
-    console.log(`📝 Enriched context: ${productContext.slice(0, 100)}...`);
-    if (variantOptions) {
-      console.log(`   Variant: ${variantOptions}`);
-    }
+    const lifestyle = generateLifestyleContext(productTitle || "");
+    const productContext = [
+      productTitle,
+      seoTitle && seoTitle !== productTitle ? seoTitle : "",
+      productDescription || seoDescription || "",
+      variantOptions ? `Variant: ${variantOptions}` : "",
+      visionAiData?.description ? `Visible product details: ${visionAiData.description}` : "",
+      serpData?.dimensions ? `Dimensions: ${serpData.dimensions}` : "",
+      serpData?.materials?.length ? `Materials: ${serpData.materials.slice(0, 4).join(", ")}` : "",
+    ].filter(Boolean).join(". ").slice(0, 1800);
 
-    // 🆕 Generate lifestyle context based on product title
-    const lifestyleContext = generateLifestyleContext(productTitle);
-    const lifestylePromptSection = generateLifestylePromptSection(productTitle);
-    console.log(`🏠 Lifestyle context: ${lifestyleContext.slice(0, 100)}...`);
+    const backgroundInstruction = enrichedPrompt || prompt || lifestyle;
+    const finalPrompt = `
+IMAGE EDITING TASK: replace ONLY the background/environment of the supplied ecommerce product image.
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
+PRODUCT TO PRESERVE:
+${productContext}
 
-    // Build comprehensive prompt based on configuration
-    const isMainImage = targetType === "main";
-    const variantInfo = variantOptions ? ` (Variant: ${variantOptions})` : "";
+NEW BACKGROUND REQUEST:
+${backgroundInstruction}
 
-    const styleDescriptions = {
-      professional: "Clean studio lighting, neutral backdrop, professional e-commerce quality",
-      lifestyle: "Natural environment, lifestyle setting, warm and inviting atmosphere",
-      minimalist: "Modern minimalist aesthetic, clean geometric shapes, neutral tones",
-      creative: "Artistic composition, creative lighting, unique and engaging perspective",
-    };
+STYLE: ${style}
+TARGET: ${targetType}
+FORMAT: ${dims.width}x${dims.height} (${dims.ratio})
+LIFESTYLE CONTEXT: ${lifestyle}
 
-    // 🆕 Format dimensions mapping with DALL-E size
-    const formatDimensions: Record<string, { width: number; height: number; ratio: string; dalleSize: string }> = {
-      square: { width: 1024, height: 1024, ratio: "1:1", dalleSize: "1024x1024" },
-      portrait: { width: 768, height: 1024, ratio: "3:4", dalleSize: "1024x1792" },
-      landscape: { width: 1024, height: 768, ratio: "4:3", dalleSize: "1792x1024" },
-    };
-    const targetDims = formatDimensions[format] || formatDimensions.square;
-    console.log(`[ai-bg-gen] 🎯 Target format: ${format} -> ${targetDims.width}x${targetDims.height} (DALL-E: ${targetDims.dalleSize})`);
-
-    const formatSpecs = {
-      square: `${targetDims.width}x${targetDims.height} square format (1:1 ratio)`,
-      portrait: `${targetDims.width}x${targetDims.height} portrait orientation (3:4 ratio)`,
-      landscape: `${targetDims.width}x${targetDims.height} landscape orientation (4:3 ratio)`,
-    };
-
-    // Force COMPLETE background replacement - ULTRA EXPLICIT
-    const forceFullBackgroundReplace = `
-🛑🛑🛑 RÈGLE ABSOLUE #1 : PRÉSERVATION PIXEL-PAR-PIXEL DU PRODUIT 🛑🛑🛑
-
-⚠️⚠️⚠️ TU NE DOIS JAMAIS GÉNÉRER UN NOUVEAU PRODUIT ⚠️⚠️⚠️
-
-L'image d'entrée contient un produit spécifique. Tu DOIS :
-1. EXTRAIRE ce produit EXACT de l'image (tous ses pixels, sa forme, sa couleur, ses détails)
-2. PLACER ce même produit EXTRAIT dans un nouvel environnement
-3. NE JAMAIS créer, dessiner, imaginer ou générer un produit similaire ou différent
-
-📸 EXEMPLE CONCRET :
-- Si l'image montre un SOMMIER métallique avec lattes → garde CE SOMMIER EXACT (pas un lit complet avec matelas!)
-- Si l'image montre une CHAISE en bois → garde CETTE CHAISE EXACTE (même forme, couleur, texture)
-- Si l'image montre une TABLE → garde CETTE TABLE EXACTE
-
-🚫 ÉCHEC TOTAL (exemples) :
-- Remplacer un sommier par un lit complet avec matelas = ÉCHEC
-- Remplacer une chaise simple par un fauteuil = ÉCHEC  
-- Modifier la forme, couleur ou texture du produit = ÉCHEC
-- Générer un produit "similaire" ou "dans la même catégorie" = ÉCHEC
-
-✅ SUCCÈS = le produit est IDENTIQUE pixel-par-pixel, seul l'arrière-plan change
-
-🚨 MISSION : REMPLACEMENT TOTAL DE L'ARRIÈRE-PLAN UNIQUEMENT
-
-⚠️ ÉTAPE 1 - EXTRACTION DU PRODUIT (CRITIQUE) :
-Tu DOIS d'abord EXTRAIRE le produit EXACT de l'image d'entrée :
-   ✅ EXTRAIS : Le produit principal EXACTEMENT comme il apparaît dans l'image
-   ✅ CONSERVE : Chaque pixel, chaque détail, chaque couleur du produit
-   ❌ SUPPRIME : Tous les murs, sols, meubles, décorations de l'arrière-plan
-   ❌ NE MODIFIE PAS : Le produit lui-même en aucune façon
-
-⚡ ÉTAPE 2 - CRÉATION D'UN NOUVEL ENVIRONNEMENT (OBLIGATOIRE) :
-Tu DOIS créer un environnement COMPLÈTEMENT DIFFÉRENT et NOUVEAU :
-   ✅ Nouveau décor : DIFFÉRENT de l'original (si c'était un salon → change pour un autre style)
-   ✅ Nouvelle palette : DIFFÉRENTE de l'original (si c'était beige → utilise gris, blanc, bleu, etc.)
-   ✅ Nouveaux meubles d'ambiance : DIFFÉRENTS de l'original (nouvelles formes, couleurs)
-   ✅ Nouveau style : Modern, scandinave, industriel, bohème (CHOISIS-EN UN DIFFÉRENT)
-   ✅ Nouveaux accessoires : plantes différentes, objets déco différents
-   ✅ Nouvel éclairage : lumière du jour, golden hour, lumière douce (DIFFÉRENT)
-
-🎯 CRITÈRES DE RÉUSSITE :
-Si quelqu'un compare l'image avant/après, il doit dire :
-"Wow, c'est un ENVIRONNEMENT COMPLÈTEMENT DIFFÉRENT !"
-"Le produit est le même, mais TOUT LE RESTE a changé !"
-"On dirait une AUTRE MAISON, un AUTRE STYLE !"
-
-📸 QUALITÉ E-COMMERCE PREMIUM (OBLIGATOIRE) :
-   ✅ Qualité catalogue professionnel (Zara Home, La Redoute, West Elm)
-   ✅ Éclairage naturel studio : doux, diffus, professionnel
-   ✅ Netteté parfaite : produit 100% net, arrière-plan léger flou artistique
-   🎨 IMAGE EN COULEUR OBLIGATOIRE : couleurs vibrantes, naturelles, réalistes (PAS de noir et blanc, PAS de grayscale, PAS de monochrome)
-   ✅ Color grading haut de gamme : tons chauds/froids selon style choisi, palette de couleurs riche et variée
-   ✅ Matériaux premium visibles : bois, marbre, métal, velours, lin avec leurs couleurs naturelles
-   ✅ Composition magazine : équilibrée, aérée, sophistiquée
-
-🚫 INTERDICTIONS ABSOLUES :
-   ❌ PAS de simple "ajout" sur l'arrière-plan existant
-   ❌ PAS de "légère modification" de l'existant
-   ❌ PAS de conservation des murs/sols/meubles originaux
-   ❌ PAS de même palette de couleurs que l'original
-   ❌ PAS de même style déco que l'original
-   ❌ PAS d'effet "collage" ou "montage"
-
-✨ RÉSULTAT ATTENDU :
-Une NOUVELLE PHOTOGRAPHIE professionnelle dans un NOUVEL ENVIRONNEMENT.
-Le produit est identique, mais TOUT LE CONTEXTE est DIFFÉRENT et NOUVEAU.
-Changement radical d'ambiance = RÉUSSITE.
-Simple retouche = ÉCHEC.
-`;
-
-    // Nouveau prompt lifestyle premium pour Lovable - INSISTE sur le CHANGEMENT RADICAL
-    const premiumLifestylePrompt = `
-🏆 PHOTOGRAPHIE E-COMMERCE PREMIUM - NOUVEL ENVIRONNEMENT OBLIGATOIRE
-
-${lifestylePromptSection}
-
-⚠️ RÈGLE #1 : CRÉER UN NOUVEL ENVIRONNEMENT (PAS une retouche)
-Tu dois imaginer que tu TRANSPORTES le produit dans un NOUVEAU LIEU différent de l'original.
-🏠 CONTEXTE LIFESTYLE SUGGÉRÉ : ${lifestyleContext}
-
-🎬 NOUVELLE SCÈNE - CHANGEMENT RADICAL :
-- 🏠 Nouveau décor intérieur : Style DIFFÉRENT (moderne, scandinave, industriel, bohème, minimaliste)
-- 🎨 Nouvelle palette : Couleurs DIFFÉRENTES de l'original
-  Exemples : Si l'original était beige → passe à gris/blanc/bleu clair
-             Si l'original était sombre → passe à lumineux/aéré
-             Si l'original était minimaliste → ajoute du caractère
-- 🪑 Nouveaux meubles d'ambiance : Formes et styles DIFFÉRENTS
-- 🌿 Nouveaux accessoires : DIFFÉRENTS objets déco, plantes, textiles
-- 💡 Nouveau type d'éclairage : Lumière du jour / Golden hour / Éclairage doux (DIFFÉRENT)
-- 🏛️ Nouvelle architecture : Murs, sol, fenêtres DIFFÉRENTS
-
-📸 QUALITÉ PHOTOGRAPHIQUE PROFESSIONNELLE :
-- Qualité studio haut de gamme (Zara Home, La Redoute, West Elm, CB2)
-- Éclairage naturel professionnel : doux, diffus, sans ombres dures
-- Netteté parfaite sur le produit (focus à 100%)
-- Léger flou artistique sur l'arrière-plan (profondeur de champ naturelle)
-- 🎨 IMAGE EN COULEUR COMPLÈTE : couleurs vives, naturelles et réalistes (ABSOLUMENT PAS de noir et blanc, grayscale ou monochrome)
-- Color grading professionnel : tons harmonieux et sophistiqués avec palette de couleurs riche
-- Composition magazine : équilibrée, aérée, élégante
-
-✨ INTÉGRATION PRODUIT PARFAITE :
-- Le produit reste IDENTIQUE : mêmes couleurs, textures, proportions, détails
-- Placement naturel dans la nouvelle scène (pas d'effet flottant)
-- Ombres et reflets réalistes adaptés au NOUVEAU contexte
-- Le produit est la STAR et doit REMPLIR 85-95% du canvas
-- 🚨 PAS de padding blanc autour du produit - il doit TOUCHER les bords
-- Zoom sur le produit pour qu'il occupe tout l'espace disponible
-
-🎯 MATÉRIAUX & AMBIANCE PREMIUM :
-- Matériaux nobles visibles : bois naturel, marbre, velours, lin, céramique, métal brossé
-- 2-3 éléments déco maximum (pas de surcharge)
-- Ambiance lumineuse, spacieuse, raffinée
-- Atmosphère aspirationnelle mais réaliste
-
-🚫 ERREURS À ÉVITER ABSOLUMENT :
-- ❌ Conserver des éléments de l'arrière-plan original
-- ❌ Faire une simple "retouche" de l'existant
-- ❌ Garder la même ambiance/style que l'original
-- ❌ Effet "collage" visible ou intégration artificielle
-- ❌ Flou artificiel ou effets IA visibles
-- ❌ Sur-saturation des couleurs
-- ❌ Décor générique ou cheap
-- ❌ Composition encombrée
-
-✅ TEST DE RÉUSSITE :
-Si quelqu'un compare avant/après, il doit remarquer immédiatement :
-"Le produit est le même, mais c'est un ENVIRONNEMENT COMPLÈTEMENT NOUVEAU !"
-"Ça ressemble à une autre maison, un autre style déco !"
-"Changement radical d'ambiance tout en gardant le produit intact !"
-
-🎯 RÉSULTAT FINAL :
-Une photo qui pourrait être publiée IMMÉDIATEMENT sur un site e-commerce premium.
-Qualité = shooting professionnel par photographe e-commerce expert.
-Nouveauté = environnement totalement différent et frais.
-Style = luxueux mais accessible, réaliste, vendeur.
-`;
-
-    // 🆕 Visual Enhancement Instructions for Professional E-Commerce Quality
-    const visualEnhancementInstructions = `
-🎨 VISUAL QUALITY ENHANCEMENT - PROFESSIONAL E-COMMERCE PHOTOGRAPHY
-
-FABRIC & TEXTURE OPTIMIZATION:
-- Enhance fabric textures to appear rich, luxurious, and tactile
-- Show natural fabric drape, folds, and depth
-- Highlight weave patterns, stitching quality, and material authenticity
-- Make velvet appear velvety, leather appear supple, linen appear crisp
-- Capture the "hand feel" of materials visually
-
-LIGHTING FOR SALES APPEAL:
-- Use professional studio lighting with main key light + fill light
-- Add subtle rim lighting to separate product from background
-- Create soft, flattering shadows that add depth without harsh contrast
-- Ensure colors appear vibrant, accurate, and true to material
-
-EYE-CATCHING COMMERCIAL QUALITY:
-- Create "hero shot" quality - the image should make viewers WANT to buy
-- Professional color grading that enhances product appeal
-- Sharp focus on product details, slightly soft background if lifestyle
-- Clean, premium look suitable for high-end e-commerce
-- Think: IKEA catalog, West Elm, Roche Bobois photography quality
-
-TEXTURE DETAIL ENHANCEMENT:
-- Zoom-worthy detail on material textures
-- Visible grain on wood, weave on fabric, sheen on leather
-- Natural material variations that prove authenticity
-- No plasticky or artificial-looking surfaces
-`;
-
-    // Critical: Frame this as IMAGE EDITING not IMAGE GENERATION
-    const imageEditingHeader = `
-🛑🛑🛑 TÂCHE : ÉDITION D'IMAGE (PAS GÉNÉRATION) 🛑🛑🛑
-
-Tu effectues une ÉDITION de l'image fournie, PAS une génération nouvelle.
-
-📷 L'IMAGE D'ENTRÉE CONTIENT :
-Un produit spécifique que tu dois CONSERVER TEL QUEL.
-Dans cette image, le produit est : ${productContext}
-
-${orientationInstructions}
-
-🎯 TA MISSION EXACTE :
-1. EXTRAIS le produit de l'image d'entrée
-2. REMPLACE l'arrière-plan/fond de l'image
-3. SI LE PRODUIT EST MAL ORIENTÉ → CORRIGE pour montrer la vue de face ou 3/4 professionnelle
-4. NE MODIFIE PAS le type/forme/couleur du produit, seulement sa présentation
-
-⚠️⚠️⚠️ EXEMPLES D'ERREURS FATALES ⚠️⚠️⚠️
-- Image d'entrée = SOMMIER (cadre métallique avec lattes) → Tu génères un LIT COMPLET avec matelas = ❌ ÉCHEC TOTAL
-- Image d'entrée = CHAISE simple → Tu génères un FAUTEUIL = ❌ ÉCHEC TOTAL  
-- Image d'entrée = TABLE basse → Tu génères une TABLE différente = ❌ ÉCHEC TOTAL
-- Tu changes la forme, couleur, ou type du produit = ❌ ÉCHEC TOTAL
-
-✅ SUCCÈS = L'objet dans l'image de sortie est le MÊME TYPE que dans l'image d'entrée
-✅ SUCCÈS = Seul le FOND/ARRIÈRE-PLAN a changé
-✅ SUCCÈS = Le produit est présenté avec une vue professionnelle (face ou 3/4)
-
-🔍 VÉRIFIE AVANT DE FINALISER :
-- Le produit dans ma sortie est-il le MÊME TYPE d'objet que dans l'entrée ? (même forme, même type, même couleur)
-- Le produit est-il présenté de manière professionnelle ?
-- Si l'entrée montre un sommier métallique → ma sortie montre-t-elle CE sommier métallique (pas un lit) ?
-`;
-
-    // Format enforcement header
-    const formatEnforcementHeader = `
-🚨🚨🚨 CRITICAL FORMAT REQUIREMENT 🚨🚨🚨
-
-📐 OUTPUT MUST BE EXACTLY ${targetDims.width}x${targetDims.height} pixels (${targetDims.ratio} ratio)
-📐 CREATE a ${targetDims.width}x${targetDims.height} canvas FIRST, then place content
-${format === "square" ? "🟦 PERFECT SQUARE: Width = Height = 1024 pixels" : ""}
-${format === "portrait" ? "📱 VERTICAL: Height (1024) > Width (768)" : ""}
-${format === "landscape" ? "🖼️ HORIZONTAL: Width (1024) > Height (768)" : ""}
-
-⚠️ PRODUCT MUST FILL 85-95% OF CANVAS - NO WHITE PADDING ⚠️
-Scale the product UP to TOUCH or NEARLY TOUCH the edges of the frame.
-`;
-
-    // Use enriched prompt if available, but ALWAYS prepend image editing rules + format + visual enhancement
-    const finalPrompt = enrichedPrompt 
-      ? `${formatEnforcementHeader}
-
-${imageEditingHeader}
-
-${visualEnhancementInstructions}
-
-📝 INSTRUCTION POUR LE NOUVEL ARRIÈRE-PLAN :
-${enrichedPrompt}
-
-🚨 RAPPEL CRITIQUE : Tu ÉDITES l'image, tu ne la régénères pas.
-Le produit (${productContext}) doit rester EXACTEMENT identique - seul l'arrière-plan change.
-Product must fill 85-95% of the ${targetDims.width}x${targetDims.height} canvas.
-`.trim()
-      : `
-${formatEnforcementHeader}
-
-${forceFullBackgroundReplace}
-
-${visualEnhancementInstructions}
-
-${premiumLifestylePrompt}
-
-📦 CONTEXTE PRODUIT :
-${productContext}${variantOptions ? ` (Variante: ${variantOptions})` : ""}
-
-🎯 PARAMÈTRES SÉLECTIONNÉS :
-- Style demandé : ${style}
-- Format image : ${format} (${targetDims.width}x${targetDims.height} pixels)
-- Type : ${isMainImage ? "Image principale" : "Image variante"}
-
-🎲 RÈGLE DE VARIÉTÉ (CRITIQUE) :
-Chaque génération DOIT être UNIQUE et DIFFÉRENTE des autres.
-Si tu génères plusieurs images pour le même produit :
-- Change l'angle de vue
-- Change la palette de couleurs
-- Change le style de décoration
-- Change les accessoires
-- Change l'éclairage
-JAMAIS deux générations identiques ou similaires !
-
-⚠️ RÈGLES FINALES NON-NÉGOCIABLES :
-1. OUTPUT EXACTEMENT ${targetDims.width}x${targetDims.height} pixels (${targetDims.ratio})
-2. L'arrière-plan DOIT être COMPLÈTEMENT NOUVEAU et DIFFÉRENT de l'original
-3. Le produit original doit rester 100% intact ET remplir 85-95% du canvas
-4. PAS de padding blanc autour du produit - il doit TOUCHER les bords
-5. Aucune modification du produit n'est autorisée
-6. Le rendu doit être photoréaliste (pas d'effet cartoon ou stylisé)
-7. La scène doit être digne d'un catalogue e-commerce haut de gamme
-
-🎯 OBJECTIF FINAL :
-Créer une photographie professionnelle ${targetDims.width}x${targetDims.height} qui TRANSFORME l'environnement du produit.
-Changement d'ambiance = OBLIGATOIRE.
-Variété = OBLIGATOIRE.
-Qualité = OBLIGATOIRE.
+NON-NEGOTIABLE RULES:
+- Keep the exact same product identity, shape, proportions, colors, materials and visible details.
+- Do not invent a replacement product and do not duplicate the product.
+- Change the background/environment only.
+- Preserve natural product orientation; use a clean front or 3/4 ecommerce presentation.
+- Product should remain the visual focus and occupy roughly 80-95% of the useful frame.
+- Produce a realistic premium ecommerce photograph in full natural color.
+- No text, watermark, logo, grayscale, monochrome or fake labels.
+- Use realistic lighting, contact shadows and reflections so the product is naturally integrated.
 `.trim();
 
-    if (enrichedPrompt) {
-      console.log("✨ Using SERP-enriched prompt for generation");
-    } else {
-      console.log("📝 Using standard premium lifestyle prompt");
-    }
-    
-    console.log("🎯 Final prompt preview (first 500 chars):", finalPrompt.substring(0, 500) + "...");
+    // Background policy: Cloudflare only. No Lovable/Gemini/OpenAI fallback.
+    const generated = await generateCloudflareBackground({
+      imageUrl,
+      prompt: finalPrompt,
+      width: dims.width,
+      height: dims.height,
+      strength: targetType === "main" ? 0.28 : 0.38,
+      guidance: 9,
+      numSteps: 20,
+    });
 
-    // Helper function to try Lovable AI
-    async function tryLovableAI(): Promise<{ imageUrl: string; model: string; error?: string } | null> {
+    const persistedUrl = await persistGeneratedImage(supabase, generated.dataUrl, productId, imageId);
+
+    if (userId) {
       try {
-        console.log("📝 Trying Lovable AI...");
-
-        // First, verify the image is accessible
-        console.log("🔍 Verifying image URL:", imageUrl.substring(0, 100) + "...");
-        try {
-          const imageCheck = await fetch(imageUrl, { method: "HEAD" });
-          if (!imageCheck.ok) {
-            const errorMsg = `Image inaccessible (HTTP ${imageCheck.status})`;
-            console.error("❌", errorMsg);
-            return { imageUrl: "", model: "", error: errorMsg };
-          }
-          console.log("✅ Image accessible");
-        } catch (e) {
-          const errorMsg = `Impossible d'accéder à l'image: ${e instanceof Error ? e.message : "Erreur inconnue"}`;
-          console.error("❌", errorMsg);
-          return { imageUrl: "", model: "", error: errorMsg };
-        }
-
-        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image-preview",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: finalPrompt },
-                  { type: "image_url", image_url: { url: imageUrl } },
-                ],
-              },
-            ],
-            modalities: ["image", "text"],
-            generationConfig: {
-              aspectRatio: format === "portrait" ? "3:4" : format === "landscape" ? "4:3" : "1:1"
-            },
-          }),
+        await supabase.rpc("increment_usage", {
+          p_seller_id: userId,
+          p_field: "optimizations_count",
+          p_increment: 8,
         });
-
-        if (response.status === 402) {
-          const errorMsg = "Pas de crédits Lovable AI disponibles";
-          console.error("❌", errorMsg);
-          return { imageUrl: "", model: "", error: errorMsg };
-        }
-
-        if (response.status === 429) {
-          const errorMsg = "Limite de taux atteinte, réessayez plus tard";
-          console.error("❌", errorMsg);
-          return { imageUrl: "", model: "", error: errorMsg };
-        }
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: { message: "Unknown error" } }));
-          const errorMsg = errorData.error?.message || `Erreur API (${response.status})`;
-          console.error(`❌ Lovable AI error (${response.status}):`, errorMsg);
-          return { imageUrl: "", model: "", error: errorMsg };
-        }
-
-        const data = await response.json();
-        const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-        if (!generatedImageUrl) {
-          const errorMsg = "Aucune image générée dans la réponse";
-          console.error("⚠️", errorMsg);
-          return { imageUrl: "", model: "", error: errorMsg };
-        }
-
-        console.log("✅ Lovable AI succeeded");
-        return { imageUrl: generatedImageUrl, model: "google/gemini-2.5-flash-image-preview (Lovable AI)" };
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : "Erreur inconnue";
-        console.error("❌ Lovable AI exception:", errorMsg);
-        return { imageUrl: "", model: "", error: errorMsg };
+        console.warn("[ai-bg-gen] usage tracking failed", error);
       }
-    }
-
-    // Cloudflare Workers AI img2img. This route is used first when credentials exist.
-    async function tryCloudflareAI(): Promise<{ imageUrl: string; model: string; error?: string } | null> {
-      const accountId = Deno.env.get("CLOUDFLARE_ACCOUNT_ID");
-      const apiToken = Deno.env.get("CLOUDFLARE_AI_API_TOKEN");
-      if (!accountId || !apiToken) return null;
 
       try {
-        const sourceResponse = await fetch(imageUrl);
-        if (!sourceResponse.ok) throw new Error(`Source image HTTP ${sourceResponse.status}`);
-        const sourceBytes = new Uint8Array(await sourceResponse.arrayBuffer());
-        let binary = "";
-        for (const byte of sourceBytes) binary += String.fromCharCode(byte);
-        const imageB64 = btoa(binary);
-
-        const model = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
-        const response = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              prompt: finalPrompt,
-              negative_prompt: "different product, altered product shape, wrong color, text, watermark, monochrome, low quality",
-              image_b64: imageB64,
-              strength: 0.35,
-              guidance: 9,
-              num_steps: 20,
-              width: targetDims.width,
-              height: targetDims.height,
-            }),
-          },
-        );
-
-        if (!response.ok) {
-          const details = await response.text();
-          return { imageUrl: "", model, error: `Cloudflare ${response.status}: ${details.slice(0, 200)}` };
-        }
-
-        const contentType = response.headers.get("content-type") || "";
-        let outputBase64 = "";
-        if (contentType.includes("application/json")) {
-          const json = await response.json();
-          outputBase64 = json?.result?.image || json?.image || "";
-        } else {
-          const bytes = new Uint8Array(await response.arrayBuffer());
-          let outputBinary = "";
-          for (const byte of bytes) outputBinary += String.fromCharCode(byte);
-          outputBase64 = btoa(outputBinary);
-        }
-
-        if (!outputBase64) return { imageUrl: "", model, error: "Cloudflare returned no image" };
-        return { imageUrl: `data:image/png;base64,${outputBase64}`, model: `${model} (Cloudflare Workers AI)` };
+        const { data: versionData } = await supabase.rpc("get_next_image_version", { p_image_id: imageId });
+        await supabase.from("product_image_history").update({ is_current: false }).eq("image_id", imageId);
+        await supabase.from("product_image_history").insert({
+          product_id: productId,
+          image_id: imageId,
+          user_id: userId,
+          optimization_type: "ai_background",
+          original_url: imageUrl,
+          optimized_url: persistedUrl,
+          version_number: versionData || 1,
+          is_current: true,
+          ai_model: `${generated.model} (Cloudflare Workers AI)`,
+          ai_prompt: backgroundInstruction,
+          metadata: { style, format, targetType, variantOptions, provider: generated.provider, policy: "cloudflare-only" },
+        });
       } catch (error) {
-        return {
-          imageUrl: "",
-          model: "cloudflare-workers-ai",
-          error: error instanceof Error ? error.message : "Cloudflare image generation failed",
-        };
+        console.warn("[ai-bg-gen] history save failed", error);
       }
     }
 
-    // Prefer Cloudflare's low/zero-cost route, then use Gemini image editing.
-    const cloudflareResult = await tryCloudflareAI();
-    const result = cloudflareResult?.imageUrl ? cloudflareResult : await tryLovableAI();
-
-    if (!result || !result.imageUrl || result.error) {
-      const errorMsg = result?.error || "Service indisponible";
-      console.error("❌ Generation failed:", errorMsg);
-
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "GENERATION_FAILED",
-          message: "La génération d'arrière-plan a échoué.",
-          details: errorMsg,
-          imageUrl: imageUrl,
-          suggestions: errorMsg.includes("inaccessible")
-            ? [
-                "Vérifiez que l'image source est accessible",
-                "Essayez avec une autre image",
-                "Vérifiez que l'URL de l'image est valide et publique",
-              ]
-            : errorMsg.includes("crédits")
-              ? ["Ajoutez des crédits à votre workspace Lovable AI"]
-              : errorMsg.includes("taux")
-                ? ["Attendez quelques minutes avant de réessayer"]
-                : [
-                    "Réessayez avec une image différente",
-                    "Vérifiez la qualité et le format de l'image source",
-                    "Contactez le support si le problème persiste",
-                  ],
-        }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const { imageUrl: generatedImageUrl, model: usedModel } = result;
-    console.log(`✅ Successfully generated AI background using ${usedModel}`);
-
-    // 🆕 POST-PROCESSING: ALWAYS Force exact format dimensions (Gemini ignores aspectRatio params)
-    let processedImageUrl = generatedImageUrl;
-    if (generatedImageUrl.startsWith('data:')) {
-      console.log(`[ai-bg-gen] 📐 CRITICAL: Forcing exact format: ${format} → ${targetDims.width}x${targetDims.height}`);
-      try {
-        processedImageUrl = await enforceImageFormat(generatedImageUrl, targetDims.width, targetDims.height);
-        console.log(`[ai-bg-gen] ✅ Format enforcement successful`);
-      } catch (postProcessError) {
-        console.error(`[ai-bg-gen] ⚠️ Post-processing failed, returning original:`, postProcessError);
-        // Continue with original image if post-processing fails
-      }
-    } else {
-      console.warn(`[ai-bg-gen] ⚠️ Cannot post-process non-base64 image - format may not be exact`);
-    }
-
-    // Save to product_image_history if user is authenticated
-    if (authHeader) {
-      const supabaseAdmin = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      );
-
-      const token = authHeader.replace("Bearer ", "");
-      const {
-        data: { user },
-      } = await supabaseAdmin.auth.getUser(token);
-
-      if (user) {
-        try {
-          // Get next version number
-          const { data: versionData } = await supabaseAdmin.rpc("get_next_image_version", { p_image_id: imageId });
-
-          const versionNumber = versionData || 1;
-
-          // Mark all previous versions as not current
-          await supabaseAdmin.from("product_image_history").update({ is_current: false }).eq("image_id", imageId);
-
-          // Insert new history entry
-          await supabaseAdmin.from("product_image_history").insert({
-            product_id: productId,
-            image_id: imageId,
-            user_id: user.id,
-            optimization_type: "ai_background",
-            original_url: imageUrl,
-            optimized_url: generatedImageUrl,
-            version_number: versionNumber,
-            is_current: true,
-            ai_model: usedModel,
-            ai_prompt: enrichedPrompt || prompt,
-            metadata: {
-              style,
-              format,
-              targetType,
-              variantOptions,
-            },
-          });
-
-          console.log("✅ Saved to product_image_history");
-        } catch (error) {
-          console.error("⚠️ Failed to save to history:", error);
-          // Continue even if history save fails
-        }
-      }
-    }
-
-    // 🆕 AUTO-SYNC TO SHOPIFY
     let shopifySyncResult = null;
-    if (productId && authenticatedUserId && processedImageUrl && !processedImageUrl.startsWith('data:')) {
-      console.log(`[ai-bg-gen] 🚀 Auto-syncing to Shopify...`);
+    if (productId && userId && persistedUrl && !persistedUrl.startsWith("data:")) {
       shopifySyncResult = await autoSyncImageToShopify({
         productId,
-        imageUrl: processedImageUrl,
+        imageUrl: persistedUrl,
         imageId,
         altText: productTitle || "Product image - AI background",
-        userId: authenticatedUserId,
-        autoSyncEnabled: body.autoSyncToShopify !== false
+        userId,
+        autoSyncEnabled: autoSyncToShopify !== false,
       });
-      
-      if (shopifySyncResult.success && !shopifySyncResult.skipped) {
-        console.log(`[ai-bg-gen] ✅ Auto-synced to Shopify: ${shopifySyncResult.shopifyImageId}`);
-      } else if (shopifySyncResult.skipped) {
-        console.log(`[ai-bg-gen] ⏭️ Shopify sync skipped: ${shopifySyncResult.skipReason}`);
-      } else {
-        console.error(`[ai-bg-gen] ❌ Shopify sync failed: ${shopifySyncResult.error}`);
-      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        imageUrl: processedImageUrl,
+        imageUrl: persistedUrl,
         shopifySync: shopifySyncResult,
-        metadata: {
-          productTitle,
-          style,
-          format,
-          targetType,
-          variantOptions,
-        },
+        provider: generated.provider,
+        model: generated.model,
+        policy: "cloudflare-only",
+        metadata: { productTitle, style, format, targetType, variantOptions, width: dims.width, height: dims.height },
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (err) {
-    console.error("❌ generate-ai-product-background error:", err);
+  } catch (error) {
+    console.error("[generate-ai-product-background] error:", error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: err instanceof Error ? err.message : String(err),
+        error: "GENERATION_FAILED",
+        message: error instanceof Error ? error.message : String(error),
+        provider: "cloudflare-workers-ai",
+        policy: "cloudflare-only",
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
