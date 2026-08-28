@@ -312,7 +312,7 @@ export function AppSidebar() {
           </div>
           {state === "expanded" && (
             <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              NewAI
+              CatalogueOptimize AI
             </span>
           )}
         </NavLink>
