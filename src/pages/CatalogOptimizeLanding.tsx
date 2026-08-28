@@ -1,7 +1,21 @@
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import {
-  ArrowRight, Check, Package, FileText, Images, BadgeDollarSign, Store,
-  ScanSearch, ShieldCheck, RefreshCw, Sparkles, AlertTriangle, Layers3, Bot, ShoppingCart
+  ArrowRight,
+  Check,
+  Package,
+  FileText,
+  Images,
+  BadgeDollarSign,
+  Store,
+  ScanSearch,
+  RefreshCw,
+  Sparkles,
+  AlertTriangle,
+  Bot,
+  ShoppingCart,
+  Layers3,
+  SearchCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,35 +32,86 @@ const pillars = [
 
 const plans = [
   {
-    name: "Free scan", price: "$0", description: "See what is holding your catalog back before choosing a plan.",
+    name: "Free scan",
+    price: "$0",
+    description: "See what is holding your catalog back before choosing a plan.",
     features: ["Catalog health scan", "Issue prioritization", "Shopping readiness preview", "No credit card required"],
-    cta: "Scan my catalog", href: "/auth",
+    cta: "Scan my catalog",
+    href: "/auth",
   },
   {
-    name: "Starter", price: "$9.99", description: "For smaller stores building a clean catalog.",
+    name: "Starter",
+    price: "$9.99",
+    description: "For smaller stores building a clean catalog.",
     features: ["Up to 100 analyzed products", "100 AI optimizations / month", "1 AI article / month", "20 AI product searches / month"],
-    cta: "Start optimizing", href: "/auth",
+    cta: "Start optimizing",
+    href: "/auth",
   },
   {
-    name: "Growth", price: "$49", description: "Automate product operations as your store grows.", popular: true,
+    name: "Growth",
+    price: "$49",
+    description: "Automate product operations as your store grows.",
+    popular: true,
     features: ["Up to 1,000 analyzed products", "500 AI optimizations / month", "5 AI articles / month", "3 automated campaigns / month"],
-    cta: "Automate my catalog", href: "/auth",
+    cta: "Automate my catalog",
+    href: "/auth",
   },
   {
-    name: "Enterprise", price: "$199", description: "For large catalogs and multi-store operators.",
+    name: "Enterprise",
+    price: "$199",
+    description: "For large catalogs and multi-store operators.",
     features: ["Unlimited analyzed products", "2,000 AI optimizations / month", "20 AI articles / month", "10 automated campaigns / month"],
-    cta: "Scale operations", href: "/auth",
+    cta: "Scale operations",
+    href: "/auth",
   },
+];
+
+const seoWorkflows = [
+  { href: "/shopify-catalog-optimization", title: "Shopify Catalog Optimization", text: "Audit and improve catalog quality across products, variants, media and channels." },
+  { href: "/ai-product-catalog-optimization", title: "AI Catalog Optimization", text: "Use AI to enrich and standardize product records at catalog scale." },
+  { href: "/shopify-product-optimization", title: "Shopify Product Optimization", text: "Improve titles, descriptions, attributes and merchandising data." },
+  { href: "/google-shopping-feed-optimization", title: "Google Shopping Optimization", text: "Find source-data issues that weaken Merchant Center and shopping feeds." },
+  { href: "/product-data-enrichment", title: "Product Data Enrichment", text: "Turn thin supplier records into structured, channel-ready product data." },
+  { href: "/bulk-product-description-generator", title: "Bulk Product Descriptions", text: "Generate reviewable Shopify descriptions without repetitive catalog copy." },
+  { href: "/shopify-image-optimization", title: "Shopify Image Optimization", text: "Improve galleries, ALT text and AI-assisted product imagery." },
+  { href: "/shopify-variant-management", title: "Shopify Variant Management", text: "Detect and clean up inconsistent options, names and variant structures." },
+];
+
+const beforeAfter = [
+  ["Supplier title", "Clear commercial title"],
+  ["Thin description", "Structured product landing page"],
+  ["Single studio photo", "Complete product gallery"],
+  ["Confusing variants", "Organized variant data"],
+  ["Missing identifiers", "Shopping-ready attributes"],
+  ["Unknown margin", "Cost and margin visibility"],
 ];
 
 export default function CatalogOptimizeLanding() {
   return (
     <div className="min-h-screen bg-white text-slate-950">
+      <Helmet>
+        <title>AI Catalog Optimization for Shopify | CatalogOptimize AI</title>
+        <meta
+          name="description"
+          content="Audit, enrich and sync Shopify product titles, descriptions, variants, images, pricing and Google Shopping data from one AI catalog optimization workspace."
+        />
+        <link rel="canonical" href="https://catalogoptimize.com/" />
+        <meta property="og:site_name" content="CatalogOptimize AI" />
+        <meta property="og:title" content="AI Catalog Optimization for Shopify | CatalogOptimize AI" />
+        <meta property="og:url" content="https://catalogoptimize.com/" />
+        <meta
+          property="og:description"
+          content="Audit, enrich and sync your entire Shopify catalog with AI from one product operations workspace."
+        />
+      </Helmet>
+
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          <Link to="/" aria-label="CatalogueOptimize AI"><CatalogOptimizeLogo /></Link>
+          <Link to="/" aria-label="CatalogOptimize AI home"><CatalogOptimizeLogo /></Link>
           <nav className="hidden items-center gap-7 text-sm text-slate-600 md:flex">
-            <a href="#product">Product</a><a href="#solutions">Solutions</a><a href="#pricing">Pricing</a>
+            <a href="#product">Product</a>
+            <a href="#solutions">Solutions</a>
+            <a href="#pricing">Pricing</a>
             <Link to="/documentation">Resources</Link>
           </nav>
           <div className="flex items-center gap-2">
@@ -59,18 +124,18 @@ export default function CatalogOptimizeLanding() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden border-b bg-gradient-to-b from-violet-50/70 via-white to-white">
-          <div className="absolute inset-x-0 top-0 -z-0 h-72 bg-[radial-gradient(circle_at_top,_rgba(124,58,237,.14),transparent_65%)]" />
+        <section className="relative overflow-hidden border-b bg-gradient-to-b from-violet-50/80 via-white to-white">
+          <div className="absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,_rgba(124,58,237,.14),transparent_65%)]" />
           <div className="relative mx-auto grid max-w-7xl gap-14 px-5 py-20 lg:grid-cols-[1.05fr_.95fr] lg:py-28">
             <div className="flex flex-col justify-center">
               <Badge variant="outline" className="mb-5 w-fit border-violet-200 bg-white text-violet-700">
-                AI PRODUCT OPERATIONS FOR SHOPIFY
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" /> AI CATALOG OPTIMIZATION FOR SHOPIFY
               </Badge>
               <h1 className="max-w-3xl text-5xl font-semibold leading-[1.05] tracking-[-.045em] sm:text-6xl">
-                Your entire Shopify catalog, optimized from one workspace
+                Optimize your entire Shopify catalog with AI
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                Import, enrich and sync products, variants, images, pricing and Google Shopping data with AI.
+                Audit, enrich and sync product titles, descriptions, variants, images, pricing and Google Shopping data from one workspace.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button size="lg" asChild className="bg-violet-600 hover:bg-violet-700">
@@ -88,22 +153,22 @@ export default function CatalogOptimizeLanding() {
             <Card className="border-slate-200 bg-white shadow-2xl shadow-violet-950/10">
               <CardHeader className="border-b">
                 <div className="flex items-center justify-between">
-                  <div><p className="text-sm font-medium">Catalog health</p><p className="text-xs text-slate-500">Illustrative workspace</p></div>
+                  <div>
+                    <p className="text-sm font-medium">Catalog health</p>
+                    <p className="text-xs text-slate-500">Illustrative workspace</p>
+                  </div>
                   <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Scan complete</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 p-6">
                 <div className="grid grid-cols-3 gap-3">
-                  {[["Products","854"],["Ready","68%"],["Issues","494"]].map(([k,v]) => (
-                    <div key={k} className="rounded-xl border bg-slate-50 p-3"><p className="text-xs text-slate-500">{k}</p><p className="mt-1 text-xl font-semibold">{v}</p></div>
+                  {[["Products", "854"], ["Ready", "68%"], ["Issues", "494"]].map(([key, value]) => (
+                    <div key={key} className="rounded-xl border bg-slate-50 p-3">
+                      <p className="text-xs text-slate-500">{key}</p><p className="mt-1 text-xl font-semibold">{value}</p>
+                    </div>
                   ))}
                 </div>
-                {[
-                  ["Incomplete descriptions","126","/products/title-description"],
-                  ["Inconsistent variants","84","/products"],
-                  ["Missing ALT text","214","/seo?tab=alt"],
-                  ["Shopping feed errors","46","/shopping"],
-                ].map(([label,count]) => (
+                {[["Incomplete descriptions", "126"], ["Inconsistent variants", "84"], ["Missing ALT text", "214"], ["Shopping feed errors", "46"]].map(([label, count]) => (
                   <div key={label} className="flex items-center justify-between rounded-xl border p-3">
                     <span className="flex items-center gap-2 text-sm"><AlertTriangle className="h-4 w-4 text-amber-500" />{label}</span>
                     <span className="font-semibold">{count}</span>
@@ -119,7 +184,7 @@ export default function CatalogOptimizeLanding() {
           <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">One product operations workspace</p>
             <h2 className="mt-3 text-4xl font-semibold tracking-tight">From supplier data to channel-ready products</h2>
-            <p className="mt-4 text-lg text-slate-600">CatalogueOptimize organizes the work around five connected pillars instead of scattered point solutions.</p>
+            <p className="mt-4 text-lg text-slate-600">CatalogOptimize AI organizes the work around five connected pillars instead of scattered point solutions.</p>
           </div>
           <div id="solutions" className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             {pillars.map((pillar) => (
@@ -161,9 +226,7 @@ export default function CatalogOptimizeLanding() {
               </CardHeader>
               <CardContent className="space-y-4 bg-slate-50 p-6">
                 <div className="ml-auto max-w-[82%] rounded-2xl rounded-br-md bg-violet-600 p-4 text-sm text-white">I need a compact green velvet sofa under €1,000.</div>
-                <div className="max-w-[88%] rounded-2xl rounded-bl-md border bg-white p-4 text-sm text-slate-700">
-                  I found three matching products. The emerald 3-seater is the closest fit and is currently available.
-                </div>
+                <div className="max-w-[88%] rounded-2xl rounded-bl-md border bg-white p-4 text-sm text-slate-700">I found three matching products. The emerald 3-seater is the closest fit and is currently available.</div>
                 <div className="grid grid-cols-[72px_1fr] gap-3 rounded-xl border bg-white p-3">
                   <div className="grid h-[72px] place-items-center rounded-lg bg-violet-50"><ShoppingCart className="h-6 w-6 text-violet-600" /></div>
                   <div><p className="font-semibold">Emerald Velvet Sofa</p><p className="mt-1 text-xs text-slate-500">In stock · 3 variants</p><Button size="sm" className="mt-3 h-8">Add to cart</Button></div>
@@ -174,26 +237,20 @@ export default function CatalogOptimizeLanding() {
         </section>
 
         <section className="border-y bg-slate-950 py-20 text-white">
-          <div className="mx-auto max-w-7xl px-5">
-            <div className="grid gap-10 lg:grid-cols-2">
-              <div>
-                <Badge className="bg-white/10 text-white hover:bg-white/10">BEFORE / AFTER</Badge>
-                <h2 className="mt-5 text-4xl font-semibold tracking-tight">Turn raw listings into complete product records</h2>
-                <p className="mt-4 text-slate-300">Improve data quality, merchandising and channel eligibility while keeping every change reviewable.</p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {[
-                  ["Supplier title","Clear commercial title"],["Thin description","Structured product landing page"],
-                  ["Single studio photo","Complete product gallery"],["Confusing variants","Organized variant data"],
-                  ["Missing identifiers","Shopping-ready attributes"],["Unknown margin","Cost and margin visibility"],
-                ].map(([before,after]) => (
-                  <div key={before} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">Before</p><p className="mt-1 text-sm text-slate-300">{before}</p>
-                    <ArrowRight className="my-3 h-4 w-4 text-violet-400" />
-                    <p className="text-xs uppercase tracking-wide text-violet-300">After</p><p className="mt-1 text-sm font-medium">{after}</p>
-                  </div>
-                ))}
-              </div>
+          <div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-2">
+            <div>
+              <Badge className="bg-white/10 text-white hover:bg-white/10">BEFORE / AFTER</Badge>
+              <h2 className="mt-5 text-4xl font-semibold tracking-tight">Turn raw listings into complete product records</h2>
+              <p className="mt-4 text-slate-300">Improve data quality, merchandising and channel eligibility while keeping every change reviewable.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {beforeAfter.map(([before, after]) => (
+                <div key={before} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-400">Before</p><p className="mt-1 text-sm text-slate-300">{before}</p>
+                  <ArrowRight className="my-3 h-4 w-4 text-violet-400" />
+                  <p className="text-xs uppercase tracking-wide text-violet-300">After</p><p className="mt-1 text-sm font-medium">{after}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -202,49 +259,86 @@ export default function CatalogOptimizeLanding() {
           <div className="text-center"><h2 className="text-4xl font-semibold tracking-tight">A clear path from scan to sync</h2></div>
           <div className="mt-10 grid gap-4 md:grid-cols-5">
             {[
-              [Store,"Connect Shopify"],[ScanSearch,"Free catalog scan"],[AlertTriangle,"Review issues"],
-              [Sparkles,"Apply fixes"],[RefreshCw,"Sync everywhere"],
-            ].map(([Icon,label],i) => {
-              const StepIcon = Icon as typeof Store;
-              return <div key={label as string} className="relative rounded-2xl border p-5 text-center"><span className="text-xs font-semibold text-violet-600">0{i+1}</span><StepIcon className="mx-auto mt-3 h-6 w-6" /><p className="mt-3 font-medium">{label as string}</p></div>;
-            })}
+              { icon: Store, label: "Connect Shopify" },
+              { icon: ScanSearch, label: "Free catalog scan" },
+              { icon: AlertTriangle, label: "Review issues" },
+              { icon: Sparkles, label: "Apply fixes" },
+              { icon: RefreshCw, label: "Sync everywhere" },
+            ].map(({ icon: Icon, label }, index) => (
+              <div key={label} className="relative rounded-2xl border p-5 text-center">
+                <span className="text-xs font-semibold text-violet-600">0{index + 1}</span><Icon className="mx-auto mt-3 h-6 w-6" /><p className="mt-3 font-medium">{label}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        <section id="pricing" className="border-y bg-slate-50 py-20">
+        <section className="border-y bg-violet-50/50 py-20">
+          <div className="mx-auto max-w-7xl px-5">
+            <div className="flex max-w-3xl items-start gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-violet-600 text-white"><SearchCheck className="h-5 w-5" /></span>
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wider text-violet-700">Catalog optimization use cases</p>
+                <h2 className="mt-2 text-4xl font-semibold tracking-tight">One platform, multiple high-intent workflows</h2>
+                <p className="mt-4 text-lg text-slate-600">Explore focused workflows for Shopify catalog quality, product data, media, variants and Google Shopping.</p>
+              </div>
+            </div>
+            <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {seoWorkflows.map((workflow) => (
+                <Link key={workflow.href} to={workflow.href} className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-violet-300 hover:shadow-md">
+                  <Layers3 className="h-5 w-5 text-violet-600" />
+                  <h3 className="mt-4 font-semibold">{workflow.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{workflow.text}</p>
+                  <span className="mt-4 inline-flex items-center text-sm font-medium text-violet-700">Explore <ArrowRight className="ml-1 h-4 w-4 transition group-hover:translate-x-0.5" /></span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="pricing" className="border-b bg-slate-50 py-20">
           <div className="mx-auto max-w-7xl px-5">
             <div className="mx-auto max-w-3xl text-center">
               <h2 className="text-4xl font-semibold tracking-tight">Start with the scan. Upgrade when the value is clear.</h2>
-              <p className="mt-4 text-slate-600">The existing billing plans stay unchanged; the packaging now explains them around catalog operations.</p>
+              <p className="mt-4 text-slate-600">See what needs fixing before you commit. Plan availability and checkout are confirmed inside the app before billing.</p>
             </div>
             <div className="mt-10 grid gap-4 lg:grid-cols-4">
               {plans.map((plan) => (
                 <Card key={plan.name} className={plan.popular ? "relative border-violet-500 shadow-xl" : "border-slate-200"}>
                   {plan.popular && <Badge className="absolute -top-3 left-5 bg-violet-600">Most Popular</Badge>}
-                  <CardHeader><CardTitle>{plan.name}</CardTitle><div><span className="text-4xl font-semibold">{plan.price}</span>{plan.price !== "$0" && <span className="text-slate-500">/month</span>}</div><p className="text-sm text-slate-600">{plan.description}</p></CardHeader>
+                  <CardHeader>
+                    <CardTitle>{plan.name}</CardTitle>
+                    <div><span className="text-4xl font-semibold">{plan.price}</span>{plan.price !== "$0" && <span className="text-sm text-slate-500">/month</span>}</div>
+                    <p className="text-sm leading-6 text-slate-600">{plan.description}</p>
+                  </CardHeader>
                   <CardContent>
-                    <ul className="space-y-3 text-sm">{plan.features.map((feature) => <li key={feature} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />{feature}</li>)}</ul>
-                    <Button asChild variant={plan.popular ? "default" : "outline"} className="mt-6 w-full"><Link to={plan.href}>{plan.cta}</Link></Button>
+                    <ul className="space-y-3 text-sm text-slate-700">
+                      {plan.features.map((feature) => <li key={feature} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />{feature}</li>)}
+                    </ul>
+                    <Button asChild variant={plan.popular ? "default" : "outline"} className={plan.popular ? "mt-7 w-full bg-violet-600 hover:bg-violet-700" : "mt-7 w-full"}>
+                      <Link to={plan.href}>{plan.cta}</Link>
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
             </div>
-            <p className="mt-5 text-center text-xs text-slate-500">Plan availability and checkout are confirmed inside the app before billing.</p>
           </div>
         </section>
 
-        <section className="mx-auto max-w-5xl px-5 py-20 text-center">
-          <ShieldCheck className="mx-auto h-10 w-10 text-violet-600" />
-          <h2 className="mt-5 text-4xl font-semibold tracking-tight">Ready to understand your catalog?</h2>
-          <p className="mx-auto mt-4 max-w-2xl text-slate-600">Connect Shopify, see every issue, and review the first recommended fixes before you commit.</p>
-          <Button size="lg" asChild className="mt-7 bg-violet-600 hover:bg-violet-700"><Link to="/auth">Scan my catalog free <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+        <section className="px-5 py-20">
+          <div className="mx-auto max-w-5xl rounded-3xl bg-gradient-to-br from-violet-600 to-blue-600 px-6 py-14 text-center text-white sm:px-12">
+            <h2 className="text-4xl font-semibold tracking-tight">Ready to understand your catalog?</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-white/80">Connect Shopify, see every issue and review the first recommended fixes before you commit.</p>
+            <Button size="lg" variant="secondary" asChild className="mt-7"><Link to="/auth">Scan my catalog free <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+          </div>
         </section>
       </main>
 
-      <footer className="border-t bg-slate-950 text-slate-300">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-10 sm:flex-row sm:items-center sm:justify-between">
-          <div><p className="font-semibold text-white">CatalogueOptimize</p><p className="mt-1 text-sm">AI Product Operations for Shopify</p></div>
-          <div className="flex flex-wrap gap-5 text-sm"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/documentation">Documentation</Link><a href="https://ranki.ai" target="_blank" rel="noreferrer">Need organic & AI-search growth? Ranki.ai</a></div>
+      <footer className="border-t bg-white py-10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 md:flex-row md:items-end md:justify-between">
+          <div><CatalogOptimizeLogo /><p className="mt-3 text-sm text-slate-500">AI Catalog Optimization & Product Operations for Shopify</p></div>
+          <div className="flex flex-wrap gap-5 text-sm text-slate-500">
+            <Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/documentation">Documentation</Link>
+          </div>
         </div>
       </footer>
     </div>
