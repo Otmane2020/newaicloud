@@ -16,6 +16,7 @@ import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useTranslation } from "@/lib/language";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -130,17 +131,17 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <SubscriptionGuard>
       <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-gray-50 overflow-x-hidden">
+        <div className="min-h-screen flex w-full bg-slate-100/70 overflow-x-hidden">
           <CatalogOptimizeSidebar />
           <main className="flex-1 min-w-0 max-w-full overflow-x-hidden">
             {/* Sticky Header */}
-            <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b">
+            <div className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur-xl">
               <div className="flex h-12 sm:h-14 items-center justify-between px-2 sm:px-4 gap-2">
                 <div className="flex items-center gap-1 sm:gap-3 min-w-0">
                   <SidebarTrigger className="flex-shrink-0" />
-                  <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
-                    <span className="font-bold text-sm sm:text-lg truncate">Catalog Optimize</span>
+                  <div className="min-w-0">
+                    <div className="hidden sm:block"><CatalogOptimizeLogo /></div>
+                    <div className="sm:hidden"><CatalogOptimizeLogo compact /></div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -161,7 +162,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
                 <NoStoreConnectedPrompt />
               </div>
             )}
-            <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-full">
+            <div className="mx-auto max-w-[1600px] p-3 sm:p-4 md:p-6 lg:p-8">
               {children}
             </div>
           </main>
