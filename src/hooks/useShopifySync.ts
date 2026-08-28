@@ -331,6 +331,51 @@ export const useShopifySync = () => {
         }
       }
 
+      // Final step: analyze the imported catalog with the same explainable rules as the Dashboard.
+      setCurrentSyncType('analysis');
+      if (historyId) {
+        await supabase.from('sync_history').update({ sync_type: 'analysis' }).eq('id', historyId);
+      }
+
+      let catalogScore: number | null = null;
+      try {
+        const { data: scoreProducts, error: scoreError } = await supabase
+          .from('shopify_products')
+          .select('title,seo_title,seo_description,image_url,tags,google_product_category,google_mpn,google_condition,google_gtin,google_white_background')
+          .eq('store_id', storeToSync.id)
+          .range(0, 9999);
+
+        if (scoreError) throw scoreError;
+
+        const catalog = scoreProducts || [];
+        if (catalog.length > 0) {
+          const hasTags = (tags: unknown) => Array.isArray(tags) ? tags.length > 0 : Boolean(String(tags || '').trim());
+          const contentFailures = catalog.filter((product) => !product.title?.trim()).length
+            + catalog.filter((product) => !product.image_url?.trim()).length
+            + catalog.filter((product) => !hasTags(product.tags)).length;
+          const seoFailures = catalog.filter((product) => !product.seo_title?.trim()).length
+            + catalog.filter((product) => !product.seo_description?.trim()).length;
+
+          const contentScore = Math.max(0, Math.round((((catalog.length * 3) - contentFailures) / (catalog.length * 3)) * 100));
+          const seoScore = Math.max(0, Math.round((((catalog.length * 2) - seoFailures) / (catalog.length * 2)) * 100));
+          const shoppingFailures = catalog.filter((product) => !product.google_product_category?.trim()).length
+            + catalog.filter((product) => !product.google_gtin?.trim()).length
+            + catalog.filter((product) => !product.google_mpn?.trim()).length
+            + catalog.filter((product) => !product.google_condition?.trim()).length
+            + catalog.filter((product) => !product.google_white_background).length;
+          const shoppingScore = Math.max(0, Math.round((((catalog.length * 5) - shoppingFailures) / (catalog.length * 5)) * 100));
+
+          catalogScore = Math.round(contentScore * 0.6 + seoScore * 0.4);
+          window.dispatchEvent(new CustomEvent('catalog-score-updated', {
+            detail: { storeId: storeToSync.id, catalogScore, contentScore, seoScore, shoppingScore, products: catalog.length }
+          }));
+          console.log('✅ [CATALOG ANALYSIS]', { catalogScore, contentScore, seoScore, shoppingScore, products: catalog.length });
+        }
+      } catch (analysisError) {
+        console.error('⚠️ [CATALOG ANALYSIS] Score calculation failed:', analysisError);
+        errorMessages.push('analysis: score calculation failed');
+      }
+
       // Update history entry with completed status
       if (historyId) {
         console.log('📝 [SYNC HISTORY] Updating history entry:', historyId, 'status:', errorMessages.length > 0 ? 'failed' : 'success');
@@ -353,9 +398,9 @@ export const useShopifySync = () => {
       }
 
       if (errorMessages.length > 0) {
-        toast.warning(`Synchronisation terminée avec des erreurs: ${totalImported} éléments importés`);
+        toast.warning(`Synchronisation terminée avec des erreurs: ${totalImported} éléments importés${catalogScore !== null ? ` · Score catalogue ${catalogScore}%` : ""}`);
       } else {
-        toast.success(`Synchronisation réussie: ${totalImported} éléments importés`);
+        toast.success(`Synchronisation et analyse terminées: ${totalImported} éléments importés${catalogScore !== null ? ` · Score catalogue ${catalogScore}%` : ""}`);
       }
 
     } catch (error: any) {
