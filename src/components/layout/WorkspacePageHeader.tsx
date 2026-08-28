@@ -18,7 +18,7 @@ export function WorkspacePageHeader({
   actions,
 }: WorkspacePageHeaderProps) {
   return (
-    <header className="space-y-5 py-1 sm:py-2">
+    <header data-ui-version="simple-headers-v2" className="space-y-5 py-1 sm:py-2">
       <div className="inline-flex items-center overflow-hidden rounded-lg bg-slate-100 text-sm font-medium text-slate-700">
         <span className="px-3 py-2">{section} <span className="px-1 text-slate-400">·</span> {page}</span>
         {count !== undefined && <span className="bg-violet-50 px-3 py-2 text-violet-700">{count}</span>}
