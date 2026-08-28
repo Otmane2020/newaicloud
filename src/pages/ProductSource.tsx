@@ -104,7 +104,7 @@ const ProductSource = () => {
       if (error) throw error;
       setProducts((data || []) as ProductSourceData[]);
     } catch (error: any) {
-      toast.error(t.seo.productSource.errors.loadProducts, {
+      toast.error(fr ? "Impossible de charger les produits." : "Unable to load products.", {
         description: error?.message,
       });
     } finally {
@@ -159,24 +159,24 @@ const ProductSource = () => {
       });
 
       if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || t.seo.productSource.errors.enrichProduct);
+      if (!data?.success) throw new Error(data?.error || (fr ? "Impossible d’enrichir le produit." : "Unable to enrich product."));
 
-      toast.success(t.seo.productSource.success.productEnriched);
+      toast.success(fr ? "Produit enrichi." : "Product enriched.");
       await loadProducts();
     } catch (error: any) {
       console.error("Error enriching product:", error);
-      toast.error(error?.message || t.seo.productSource.errors.enrichProduct);
+      toast.error(error?.message || (fr ? "Impossible d’enrichir le produit." : "Unable to enrich product."));
     }
   };
 
   const enrichMany = async (ids: string[]) => {
     if (!ids.length) {
-      toast.info(t.seo.productSource.info.allEnriched);
+      toast.info(fr ? "Tous les produits sont déjà enrichis." : "All products are already enriched.");
       return;
     }
 
     setEnriching(true);
-    toast.info(tf("seo.productSource.info.enriching", { count: ids.length }));
+    toast.info(fr ? `Enrichissement de ${ids.length} produit(s)…` : `Enriching ${ids.length} product(s)…`);
 
     try {
       for (const id of ids) {
@@ -197,7 +197,7 @@ const ProductSource = () => {
 
   const handleEnrichSelected = async () => {
     if (!selectedProducts.size) {
-      toast.info(t.seo.productSource.info.noSelection);
+      toast.info(fr ? "Sélectionnez au moins un produit." : "Select at least one product.");
       return;
     }
     await enrichMany(Array.from(selectedProducts));
@@ -205,7 +205,7 @@ const ProductSource = () => {
 
   const handleDeleteSelected = async () => {
     if (!selectedProducts.size) {
-      toast.info(t.seo.productSource.info.noSelection);
+      toast.info(fr ? "Sélectionnez au moins un produit." : "Select at least one product.");
       return;
     }
 
@@ -217,11 +217,11 @@ const ProductSource = () => {
 
       if (error) throw error;
 
-      toast.success(tf("seo.productSource.success.productsDeleted", { count: selectedProducts.size }));
+      toast.success(fr ? `${selectedProducts.size} produit(s) supprimé(s).` : `${selectedProducts.size} product(s) deleted.`);
       setSelectedProducts(new Set());
       await loadProducts();
     } catch (error: any) {
-      toast.error(error?.message || t.seo.productSource.errors.deleteProducts);
+      toast.error(error?.message || (fr ? "Impossible de supprimer les produits." : "Unable to delete products."));
     }
   };
 
@@ -291,25 +291,16 @@ const ProductSource = () => {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `produits-enrichis-${new Date().toISOString().split("T")[0]}.json`;
+    link.download = `${fr ? "produits-enrichis" : "enriched-products"}-${new Date().toISOString().split("T")[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success(t.seo.productSource.success.dataExported);
+    toast.success(fr ? "Données JSON exportées." : "JSON data exported.");
   };
 
   const exportToCSV = () => {
-    const headers = [
-      "Titre",
-      "Catégorie",
-      "Couleur",
-      "Matériau",
-      "Forme",
-      "Longueur",
-      "Largeur",
-      "Hauteur",
-      "Qualité",
-      "Status",
-    ];
+    const headers = fr
+      ? ["Titre", "Catégorie", "Couleur", "Matériau", "Forme", "Longueur", "Largeur", "Hauteur", "Qualité", "Statut"]
+      : ["Title", "Category", "Color", "Material", "Shape", "Length", "Width", "Height", "Quality", "Status"];
 
     const rows = filteredProducts.map((product) => [
       product.title,
@@ -337,7 +328,7 @@ const ProductSource = () => {
     link.download = `products-enriched-${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success(t.seo.productSource.success.csvExported);
+    toast.success(fr ? "Fichier CSV exporté." : "CSV file exported.");
   };
 
   if (loading) {
@@ -354,7 +345,7 @@ const ProductSource = () => {
         section={fr ? "Catalogue" : "Catalog"}
         page={fr ? "Données enrichies" : "Enriched Data"}
         count={products.length}
-        title={t.seo.productSource.title}
+        title={fr ? "Catalogue enrichi" : "Enriched Catalog"}
         description={fr
           ? "L’IA analyse couleurs, matières, dimensions, style, éclairage et arrière-plan afin d’extraire un maximum d’attributs fiables à valider puis ajouter dans Shopify."
           : "AI analyzes colors, materials, dimensions, style, lighting, and background to extract the maximum reliable attributes for review and export to Shopify."}
@@ -366,10 +357,10 @@ const ProductSource = () => {
             >
               {enriching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
               {selectedProducts.size > 0
-                ? tf("seo.productSource.actions.enrichSelection", { count: selectedProducts.size })
+                ? (fr ? `Enrichir la sélection (${selectedProducts.size})` : `Enrich selected (${selectedProducts.size})`)
                 : enriching
-                  ? t.seo.productSource.actions.enriching
-                  : t.seo.productSource.actions.enrichAll}
+                  ? (fr ? "Enrichissement…" : "Enriching…")
+                  : (fr ? "Tout enrichir" : "Enrich all")}
             </Button>
             <Button
               variant="outline"
@@ -386,11 +377,11 @@ const ProductSource = () => {
               </summary>
               <div className="absolute right-0 z-30 mt-2 grid w-56 gap-1 rounded-xl border bg-white p-2 shadow-xl">
                 <Button onClick={loadProducts} disabled={enriching} variant="ghost" className="justify-start">{fr ? "Actualiser" : "Refresh"}</Button>
-                <Button onClick={exportToCSV} variant="ghost" className="justify-start">{t.seo.productSource.actions.exportCSV}</Button>
-                <Button onClick={exportData} variant="ghost" className="justify-start">{t.seo.productSource.actions.exportJSON}</Button>
+                <Button onClick={exportToCSV} variant="ghost" className="justify-start">{fr ? "Exporter en CSV" : "Export CSV"}</Button>
+                <Button onClick={exportData} variant="ghost" className="justify-start">{fr ? "Exporter en JSON" : "Export JSON"}</Button>
                 {selectedProducts.size > 0 && (
                   <Button onClick={handleDeleteSelected} variant="ghost" className="justify-start text-red-600">
-                    {tf("seo.productSource.actions.deleteSelection", { count: selectedProducts.size })}
+                    {fr ? `Supprimer la sélection (${selectedProducts.size})` : `Delete selected (${selectedProducts.size})`}
                   </Button>
                 )}
               </div>
