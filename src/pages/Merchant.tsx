@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { GoogleMerchant } from "@/components/seo/GoogleMerchant";
 import { GoogleMerchantSettings } from "@/components/seo/GoogleMerchantSettings";
 import { GoogleShoppingSyncSettings } from "@/components/seo/GoogleShoppingSyncSettings";
@@ -8,8 +7,7 @@ import { GoogleMerchantIntegration } from "@/components/seo/GoogleMerchantIntegr
 import { GoogleMerchantSyncSettings } from "@/components/seo/GoogleMerchantSyncSettings";
 import { GoogleMerchantMonitoring } from "@/components/seo/GoogleMerchantMonitoring";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { FileText, Settings, ShoppingCart, ArrowRight, Package, RefreshCw, Globe, BarChart3 } from "lucide-react";
+import { FileText, Settings, ShoppingCart, ArrowRight, RefreshCw, Globe, BarChart3 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 
 export default function Merchant() {
@@ -18,24 +16,15 @@ export default function Merchant() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "feed");
   
-  // Import user from auth context
-  const { user } = useAuth();
-  
-  // Check if user is the test account
-  const isTestAccount = user?.email === "sweet.deco.meubles@gmail.com";
-
   useEffect(() => {
     const tab = searchParams.get("tab");
-    const validTabs = isTestAccount 
-      ? ["integration", "feed", "settings", "sync"]
-      : ["feed", "settings", "sync"];
-    
+    const validTabs = ["integration", "feed", "settings", "sync", "monitoring"];
     if (tab && validTabs.includes(tab)) {
       setActiveTab(tab);
     } else {
-      setActiveTab(isTestAccount ? "integration" : "feed");
+      setActiveTab("integration");
     }
-  }, [searchParams, isTestAccount]);
+  }, [searchParams]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -43,13 +32,13 @@ export default function Merchant() {
   };
 
   const tabs = [
-    ...(isTestAccount ? [{
+    {
       id: "integration",
       label: t.googleConsole.integration,
       icon: Globe,
       description: t.merchant.tabs.integration.description,
       component: <GoogleMerchantIntegration />,
-    }] : []),
+    },
     {
       id: "feed",
       label: t.navigation.merchantSubmenu.feed,
@@ -83,60 +72,45 @@ export default function Merchant() {
   const activeTabData = tabs.find((tab) => tab.id === activeTab);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <ShoppingCart className="w-7 h-7 text-white" />
+    <div className="mx-auto w-full max-w-[1600px] space-y-5">
+      <section className="workspace-hero overflow-hidden bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 text-white">
+        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-violet-100">
+              <ShoppingCart className="h-3.5 w-3.5" /> Google channel
             </div>
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold">{t.merchant.title}</h1>
-              <p className="text-muted-foreground">
-                {t.merchant.description}
-              </p>
-            </div>
+            <h1>{t.merchant.title}</h1>
+            <p className="max-w-2xl">{t.merchant.description}</p>
           </div>
+          <a href="https://business.google.com/fr/merchant-center/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-medium text-white hover:bg-white/15">
+            {t.merchant.openMerchantCenter}<ArrowRight className="ml-2 h-4 w-4" />
+          </a>
         </div>
+      </section>
 
-        {/* Quick Link */}
-        <a
-          href="https://business.google.com/fr/merchant-center/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-all shadow-md hover:shadow-lg"
-        >
-          {t.merchant.openMerchantCenter}
-          <ArrowRight className="w-4 h-4" />
-        </a>
-      </div>
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-5">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <TabsTrigger key={id} value={id} className="gap-2">
+              <Icon className="h-4 w-4" /><span className="truncate">{label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        {/* Content */}
-        <div>
-          {activeTabData && (
-            <div className="space-y-4">
-              {/* Tab Header */}
-              <div className="flex items-center gap-3 pb-4 border-b">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <activeTabData.icon className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold">{activeTabData.label}</h2>
-                  <p className="text-sm text-muted-foreground">{activeTabData.description}</p>
-                </div>
-              </div>
-
-              {/* Tab Component */}
-              <div className="pt-2">
-                {activeTabData.component}
+        {activeTabData && (
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-50 text-violet-700">
+                <activeTabData.icon className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold">{activeTabData.label}</h2>
+                <p className="text-sm text-muted-foreground">{activeTabData.description}</p>
               </div>
             </div>
-          )}
-        </div>
+            {activeTabData.component}
+          </section>
+        )}
       </Tabs>
     </div>
-  );
-}
+  );}
