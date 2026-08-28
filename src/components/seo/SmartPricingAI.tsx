@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -138,6 +139,9 @@ const marketOptions = [
 ];
 
 export function SmartPricingAI() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const pricingWorkspace = requestedTab === "competitors" ? "competitors" : requestedTab === "recommendations" ? "recommendations" : "costs";
   const { t, tf, language } = useTranslation();
   const { selectedStore } = useStore();
   const [products, setProducts] = useState<ProductPricing[]>([]);
@@ -1624,26 +1628,30 @@ export function SmartPricingAI() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card className="p-6 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-950 dark:via-teal-950 dark:to-cyan-950 border-2 border-emerald-200">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-emerald-500 rounded-xl">
-            <DollarSign className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold">{t.smartPricing.title}</h2>
-              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold px-3 py-1 text-xs shadow-lg animate-pulse">
-                ✨ {t.smartPricing.badge}
-              </Badge>
-            </div>
-            <p className="text-muted-foreground">
-              {t.smartPricing.description}
-            </p>
+      <Card className="border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="rounded-xl bg-violet-50 p-2.5 text-violet-700"><DollarSign className="h-5 w-5" /></div>
+          <div>
+            <h2 className="text-xl font-semibold text-slate-950">{t.smartPricing.title}</h2>
+            <p className="mt-1 max-w-2xl text-sm text-slate-600">{t.smartPricing.description}</p>
           </div>
         </div>
       </Card>
 
+      <nav className="grid grid-cols-1 gap-2 rounded-xl border bg-white p-2 sm:grid-cols-3" aria-label="Pricing workspace">
+        {[
+          { id: "costs", label: language === "fr" ? "Coûts & marges" : "Costs & margins", icon: Calculator },
+          { id: "competitors", label: language === "fr" ? "Prix concurrents" : "Competitor prices", icon: Globe },
+          { id: "recommendations", label: language === "fr" ? "Recommandations" : "Recommendations", icon: Sparkles },
+        ].map(({ id, label, icon: Icon }) => (
+          <Button key={id} type="button" variant={pricingWorkspace === id ? "secondary" : "ghost"} className="justify-start" onClick={() => setSearchParams({ tab: id })}>
+            <Icon className="mr-2 h-4 w-4" /> {label}
+          </Button>
+        ))}
+      </nav>
+
+      {pricingWorkspace === "costs" && (
+        <>
       {/* Tax Rate Configuration */}
       <Card className="p-6 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200">
         <div className="flex items-start gap-4">
@@ -1677,6 +1685,11 @@ export function SmartPricingAI() {
         </div>
       </Card>
 
+        </>
+      )}
+
+      {pricingWorkspace === "competitors" && (
+        <>
       {/* Market Configuration - Compact */}
       <Card className="p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-blue-950 dark:via-indigo-950 dark:to-violet-950 border-2 border-blue-200">
         <div className="flex items-center justify-between">
@@ -1729,6 +1742,11 @@ export function SmartPricingAI() {
         onMarketsChange={setSelectedMarkets}
       />
 
+        </>
+      )}
+
+      {pricingWorkspace === "costs" && (
+        <>
       {/* Bulk Operations */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -1807,6 +1825,9 @@ export function SmartPricingAI() {
           </Button>
         </div>
       </Card>
+
+        </>
+      )}
 
       {/* Last Analysis Banner */}
       {lastAnalysisTime && (
@@ -2062,6 +2083,12 @@ export function SmartPricingAI() {
             Sync Tout
           </Button>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        {pricingWorkspace === "costs" && (language === "fr" ? "Renseignez les coûts et contrôlez les marges avant synchronisation." : "Enter costs and review margins before syncing.")}
+        {pricingWorkspace === "competitors" && (language === "fr" ? "Analysez le marché sélectionné puis comparez les prix produit par produit." : "Analyze selected markets, then compare prices product by product.")}
+        {pricingWorkspace === "recommendations" && (language === "fr" ? "Examinez chaque Smart Price avant de l’appliquer. Aucun prix n’est modifié automatiquement." : "Review every Smart Price before applying it. Prices are never changed automatically.")}
       </div>
 
       {/* Products Table or Grid */}
