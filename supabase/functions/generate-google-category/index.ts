@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,35 +9,6 @@ const corsHeaders = {
 
 interface CategoryGenerationRequest {
   productId: string;
-}
-
-async function callDeepSeek(messages: any[], maxTokens = 300) {
-  const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
-
-  if (!deepseekApiKey) {
-    throw new Error('DeepSeek API key not configured');
-  }
-
-  const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${deepseekApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages,
-      temperature: 0.3,
-      max_tokens: maxTokens,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
-  }
-
-  return await response.json();
 }
 
 Deno.serve(async (req: Request) => {
@@ -98,7 +70,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`Generating Google category with DeepSeek for product: ${product.title}`);
+    console.log(`Generating Google category for product: ${product.title}`);
 
     const categoryPrompt = `You are a Google Shopping product categorization expert. Based on the product information below, generate the EXACT Google Shopping category hierarchy.
 
@@ -130,18 +102,26 @@ IMPORTANT:
 - Default condition to "new" unless context suggests otherwise
 - Use vendor as brand if no other brand information is available`;
 
-    const categoryResponse = await callDeepSeek([
-      {
-        role: "system",
-        content: "You are a Google Shopping categorization expert. Always respond with valid JSON only.",
-      },
-      {
-        role: "user",
-        content: categoryPrompt,
-      },
-    ]);
+    const categoryResponse = await routeAI({
+      messages: [
+        {
+          role: "system",
+          content: "You are a Google Shopping categorization expert. Always respond with one valid JSON object only, without markdown fences.",
+        },
+        {
+          role: "user",
+          content: categoryPrompt,
+        },
+      ],
+      maxTokens: 500,
+      temperature: 0.15,
+    });
 
-    const categoryContent = categoryResponse.choices[0].message.content;
+    console.log(`Google category provider: ${categoryResponse.provider}/${categoryResponse.model}`);
+    const categoryContent = categoryResponse.content
+      .replace(/^\`\`\`(?:json)?\\s*/i, "")
+      .replace(/\\s*\`\`\`$/i, "")
+      .trim();
 
     let googleData = {
       google_product_category: "",
@@ -159,8 +139,12 @@ IMPORTANT:
         google_brand: parsed.google_brand || googleData.google_brand,
       };
     } catch (e) {
-      console.error("Failed to parse category JSON:", categoryContent);
-      // Keep defaults
+      console.error("Failed to parse category JSON from AI provider", e);
+      throw new Error("AI returned an invalid Google category response");
+    }
+
+    if (!googleData.google_product_category.trim()) {
+      throw new Error("AI returned an empty Google product category");
     }
 
     const { error: updateError } = await supabaseClient
