@@ -210,7 +210,32 @@ export default function SEO() {
         </div>
       </div>
 
-      {/* Tab Content - Navigation via sidebar uniquement */}
+      <nav className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1" aria-label={language === "fr" ? "Métadonnées SEO" : "SEO metadata"}>
+        {[
+          { id: "products", label: language === "fr" ? "Produits" : "Products", icon: Package },
+          { id: "collections", label: language === "fr" ? "Collections" : "Collections", icon: Tags },
+          { id: "pages", label: language === "fr" ? "Pages" : "Pages", icon: FileText },
+          { id: "articles", label: language === "fr" ? "Articles" : "Articles", icon: PenSquare },
+        ].map(({ id, label, icon: Icon }) => (
+          <Button
+            key={id}
+            type="button"
+            size="sm"
+            variant={activeTab === id ? "default" : "ghost"}
+            className={activeTab === id ? "bg-violet-600 hover:bg-violet-700" : ""}
+            onClick={() => {
+              setActiveTab(id);
+              setSearchParams({ tab: id });
+            }}
+          >
+            <Icon className="mr-2 h-4 w-4" />{label}
+            {id === "pages" && pagesSeoScore > 0 && <span className="ml-2 text-xs opacity-80">{pagesSeoScore}%</span>}
+            {id === "articles" && articlesSeoScore > 0 && <span className="ml-2 text-xs opacity-80">{articlesSeoScore}%</span>}
+          </Button>
+        ))}
+      </nav>
+
+      {/* SEO resource content */}
       <div className="mt-6">
         {(activeTab === 'products' || activeTab === 'optimization') && <ProductOptimizationTabs />}
         {activeTab === 'tags' && <TagOptimization />}
@@ -219,7 +244,7 @@ export default function SEO() {
         
         {/* Blog tabs - now available to all users */}
         
-        {activeTab === 'pages' && hasFullAccess && (
+        {activeTab === 'pages' && (
           <>
             {/* Banner for Pages */}
             <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
@@ -288,7 +313,7 @@ export default function SEO() {
             <PageOptimization />
           </>
         )}
-        {activeTab === 'articles' && hasFullAccess && (
+        {activeTab === 'articles' && (
           <>
             {/* Banner for Articles */}
             <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
