@@ -199,7 +199,7 @@ export default function SetupWizard() {
           if (profile?.subscription_status === 'active') {
             console.log('✅ [SetupWizard] Active subscription found in DB, redirecting');
             setIsCheckingSubscription(false);
-            navigate("/dashboard-light", { replace: true });
+            navigate("/dashboard-light?scan=1", { replace: true });
             return;
           }
         }
@@ -234,7 +234,7 @@ export default function SetupWizard() {
             }
 
             setIsCheckingSubscription(false);
-            navigate("/dashboard-light", { replace: true });
+            navigate("/dashboard-light?scan=1", { replace: true });
             return;
           }
 

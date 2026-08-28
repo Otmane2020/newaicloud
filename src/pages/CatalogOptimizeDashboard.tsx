@@ -27,6 +27,9 @@ type ProductHealthRow = {
 type CatalogStats = {
   total: number;
   incomplete: number;
+  missingTitles: number;
+  missingSeoTitles: number;
+  missingSeoDescriptions: number;
   missingImages: number;
   missingSeo: number;
   missingTags: number;
@@ -35,7 +38,7 @@ type CatalogStats = {
 };
 
 const initialStats: CatalogStats = {
-  total: 0, incomplete: 0, missingImages: 0, missingSeo: 0, missingTags: 0, enriched: 0, lastSync: null,
+  total: 0, incomplete: 0, missingTitles: 0, missingSeoTitles: 0, missingSeoDescriptions: 0, missingImages: 0, missingSeo: 0, missingTags: 0, enriched: 0, lastSync: null,
 };
 
 export default function CatalogOptimizeDashboard() {
@@ -46,6 +49,7 @@ export default function CatalogOptimizeDashboard() {
   const [stats, setStats] = useState<CatalogStats>(initialStats);
   const [loading, setLoading] = useState(false);
   const [scanError, setScanError] = useState(false);
+  const [scanNonce, setScanNonce] = useState(0);
 
   useEffect(() => {
     if (!user?.id || !selectedStore?.id) {
@@ -71,6 +75,9 @@ export default function CatalogOptimizeDashboard() {
         if (countResult.error) throw countResult.error;
         if (productsResult.error) throw productsResult.error;
         const products = (productsResult.data || []) as ProductHealthRow[];
+        const missingTitles = products.filter((p) => !p.title?.trim()).length;
+        const missingSeoTitles = products.filter((p) => !p.seo_title?.trim()).length;
+        const missingSeoDescriptions = products.filter((p) => !p.seo_description?.trim()).length;
         const missingSeo = products.filter((p) => !p.seo_title?.trim() || !p.seo_description?.trim()).length;
         const missingImages = products.filter((p) => !p.image_url?.trim()).length;
         const missingTags = products.filter((p) => !p.tags || (Array.isArray(p.tags) ? p.tags.length === 0 : !String(p.tags).trim())).length;
@@ -79,7 +86,7 @@ export default function CatalogOptimizeDashboard() {
 
         if (mounted) setStats({
           total: countResult.count || products.length,
-          incomplete, missingImages, missingSeo, missingTags, enriched,
+          incomplete, missingTitles, missingSeoTitles, missingSeoDescriptions, missingImages, missingSeo, missingTags, enriched,
           lastSync: syncResult.data?.created_at || null,
         });
       } catch (error) {
@@ -91,17 +98,25 @@ export default function CatalogOptimizeDashboard() {
     };
     load();
     return () => { mounted = false; };
-  }, [user?.id, selectedStore?.id]);
+  }, [user?.id, selectedStore?.id, scanNonce]);
 
   const health = useMemo(() => {
     if (!stats.total) return null;
-    const issueWeight = Math.min(stats.total, Math.max(stats.incomplete, stats.missingSeo, stats.missingImages, stats.missingTags));
-    return Math.max(0, Math.round((1 - issueWeight / stats.total) * 100));
+    const totalChecks = stats.total * 6;
+    const failedChecks =
+      stats.missingTitles +
+      stats.missingSeoTitles +
+      stats.missingSeoDescriptions +
+      stats.missingImages +
+      stats.missingTags +
+      Math.max(0, stats.total - stats.enriched);
+    return Math.max(0, Math.round(((totalChecks - failedChecks) / totalChecks) * 100));
   }, [stats]);
 
   const issues = [
-    { label: fr ? "Produits incomplets" : "Incomplete products", value: stats.incomplete, href: "/products/title-description", icon: FileText },
-    { label: fr ? "SEO produit incomplet" : "Incomplete product SEO", value: stats.missingSeo, href: "/seo?tab=products", icon: Sparkles },
+    { label: fr ? "Titres produit manquants" : "Missing product titles", value: stats.missingTitles, href: "/products/title-description", icon: FileText },
+    { label: fr ? "Titres SEO manquants" : "Missing SEO titles", value: stats.missingSeoTitles, href: "/seo?tab=products", icon: Sparkles },
+    { label: fr ? "Descriptions SEO manquantes" : "Missing SEO descriptions", value: stats.missingSeoDescriptions, href: "/seo?tab=products", icon: FileText },
     { label: fr ? "Images principales manquantes" : "Missing primary images", value: stats.missingImages, href: "/products/title-description?view=images", icon: Image },
     { label: fr ? "Tags manquants" : "Missing tags", value: stats.missingTags, href: "/seo?tab=tags", icon: Tags },
   ].sort((a, b) => b.value - a.value);
@@ -147,6 +162,10 @@ export default function CatalogOptimizeDashboard() {
             <p className="mt-3 flex items-center gap-2 text-sm text-slate-300"><Store className="h-4 w-4 text-violet-300" />{selectedStore.store_name || selectedStore.store_url}</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={() => setScanNonce((value) => value + 1)} disabled={loading} className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ScanSearch className="mr-2 h-4 w-4" />}
+              {fr ? "Scanner maintenant" : "Scan now"}
+            </Button>
             <Button variant="outline" asChild className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/products?panel=import"><RefreshCw className="mr-2 h-4 w-4" />{fr ? "Importer" : "Import products"}</Link></Button>
             <Button asChild className="bg-violet-500 hover:bg-violet-400"><Link to="/products/title-description"><ScanSearch className="mr-2 h-4 w-4" />{fr ? "Corriger le catalogue" : "Fix catalog issues"}</Link></Button>
           </div>
@@ -161,7 +180,7 @@ export default function CatalogOptimizeDashboard() {
         <Card className="overflow-hidden border-violet-100 shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center justify-between"><p className="text-sm font-medium text-slate-500">{fr ? "Santé du catalogue" : "Catalog health"}</p><span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-50 text-violet-700"><Sparkles className="h-4 w-4" /></span></div>
-            {loading ? <Loader2 className="mt-5 h-6 w-6 animate-spin text-violet-600" /> : health === null ? <p className="mt-5 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-4 text-3xl font-semibold tracking-tight">{health}%</p><Progress value={health} className="mt-3 h-2" /></>}
+            {loading ? <Loader2 className="mt-5 h-6 w-6 animate-spin text-violet-600" /> : health === null ? <p className="mt-5 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-4 text-3xl font-semibold tracking-tight">{health}%</p><Progress value={health} className="mt-3 h-2" /><p className="mt-2 text-xs text-slate-500">{fr ? "6 contrôles par produit" : "6 checks per product"}</p></>}
           </CardContent>
         </Card>
         {[
@@ -181,7 +200,7 @@ export default function CatalogOptimizeDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>{fr ? "Priorités" : "Prioritized issues"}</CardTitle><p className="mt-1 text-sm text-muted-foreground">{fr ? "Calculées à partir des données réellement importées." : "Calculated from your imported catalog data."}</p></div><Badge variant="secondary">{issues.reduce((sum, item) => sum + item.value, 0)} {fr ? "signaux" : "signals"}</Badge></CardHeader>
           <CardContent className="space-y-3">
-            {issues.map((issue) => (
+            {issues.filter((issue) => issue.value > 0).sort((a, b) => b.value - a.value).map((issue) => (
               <Link key={issue.label} to={issue.href} className="flex items-center justify-between rounded-xl border p-4 transition-colors hover:bg-muted/50">
                 <span className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-amber-50 text-amber-600"><issue.icon className="h-4 w-4" /></span><span className="font-medium">{issue.label}</span></span>
                 <span className="flex items-center gap-3"><strong>{loading ? "—" : issue.value}</strong><ArrowRight className="h-4 w-4 text-muted-foreground" /></span>
