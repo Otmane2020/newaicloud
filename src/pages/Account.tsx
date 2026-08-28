@@ -74,7 +74,7 @@ export default function Account() {
 
   return (
     <div className="space-y-6 pb-10">
-      <section className="overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
+      <section className="workspace-hero overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div>
             <Badge className="border border-white/10 bg-white/10 text-violet-100 hover:bg-white/10">

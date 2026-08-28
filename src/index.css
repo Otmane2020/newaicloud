@@ -770,3 +770,45 @@ label {
     }
   }
 }
+
+
+/* Compact workspace headers: app pages should feel operational, not like landing pages. */
+@layer components {
+  .catalog-workspace .workspace-hero {
+    min-height: 0;
+    border-radius: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 14px 36px -28px hsl(258 90% 20% / 0.75);
+  }
+
+  .catalog-workspace .workspace-hero h1 {
+    margin-top: 0.75rem;
+    max-width: 42rem;
+    color: white !important;
+    font-size: clamp(1.45rem, 2.2vw, 2rem);
+    line-height: 1.12;
+    letter-spacing: -0.035em;
+  }
+
+  .catalog-workspace .workspace-hero p {
+    margin-top: 0.45rem;
+    color: hsl(252 100% 94%);
+    line-height: 1.45;
+  }
+
+  .catalog-workspace .workspace-hero [class*="tracking-"] {
+    margin-bottom: 0;
+  }
+
+  .catalog-workspace .workspace-hero button,
+  .catalog-workspace .workspace-hero a[role="button"] {
+    min-height: 2.5rem;
+    border-radius: 0.75rem;
+  }
+
+  @media (min-width: 1024px) {
+    .catalog-workspace .workspace-hero {
+      padding: 1.5rem 1.75rem;
+    }
+  }
+}
