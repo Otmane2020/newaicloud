@@ -1,25 +1,22 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Download,
-  FileText,
-  Copy,
-  Check,
-  ExternalLink,
-  RefreshCw,
   AlertCircle,
-  Settings,
-  Calendar,
+  Check,
+  Copy,
+  Download,
+  ExternalLink,
+  FileSpreadsheet,
+  FileText,
+  RefreshCw,
   Sparkles,
   Zap,
-  FileSpreadsheet,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
@@ -33,6 +30,9 @@ interface FeedStatus {
   status: "success" | "error" | "loading" | "idle";
   error?: string;
 }
+
+const PUBLIC_FEED_ORIGIN = "https://catalogoptimize.com";
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
 
 export function GoogleMerchant() {
   const { user } = useAuth();
@@ -49,42 +49,49 @@ export function GoogleMerchant() {
   const [regenerating, setRegenerating] = useState(false);
   const [optimizationScore, setOptimizationScore] = useState(0);
   const [totalProducts, setTotalProducts] = useState(0);
-  const [dbProductCount, setDbProductCount] = useState(0);
+  const [optimizedProducts, setOptimizedProducts] = useState(0);
 
-  // URL du flux avec le domaine NewAI (pour affichage final)
-  const feedUrl = `https://newai.sale/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
-  
-  // URL Supabase directe (fonctionne toujours)
-  const directFeedUrl = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user?.id || "YOUR_SELLER_ID"}/xml`;
+  const sellerId = user?.id || "YOUR_SELLER_ID";
+  const feedUrl = `${PUBLIC_FEED_ORIGIN}/shoppingfeed/${sellerId}/xml`;
+  const directFeedUrl = useMemo(
+    () => `${SUPABASE_URL}/functions/v1/shopping-feed/shoppingfeed/${sellerId}/xml`,
+    [sellerId],
+  );
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(directFeedUrl);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(feedUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const testFeed = async () => {
+    if (!user?.id || !SUPABASE_URL) return;
+
     setIsTesting(true);
-    setFeedStatus((prev) => ({ ...prev, status: "loading" }));
+    setFeedStatus((prev) => ({ ...prev, status: "loading", error: undefined }));
 
     try {
-      // Utiliser l'URL Supabase directe pour tester (fonctionne en preview)
-      const testUrl = `https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/${user?.id}/xml`;
-      const response = await fetch(testUrl);
+      // Always test the backend attached to the current Lovable/Supabase project.
+      // The old hardcoded Supabase project was the source of false 400 domain errors.
+      const response = await fetch(directFeedUrl, { cache: "no-store" });
+      const body = await response.text();
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        let detail = body;
+        try {
+          const parsed = JSON.parse(body);
+          detail = parsed?.error || parsed?.message || body;
+        } catch {
+          // Keep raw response body.
+        }
+        throw new Error(`HTTP ${response.status}${detail ? `: ${detail}` : ""}`);
       }
 
-      const text = await response.text();
-
-      // Vérifier si c'est un XML valide
-      if (!text.includes("<?xml") || !text.includes("<rss")) {
+      if (!body.includes("<?xml") || !body.includes("<rss")) {
         throw new Error(t.merchant.feed.errors.invalidFormat);
       }
 
-      // Compter les items
-      const itemCount = (text.match(/<item>/g) || []).length;
-
+      const itemCount = (body.match(/<item>/g) || []).length;
       setFeedStatus({
         lastFetch: new Date().toISOString(),
         itemCount,
@@ -102,12 +109,44 @@ export function GoogleMerchant() {
     }
   };
 
+  const fetchOptimizationScore = async () => {
+    try {
+      if (!selectedStore?.id) {
+        setTotalProducts(0);
+        setOptimizedProducts(0);
+        setOptimizationScore(0);
+        return;
+      }
+
+      const [{ count: total }, { count: optimized }] = await Promise.all([
+        supabase
+          .from("shopify_products")
+          .select("*", { count: "exact", head: true })
+          .eq("store_id", selectedStore.id),
+        supabase
+          .from("shopify_products")
+          .select("*", { count: "exact", head: true })
+          .eq("store_id", selectedStore.id)
+          .not("google_product_category", "is", null)
+          .not("google_gtin", "is", null)
+          .eq("google_white_background", true),
+      ]);
+
+      const totalCount = total || 0;
+      const optimizedCount = optimized || 0;
+      setTotalProducts(totalCount);
+      setOptimizedProducts(optimizedCount);
+      setOptimizationScore(totalCount > 0 ? Math.round((optimizedCount / totalCount) * 100) : 0);
+    } catch (error) {
+      console.error("Error fetching optimization score:", error);
+    }
+  };
+
   const regenerateFeed = async () => {
     setRegenerating(true);
     try {
-      // Force une nouvelle génération en appelant le flux
       await testFeed();
-      await fetchOptimizationScore(); // Recalculate score after regeneration
+      await fetchOptimizationScore();
       toast.success(t.merchant.feed.success.regenerated);
     } catch (error) {
       console.error("Error regenerating feed:", error);
@@ -120,27 +159,24 @@ export function GoogleMerchant() {
   const exportToCSV = async () => {
     try {
       toast.info(t.merchant.feed.status.generating);
-      
+
       if (!selectedStore) {
         toast.error(t.toasts.dashboard.noStoreSelected);
         return;
       }
 
-      // Fetch products from database
       const { data: products, error } = await supabase
-        .from('shopify_products')
-        .select('*')
-        .eq('store_id', selectedStore.id)
-        .order('title');
+        .from("shopify_products")
+        .select("*")
+        .eq("store_id", selectedStore.id)
+        .order("title");
 
       if (error) throw error;
-
       if (!products || products.length === 0) {
         toast.error(t.merchant.feed.errors.noProducts);
         return;
       }
 
-      // CSV headers
       const headers = [
         t.merchant.feed.csv.headers.id,
         t.merchant.feed.csv.headers.title,
@@ -154,104 +190,62 @@ export function GoogleMerchant() {
         t.merchant.feed.csv.headers.gtin,
         t.merchant.feed.csv.headers.mpn,
         t.merchant.feed.csv.headers.condition,
-        t.merchant.feed.csv.headers.whiteBackground
+        t.merchant.feed.csv.headers.whiteBackground,
       ];
 
-      // Convert products to CSV rows
       const rows = products.map((product: any) => [
-        product.shopify_product_id || '',
-        product.title || '',
-        (product.body_html || product.description || '').replace(/"/g, '""').replace(/\n/g, ' '),
-        product.price || '',
-        product.handle ? `https://www.shopify.com/products/${product.handle}` : '',
-        product.image_url || '',
-        product.status === 'active' ? t.merchant.feed.csv.inStock : t.merchant.feed.csv.outOfStock,
-        product.vendor || '',
-        product.google_product_category || '',
-        product.google_gtin || '',
-        product.google_mpn || '',
-        product.google_condition || 'new',
-        product.google_white_background ? t.merchant.feed.csv.yes : t.merchant.feed.csv.no
+        product.shopify_product_id || product.shopify_id || "",
+        product.title || "",
+        (product.body_html || product.description || "").replace(/"/g, '""').replace(/\n/g, " "),
+        product.price || "",
+        product.handle ? `${PUBLIC_FEED_ORIGIN}/products/${product.handle}` : "",
+        product.image_url || "",
+        product.status === "active" ? t.merchant.feed.csv.inStock : t.merchant.feed.csv.outOfStock,
+        product.vendor || "",
+        product.google_product_category || "",
+        product.google_gtin || "",
+        product.google_mpn || "",
+        product.google_condition || "new",
+        product.google_white_background ? t.merchant.feed.csv.yes : t.merchant.feed.csv.no,
       ]);
 
-      // Combine headers and rows
       const csvContent = [
-        headers.join(','),
-        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-      ].join('\n');
+        headers.join(","),
+        ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+      ].join("\n");
 
-      // Create blob and download
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
-      
-      link.setAttribute('href', url);
-      link.setAttribute('download', `google-shopping-feed-${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      
+      link.setAttribute("href", url);
+      link.setAttribute("download", `google-shopping-feed-${new Date().toISOString().split("T")[0]}.csv`);
+      link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-      toast.success(t.merchant.feed.success.exported.replace('{{count}}', products.length.toString()));
+      toast.success(t.merchant.feed.success.exported.replace("{{count}}", products.length.toString()));
     } catch (error) {
-      console.error('Error exporting to CSV:', error);
+      console.error("Error exporting to CSV:", error);
       toast.error(t.merchant.feed.errors.exportFailed);
     }
   };
 
   useEffect(() => {
-    if (selectedStore) {
-      // Tester automatiquement le flux au chargement
-      testFeed();
-      fetchOptimizationScore();
-      
-      // Auto-refresh score every 10 seconds to catch external updates
-      const interval = setInterval(() => {
-        fetchOptimizationScore();
-      }, 10000);
-      
-      return () => clearInterval(interval);
-    } else {
-      setFeedStatus({ lastFetch: null, itemCount: null, status: 'idle' });
+    if (!selectedStore) {
+      setFeedStatus({ lastFetch: null, itemCount: null, status: "idle" });
       setOptimizationScore(0);
       setTotalProducts(0);
-      setDbProductCount(0);
+      setOptimizedProducts(0);
+      return;
     }
-  }, [selectedStore?.id]);
 
-  const fetchOptimizationScore = async () => {
-    try {
-      if (!selectedStore?.id) {
-        setTotalProducts(0);
-        setDbProductCount(0);
-        setOptimizationScore(0);
-        return;
-      }
-
-      // Fetch total products for selected store
-      const { count: total } = await supabase
-        .from('shopify_products')
-        .select('*', { count: 'exact', head: true })
-        .eq('store_id', selectedStore.id);
-
-      // Fetch optimized products (with category, gtin, and white background)
-      const { count: optimized } = await supabase
-        .from('shopify_products')
-        .select('*', { count: 'exact', head: true })
-        .eq('store_id', selectedStore.id)
-        .not('google_product_category', 'is', null)
-        .not('google_gtin', 'is', null)
-        .eq('google_white_background', true);
-
-      setTotalProducts(total || 0);
-      setDbProductCount(total || 0);
-      const score = total && total > 0 ? Math.round((optimized || 0) / total * 100) : 0;
-      setOptimizationScore(score);
-    } catch (error) {
-      console.error('Error fetching optimization score:', error);
-    }
-  };
+    void testFeed();
+    void fetchOptimizationScore();
+    const interval = window.setInterval(() => void fetchOptimizationScore(), 10000);
+    return () => window.clearInterval(interval);
+  }, [selectedStore?.id, user?.id]);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t.merchant.feed.status.never;
@@ -261,294 +255,172 @@ export function GoogleMerchant() {
   const getStatusBadge = () => {
     switch (feedStatus.status) {
       case "success":
-        return (
-          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
-            ✓ {t.merchant.feed.status.operational}
-          </Badge>
-        );
+        return <Badge className="border-green-200 bg-green-50 text-green-700 hover:bg-green-50">✓ {t.merchant.feed.status.operational}</Badge>;
       case "error":
-        return (
-          <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
-            ✗ {t.merchant.feed.status.error}
-          </Badge>
-        );
+        return <Badge variant="destructive">✗ {t.merchant.feed.status.error}</Badge>;
       case "loading":
-        return (
-          <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
-            ⟳ {t.merchant.feed.status.testing}
-          </Badge>
-        );
+        return <Badge variant="secondary"><RefreshCw className="mr-1 h-3 w-3 animate-spin" />{t.merchant.feed.status.testing}</Badge>;
       default:
-        return <Badge variant="outline">⏳ {t.merchant.feed.status.notTested}</Badge>;
+        return <Badge variant="outline">{t.merchant.feed.status.notTested}</Badge>;
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 p-8 text-white shadow-xl">
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{t.merchant.title}</h1>
-              <p className="text-white/90 text-lg">
-                {t.merchant.description}
+    <div className="space-y-4">
+      {/* Compact feed summary — no duplicate hero/banner */}
+      <Card className="p-4 shadow-none">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            <div className="flex items-center gap-2">
+              {getStatusBadge()}
+              <span className="text-sm text-muted-foreground">
+                {feedStatus.itemCount ?? 0} {t.merchant.feed.products}
+                {totalProducts > 0 ? ` · ${totalProducts} ${t.merchant.feed.inDatabase}` : ""}
+              </span>
+            </div>
+
+            <div className="min-w-[220px] max-w-sm flex-1">
+              <div className="mb-1.5 flex items-center justify-between gap-4 text-xs">
+                <span className="font-medium">{t.merchant.feed.optimizationScore}</span>
+                <span className="font-semibold">{optimizationScore}%</span>
+              </div>
+              <Progress value={optimizationScore} className="h-1.5" />
+              <p className="mt-1 text-xs text-muted-foreground">
+                {optimizedProducts} / {totalProducts} {t.merchant.feed.products}
               </p>
             </div>
-            <div className="text-right">
-              {getStatusBadge()}
-              <div className="mt-2 flex items-baseline gap-2">
-                {feedStatus.itemCount !== null && (
-                  <span className="text-2xl font-bold">{feedStatus.itemCount}</span>
-                )}
-                {dbProductCount > 0 && (
-                  <span className="text-sm text-white/70">({dbProductCount} {t.merchant.feed.inDatabase})</span>
-                )}
-                <span className="text-sm text-white/70">{t.merchant.feed.products}</span>
-              </div>
-            </div>
           </div>
 
-          {/* Optimization Score */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">{t.merchant.feed.optimizationScore}</span>
-              <span className="text-2xl font-bold">{optimizationScore}%</span>
-            </div>
-            <Progress value={optimizationScore} className="h-2 bg-white/20" />
-            <p className="text-xs text-white/70 mt-2">
-              {totalProducts > 0 
-                ? t.merchant.feed.optimizationDetails
-                    .replace('{{optimized}}', Math.round(totalProducts * optimizationScore / 100).toString())
-                    .replace('{{total}}', totalProducts.toString())
-                : t.merchant.feed.noProducts
-              }
-            </p>
-          </div>
-
-          <div className="flex gap-3 mt-6">
-            <Button
-              variant="secondary"
-              size="lg"
-              onClick={() => navigate('/shopping')}
-              className="bg-white text-purple-600 hover:bg-white/90"
-            >
-              <Zap className="w-5 h-5 mr-2" />
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => navigate("/shopping")}>
+              <Zap className="mr-1.5 h-4 w-4" />
               {t.merchant.feed.actions.optimizeAll}
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={testFeed}
-              disabled={isTesting}
-              className="border-white text-white hover:bg-white/10"
-            >
-              {isTesting ? (
-                <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="w-5 h-5 mr-2" />
-              )}
+            <Button size="sm" variant="outline" onClick={testFeed} disabled={isTesting}>
+              <RefreshCw className={`mr-1.5 h-4 w-4 ${isTesting ? "animate-spin" : ""}`} />
               {t.merchant.feed.actions.testFeed}
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={regenerateFeed}
-              disabled={regenerating}
-              className="border-white text-white hover:bg-white/10"
-            >
-              {regenerating ? (
-                <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-              ) : (
-                <Download className="w-5 h-5 mr-2" />
-              )}
+            <Button size="sm" variant="outline" onClick={regenerateFeed} disabled={regenerating}>
+              <Download className={`mr-1.5 h-4 w-4 ${regenerating ? "animate-pulse" : ""}`} />
               {t.merchant.feed.actions.regenerate}
             </Button>
           </div>
         </div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24" />
-      </div>
+      </Card>
 
-      {/* Warning Alert */}
-      <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
-        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-        <AlertDescription className="text-amber-800 dark:text-amber-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <strong className="font-semibold">{t.merchant.feed.enrichment.title}</strong>
-              <p className="mt-1 text-sm">
-                {t.merchant.feed.enrichment.description}
-              </p>
-            </div>
-            <Button
-              onClick={() => navigate('/shopping')}
-              variant="default"
-              size="sm"
-              className="ml-4 gap-2 whitespace-nowrap"
-            >
-              <Sparkles className="w-4 h-4" />
-              {t.merchant.feed.enrichment.action}
-            </Button>
+      <Alert className="border-slate-200 bg-slate-50/70">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <strong className="text-sm font-medium text-foreground">{t.merchant.feed.enrichment.title}</strong>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t.merchant.feed.enrichment.description}</p>
           </div>
+          <Button onClick={() => navigate("/shopping")} variant="outline" size="sm" className="shrink-0">
+            {t.merchant.feed.enrichment.action}
+          </Button>
         </AlertDescription>
       </Alert>
 
-      {/* Status Card */}
-      <Card className="p-6 border-l-4 border-l-primary">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold">{t.merchant.feed.statusTitle}</h3>
+      <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <Card className="p-5 shadow-none">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold">{t.merchant.feed.statusTitle}</h3>
             {getStatusBadge()}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">{t.merchant.feed.lastTest}</p>
-              <p className="text-lg font-semibold">
-                {feedStatus.status === "loading" ? "..." : formatDate(feedStatus.lastFetch)}
-              </p>
+          <div className="grid grid-cols-3 gap-3 rounded-lg border bg-muted/20 p-3">
+            <div>
+              <p className="text-[11px] text-muted-foreground">{t.merchant.feed.lastTest}</p>
+              <p className="mt-1 truncate text-sm font-medium">{feedStatus.status === "loading" ? "…" : formatDate(feedStatus.lastFetch)}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">{t.merchant.feed.detectedProducts}</p>
-              <p className="text-lg font-semibold">
-                {feedStatus.status === "loading" ? "..." : feedStatus.itemCount || "0"}
-              </p>
+            <div>
+              <p className="text-[11px] text-muted-foreground">{t.merchant.feed.detectedProducts}</p>
+              <p className="mt-1 text-sm font-medium">{feedStatus.status === "loading" ? "…" : feedStatus.itemCount ?? 0}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">{t.merchant.feed.format}</p>
-              <p className="text-lg font-semibold">{t.merchant.feed.formatValue}</p>
+            <div>
+              <p className="text-[11px] text-muted-foreground">{t.merchant.feed.format}</p>
+              <p className="mt-1 text-sm font-medium">XML</p>
             </div>
           </div>
 
           {feedStatus.status === "error" && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{t.merchant.feed.status.error}: {feedStatus.error}</AlertDescription>
+              <AlertDescription className="text-xs">{feedStatus.error}</AlertDescription>
             </Alert>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={testFeed} disabled={isTesting} variant="default" size="lg">
-              <RefreshCw className={`w-4 h-4 mr-2 ${isTesting ? "animate-spin" : ""}`} />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button onClick={testFeed} disabled={isTesting} size="sm">
+              <RefreshCw className={`mr-1.5 h-4 w-4 ${isTesting ? "animate-spin" : ""}`} />
               {isTesting ? t.merchant.feed.status.testing : t.merchant.feed.actions.testFeed}
             </Button>
-
-            {feedStatus.status === "success" && (
-              <>
-                <Button asChild variant="outline" size="lg">
-                  <a href={directFeedUrl} target="_blank" rel="noopener noreferrer">
-                    <Download className="w-4 h-4 mr-2" />
-                    {t.merchant.feed.actions.downloadXML}
-                  </a>
-                </Button>
-                <Button onClick={exportToCSV} variant="outline" size="lg">
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  {t.merchant.feed.actions.exportCSV}
-                </Button>
-              </>
-            )}
+            <Button asChild variant="outline" size="sm">
+              <a href={feedUrl} target="_blank" rel="noopener noreferrer">
+                <Download className="mr-1.5 h-4 w-4" />
+                {t.merchant.feed.actions.downloadXML}
+              </a>
+            </Button>
+            <Button onClick={exportToCSV} variant="outline" size="sm">
+              <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+              {t.merchant.feed.actions.exportCSV}
+            </Button>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      {/* URL Card */}
-      <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950">
-        <div className="space-y-4">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Settings className="w-6 h-6 text-green-600 dark:text-green-400" />
+        <Card className="p-5 shadow-none">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border bg-muted/40">
+              <FileText className="h-4 w-4" />
             </div>
-            <div className="flex-1 space-y-3">
-              <div>
-                <h3 className="text-xl font-bold mb-1">{t.merchant.feed.url.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t.merchant.feed.url.description}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">{t.merchant.feed.url.label}</label>
-                <div className="flex gap-2">
-                  <Input 
-                    readOnly 
-                    value={feedUrl} 
-                    className="flex-1 font-mono text-sm bg-background"
-                  />
-                  <Button onClick={handleCopy} variant="default" size="lg">
-                    {copied ? (
-                      <>
-                        <Check className="w-4 h-4 mr-2" />
-                        {t.merchant.feed.url.copied}
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4 mr-2" />
-                        {t.merchant.feed.url.copy}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  <strong>{t.merchant.feed.url.note.title}</strong> {t.merchant.feed.url.note.description}
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex gap-2">
-                <Button asChild variant="default" size="lg">
-                  <a href={directFeedUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    {t.merchant.feed.url.preview}
-                  </a>
-                </Button>
-                <Button asChild variant="outline" size="lg">
-                  <a href="https://business.google.com/merchant-center/" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    {t.merchant.openMerchantCenter}
-                  </a>
-                </Button>
-              </div>
+            <div>
+              <h3 className="text-sm font-semibold">{t.merchant.feed.url.title}</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t.merchant.feed.url.description}</p>
             </div>
           </div>
-        </div>
-      </Card>
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h4 className="font-semibold">{t.merchant.feed.info.format.title}</h4>
+          <label className="text-xs font-medium">{t.merchant.feed.url.label}</label>
+          <div className="mt-2 flex gap-2">
+            <Input readOnly value={feedUrl} className="h-9 flex-1 font-mono text-xs" />
+            <Button onClick={handleCopy} variant="outline" size="sm">
+              {copied ? <Check className="mr-1.5 h-4 w-4" /> : <Copy className="mr-1.5 h-4 w-4" />}
+              {copied ? t.merchant.feed.url.copied : t.merchant.feed.url.copy}
+            </Button>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {t.merchant.feed.info.format.description}
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            <strong>catalogoptimize.com</strong> est l’URL publique à fournir à Google Merchant Center. Le test interne utilise automatiquement le backend Supabase du projet actif.
           </p>
-        </Card>
 
-        <Card className="p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-              <RefreshCw className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
-            <h4 className="font-semibold">{t.merchant.feed.info.update.title}</h4>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <a href={feedUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-1.5 h-4 w-4" />
+                {t.merchant.feed.url.preview}
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <a href="https://business.google.com/merchant-center/" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-1.5 h-4 w-4" />
+                {t.merchant.openMerchantCenter}
+              </a>
+            </Button>
           </div>
-          <p className="text-sm text-muted-foreground">{t.merchant.feed.info.update.description}</p>
         </Card>
+      </div>
 
-        <Card className="p-4 hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <h4 className="font-semibold">{t.merchant.feed.info.schedule.title}</h4>
-          </div>
-          <p className="text-sm text-muted-foreground">{t.merchant.feed.info.schedule.description}</p>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <Card className="p-4 shadow-none">
+          <p className="text-xs text-muted-foreground">{t.merchant.feed.info.format.title}</p>
+          <p className="mt-1 text-sm font-medium">{t.merchant.feed.info.format.description}</p>
+        </Card>
+        <Card className="p-4 shadow-none">
+          <p className="text-xs text-muted-foreground">{t.merchant.feed.info.update.title}</p>
+          <p className="mt-1 text-sm font-medium">{t.merchant.feed.info.update.description}</p>
+        </Card>
+        <Card className="p-4 shadow-none">
+          <p className="text-xs text-muted-foreground">{t.merchant.feed.info.schedule.title}</p>
+          <p className="mt-1 text-sm font-medium">{t.merchant.feed.info.schedule.description}</p>
         </Card>
       </div>
     </div>
