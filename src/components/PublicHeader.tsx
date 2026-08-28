@@ -30,7 +30,7 @@ export const PublicHeader = () => {
                 <Sparkles className="w-5 h-5 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold text-foreground leading-tight">NewAI</span>
+                <span className="text-xl font-bold text-foreground leading-tight">CatalogueOptimize AI</span>
                 <span className="text-[10px] text-muted-foreground leading-tight">Smart Way To Scale</span>
               </div>
             </div>
