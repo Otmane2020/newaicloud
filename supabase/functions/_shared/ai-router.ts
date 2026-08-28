@@ -87,35 +87,38 @@ async function tryOpenRouter(options: RouteOptions): Promise<AIRouteResult | nul
   }
 }
 
+/**
+ * Vision always uses Moonshot's official Kimi API directly.
+ * No OpenRouter proxy is used for image understanding.
+ * Kimi K2.6 expects image_url content as base64 data URLs.
+ */
 async function tryKimiVision(options: RouteOptions): Promise<AIRouteResult | null> {
-  const apiKey = Deno.env.get("OPENROUTER_API_KEY");
-  if (!apiKey) return null;
+  const apiKey = Deno.env.get("MOONSHOT_API_KEY") || Deno.env.get("KIMI_API_KEY");
+  if (!apiKey) {
+    console.warn("[ai-router] Kimi vision unavailable: MOONSHOT_API_KEY/KIMI_API_KEY is missing");
+    return null;
+  }
 
-  // Image understanding is deliberately Kimi-only across CatalogOptimize.
-  const model = Deno.env.get("KIMI_OPENROUTER_VISION_MODEL")
-    || Deno.env.get("OPENROUTER_VISION_MODEL")
-    || "moonshotai/kimi-k2.6:free";
+  const model = Deno.env.get("KIMI_VISION_MODEL") || "kimi-k2.6";
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetch("https://api.moonshot.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": Deno.env.get("PUBLIC_SITE_URL") || "https://catalogoptimize.com",
-        "X-Title": "CatalogOptimize AI",
       },
       body: JSON.stringify({
         model,
         messages: options.messages,
         max_tokens: options.maxTokens || 1200,
-        temperature: options.temperature ?? 0.15,
+        thinking: { type: "disabled" },
       }),
     });
 
     if (!response.ok) {
-      const detail = (await response.text().catch(() => "")).slice(0, 300);
-      console.warn(`[ai-router] Kimi vision ${model} failed: ${response.status}${detail ? ` ${detail}` : ""}`);
+      const detail = (await response.text().catch(() => "")).slice(0, 500);
+      console.warn(`[ai-router] Direct Kimi vision ${model} failed: ${response.status}${detail ? ` ${detail}` : ""}`);
       return null;
     }
 
@@ -123,7 +126,7 @@ async function tryKimiVision(options: RouteOptions): Promise<AIRouteResult | nul
     const content = data?.choices?.[0]?.message?.content?.trim();
     return content ? { content, provider: "kimi", model: data?.model || model } : null;
   } catch (error) {
-    console.warn(`[ai-router] Kimi vision ${model} request failed`, error);
+    console.warn(`[ai-router] Direct Kimi vision ${model} request failed`, error);
     return null;
   }
 }
@@ -213,12 +216,12 @@ async function tryDeepSeek(options: RouteOptions): Promise<AIRouteResult | null>
   return content ? { content, provider: "deepseek", model } : null;
 }
 
-/** Text remains cost-first. Vision is Kimi-only by design. */
+/** Text remains cost-first. Vision is direct Kimi-only by design. */
 export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
   if (options.vision) {
     const result = await tryKimiVision(options);
     if (result) return result;
-    throw new Error("Kimi vision is unavailable. Configure OPENROUTER_API_KEY and a Kimi vision model.");
+    throw new Error("Kimi direct vision is unavailable. Configure MOONSHOT_API_KEY or KIMI_API_KEY for the official Moonshot API.");
   }
 
   const attempts = [
@@ -247,6 +250,5 @@ export async function routeVision(messages: AIMessage[], maxTokens = 600): Promi
     maxTokens,
     temperature: 0.15,
     vision: true,
-    preferredFreeModel: Deno.env.get("KIMI_OPENROUTER_VISION_MODEL") || "moonshotai/kimi-k2.6:free",
   });
 }
