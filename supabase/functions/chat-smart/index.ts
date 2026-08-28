@@ -46,6 +46,8 @@ interface Product {
   currency?: string;
   description?: string;
   product_type?: string;
+  variant_count?: number;
+  inventory_quantity?: number;
   style?: string;
   room?: string;
   functionality?: string;
@@ -456,6 +458,8 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
         ai_vision_confidence: v?.ai_vision_confidence ?? p.ai_vision_confidence,
         image_url: v?.image_url ?? p.image_url,
         price: (v?.price ?? p.price)?.toString?.() ?? String(p.price ?? ""),
+        variant_count: Array.isArray(p.product_variants) ? p.product_variants.length : 0,
+        inventory_quantity: p.inventory_quantity ?? 0,
       } as Product;
     });
 
@@ -510,8 +514,8 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       `)
       .eq("status", filters.status || "active");
 
-    if (sellerId) q = q.eq("seller_id", sellerId);
-    else if (storeId) q = q.eq("store_id", storeId);
+    if (storeId) q = q.eq("store_id", storeId);
+    else if (sellerId) q = q.eq("seller_id", sellerId);
 
     if (filters.query && filters.query.trim().length > 0) {
       const terms = normalizeText(filters.query).split(" ").filter(t => t.length > 2);
@@ -536,8 +540,8 @@ async function searchProducts(filters: ProductSearchFilters, storeId?: string, s
       .select("*")
       .eq("status", filters.status || "active");
 
-    if (sellerId) q = q.eq("seller_id", sellerId);
-    else if (storeId) q = q.eq("store_id", storeId);
+    if (storeId) q = q.eq("store_id", storeId);
+    else if (sellerId) q = q.eq("seller_id", sellerId);
 
     if (filters.query && filters.query.trim().length > 0) {
       const terms = normalizeText(filters.query).split(" ").filter(t => t.length > 2);
