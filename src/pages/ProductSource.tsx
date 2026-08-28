@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Download, Eye, Loader2, Package, Sparkles } from "lucide-react";
+import { Download, Eye, Loader2, Package, Sparkles, Upload } from "lucide-react";
 
 interface ProductSourceData {
   id: string;
@@ -88,6 +88,7 @@ const ProductSource = () => {
   const [selectedProduct, setSelectedProduct] = useState<ProductSourceData | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [enriching, setEnriching] = useState(false);
+  const [syncingAttributes, setSyncingAttributes] = useState(false);
 
   const loadProducts = async () => {
     if (!user?.id) return;
@@ -245,6 +246,46 @@ const ProductSource = () => {
     setSelectedProducts(new Set(filteredProducts.map((product) => product.id)));
   };
 
+  const syncAttributesToShopify = async () => {
+    const productIds = Array.from(selectedProducts);
+    if (!productIds.length) {
+      toast.info(fr ? "Sélectionnez au moins un produit." : "Select at least one product.");
+      return;
+    }
+
+    try {
+      setSyncingAttributes(true);
+      const { data, error } = await supabase.functions.invoke("export-shopify-attributes", {
+        body: { productIds },
+      });
+
+      if (error) throw error;
+      if (!data || data.error) throw new Error(data?.error || "Shopify attribute export failed");
+
+      const attributes = Number(data.attributes_exported) || 0;
+      const exportedProducts = Number(data.products_exported) || 0;
+      const failed = Number(data.failed) || 0;
+
+      if (failed > 0) {
+        toast.warning(
+          fr ? `${exportedProducts} produit(s) envoyé(s), ${failed} échec(s).` : `${exportedProducts} product(s) exported, ${failed} failed.`,
+          { description: fr ? `${attributes} attribut(s) ajouté(s) à Shopify.` : `${attributes} attribute(s) added to Shopify.` },
+        );
+      } else {
+        toast.success(
+          fr ? `${attributes} attribut(s) ajouté(s) à Shopify.` : `${attributes} attribute(s) added to Shopify.`,
+        );
+      }
+    } catch (error: any) {
+      console.error("Shopify attribute export failed:", error);
+      toast.error(fr ? "Impossible d’ajouter les attributs à Shopify." : "Unable to add attributes to Shopify.", {
+        description: error?.message,
+      });
+    } finally {
+      setSyncingAttributes(false);
+    }
+  };
+
   const exportData = () => {
     const dataBlob = new Blob([JSON.stringify(filteredProducts, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(dataBlob);
@@ -314,7 +355,9 @@ const ProductSource = () => {
         page={fr ? "Données enrichies" : "Enriched Data"}
         count={products.length}
         title={t.seo.productSource.title}
-        description={t.seo.productSource.subtitle}
+        description={fr
+          ? "L’IA analyse couleurs, matières, dimensions, style, éclairage et arrière-plan afin d’extraire un maximum d’attributs fiables à valider puis ajouter dans Shopify."
+          : "AI analyzes colors, materials, dimensions, style, lighting, and background to extract the maximum reliable attributes for review and export to Shopify."}
         actions={
           <>
             <Button
@@ -327,6 +370,15 @@ const ProductSource = () => {
                 : enriching
                   ? t.seo.productSource.actions.enriching
                   : t.seo.productSource.actions.enrichAll}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={syncAttributesToShopify}
+              disabled={syncingAttributes || selectedProducts.size === 0}
+              title={fr ? "Ajouter les attributs validés aux métachamps Shopify" : "Add validated attributes to Shopify metafields"}
+            >
+              {syncingAttributes ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+              {fr ? "Ajouter à Shopify" : "Add to Shopify"}
             </Button>
             <details className="relative">
               <summary className="flex min-h-9 cursor-pointer list-none items-center rounded-lg border px-3 text-sm font-medium hover:bg-muted">
