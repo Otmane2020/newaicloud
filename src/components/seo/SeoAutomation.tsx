@@ -17,7 +17,8 @@ import {
   AlertCircle,
   Calendar,
   TrendingUp,
-  Target
+  Target,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
