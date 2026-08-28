@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -815,33 +816,24 @@ export function GoogleShopping() {
 
   return (
     <div className="space-y-6 pb-10">
-      <Card className="border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-violet-50 p-2.5 text-violet-700"><ShoppingBag className="h-5 w-5" /></div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-semibold text-slate-950">Google Shopping readiness</h1>
-                <Badge variant="secondary">{products.length} products</Badge>
-              </div>
-              <p className="mt-1 max-w-2xl text-sm text-slate-600">
-                Complete required identifiers and media, review the result, then synchronize approved changes.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
+      <WorkspacePageHeader
+        section="Channels"
+        page="Google Shopping"
+        count={products.length}
+        title="Google Shopping"
+        description="Complete missing product data, review the result, then synchronize approved changes."
+        actions={
+          <>
             <Button onClick={handleOptimizeAll} disabled={isOptimizing || products.length === 0}>
-              {isOptimizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />} Fix missing data
+              {isOptimizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+              Fix missing data
             </Button>
             <Button variant="outline" onClick={() => navigate("/merchant?tab=feed")}>
               <Download className="mr-2 h-4 w-4" /> Product feed
             </Button>
-            <Button variant="ghost" size="icon" onClick={fetchProducts} disabled={loading} aria-label="Refresh products">
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
-        </div>
-      </Card>
+          </>
+        }
+      />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
