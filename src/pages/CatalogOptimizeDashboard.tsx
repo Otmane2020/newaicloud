@@ -139,28 +139,43 @@ export default function CatalogOptimizeDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-7">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-        <div>
-          <Badge variant="outline" className="border-violet-200 text-violet-700">AI PRODUCT OPERATIONS</Badge>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">{fr ? "Santé du catalogue" : "Catalog health"}</h1>
-          <p className="mt-1 text-muted-foreground">{selectedStore.store_name || selectedStore.store_url}</p>
+      <section className="overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
+        <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+          <div>
+            <Badge className="border border-white/10 bg-white/10 text-violet-100 hover:bg-white/10">AI PRODUCT OPERATIONS</Badge>
+            <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">{fr ? "Pilotez la santé de votre catalogue" : "Run your catalog from one clear view"}</h1>
+            <p className="mt-3 flex items-center gap-2 text-sm text-slate-300"><Store className="h-4 w-4 text-violet-300" />{selectedStore.store_name || selectedStore.store_url}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/products?panel=import"><RefreshCw className="mr-2 h-4 w-4" />{fr ? "Importer" : "Import products"}</Link></Button>
+            <Button asChild className="bg-violet-500 hover:bg-violet-400"><Link to="/products/title-description"><ScanSearch className="mr-2 h-4 w-4" />{fr ? "Corriger le catalogue" : "Fix catalog issues"}</Link></Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild><Link to="/products?panel=import"><RefreshCw className="mr-2 h-4 w-4" />{fr ? "Importer" : "Import products"}</Link></Button>
-          <Button asChild className="bg-violet-600 hover:bg-violet-700"><Link to="/products/title-description"><ScanSearch className="mr-2 h-4 w-4" />{fr ? "Corriger le catalogue" : "Fix catalog issues"}</Link></Button>
-        </div>
-      </div>
+      </section>
 
       {scanError && (
         <Card className="border-amber-200 bg-amber-50"><CardContent className="flex items-center gap-3 p-4 text-sm text-amber-900"><AlertTriangle className="h-5 w-5" />{fr ? "L'audit n'a pas pu charger toutes les données. Réessayez après la prochaine synchronisation." : "The scan could not load all catalog data. Try again after the next sync."}</CardContent></Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card><CardContent className="p-5"><p className="text-sm text-muted-foreground">{fr ? "Santé du catalogue" : "Catalog health"}</p>{loading ? <Loader2 className="mt-4 h-6 w-6 animate-spin" /> : health === null ? <p className="mt-3 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-2 text-3xl font-semibold">{health}%</p><Progress value={health} className="mt-3" /></>}</CardContent></Card>
-        <Card><CardContent className="p-5"><Package className="h-5 w-5 text-violet-600" /><p className="mt-4 text-3xl font-semibold">{loading ? "—" : stats.total}</p><p className="text-sm text-muted-foreground">{fr ? "Produits analysés" : "Products analyzed"}</p></CardContent></Card>
-        <Card><CardContent className="p-5"><AlertTriangle className="h-5 w-5 text-amber-500" /><p className="mt-4 text-3xl font-semibold">{loading ? "—" : stats.incomplete}</p><p className="text-sm text-muted-foreground">{fr ? "Produits incomplets" : "Incomplete products"}</p></CardContent></Card>
-        <Card><CardContent className="p-5"><RefreshCw className="h-5 w-5 text-blue-600" /><p className="mt-4 text-base font-semibold">{stats.lastSync ? new Date(stats.lastSync).toLocaleString(language) : (fr ? "Aucune synchronisation" : "No sync yet")}</p><p className="mt-2 text-sm text-muted-foreground">{fr ? "Dernière synchronisation" : "Last Shopify sync"}</p></CardContent></Card>
-      </div>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="overflow-hidden border-violet-100 shadow-sm">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between"><p className="text-sm font-medium text-slate-500">{fr ? "Santé du catalogue" : "Catalog health"}</p><span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-50 text-violet-700"><Sparkles className="h-4 w-4" /></span></div>
+            {loading ? <Loader2 className="mt-5 h-6 w-6 animate-spin text-violet-600" /> : health === null ? <p className="mt-5 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-4 text-3xl font-semibold tracking-tight">{health}%</p><Progress value={health} className="mt-3 h-2" /></>}
+          </CardContent>
+        </Card>
+        {[
+          { label: fr ? "Produits analysés" : "Products analyzed", value: loading ? "—" : stats.total, detail: fr ? "Catalogue importé" : "Imported catalog", icon: Package, tone: "bg-blue-50 text-blue-700" },
+          { label: fr ? "Produits incomplets" : "Incomplete products", value: loading ? "—" : stats.incomplete, detail: fr ? "À traiter en priorité" : "Priority work queue", icon: AlertTriangle, tone: "bg-amber-50 text-amber-700" },
+          { label: fr ? "Dernière synchronisation" : "Last Shopify sync", value: stats.lastSync ? new Date(stats.lastSync).toLocaleDateString(language) : "—", detail: stats.lastSync ? new Date(stats.lastSync).toLocaleTimeString(language, { hour: "2-digit", minute: "2-digit" }) : (fr ? "Aucune synchronisation" : "No sync yet"), icon: RefreshCw, tone: "bg-emerald-50 text-emerald-700" },
+        ].map(({ label, value, detail, icon: Icon, tone }) => (
+          <Card key={label} className="border-slate-200 shadow-sm">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-4 text-3xl font-semibold tracking-tight">{value}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></div><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${tone}`}><Icon className="h-4 w-4" /></span></div>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
 
       <div className="grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
         <Card>
