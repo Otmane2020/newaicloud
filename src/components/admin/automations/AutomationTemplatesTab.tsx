@@ -30,7 +30,7 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
   {
     id: 'cart_abandoned',
     name: 'Panier abandonné',
-    subject: '🛒 Votre panier vous attend - NewAI',
+    subject: '🛒 Votre panier vous attend - CatalogueOptimize AI',
     description: 'Email envoyé 1h après abandon du panier',
     icon: ShoppingCart,
     variables: ['{{customer_name}}', '{{cart_url}}', '{{product_list}}']
@@ -38,7 +38,7 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
   {
     id: 'onboarding_abandoned',
     name: 'Onboarding abandonné',
-    subject: '🎁 Votre essai gratuit vous attend - NewAI',
+    subject: '🎁 Votre essai gratuit vous attend - CatalogueOptimize AI',
     description: 'Rappel pour utilisateurs n\'ayant pas finalisé leur inscription',
     icon: Users,
     variables: ['{{customer_name}}', '{{signup_date}}']
@@ -46,7 +46,7 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
   {
     id: 'reminder_24h',
     name: 'Rappel promo 24h',
-    subject: '⏰ Plus que 24h pour profiter de -50% - NewAI',
+    subject: '⏰ Plus que 24h pour profiter de -50% - CatalogueOptimize AI',
     description: 'Offre promotionnelle -50% avec code WELCOME50',
     icon: Gift,
     variables: ['{{customer_name}}', '{{promo_code}}', '{{expiry_date}}']
@@ -64,7 +64,7 @@ export function AutomationTemplatesTab() {
       cart_abandoned: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; padding: 20px;">
-            <div style="font-size: 28px; font-weight: bold; color: #6366f1;">NewAI</div>
+            <div style="font-size: 28px; font-weight: bold; color: #6366f1;">CatalogueOptimize AI</div>
           </div>
           <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin: 20px 0;">
             <h1 style="margin-top: 0;">Vous avez oublié quelque chose ! 🛒</h1>
@@ -84,7 +84,7 @@ export function AutomationTemplatesTab() {
       onboarding_abandoned: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; padding: 20px;">
-            <div style="font-size: 28px; font-weight: bold; color: #6366f1;">NewAI</div>
+            <div style="font-size: 28px; font-weight: bold; color: #6366f1;">CatalogueOptimize AI</div>
           </div>
           <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin: 20px 0;">
             <h1 style="margin-top: 0;">Vous êtes si proche de booster vos ventes ! 🚀</h1>
@@ -107,7 +107,7 @@ export function AutomationTemplatesTab() {
       reminder_24h: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; padding: 20px;">
-            <div style="font-size: 28px; font-weight: bold; color: #6366f1;">NewAI</div>
+            <div style="font-size: 28px; font-weight: bold; color: #6366f1;">CatalogueOptimize AI</div>
           </div>
           <div style="background: #f8fafc; border-radius: 12px; padding: 30px; margin: 20px 0;">
             <h1 style="margin-top: 0;">🎉 Offre spéciale pour vous !</h1>
