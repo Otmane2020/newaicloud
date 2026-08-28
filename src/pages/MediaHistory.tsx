@@ -557,7 +557,14 @@ export default function MediaHistory() {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">\n        <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-violet-950 to-fuchsia-700 p-6 text-white shadow-2xl shadow-violet-950/15 sm:p-8">\n          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-violet-100"><ImageIcon className="h-3.5 w-3.5" /> AI media library</div>\n          <h1 className="text-3xl font-bold text-white sm:text-4xl">Historique des images IA</h1>\n          <p className="mt-2 max-w-2xl text-sm text-violet-100 sm:text-base">\n            Retrouvez toutes vos images générées par IA et restaurez les versions précédentes\n          </p>\n        </div>
+      <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="workspace-hero rounded-3xl bg-gradient-to-br from-slate-950 via-violet-950 to-fuchsia-700 p-6 text-white shadow-2xl shadow-violet-950/15 sm:p-8">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-violet-100"><ImageIcon className="h-3.5 w-3.5" /> AI media library</div>
+          <h1 className="text-3xl font-bold text-white sm:text-4xl">Historique des images IA</h1>
+          <p className="mt-2 max-w-2xl text-sm text-violet-100 sm:text-base">
+            Retrouvez toutes vos images générées par IA et restaurez les versions précédentes
+          </p>
+        </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="overflow-x-auto">
