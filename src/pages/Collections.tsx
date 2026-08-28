@@ -474,74 +474,31 @@ export default function Collections() {
           <p className="mt-2 text-sm text-violet-100 sm:text-base">{t.collections.subtitle}</p>
         </div>
         
-        <div className="mt-6 flex flex-wrap gap-2 lg:mt-0">
-          <Button
-            onClick={handleImportCollections}
-            disabled={importing || syncing}
-            variant="outline"
-          >
-            {importing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {t.collections.import.importing}
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4 mr-2" />
-                {t.collections.import.button}
-              </>
-            )}
+        <div className="mt-5 flex flex-wrap items-center gap-2 lg:mt-0 lg:justify-end">
+          {collections.length === 0 ? (
+            <Button onClick={handleImportCollections} disabled={importing || syncing} className="bg-white text-violet-950 hover:bg-violet-50">
+              {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+              {importing ? t.collections.import.importing : t.collections.import.button}
+            </Button>
+          ) : (
+            <Button onClick={handleGenerateAICollections} disabled={importing || syncing || generatingCollections} className="bg-white text-violet-950 hover:bg-violet-50">
+              {generatingCollections ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              {generatingCollections ? t.collections.generate.generating : t.collections.generate.button}
+            </Button>
+          )}
+          <Button onClick={handleSyncProductCollections} disabled={importing || syncing} variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white">
+            {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            {syncing ? t.sync.syncing : t.sync.syncButton}
           </Button>
-          <Button
-            onClick={handleSyncProductCollections}
-            disabled={importing || syncing}
-            variant="outline"
-          >
-            {syncing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {t.sync.syncing}
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                {t.sync.syncButton}
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={handleFullImport}
-            disabled={importing || syncing}
-          >
-            {importing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {t.sync.fullImportInProgress}
-              </>
-            ) : (
-              <>
-                <FileText className="w-4 h-4 mr-2" />
-                {t.sync.fullImportButton}
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={handleGenerateAICollections}
-            disabled={importing || syncing || generatingCollections}
-            className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white"
-          >
-            {generatingCollections ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {t.collections.generate.generating}
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                {t.collections.generate.button}
-              </>
-            )}
-          </Button>
+          <details className="relative">
+            <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium text-white hover:bg-white/10">
+              <FileText className="mr-2 h-4 w-4" /> {language === "fr" ? "Plus" : "More"}
+            </summary>
+            <div className="absolute right-0 z-20 mt-2 grid w-56 gap-1 rounded-xl border bg-white p-2 shadow-xl">
+              {collections.length > 0 && <Button onClick={handleImportCollections} disabled={importing || syncing} variant="ghost" className="justify-start text-slate-700"><Upload className="mr-2 h-4 w-4" />{t.collections.import.button}</Button>}
+              <Button onClick={handleFullImport} disabled={importing || syncing} variant="ghost" className="justify-start text-slate-700"><FileText className="mr-2 h-4 w-4" />{importing ? t.sync.fullImportInProgress : t.sync.fullImportButton}</Button>
+            </div>
+          </details>
         </div>
       </div>
 
