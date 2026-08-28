@@ -44,7 +44,7 @@ serve(async (req) => {
 
     if (userError || !user) throw new Error('Unauthorized');
 
-    const { product_ids } = await req.json();
+    const { product_ids } = body as any;
     console.log(`📦 [SYNC-PRICING] Syncing ${product_ids.length} product(s)`);
 
     // Get user's Shopify connection

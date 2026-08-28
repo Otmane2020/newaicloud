@@ -29,7 +29,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { article_id } = await req.json();
+    const { article_id } = body as any;
     console.log(`📰 [SYNC-ARTICLE-IMAGE] Article ID: ${article_id}`);
 
     // Get article data

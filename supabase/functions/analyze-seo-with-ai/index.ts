@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
       throw new Error(TRANSLATIONS[lang].apiKeyNotConfigured.replace('LOVABLE_API_KEY', 'GOOGLE_GEMINI_API_KEY'));
     }
 
-    const analysisData: SeoAnalysisInput = await req.json();
+    const analysisData = body as SeoAnalysisInput;
 
     // Prepare concise analysis prompt for automated actions
     const input = {

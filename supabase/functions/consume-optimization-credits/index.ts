@@ -66,7 +66,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const body: ConsumeRequest = await req.json();
+    const consumeBody = body as ConsumeRequest;
     const { actionType, frequency } = body;
 
     // Calculate cost based on action type and frequency

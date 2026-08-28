@@ -27,7 +27,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    const requestBody = await req.json().catch(() => ({}));
+    const requestBody = body;
     const { title, category, keywords } = requestBody;
 
     if (!title) {

@@ -27,7 +27,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    const requestBody = await req.json().catch(() => ({}));
+    const requestBody = body;
     const count = requestBody.count || 10;
 
     const systemPrompt = `You are an SEO content strategist for NewAI, a SaaS platform that helps Shopify merchants optimize their stores with AI. 

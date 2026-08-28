@@ -31,7 +31,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { collection_id } = await req.json();
+    const { collection_id } = body as any;
     console.log(`📦 [SYNC-IMAGE] Collection ID: ${collection_id}`);
 
     // Get collection data with user info
