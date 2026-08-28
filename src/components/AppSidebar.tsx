@@ -29,9 +29,7 @@ const groups: NavGroup[] = [
     { label: "Categories & tags", to: "/seo?tab=tags", icon: Tags },
   ]},
   { label: "Media", icon: Image, items: [
-    { label: "Studio", to: "/products/title-description?view=images", icon: Image },
-    { label: "ALT text", to: "/seo?tab=alt", icon: Tags },
-    { label: "History", to: "/products/media-history", icon: History },
+    { label: "Image Studio", to: "/products/title-description?view=images", icon: Image },
   ]},
   { label: "Pricing", icon: CreditCard, items: [
     { label: "Costs & margins", to: "/pricing?tab=costs", icon: CreditCard },
