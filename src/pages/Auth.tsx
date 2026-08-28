@@ -20,7 +20,14 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode') === 'signup' || searchParams.get('signup') === 'true' ? 'signup' : 'login';
   const referralCode = searchParams.get('ref');
-  const redirectPath = searchParams.get('redirect');
+  const requestedRedirect = searchParams.get('redirect');
+  const redirectPath =
+    requestedRedirect &&
+    requestedRedirect.startsWith('/') &&
+    !requestedRedirect.startsWith('//') &&
+    !['/', '/home', '/auth'].includes(requestedRedirect.split('?')[0])
+      ? requestedRedirect
+      : '/dashboard';
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -104,8 +111,7 @@ export default function Auth() {
           }
         } else {
           // Redirection normale sans Shopify pending
-          const destination = redirectPath || '/dashboard';
-          navigate(destination);
+          navigate(redirectPath, { replace: true });
         }
       } catch (error: any) {
         console.error('[Auth] Redirect check error:', error);
