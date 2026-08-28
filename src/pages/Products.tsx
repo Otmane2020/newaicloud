@@ -701,7 +701,7 @@ export default function Products() {
     <div className="space-y-6 pb-10">
       <SimpleSyncProgress open={isSyncing} currentType={currentSyncType} />
 
-      <section className="overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
+      <section className="workspace-hero overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
         <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -725,9 +725,11 @@ export default function Products() {
             }} variant="outline" disabled={isSyncing || !selectedStore} className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
               <RefreshCw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} /> Synchroniser
             </Button>
-            <Button size="sm" onClick={() => navigate("/app/setup-wizard")} className="bg-violet-500 hover:bg-violet-400">
-              <Plus className="mr-2 h-4 w-4" /> {t.products.importProducts}
-            </Button>
+            {totalCount === 0 && (
+              <Button size="sm" onClick={() => navigate("/app/setup-wizard")} className="bg-violet-500 hover:bg-violet-400">
+                <Plus className="mr-2 h-4 w-4" /> {t.products.importProducts}
+              </Button>
+            )}
           </div>
         </div>
       </section>
