@@ -200,25 +200,21 @@ export default function CronMonitoring() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="mx-auto w-full max-w-[1600px] space-y-5">
+      <section className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Monitoring des Synchronisations</h1>
-          <p className="text-muted-foreground">
-            Suivez l'état des synchronisations automatiques en temps réel
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">Tâches & historique</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Surveillez les automatisations, repérez les retards et relancez uniquement la tâche concernée.</p>
         </div>
         <Button onClick={loadCronStatus} variant="outline" size="sm">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Actualiser
+          <RefreshCw className="mr-2 h-4 w-4" /> Actualiser
         </Button>
-      </div>
+      </section>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Tâches actives</p>
@@ -232,7 +228,7 @@ export default function CronMonitoring() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">En retard</p>
@@ -246,7 +242,7 @@ export default function CronMonitoring() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Jamais exécuté</p>
