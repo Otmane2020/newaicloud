@@ -21,15 +21,15 @@ type RouteOptions = {
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_GENERIC_FREE_MODEL = "openrouter/free";
 const KIMI_FREE_MODEL = "moonshotai/kimi-k2.6:free";
-const DEEPSEEK_FREE_MODEL = "deepseek/deepseek-r1:free";
-const GEMINI_FREE_MODEL = "gemini-3.5-flash-lite";
+const DEEPSEEK_FREE_MODEL = "deepseek/deepseek-v4-flash:free";
+const GEMINI_FREE_MODEL = "gemini-3.1-flash-lite";
 
-// Keep Gemini pinned to models that currently expose a Google AI Studio free tier.
+// Only models currently documented with a Google AI Studio free tier are accepted.
 // Unknown/custom model ids are ignored so a paid Gemini SKU cannot be enabled accidentally.
 const GEMINI_FREE_MODELS = new Set([
-  "gemini-3.5-flash-lite",
   "gemini-3.1-flash-lite",
   "gemini-2.5-flash-lite",
+  "gemini-2.5-flash-lite-preview-09-2025",
 ]);
 
 function isOpenRouterFreeModel(model: string | undefined | null): boolean {
