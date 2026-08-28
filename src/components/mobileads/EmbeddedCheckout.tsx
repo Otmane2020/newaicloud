@@ -565,7 +565,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
             <span className="text-white font-bold text-xs">N</span>
           </div>
-          <span className="font-bold text-gray-900">NewAI</span>
+          <span className="font-bold text-gray-900">CatalogueOptimize AI</span>
           <span className="text-gray-400 text-sm">Checkout</span>
         </div>
         <button type="button" onClick={onClose} className="text-violet-600 text-sm font-medium hover:underline">
@@ -619,7 +619,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
             </div>
             
             <p className="text-xs text-gray-500">
-              Use this password to access your NewAI dashboard.
+              Use this password to access your CatalogueOptimize AI dashboard.
             </p>
           </div>
         </section>
@@ -763,7 +763,7 @@ function CheckoutForm({ selectedPlan, billingPeriod, onClose }: EmbeddedCheckout
             </div>
             
             <p className="text-xs text-gray-500">
-              By subscribing, you authorize NewAI to charge you according to the terms until you cancel.
+              By subscribing, you authorize CatalogueOptimize AI to charge you according to the terms until you cancel.
             </p>
           </div>
 
