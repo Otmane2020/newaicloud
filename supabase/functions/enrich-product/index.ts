@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { resolveLanguage, getLanguageInstructions, getLanguageName, getGenerationLanguage } from "../_shared/language-detector.ts";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,42 +12,14 @@ interface EnrichmentRequest {
   productId: string;
 }
 
-async function callDeepSeek(messages: any[], maxTokens = 500) {
-  const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
-
-  if (!deepseekApiKey) {
-    throw new Error('DeepSeek API key not configured');
-  }
-
-  try {
-    console.log(`🔁 DeepSeek API call`);
-
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${deepseekApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages,
-        temperature: 0.5,
-        max_tokens: maxTokens,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('DeepSeek API error:', errorText);
-      throw new Error(`DeepSeek API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
-  } catch (error) {
-    console.error('❌ Error calling DeepSeek:', error);
-    throw error;
-  }
+async function callAI(messages: any[], maxTokens = 500) {
+  const routedAI = await routeAI({
+    messages,
+    maxTokens,
+    temperature: 0.5,
+  });
+  console.log(`[enrich-product] AI provider: ${routedAI.provider}, model: ${routedAI.model}`);
+  return routedAI;
 }
 
 // Helper pour parser les dimensions Vision AI (format: "75cm" ou "75" ou 75)
@@ -257,7 +230,7 @@ Deno.serve(async (req: Request) => {
       .limit(3);
 
     if (images && images.length > 0) {
-      console.log(`📸 Found ${images.length} images, analyzing with Gemini Vision...`);
+      console.log(`📸 Found ${images.length} images, analyzing with Vision AI...`);
       
       // ✅ Analyser TOUTES les images (pas de limite)
       const maxImages = images.length;
@@ -338,8 +311,8 @@ Deno.serve(async (req: Request) => {
       console.log('⏭️ No product images found, skipping Vision AI');
     }
 
-    // ============ PHASE 2: DEEPSEEK AI COMPLETION (FILLS REMAINING GAPS) ============
-    console.log('🤖 Phase 2: DeepSeek AI completing missing attributes...');
+    // ============ PHASE 2: AI COMPLETION (FILLS REMAINING GAPS) ============
+    console.log('🤖 Phase 2: AI completion for missing attributes...');
 
     // Build multilingual prompt based on detected language
     const visionDataSummary = visionAttributes ? (detectedLanguage === 'en' ? `
@@ -480,13 +453,13 @@ Si une information n'est pas disponible ou applicable, utilise null.
 
 Réponds UNIQUEMENT en JSON valide.`;
 
-    console.log('🤖 Calling DeepSeek API for attribute detection...');
+    console.log('🤖 Calling resilient AI router for attribute detection...');
     
     const systemPrompt = detectedLanguage === 'en' 
       ? 'You are an e-commerce product analysis expert. Respond ONLY in valid JSON without comments.'
       : 'Tu es un expert en analyse de produits e-commerce. Réponds UNIQUEMENT en JSON valide sans commentaires.';
     
-    const aiResponse = await callDeepSeek([
+    const routedAI = await callAI([
       {
         role: 'system',
         content: systemPrompt
@@ -497,9 +470,9 @@ Réponds UNIQUEMENT en JSON valide.`;
       }
     ], 1500);
 
-    console.log('✅ AI response received');
+    console.log(`✅ AI response received via ${routedAI.provider} (${routedAI.model})`);
 
-    const parsedData = parseAIResponse(aiResponse);
+    const parsedData = parseAIResponse(routedAI.content);
 
     if (!parsedData) {
       throw new Error('Failed to parse AI response');
@@ -631,7 +604,7 @@ Réponds UNIQUEMENT en JSON valide.`;
       vision_timestamp: visionAttributes ? new Date().toISOString() : null,
       vision_model: visionAttributes ? 'google/gemini-2.5-flash' : null,
       
-      // Visual attributes (from DeepSeek, unless overridden by Vision)
+      // Visual attributes (from routed AI, unless overridden by Vision)
       ai_color: visionAttributes?.primaryColor || parsedData.ai_color || null,
       ai_material: visionAttributes?.materials?.join(', ') || parsedData.ai_material || null,
       ai_shape: parsedData.ai_shape || null,
@@ -640,9 +613,9 @@ Réponds UNIQUEMENT en JSON valide.`;
       ai_finish: visionAttributes?.finish || parsedData.ai_finish || null,
       ai_design_elements: parsedData.ai_design_elements || null,
       
-      // Vision AI analysis
+      // AI analysis
       ai_vision_analysis: parsedData.ai_vision_analysis || null,
-      ai_vision_model: 'deepseek-chat',
+      ai_vision_model: routedAI.model,
       ai_vision_timestamp: new Date().toISOString(),
       ai_vision_confidence: qualityScore !== null
         ? qualityScore
@@ -773,7 +746,9 @@ Réponds UNIQUEMENT en JSON valide.`;
     return new Response(
       JSON.stringify({
         success: true,
-        attributes: parsedData
+        attributes: parsedData,
+        ai_provider: routedAI.provider,
+        ai_model: routedAI.model,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
