@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { CatalogOptimizeSidebar } from "@/components/CatalogOptimizeSidebar";
@@ -23,6 +23,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { isSyncing } = useAutoSyncProgress();
   const { limits } = useUsageLimits();
   const { language } = useTranslation();
+  const { pathname } = useLocation();
   
   // ✅ Global 10s timeout state
   const [globalTimeout, setGlobalTimeout] = useState(false);
@@ -155,7 +156,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <LimitWarningBanner />
-            {!storesLoading && !isSyncing && stores.length === 0 && (
+            {!storesLoading && !isSyncing && stores.length === 0 && pathname !== "/shopping" && (
               <div className="px-3 sm:px-4 md:px-6 lg:px-8 mt-3">
                 <NoStoreConnectedPrompt />
               </div>
