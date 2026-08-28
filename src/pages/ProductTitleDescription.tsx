@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -203,6 +203,9 @@ interface PreviewImage {
 
 export default function ProductTitleDescription() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedView = searchParams.get("view") || "content";
+  const workspace = requestedView === "landing" ? "landing" : requestedView === "images" || requestedView === "gallery" ? "images" : requestedView === "bulk" ? "bulk" : "content";
   const { t, tf, language } = useTranslation();
   const { limits, canDoAction, refresh: refreshLimits } = useUsageLimits();
   const { selectedStore } = useStore();
@@ -1965,121 +1968,74 @@ export default function ProductTitleDescription() {
               </h1>
               <p className="max-w-2xl text-sm text-violet-100 sm:text-base">{t.contentOptimization.hero.description}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 onClick={() => {
                   if (!canDoAction("optimizations")) {
-                    toast.error("Limite d'optimisations atteinte");
+                    toast.error(t.contentOptimization.toasts.limitReached);
                     setShowUpgradeDialog(true);
+                    return;
+                  }
+                  if (workspace === "images") {
+                    setSelectedProducts(new Set(filteredProducts.map((product) => product.id)));
+                    setShowBulkAIImagesDialog(true);
+                    return;
+                  }
+                  if (workspace === "landing") {
+                    setSelectedProducts(new Set(filteredProducts.map((product) => product.id)));
+                    setShowBulkLandingConfigDialog(true);
                     return;
                   }
                   handleOptimizeAll();
                 }}
                 disabled={generating || filteredProducts.length === 0}
-                size="lg"
-                className="gap-2"
+                className="bg-white text-violet-950 hover:bg-violet-50"
               >
-                {generating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t.contentOptimization.buttons.optimizing}
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="h-4 w-4" />
-                    {t.contentOptimization.buttons.optimizeAll}
-                  </>
-                )}
+                {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : workspace === "images" ? <Images className="mr-2 h-4 w-4" /> : workspace === "landing" ? <FileText className="mr-2 h-4 w-4" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                {workspace === "images" ? "Generate images" : workspace === "landing" ? "Generate landing pages" : t.contentOptimization.buttons.optimizeAll}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => {
-                  const productsToSync = filteredProducts.filter(
-                    (p) => p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title),
-                  );
-
+                  const productsToSync = filteredProducts.filter((product) => product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title));
                   if (productsToSync.length === 0) {
                     toast.error(t.contentOptimization.toasts.noProductToSync);
                     return;
                   }
-
                   setSyncProducts(productsToSync);
                   setShowSyncProgressDialog(true);
                 }}
                 disabled={syncingToShopify}
-                size="lg"
-                className="gap-2"
+                className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
               >
-                {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {syncingToShopify ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                 {t.contentOptimization.buttons.syncAll}
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const productsToSync = Array.from(selectedProducts)
-                    .map((id) => products.find((p) => p.id === id))
-                    .filter((p) => p && p.shopify_id && (hasRichHtmlDescription(p) || p.seo_title)) as Product[];
-
-                  if (productsToSync.length === 0) {
-                    toast.error(t.contentOptimization.toasts.noSelectedProduct);
-                    return;
-                  }
-
-                  setSyncProducts(productsToSync);
-                  setShowSyncProgressDialog(true);
-                }}
-                disabled={syncingToShopify || selectedProducts.size === 0}
-                size="lg"
-                className="gap-2"
-              >
-                {syncingToShopify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                {t.contentOptimization.buttons.syncSelected} ({selectedProducts.size})
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (filteredProducts.length === 0) {
-                    toast.error(t.contentOptimization.toasts.noProductToExport);
-                    return;
-                  }
-                  try {
-                    exportProductsToCSV(filteredProducts, language);
-                    toast.success(tf('contentOptimization.toasts.exportSuccess', { count: filteredProducts.length }));
-                  } catch (e) {
-                    toast.error(t.contentOptimization.toasts.exportError);
-                  }
-                }}
-                disabled={filteredProducts.length === 0}
-                size="lg"
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                {t.contentOptimization.buttons.exportCSV}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (filteredProducts.length === 0) {
-                    toast.error(t.contentOptimization.toasts.noProductToExport);
-                    return;
-                  }
-                  try {
-                    exportProductsToExcel(filteredProducts, language);
-                    toast.success(tf('contentOptimization.toasts.exportSuccess', { count: filteredProducts.length }));
-                  } catch (e) {
-                    toast.error(t.contentOptimization.toasts.exportError);
-                  }
-                }}
-                disabled={filteredProducts.length === 0}
-                size="lg"
-                className="gap-2"
-              >
-                <FileSpreadsheet className="h-4 w-4" />
-                {t.contentOptimization.buttons.exportExcel}
-              </Button>
+              <details className="relative">
+                <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium text-white hover:bg-white/10">
+                  <Download className="mr-2 h-4 w-4" /> Export
+                </summary>
+                <div className="absolute right-0 z-30 mt-2 grid w-48 gap-1 rounded-xl border bg-white p-2 shadow-xl">
+                  <Button variant="ghost" className="justify-start text-slate-700" onClick={() => exportProductsToCSV(filteredProducts, language)}><Download className="mr-2 h-4 w-4" /> CSV</Button>
+                  <Button variant="ghost" className="justify-start text-slate-700" onClick={() => exportProductsToExcel(filteredProducts, language)}><FileSpreadsheet className="mr-2 h-4 w-4" /> Excel</Button>
+                </div>
+              </details>
             </div>
           </div>
         </Card>
+
+        <nav className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm lg:grid-cols-4" aria-label="Product workspace">
+          {[
+            { id: "content", label: language === "fr" ? "Contenu" : "Content", icon: FileText },
+            { id: "landing", label: "Landing pages", icon: Sparkles },
+            { id: "images", label: language === "fr" ? "Images" : "Images", icon: Images },
+            { id: "bulk", label: language === "fr" ? "Actions groupées" : "Bulk actions", icon: Layers },
+          ].map(({ id, label, icon: Icon }) => (
+            <Button key={id} type="button" variant={workspace === id ? "default" : "ghost"} onClick={() => setSearchParams({ view: id })} className="justify-start gap-2">
+              <Icon className="h-4 w-4" />{label}
+            </Button>
+          ))}
+        </nav>
 
         {/* Total Products Header */}
         <div className="flex items-center gap-3 mb-4">
