@@ -1953,17 +1953,17 @@ export default function ProductTitleDescription() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto w-full max-w-[1600px] space-y-6">
         {/* Hero Banner */}
-        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-primary/20 p-6 sm:p-8">
+        <Card className="overflow-hidden rounded-3xl border-white/10 bg-gradient-to-br from-slate-950 via-violet-950 to-violet-700 p-6 text-white shadow-2xl shadow-violet-950/15 sm:p-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-                <Sparkles className="h-6 w-6 sm:h-8 sm:h-8 text-primary" />
+              <h1 className="flex items-center gap-2 text-3xl font-bold text-white sm:text-4xl">
+                <Sparkles className="h-7 w-7 text-violet-200 sm:h-8 sm:w-8" />
                 {t.contentOptimization.hero.title}
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">{t.contentOptimization.hero.description}</p>
+              <p className="max-w-2xl text-sm text-violet-100 sm:text-base">{t.contentOptimization.hero.description}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
