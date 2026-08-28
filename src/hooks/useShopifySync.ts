@@ -339,25 +339,40 @@ export const useShopifySync = () => {
 
       let catalogScore: number | null = null;
       try {
-        const { data: scoreProducts, error: scoreError } = await supabase
-          .from('shopify_products')
-          .select('title,seo_title,seo_description,image_url,tags,google_product_category,google_mpn,google_condition,google_gtin,google_white_background')
-          .eq('store_id', storeToSync.id)
-          .range(0, 9999);
+        const [productsResult, collectionsResult, pagesResult, articlesResult] = await Promise.all([
+          supabase.from('shopify_products').select('title,seo_title,seo_description,image_url,tags,google_product_category,google_mpn,google_condition,google_gtin,google_white_background').eq('store_id', storeToSync.id).range(0, 9999),
+          supabase.from('shopify_collections').select('seo_title,seo_description').eq('store_id', storeToSync.id).range(0, 9999),
+          supabase.from('shopify_pages').select('seo_title,seo_description').eq('store_id', storeToSync.id).range(0, 9999),
+          supabase.from('blog_articles').select('seo_title,meta_description').eq('store_id', storeToSync.id).range(0, 9999),
+        ]);
+        if (productsResult.error) throw productsResult.error;
 
-        if (scoreError) throw scoreError;
-
-        const catalog = scoreProducts || [];
+        const catalog = productsResult.data || [];
         if (catalog.length > 0) {
           const hasTags = (tags: unknown) => Array.isArray(tags) ? tags.length > 0 : Boolean(String(tags || '').trim());
           const contentFailures = catalog.filter((product) => !product.title?.trim()).length
             + catalog.filter((product) => !product.image_url?.trim()).length
             + catalog.filter((product) => !hasTags(product.tags)).length;
-          const seoFailures = catalog.filter((product) => !product.seo_title?.trim()).length
+          const productSeoFailures = catalog.filter((product) => !product.seo_title?.trim()).length
             + catalog.filter((product) => !product.seo_description?.trim()).length;
-
           const contentScore = Math.max(0, Math.round((((catalog.length * 3) - contentFailures) / (catalog.length * 3)) * 100));
-          const seoScore = Math.max(0, Math.round((((catalog.length * 2) - seoFailures) / (catalog.length * 2)) * 100));
+          const productSeoScore = Math.max(0, Math.round((((catalog.length * 2) - productSeoFailures) / (catalog.length * 2)) * 100));
+
+          const resourceScore = (rows: Array<Record<string, unknown>>, descriptionField: string) => {
+            if (!rows.length) return null;
+            const failures = rows.filter((row) => !String(row.seo_title || '').trim()).length + rows.filter((row) => !String(row[descriptionField] || '').trim()).length;
+            return Math.max(0, Math.round((((rows.length * 2) - failures) / (rows.length * 2)) * 100));
+          };
+          const collectionSeoScore = resourceScore((collectionsResult.data || []) as Array<Record<string, unknown>>, 'seo_description');
+          const pageSeoScore = resourceScore((pagesResult.data || []) as Array<Record<string, unknown>>, 'seo_description');
+          const articleSeoScore = resourceScore((articlesResult.data || []) as Array<Record<string, unknown>>, 'meta_description');
+          const seoParts = [
+            { value: productSeoScore, weight: 50 }, { value: collectionSeoScore, weight: 20 },
+            { value: pageSeoScore, weight: 15 }, { value: articleSeoScore, weight: 15 },
+          ].filter((part): part is { value: number; weight: number } => part.value !== null);
+          const seoWeight = seoParts.reduce((sum, part) => sum + part.weight, 0);
+          const seoScore = Math.round(seoParts.reduce((sum, part) => sum + part.value * part.weight, 0) / seoWeight);
+
           const shoppingFailures = catalog.filter((product) => !product.google_product_category?.trim()).length
             + catalog.filter((product) => !product.google_gtin?.trim()).length
             + catalog.filter((product) => !product.google_mpn?.trim()).length
@@ -366,10 +381,9 @@ export const useShopifySync = () => {
           const shoppingScore = Math.max(0, Math.round((((catalog.length * 5) - shoppingFailures) / (catalog.length * 5)) * 100));
 
           catalogScore = Math.round(contentScore * 0.6 + seoScore * 0.4);
-          window.dispatchEvent(new CustomEvent('catalog-score-updated', {
-            detail: { storeId: storeToSync.id, catalogScore, contentScore, seoScore, shoppingScore, products: catalog.length }
-          }));
-          console.log('✅ [CATALOG ANALYSIS]', { catalogScore, contentScore, seoScore, shoppingScore, products: catalog.length });
+          const detail = { storeId: storeToSync.id, catalogScore, contentScore, seoScore, productSeoScore, collectionSeoScore, pageSeoScore, articleSeoScore, shoppingScore, products: catalog.length };
+          window.dispatchEvent(new CustomEvent('catalog-score-updated', { detail }));
+          console.log('✅ [CATALOG ANALYSIS]', detail);
         }
       } catch (analysisError) {
         console.error('⚠️ [CATALOG ANALYSIS] Score calculation failed:', analysisError);
