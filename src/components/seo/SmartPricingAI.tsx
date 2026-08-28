@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -1628,15 +1629,19 @@ export function SmartPricingAI() {
 
   return (
     <div className="space-y-6">
-      <Card className="border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="rounded-xl bg-violet-50 p-2.5 text-violet-700"><DollarSign className="h-5 w-5" /></div>
-          <div>
-            <h2 className="text-xl font-semibold text-slate-950">{t.smartPricing.title}</h2>
-            <p className="mt-1 max-w-2xl text-sm text-slate-600">{t.smartPricing.description}</p>
-          </div>
-        </div>
-      </Card>
+      <WorkspacePageHeader
+        section="Pricing"
+        page={pricingWorkspace === "costs" ? "Costs & Margins" : pricingWorkspace === "competitors" ? "Competitor Prices" : "Recommendations"}
+        count={products.length}
+        title={pricingWorkspace === "costs" ? "Costs & Margins" : pricingWorkspace === "competitors" ? "Competitor Prices" : "Price Recommendations"}
+        description={
+          pricingWorkspace === "costs"
+            ? "Review costs and margins before changing Shopify prices."
+            : pricingWorkspace === "competitors"
+              ? "Compare market prices for the selected products."
+              : "Review AI suggestions before applying any price."
+        }
+      />
 
       <nav className="grid grid-cols-1 gap-2 rounded-xl border bg-white p-2 sm:grid-cols-3" aria-label="Pricing workspace">
         {[
