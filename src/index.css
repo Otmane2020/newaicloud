@@ -747,9 +747,8 @@ label {
     border-color: hsl(var(--primary) / 0.2);
   }
 
-  .catalog-workspace .rounded-lg.border,
-  .catalog-workspace .rounded-xl.border,
-  .catalog-workspace [class*="rounded-"][class*="border"][class*="bg-card"] {
+  .catalog-workspace [class*="rounded-"][class*="bg-card"],
+  .catalog-workspace [class*="rounded-"][class*="bg-background"] {
     border-color: hsl(var(--border) / 0.78);
     box-shadow: 0 18px 45px -38px hsl(222 47% 11% / 0.5);
   }
