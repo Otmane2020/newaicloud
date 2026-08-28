@@ -20,58 +20,6 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function cleanFallbackAlt(value: string): string {
-  return value
-    .replace(/^["'`]+|["'`]+$/g, "")
-    .replace(/^(alt(?: text)?\s*:?\s*|image of\s+|photo of\s+|image de\s+|photo de\s+)/i, "")
-    .replace(/^[-*•]\s*/, "")
-    .split(/\n|•/)[0]
-    .trim()
-    .slice(0, 125);
-}
-
-async function callGeminiVision(imageUrl: string, title: string, language: string): Promise<string> {
-  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
-
-  const isFrench = language.toLowerCase().startsWith("fr");
-  const prompt = isFrench
-    ? `Génère UN SEUL texte ALT en français pour cette image e-commerce.\nTitre: ${title}\nDécris précisément ce qui est visible, sans inventer. 8 à 12 mots si possible, 125 caractères maximum. Ne commence pas par « Image de » ou « Photo de ». Réponds uniquement avec le texte ALT.`
-    : `Generate ONE ALT text in English for this ecommerce image.\nTitle: ${title}\nDescribe what is actually visible without inventing details. Prefer 8-12 words, maximum 125 characters. Do not start with “Image of” or “Photo of”. Return only the ALT text.`;
-
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${lovableApiKey}`,
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: imageUrl } },
-          ],
-        },
-      ],
-      max_tokens: 150,
-      temperature: 0.3,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Lovable AI error: ${response.status} - ${errorText.slice(0, 300)}`);
-  }
-
-  const data = await response.json();
-  const altText = cleanFallbackAlt(data?.choices?.[0]?.message?.content?.trim() || "");
-  if (!altText) throw new Error("Gemini returned an empty ALT text");
-  return altText;
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -117,7 +65,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    console.log(`[ALT-TEXTS] Processing ${imageIds.length} images. Primary model: ${KIMI_ALT_MODEL}`);
+    console.log(`[ALT-TEXTS] Processing ${imageIds.length} images. Vision policy: Kimi free only (${KIMI_ALT_MODEL})`);
 
     const results: Array<{
       imageId: string;
@@ -236,23 +184,16 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        let altText = "";
-        let provider = "kimi";
-
-        try {
-          altText = await generateAltWithKimi({
-            imageUrl: image.src,
-            title,
-            description,
-            language: storeLanguage,
-            contentType,
-          });
-          console.log(`[ALT-TEXTS] ✅ Kimi generated ALT for ${imageId}: "${altText}"`);
-        } catch (kimiError) {
-          provider = "gemini-fallback";
-          console.warn(`[ALT-TEXTS] ⚠️ Kimi unavailable for ${imageId}; falling back to Gemini:`, kimiError);
-          altText = await callGeminiVision(image.src, title, storeLanguage);
-        }
+        // Vision rule: Kimi free only. No Lovable/Gemini paid-credit fallback.
+        const altText = await generateAltWithKimi({
+          imageUrl: image.src,
+          title,
+          description,
+          language: storeLanguage,
+          contentType,
+        });
+        const provider = "kimi-free";
+        console.log(`[ALT-TEXTS] ✅ Kimi free generated ALT for ${imageId}: "${altText}"`);
 
         const tableName = isContentImage ? "content_images" : "product_images";
         const { error: updateError } = await supabaseClient
@@ -272,17 +213,13 @@ Deno.serve(async (req: Request) => {
 
         let synced = false;
         let syncErrorMsg: string | undefined;
-
         if (image.shopify_image_id) {
           try {
             const syncResponse = await fetch(
               `${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-seo-to-shopify`,
               {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: authHeader,
-                },
+                headers: { "Content-Type": "application/json", Authorization: authHeader },
                 body: JSON.stringify({ imageId, imageType: contentType, syncAltText: true, force: true }),
               },
             );
