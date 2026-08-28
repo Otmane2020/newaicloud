@@ -1,5 +1,5 @@
-# Shopping feed proxy
-/shoppingfeed/* https://nekqqlhrjgmyudmmewas.supabase.co/functions/v1/shopping-feed/shoppingfeed/:splat 200!
+# Google Shopping feed proxy for catalogoptimize.com
+/shoppingfeed/* https://xkrrcusvmxifbiejxker.supabase.co/functions/v1/shopping-feed/shoppingfeed/:splat 200!
 
 # sitemap.xml is served directly from public/sitemap.xml.
 # Keeping it static avoids a dependency on the Supabase Edge Function for SEO crawling.
