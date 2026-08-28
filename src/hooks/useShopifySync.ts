@@ -380,7 +380,7 @@ export const useShopifySync = () => {
             + catalog.filter((product) => !product.google_white_background).length;
           const shoppingScore = Math.max(0, Math.round((((catalog.length * 5) - shoppingFailures) / (catalog.length * 5)) * 100));
 
-          catalogScore = Math.round(contentScore * 0.6 + seoScore * 0.4);
+          catalogScore = Math.round(contentScore * 0.4 + seoScore * 0.35 + shoppingScore * 0.25);
           const detail = { storeId: storeToSync.id, catalogScore, contentScore, seoScore, productSeoScore, collectionSeoScore, pageSeoScore, articleSeoScore, shoppingScore, products: catalog.length };
           window.dispatchEvent(new CustomEvent('catalog-score-updated', { detail }));
           console.log('✅ [CATALOG ANALYSIS]', detail);
