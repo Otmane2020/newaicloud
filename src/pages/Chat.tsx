@@ -25,16 +25,21 @@ interface Message {
 
 interface StoreAvatarProps {
   storeName?: string;
+  logoUrl?: string;
 }
 
-const StoreAvatar = ({ storeName }: StoreAvatarProps) => {
+const StoreAvatar = ({ storeName, logoUrl }: StoreAvatarProps) => {
   const getInitials = (name?: string) => {
     if (!name) return "NC";
     return name.slice(0, 2).toUpperCase();
   };
 
-  return (
-    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md">
+  return logoUrl ? (
+    <div className="h-10 w-10 overflow-hidden rounded-xl border border-white/20 bg-white p-1 shadow-md">
+      <img src={logoUrl} alt={storeName || "Store logo"} className="h-full w-full object-contain" />
+    </div>
+  ) : (
+    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold text-sm shadow-md">
       {getInitials(storeName)}
     </div>
   );
@@ -60,6 +65,7 @@ export default function Chat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [storeName, setStoreName] = useState<string>();
+  const [storeLogoUrl, setStoreLogoUrl] = useState<string>();
   const [assistantName, setAssistantName] = useState<string>(t.chatPage?.defaultAssistantName || 'Assistant');
   const [enrichmentPercentage, setEnrichmentPercentage] = useState<number>(100);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -96,6 +102,13 @@ export default function Chat() {
       if (data?.[0]?.store_name) {
         setStoreName(data[0].store_name);
       }
+
+      const { data: branding } = await supabase
+        .from('social_settings')
+        .select('logo_url')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (branding?.logo_url) setStoreLogoUrl(branding.logo_url);
     } catch (err) {
       console.error('Error loading store name:', err);
     }
@@ -259,6 +272,7 @@ export default function Chat() {
             userMessage: userMessageText,
             history: messages, // Envoyer TOUT l'historique
             sellerId: user?.id,
+            storeId: selectedStore?.id,
           }),
         }
       );
@@ -294,7 +308,14 @@ export default function Chat() {
             const data = JSON.parse(line.slice(6));
             assistantContent += data.content || "";
             if (data.products && data.products.length > 0) {
-              assistantProducts = data.products;
+              assistantProducts = data.products.map((suggested: any) => {
+                const catalogProduct = products.find((item) => item.id === suggested.id || item.shopify_id === suggested.shopify_id);
+                return {
+                  ...catalogProduct,
+                  ...suggested,
+                  image_url: suggested.image_url || catalogProduct?.image_url,
+                };
+              });
             }
 
             // ✅ Update last assistant message
@@ -890,7 +911,7 @@ export default function Chat() {
           {/* Header du chat avec design moderne */}
           <div className="px-3 sm:px-6 py-3 sm:py-5 border-b-2 bg-gradient-to-r from-primary via-primary/90 to-primary/80 text-white">
             <div className="flex items-center gap-2 sm:gap-3">
-              <StoreAvatar storeName={storeName} />
+              <StoreAvatar storeName={storeName} logoUrl={storeLogoUrl} />
               <div>
                 <h3 className="font-bold text-base sm:text-lg">{assistantName}</h3>
                 <p className="text-xs text-white/90 flex items-center gap-2">
@@ -912,7 +933,7 @@ export default function Chat() {
               >
                 {message.role === 'assistant' && (
                   <div className="flex-shrink-0">
-                    <StoreAvatar storeName={storeName} />
+                    <StoreAvatar storeName={storeName} logoUrl={storeLogoUrl} />
                   </div>
                 )}
                 
@@ -949,8 +970,10 @@ export default function Chat() {
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-sm sm:text-base text-foreground group-hover:text-primary transition-colors truncate">{product.title}</p>
-                            <p className="text-xs sm:text-sm text-muted-foreground">
-                              {product.price} {product.currency || 'EUR'}
+                            <p className="text-xs sm:text-sm text-muted-foreground">{product.price} {product.currency || 'EUR'}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {Number(product.inventory_quantity) > 0 ? (language === 'fr' ? 'En stock' : 'In stock') : (language === 'fr' ? 'Disponibilité à vérifier' : 'Check availability')}
+                              {Number(product.variant_count) > 0 ? ` · ${product.variant_count} ${language === 'fr' ? 'variante(s)' : 'variant(s)'}` : ''}
                             </p>
                           </div>
                           <Button
