@@ -142,7 +142,7 @@ serve(async (req) => {
     }
 
     // Find appropriate plan based on product count
-    let plan = allPlans.find(p => p.id === plan_id);
+    let plan = allPlans.find((p: any) => p.id === plan_id);
     
     if (!plan) {
       console.error('❌ Requested plan not found:', plan_id);
@@ -163,7 +163,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: `Votre boutique contient ${productCount} produits, ce qui dépasse la limite de ${plan.max_products} produits du plan ${plan.name}. Veuillez sélectionner un plan supérieur.`,
-          suggested_plan_id: allPlans.find(p => p.max_products === -1 || p.max_products >= productCount)?.id
+          suggested_plan_id: allPlans.find((p: any) => p.max_products === -1 || p.max_products >= productCount)?.id
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
