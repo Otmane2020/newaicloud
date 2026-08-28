@@ -23,7 +23,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { isSyncing } = useAutoSyncProgress();
   const { limits } = useUsageLimits();
   const { language } = useTranslation();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   
   // ✅ Global 10s timeout state
   const [globalTimeout, setGlobalTimeout] = useState(false);
@@ -124,7 +124,9 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    const returnTo = `${pathname}${search}`;
+    const authUrl = `/auth?redirect=${encodeURIComponent(returnTo)}`;
+    return <Navigate to={authUrl} replace />;
   }
 
   return (
