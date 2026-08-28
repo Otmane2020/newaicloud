@@ -61,7 +61,7 @@ export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [generatingBg, setGeneratingBg] = useState<{ productId: string; type: 'white' | 'ai' | 'smart' } | null>(null);
@@ -707,7 +707,7 @@ export default function Products() {
         page="Products"
         count={totalCount}
         title={t.products.title}
-        description="Review, organize and improve every Shopify product from one catalog workspace."
+        description={`${totalCount} products · ${selectedStore?.store_name || "Shopify catalog"}`}
         actions={
           <>
             <Button
@@ -732,11 +732,11 @@ export default function Products() {
         }
       />
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <section className="rounded-xl border border-slate-200 bg-white p-3">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input placeholder={t.products.searchPlaceholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-10 bg-slate-50 pl-9" />
+            <Input placeholder={t.products.searchPlaceholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-9 border-0 bg-slate-50 pl-9 shadow-none focus-visible:ring-1" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {[
@@ -900,8 +900,8 @@ export default function Products() {
                         <h3 className="font-semibold text-sm line-clamp-2 mb-2 leading-tight">{product.title}</h3>
 
                         {/* Price section */}
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-bold text-base text-gray-900">
+                        <div className="flex items-center gap-2 md:contents">
+                          <span className="font-medium text-sm text-slate-900">
                             {product.price?.toFixed(2) || "0.00"} {product.currency}
                           </span>
                           {product.compare_at_price && product.compare_at_price > (product.price || 0) && (
@@ -930,7 +930,8 @@ export default function Products() {
               </TooltipProvider>
             ) : (
               // Optimized mobile list - Like the photo
-              <div className="space-y-3">
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="hidden grid-cols-[56px_minmax(0,1fr)_110px_120px_110px_32px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-500 md:grid"><span /><span>Product</span><span>Status</span><span>Price</span><span>Stock</span><span /></div>
                 {filteredProducts.map((product) => {
                   const discount = calculateDiscount(product.price, product.compare_at_price);
 
@@ -938,11 +939,11 @@ export default function Products() {
                     <Card
                       key={product.id}
                       onClick={() => navigate(`/product-landing/${product.id}`)}
-                      className="cursor-pointer border-0 shadow-sm p-3 transition-all active:scale-[0.98] bg-white"
+                      className="cursor-pointer rounded-none border-0 border-b border-slate-100 p-3 shadow-none transition-colors last:border-b-0 hover:bg-slate-50"
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3 md:grid-cols-[56px_minmax(0,1fr)_110px_120px_110px_32px]">
                         {/* Product image */}
-                        <div className="w-20 h-20 bg-muted/50 rounded-lg overflow-hidden flex-shrink-0 relative">
+                        <div className="relative h-14 w-14 overflow-hidden rounded-lg bg-slate-100">
                           {product.image_url ? (
                             <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
                           ) : (
@@ -958,50 +959,21 @@ export default function Products() {
                           )}
                         </div>
 
-                        {/* Product details */}
-                        <div className="flex-1 min-w-0">
-                          {/* Title and status */}
-                          <div className="flex items-start justify-between mb-1">
-                            <h3 className="font-semibold text-sm line-clamp-2 flex-1 mr-2">{product.title}</h3>
-                            <Badge
-                              variant={product.status === "active" ? "default" : "secondary"}
-                              className="text-xs bg-green-100 text-green-800 border-0"
-                            >
-                              {product.status === "active" ? t.common.active : t.common.draft}
-                            </Badge>
-                          </div>
-
-                          {/* Description */}
-                          <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-                            {product.description || t.products.noDescription}
-                          </p>
-
-                          {/* Price section */}
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-bold text-base text-gray-900">
-                              {product.price?.toFixed(2) || "0.00"} {product.currency}
-                            </span>
-                            {product.compare_at_price && product.compare_at_price > (product.price || 0) && (
-                              <span className="text-xs text-gray-500 line-through">
-                                {product.compare_at_price.toFixed(2)} {product.currency}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Vendor and stock */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-gray-700">{product.vendor || t.products.noVendor}</span>
-                            <span
-                              className={`text-xs px-2 py-1 rounded ${
-                                product.inventory_quantity > 0
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {tf('products.stock', { count: formatNumber(product.inventory_quantity) })}
-                            </span>
+                        <div className="min-w-0">
+                          <h3 className="truncate text-sm font-medium text-slate-950">{product.title}</h3>
+                          <p className="mt-1 truncate text-xs text-slate-500">{product.vendor || product.product_type || t.products.noVendor}</p>
+                          <div className="mt-2 flex items-center gap-2 md:hidden">
+                            <Badge variant="outline" className={product.status === "active" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : ""}>{product.status === "active" ? t.common.active : t.common.draft}</Badge>
+                            <span className="text-sm font-medium">{product.price?.toFixed(2) || "0.00"} {product.currency}</span>
                           </div>
                         </div>
+                        <Badge variant="outline" className={product.status === "active" ? "hidden w-fit border-emerald-200 bg-emerald-50 text-emerald-700 md:inline-flex" : "hidden w-fit md:inline-flex"}>{product.status === "active" ? t.common.active : t.common.draft}</Badge>
+                        <div className="hidden text-sm font-medium text-slate-900 md:block">
+                          {product.price?.toFixed(2) || "0.00"} {product.currency}
+                          {product.compare_at_price && product.compare_at_price > (product.price || 0) && <span className="ml-1 block text-xs font-normal text-slate-400 line-through">{product.compare_at_price.toFixed(2)} {product.currency}</span>}
+                        </div>
+                        <span className={`hidden text-sm md:block ${product.inventory_quantity > 0 ? "text-slate-700" : "text-red-700"}`}>{formatNumber(product.inventory_quantity)}</span>
+                        <span className="hidden text-slate-400 md:block">›</span>
                       </div>
                     </Card>
                   );
