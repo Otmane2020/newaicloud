@@ -16,6 +16,7 @@ import { useTranslation } from "@/lib/language";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
+import BlogNewAI from "@/pages/BlogNewAI";
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -61,6 +62,12 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
       }
     };
   }, [isLoading, globalTimeout]);
+
+  // /blog is a public SEO/content route. Do not require authentication,
+  // store loading or an active subscription to read published articles.
+  if (pathname === "/blog") {
+    return <BlogNewAI />;
+  }
   
   const handleRetry = () => {
     setIsRetrying(true);
