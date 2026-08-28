@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  AlertTriangle, ArrowRight, BadgeDollarSign, CheckCircle2, FileText,
-  Image, Images, Loader2, Package, RefreshCw, ScanSearch, ShoppingCart,
+  AlertTriangle, ArrowRight, CheckCircle2, FileText,
+  Image, Loader2, Package, RefreshCw, ShoppingCart,
   Sparkles, Store, Tags
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,10 +10,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useStore } from "@/contexts/StoreContext";
 import { useShopifySync } from "@/hooks/useShopifySync";
 import { useTranslation } from "@/lib/language";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 
 type ProductHealthRow = {
   id: string;
@@ -32,13 +31,27 @@ type ProductHealthRow = {
 };
 
 type ResourceSeoStats = {
-  collections: number | null; pages: number | null; articles: number | null;
-  collectionCount: number; pageCount: number; articleCount: number;
-  missingCollections: number; missingPages: number; missingArticles: number;
+  collections: number | null;
+  pages: number | null;
+  articles: number | null;
+  collectionCount: number;
+  pageCount: number;
+  articleCount: number;
+  missingCollections: number;
+  missingPages: number;
+  missingArticles: number;
 };
+
 const initialResourceSeo: ResourceSeoStats = {
-  collections: null, pages: null, articles: null, collectionCount: 0, pageCount: 0, articleCount: 0,
-  missingCollections: 0, missingPages: 0, missingArticles: 0,
+  collections: null,
+  pages: null,
+  articles: null,
+  collectionCount: 0,
+  pageCount: 0,
+  articleCount: 0,
+  missingCollections: 0,
+  missingPages: 0,
+  missingArticles: 0,
 };
 
 type CatalogStats = {
@@ -61,7 +74,22 @@ type CatalogStats = {
 };
 
 const initialStats: CatalogStats = {
-  total: 0, incomplete: 0, missingTitles: 0, missingSeoTitles: 0, missingSeoDescriptions: 0, missingImages: 0, missingSeo: 0, missingTags: 0, enriched: 0, missingGoogleCategory: 0, missingGtin: 0, missingMpn: 0, missingCondition: 0, missingWhiteBackground: 0, notSyncedToShopify: 0, lastSync: null,
+  total: 0,
+  incomplete: 0,
+  missingTitles: 0,
+  missingSeoTitles: 0,
+  missingSeoDescriptions: 0,
+  missingImages: 0,
+  missingSeo: 0,
+  missingTags: 0,
+  enriched: 0,
+  missingGoogleCategory: 0,
+  missingGtin: 0,
+  missingMpn: 0,
+  missingCondition: 0,
+  missingWhiteBackground: 0,
+  notSyncedToShopify: 0,
+  lastSync: null,
 };
 
 export default function CatalogOptimizeDashboard() {
@@ -99,6 +127,7 @@ export default function CatalogOptimizeDashboard() {
 
         if (countResult.error) throw countResult.error;
         if (productsResult.error) throw productsResult.error;
+
         const products = (productsResult.data || []) as ProductHealthRow[];
         const missingTitles = products.filter((p) => !p.title?.trim()).length;
         const missingSeoTitles = products.filter((p) => !p.seo_title?.trim()).length;
@@ -111,23 +140,40 @@ export default function CatalogOptimizeDashboard() {
         const missingGtin = products.filter((p) => !p.google_gtin?.trim()).length;
         const missingMpn = products.filter((p) => !p.google_mpn?.trim()).length;
         const missingCondition = products.filter((p) => !p.google_condition?.trim()).length;
-        const missingWhiteBackground = products.filter((p) => !p.google_white_background).length;
-        const notSyncedToShopify = products.filter((p) => !p.seo_synced_to_shopify).length;
+
+        // null = not audited yet. Only an explicit false is a verified issue.
+        const missingWhiteBackground = products.filter((p) => p.google_white_background === false).length;
+        const notSyncedToShopify = products.filter((p) => p.seo_synced_to_shopify === false).length;
+
         const incomplete = products.filter((p) =>
           !p.title?.trim() || !p.image_url?.trim() ||
           !p.seo_title?.trim() || !p.seo_description?.trim() ||
           !p.tags || (Array.isArray(p.tags) ? p.tags.length === 0 : !String(p.tags).trim()) ||
           !p.google_product_category?.trim() || !p.google_mpn?.trim() ||
-          !p.google_condition?.trim() || !p.google_white_background ||
-          !p.seo_synced_to_shopify
+          !p.google_condition?.trim() || p.google_white_background === false ||
+          p.seo_synced_to_shopify === false
         ).length;
 
-        if (mounted) setStats({
-          total: countResult.count || products.length,
-          incomplete, missingTitles, missingSeoTitles, missingSeoDescriptions, missingImages, missingSeo, missingTags, enriched,
-          missingGoogleCategory, missingGtin, missingMpn, missingCondition, missingWhiteBackground, notSyncedToShopify,
-          lastSync: syncResult.data?.created_at || null,
-        });
+        if (mounted) {
+          setStats({
+            total: countResult.count || products.length,
+            incomplete,
+            missingTitles,
+            missingSeoTitles,
+            missingSeoDescriptions,
+            missingImages,
+            missingSeo,
+            missingTags,
+            enriched,
+            missingGoogleCategory,
+            missingGtin,
+            missingMpn,
+            missingCondition,
+            missingWhiteBackground,
+            notSyncedToShopify,
+            lastSync: syncResult.data?.created_at || null,
+          });
+        }
       } catch (error) {
         console.error("[CatalogOptimizeDashboard] catalog scan failed", error);
         if (mounted) setScanError(true);
@@ -135,12 +181,17 @@ export default function CatalogOptimizeDashboard() {
         if (mounted) setLoading(false);
       }
     };
+
     load();
     return () => { mounted = false; };
   }, [user?.id, selectedStore?.id, scanNonce]);
 
   useEffect(() => {
-    if (!selectedStore?.id) { setResourceSeo(initialResourceSeo); return; }
+    if (!selectedStore?.id) {
+      setResourceSeo(initialResourceSeo);
+      return;
+    }
+
     let mounted = true;
     const loadResourceSeo = async () => {
       const [collectionsResult, pagesResult, articlesResult] = await Promise.all([
@@ -148,21 +199,35 @@ export default function CatalogOptimizeDashboard() {
         supabase.from("shopify_pages").select("seo_title,seo_description").eq("store_id", selectedStore.id).range(0, 9999),
         supabase.from("blog_articles").select("seo_title,meta_description").eq("store_id", selectedStore.id).range(0, 9999),
       ]);
+
       const collections = (collectionsResult.data || []) as Array<Record<string, unknown>>;
       const pages = (pagesResult.data || []) as Array<Record<string, unknown>>;
       const articles = (articlesResult.data || []) as Array<Record<string, unknown>>;
+
       const score = (rows: Array<Record<string, unknown>>, descriptionField: string) => {
         if (!rows.length) return null;
-        const failures = rows.filter((row) => !String(row.seo_title || "").trim()).length + rows.filter((row) => !String(row[descriptionField] || "").trim()).length;
+        const failures = rows.filter((row) => !String(row.seo_title || "").trim()).length
+          + rows.filter((row) => !String(row[descriptionField] || "").trim()).length;
         return Math.max(0, Math.round((((rows.length * 2) - failures) / (rows.length * 2)) * 100));
       };
-      const missing = (rows: Array<Record<string, unknown>>, descriptionField: string) => rows.filter((row) => !String(row.seo_title || "").trim() || !String(row[descriptionField] || "").trim()).length;
-      if (mounted) setResourceSeo({
-        collections: score(collections, "seo_description"), pages: score(pages, "seo_description"), articles: score(articles, "meta_description"),
-        collectionCount: collections.length, pageCount: pages.length, articleCount: articles.length,
-        missingCollections: missing(collections, "seo_description"), missingPages: missing(pages, "seo_description"), missingArticles: missing(articles, "meta_description"),
-      });
+      const missing = (rows: Array<Record<string, unknown>>, descriptionField: string) =>
+        rows.filter((row) => !String(row.seo_title || "").trim() || !String(row[descriptionField] || "").trim()).length;
+
+      if (mounted) {
+        setResourceSeo({
+          collections: score(collections, "seo_description"),
+          pages: score(pages, "seo_description"),
+          articles: score(articles, "meta_description"),
+          collectionCount: collections.length,
+          pageCount: pages.length,
+          articleCount: articles.length,
+          missingCollections: missing(collections, "seo_description"),
+          missingPages: missing(pages, "seo_description"),
+          missingArticles: missing(articles, "meta_description"),
+        });
+      }
     };
+
     loadResourceSeo().catch((error) => console.error("[CatalogOptimizeDashboard] SEO resources scan failed", error));
     return () => { mounted = false; };
   }, [selectedStore?.id, scanNonce]);
@@ -183,9 +248,12 @@ export default function CatalogOptimizeDashboard() {
 
   const seoScore = useMemo(() => {
     const parts = [
-      { value: productSeoScore, weight: 50 }, { value: resourceSeo.collections, weight: 20 },
-      { value: resourceSeo.pages, weight: 15 }, { value: resourceSeo.articles, weight: 15 },
+      { value: productSeoScore, weight: 50 },
+      { value: resourceSeo.collections, weight: 20 },
+      { value: resourceSeo.pages, weight: 15 },
+      { value: resourceSeo.articles, weight: 15 },
     ].filter((part): part is { value: number; weight: number } => part.value !== null);
+
     if (!parts.length) return null;
     const totalWeight = parts.reduce((sum, part) => sum + part.weight, 0);
     return Math.round(parts.reduce((sum, part) => sum + part.value * part.weight, 0) / totalWeight);
@@ -198,7 +266,6 @@ export default function CatalogOptimizeDashboard() {
     return Math.max(0, Math.round(((totalChecks - failedChecks) / totalChecks) * 100));
   }, [stats]);
 
-  // Honest overall health: catalog content 40%, SEO 35%, Google Shopping 25%.
   const health = useMemo(() => {
     if (contentScore === null || seoScore === null || shoppingReadiness === null) return null;
     return Math.round(contentScore * 0.4 + seoScore * 0.35 + shoppingReadiness * 0.25);
@@ -215,7 +282,10 @@ export default function CatalogOptimizeDashboard() {
     const tone = scoreTone(value);
     const safeValue = value ?? 0;
     return (
-      <div className="relative grid shrink-0 place-items-center rounded-full" style={{ width: size, height: size, background: `conic-gradient(${tone.color} ${safeValue * 3.6}deg, #e2e8f0 0deg)` }}>
+      <div
+        className="relative grid shrink-0 place-items-center rounded-full"
+        style={{ width: size, height: size, background: `conic-gradient(${tone.color} ${safeValue * 3.6}deg, #e2e8f0 0deg)` }}
+      >
         <div className="grid h-[76%] w-[76%] place-items-center rounded-full bg-white">
           <strong className={`text-lg ${tone.text}`}>{value === null ? "—" : `${value}%`}</strong>
         </div>
@@ -240,7 +310,9 @@ export default function CatalogOptimizeDashboard() {
     { label: fr ? "SEO articles incomplet" : "Incomplete article SEO", value: resourceSeo.missingArticles, href: "/seo?tab=articles", icon: FileText },
   ].sort((a, b) => b.value - a.value);
 
-  if (storesLoading) return <div className="grid min-h-[360px] place-items-center"><Loader2 className="h-7 w-7 animate-spin text-violet-600" /></div>;
+  if (storesLoading) {
+    return <div className="grid min-h-[360px] place-items-center"><Loader2 className="h-7 w-7 animate-spin text-violet-600" /></div>;
+  }
 
   if (!selectedStore || stores.length === 0) {
     return (
@@ -298,37 +370,56 @@ export default function CatalogOptimizeDashboard() {
         <div className={`flex items-center gap-5 rounded-xl border p-5 ${scoreTone(health).bg} ${scoreTone(health).border}`}>
           <ScoreGauge value={health} size={112} />
           <div>
-            <div className="flex items-center gap-2"><h2 className="text-base font-semibold text-slate-950">{fr ? "Performance globale" : "Overall performance"}</h2><span className={`rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium ${scoreTone(health).text}`}>{scoreTone(health).label}</span></div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-semibold text-slate-950">{fr ? "Performance globale" : "Overall performance"}</h2>
+              <span className={`rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium ${scoreTone(health).text}`}>{scoreTone(health).label}</span>
+            </div>
             <p className="mt-2 text-sm text-slate-600">{fr ? "40 % contenu · 35 % SEO · 25 % Google Shopping" : "40% content · 35% SEO · 25% Google Shopping"}</p>
-            <Button asChild size="sm" className="mt-4 bg-violet-600 hover:bg-violet-700"><Link to={shoppingReadiness !== null && shoppingReadiness < 50 ? "/shopping" : "/products/title-description"}>{fr ? "Améliorer le score" : "Improve score"}<ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+            <Button asChild size="sm" className="mt-4 bg-violet-600 hover:bg-violet-700">
+              <Link to={shoppingReadiness !== null && shoppingReadiness < 50 ? "/shopping" : "/products/title-description"}>
+                {fr ? "Améliorer le score" : "Improve score"}<ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
           </div>
         </div>
+
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-sm text-slate-500">{fr ? "Produits analysés" : "Products analyzed"}</p><strong className="mt-2 block text-2xl text-slate-950">{loading ? "—" : stats.total}</strong></div>
-          <div className={`rounded-xl border p-4 ${stats.incomplete > 0 ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"}`}><p className="text-sm text-slate-500">{fr ? "Produits à corriger" : "Products to fix"}</p><strong className={`mt-2 block text-2xl ${stats.incomplete > 0 ? "text-red-700" : "text-green-700"}`}>{loading ? "—" : stats.incomplete}</strong></div>
-          <div className="col-span-2 flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4"><div><p className="text-sm text-slate-500">{fr ? "Dernière synchronisation" : "Last sync"}</p><strong className="mt-1 block text-sm text-slate-950">{stats.lastSync ? new Date(stats.lastSync).toLocaleString(language) : "—"}</strong></div><Button type="button" variant="outline" size="sm" onClick={async () => { if (!selectedStore) return; await syncShopifyStore(selectedStore); setScanNonce((value) => value + 1); }} disabled={loading || isSyncing}>{loading || isSyncing ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-2 h-3.5 w-3.5" />}{fr ? "Analyser" : "Scan now"}</Button></div>
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <p className="text-sm text-slate-500">{fr ? "Produits analysés" : "Products analyzed"}</p>
+            <strong className="mt-2 block text-2xl text-slate-950">{loading ? "—" : stats.total}</strong>
+          </div>
+          <div className={`rounded-xl border p-4 ${stats.incomplete > 0 ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"}`}>
+            <p className="text-sm text-slate-500">{fr ? "Produits à corriger" : "Products to fix"}</p>
+            <strong className={`mt-2 block text-2xl ${stats.incomplete > 0 ? "text-red-700" : "text-green-700"}`}>{loading ? "—" : stats.incomplete}</strong>
+          </div>
+          <div className="col-span-2 flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4">
+            <div>
+              <p className="text-sm text-slate-500">{fr ? "Dernière synchronisation" : "Last sync"}</p>
+              <strong className="mt-1 block text-sm text-slate-950">{stats.lastSync ? new Date(stats.lastSync).toLocaleString(language) : "—"}</strong>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                if (!selectedStore) return;
+                await syncShopifyStore(selectedStore);
+                setScanNonce((value) => value + 1);
+              }}
+              disabled={loading || isSyncing}
+            >
+              {loading || isSyncing ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-2 h-3.5 w-3.5" />}
+              {fr ? "Analyser" : "Scan now"}
+            </Button>
+          </div>
         </div>
       </section>
 
       <section>
-        <div className="mb-3 flex items-center justify-between">
-          <div><h2 className="text-lg font-semibold text-slate-950">{fr ? "À traiter maintenant" : "Needs attention"}</h2><p className="text-sm text-slate-500">{fr ? "Problèmes classés par impact." : "Issues ranked by impact."}</p></div>
-          <span className="text-sm text-slate-500">{issues.filter((item) => item.value > 0).length} {fr ? "types de problèmes" : "issue types"}</span>
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold text-slate-950">{fr ? "Performance par domaine" : "Performance by area"}</h2>
+          <p className="text-sm text-slate-500">{fr ? "Vert : bon · Orange : à améliorer · Rouge : prioritaire." : "Green: good · Amber: improve · Red: priority."}</p>
         </div>
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          {issues.filter((issue) => issue.value > 0).slice(0, 7).map((issue, index) => (
-            <Link key={issue.label} to={issue.href} className={`grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-3 transition hover:bg-slate-50 ${index ? "border-t border-slate-100" : ""}`}>
-              <span className="flex items-center gap-3 text-sm font-medium text-slate-800"><issue.icon className="h-4 w-4 text-amber-600" />{issue.label}</span>
-              <strong className="text-sm text-slate-950">{loading ? "—" : issue.value}</strong>
-              <ArrowRight className="h-4 w-4 text-slate-400" />
-            </Link>
-          ))}
-          {!loading && issues.every((issue) => issue.value === 0) && <div className="flex items-center gap-3 p-5 text-sm text-emerald-800"><CheckCircle2 className="h-5 w-5" />{fr ? "Aucun problème prioritaire détecté." : "No priority issues detected."}</div>}
-        </div>
-      </section>
-
-      <section>
-        <div className="mb-3"><h2 className="text-lg font-semibold text-slate-950">{fr ? "Performance par domaine" : "Performance by area"}</h2><p className="text-sm text-slate-500">{fr ? "Vert : bon · Orange : à améliorer · Rouge : prioritaire." : "Green: good · Amber: improve · Red: priority."}</p></div>
         <div className="grid gap-3 sm:grid-cols-3">
           {[
             { label: fr ? "Contenu" : "Content", value: contentScore, href: "/products/title-description", cta: fr ? "Améliorer le contenu" : "Improve content" },
@@ -338,15 +429,24 @@ export default function CatalogOptimizeDashboard() {
             const tone = scoreTone(score.value);
             return (
               <div key={score.label} className={`rounded-xl border p-4 ${tone.bg} ${tone.border}`}>
-                <div className="flex items-center gap-4"><ScoreGauge value={score.value} /><div><h3 className="font-semibold text-slate-950">{score.label}</h3><p className={`mt-1 text-xs font-medium ${tone.text}`}>{tone.label}</p></div></div>
-                <Button asChild variant="outline" size="sm" className="mt-4 w-full justify-between bg-white/80"><Link to={score.href}>{score.cta}<ArrowRight className="h-4 w-4" /></Link></Button>
+                <div className="flex items-center gap-4">
+                  <ScoreGauge value={score.value} />
+                  <div><h3 className="font-semibold text-slate-950">{score.label}</h3><p className={`mt-1 text-xs font-medium ${tone.text}`}>{tone.label}</p></div>
+                </div>
+                <Button asChild variant="outline" size="sm" className="mt-4 w-full justify-between bg-white/80">
+                  <Link to={score.href}>{score.cta}<ArrowRight className="h-4 w-4" /></Link>
+                </Button>
               </div>
             );
           })}
         </div>
       </section>
+
       <section>
-        <div className="mb-3"><h2 className="text-lg font-semibold text-slate-950">{fr ? "Score SEO détaillé" : "SEO score breakdown"}</h2><p className="text-sm text-slate-500">{fr ? "Titres et descriptions SEO de chaque type de contenu." : "SEO titles and descriptions for every content type."}</p></div>
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold text-slate-950">{fr ? "Score SEO détaillé" : "SEO score breakdown"}</h2>
+          <p className="text-sm text-slate-500">{fr ? "Titres et descriptions SEO de chaque type de contenu." : "SEO titles and descriptions for every content type."}</p>
+        </div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: fr ? "Produits" : "Products", value: productSeoScore, count: stats.total, weight: "50%", href: "/seo?tab=products" },
@@ -357,12 +457,46 @@ export default function CatalogOptimizeDashboard() {
             const tone = scoreTone(item.value);
             return (
               <Link key={item.href} to={item.href} className={`rounded-lg border p-3 transition hover:shadow-sm ${tone.bg} ${tone.border}`}>
-                <div className="flex items-center justify-between"><span className="text-sm font-medium">{item.label}</span><strong className={tone.text}>{item.value === null ? "—" : `${item.value}%`}</strong></div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{item.label}</span>
+                  <strong className={tone.text}>{item.value === null ? "—" : `${item.value}%`}</strong>
+                </div>
                 <p className="mt-1 text-xs text-slate-500">{item.count} {fr ? "éléments" : "items"} · {fr ? "poids" : "weight"} {item.weight}</p>
-                <span className={`mt-3 flex items-center justify-between text-xs font-medium ${tone.text}`}>{item.value !== null && item.value < 100 ? (fr ? "Améliorer" : "Improve") : (fr ? "Voir" : "View")}<ArrowRight className="h-3.5 w-3.5" /></span>
+                <span className={`mt-3 flex items-center justify-between text-xs font-medium ${tone.text}`}>
+                  {item.value !== null && item.value < 100 ? (fr ? "Améliorer" : "Improve") : (fr ? "Voir" : "View")}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </span>
               </Link>
             );
           })}
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">{fr ? "À traiter maintenant" : "Needs attention"}</h2>
+            <p className="text-sm text-slate-500">{fr ? "Problèmes classés par impact." : "Issues ranked by impact."}</p>
+          </div>
+          <span className="text-sm text-slate-500">{issues.filter((item) => item.value > 0).length} {fr ? "types de problèmes" : "issue types"}</span>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          {issues.filter((issue) => issue.value > 0).slice(0, 7).map((issue, index) => (
+            <Link
+              key={issue.label}
+              to={issue.href}
+              className={`grid grid-cols-[1fr_auto_auto] items-center gap-4 px-4 py-3 transition hover:bg-slate-50 ${index ? "border-t border-slate-100" : ""}`}
+            >
+              <span className="flex items-center gap-3 text-sm font-medium text-slate-800"><issue.icon className="h-4 w-4 text-amber-600" />{issue.label}</span>
+              <strong className="text-sm text-slate-950">{loading ? "—" : issue.value}</strong>
+              <ArrowRight className="h-4 w-4 text-slate-400" />
+            </Link>
+          ))}
+          {!loading && issues.every((issue) => issue.value === 0) && (
+            <div className="flex items-center gap-3 p-5 text-sm text-emerald-800">
+              <CheckCircle2 className="h-5 w-5" />{fr ? "Aucun problème prioritaire détecté." : "No priority issues detected."}
+            </div>
+          )}
         </div>
       </section>
     </div>
