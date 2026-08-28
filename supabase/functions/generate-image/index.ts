@@ -1,16 +1,30 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { generateCloudflareImage } from "../_shared/cloudflare-image.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ===== MAIN FUNCTION =====
+const ratioDimensions: Record<string, { width: number; height: number }> = {
+  "1:1": { width: 1024, height: 1024 },
+  "16:9": { width: 1024, height: 576 },
+  "4:3": { width: 1024, height: 768 },
+  "3:4": { width: 768, height: 1024 },
+};
+
+function dataUrlBytes(dataUrl: string): { bytes: Uint8Array; mime: string } {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) throw new Error("Invalid generated image data");
+  const binary = atob(match[2]);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return { bytes, mime: match[1] };
+}
+
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const {
@@ -30,165 +44,75 @@ serve(async (req) => {
       });
     }
 
-    // --- CONFIG ---
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY non configurée");
-    }
-
-    console.log("🧠 Generating image for:", prompt);
-
-    // Determine if it's for a blog article (16:9) or product/collection (1:1)
-    const isArticle = !!article_id;
+    const isArticle = Boolean(article_id);
     const finalAspectRatio = isArticle ? "16:9" : aspect_ratio;
-    const resolution = isArticle ? "1920x1080" : "1024x1024";
+    const dims = ratioDimensions[finalAspectRatio] || ratioDimensions["1:1"];
+    const enhancedPrompt = `
+Generate a professional ${isArticle ? "editorial/blog featured" : "ecommerce"} image.
+Subject: ${prompt}
+Style: ${style}.
+${type === "white" ? "Use a clean pure white or very light neutral background." : "Use a natural premium lifestyle setting."}
+Photorealistic, professional lighting and composition, no text, watermark, border or logo.
+Aspect ratio ${finalAspectRatio}; output ${dims.width}x${dims.height}.
+`.trim();
 
-    // --- SIMPLIFIED PROMPT ---
-    const enhancedPrompt = `Generate a professional ${isArticle ? 'blog featured' : 'product'} image.
+    const generated = await generateCloudflareImage({
+      prompt: enhancedPrompt,
+      width: dims.width,
+      height: dims.height,
+      guidance: 9,
+      numSteps: 20,
+    });
 
-${prompt}
-
-Requirements:
-- Aspect ratio: ${finalAspectRatio}
-- High resolution: ${resolution}
-- ${type === "white" ? "Pure white background" : "Natural lifestyle setting"}
-- Professional lighting and composition
-- No text, watermarks, or borders`.trim();
-
-    // --- LOVABLE AI IMAGE GENERATION ---
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [
-            {
-              role: "user",
-              content: enhancedPrompt
-            }
-          ],
-          modalities: ["image", "text"]
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Lovable AI Error:", response.status, errorText);
-
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({
-            error: "Limite de taux dépassée. Réessayez dans quelques secondes.",
-          }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({
-            error: "Crédits insuffisants. Veuillez recharger votre compte.",
-          }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      throw new Error(`Erreur Lovable AI: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log("✅ Lovable AI response received");
-
-    // --- EXTRACT IMAGE BASE64 FROM LOVABLE AI RESPONSE ---
-    // Lovable AI returns the image in data.choices[0].message.images[0].image_url.url
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-    if (!imageUrl) {
-      console.error("❌ Aucune image détectée :", JSON.stringify(data, null, 2));
-      throw new Error("Aucune image générée - format inattendu.");
-    }
-
-    // Extract base64 from data URL (format: data:image/png;base64,...)
-    const base64Match = imageUrl.match(/data:image\/[^;]+;base64,(.+)/);
-    const base64Data = base64Match ? base64Match[1] : imageUrl;
-
-    const imageBuffer = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-
-    // --- SUPABASE UPLOAD ---
-    let publicUrl = null;
+    let imageUrl = generated.dataUrl;
     let storageMetadata = null;
 
     if (collection_id || article_id) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL");
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-      if (supabaseUrl && supabaseKey) {
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        const filename = `ai_gen_${collection_id || "product"}_${article_id || "img"}_${Date.now()}.png`;
-
-        const { error: uploadError } = await supabase.storage.from("generated-images").upload(filename, imageBuffer, {
-          contentType: "image/png",
-        });
-
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage.from("generated-images").getPublicUrl(filename);
-          publicUrl = urlData.publicUrl;
-          storageMetadata = {
-            filename,
-            bucket: "generated-images",
-            uploaded_at: new Date().toISOString(),
-          };
-          console.log("☁️ Upload réussi:", filename);
-        } else {
-          console.error("Erreur upload Supabase:", uploadError);
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createClient(supabaseUrl, supabaseKey);
+          const { bytes, mime } = dataUrlBytes(generated.dataUrl);
+          const filename = `ai_gen_${collection_id || "product"}_${article_id || "img"}_${Date.now()}.png`;
+          const { error } = await supabase.storage.from("generated-images").upload(filename, bytes, { contentType: mime });
+          if (!error) {
+            const { data } = supabase.storage.from("generated-images").getPublicUrl(filename);
+            imageUrl = data.publicUrl;
+            storageMetadata = { filename, bucket: "generated-images", uploaded_at: new Date().toISOString() };
+          }
         }
+      } catch (error) {
+        console.warn("[generate-image] storage upload failed; returning data URL", error);
       }
     }
 
-    // --- SUCCESS RESPONSE ---
-    return new Response(
-      JSON.stringify({
-        success: true,
-        image_url: publicUrl || imageUrl,
-        metadata: {
-          model: "google/gemini-2.5-flash-image-preview",
-          product_type,
-          style,
-          aspect_ratio: finalAspectRatio,
-          resolution: resolution,
-          generated_at: new Date().toISOString(),
-          storage: storageMetadata,
-        },
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+    return new Response(JSON.stringify({
+      success: true,
+      image_url: imageUrl,
+      metadata: {
+        provider: generated.provider,
+        model: generated.model,
+        product_type,
+        style,
+        aspect_ratio: finalAspectRatio,
+        resolution: `${dims.width}x${dims.height}`,
+        generated_at: new Date().toISOString(),
+        storage: storageMetadata,
+        policy: "cloudflare-free-only",
       },
-    );
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error("❌ Image generation error:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        suggestion: "Vérifiez votre prompt ou essayez un texte plus précis (couleur, matériau, ambiance).",
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    console.error("[generate-image] error:", error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    }), {
+      status: 503,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
