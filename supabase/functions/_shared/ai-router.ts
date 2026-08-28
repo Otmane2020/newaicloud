@@ -68,58 +68,84 @@ async function tryOpenAI(options: RouteOptions): Promise<AIRouteResult | null> {
 
 async function tryOpenRouter(options: RouteOptions): Promise<AIRouteResult | null> {
   const apiKey = Deno.env.get("OPENROUTER_API_KEY");
+  if (!apiKey || options.vision) return null;
+
+  const model = options.preferredFreeModel?.trim() || "openrouter/free";
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": Deno.env.get("PUBLIC_SITE_URL") || "https://catalogoptimize.com",
+        "X-Title": "CatalogOptimize AI",
+      },
+      body: JSON.stringify({
+        model,
+        messages: options.messages,
+        max_tokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0.3,
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = (await response.text().catch(() => "")).slice(0, 300);
+      console.warn(`[ai-router] OpenRouter ${model} failed: ${response.status}${detail ? ` ${detail}` : ""}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content?.trim();
+    return content ? { content, provider: "openrouter-free", model: data?.model || model } : null;
+  } catch (error) {
+    console.warn(`[ai-router] OpenRouter ${model} request failed`, error);
+    return null;
+  }
+}
+
+async function tryKimiVision(options: RouteOptions): Promise<AIRouteResult | null> {
+  const apiKey = Deno.env.get("OPENROUTER_API_KEY");
   if (!apiKey) return null;
 
-  // An explicitly configured model is tried first. For vision, always fall back to
-  // OpenRouter's free router, which dynamically selects a free model supporting image input.
-  // This prevents a stale/removed vision model slug from turning into a hard failure.
-  const models = Array.from(new Set([
-    options.preferredFreeModel?.trim(),
-    "openrouter/free",
-  ].filter(Boolean))) as string[];
+  const model = Deno.env.get("KIMI_OPENROUTER_VISION_MODEL")
+    || Deno.env.get("OPENROUTER_VISION_MODEL")
+    || "moonshotai/kimi-k2.6:free";
 
-  for (const model of models) {
-    try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": Deno.env.get("PUBLIC_SITE_URL") || "https://catalogoptimize.com",
-          "X-Title": "CatalogueOptimize AI",
-        },
-        body: JSON.stringify({
-          model,
-          messages: options.messages,
-          max_tokens: options.maxTokens || 4096,
-          temperature: options.temperature ?? 0.3,
-        }),
-      });
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": Deno.env.get("PUBLIC_SITE_URL") || "https://catalogoptimize.com",
+        "X-Title": "CatalogOptimize AI",
+      },
+      body: JSON.stringify({
+        model,
+        messages: options.messages,
+        max_tokens: options.maxTokens || 1200,
+        temperature: options.temperature ?? 0.15,
+      }),
+    });
 
-      if (!response.ok) {
-        const detail = (await response.text().catch(() => "")).slice(0, 300);
-        console.warn(`[ai-router] OpenRouter ${model} failed: ${response.status}${detail ? ` ${detail}` : ""}`);
-        continue;
-      }
-
-      const data = await response.json();
-      const content = data?.choices?.[0]?.message?.content?.trim();
-      if (content) {
-        return { content, provider: "openrouter-free", model: data?.model || model };
-      }
-
-      console.warn(`[ai-router] OpenRouter ${model} returned no content`);
-    } catch (error) {
-      console.warn(`[ai-router] OpenRouter ${model} request failed`, error);
+    if (!response.ok) {
+      const detail = (await response.text().catch(() => "")).slice(0, 300);
+      console.warn(`[ai-router] Kimi vision ${model} failed: ${response.status}${detail ? ` ${detail}` : ""}`);
+      return null;
     }
-  }
 
-  return null;
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content?.trim();
+    return content ? { content, provider: "kimi", model: data?.model || model } : null;
+  } catch (error) {
+    console.warn(`[ai-router] Kimi vision ${model} request failed`, error);
+    return null;
+  }
 }
 
 async function tryGemini(options: RouteOptions): Promise<AIRouteResult | null> {
   const apiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-  if (!apiKey) return null;
+  if (!apiKey || options.vision) return null;
 
   const model = Deno.env.get("GEMINI_TEXT_MODEL") || "gemini-3-flash-preview";
   const system = options.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n");
@@ -176,7 +202,7 @@ async function tryKimi(options: RouteOptions): Promise<AIRouteResult | null> {
         "Content-Type": "application/json",
         ...(!direct ? {
           "HTTP-Referer": Deno.env.get("PUBLIC_SITE_URL") || "https://catalogoptimize.com",
-          "X-Title": "CatalogueOptimize AI",
+          "X-Title": "CatalogOptimize AI",
         } : {}),
       },
       body: JSON.stringify({
@@ -228,31 +254,22 @@ async function tryDeepSeek(options: RouteOptions): Promise<AIRouteResult | null>
 }
 
 /**
- * Resilient text routing, cost-first:
- * 1. OpenRouter free
- * 2. Gemini
- * 3. Kimi (Moonshot directly, or through OpenRouter)
- * 4. DeepSeek
- *
- * Vision routing:
- * 1. Optional OPENROUTER_VISION_MODEL override
- * 2. OpenRouter free multimodal router
- * 3. Gemini fallback
- *
- * DeepSeek is intentionally never used for vision.
+ * Text routing stays cost-first. Visual understanding is intentionally Kimi-only.
  */
 export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
-  const attempts = options.vision
-    ? [
-        () => tryOpenRouter(options),
-        () => tryGemini(options),
-      ]
-    : [
-        () => tryOpenRouter(options),
-        () => tryGemini(options),
-        () => tryKimi(options),
-        () => tryDeepSeek(options),
-      ];
+  if (options.vision) {
+    const result = await tryKimiVision(options);
+    if (result) return result;
+    throw new Error("No Kimi vision provider is available. Configure OPENROUTER_API_KEY and a Kimi vision model.");
+  }
+
+  const attempts = [
+    () => tryOpenRouter(options),
+    () => tryGemini(options),
+    () => tryKimi(options),
+    () => tryDeepSeek(options),
+    () => tryOpenAI(options),
+  ];
 
   for (const attempt of attempts) {
     try {
@@ -263,7 +280,7 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
     }
   }
 
-  throw new Error("No AI provider is available. Configure OPENROUTER_API_KEY, GOOGLE_GEMINI_API_KEY, KIMI_API_KEY/MOONSHOT_API_KEY, or DEEPSEEK_API_KEY.");
+  throw new Error("No AI provider is available. Configure OPENROUTER_API_KEY, GOOGLE_GEMINI_API_KEY, KIMI_API_KEY/MOONSHOT_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY.");
 }
 
 export async function routeVision(messages: AIMessage[], maxTokens = 600): Promise<AIRouteResult> {
@@ -272,6 +289,6 @@ export async function routeVision(messages: AIMessage[], maxTokens = 600): Promi
     maxTokens,
     temperature: 0.15,
     vision: true,
-    preferredFreeModel: Deno.env.get("OPENROUTER_VISION_MODEL") || undefined,
+    preferredFreeModel: Deno.env.get("KIMI_OPENROUTER_VISION_MODEL") || "moonshotai/kimi-k2.6:free",
   });
 }
