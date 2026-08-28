@@ -518,13 +518,7 @@ const Subscription = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:p-6 md:p-8 space-y-6 sm:space-y-8 md:space-y-12">
-      <div className="space-y-2 sm:space-y-3 md:space-y-4">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">{language === "fr" ? "Choisissez votre capacité catalogue" : "Choose your catalog capacity"}</h1>
-        <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
-          {t.seo.subscription.subtitle}
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 sm:space-y-8 sm:px-6 lg:px-8">\n      <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-violet-950 to-violet-700 p-6 text-white shadow-2xl shadow-violet-950/15 sm:p-8">\n        <div className="mb-4 inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-violet-100">Plans & capacity</div>\n        <h1 className="text-3xl font-bold text-white sm:text-4xl">{language === "fr" ? "Choisissez votre capacité catalogue" : "Choose your catalog capacity"}</h1>\n        <p className="mt-2 max-w-2xl text-sm text-violet-100 sm:text-base">{t.seo.subscription.subtitle}</p>\n      </div>
 
       {loading ? (
         <div className="flex justify-center items-center py-12">

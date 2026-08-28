@@ -322,18 +322,8 @@ const ProductSource = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Database className="w-8 h-8 text-primary" />
-            {t.seo.productSource.title}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t.seo.productSource.subtitle}
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="rounded-3xl bg-gradient-to-br from-slate-950 via-violet-950 to-violet-700 p-6 text-white shadow-2xl shadow-violet-950/15 sm:p-8 lg:flex lg:items-end lg:justify-between lg:gap-6">\n        <div className="max-w-2xl">\n          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-violet-100"><Database className="h-3.5 w-3.5" /> Catalog intelligence</div>\n          <h1 className="text-3xl font-bold text-white sm:text-4xl">{t.seo.productSource.title}</h1>\n          <p className="mt-2 text-sm text-violet-100 sm:text-base">{t.seo.productSource.subtitle}</p>\n        </div>\n        <div className="mt-6 flex flex-wrap gap-2 lg:mt-0">
           {selectedProducts.size > 0 && (
             <>
               <Button onClick={handleEnrichSelected} variant="default" disabled={enriching}>
