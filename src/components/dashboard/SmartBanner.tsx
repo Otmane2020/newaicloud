@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { CatalogActionCard } from '@/components/CatalogActionCard';
 import { Sparkles, AlertTriangle, Lightbulb } from 'lucide-react';
 
 interface SmartBannerProps {
@@ -10,79 +11,38 @@ interface SmartBannerProps {
   count?: number;
 }
 
-export function SmartBanner({ 
-  type, 
-  title, 
-  description, 
-  actionLabel, 
+export function SmartBanner({
+  type,
+  title,
+  description,
+  actionLabel,
   onAction,
-  count 
+  count,
 }: SmartBannerProps) {
-  const configs = {
-    optimization: {
-      gradient: 'from-warning/20 via-warning/10 to-transparent',
-      border: 'border-warning/30',
-      icon: Sparkles,
-      iconColor: 'text-warning',
-      iconBg: 'bg-warning/10',
-      buttonVariant: 'default' as const,
-      buttonClass: 'bg-warning hover:bg-warning/90 text-white'
-    },
-    'low-score': {
-      gradient: 'from-destructive/20 via-destructive/10 to-transparent',
-      border: 'border-destructive/30',
-      icon: AlertTriangle,
-      iconColor: 'text-destructive',
-      iconBg: 'bg-destructive/10',
-      buttonVariant: 'destructive' as const,
-      buttonClass: ''
-    },
-    success: {
-      gradient: 'from-success/20 via-success/10 to-transparent',
-      border: 'border-success/30',
-      icon: Lightbulb,
-      iconColor: 'text-success',
-      iconBg: 'bg-success/10',
-      buttonVariant: 'default' as const,
-      buttonClass: 'bg-success hover:bg-success/90 text-white'
-    }
+  const icons = {
+    optimization: Sparkles,
+    'low-score': AlertTriangle,
+    success: Lightbulb,
   };
 
-  const config = configs[type];
-  const Icon = config.icon;
+  const Icon = icons[type];
 
   return (
-    <div className={`relative overflow-hidden rounded-lg sm:rounded-xl border-2 ${config.border} bg-gradient-to-r ${config.gradient} backdrop-blur-sm p-4 sm:p-6 animate-fade-in`}>
-      {/* Animated background effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse" />
-      
-      <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full">
-          <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${config.iconBg} animate-pulse flex-shrink-0`}>
-            <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${config.iconColor}`} />
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm sm:text-base font-bold text-foreground mb-1 break-words">
-              {count !== undefined && count > 0 && (
-                <span className={`${config.iconColor} mr-2`}>🎯 {count}</span>
-              )}
-              {title}
-            </h3>
-            <p className="text-xs sm:text-sm text-muted-foreground break-words">
-              {description}
-            </p>
-          </div>
-        </div>
-
-        <Button 
+    <CatalogActionCard
+      icon={Icon}
+      title={title}
+      description={description}
+      meta={count !== undefined && count > 0 ? `${count} items need attention` : undefined}
+      action={
+        <Button
           onClick={onAction}
-          className={`${config.buttonClass} font-semibold shadow-lg hover:scale-105 transition-transform w-full sm:w-auto flex-shrink-0`}
           size="sm"
+          className="rounded-lg bg-violet-600 px-5 font-semibold text-white shadow-none hover:bg-violet-700"
         >
-          <span className="truncate">{actionLabel}</span>
+          <Sparkles className="mr-2 h-4 w-4" />
+          {actionLabel}
         </Button>
-      </div>
-    </div>
+      }
+    />
   );
 }
