@@ -42,14 +42,20 @@ const PLANS = [
     yearlyPrice: 7.99,
     features: {
       en: [
-        '100 analyzed products',
+        '100 products',
         '100 AI SEO optimizations / month',
-        '1 AI article / month'
+        '10 AI articles / month',
+        '100 AI chat responses / month',
+        '1 Shopify store',
+        'No automated campaigns'
       ],
       fr: [
-        '100 produits analysés',
+        '100 produits',
         '100 optimisations SEO IA / mois',
-        '1 article IA / mois'
+        '10 articles IA / mois',
+        '100 réponses du chat IA / mois',
+        '1 boutique Shopify',
+        'Aucune campagne automatisée'
       ]
     },
     icon: Zap,
@@ -67,16 +73,20 @@ const PLANS = [
     yearlyPrice: 39,
     features: {
       en: [
-        '1,000 analyzed products',
+        '1,000 products',
         '500 AI SEO optimizations / month',
-        '5 AI articles / month',
-        '3 automatic AI campaigns / month'
+        '10 AI articles / month',
+        '500 AI chat responses / month',
+        '3 automatic AI campaigns / month',
+        '1 Shopify store'
       ],
       fr: [
-        '1 000 produits analysés',
+        '1 000 produits',
         '500 optimisations SEO IA / mois',
-        '5 articles IA / mois',
-        '3 campagnes IA automatiques / mois'
+        '10 articles IA / mois',
+        '500 réponses du chat IA / mois',
+        '3 campagnes IA automatiques / mois',
+        '1 boutique Shopify'
       ]
     },
     icon: Crown,
@@ -96,14 +106,18 @@ const PLANS = [
       en: [
         'Unlimited products',
         '2,000 AI SEO optimizations / month',
-        '20 AI articles / month',
-        '10 automatic AI campaigns / month'
+        '100 AI articles / month',
+        '2,000 AI chat responses / month',
+        '10 automatic AI campaigns / month',
+        '5 Shopify stores'
       ],
       fr: [
         'Produits illimités',
         '2 000 optimisations SEO IA / mois',
-        '20 articles IA / mois',
-        '10 campagnes IA automatiques / mois'
+        '100 articles IA / mois',
+        '2 000 réponses du chat IA / mois',
+        '10 campagnes IA automatiques / mois',
+        '5 boutiques Shopify'
       ]
     },
     icon: Building2,
