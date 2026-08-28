@@ -5,6 +5,21 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { translations as fr } from '@/lib/translations/fr';
 import { translations as en } from '@/lib/translations/en';
+import { isAeoreplyDomain } from '@/hooks/useAppMode';
+
+// Resolve a safe in-app destination after authentication.
+const getPostLoginPath = () => {
+  const requested = new URLSearchParams(window.location.search).get('redirect');
+  if (
+    requested &&
+    requested.startsWith('/') &&
+    !requested.startsWith('//') &&
+    !['/', '/home', '/auth'].includes(requested.split('?')[0])
+  ) {
+    return requested;
+  }
+  return isAeoreplyDomain() ? '/aeo-setup' : '/dashboard';
+};
 
 // Helper function to get translated message based on stored language
 const getTranslatedMessage = (frMessage: string, enMessage: string): string => {
@@ -229,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const redirectUrl = `${window.location.origin}/aeo-setup`;
+    const redirectUrl = `${window.location.origin}${getPostLoginPath()}`;
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -250,7 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithFacebook = async () => {
-    const redirectUrl = `${window.location.origin}/dashboard`;
+    const redirectUrl = `${window.location.origin}${getPostLoginPath()}`;
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
