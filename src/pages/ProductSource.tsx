@@ -349,7 +349,7 @@ const ProductSource = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-4">
+    <div data-ui-version="product-source-list-v3" className="product-source-page mx-auto w-full max-w-[1600px] space-y-4">
       <WorkspacePageHeader
         section={fr ? "Catalogue" : "Catalog"}
         page={fr ? "Données enrichies" : "Enriched Data"}
@@ -450,7 +450,7 @@ const ProductSource = () => {
 
         <div className="divide-y divide-slate-100">
           {filteredProducts.map((product) => (
-            <div key={product.id} className="grid grid-cols-[auto_48px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 transition hover:bg-slate-50">
+            <div key={product.id} className="product-source-row grid grid-cols-[auto_48px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 transition hover:bg-slate-50">
               <Checkbox checked={selectedProducts.has(product.id)} onCheckedChange={() => toggleProductSelection(product.id)} />
               <div className="h-12 w-12 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                 {product.image_url ? <img src={product.image_url} alt={product.title} className="h-full w-full object-cover" /> : <Package className="m-3 h-6 w-6 text-slate-300" />}
@@ -464,7 +464,7 @@ const ProductSource = () => {
                   {product.ai_vision_model && <span className="text-violet-600">Vision AI</span>}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="product-source-actions flex items-center gap-2">
                 <Badge variant="outline" className={product.enrichment_status === "enriched" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : product.enrichment_status === "error" ? "border-rose-200 bg-rose-50 text-rose-700" : "border-amber-200 bg-amber-50 text-amber-700"}>
                   {product.enrichment_status === "enriched" ? (fr ? "Enrichi" : "Enriched") : product.enrichment_status === "error" ? (fr ? "Erreur" : "Error") : (fr ? "En attente" : "Pending")}
                 </Badge>
