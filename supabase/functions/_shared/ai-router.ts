@@ -27,7 +27,7 @@ function textFromGemini(data: any): string {
 function toGeminiParts(content: AIMessage["content"]): any[] {
   if (typeof content === "string") return [{ text: content }];
 
-  return content.flatMap((part: any) => {
+  return (content as any[]).flatMap((part: any): any[] => {
     if (part?.type === "text") return [{ text: part.text || "" }];
     const url = part?.image_url?.url;
     if (!url) return [];
