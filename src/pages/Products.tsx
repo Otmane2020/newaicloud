@@ -698,146 +698,83 @@ export default function Products() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="space-y-6 pb-10">
       <SimpleSyncProgress open={isSyncing} currentType={currentSyncType} />
-      
-      {/* Sticky header for mobile */}
-      <div className="sticky top-0 bg-background border-b z-10 p-4">
-        <div className="flex items-center justify-between mb-3">
+
+      <section className="overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
+        <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
           <div>
-            <h1 className="text-xl font-bold">{t.products.title}</h1>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {products.length} / {
-                limits?.limits?.max_products && limits.limits.max_products >= 999999 
-                  ? <Infinity className="w-3 h-3" />
-                  : (limits?.limits?.max_products || "...")
-              } • {
-                limits 
-                  ? (limits.limits.max_products >= 999999 
-                      ? <span className="flex items-center gap-1">slots <Infinity className="w-3 h-3" /></span>
-                      : tf('products.slotsAvailable', { slots: Math.max(0, (limits.limits.max_products || 0) - (limits.usage.products_count || 0)) }))
-                  : t.common.loading
-              }
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="border border-white/10 bg-white/10 text-violet-100 hover:bg-white/10">CATALOG · PRODUCTS</Badge>
+              <Badge className="border border-white/10 bg-white/5 text-white hover:bg-white/5">
+                {totalCount} / {limits?.limits?.max_products && limits.limits.max_products >= 999999 ? '∞' : (limits?.limits?.max_products || '…')}
+              </Badge>
+            </div>
+            <h1 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">{t.products.title}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Review, organize and improve every Shopify product from one catalog workspace.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap gap-2">
             {user?.email === 'oben.rockman@gmail.com' && (
-              <Button 
-                size="sm" 
-                onClick={() => navigate("/products/homepage")} 
-                variant="outline" 
-                className="h-9 px-3"
-              >
-                <Home className="w-4 h-4 mr-2" />
-                Homepage
+              <Button size="sm" onClick={() => navigate("/products/homepage")} variant="outline" className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
+                <Home className="mr-2 h-4 w-4" /> Homepage
               </Button>
             )}
-            <Button 
-              size="sm" 
-              onClick={async () => {
-                if (!selectedStore) {
-                  toast.error("Aucune boutique sélectionnée");
-                  return;
-                }
-                await syncShopifyStore(selectedStore);
-                await loadProducts();
-                await refreshLimits();
-              }} 
-              variant="outline" 
-              className="h-9 px-3"
-              disabled={isSyncing || !selectedStore}
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-              Synchroniser
+            <Button size="sm" onClick={async () => {
+              if (!selectedStore) { toast.error("Aucune boutique sélectionnée"); return; }
+              await syncShopifyStore(selectedStore); await loadProducts(); await refreshLimits();
+            }} variant="outline" disabled={isSyncing || !selectedStore} className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
+              <RefreshCw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} /> Synchroniser
             </Button>
-            <Button size="sm" onClick={() => navigate("/integration")} className="h-9 px-3">
-              <Plus className="w-4 h-4 mr-2" />
-              {t.products.importProducts}
+            <Button size="sm" onClick={() => navigate("/app/setup-wizard")} className="bg-violet-500 hover:bg-violet-400">
+              <Plus className="mr-2 h-4 w-4" /> {t.products.importProducts}
             </Button>
           </div>
         </div>
+      </section>
 
-        {/* Search bar */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder={t.products.searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10 text-sm bg-muted/50 border-0"
-          />
+      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input placeholder={t.products.searchPlaceholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-10 bg-slate-50 pl-9" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              ['active', t.common.active],
+              ['draft', t.common.draft],
+              ['all', t.common.all],
+            ].map(([value, label]) => (
+              <Button key={value} variant={statusFilter === value ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(value)} className={statusFilter === value ? "bg-violet-600 hover:bg-violet-700" : ""}>{label}</Button>
+            ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="outline" size="sm">{t.common.sort}<ChevronDown className="ml-1 h-3 w-3" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setSortBy("recent")}>{t.products.filters.recent}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("name-asc")}>{t.products.filters.nameAsc}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("name-desc")}>{t.products.filters.nameDesc}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("price-asc")}>{t.products.filters.priceLow}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortBy("price-desc")}>{t.products.filters.priceHigh}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}>
+              {viewMode === "grid" ? <List className="h-4 w-4" /> : <Grid3x3 className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
+      </section>
 
-        {/* Quick filters - Status first */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
-          <Button
-            variant={statusFilter === "active" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setStatusFilter("active")}
-            className="whitespace-nowrap text-xs h-8 px-3"
-          >
-            {t.common.active}
-          </Button>
-          <Button
-            variant={statusFilter === "draft" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setStatusFilter("draft")}
-            className="whitespace-nowrap text-xs h-8 px-3"
-          >
-            {t.common.draft}
-          </Button>
-          <Button
-            variant={statusFilter === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setStatusFilter("all")}
-            className="whitespace-nowrap text-xs h-8 px-3"
-          >
-            {t.common.all}
-          </Button>
+      <div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="whitespace-nowrap text-xs h-8 px-3">
-                {t.common.sort}
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setSortBy("recent")}>{t.products.filters.recent}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("name-asc")}>{t.products.filters.nameAsc}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("name-desc")}>{t.products.filters.nameDesc}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("price-asc")}>{t.products.filters.priceLow}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("price-desc")}>{t.products.filters.priceHigh}</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-            className="whitespace-nowrap text-xs h-8 px-3"
-          >
-            {viewMode === "grid" ? <List className="w-3 h-3" /> : <Grid3x3 className="w-3 h-3" />}
-          </Button>
-        </div>
-      </div>
-
-      <div className="p-4">
         {products.length === 0 ? (
-          <Card className="p-8 text-center border-0 shadow-sm">
-            <div className="flex flex-col items-center gap-4">
-              <div className="p-3 bg-muted rounded-full">
-                <Package className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">{t.products.empty.title}</h3>
-                <p className="text-muted-foreground mb-6 text-sm">{t.products.empty.description}</p>
-                <Button onClick={() => navigate("/integration")} size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  {t.products.empty.addProduct}
-                </Button>
-              </div>
-            </div>
+          <Card className="overflow-hidden rounded-3xl border-violet-100 bg-gradient-to-br from-white to-violet-50/60 shadow-sm">
+            <CardContent className="flex flex-col items-center px-6 py-14 text-center">
+              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-violet-100 text-violet-700"><Package className="h-7 w-7" /></span>
+              <h3 className="mt-5 text-xl font-semibold">{t.products.empty.title}</h3>
+              <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">{t.products.empty.description}</p>
+              <Button onClick={() => navigate("/app/setup-wizard")} className="mt-7 bg-violet-600 hover:bg-violet-700">
+                <Plus className="mr-2 h-4 w-4" /> Connect and import Shopify
+              </Button>
+            </CardContent>
           </Card>
         ) : (
           <>
@@ -848,7 +785,7 @@ export default function Products() {
             ) : viewMode === "grid" ? (
               // Optimized mobile grid (2 columns) - Like the photo
               <TooltipProvider>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {filteredProducts.map((product) => {
                   const discount = calculateDiscount(product.price, product.compare_at_price);
 
@@ -856,7 +793,7 @@ export default function Products() {
                     <Card
                       key={product.id}
                       onClick={() => navigate(`/product-landing/${product.id}`)}
-                      className="cursor-pointer border-0 shadow-sm overflow-hidden transition-all active:scale-95 bg-white"
+                      className="cursor-pointer overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md active:scale-[.99]"
                     >
                       <div className="aspect-square bg-muted/50 relative overflow-hidden group">
                         {product.image_url ? (

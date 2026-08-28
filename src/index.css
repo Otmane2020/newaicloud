@@ -249,6 +249,51 @@ label {
 }
 }
 
+@layer components {
+  /* CatalogueOptimize AI workspace: one visual language for legacy sub-tabs and tables */
+  .catalog-workspace [role="tablist"] {
+    @apply h-auto flex-wrap gap-1 rounded-2xl border border-violet-100 bg-white p-1.5 shadow-sm;
+  }
+
+  .catalog-workspace [role="tab"] {
+    @apply rounded-xl px-3 py-2 text-sm font-medium text-slate-500 transition-colors;
+  }
+
+  .catalog-workspace [role="tab"][data-state="active"] {
+    @apply bg-violet-50 text-violet-700 shadow-none;
+  }
+
+  .catalog-workspace table {
+    @apply w-full text-sm;
+  }
+
+  .catalog-workspace thead {
+    @apply border-b border-slate-200 bg-slate-50/90;
+  }
+
+  .catalog-workspace th {
+    @apply h-11 whitespace-nowrap px-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;
+  }
+
+  .catalog-workspace tbody tr {
+    @apply border-b border-slate-100 bg-white transition-colors;
+  }
+
+  .catalog-workspace tbody tr:hover {
+    @apply bg-violet-50/35;
+  }
+
+  .catalog-workspace td {
+    @apply px-4 py-3;
+  }
+
+  .catalog-workspace input,
+  .catalog-workspace textarea,
+  .catalog-workspace button[role="combobox"] {
+    @apply border-slate-200;
+  }
+}
+
 @layer utilities {
   .hide-scrollbar {
     -ms-overflow-style: none;
