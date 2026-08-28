@@ -1,10 +1,12 @@
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle2, RefreshCw, Loader2, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useState, useEffect } from 'react';
+import { useTranslation } from '@/lib/language';
+import { getImageUiTranslations } from '@/lib/imageUiTranslations';
 
 interface ImageGenerationPreviewDialogProps {
   open: boolean;
@@ -33,8 +35,10 @@ export function ImageGenerationPreviewDialog({
   isRegenerating = false,
   onApply,
   onRegenerate,
-  imageMetadata
+  imageMetadata,
 }: ImageGenerationPreviewDialogProps) {
+  const { language } = useTranslation();
+  const ui = getImageUiTranslations(language);
   const [regeneratePrompt, setRegeneratePrompt] = useState('');
   const [showRegenerateInput, setShowRegenerateInput] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
@@ -45,12 +49,12 @@ export function ImageGenerationPreviewDialog({
       setShowRegenerateInput(true);
       return;
     }
+
     await onRegenerate(regeneratePrompt);
     setRegeneratePrompt('');
     setShowRegenerateInput(false);
   };
 
-  // Reset image states when generatedImage changes
   useEffect(() => {
     setImageLoading(true);
     setImageError(false);
@@ -60,16 +64,14 @@ export function ImageGenerationPreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Prévisualisation - {title}</DialogTitle>
+          <DialogTitle>{ui.generationPreview.title(title)}</DialogTitle>
           <DialogDescription>
-            {currentImage 
-              ? "Comparez et validez l'image générée par IA avant de l'appliquer"
-              : "Prévisualisez et validez l'image générée par IA avant de l'appliquer"
-            }
+            {currentImage
+              ? ui.generationPreview.compareDescription
+              : ui.generationPreview.previewDescription}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Image Metadata */}
         {imageMetadata && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Info className="w-3 h-3" />
@@ -80,35 +82,35 @@ export function ImageGenerationPreviewDialog({
             )}
             {imageMetadata.model && (
               <Badge variant="outline" className="text-xs">
-                Modèle: {imageMetadata.model}
+                {ui.common.model}: {imageMetadata.model}
               </Badge>
             )}
           </div>
         )}
 
-        <div className={currentImage ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : "space-y-4"}>
-          {/* Current Image - Only shown if exists */}
+        <div className={currentImage ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-4'}>
           {currentImage && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium">Image actuelle</p>
+                <p className="text-sm font-medium">{ui.generationPreview.currentImage}</p>
               </div>
-              <img 
-                src={currentImage} 
-                alt="Actuelle" 
-                className="w-full h-auto border rounded-lg object-cover aspect-square bg-muted" 
+              <img
+                src={currentImage}
+                alt={ui.generationPreview.currentAlt}
+                className="w-full h-auto border rounded-lg object-cover aspect-square bg-muted"
               />
             </div>
           )}
 
-          {/* Generated Image - Full width if no current image */}
-          <div className={!currentImage ? "max-w-2xl mx-auto" : ""}>
+          <div className={!currentImage ? 'max-w-2xl mx-auto' : ''}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium">
-                {currentImage ? "Image générée par IA" : "Image IA générée"}
+                {currentImage
+                  ? ui.generationPreview.generatedImage
+                  : ui.generationPreview.generatedImageOnly}
               </p>
               <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs">
-                {currentImage ? "Nouveau" : "Nouvelle image"}
+                {currentImage ? ui.generationPreview.new : ui.generationPreview.newImage}
               </Badge>
             </div>
             <div className="relative w-full aspect-square border rounded-lg overflow-hidden bg-white">
@@ -119,13 +121,13 @@ export function ImageGenerationPreviewDialog({
               )}
               {imageError && (
                 <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground">
-                  <p className="text-sm">Erreur de chargement</p>
+                  <p className="text-sm">{ui.generationPreview.loadError}</p>
                 </div>
               )}
               {generatedImage && (
-                <img 
-                  src={generatedImage} 
-                  alt="Générée" 
+                <img
+                  src={generatedImage}
+                  alt={ui.generationPreview.generatedAlt}
                   className="w-full h-full object-cover"
                   onLoad={() => setImageLoading(false)}
                   onError={() => {
@@ -138,35 +140,30 @@ export function ImageGenerationPreviewDialog({
           </div>
         </div>
 
-        {/* Regenerate Section */}
         {showRegenerateInput && (
           <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
-            <Label htmlFor="regenerate-prompt">
-              Modifier le prompt pour régénérer
-            </Label>
+            <Label htmlFor="regenerate-prompt">{ui.generationPreview.modifyPrompt}</Label>
             <Input
               id="regenerate-prompt"
-              placeholder="Ex: Image plus lumineuse avec fond blanc minimaliste..."
+              placeholder={ui.generationPreview.promptPlaceholder}
               value={regeneratePrompt}
-              onChange={(e) => setRegeneratePrompt(e.target.value)}
+              onChange={(event) => setRegeneratePrompt(event.target.value)}
               disabled={isRegenerating}
             />
-            <p className="text-xs text-muted-foreground">
-              Décrivez les modifications souhaitées pour améliorer l'image
-            </p>
+            <p className="text-xs text-muted-foreground">{ui.generationPreview.promptHelp}</p>
           </div>
         )}
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isApplying || isRegenerating}
           >
-            Annuler
+            {ui.common.cancel}
           </Button>
-          
-          <Button 
+
+          <Button
             variant="outline"
             onClick={handleRegenerate}
             disabled={isApplying || isRegenerating || (showRegenerateInput && !regeneratePrompt.trim())}
@@ -174,30 +171,30 @@ export function ImageGenerationPreviewDialog({
             {isRegenerating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Régénération...
+                {ui.common.regenerating}
               </>
             ) : (
               <>
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Régénérer
+                {ui.common.regenerate}
               </>
             )}
           </Button>
 
-          <Button 
-            onClick={onApply} 
+          <Button
+            onClick={onApply}
             disabled={isApplying || isRegenerating}
             className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
           >
             {isApplying ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Application...
+                {ui.common.applying}
               </>
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4 mr-2" />
-                Appliquer cette image
+                {ui.generationPreview.applyImage}
               </>
             )}
           </Button>
