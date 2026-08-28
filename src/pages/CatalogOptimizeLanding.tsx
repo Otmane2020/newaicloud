@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import {
   ArrowRight, Check, Package, FileText, Images, BadgeDollarSign, Store,
-  ScanSearch, ShieldCheck, RefreshCw, Sparkles, AlertTriangle, Layers3
+  ScanSearch, ShieldCheck, RefreshCw, Sparkles, AlertTriangle, Layers3, Bot, ShoppingCart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
 
 const pillars = [
   { icon: Package, title: "Catalog", text: "Products, collections, variants, bulk editing and imports." },
@@ -43,12 +44,7 @@ export default function CatalogOptimizeLanding() {
     <div className="min-h-screen bg-white text-slate-950">
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 text-white">
-              <Package className="h-5 w-5" />
-            </span>
-            <span className="font-semibold tracking-tight">Catalog Optimize</span>
-          </Link>
+          <Link to="/" aria-label="Catalog Optimize AI"><CatalogOptimizeLogo /></Link>
           <nav className="hidden items-center gap-7 text-sm text-slate-600 md:flex">
             <a href="#product">Product</a><a href="#solutions">Solutions</a><a href="#pricing">Pricing</a>
             <Link to="/documentation">Resources</Link>
@@ -135,6 +131,45 @@ export default function CatalogOptimizeLanding() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </section>
+
+        <section className="border-y border-violet-100 bg-gradient-to-br from-violet-50 via-white to-blue-50 py-20">
+          <div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[.85fr_1.15fr] lg:items-center">
+            <div>
+              <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100">AI SALES ASSISTANT</Badge>
+              <h2 className="mt-5 text-4xl font-semibold tracking-tight">Turn your product catalog into a guided shopping experience</h2>
+              <p className="mt-4 text-lg leading-8 text-slate-600">
+                The assistant understands your Shopify products, asks the right questions and recommends relevant items, variants and alternatives.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-slate-700">
+                {["Product recommendations grounded in your catalog", "Variant, price and availability guidance", "Add-to-cart and Shopify checkout handoff", "Conversation, order and learning history"].map((item) => (
+                  <li key={item} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 text-emerald-600" />{item}</li>
+                ))}
+              </ul>
+              <Button asChild className="mt-7 bg-violet-600 hover:bg-violet-700">
+                <Link to="/auth?redirect=/storefront-assistant">Activate my sales assistant <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </div>
+            <Card className="overflow-hidden border-slate-200 shadow-2xl shadow-violet-950/10">
+              <CardHeader className="border-b bg-slate-950 text-white">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-600"><Bot className="h-5 w-5" /></span>
+                  <div><CardTitle className="text-base">Storefront AI</CardTitle><p className="text-xs text-slate-400">Connected to your live catalog</p></div>
+                  <span className="ml-auto h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 bg-slate-50 p-6">
+                <div className="ml-auto max-w-[82%] rounded-2xl rounded-br-md bg-violet-600 p-4 text-sm text-white">I need a compact green velvet sofa under €1,000.</div>
+                <div className="max-w-[88%] rounded-2xl rounded-bl-md border bg-white p-4 text-sm text-slate-700">
+                  I found three matching products. The emerald 3-seater is the closest fit and is currently available.
+                </div>
+                <div className="grid grid-cols-[72px_1fr] gap-3 rounded-xl border bg-white p-3">
+                  <div className="grid h-[72px] place-items-center rounded-lg bg-violet-50"><ShoppingCart className="h-6 w-6 text-violet-600" /></div>
+                  <div><p className="font-semibold">Emerald Velvet Sofa</p><p className="mt-1 text-xs text-slate-500">In stock · 3 variants</p><Button size="sm" className="mt-3 h-8">Add to cart</Button></div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
