@@ -89,11 +89,11 @@ export function AccountSettings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-5 xl:grid-cols-2">
       {/* Personal Information */}
-      <Card className="p-6">
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <User className="w-6 h-6 text-primary" />
+      <Card className="rounded-3xl border-slate-200 p-5 shadow-sm sm:p-6">
+        <h2 className="mb-6 flex items-center gap-3 text-xl font-semibold tracking-tight">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-50 text-violet-700"><User className="h-5 w-5" /></span>
           {t.account.profile.title}
         </h2>
 
@@ -121,7 +121,7 @@ export function AccountSettings() {
             />
           </div>
 
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="bg-violet-600 hover:bg-violet-700">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t.common.saveChanges}
           </Button>
@@ -131,7 +131,7 @@ export function AccountSettings() {
       {/* Security - Change Password */}
       <Card className="p-6">
         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <Lock className="w-6 h-6 text-primary" />
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-50 text-violet-700"><Lock className="h-5 w-5" /></span>
           {t.account.security.title}
         </h2>
 
@@ -186,11 +186,11 @@ export function AccountSettings() {
             </div>
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+          <div className="rounded-2xl border border-violet-100 bg-violet-50/70 p-4">
+            <p className="text-sm text-violet-900">
               <strong>{t.account.security.securityTips}</strong>
             </p>
-            <ul className="text-sm text-blue-700 dark:text-blue-300 mt-2 space-y-1 ml-4 list-disc">
+            <ul className="ml-4 mt-2 list-disc space-y-1 text-sm text-violet-700">
               <li>{t.account.security.tip1}</li>
               <li>{t.account.security.tip2}</li>
               <li>{t.account.security.tip3}</li>
@@ -198,15 +198,14 @@ export function AccountSettings() {
             </ul>
           </div>
 
-          <Button type="submit" disabled={passwordLoading || !newPassword || !confirmPassword}>
+          <Button type="submit" disabled={passwordLoading || !newPassword || !confirmPassword} className="bg-violet-600 hover:bg-violet-700">
             {passwordLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t.account.security.changePassword}
           </Button>
         </form>
       </Card>
 
-      {/* Language Preferences */}
-      <LanguagePreferences />
+      <div className="xl:col-span-2"><LanguagePreferences /></div>
     </div>
   );
 }
