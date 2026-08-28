@@ -36,7 +36,7 @@ export function WorkspacePageHeader({
         <div className="min-w-0 max-w-3xl">
           <div className="flex flex-wrap items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-xl border border-violet-100 bg-white text-violet-600 shadow-sm">
-              <Sparkles className="h-4.5 w-4.5" />
+              <Sparkles className="h-4 w-4" />
             </span>
             <div className="inline-flex flex-wrap items-center overflow-hidden rounded-xl border border-violet-100/80 bg-white/80 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur-sm sm:text-sm">
               <span className="px-3 py-2">{section}</span>
