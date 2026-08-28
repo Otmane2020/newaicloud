@@ -192,7 +192,7 @@ export default function CatalogOptimizeDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-7">
-      <section className="overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
+      <section className="workspace-hero overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-slate-950 via-violet-950 to-blue-950 p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
         <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
           <div>
             <Badge className="border border-white/10 bg-white/10 text-violet-100 hover:bg-white/10">AI PRODUCT OPERATIONS</Badge>
@@ -208,7 +208,7 @@ export default function CatalogOptimizeDashboard() {
               {loading || isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ScanSearch className="mr-2 h-4 w-4" />}
               {fr ? "Scanner maintenant" : "Scan now"}
             </Button>
-            <Button variant="outline" asChild className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/products?panel=import"><RefreshCw className="mr-2 h-4 w-4" />{fr ? "Importer" : "Import products"}</Link></Button>
+            {stats.total === 0 && <Button variant="outline" asChild className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"><Link to="/products?panel=import"><RefreshCw className="mr-2 h-4 w-4" />{fr ? "Importer" : "Import products"}</Link></Button>}
             <Button asChild className="bg-violet-500 hover:bg-violet-400"><Link to="/products/title-description"><ScanSearch className="mr-2 h-4 w-4" />{fr ? "Corriger le catalogue" : "Fix catalog issues"}</Link></Button>
           </div>
         </div>
