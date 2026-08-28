@@ -330,11 +330,11 @@ const ProductSource = () => {
           <h1 className="text-3xl font-bold text-white sm:text-4xl">{t.seo.productSource.title}</h1>
           <p className="mt-2 text-sm text-violet-100 sm:text-base">{t.seo.productSource.subtitle}</p>
         </div>
-        <div className="mt-6 flex flex-wrap gap-2 lg:mt-0">
+        <div className="mt-5 flex flex-wrap items-center gap-2 lg:mt-0 lg:max-w-xl lg:justify-end">
           {selectedProducts.size > 0 && (
             <>
-              <Button onClick={handleEnrichSelected} variant="default" disabled={enriching}>
-                <Sparkles className="w-4 h-4 mr-2" />
+              <Button onClick={handleEnrichSelected} disabled={enriching} className="bg-white text-violet-950 hover:bg-violet-50">
+                <Sparkles className="mr-2 h-4 w-4" />
                 {tf('seo.productSource.actions.enrichSelection', { count: selectedProducts.size })}
               </Button>
               <Button onClick={handleDeleteSelected} variant="destructive">
@@ -342,22 +342,25 @@ const ProductSource = () => {
               </Button>
             </>
           )}
-          <Button onClick={handleEnrichAll} variant="secondary" disabled={enriching}>
-            <Sparkles className="w-4 h-4 mr-2" />
-            {enriching ? t.seo.productSource.actions.enriching : t.seo.productSource.actions.enrichAll}
-          </Button>
-          <Button onClick={exportToCSV} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            {t.seo.productSource.actions.exportCSV}
-          </Button>
-          <Button onClick={exportData} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            {t.seo.productSource.actions.exportJSON}
-          </Button>
-          <Button onClick={loadProducts} disabled={enriching}>
-            <TrendingUp className="w-4 h-4 mr-2" />
+          {selectedProducts.size === 0 && (
+            <Button onClick={handleEnrichAll} disabled={enriching} className="bg-white text-violet-950 hover:bg-violet-50">
+              <Sparkles className="mr-2 h-4 w-4" />
+              {enriching ? t.seo.productSource.actions.enriching : t.seo.productSource.actions.enrichAll}
+            </Button>
+          )}
+          <Button onClick={loadProducts} disabled={enriching} variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white">
+            <RefreshCw className="mr-2 h-4 w-4" />
             {t.seo.productSource.actions.refresh}
           </Button>
+          <details className="relative">
+            <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium text-white hover:bg-white/10">
+              <Download className="mr-2 h-4 w-4" /> Export
+            </summary>
+            <div className="absolute right-0 z-20 mt-2 grid w-48 gap-1 rounded-xl border bg-white p-2 shadow-xl">
+              <Button onClick={exportToCSV} variant="ghost" className="justify-start text-slate-700">{t.seo.productSource.actions.exportCSV}</Button>
+              <Button onClick={exportData} variant="ghost" className="justify-start text-slate-700">{t.seo.productSource.actions.exportJSON}</Button>
+            </div>
+          </details>
         </div>
       </div>
 
