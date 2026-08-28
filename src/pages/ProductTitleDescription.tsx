@@ -45,6 +45,8 @@ import {
   Layers,
   Download,
   FileSpreadsheet,
+  History,
+  ShoppingCart,
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -2028,6 +2030,39 @@ export default function ProductTitleDescription() {
             </Button>
           ))}
         </nav>
+
+        {workspace === "images" && (
+          <section className="rounded-xl border border-slate-200 bg-white p-3" aria-label={language === "fr" ? "Outils Image Studio" : "Image Studio tools"}>
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold text-slate-950">Image Studio</h2>
+              <p className="text-xs text-slate-500">{language === "fr" ? "Toutes les opérations image dans un seul espace." : "Every image operation in one workspace."}</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              <Button variant="outline" className="h-auto justify-start gap-3 p-3" disabled={selectedProducts.size === 0} onClick={() => {
+                const selectedProductsList = products.filter((product) => selectedProducts.has(product.id));
+                const hasVariants = selectedProductsList.some((product) => product.variants?.length > 1 || (product.variants?.[0] && product.variants[0].title !== "Default Title"));
+                setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
+                setShowWhiteBgConfigDialog(true);
+                loadGalleryImages(Array.from(selectedProducts), true);
+              }}>
+                <Square className="h-4 w-4 text-violet-600" /><span className="text-left"><strong className="block text-sm">{language === "fr" ? "Fond blanc" : "White background"}</strong><small className="text-slate-500">{language === "fr" ? "Photos catalogue" : "Catalog photos"}</small></span>
+              </Button>
+              <Button variant="outline" className="h-auto justify-start gap-3 p-3" disabled={selectedProducts.size === 0} onClick={() => setShowAiConfigDialog(true)}>
+                <Wand2 className="h-4 w-4 text-violet-600" /><span className="text-left"><strong className="block text-sm">{language === "fr" ? "Arrière-plan IA" : "AI background"}</strong><small className="text-slate-500">{language === "fr" ? "Créer une ambiance" : "Create a scene"}</small></span>
+              </Button>
+              <Button variant="outline" className="h-auto justify-start gap-3 p-3" onClick={() => navigate("/shopping?focus=images")}>
+                <ShoppingCart className="h-4 w-4 text-violet-600" /><span className="text-left"><strong className="block text-sm">Google Shopping</strong><small className="text-slate-500">{language === "fr" ? "Images conformes" : "Compliant images"}</small></span>
+              </Button>
+              <Button variant="outline" className="h-auto justify-start gap-3 p-3" onClick={() => navigate("/seo?tab=alt")}>
+                <ImageIcon className="h-4 w-4 text-violet-600" /><span className="text-left"><strong className="block text-sm">ALT text</strong><small className="text-slate-500">{language === "fr" ? "Accessibilité et SEO" : "Accessibility and SEO"}</small></span>
+              </Button>
+              <Button variant="outline" className="h-auto justify-start gap-3 p-3" onClick={() => navigate("/products/media-history")}>
+                <History className="h-4 w-4 text-violet-600" /><span className="text-left"><strong className="block text-sm">{language === "fr" ? "Historique" : "History"}</strong><small className="text-slate-500">{language === "fr" ? "Retrouver les créations" : "Review creations"}</small></span>
+              </Button>
+            </div>
+            {selectedProducts.size === 0 && <p className="mt-2 text-xs text-slate-500">{language === "fr" ? "Sélectionnez un ou plusieurs produits pour générer un fond." : "Select one or more products to generate a background."}</p>}
+          </section>
+        )}
 
         {/* Total Products Header */}
         <div className="flex items-center gap-3 mb-4">
