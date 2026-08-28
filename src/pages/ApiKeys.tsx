@@ -146,11 +146,11 @@ export default function ApiKeys() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto w-full max-w-[1600px] space-y-5">
+      <section className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold">{t.apiKeys.title}</h1>
-          <p className="text-muted-foreground">{t.apiKeys.description}</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t.apiKeys.title}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t.apiKeys.description}</p>
         </div>
         <Dialog open={newKeyDialog} onOpenChange={setNewKeyDialog}>
           <DialogTrigger asChild>
@@ -219,7 +219,7 @@ export default function ApiKeys() {
             )}
           </DialogContent>
         </Dialog>
-      </div>
+      </section>
 
       <div className="grid gap-4">
         {apiKeys.length === 0 ? (
