@@ -121,17 +121,25 @@ export default function CatalogOptimizeDashboard() {
     return () => { mounted = false; };
   }, [user?.id, selectedStore?.id, scanNonce]);
 
-  const health = useMemo(() => {
+  const contentScore = useMemo(() => {
     if (!stats.total) return null;
-    const totalChecks = stats.total * 5;
-    const failedChecks =
-      stats.missingTitles +
-      stats.missingSeoTitles +
-      stats.missingSeoDescriptions +
-      stats.missingImages +
-      stats.missingTags;
-    return Math.max(0, Math.round(((totalChecks - failedChecks) / totalChecks) * 100));
+    const checks = stats.total * 3;
+    const failures = stats.missingTitles + stats.missingImages + stats.missingTags;
+    return Math.max(0, Math.round(((checks - failures) / checks) * 100));
   }, [stats]);
+
+  const seoScore = useMemo(() => {
+    if (!stats.total) return null;
+    const checks = stats.total * 2;
+    const failures = stats.missingSeoTitles + stats.missingSeoDescriptions;
+    return Math.max(0, Math.round(((checks - failures) / checks) * 100));
+  }, [stats]);
+
+  // Catalog health is an explainable composite: 60% catalog content + 40% SEO.
+  const health = useMemo(() => {
+    if (contentScore === null || seoScore === null) return null;
+    return Math.round(contentScore * 0.6 + seoScore * 0.4);
+  }, [contentScore, seoScore]);
 
   const shoppingReadiness = useMemo(() => {
     if (!stats.total) return null;
@@ -222,10 +230,11 @@ export default function CatalogOptimizeDashboard() {
         <Card className="overflow-hidden border-violet-100 shadow-sm">
           <CardContent className="p-5">
             <div className="flex items-center justify-between"><p className="text-sm font-medium text-slate-500">{fr ? "Santé du catalogue" : "Catalog health"}</p><span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-50 text-violet-700"><Sparkles className="h-4 w-4" /></span></div>
-            {loading ? <Loader2 className="mt-5 h-6 w-6 animate-spin text-violet-600" /> : health === null ? <p className="mt-5 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-4 text-3xl font-semibold tracking-tight">{health}%</p><Progress value={health} className="mt-3 h-2" /><p className="mt-2 text-xs text-slate-500">{fr ? "5 contrôles de qualité intrinsèque par produit" : "5 intrinsic quality checks per product"}</p></>}
+            {loading ? <Loader2 className="mt-5 h-6 w-6 animate-spin text-violet-600" /> : health === null ? <p className="mt-5 text-xl font-semibold">{fr ? "Audit requis" : "Scan required"}</p> : <><p className="mt-4 text-3xl font-semibold tracking-tight">{health}%</p><Progress value={health} className="mt-3 h-2" /><p className="mt-2 text-xs text-slate-500">{fr ? `Contenu 60 % (${contentScore ?? 0}) · SEO 40 % (${seoScore ?? 0})` : `Content 60% (${contentScore ?? 0}) · SEO 40% (${seoScore ?? 0})`}</p></>}
           </CardContent>
         </Card>
         {[
+          { label: fr ? "Score SEO" : "SEO score", value: loading ? "—" : (seoScore === null ? "—" : `${seoScore}%`), detail: fr ? "Titres et descriptions SEO" : "SEO titles and descriptions", icon: Sparkles, tone: "bg-fuchsia-50 text-fuchsia-700" },
           { label: fr ? "Préparation Shopping" : "Shopping readiness", value: loading ? "—" : (shoppingReadiness === null ? "—" : `${shoppingReadiness}%`), detail: fr ? "Score séparé, non inclus dans la santé" : "Separate score, not included in health", icon: ShoppingCart, tone: "bg-violet-50 text-violet-700" },
           { label: fr ? "Produits analysés" : "Products analyzed", value: loading ? "—" : stats.total, detail: fr ? "Catalogue importé" : "Imported catalog", icon: Package, tone: "bg-blue-50 text-blue-700" },
           { label: fr ? "Produits incomplets" : "Incomplete products", value: loading ? "—" : stats.incomplete, detail: fr ? "À traiter en priorité" : "Priority work queue", icon: AlertTriangle, tone: "bg-amber-50 text-amber-700" },
