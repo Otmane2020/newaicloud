@@ -1,19 +1,24 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.1";
-import { detectContentLanguage, resolveLanguage, getLanguageInstructions, getGenerationLanguage } from "../_shared/language-detector.ts";
+import { resolveLanguage } from "../_shared/language-detector.ts";
+import { routeAI, routeVision } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// -----------------------------
-// CLEAN JSON
-// -----------------------------
-const cleanJSON = (t: string) =>
-  t
+const cleanJSON = (text: string) =>
+  text
     .replace(/```json/gi, "")
     .replace(/```/g, "")
     .trim();
+
+function jsonResponse(payload: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
 function arrayBufferToBase64(buf: ArrayBuffer) {
   const bytes = new Uint8Array(buf);
@@ -25,200 +30,42 @@ function arrayBufferToBase64(buf: ArrayBuffer) {
   return btoa(binary);
 }
 
-// -----------------------------
-// 🟦 LOVABLE AI VISION (NO CRASH)
-// -----------------------------
-async function safeLovableVision(base64: string, prompt: string, apiKey: string) {
-  try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              {
-                type: "image_url",
-                image_url: { url: `data:image/jpeg;base64,${base64}` },
-              },
-            ],
-          },
-        ],
-        temperature: 0.2,
-      }),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.log("⚠ Lovable AI Vision non-fatal:", res.status, text);
-      
-      if (res.status === 429) {
-        console.log("⚠ Rate limit exceeded");
-      } else if (res.status === 402) {
-        console.log("⚠ Payment required");
-      }
-      return null;
-    }
-
-    const data = await res.json();
-    return data?.choices?.[0]?.message?.content || null;
-  } catch (e) {
-    console.log("⚠ Lovable AI Vision exception:", e);
-    return null;
-  }
-}
-
-// -----------------------------
-// 🔥 DEEPSEEK VISION FALLBACK
-// -----------------------------
-async function deepseekVision(base64: string, prompt: string, apiKey: string) {
-  const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "deepseek-vl",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "input_image",
-              image_url: `data:image/jpeg;base64,${base64}`,
-            },
-          ],
-        },
-      ],
-      temperature: 0.2,
-    }),
+async function aiTextWithFallback(prompt: string): Promise<string> {
+  const result = await routeAI({
+    messages: [{ role: "user", content: prompt }],
+    maxTokens: 1200,
+    temperature: 0.3,
   });
-
-  if (!res.ok) throw new Error("DeepSeek Vision error");
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || "null";
+  console.log(`[smart-title] text provider=${result.provider} model=${result.model}`);
+  return result.content;
 }
 
-// -----------------------------
-// 🔥 DEEPSEEK TEXT
-// -----------------------------
-async function deepseekText(prompt: string, apiKey: string) {
-  const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "deepseek-chat",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.4,
-    }),
-  });
-
-  if (!res.ok) throw new Error("DeepSeek error");
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || "";
-}
-
-// -----------------------------
-// 🟦 LOVABLE AI TEXT FALLBACK
-// -----------------------------
-async function lovableAIText(prompt: string, apiKey: string): Promise<string> {
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash-lite",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    console.log("⚠ Lovable AI Text error:", res.status, text);
-    throw new Error("Lovable AI error");
-  }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || "";
-}
-
-// -----------------------------
-// 🔄 AI TEXT WITH FALLBACK (DeepSeek → Lovable AI)
-// -----------------------------
-async function aiTextWithFallback(prompt: string, deepseekKey: string, lovableKey: string): Promise<string> {
-  // Try DeepSeek first
-  try {
-    const result = await deepseekText(prompt, deepseekKey);
-    if (result && result.trim()) {
-      console.log("✅ DeepSeek text success");
-      return result;
-    }
-  } catch (e) {
-    console.log("⚠ DeepSeek failed, trying Lovable AI:", e);
-  }
-
-  // Fallback to Lovable AI
-  try {
-    const result = await lovableAIText(prompt, lovableKey);
-    if (result && result.trim()) {
-      console.log("✅ Lovable AI text success (fallback)");
-      return result;
-    }
-  } catch (e) {
-    console.log("⚠ Lovable AI also failed:", e);
-  }
-
-  throw new Error("All AI providers failed");
-}
-
-// -----------------------------
-// 🏷️ SIMPLE LOCAL FALLBACK (no AI)
-// -----------------------------
 function generateSimpleTitle(product: any, language: string): string {
-  const type = product.product_type || '';
-  const title = product.title || '';
-  
-  // Extract main keywords from title (words > 3 chars)
-  const keywords = title.split(' ')
-    .filter((w: string) => w.length > 3 && !/^[0-9]+$/.test(w))
+  const type = product.product_type || "";
+  const originalTitle = product.title || "";
+  const keywords = originalTitle
+    .split(/\s+/)
+    .filter((word: string) => word.length > 3 && !/^[0-9]+$/.test(word))
     .slice(0, 4)
-    .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
-  
-  if (language === 'fr') {
+    .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+
+  if (language === "fr") {
     return type ? `${type} ${keywords}`.trim() : keywords;
-  } else {
-    return type ? `${keywords} ${type}`.trim() : keywords;
   }
+  return type ? `${keywords} ${type}`.trim() : keywords;
 }
 
-// Language-specific vision prompts
 function getVisionPrompt(lang: string): string {
   const prompts: Record<string, string> = {
-    fr: `Analyse cette image et décris précisément:
+    fr: `Analyse cette image et décris précisément :
 - Construction (monobloc / avec pieds)
 - Matériau du corps
 - Matériau du piètement (si présent)
 - Décoration (lignes dorées, motifs…)
 - Forme
 - Style
-Réponds en phrases complètes en français.`,
+N'invente aucun attribut invisible. Réponds en phrases complètes en français.`,
     en: `Analyze this image and describe precisely:
 - Construction (single piece / with legs)
 - Body material
@@ -226,7 +73,7 @@ Réponds en phrases complètes en français.`,
 - Decoration (gold lines, patterns…)
 - Shape
 - Style
-Answer in complete sentences in English.`,
+Do not invent attributes that are not visible. Answer in complete sentences in English.`,
     de: `Analysiere dieses Bild und beschreibe genau:
 - Konstruktion (einteilig / mit Beinen)
 - Korpusmaterial
@@ -234,7 +81,7 @@ Answer in complete sentences in English.`,
 - Dekoration (goldene Linien, Muster…)
 - Form
 - Stil
-Antworte in vollständigen Sätzen auf Deutsch.`,
+Erfinde keine unsichtbaren Attribute. Antworte in vollständigen Sätzen auf Deutsch.`,
     es: `Analiza esta imagen y describe con precisión:
 - Construcción (monobloque / con patas)
 - Material del cuerpo
@@ -242,7 +89,7 @@ Antworte in vollständigen Sätzen auf Deutsch.`,
 - Decoración (líneas doradas, patrones…)
 - Forma
 - Estilo
-Responde en oraciones completas en español.`,
+No inventes atributos que no sean visibles. Responde en oraciones completas en español.`,
     it: `Analizza questa immagine e descrivi con precisione:
 - Costruzione (monoblocco / con gambe)
 - Materiale del corpo
@@ -250,35 +97,35 @@ Responde en oraciones completas en español.`,
 - Decorazione (linee dorate, motivi…)
 - Forma
 - Stile
-Rispondi in frasi complete in italiano.`,
+Non inventare attributi non visibili. Rispondi in frasi complete in italiano.`,
   };
   return prompts[lang] || prompts.fr;
 }
 
-// Language-specific title prompts
 function getTitlePrompt(lang: string, visionAnalysis: string | null, parsed: any): string {
+  const visionBlock = visionAnalysis || "Aucune analyse visuelle disponible. Base-toi uniquement sur les données produit.";
   const prompts: Record<string, string> = {
-    fr: `Génère un TITRE ULTRA SEO basé sur:
+    fr: `Génère un TITRE ULTRA SEO basé sur :
 
-IMAGE:
-${visionAnalysis}
+IMAGE :
+${visionBlock}
 
-TEXTE:
+TEXTE :
 ${JSON.stringify(parsed)}
 
-RÈGLES:
+RÈGLES :
 - 80 caractères max
 - Majuscule à chaque mot
 - Français pur
 - Format: Catégorie + Forme + Couleur + Matériau + [Pieds si présents] + Style
-Pas de virgules ni guillemets.
+- N'invente pas une information absente
+- Pas de virgules ni guillemets
 
-Retourne:
-UN SEUL TITRE.`,
+Retourne UN SEUL TITRE.`,
     en: `Generate an ULTRA SEO TITLE based on:
 
 IMAGE:
-${visionAnalysis}
+${visionBlock}
 
 TEXT:
 ${JSON.stringify(parsed)}
@@ -288,14 +135,14 @@ RULES:
 - Capitalize each word
 - Pure English
 - Format: Category + Shape + Color + Material + [Legs if present] + Style
-No commas or quotes.
+- Do not invent missing information
+- No commas or quotes
 
-Return:
-A SINGLE TITLE.`,
+Return A SINGLE TITLE.`,
     de: `Generiere einen ULTRA SEO TITEL basierend auf:
 
 BILD:
-${visionAnalysis}
+${visionBlock}
 
 TEXT:
 ${JSON.stringify(parsed)}
@@ -305,14 +152,14 @@ REGELN:
 - Jeden Wort großschreiben
 - Reines Deutsch
 - Format: Kategorie + Form + Farbe + Material + [Beine falls vorhanden] + Stil
-Keine Kommas oder Anführungszeichen.
+- Keine fehlenden Informationen erfinden
+- Keine Kommas oder Anführungszeichen
 
-Gib zurück:
-EINEN EINZIGEN TITEL.`,
+Gib EINEN EINZIGEN TITEL zurück.`,
     es: `Genera un TÍTULO ULTRA SEO basado en:
 
 IMAGEN:
-${visionAnalysis}
+${visionBlock}
 
 TEXTO:
 ${JSON.stringify(parsed)}
@@ -322,14 +169,14 @@ REGLAS:
 - Capitalizar cada palabra
 - Español puro
 - Formato: Categoría + Forma + Color + Material + [Patas si las hay] + Estilo
-Sin comas ni comillas.
+- No inventar información ausente
+- Sin comas ni comillas
 
-Devuelve:
-UN SOLO TÍTULO.`,
+Devuelve UN SOLO TÍTULO.`,
     it: `Genera un TITOLO ULTRA SEO basato su:
 
 IMMAGINE:
-${visionAnalysis}
+${visionBlock}
 
 TESTO:
 ${JSON.stringify(parsed)}
@@ -339,167 +186,182 @@ REGOLE:
 - Prima lettera maiuscola per ogni parola
 - Italiano puro
 - Formato: Categoria + Forma + Colore + Materiale + [Gambe se presenti] + Stile
-Nessuna virgola o virgolette.
+- Non inventare informazioni mancanti
+- Nessuna virgola o virgolette
 
-Restituisci:
-UN SOLO TITOLO.`,
+Restituisci UN SOLO TITOLO.`,
   };
   return prompts[lang] || prompts.fr;
 }
 
-// --------------------------------------------------
-//                  MAIN FUNCTION
-// --------------------------------------------------
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // Safe HealthCheck handler
-  const bodyCheck = await req.json().catch(() => ({}));
-  if (bodyCheck?.healthCheck === true) {
-    return new Response(JSON.stringify({ ok: true }), { 
-      status: 200, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) {
+    return jsonResponse({ ok: true });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const DEEPSEEK_KEY = Deno.env.get("DEEPSEEK_API_KEY")!;
-    const LOVABLE_KEY = Deno.env.get("LOVABLE_API_KEY")!
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !supabaseKey) {
+      return jsonResponse({
+        success: false,
+        error: "SUPABASE_NOT_CONFIGURED",
+        message: "Smart title is not configured correctly.",
+      });
+    }
+
+    const { productId, language: explicitLang } = body;
+    if (!productId) {
+      return jsonResponse({
+        success: false,
+        error: "PRODUCT_ID_REQUIRED",
+        message: "Product ID required.",
+      });
+    }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { productId, language: explicitLang } = bodyCheck;
-
-    if (!productId) throw new Error("Product ID required");
-
-    // LOAD PRODUCT with store language
-    const { data: product } = await supabase
+    const { data: product, error: productError } = await supabase
       .from("shopify_products")
       .select("*, product_images(*), shopify_connections!inner(store_language)")
       .eq("id", productId)
       .single();
 
-    // 🌍 Detect language from product title (priority) or fallback to store language
-    const storeLanguage = (product as any)?.shopify_connections?.store_language || "fr-FR";
-    const contentText = `${product.title || ''} ${product.body_html || ''}`;
-    const language = resolveLanguage({
-      explicitLanguage: explicitLang,
-      contentText: contentText,
-      storeLanguage: storeLanguage
-    });
-    console.log(`🌍 [smart-title] Using language: ${language} (detected from: ${product.title?.substring(0, 50)}...)`);
-
-    const images = product.product_images || [];
-    const primary = images.sort((a: any, b: any) => (a.position || 0) - (b.position || 0))[0];
-
-    let visionAnalysis = null;
-
-    // -------------------------------
-    // DOWNLOAD IMAGE
-    // -------------------------------
-    if (primary?.src) {
-      const img = await fetch(primary.src);
-      const buf = await img.arrayBuffer();
-      const base64 = arrayBufferToBase64(buf);
-
-      const visionPrompt = getVisionPrompt(language);
-
-      // ESSAI LOVABLE AI (NE CRASH JAMAIS)
-      if (LOVABLE_KEY) {
-        visionAnalysis = await safeLovableVision(base64, visionPrompt, LOVABLE_KEY);
-      }
-
-      // FALLBACK
-      if (!visionAnalysis && DEEPSEEK_KEY) {
-        visionAnalysis = await deepseekVision(base64, visionPrompt, DEEPSEEK_KEY);
-      }
-
-      console.log("VISION FINAL:", visionAnalysis);
+    if (productError || !product) {
+      console.error("[smart-title] product load failed:", productError);
+      return jsonResponse({
+        success: false,
+        error: "PRODUCT_NOT_FOUND",
+        message: "Product could not be loaded.",
+      });
     }
 
-    // PRODUCT ANALYSIS - Language-aware
+    const storeLanguage = (product as any)?.shopify_connections?.store_language || "fr-FR";
+    const contentText = `${product.title || ""} ${product.body_html || ""}`;
+    const language = resolveLanguage({
+      explicitLanguage: explicitLang,
+      contentText,
+      storeLanguage,
+    });
+    console.log(`🌍 [smart-title] language=${language}`);
+
+    const images = [...(product.product_images || [])];
+    const primary = images.sort((a: any, b: any) => (a.position || 0) - (b.position || 0))[0];
+    let visionAnalysis: string | null = null;
+
+    // Vision is optional enrichment. It must never block title generation.
+    if (primary?.src) {
+      try {
+        const imageResponse = await fetch(primary.src);
+        if (!imageResponse.ok) {
+          throw new Error(`Image download failed: ${imageResponse.status}`);
+        }
+
+        const mimeType = imageResponse.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+        if (!mimeType.startsWith("image/")) {
+          throw new Error("Image download returned a non-image content type");
+        }
+
+        const base64 = arrayBufferToBase64(await imageResponse.arrayBuffer());
+        const dataUrl = `data:${mimeType};base64,${base64}`;
+        const routedVision = await routeVision([
+          {
+            role: "user",
+            content: [
+              { type: "text", text: getVisionPrompt(language) },
+              { type: "image_url", image_url: { url: dataUrl } },
+            ],
+          },
+        ], 700);
+
+        visionAnalysis = routedVision.content || null;
+        console.log(`[smart-title] vision provider=${routedVision.provider} model=${routedVision.model}`);
+      } catch (visionError) {
+        console.warn("⚠ [smart-title] vision unavailable; continuing without it:", visionError);
+        visionAnalysis = null;
+      }
+    }
+
     const analysisPrompts: Record<string, string> = {
-      fr: `Analyse ce produit et retourne un JSON strict:
+      fr: `Analyse ce produit et retourne un JSON strict :
 Titre: ${product.title}
 Type: ${product.product_type}
 Description: ${product.body_html}
 
-Retourne:
+Retourne :
 {
- "category": "",
- "materials": [],
- "style": "",
- "features": [],
- "selling_points": []
+  "category": "",
+  "materials": [],
+  "style": "",
+  "features": [],
+  "selling_points": []
 }`,
-      en: `Analyze this product and return a strict JSON:
+      en: `Analyze this product and return strict JSON:
 Title: ${product.title}
 Type: ${product.product_type}
 Description: ${product.body_html}
 
 Return:
 {
- "category": "",
- "materials": [],
- "style": "",
- "features": [],
- "selling_points": []
+  "category": "",
+  "materials": [],
+  "style": "",
+  "features": [],
+  "selling_points": []
 }`,
     };
 
     const analysisPrompt = analysisPrompts[language] || analysisPrompts.fr;
-    
-    let parsed;
-    let title;
-    
+    let parsed: any;
+
     try {
-      // Try AI with fallback (DeepSeek → Lovable AI)
-      const analysis = await aiTextWithFallback(analysisPrompt, DEEPSEEK_KEY, LOVABLE_KEY);
+      const analysis = await aiTextWithFallback(analysisPrompt);
       parsed = JSON.parse(cleanJSON(analysis));
-      console.log("✅ AI analysis successful");
+      console.log("✅ [smart-title] AI product analysis successful");
     } catch (analysisError) {
-      console.log("⚠ AI analysis failed, using simple fallback:", analysisError);
+      console.warn("⚠ [smart-title] AI analysis failed; using product data:", analysisError);
       parsed = {
-        category: product.product_type || '',
+        category: product.product_type || "",
         materials: [],
-        style: '',
+        style: "",
         features: [],
-        selling_points: []
+        selling_points: [],
       };
     }
 
-    // TITLE - Language-specific
+    let title: string;
     try {
-      const titlePrompt = getTitlePrompt(language, visionAnalysis, parsed);
-      title = (await aiTextWithFallback(titlePrompt, DEEPSEEK_KEY, LOVABLE_KEY)).trim();
+      title = (await aiTextWithFallback(getTitlePrompt(language, visionAnalysis, parsed))).trim();
       title = title.replace(/^["']|["']$/g, "");
-      console.log("✅ AI title generation successful");
+      console.log("✅ [smart-title] AI title generation successful");
     } catch (titleError) {
-      console.log("⚠ AI title failed, using simple local fallback:", titleError);
+      console.warn("⚠ [smart-title] AI title failed; using local fallback:", titleError);
       title = generateSimpleTitle(product, language);
     }
 
+    if (!title) title = product.title || "Product";
     if (title.length > 80) {
-      title = title.slice(0, title.lastIndexOf(" "));
+      const shortened = title.slice(0, 80);
+      const lastSpace = shortened.lastIndexOf(" ");
+      title = lastSpace > 40 ? shortened.slice(0, lastSpace) : shortened;
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        optimizedTitle: title,
-        visionAnalysis,
-        deepseekAnalysis: parsed,
-        language: language,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: corsHeaders,
+    return jsonResponse({
+      success: true,
+      optimizedTitle: title,
+      visionAnalysis,
+      deepseekAnalysis: parsed,
+      language,
+    });
+  } catch (error: any) {
+    console.error("❌ [smart-title] unexpected error:", error);
+    return jsonResponse({
+      success: false,
+      error: "SMART_TITLE_FAILED",
+      message: error?.message || "Smart title generation failed.",
     });
   }
 });
