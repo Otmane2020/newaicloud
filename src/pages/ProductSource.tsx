@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/lib/language";
@@ -324,45 +325,37 @@ const ProductSource = () => {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="workspace-hero rounded-3xl bg-gradient-to-br from-slate-950 via-violet-950 to-violet-700 p-6 text-white shadow-2xl shadow-violet-950/15 sm:p-8 lg:flex lg:items-end lg:justify-between lg:gap-6">
-        <div className="max-w-2xl">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-violet-100"><Database className="h-3.5 w-3.5" /> Catalog intelligence</div>
-          <h1 className="text-3xl font-bold text-white sm:text-4xl">{t.seo.productSource.title}</h1>
-          <p className="mt-2 text-sm text-violet-100 sm:text-base">{t.seo.productSource.subtitle}</p>
-        </div>
-        <div className="mt-5 flex flex-wrap items-center gap-2 lg:mt-0 lg:max-w-xl lg:justify-end">
-          {selectedProducts.size > 0 && (
-            <>
-              <Button onClick={handleEnrichSelected} disabled={enriching} className="bg-white text-violet-950 hover:bg-violet-50">
-                <Sparkles className="mr-2 h-4 w-4" />
-                {tf('seo.productSource.actions.enrichSelection', { count: selectedProducts.size })}
-              </Button>
-              <Button onClick={handleDeleteSelected} variant="destructive">
-                {tf('seo.productSource.actions.deleteSelection', { count: selectedProducts.size })}
-              </Button>
-            </>
-          )}
-          {selectedProducts.size === 0 && (
-            <Button onClick={handleEnrichAll} disabled={enriching} className="bg-white text-violet-950 hover:bg-violet-50">
+      <WorkspacePageHeader
+        section="Catalog"
+        page="Product Sources"
+        count={products.length}
+        title={t.seo.productSource.title}
+        description={t.seo.productSource.subtitle}
+        actions={
+          <>
+            <Button
+              onClick={selectedProducts.size > 0 ? handleEnrichSelected : handleEnrichAll}
+              disabled={enriching}
+            >
               <Sparkles className="mr-2 h-4 w-4" />
-              {enriching ? t.seo.productSource.actions.enriching : t.seo.productSource.actions.enrichAll}
+              {selectedProducts.size > 0
+                ? tf("seo.productSource.actions.enrichSelection", { count: selectedProducts.size })
+                : enriching ? t.seo.productSource.actions.enriching : t.seo.productSource.actions.enrichAll}
             </Button>
-          )}
-          <Button onClick={loadProducts} disabled={enriching} variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            {t.seo.productSource.actions.refresh}
-          </Button>
-          <details className="relative">
-            <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-medium text-white hover:bg-white/10">
-              <Download className="mr-2 h-4 w-4" /> Export
-            </summary>
-            <div className="absolute right-0 z-20 mt-2 grid w-48 gap-1 rounded-xl border bg-white p-2 shadow-xl">
-              <Button onClick={exportToCSV} variant="ghost" className="justify-start text-slate-700">{t.seo.productSource.actions.exportCSV}</Button>
-              <Button onClick={exportData} variant="ghost" className="justify-start text-slate-700">{t.seo.productSource.actions.exportJSON}</Button>
-            </div>
-          </details>
-        </div>
-      </div>
+            <details className="relative">
+              <summary className="flex min-h-9 cursor-pointer list-none items-center rounded-lg border px-3 text-sm font-medium hover:bg-muted">
+                <Download className="mr-2 h-4 w-4" /> More
+              </summary>
+              <div className="absolute right-0 z-30 mt-2 grid w-56 gap-1 rounded-xl border bg-white p-2 shadow-xl">
+                <Button onClick={loadProducts} disabled={enriching} variant="ghost" className="justify-start">Refresh</Button>
+                <Button onClick={exportToCSV} variant="ghost" className="justify-start">{t.seo.productSource.actions.exportCSV}</Button>
+                <Button onClick={exportData} variant="ghost" className="justify-start">{t.seo.productSource.actions.exportJSON}</Button>
+                {selectedProducts.size > 0 && <Button onClick={handleDeleteSelected} variant="ghost" className="justify-start text-red-600">{tf("seo.productSource.actions.deleteSelection", { count: selectedProducts.size })}</Button>}
+              </div>
+            </details>
+          </>
+        }
+      />
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
