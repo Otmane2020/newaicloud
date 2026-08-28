@@ -830,3 +830,28 @@ label {
     line-height: 1.25rem !important;
   }
 }
+
+
+/* Product Sources: compact Shopify-like rows with a safe mobile fallback. */
+@layer components {
+  .product-source-page .product-source-row {
+    min-height: 4rem;
+    background: hsl(var(--card));
+  }
+
+  .product-source-page .product-source-row:hover {
+    background: hsl(210 40% 98%);
+  }
+
+  @media (max-width: 640px) {
+    .product-source-page .product-source-row {
+      grid-template-columns: auto 2.5rem minmax(0, 1fr);
+      gap: 0.625rem;
+    }
+
+    .product-source-page .product-source-actions {
+      grid-column: 2 / -1;
+      justify-content: flex-end;
+    }
+  }
+}
