@@ -1495,9 +1495,9 @@ export const translations = {
   },
 
   aiAssistant: {
-    title: "NewAI Support",
+    title: "CatalogueOptimize AI Support",
     subtitle: "En ligne et prêt à vous aider",
-    welcome: "Bonjour ! Je suis votre assistant NewAI Support. Comment puis-je vous aider aujourd'hui ?",
+    welcome: "Bonjour ! Je suis votre assistant CatalogueOptimize AI Support. Comment puis-je vous aider aujourd'hui ?",
     placeholder: "Tapez votre message...",
     error: "Désolé, j'ai rencontré une erreur. Veuillez réessayer.",
     contactForm: "Formulaire de contact",
@@ -2502,7 +2502,7 @@ export const translations = {
     },
     googleAds: {
       title: "Google Ads Optimizer",
-      description: "Optimisation IA des campagnes pour NewAI",
+      description: "Optimisation IA des campagnes pour CatalogueOptimize AI",
       refresh: "Actualiser",
       importData: "Importer",
       totalSpend: "Dépenses totales",
@@ -3459,7 +3459,7 @@ export const translations = {
       },
     },
     chatRobot: {
-      title: "NewAI Robot",
+      title: "CatalogueOptimize AI Robot",
       home: "Accueil",
       listeningEnabled: "🎤 Écoute activée",
       microphoneError: "Impossible d'accéder au microphone",
@@ -4858,7 +4858,7 @@ export const translations = {
   },
 
   onboarding: {
-    title: "Choisissez votre plan NewAI",
+    title: "Choisissez votre plan CatalogueOptimize AI",
     subtitle: "Choisissez le plan qui correspond à vos besoins • Accès immédiat à toutes les fonctionnalités",
     monthly: "Mensuel",
     yearly: "Annuel",
@@ -5406,7 +5406,7 @@ export const translations = {
     },
 
     // Actions
-    automatedActions: "Actions Automatisées NewAI",
+    automatedActions: "Actions Automatisées CatalogueOptimize AI",
     automatedActionsDesc: "Actions rapides optimisées par l'IA",
     elementsToOptimize: "{{count}} éléments à optimiser",
     optimize: "Optimiser",
@@ -6523,7 +6523,7 @@ export const translations = {
       title: "Notifications Générales",
       subtitle: "Activez ou désactivez les notifications dans l'application et par email",
       inApp: "Notifications dans l'application",
-      inAppDesc: "Recevez des notifications dans l'interface NewAI",
+      inAppDesc: "Recevez des notifications dans l'interface CatalogueOptimize AI",
       email: "Notifications par email",
       emailDesc: "Recevez un résumé quotidien de vos tâches SEO par email",
       digest: "Résumé quotidien",
@@ -6731,7 +6731,7 @@ export const translations = {
     },
     installGuide: {
       title: "Connectez votre boutique Shopify",
-      subtitle: "Une dernière étape avant de profiter de NewAI pour optimiser votre SEO",
+      subtitle: "Une dernière étape avant de profiter de CatalogueOptimize AI pour optimiser votre SEO",
       storeDetected: "Boutique détectée",
       autoFilled: "Vos informations seront automatiquement pré-remplies",
       step1: {
@@ -7063,7 +7063,7 @@ export const translations = {
   },
 
   footer: {
-    brand: "NewAI",
+    brand: "CatalogueOptimize AI",
     tagline: "SEO propulsé par IA pour boutiques Shopify",
     product: "Produit",
     features: "Fonctionnalités",
@@ -7368,10 +7368,10 @@ export const translations = {
     },
     comparison: {
       badge: "Voir la différence",
-      title: "Avant & Après NewAI",
-      subtitle: "Voyez comment NewAI transforme les scores SEO de votre boutique Shopify en quelques minutes",
+      title: "Avant & Après CatalogueOptimize AI",
+      subtitle: "Voyez comment CatalogueOptimize AI transforme les scores SEO de votre boutique Shopify en quelques minutes",
       before: "Avant",
-      after: "Après NewAI",
+      after: "Après CatalogueOptimize AI",
       globalScore: "Score SEO Global",
       poorSeo: "SEO Faible",
       improvement: "d'amélioration",
@@ -7508,7 +7508,7 @@ export const translations = {
     testimonials: {
       badge: "Témoignages",
       title: "Approuvé par les boutiques E-commerce",
-      subtitle: "Découvrez ce que disent les propriétaires de boutiques sur NewAI",
+      subtitle: "Découvrez ce que disent les propriétaires de boutiques sur CatalogueOptimize AI",
       items: [
         {
           quote: "Notre trafic organique a augmenté de 180% en seulement 2 mois. L'IA fait tout le travail !",
@@ -7810,10 +7810,10 @@ export const translations = {
     lastUpdated: "Dernière mise à jour",
     acceptance: "Acceptation des Conditions",
     acceptanceDesc:
-      "En accédant et en utilisant NewAI, vous acceptez d'être lié par ces conditions générales d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser nos services. Votre utilisation continue de la plateforme constitue votre acceptation de toute modification de ces conditions.",
+      "En accédant et en utilisant CatalogueOptimize AI, vous acceptez d'être lié par ces conditions générales d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser nos services. Votre utilisation continue de la plateforme constitue votre acceptation de toute modification de ces conditions.",
     services: "Services Fournis",
     servicesDesc:
-      "NewAI fournit une plateforme d'optimisation SEO alimentée par l'intelligence artificielle pour les boutiques Shopify, incluant :",
+      "CatalogueOptimize AI fournit une plateforme d'optimisation SEO alimentée par l'intelligence artificielle pour les boutiques Shopify, incluant :",
     service1: "Génération automatique de descriptions de produits optimisées",
     service2: "Optimisation des balises meta et alt texts",
     service3: "Création d'articles de blog SEO-friendly",
@@ -7835,10 +7835,10 @@ export const translations = {
     prohibited5: "Reproduire, dupliquer ou copier notre technologie",
     limitation: "Limitation de Responsabilité",
     limitationDesc:
-      "NewAI est fourni \"en l'état\" sans garantie d'aucune sorte. Nous ne garantissons pas que le service sera ininterrompu ou exempt d'erreurs. En aucun cas, nous ne serons responsables des dommages indirects, consécutifs ou spéciaux résultant de l'utilisation ou de l'impossibilité d'utiliser nos services.",
+      "CatalogueOptimize AI est fourni \"en l'état\" sans garantie d'aucune sorte. Nous ne garantissons pas que le service sera ininterrompu ou exempt d'erreurs. En aucun cas, nous ne serons responsables des dommages indirects, consécutifs ou spéciaux résultant de l'utilisation ou de l'impossibilité d'utiliser nos services.",
     intellectual: "Propriété Intellectuelle",
     intellectualDesc:
-      "Tout le contenu généré par NewAI vous appartient. Cependant, nous conservons tous les droits sur notre plateforme, algorithmes, et technologie. Vous nous accordez une licence pour utiliser votre contenu uniquement dans le but de fournir nos services.",
+      "Tout le contenu généré par CatalogueOptimize AI vous appartient. Cependant, nous conservons tous les droits sur notre plateforme, algorithmes, et technologie. Vous nous accordez une licence pour utiliser votre contenu uniquement dans le but de fournir nos services.",
     termination: "Résiliation",
     terminationDesc:
       "Vous pouvez résilier votre compte à tout moment depuis vos paramètres. Nous nous réservons le droit de suspendre ou résilier votre compte en cas de violation de ces conditions. En cas de résiliation, vous perdrez l'accès à vos données après 30 jours.",
@@ -7846,7 +7846,7 @@ export const translations = {
   },
 
   blogPage: {
-    title: "Blog NewAI",
+    title: "Blog CatalogueOptimize AI",
     subtitle:
       "Découvrez comment l'IA révolutionne le SEO e-commerce, Google Merchant Center et l'assistance intelligente aux ventes",
     searchPlaceholder: "Rechercher des articles...",
@@ -7859,10 +7859,10 @@ export const translations = {
     backToArticles: "Retour aux Articles",
     ctaTitle: "Prêt à Transformer Votre Boutique ?",
     ctaDescription:
-      "Rejoignez des centaines de commerçants qui utilisent NewAI pour automatiser leur SEO et booster leurs ventes.",
+      "Rejoignez des centaines de commerçants qui utilisent CatalogueOptimize AI pour automatiser leur SEO et booster leurs ventes.",
     ctaMainTitle: "Prêt à Booster Votre E-commerce avec l'IA ?",
     ctaMainDescription:
-      "Rejoignez des centaines de commerçants qui automatisent leur SEO et multiplient leurs ventes avec NewAI",
+      "Rejoignez des centaines de commerçants qui automatisent leur SEO et multiplient leurs ventes avec CatalogueOptimize AI",
     startTrial: "Commencer l'Essai Gratuit",
     learnMore: "En Savoir Plus",
     articleNotFound: "Article introuvable",
@@ -7885,7 +7885,7 @@ export const translations = {
     },
     demo: {
       title: "Démo Complète & Guides Pas-à-Pas",
-      description: "Découvrez toutes les fonctionnalités de NewAI avec des guides détaillés et des exemples pratiques.",
+      description: "Découvrez toutes les fonctionnalités de CatalogueOptimize AI avec des guides détaillés et des exemples pratiques.",
       merchant: {
         title: "Google Merchant Center",
         subtitle: "Créez et gérez automatiquement votre flux XML Google Shopping pour augmenter votre visibilité.",
@@ -9162,7 +9162,7 @@ export const translations = {
   // ============= API Docs =============
   apiDocs: {
     title: "Documentation API",
-    description: "Guide complet d'utilisation de l'API NewAI.sale",
+    description: "Guide complet d'utilisation de l'API CatalogueOptimize AI.sale",
     tabs: {
       intro: "Introduction",
       auth: "Authentification",
@@ -9171,7 +9171,7 @@ export const translations = {
     },
     intro: {
       welcome: "Bienvenue",
-      welcomeDesc: "L'API NewAI.sale vous permet d'automatiser toutes les fonctionnalités de la plateforme",
+      welcomeDesc: "L'API CatalogueOptimize AI.sale vous permet d'automatiser toutes les fonctionnalités de la plateforme",
       features: "🚀 Fonctionnalités principales",
       featuresList: {
         seo: "Optimisation SEO automatique de produits",
@@ -9460,7 +9460,7 @@ export const translations = {
 
   // ============= Blog SEO Management =============
   blogSeoManagement: {
-    subtitle: "Gérer les articles promotionnels pour newai.sale/blog-NewAI",
+    subtitle: "Gérer les articles promotionnels pour newai.sale/blog-CatalogueOptimize AI",
     suggestTopics: "Suggérer des sujets",
     createArticle: "Créer un article",
     totalArticles: "Total articles",
@@ -9476,7 +9476,7 @@ export const translations = {
     createFirstArticle: "Créez votre premier article pour améliorer le SEO",
     aiCampaigns: "Campagnes de contenu IA",
     campaignsDescription:
-      "Planifiez la génération automatique d'articles pour les différentes fonctionnalités de NewAI",
+      "Planifiez la génération automatique d'articles pour les différentes fonctionnalités de CatalogueOptimize AI",
     campaignsComingSoon:
       "Campagnes IA bientôt disponibles. Utilisez 'Suggérer des sujets' pour générer des idées d'articles maintenant.",
     generateIdeas: "Générer des idées",
@@ -9545,7 +9545,7 @@ export const translations = {
         title: "Étape 2 : Créez une application personnalisée",
         items: [
           'Cliquez sur "Créer une application"',
-          'Donnez un nom à votre application (ex: "NewAI SEO Integration")',
+          'Donnez un nom à votre application (ex: "CatalogueOptimize AI SEO Integration")',
           'Cliquez sur "Créer une application" pour confirmer',
         ],
       },
@@ -9580,7 +9580,7 @@ export const translations = {
       },
       step6: {
         title: "Étape 6 : Collez vos clés dans le formulaire",
-        description: "Utilisez les deux clés ci-dessus dans le formulaire de connexion pour connecter votre boutique à NewAI.",
+        description: "Utilisez les deux clés ci-dessus dans le formulaire de connexion pour connecter votre boutique à CatalogueOptimize AI.",
       },
     },
     footer: {
