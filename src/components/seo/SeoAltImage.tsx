@@ -870,126 +870,50 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner */}
-      <Card className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950 dark:via-emerald-950 dark:to-teal-950 border-2 border-green-200 p-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-2">
-              <ImageIcon className="w-6 h-6 text-green-600" />
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                {t.seo.altImage.banner.title}
-              </h2>
+      <Card className="border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-violet-50 p-2.5 text-violet-700">
+              <ImageIcon className="h-5 w-5" />
             </div>
-            <p className="text-muted-foreground text-lg max-w-2xl">
-              {t.seo.altImage.banner.description}
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <div className="flex items-center gap-2 text-sm">
-                <Eye className="w-4 h-4 text-green-600" />
-                <span className="font-medium">{t.seo.altImage.banner.maxAccessibility}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-                <span className="font-medium">{t.seo.altImage.banner.seoBoost}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Sparkles className="w-4 h-4 text-teal-600" />
-                <span className="font-medium">{t.seo.altImage.banner.advancedVision}</span>
-              </div>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-950">{t.seo.altImage.banner.title}</h2>
+              <p className="mt-1 max-w-2xl text-sm text-slate-600">{t.seo.altImage.banner.description}</p>
             </div>
           </div>
-          <div className="flex flex-col gap-3 items-center">
-            {showProgressDialog ? (
-              <div className="text-center space-y-3 w-full max-w-md">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <span className="font-semibold text-lg">{t.seo.altImage.progress.optimizing}</span>
-                </div>
-                <Progress value={progress.total > 0 ? (progress.current / progress.total) * 100 : 0} className="h-3" />
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>{progress.current} / {progress.total}</span>
-                  <span className="font-bold text-primary">{progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0}%</span>
-                </div>
-                <p className="text-xs text-muted-foreground">💡 {t.seo.altImage.progress.backgroundProcessing}</p>
+          {showProgressDialog ? (
+            <div className="w-full max-w-sm space-y-2">
+              <div className="flex justify-between text-sm"><span>{t.seo.altImage.progress.optimizing}</span><span>{progress.current}/{progress.total}</span></div>
+              <Progress value={progress.total > 0 ? (progress.current / progress.total) * 100 : 0} className="h-2" />
+            </div>
+          ) : (
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{t.seo.altImage.stats.seoScore}</p>
+                <p className="text-2xl font-semibold text-slate-950">{altSeoScore}/100</p>
               </div>
-            ) : (
-              <>
-                <div className="text-center">
-                  <div className={`text-4xl font-bold ${
-                    altSeoScore >= 80 ? 'text-green-600' : 
-                    altSeoScore >= 60 ? 'text-orange-600' : 
-                    'text-red-600'
-                  }`}>
-                    {altSeoScore} / 100
-                  </div>
-                  <div className="text-sm text-muted-foreground">{t.seo.altImage.stats.seoScore} ({imagesOptimizedByAI}/{imagesFilteredByType.length})</div>
-                </div>
-                <Button
-                  size="lg"
-                  onClick={handleOptimizeAllImages}
-                  disabled={isTypeRunning('alt') || limitsLoading || images.length === 0}
-                  className="bg-gradient-to-r from-accent via-accent to-accent/80 hover:from-accent/90 hover:via-accent hover:to-accent/70 gap-2 shadow-lg hover:shadow-accent/50 text-accent-foreground font-semibold transition-all duration-300"
-                >
-                  <Eye className="w-5 h-5" />
-                  {imagesNotOptimized > 0 
-                    ? `${t.seo.altImage.banner.optimizeAll} (${imagesNotOptimized})`
-                    : `Ré-optimiser tout (${images.length})`
-                  }
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </>
-            )}
-          </div>
+              <Button onClick={handleOptimizeAllImages} disabled={isTypeRunning("alt") || limitsLoading || imagesNotOptimized === 0}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Optimize missing ({imagesNotOptimized})
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
 
-      {/* Clickable Filter Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card
-          className="p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950 border-orange-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setActiveTab('needs-alt');
-            toast.info(tf('seo.altImage.toasts.displayNotOptimized', { count: imagesNotOptimized }));
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
-                {t.seo.altImage.cards.notOptimized}
-              </p>
-              <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">{imagesNotOptimized}</p>
-              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                {t.seo.altImage.cards.noOptimization}
-              </p>
-            </div>
-            <Clock className="w-8 h-8 text-orange-600" />
-          </div>
-          <p className="text-xs text-orange-700 dark:text-orange-300 mt-2">{t.seo.altImage.cards.clickToView}</p>
-        </Card>
-
-        <Card
-          className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 hover:shadow-lg transition-shadow cursor-pointer hover:scale-105 transform duration-200"
-          onClick={() => {
-            setActiveTab('has-alt');
-            toast.info(tf('seo.altImage.toasts.displayOptimized', { count: imagesOptimizedByAI }));
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-300">
-                {t.seo.altImage.cards.aiGenerated}
-              </p>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">{imagesOptimizedByAI}</p>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                {t.seo.altImage.cards.aiOptimized}
-              </p>
-            </div>
-            <Sparkles className="w-8 h-8 text-green-600" />
-          </div>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-2">{t.seo.altImage.cards.clickToView}</p>
-        </Card>
-
-
+      <div className="grid gap-3 sm:grid-cols-3">
+        <button type="button" onClick={() => setActiveTab("needs-alt")} className="rounded-xl border bg-white p-4 text-left transition hover:border-violet-300 hover:shadow-sm">
+          <p className="text-sm text-slate-500">{t.seo.altImage.cards.notOptimized}</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-950">{imagesNotOptimized}</p>
+        </button>
+        <button type="button" onClick={() => setActiveTab("has-alt")} className="rounded-xl border bg-white p-4 text-left transition hover:border-violet-300 hover:shadow-sm">
+          <p className="text-sm text-slate-500">{t.seo.altImage.cards.aiGenerated}</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-950">{imagesOptimizedByAI}</p>
+        </button>
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-sm text-slate-500">Images in catalog</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-950">{imagesFilteredByType.length}</p>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -1015,129 +939,40 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
         ))}
       </div>
 
-      {/* Sticky Action Bar */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Checkbox 
+      <Card className="sticky top-0 z-20 border-slate-200 bg-white/95 p-3 shadow-sm backdrop-blur">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="flex items-center gap-3 text-sm font-medium">
+            <Checkbox
               checked={selectedImages.size === sortedImages.length && sortedImages.length > 0}
               onCheckedChange={handleSelectAll}
             />
-            <span className="text-sm font-medium">
-              {selectedImages.size > 0 ? (
-                <span className="text-primary">{tf('seo.altImage.actions.imagesSelected', { count: selectedImages.size })}</span>
-              ) : (
-                <span className="text-muted-foreground">{t.seo.altImage.actions.selectAll}</span>
-              )}
-            </span>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            {/* Check if selected images include manual sync required */}
-            {(() => {
-              const selectedImagesArray = sortedImages.filter(img => selectedImages.has(img.id));
-              const hasManualSyncRequired = selectedImagesArray.some(img => !canSyncToShopify(img.content_type));
-              const manualSyncCount = selectedImagesArray.filter(img => !canSyncToShopify(img.content_type)).length;
-              
-              return (
-                <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => handleGenerateForSelected(false)}
-                        disabled={selectedImages.size === 0 || isTypeRunning('alt')}
-                        size="sm"
-                      >
-                        <Sparkles className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">{t.seo.altImage.actions.generateAlt}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-sm p-3">
-                      {hasManualSyncRequired ? (
-                        <div className="flex flex-col gap-2">
-                          <span className="font-semibold text-amber-500 flex items-center gap-1">
-                            <AlertTriangle className="w-4 h-4" />
-                            {manualSyncCount} {t.seo.altImage.toasts.imagesRequireManualSync}
-                          </span>
-                          
-                          <div className="text-xs space-y-1 text-muted-foreground border-l-2 border-amber-500/50 pl-2">
-                            <p className="font-medium text-foreground">{t.seo.altImage.toasts.manualSyncGuide}</p>
-                            <p>{t.seo.altImage.toasts.manualSyncStep1}</p>
-                            <p>{t.seo.altImage.toasts.manualSyncStep2}</p>
-                            <p>{t.seo.altImage.toasts.manualSyncStep3}</p>
-                            <p>{t.seo.altImage.toasts.manualSyncStep4}</p>
-                          </div>
-                          
-                          <p className="text-[10px] text-muted-foreground mt-1 italic">
-                            {t.seo.altImage.toasts.manualSyncNote}
-                          </p>
-                        </div>
-                      ) : (
-                        <span>{t.seo.altImage.actions.generateAlt}</span>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                  
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => handleGenerateForSelected(true)}
-                        disabled={selectedImages.size === 0 || isTypeRunning('alt')}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Eye className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">{t.seo.altImage.actions.visionAI}</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-sm p-3">
-                      {hasManualSyncRequired ? (
-                        <div className="flex flex-col gap-2">
-                          <span className="font-semibold text-amber-500 flex items-center gap-1">
-                            <AlertTriangle className="w-4 h-4" />
-                            {manualSyncCount} {t.seo.altImage.toasts.imagesRequireManualSync}
-                          </span>
-                          
-                          <div className="text-xs space-y-1 text-muted-foreground border-l-2 border-amber-500/50 pl-2">
-                            <p className="font-medium text-foreground">{t.seo.altImage.toasts.manualSyncGuide}</p>
-                            <p>{t.seo.altImage.toasts.manualSyncStep1}</p>
-                            <p>{t.seo.altImage.toasts.manualSyncStep2}</p>
-                            <p>{t.seo.altImage.toasts.manualSyncStep3}</p>
-                            <p>{t.seo.altImage.toasts.manualSyncStep4}</p>
-                          </div>
-                          
-                          <p className="text-[10px] text-muted-foreground mt-1 italic">
-                            {t.seo.altImage.toasts.manualSyncNote}
-                          </p>
-                        </div>
-                      ) : (
-                        <span>{t.seo.altImage.actions.visionAI}</span>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </>
-              );
-            })()}
-            <Button
-              onClick={handleImportContentImages}
-              disabled={importing}
-              variant="outline"
-              size="sm"
-            >
-              {importing ? <Loader2 className="w-4 h-4 animate-spin sm:mr-2" /> : <ImageIcon className="w-4 h-4 sm:mr-2" />}
-              <span className="hidden sm:inline">{t.seo.altImage.actions.import}</span>
+            {selectedImages.size > 0 ? tf("seo.altImage.actions.imagesSelected", { count: selectedImages.size }) : t.seo.altImage.actions.selectAll}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => handleGenerateForSelected(false)} disabled={selectedImages.size === 0 || isTypeRunning("alt")}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generate ALT ({selectedImages.size})
             </Button>
-            <Button
-              onClick={fetchImages}
-              disabled={loading}
-              variant="ghost"
-              size="sm"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
+            <details className="relative">
+              <summary className="list-none cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted">More</summary>
+              <div className="absolute right-0 z-30 mt-2 grid min-w-56 gap-1 rounded-xl border bg-background p-2 shadow-xl">
+                <Button variant="ghost" size="sm" className="justify-start" onClick={() => handleGenerateForSelected(true)} disabled={selectedImages.size === 0 || isTypeRunning("alt")}>
+                  <Eye className="mr-2 h-4 w-4" /> Re-generate selected
+                </Button>
+                <Button variant="ghost" size="sm" className="justify-start" onClick={handleReoptimizeAllImages} disabled={images.length === 0 || isTypeRunning("alt")}>
+                  <RefreshCw className="mr-2 h-4 w-4" /> Re-generate all
+                </Button>
+                <Button variant="ghost" size="sm" className="justify-start" onClick={handleImportContentImages} disabled={importing}>
+                  <ImageIcon className="mr-2 h-4 w-4" /> Import content images
+                </Button>
+                <Button variant="ghost" size="sm" className="justify-start" onClick={fetchImages} disabled={loading}>
+                  <RefreshCw className="mr-2 h-4 w-4" /> Refresh data
+                </Button>
+              </div>
+            </details>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Content Type Filters */}
       <div className="bg-background border rounded-lg p-1 flex flex-wrap gap-1">
@@ -1216,9 +1051,6 @@ export const SeoAltImage = React.forwardRef<SeoAltImageRef, {}>((props, ref) => 
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
           >
             {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3x3 className="w-4 h-4" />}
-          </Button>
-          <Button variant="outline" size="icon" onClick={fetchImages}>
-            <RefreshCw className="w-4 h-4" />
           </Button>
         </div>
       </div>
