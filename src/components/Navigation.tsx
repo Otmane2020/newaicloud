@@ -246,7 +246,7 @@ export function Navigation() {
             </div>
             {!collapsed && (
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-                NewAI
+                CatalogueOptimize AI
               </span>
             )}
           </div>
