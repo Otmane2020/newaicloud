@@ -38,12 +38,12 @@ export const DemoSeoComparison = () => {
             {language === 'fr' ? "Voyez la différence" : "See the Difference"}
           </Badge>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">
-            {language === 'fr' ? "Avant & Après NewAI" : "Before & After NewAI"}
+            {language === 'fr' ? "Avant & Après CatalogueOptimize AI" : "Before & After CatalogueOptimize AI"}
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             {language === 'fr' 
-              ? "Découvrez comment NewAI transforme vos scores SEO en quelques minutes"
-              : "See how NewAI transforms your SEO scores in minutes"}
+              ? "Découvrez comment CatalogueOptimize AI transforme vos scores SEO en quelques minutes"
+              : "See how CatalogueOptimize AI transforms your SEO scores in minutes"}
           </p>
         </div>
 
@@ -125,7 +125,7 @@ export const DemoSeoComparison = () => {
                 <div className="absolute -top-3 left-6">
                   <span className="bg-gradient-to-r from-primary to-success text-primary-foreground px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5">
                     <Zap className="w-3.5 h-3.5" />
-                    {language === 'fr' ? "Après NewAI" : "After NewAI"}
+                    {language === 'fr' ? "Après CatalogueOptimize AI" : "After CatalogueOptimize AI"}
                   </span>
                 </div>
                 
