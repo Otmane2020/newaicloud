@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, FileText, Images, Layers3, PanelsTopLeft, Star, Tags } from "lucide-react";
+import { ArrowRight, Camera, FileText, Layers3, Newspaper, PanelsTopLeft, Sparkles, Star, Tags, Images } from "lucide-react";
 import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,69 +52,77 @@ export default function ContentWorkspace() {
     { good: 0, medium: 0, bad: 0 },
   );
 
-  const tools = [
+  const primaryTools = [
     {
       title: fr ? "Contenu produit" : "Product content",
-      note: fr ? "Titres & descriptions" : "Titles & descriptions",
+      note: fr ? "Titres, descriptions, SEO" : "Titles, descriptions, SEO",
       href: "/products/title-description?view=content",
       icon: FileText,
     },
     {
-      title: fr ? "Landing pages" : "Landing pages",
-      note: fr ? "Pages produit enrichies" : "Rich product pages",
-      href: "/products/title-description?view=landing",
-      icon: PanelsTopLeft,
+      title: fr ? "Collections & pages" : "Collections & pages",
+      note: "SEO",
+      href: "/seo?tab=collections",
+      icon: Layers3,
+    },
+    {
+      title: "Blog",
+      note: fr ? "Articles & campagnes" : "Articles & campaigns",
+      href: "/blog/management",
+      icon: Newspaper,
     },
     {
       title: "Studio",
-      note: fr ? "Images & Product Shot" : "Images & Product Shot",
+      note: "Product Shot AI",
       href: "/studio",
-      icon: Images,
-    },
-    {
-      title: fr ? "Actions groupées" : "Bulk actions",
-      note: fr ? "Optimiser en lot" : "Optimize in bulk",
-      href: "/products/title-description?view=bulk",
-      icon: Layers3,
+      icon: Camera,
     },
   ];
 
+  const quickTools = [
+    { label: fr ? "Landing pages" : "Landing pages", href: "/products/title-description?view=landing", icon: PanelsTopLeft },
+    { label: "Tags", href: "/seo?tab=tags", icon: Tags },
+    { label: "ALT", href: "/seo?tab=alt", icon: Images },
+    { label: fr ? "Actions groupées" : "Bulk actions", href: "/products/title-description?view=bulk", icon: Sparkles },
+  ];
+
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-5">
+    <div className="mx-auto w-full max-w-[1500px] space-y-4">
       <WorkspacePageHeader
         section={fr ? "Contenu" : "Content"}
         page={fr ? "Vue d’ensemble" : "Overview"}
         count={products.length}
         title={fr ? "Contenu" : "Content"}
-        description={fr ? "Choisissez une tâche." : "Choose a task."}
+        description=""
       />
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {tools.map(({ title, note, href, icon: Icon }) => (
+        {primaryTools.map(({ title, note, href, icon: Icon }) => (
           <Link key={href} to={href} className="group block">
-            <Card className="h-full rounded-xl border-slate-200 p-4 shadow-none transition hover:border-violet-300 hover:shadow-sm">
+            <Card className="h-full rounded-xl border-slate-200 p-4 shadow-none transition hover:border-slate-300">
               <div className="flex items-center justify-between gap-4">
-                <span className="grid h-9 w-9 place-items-center rounded-lg bg-violet-50 text-violet-700">
+                <span className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700">
                   <Icon className="h-4 w-4" />
                 </span>
-                <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:text-violet-600" />
+                <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:text-slate-600" />
               </div>
-              <h2 className="mt-5 text-sm font-semibold text-slate-950">{title}</h2>
-              <p className="mt-1 text-xs text-slate-500">{note}</p>
+              <h2 className="mt-4 text-sm font-semibold text-slate-950">{title}</h2>
+              <p className="mt-1 text-xs text-slate-400">{note}</p>
             </Card>
           </Link>
         ))}
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-3">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
-          <div className="flex items-center gap-2"><QualityStar tone="good" /><span className="font-medium text-slate-700">{quality.good}</span><span className="text-slate-400">{fr ? "prêts" : "ready"}</span></div>
-          <div className="flex items-center gap-2"><QualityStar tone="medium" /><span className="font-medium text-slate-700">{quality.medium}</span><span className="text-slate-400">{fr ? "à améliorer" : "improve"}</span></div>
-          <div className="flex items-center gap-2"><QualityStar tone="bad" /><span className="font-medium text-slate-700">{quality.bad}</span><span className="text-slate-400">{fr ? "incomplets" : "missing"}</span></div>
-          <div className="ml-auto flex flex-wrap gap-2">
-            <Button asChild variant="ghost" size="sm"><Link to="/seo?tab=tags"><Tags className="mr-2 h-4 w-4" />Tags</Link></Button>
-            <Button asChild variant="ghost" size="sm"><Link to="/seo?tab=alt"><Images className="mr-2 h-4 w-4" />ALT</Link></Button>
-          </div>
+      <section className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5">
+        {quickTools.map(({ label, href, icon: Icon }) => (
+          <Button key={href} asChild variant="ghost" size="sm" className="h-8 text-xs">
+            <Link to={href}><Icon className="mr-1.5 h-3.5 w-3.5" />{label}</Link>
+          </Button>
+        ))}
+        <div className="ml-auto flex flex-wrap items-center gap-4 px-1 text-xs">
+          <div className="flex items-center gap-1.5"><QualityStar tone="good" /><span className="font-medium text-slate-700">{quality.good}</span></div>
+          <div className="flex items-center gap-1.5"><QualityStar tone="medium" /><span className="font-medium text-slate-700">{quality.medium}</span></div>
+          <div className="flex items-center gap-1.5"><QualityStar tone="bad" /><span className="font-medium text-slate-700">{quality.bad}</span></div>
         </div>
       </section>
     </div>
