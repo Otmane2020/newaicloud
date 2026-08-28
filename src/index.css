@@ -803,3 +803,30 @@ label {
     }
   }
 }
+
+
+/* Compact application typography — scoped to the authenticated catalog workspace. */
+@layer components {
+  .catalog-workspace h1 {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+    letter-spacing: -0.02em;
+  }
+
+  .catalog-workspace h2 {
+    font-size: 1.125rem !important;
+    line-height: 1.625rem !important;
+  }
+
+  .catalog-workspace h3 {
+    font-size: 1rem !important;
+    line-height: 1.5rem !important;
+  }
+
+  .catalog-workspace h4,
+  .catalog-workspace h5,
+  .catalog-workspace h6 {
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+  }
+}
