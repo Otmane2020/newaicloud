@@ -1,33 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/**
- * ✅ VERSION AEO GÉNÉRIQUE MULTI-MÉTIERS
- * Moteur universel qui fonctionne pour N'IMPORTE QUEL métier :
- * - E-commerce (meubles, mode, électronique...)
- * - Services (avocats, artisans, restaurants...)
- * - SaaS, Santé, BTP, etc.
- * 
- * Logique basée sur les INTENTIONS (price, duration, criteria, comparison)
- * plutôt que sur des catégories hardcodées.
- * 
- * ✅ AEOREPLY MODE:
- * - storeId is OPTIONAL (can work without Shopify)
- * - projectType: 'aeoreply' = works from URL/keywords/links analysis
- * - targets: multiple AI platforms (chatgpt, gemini, claude, perplexity, copilot)
- */
+type Platform = "chatgpt" | "gemini" | "copilot" | "claude" | "perplexity" | "aeo";
+type Lang = "fr" | "en";
+type QueryType = "direct" | "list" | "comparison";
+type IntentType = "price" | "dimensions" | "criteria" | "comparison" | "howto" | "best";
 
-type Platform = 'chatgpt' | 'gemini' | 'copilot' | 'claude' | 'perplexity' | 'aeo';
-type Lang = 'fr' | 'en';
-type QueryType = 'direct' | 'list' | 'comparison';
-type IntentType = 'price' | 'duration' | 'dimensions' | 'criteria' | 'comparison' | 'howto' | 'best';
-
-interface Product {
+type Product = {
   id: string;
   title: string;
   product_type?: string | null;
@@ -35,799 +20,258 @@ interface Product {
   tags?: string | null;
   body_html?: string | null;
   seo_description?: string | null;
-}
+};
 
-interface AiAnswer {
-  platform: Platform;
-  query_type: QueryType;
-  question: string;
-  direct_answer: string;
-  answer_confidence: number;
-  supporting_content: {
-    bullets: string[];
-    faq: { q: string; a: string }[];
-    comparison_table?: any[];
-  };
-  citation_potential: number;
-  product_ids: string[];
-  keywords: string[];
-  difficulty: 'easy' | 'medium' | 'hard';
-  category: string;
-  // 🆕 Aeoreply project context
-  project_id?: string;
-  source_id?: string;
-  source_url?: string;
-  brand_mention?: string;
-}
-
-// 🆕 Project context for Aeoreply
-interface ProjectContext {
+type ProjectContext = {
   project_id: string;
   brand_name: string;
   website_url?: string;
   source_id?: string;
   source_url?: string;
-}
-
-// Platform-specific configurations for AEO
-const PLATFORM_CONFIGS: Record<string, { name: string; style: string; preferredAnswerLength: number; citationWeight: number; queryTypes: readonly QueryType[] }> = {
-  chatgpt: {
-    name: 'ChatGPT',
-    style: 'conversational',
-    preferredAnswerLength: 140,
-    citationWeight: 0.95,
-    queryTypes: ['direct', 'comparison', 'list'] as const
-  },
-  gemini: {
-    name: 'Gemini',
-    style: 'factual',
-    preferredAnswerLength: 160,
-    citationWeight: 0.90,
-    queryTypes: ['direct', 'list', 'comparison'] as const
-  },
-  copilot: {
-    name: 'Copilot',
-    style: 'practical',
-    preferredAnswerLength: 150,
-    citationWeight: 0.85,
-    queryTypes: ['list', 'direct', 'comparison'] as const
-  },
-  claude: {
-    name: 'Claude',
-    style: 'analytical',
-    preferredAnswerLength: 145,
-    citationWeight: 0.92,
-    queryTypes: ['direct', 'list', 'comparison'] as const
-  },
-  perplexity: {
-    name: 'Perplexity',
-    style: 'researched',
-    preferredAnswerLength: 155,
-    citationWeight: 0.88,
-    queryTypes: ['direct', 'comparison', 'list'] as const
-  },
-  aeo: {
-    name: 'Universal AEO',
-    style: 'universal',
-    preferredAnswerLength: 140,
-    citationWeight: 0.95,
-    queryTypes: ['direct', 'comparison', 'list'] as const
-  }
 };
 
-/**
- * ✅ INTENT TEMPLATES - Génériques pour tous métiers
- * Chaque intention génère une structure de question/réponse adaptable
- */
-const INTENT_TEMPLATES = {
-  price: {
-    fr: {
-      questionPattern: (category: string) => `Combien coûte ${category} ?`,
-      answerPattern: (category: string, details: string) => 
-        `${category} coûte en moyenne ${details}. Le prix varie selon la qualité et les options.`
-    },
-    en: {
-      questionPattern: (category: string) => `How much does ${category} cost?`,
-      answerPattern: (category: string, details: string) => 
-        `${category} costs on average ${details}. Price varies based on quality and options.`
-    }
-  },
-  duration: {
-    fr: {
-      questionPattern: (category: string) => `Combien de temps pour ${category} ?`,
-      answerPattern: (category: string, details: string) => 
-        `${category} prend généralement ${details}. Ce délai peut varier selon la complexité.`
-    },
-    en: {
-      questionPattern: (category: string) => `How long does ${category} take?`,
-      answerPattern: (category: string, details: string) => 
-        `${category} typically takes ${details}. This timeframe may vary based on complexity.`
-    }
-  },
-  dimensions: {
-    fr: {
-      questionPattern: (category: string) => `Quelles dimensions pour ${category} ?`,
-      answerPattern: (category: string, details: string) => 
-        `${category} mesure généralement ${details}. Prévoir l'espace nécessaire avant l'achat.`
-    },
-    en: {
-      questionPattern: (category: string) => `What dimensions for ${category}?`,
-      answerPattern: (category: string, details: string) => 
-        `${category} typically measures ${details}. Allow necessary space before purchase.`
-    }
-  },
-  criteria: {
-    fr: {
-      questionPattern: (category: string) => `Comment choisir ${category} ?`,
-      answerPattern: (category: string, details: string) => 
-        `Les 3 critères clés pour choisir ${category} sont : ${details}.`
-    },
-    en: {
-      questionPattern: (category: string) => `How to choose ${category}?`,
-      answerPattern: (category: string, details: string) => 
-        `The 3 key criteria for choosing ${category} are: ${details}.`
-    }
-  },
-  comparison: {
-    fr: {
-      questionPattern: (category: string) => `Comment comparer les ${category} ?`,
-      answerPattern: (category: string, details: string) => 
-        `Pour comparer les ${category}, évaluez : ${details}.`
-    },
-    en: {
-      questionPattern: (category: string) => `How to compare ${category}?`,
-      answerPattern: (category: string, details: string) => 
-        `To compare ${category}, evaluate: ${details}.`
-    }
-  },
-  howto: {
-    fr: {
-      questionPattern: (category: string) => `Comment utiliser ${category} ?`,
-      answerPattern: (category: string, details: string) => 
-        `Pour utiliser ${category} : ${details}.`
-    },
-    en: {
-      questionPattern: (category: string) => `How to use ${category}?`,
-      answerPattern: (category: string, details: string) => 
-        `To use ${category}: ${details}.`
-    }
-  },
-  best: {
-    fr: {
-      questionPattern: (category: string) => `Quel est le meilleur ${category} ?`,
-      answerPattern: (category: string, details: string) => 
-        `Le meilleur ${category} dépend de vos besoins : ${details}.`
-    },
-    en: {
-      questionPattern: (category: string) => `What is the best ${category}?`,
-      answerPattern: (category: string, details: string) => 
-        `The best ${category} depends on your needs: ${details}.`
-    }
-  }
+type AiAnswer = {
+  platform: Platform;
+  query_type: QueryType;
+  question: string;
+  direct_answer: string;
+  answer_confidence: number;
+  supporting_content: { bullets: string[]; faq: { q: string; a: string }[] };
+  citation_potential: number;
+  product_ids: string[];
+  keywords: string[];
+  difficulty: "easy" | "medium" | "hard";
+  category: string;
+  project_id?: string;
+  source_id?: string;
+  source_url?: string;
+  brand_mention?: string;
+  ai_provider?: string;
+  ai_model?: string;
 };
 
-/* -------------------- HELPERS -------------------- */
+const PLATFORM_CONFIGS: Record<Platform, { preferredAnswerLength: number; citationWeight: number }> = {
+  chatgpt: { preferredAnswerLength: 140, citationWeight: 0.95 },
+  gemini: { preferredAnswerLength: 160, citationWeight: 0.90 },
+  copilot: { preferredAnswerLength: 150, citationWeight: 0.85 },
+  claude: { preferredAnswerLength: 145, citationWeight: 0.92 },
+  perplexity: { preferredAnswerLength: 155, citationWeight: 0.88 },
+  aeo: { preferredAnswerLength: 140, citationWeight: 0.95 },
+};
 
 function detectLanguage(products: Product[]): Lang {
-  const text = products.map(p => p.title.toLowerCase()).join(' ');
-  const frenchIndicators = [' de ', ' le ', ' la ', ' les ', ' pour ', ' avec ', ' en ', ' du ', ' des ', ' une ', ' un '];
-  const frenchCount = frenchIndicators.filter(w => text.includes(w)).length;
-  return frenchCount >= 2 ? 'fr' : 'en';
+  const text = products.map((p) => p.title.toLowerCase()).join(" ");
+  const fr = [" de ", " le ", " la ", " les ", " pour ", " avec ", " en ", " du ", " des ", " une ", " un "];
+  return fr.filter((w) => text.includes(w)).length >= 2 ? "fr" : "en";
 }
 
 function groupByCategory(products: Product[]): Record<string, Product[]> {
   return products.reduce<Record<string, Product[]>>((acc, p) => {
-    const key = p.product_type || p.vendor || 'general';
-    acc[key] ??= [];
-    acc[key].push(p);
+    const key = p.product_type || p.vendor || "general";
+    (acc[key] ||= []).push(p);
     return acc;
   }, {});
 }
 
-/**
- * ✅ Déterminer les intentions pertinentes selon le type de catégorie
- */
 function getRelevantIntents(category: string, products: Product[]): IntentType[] {
-  const categoryLower = category.toLowerCase();
-  const productText = products.map(p => `${p.title} ${p.body_html || ''}`).join(' ').toLowerCase();
-  
-  // Indices de métier détectés
-  const isPhysicalProduct = /meuble|chaise|table|lit|canapé|matelas|vêtement|électronique|appareil/i.test(categoryLower + ' ' + productText);
-  const isService = /service|conseil|consultation|formation|coaching|avocat|artisan|rénovation/i.test(categoryLower + ' ' + productText);
-  const isSoftware = /logiciel|software|saas|app|application|abonnement/i.test(categoryLower + ' ' + productText);
-  const isFood = /restaurant|café|food|nourriture|plat|menu/i.test(categoryLower + ' ' + productText);
-  
-  const intents: IntentType[] = [];
-  
-  // Toujours pertinents
-  intents.push('criteria', 'best');
-  
-  // Prix - presque toujours pertinent
-  intents.push('price');
-  
-  // Selon le type
-  if (isPhysicalProduct) {
-    intents.push('dimensions', 'comparison');
-  }
-  
-  if (isService || isSoftware) {
-    intents.push('duration', 'howto');
-  }
-  
-  if (products.length >= 2) {
-    intents.push('comparison');
-  }
-  
-  // Dédupliquer
+  const text = `${category} ${products.map((p) => `${p.title} ${p.body_html || ""}`).join(" ")}`.toLowerCase();
+  const intents: IntentType[] = ["criteria", "best"];
+  if (/€|\$|prix|price|cost|coût/.test(text)) intents.push("price");
+  if (/\b\d+(?:[.,]\d+)?\s*(cm|mm|m|inch|inches)\b/.test(text)) intents.push("dimensions");
+  if (products.length >= 2) intents.push("comparison");
+  if (/mode d'emploi|utilisation|how to|use|installer|assembly|montage/.test(text)) intents.push("howto");
   return [...new Set(intents)];
 }
 
-/**
- * ✅ Scoring AEO réel
- * Critères : longueur ≤140, chiffres, affirmatif, pas de "dépend"
- */
-function computeCitationScoreAEO(
-  answer: string,
-  platform: Platform,
-  queryType: QueryType
-): number {
-  let score = 50;
-
-  const preferredLength = PLATFORM_CONFIGS[platform].preferredAnswerLength;
-  if (answer.length <= preferredLength) score += 20;
-  
-  // Contient des chiffres = +20
-  if (/\d/.test(answer)) score += 20;
-  
-  // Pas de "dépend" / "depends" = +10
-  if (!answer.toLowerCase().includes('dépend') && !answer.toLowerCase().includes('depend')) score += 10;
-  
-  // Réponse directe = +10
-  if (queryType === 'direct') score += 10;
-  
-  // Unités de mesure = +5
-  if (/cm|kg|€|\$|%|mm|m²|jour|semaine|mois|year|week|day|month/.test(answer)) score += 5;
-  
-  // Affirmation forte = +5
-  if (answer.includes('est ') || answer.includes(' is ') || answer.includes('coûte') || answer.includes('costs') || answer.includes('prend') || answer.includes('takes')) score += 5;
-
-  const weight = PLATFORM_CONFIGS[platform].citationWeight;
-  return Math.min(100, Math.round(score * weight));
+function queryTypeForIntent(intent: IntentType): QueryType {
+  if (intent === "comparison") return "comparison";
+  if (intent === "criteria" || intent === "howto") return "list";
+  return "direct";
 }
 
-/**
- * ✅ Appel à l'IA pour générer des réponses contextuelles avec référence marque/URL
- */
-async function generateAIAnswer(
-  category: string,
-  products: Product[],
-  intent: IntentType,
-  lang: Lang,
-  projectContext?: ProjectContext
-): Promise<{ question: string; answer: string; details: string; brandMention?: string }> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  
-  // Construire le contexte produits
-  const productContext = products.slice(0, 5).map(p => ({
+function computeCitationScore(answer: string, platform: Platform, queryType: QueryType): number {
+  let score = 50;
+  if (answer.length <= PLATFORM_CONFIGS[platform].preferredAnswerLength) score += 20;
+  if (/\d/.test(answer)) score += 10;
+  if (queryType === "direct") score += 10;
+  if (!/peut-être|maybe|probablement|probably/i.test(answer)) score += 5;
+  return Math.min(100, Math.round(score * PLATFORM_CONFIGS[platform].citationWeight));
+}
+
+function factualFallback(category: string, products: Product[], intent: IntentType, lang: Lang) {
+  const titles = products.slice(0, 3).map((p) => p.title).join(", ");
+  const question: Record<IntentType, { fr: string; en: string }> = {
+    price: { fr: `Quel est le prix de ${category} ?`, en: `What is the price of ${category}?` },
+    dimensions: { fr: `Quelles dimensions pour ${category} ?`, en: `What dimensions are available for ${category}?` },
+    criteria: { fr: `Comment choisir ${category} ?`, en: `How to choose ${category}?` },
+    comparison: { fr: `Comment comparer les ${category} ?`, en: `How to compare ${category}?` },
+    howto: { fr: `Comment utiliser ${category} ?`, en: `How to use ${category}?` },
+    best: { fr: `Quel ${category} choisir ?`, en: `Which ${category} should I choose?` },
+  };
+  const answer = lang === "fr"
+    ? `Comparez les caractéristiques réellement indiquées sur les fiches ${titles || category}; ne retenez que les dimensions, matières, prix et usages explicitement fournis.`
+    : `Compare only facts explicitly shown on the product pages for ${titles || category}, such as dimensions, materials, prices and stated use cases.`;
+  return { question: question[intent][lang], answer, details: "" };
+}
+
+async function generateAIAnswer(category: string, products: Product[], intent: IntentType, lang: Lang, projectContext?: ProjectContext) {
+  const productContext = products.slice(0, 5).map((p) => ({
+    id: p.id,
     title: p.title,
     type: p.product_type,
-    vendor: p.vendor
+    vendor: p.vendor,
+    facts: `${p.tags || ""} ${(p.body_html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").slice(0, 500)} ${p.seo_description || ""}`.trim(),
   }));
 
-  // 🆕 Build brand/source citation instructions
-  const brandCitationInstruction = projectContext?.brand_name
-    ? lang === 'fr'
-      ? `
-🎯 OBLIGATION DE CITATION - TRÈS IMPORTANT:
-- Tu DOIS mentionner "${projectContext.brand_name}" dans ta réponse
-- Exemples: "Selon ${projectContext.brand_name}...", "D'après les experts de ${projectContext.brand_name}...", "${projectContext.brand_name} recommande..."
-${projectContext.website_url ? `- Tu peux citer la source: ${projectContext.website_url}` : ''}
-- La marque doit apparaître NATURELLEMENT dans la réponse`
-      : `
-🎯 CITATION REQUIREMENT - VERY IMPORTANT:
-- You MUST mention "${projectContext.brand_name}" in your answer
-- Examples: "According to ${projectContext.brand_name}...", "As experts at ${projectContext.brand_name} note...", "${projectContext.brand_name} recommends..."
-${projectContext.website_url ? `- You can cite the source: ${projectContext.website_url}` : ''}
-- The brand must appear NATURALLY in the answer`
-    : '';
+  const brandRule = projectContext?.brand_name
+    ? `You may mention the brand ${projectContext.brand_name} only as the source/brand represented by the supplied data. Do not invent endorsements, guarantees or claims.${projectContext.website_url ? ` Website: ${projectContext.website_url}` : ""}`
+    : "Do not invent a brand or source.";
 
-  const systemPrompt = lang === 'fr' 
-    ? `Tu es un expert AEO (Answer Engine Optimization). Génère des réponses EXACTES, COURTES et CITABLES pour les IA comme ChatGPT.
+  const languageRule = lang === "fr" ? "Réponds en français." : "Answer in English.";
+  const prompt = `${languageRule}
+Create one useful AEO question and one concise answer for category "${category}" with intent "${intent}".
+PRODUCT/SOURCE DATA:
+${JSON.stringify(productContext)}
+${brandRule}
 
-RÈGLES STRICTES :
-- Maximum 2 phrases
-- Inclure des CHIFFRES concrets (prix, dimensions, durées)
-- Ton affirmatif, PAS de "ça dépend"
-- Réponse factuelle et vérifiable
-- Adapte-toi au contexte métier des produits
-${brandCitationInstruction}`
-    : `You are an AEO (Answer Engine Optimization) expert. Generate EXACT, SHORT and CITABLE answers for AIs like ChatGPT.
+STRICT FACT RULES:
+- Use only facts present in PRODUCT/SOURCE DATA.
+- Never invent a price, dimension, warranty, delivery time, review score, material or certification.
+- If the requested intent needs a fact that is absent, explicitly say that the exact value must be checked on the product page rather than guessing.
+- Answer in maximum 2 short sentences and make it directly useful/citable.
 
-STRICT RULES:
-- Maximum 2 sentences
-- Include concrete NUMBERS (prices, dimensions, durations)
-- Affirmative tone, NO "it depends"
-- Factual and verifiable answer
-- Adapt to the business context of products
-${brandCitationInstruction}`;
-
-  const intentDescription = {
-    price: lang === 'fr' ? 'le prix/coût' : 'the price/cost',
-    duration: lang === 'fr' ? 'la durée/délai' : 'the duration/timeframe',
-    dimensions: lang === 'fr' ? 'les dimensions/taille' : 'the dimensions/size',
-    criteria: lang === 'fr' ? 'les critères de choix' : 'the selection criteria',
-    comparison: lang === 'fr' ? 'la comparaison' : 'the comparison',
-    howto: lang === 'fr' ? 'comment utiliser/faire' : 'how to use/do',
-    best: lang === 'fr' ? 'le meilleur choix' : 'the best choice'
-  };
-
-  const brandContext = projectContext?.brand_name 
-    ? lang === 'fr' 
-      ? `\nMarque/Source: ${projectContext.brand_name}${projectContext.website_url ? ` (${projectContext.website_url})` : ''}\n⚠️ MENTIONNE CETTE MARQUE dans ta réponse!`
-      : `\nBrand/Source: ${projectContext.brand_name}${projectContext.website_url ? ` (${projectContext.website_url})` : ''}\n⚠️ MENTION THIS BRAND in your answer!`
-    : '';
-
-  const userPrompt = lang === 'fr'
-    ? `Catégorie: "${category}"
-Produits exemple: ${JSON.stringify(productContext)}
-Intention: ${intentDescription[intent]}${brandContext}
-
-Génère:
-1. Une question naturelle que les gens posent à ChatGPT sur "${category}" concernant ${intentDescription[intent]}
-2. Une réponse AEO (max 2 phrases, avec chiffres)${projectContext?.brand_name ? ` MENTIONNE ${projectContext.brand_name}!` : ''}
-
-Format JSON:
-{"question": "...", "answer": "...", "details": "données chiffrées utilisées"}`
-    : `Category: "${category}"
-Example products: ${JSON.stringify(productContext)}
-Intent: ${intentDescription[intent]}${brandContext}
-
-Generate:
-1. A natural question people ask ChatGPT about "${category}" regarding ${intentDescription[intent]}
-2. An AEO answer (max 2 sentences, with numbers)${projectContext?.brand_name ? ` MENTION ${projectContext.brand_name}!` : ''}
-
-JSON format:
-{"question": "...", "answer": "...", "details": "numerical data used"}`;
+Return JSON only: {"question":"...","answer":"...","details":"facts used"}`;
 
   try {
-    if (LOVABLE_API_KEY) {
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-          ],
-          temperature: 0.3,
-          max_tokens: 500
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || '';
-        
-        // Parser le JSON
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            const parsed = JSON.parse(jsonMatch[0]);
-            return {
-              question: parsed.question || INTENT_TEMPLATES[intent][lang].questionPattern(category),
-              answer: parsed.answer || INTENT_TEMPLATES[intent][lang].answerPattern(category, 'données variables'),
-              details: parsed.details || ''
-            };
-          } catch {
-            console.log('JSON parse failed, using fallback');
-          }
-        }
-      }
-    }
+    const routed = await routeAI({
+      messages: [
+        { role: "system", content: "You are an AEO specialist. Factual accuracy is mandatory. Return JSON only." },
+        { role: "user", content: prompt },
+      ],
+      maxTokens: 550,
+      temperature: 0.2,
+    });
+    const match = routed.content.replace(/```json|```/gi, "").match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("No JSON object returned");
+    const parsed = JSON.parse(match[0]);
+    if (!parsed.question || !parsed.answer) throw new Error("Incomplete AEO response");
+    return { question: String(parsed.question), answer: String(parsed.answer), details: String(parsed.details || ""), provider: routed.provider, model: routed.model };
   } catch (error) {
-    console.error('AI generation error:', error);
+    console.warn("[generate-ai-query-opportunities] free AI unavailable; using factual deterministic fallback", error);
+    return { ...factualFallback(category, products, intent, lang), provider: "deterministic-fallback", model: "none" };
   }
-
-  // Fallback avec templates
-  const template = INTENT_TEMPLATES[intent][lang];
-  const fallbackDetails = getFallbackDetails(intent, lang);
-  
-  return {
-    question: template.questionPattern(category),
-    answer: template.answerPattern(category, fallbackDetails),
-    details: fallbackDetails
-  };
 }
 
-/**
- * ✅ Détails de fallback génériques mais utiles
- */
-function getFallbackDetails(intent: IntentType, lang: Lang): string {
-  const details: Record<IntentType, { fr: string; en: string }> = {
-    price: { 
-      fr: '50€ à 500€ selon la gamme', 
-      en: '$50 to $500 depending on range' 
-    },
-    duration: { 
-      fr: '1 à 4 semaines', 
-      en: '1 to 4 weeks' 
-    },
-    dimensions: { 
-      fr: 'dimensions standard adaptées à votre espace', 
-      en: 'standard dimensions suited to your space' 
-    },
-    criteria: { 
-      fr: 'qualité (40%), prix (30%), avis clients (30%)', 
-      en: 'quality (40%), price (30%), customer reviews (30%)' 
-    },
-    comparison: { 
-      fr: 'prix, qualité des matériaux, garantie', 
-      en: 'price, material quality, warranty' 
-    },
-    howto: { 
-      fr: 'suivre les instructions, vérifier la compatibilité', 
-      en: 'follow instructions, check compatibility' 
-    },
-    best: { 
-      fr: 'rapport qualité-prix, durabilité, avis clients', 
-      en: 'value for money, durability, customer reviews' 
-    }
-  };
-  
-  return details[intent][lang];
+function supportingBullets(category: string, lang: Lang): string[] {
+  return lang === "fr"
+    ? [`Vérifier les caractéristiques publiées pour ${category}`, "Comparer uniquement des données équivalentes", "Confirmer les informations importantes sur la fiche produit"]
+    : [`Check published specifications for ${category}`, "Compare like-for-like product facts", "Confirm important information on the product page"];
 }
 
-/**
- * ✅ Génération des bullets de support contextuels
- */
-function generateSupportingBullets(category: string, intent: IntentType, lang: Lang): string[] {
-  const genericBullets = {
-    fr: [
-      `Vérifier les caractéristiques avant l'achat`,
-      `Comparer plusieurs options`,
-      `Lire les avis clients récents`,
-      `Vérifier la garantie et le SAV`,
-      `Demander conseil si besoin`
-    ],
-    en: [
-      `Check specifications before purchase`,
-      `Compare multiple options`,
-      `Read recent customer reviews`,
-      `Check warranty and support`,
-      `Ask for advice if needed`
-    ]
-  };
-  
-  return genericBullets[lang];
+function faq(category: string, answer: string, lang: Lang): { q: string; a: string }[] {
+  return lang === "fr"
+    ? [{ q: `Que vérifier avant de choisir ${category} ?`, a: answer }]
+    : [{ q: `What should I verify before choosing ${category}?`, a: answer }];
 }
 
-/**
- * ✅ Génération FAQ contextuelle
- */
-function generateFaq(
-  category: string, 
-  directAnswer: string, 
-  intent: IntentType,
-  lang: Lang
-): { q: string; a: string }[] {
-  const template = INTENT_TEMPLATES[intent][lang];
-  
-  return lang === 'fr'
-    ? [
-        { q: template.questionPattern(category), a: directAnswer },
-        { q: `Où acheter ${category} de qualité ?`, a: `Privilégiez les vendeurs avec garantie et avis positifs.` },
-        { q: `Quelle garantie pour ${category} ?`, a: `Une garantie minimum de 2 ans est recommandée.` }
-      ]
-    : [
-        { q: template.questionPattern(category), a: directAnswer },
-        { q: `Where to buy quality ${category}?`, a: `Choose sellers with warranty and positive reviews.` },
-        { q: `What warranty for ${category}?`, a: `A minimum 2-year warranty is recommended.` }
-      ];
-}
-
-/* -------------------- CORE AEO GENERATION -------------------- */
-
-async function generateAeoAnswers(
-  products: Product[],
-  platform: Platform,
-  lang: Lang,
-  projectContext?: ProjectContext
-): Promise<AiAnswer[]> {
-  const categories = groupByCategory(products);
-  const config = PLATFORM_CONFIGS[platform];
+async function generateAeoAnswers(products: Product[], platform: Platform, lang: Lang, projectContext?: ProjectContext): Promise<AiAnswer[]> {
   const results: AiAnswer[] = [];
-
-  for (const [category, items] of Object.entries(categories)) {
-    if (items.length === 0) continue;
-
-    // Déterminer les intentions pertinentes pour cette catégorie
-    const intents = getRelevantIntents(category, items);
-    
-    // Générer une réponse par intention (max 3 pour éviter trop de requêtes)
-    for (const intent of intents.slice(0, 3)) {
-      // Mapper l'intent vers un queryType
-      const queryType: QueryType = 
-        intent === 'comparison' ? 'comparison' :
-        intent === 'criteria' || intent === 'howto' ? 'list' : 'direct';
-
-      // ✅ Utiliser l'IA pour générer une réponse contextuelle AVEC contexte projet
-      const aiGenerated = await generateAIAnswer(category, items, intent, lang, projectContext);
-      
-      const direct_answer = aiGenerated.answer;
-      const question = aiGenerated.question;
-      
-      // Scoring AEO - bonus if brand is mentioned
-      let citation_potential = computeCitationScoreAEO(direct_answer, platform, queryType);
-      if (projectContext?.brand_name && direct_answer.includes(projectContext.brand_name)) {
-        citation_potential = Math.min(100, citation_potential + 10); // Bonus for brand mention
-      }
-      
-      // Difficulty
-      const difficulty: 'easy' | 'medium' | 'hard' = items.length >= 5 ? 'hard' : items.length >= 2 ? 'medium' : 'easy';
-      
-      // Keywords
-      const keywords = [
-        category.toLowerCase(),
-        ...items.slice(0, 3).map(p => p.title.toLowerCase().split(' ').slice(0, 3).join(' ')),
-        intent,
-        queryType,
-        platform,
-        ...(projectContext?.brand_name ? [projectContext.brand_name.toLowerCase()] : [])
-      ].filter((v, i, a) => a.indexOf(v) === i && v.length > 2);
+  for (const [category, items] of Object.entries(groupByCategory(products))) {
+    for (const intent of getRelevantIntents(category, items).slice(0, 3)) {
+      const generated = await generateAIAnswer(category, items, intent, lang, projectContext);
+      const queryType = queryTypeForIntent(intent);
+      let citationPotential = computeCitationScore(generated.answer, platform, queryType);
+      if (projectContext?.brand_name && generated.answer.includes(projectContext.brand_name)) citationPotential = Math.min(100, citationPotential + 5);
 
       results.push({
         platform,
         query_type: queryType,
-        question,
-        direct_answer,
-        answer_confidence: 0.85,
-        supporting_content: {
-          bullets: generateSupportingBullets(category, intent, lang),
-          faq: generateFaq(category, direct_answer, intent, lang)
-        },
-        citation_potential,
-        product_ids: items.slice(0, 5).map(p => p.id),
-        keywords,
-        difficulty,
+        question: generated.question,
+        direct_answer: generated.answer,
+        answer_confidence: generated.provider === "deterministic-fallback" ? 0.7 : 0.88,
+        supporting_content: { bullets: supportingBullets(category, lang), faq: faq(category, generated.answer, lang) },
+        citation_potential: citationPotential,
+        product_ids: items.slice(0, 5).map((p) => p.id),
+        keywords: [...new Set([category.toLowerCase(), intent, queryType, platform, ...(projectContext?.brand_name ? [projectContext.brand_name.toLowerCase()] : [])])],
+        difficulty: items.length >= 5 ? "hard" : items.length >= 2 ? "medium" : "easy",
         category,
-        // 🆕 Include project context in answer
         project_id: projectContext?.project_id,
         source_id: projectContext?.source_id,
         source_url: projectContext?.source_url,
-        brand_mention: projectContext?.brand_name && direct_answer.includes(projectContext.brand_name) 
-          ? projectContext.brand_name 
-          : undefined
+        brand_mention: projectContext?.brand_name && generated.answer.includes(projectContext.brand_name) ? projectContext.brand_name : undefined,
+        ai_provider: generated.provider,
+        ai_model: generated.model,
       });
     }
   }
-
   return results;
 }
 
-/**
- * ✅ Limite par catégorie + plateforme
- */
-function limitPerCategory(answers: AiAnswer[], maxPerCategory: number = 2): AiAnswer[] {
+function limitPerCategory(answers: AiAnswer[], max = 2): AiAnswer[] {
   const grouped: Record<string, AiAnswer[]> = {};
-  
-  for (const answer of answers) {
-    const key = answer.category;
-    grouped[key] ??= [];
-    grouped[key].push(answer);
-  }
-  
-  const finalResults: AiAnswer[] = [];
-  
-  for (const category of Object.keys(grouped)) {
-    const categoryAnswers = grouped[category]
-      .sort((a, b) => b.citation_potential - a.citation_potential)
-      .slice(0, maxPerCategory);
-    
-    finalResults.push(...categoryAnswers);
-  }
-  
-  return finalResults.sort((a, b) => b.citation_potential - a.citation_potential);
+  for (const answer of answers) (grouped[answer.category] ||= []).push(answer);
+  return Object.values(grouped).flatMap((items) => items.sort((a, b) => b.citation_potential - a.citation_potential).slice(0, max)).sort((a, b) => b.citation_potential - a.citation_potential);
 }
 
-/* -------------------- HTTP SERVER -------------------- */
-
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseKey) throw new Error("Supabase service is not configured");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'No authorization header' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return new Response(JSON.stringify({ error: "No authorization header" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (authError || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    const body = await req.json();
+    const { storeId, platform, targets, projectType, refresh = false, wizardMode, wizardInput, projectId, brandName, websiteUrl, sourceId, sourceUrl } = body;
+    const isAeoreplyMode = projectType === "aeoreply" || !storeId;
+    const projectContext: ProjectContext | undefined = projectId && brandName ? { project_id: projectId, brand_name: brandName, website_url: websiteUrl, source_id: sourceId, source_url: sourceUrl } : undefined;
 
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const { 
-      storeId, 
-      platform, 
-      targets,
-      projectType,
-      refresh = false, 
-      generateArticle = false,
-      wizardMode,
-      wizardInput,
-      // 🆕 Aeoreply project context
-      projectId,
-      brandName,
-      websiteUrl,
-      sourceId,
-      sourceUrl
-    } = await req.json();
-
-    // ✅ AEOREPLY MODE: storeId is OPTIONAL
-    // When projectType is 'aeoreply', we work from wizard input (URL/keywords/links)
-    const isAeoreplyMode = projectType === 'aeoreply' || !storeId;
-
-    // 🆕 Build project context for brand/source referencing
-    const projectContext: ProjectContext | undefined = (projectId && brandName) ? {
-      project_id: projectId,
-      brand_name: brandName,
-      website_url: websiteUrl,
-      source_id: sourceId,
-      source_url: sourceUrl
-    } : undefined;
-
-    if (projectContext) {
-      console.log(`🏷️ Project context: ${projectContext.brand_name} (${projectContext.website_url || 'no URL'})`);
-    }
-
-    // Determine platforms to target
     let platforms: Platform[];
-    if (platform === 'aeo' && targets) {
-      // Universal AEO mode with multiple targets
-      platforms = targets.filter((t: string) => PLATFORM_CONFIGS[t]);
-    } else if (platform) {
-      platforms = [platform];
-    } else {
-      platforms = ['chatgpt', 'gemini', 'copilot', 'claude', 'perplexity'];
-    }
+    if (platform === "aeo" && Array.isArray(targets)) platforms = targets.filter((t: Platform) => PLATFORM_CONFIGS[t]);
+    else if (platform && PLATFORM_CONFIGS[platform as Platform]) platforms = [platform as Platform];
+    else platforms = ["chatgpt", "gemini", "copilot", "claude", "perplexity"];
 
-    console.log(`🎯 Mode: ${isAeoreplyMode ? 'Aeoreply' : 'Store-based'}, Platforms: ${platforms.join(', ')}`);
-
-    // Check cache in ai_answers table if not refreshing (only for store mode)
     if (!refresh && storeId) {
-      const { data: cached } = await supabase
-        .from('ai_answers')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('store_id', storeId)
-        .in('platform', platforms)
-        .order('citation_potential', { ascending: false });
-
-      if (cached && cached.length > 0) {
-        console.log(`✅ Returning ${cached.length} cached AEO answers`);
-        return new Response(JSON.stringify({ 
-          success: true, 
-          opportunities: cached,
-          cached: true
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
+      const { data: cached } = await supabase.from("ai_answers").select("*").eq("user_id", user.id).eq("store_id", storeId).in("platform", platforms).order("citation_potential", { ascending: false });
+      if (cached?.length) return new Response(JSON.stringify({ success: true, opportunities: cached, cached: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     } else if (refresh && storeId) {
-      // Clear existing answers for refresh
-      await supabase
-        .from('ai_answers')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('store_id', storeId)
-        .in('platform', platforms);
+      await supabase.from("ai_answers").delete().eq("user_id", user.id).eq("store_id", storeId).in("platform", platforms);
     }
 
     let products: Product[] = [];
-
-    // ✅ AEOREPLY MODE: Generate from wizard input instead of products
     if (isAeoreplyMode && wizardMode && wizardInput) {
-      console.log(`📝 Aeoreply wizard mode: ${wizardMode}`);
-      
-      // Create pseudo-products from wizard input for the generation engine
-      if (wizardMode === 'url') {
-        // Analyze URL - create product from URL content
-        products = [{
-          id: `wizard-url-${Date.now()}`,
-          title: typeof wizardInput === 'string' ? `Content from ${wizardInput}` : 'URL Content',
-          product_type: 'web_content',
-          vendor: typeof wizardInput === 'string' ? new URL(wizardInput).hostname : 'unknown',
-          body_html: `Analyzed from ${wizardInput}`,
-        }];
-      } else if (wizardMode === 'keywords') {
-        // Create products from keywords
-        const keywordsList = Array.isArray(wizardInput) ? wizardInput : [wizardInput];
-        products = keywordsList.map((kw: string, i: number) => ({
-          id: `wizard-keyword-${i}-${Date.now()}`,
-          title: kw,
-          product_type: 'keyword_topic',
-          vendor: 'aeoreply',
-          body_html: `Topic: ${kw}`,
-        }));
-      } else if (wizardMode === 'links') {
-        // Create products from links
-        const linksList = Array.isArray(wizardInput) ? wizardInput : [wizardInput];
-        products = linksList.map((link: string, i: number) => ({
-          id: `wizard-link-${i}-${Date.now()}`,
-          title: `Page: ${link}`,
-          product_type: 'web_page',
-          vendor: new URL(link).hostname,
-          body_html: `Content from ${link}`,
-        }));
+      if (wizardMode === "url") {
+        const url = String(wizardInput);
+        products = [{ id: `wizard-url-${Date.now()}`, title: `Content from ${url}`, product_type: "web_content", vendor: (() => { try { return new URL(url).hostname; } catch { return "unknown"; } })(), body_html: `Source URL: ${url}` }];
+      } else if (wizardMode === "keywords") {
+        const list = Array.isArray(wizardInput) ? wizardInput : [wizardInput];
+        products = list.map((kw: string, i: number) => ({ id: `wizard-keyword-${i}-${Date.now()}`, title: String(kw), product_type: "keyword_topic", vendor: "aeoreply", body_html: `Topic: ${kw}` }));
+      } else if (wizardMode === "links") {
+        const list = Array.isArray(wizardInput) ? wizardInput : [wizardInput];
+        products = list.map((link: string, i: number) => ({ id: `wizard-link-${i}-${Date.now()}`, title: `Page: ${link}`, product_type: "web_page", vendor: (() => { try { return new URL(link).hostname; } catch { return "unknown"; } })(), body_html: `Source URL: ${link}` }));
       }
     } else if (storeId) {
-      // STORE MODE: Fetch products from Shopify
-      const { data: storeProducts, error: productsError } = await supabase
-        .from('shopify_products')
-        .select('id, title, product_type, vendor, tags, body_html, seo_description')
-        .eq('seller_id', user.id)
-        .eq('store_id', storeId)
-        .limit(100);
-
-      if (productsError) {
-        console.error('Error fetching products:', productsError);
-        return new Response(JSON.stringify({ error: 'Failed to fetch products' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      products = storeProducts || [];
+      const { data, error } = await supabase.from("shopify_products").select("id, title, product_type, vendor, tags, body_html, seo_description").eq("seller_id", user.id).eq("store_id", storeId).limit(100);
+      if (error) throw error;
+      products = data || [];
     }
 
-    if (products.length === 0) {
-      return new Response(JSON.stringify({ 
-        success: true, 
-        opportunities: [],
-        message: isAeoreplyMode ? 'No input provided' : 'No products found'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    if (!products.length) return new Response(JSON.stringify({ success: true, opportunities: [], message: isAeoreplyMode ? "No input provided" : "No products found" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const language = detectLanguage(products);
-    console.log(`🌐 Detected language: ${language}, Products: ${products.length}`);
-
-    // Generate AEO answers for each platform
     const allAnswers: any[] = [];
-    
     for (const p of platforms) {
-      // 🆕 Pass project context to generation for brand referencing
-      const rawAnswers = await generateAeoAnswers(products, p, language, projectContext);
-      
-      // Limite par catégorie (2 par catégorie)
-      const answers = limitPerCategory(rawAnswers, 2);
-      
-      console.log(`✨ Generated ${answers.length} AEO answers for ${p}`);
-      
-      // Insert into ai_answers
+      const answers = limitPerCategory(await generateAeoAnswers(products, p, language, projectContext), 2);
       for (const answer of answers) {
-        const insertData: any = {
+        const { data: inserted, error } = await supabase.from("ai_answers").insert({
           user_id: user.id,
-          store_id: storeId ?? null, // Can be null for Aeoreply mode
+          store_id: storeId ?? null,
           platform: answer.platform,
           query_type: answer.query_type,
           question: answer.question,
@@ -839,47 +283,26 @@ serve(async (req) => {
           keywords: answer.keywords,
           difficulty: answer.difficulty,
           category: answer.category,
-          status: 'pending',
-          // 🆕 Include project/source references
+          status: "pending",
           project_id: answer.project_id ?? null,
           source_id: answer.source_id ?? null,
           source_url: answer.source_url ?? null,
-          brand_mention: answer.brand_mention ?? null
-        };
-
-        const { data: inserted, error: insertError } = await supabase
-          .from('ai_answers')
-          .insert(insertData)
-          .select()
-          .single();
-
-        if (!insertError && inserted) {
-          allAnswers.push(inserted);
-        } else if (insertError) {
-          console.error('Insert error:', insertError);
-        }
+          brand_mention: answer.brand_mention ?? null,
+        }).select().single();
+        if (!error && inserted) allAnswers.push(inserted);
       }
     }
 
-    console.log(`✅ Total AEO answers generated: ${allAnswers.length}`);
-
-    return new Response(JSON.stringify({ 
-      success: true, 
+    return new Response(JSON.stringify({
+      success: true,
       opportunities: allAnswers,
       cached: false,
-      engine: 'generic-multi-industry',
-      mode: isAeoreplyMode ? 'aeoreply' : 'store'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-
+      engine: "generic-multi-industry",
+      mode: isAeoreplyMode ? "aeoreply" : "store",
+      policy: "openrouter-free>gemini-free>kimi-free>deepseek-free",
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
-    console.error('Error in generate-ai-query-opportunities:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.error("[generate-ai-query-opportunities] error:", error);
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
