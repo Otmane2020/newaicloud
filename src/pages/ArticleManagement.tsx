@@ -921,7 +921,7 @@ const ArticleManagement = forwardRef<ArticleManagementRef, ArticleManagementProp
                           variant={article.source === 'ai_generated' ? 'default' : 'secondary'}
                           className={article.source === 'ai_generated' ? 'bg-blue-600' : 'bg-green-600'}
                         >
-                          {article.source === 'ai_generated' ? 'AI NewAI' : 'Shopify'}
+                          {article.source === 'ai_generated' ? 'AI CatalogueOptimize AI' : 'Shopify'}
                         </Badge>
                       </td>
                       <td className="p-3 hidden md:table-cell">
