@@ -44,7 +44,7 @@ export default function CatalogOptimizeLanding() {
     <div className="min-h-screen bg-white text-slate-950">
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          <Link to="/" aria-label="Catalog Optimize AI"><CatalogOptimizeLogo /></Link>
+          <Link to="/" aria-label="CatalogueOptimize AI"><CatalogOptimizeLogo /></Link>
           <nav className="hidden items-center gap-7 text-sm text-slate-600 md:flex">
             <a href="#product">Product</a><a href="#solutions">Solutions</a><a href="#pricing">Pricing</a>
             <Link to="/documentation">Resources</Link>
@@ -119,7 +119,7 @@ export default function CatalogOptimizeLanding() {
           <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-wider text-violet-600">One product operations workspace</p>
             <h2 className="mt-3 text-4xl font-semibold tracking-tight">From supplier data to channel-ready products</h2>
-            <p className="mt-4 text-lg text-slate-600">Catalog Optimize organizes the work around five connected pillars instead of scattered point solutions.</p>
+            <p className="mt-4 text-lg text-slate-600">CatalogueOptimize organizes the work around five connected pillars instead of scattered point solutions.</p>
           </div>
           <div id="solutions" className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             {pillars.map((pillar) => (
@@ -243,7 +243,7 @@ export default function CatalogOptimizeLanding() {
 
       <footer className="border-t bg-slate-950 text-slate-300">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-10 sm:flex-row sm:items-center sm:justify-between">
-          <div><p className="font-semibold text-white">Catalog Optimize</p><p className="mt-1 text-sm">AI Product Operations for Shopify</p></div>
+          <div><p className="font-semibold text-white">CatalogueOptimize</p><p className="mt-1 text-sm">AI Product Operations for Shopify</p></div>
           <div className="flex flex-wrap gap-5 text-sm"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/documentation">Documentation</Link><a href="https://ranki.ai" target="_blank" rel="noreferrer">Need organic & AI-search growth? Ranki.ai</a></div>
         </div>
       </footer>
