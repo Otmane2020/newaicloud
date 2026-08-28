@@ -10,11 +10,11 @@ interface SimpleSyncProgressProps {
 }
 
 export function SimpleSyncProgress({ open, currentType }: SimpleSyncProgressProps) {
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [displayedPercentage, setDisplayedPercentage] = useState(0);
 
-  // Animer la barre de progression
+  // Progress follows real sync stages; the final stage is the catalog score analysis.
   useEffect(() => {
     if (!open) {
       setAnimatedProgress(0);
@@ -22,16 +22,27 @@ export function SimpleSyncProgress({ open, currentType }: SimpleSyncProgressProp
       return;
     }
 
+    const stageProgress: Record<string, number> = {
+      products: 18,
+      costs: 30,
+      collections: 44,
+      pages: 56,
+      articles: 68,
+      images: 80,
+      linking: 88,
+      analysis: 96,
+      completed: 100,
+    };
+    const target = stageProgress[currentType] ?? 12;
     const interval = setInterval(() => {
-      setAnimatedProgress((prev) => {
-        const increment = Math.random() * 2 + 1;
-        const newValue = Math.min(prev + increment, 95);
-        return newValue;
+      setAnimatedProgress((previous) => {
+        if (previous >= target) return previous;
+        return Math.min(previous + 1, target);
       });
-    }, 200);
+    }, 45);
 
     return () => clearInterval(interval);
-  }, [open]);
+  }, [open, currentType]);
 
   // Animer le pourcentage défilant
   useEffect(() => {
@@ -55,9 +66,13 @@ export function SimpleSyncProgress({ open, currentType }: SimpleSyncProgressProp
   }, [open]);
 
   const getTypeLabel = (type: string) => {
+    if (type === "analysis") return language === "fr" ? "Analyse du catalogue" : "Catalog analysis";
+    if (type === "linking") return "Collections";
     const typeKey = type as keyof typeof t.integration.sync.types;
     return t.integration.sync.types[typeKey] || type;
   };
+
+  const isAnalysis = currentType === "analysis";
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
@@ -65,11 +80,11 @@ export function SimpleSyncProgress({ open, currentType }: SimpleSyncProgressProp
         <DialogHeader>
           <DialogTitle className="text-base sm:text-xl flex items-center gap-2 pr-6">
             <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-primary flex-shrink-0" />
-            <span className="truncate">{t.integration.sync.progress.title}</span>
+            <span className="truncate">{isAnalysis ? (language === "fr" ? "Analyse du catalogue" : "Catalog analysis") : t.integration.sync.progress.title}</span>
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm pr-6">
             <span className="block truncate">
-              {tf("integration.sync.progress.importing", { type: getTypeLabel(currentType) })}
+              {isAnalysis ? (language === "fr" ? "Calcul des scores Contenu, SEO et Google Shopping…" : "Calculating Content, SEO and Google Shopping scores…") : tf("integration.sync.progress.importing", { type: getTypeLabel(currentType) })}
             </span>
           </DialogDescription>
         </DialogHeader>
@@ -127,10 +142,14 @@ export function SimpleSyncProgress({ open, currentType }: SimpleSyncProgressProp
           {/* Message d'encouragement dynamique */}
           <div className="text-center">
             <p className="text-xs text-muted-foreground animate-pulse">
-              {displayedPercentage < 30 && t.integration.sync.progress.stages.preparing}
-              {displayedPercentage >= 30 && displayedPercentage < 60 && t.integration.sync.progress.stages.syncing}
-              {displayedPercentage >= 60 && displayedPercentage < 85 && t.integration.sync.progress.stages.finalizing}
-              {displayedPercentage >= 85 && t.integration.sync.progress.stages.almostDone}
+              {isAnalysis
+                ? (language === "fr" ? "Analyse des produits importés et préparation des recommandations…" : "Analyzing imported products and preparing recommendations…")
+                : <>
+                    {displayedPercentage < 30 && t.integration.sync.progress.stages.preparing}
+                    {displayedPercentage >= 30 && displayedPercentage < 60 && t.integration.sync.progress.stages.syncing}
+                    {displayedPercentage >= 60 && displayedPercentage < 85 && t.integration.sync.progress.stages.finalizing}
+                    {displayedPercentage >= 85 && t.integration.sync.progress.stages.almostDone}
+                  </>}
             </p>
           </div>
         </div>
