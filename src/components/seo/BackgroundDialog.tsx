@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Loader2, Check, X, RefreshCw, Sparkles, Upload } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTranslation } from '@/lib/language';
@@ -45,36 +44,44 @@ interface BackgroundDialogProps {
 
 const PRESET_PROMPTS = [
   {
-    label: 'Studio professionnel',
-    value: 'Place this product in a professional studio setting with soft lighting and neutral gray backdrop'
+    labelFr: 'Studio professionnel',
+    labelEn: 'Professional studio',
+    value: 'Place this product in a professional studio setting with soft lighting and neutral gray backdrop',
   },
   {
-    label: 'Cozy Lifestyle – Salon moderne',
-    value: 'A cozy lifestyle setting with warm lighting and a comfortable modern living room interior. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce.'
+    labelFr: 'Cozy Lifestyle – Salon moderne',
+    labelEn: 'Cozy Lifestyle – Modern living room',
+    value: 'A cozy lifestyle setting with warm lighting and a comfortable modern living room interior. Soft ambient light, natural textures, wooden elements, neutral tones. The product is displayed as the hero element, well-lit, perfectly integrated into the scene, with a premium aesthetic suitable for e-commerce.',
   },
   {
-    label: 'Studio professionnel',
-    value: 'Professional studio photography with a clean white background and perfect soft lighting. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic.'
+    labelFr: 'Studio photo professionnel',
+    labelEn: 'Professional photo studio',
+    value: 'Professional studio photography with a clean white background and perfect soft lighting. High-end commercial style, sharp focus on the product, no distractions, premium e-commerce aesthetic.',
   },
   {
-    label: 'Nature luxueuse',
-    value: 'Luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment.'
+    labelFr: 'Nature luxueuse',
+    labelEn: 'Luxury nature',
+    value: 'Luxurious natural setting with green plants, wood textures, soft daylight and refined organic décor. Warm, elegant, high-end natural ambiance that highlights the product in a premium lifestyle environment.',
   },
   {
-    label: 'Minimaliste moderne',
-    value: 'Modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce.'
+    labelFr: 'Minimaliste moderne',
+    labelEn: 'Modern minimalist',
+    value: 'Modern minimalist interior with clean lines, neutral colors, soft daylight and a refined, uncluttered aesthetic. The product is centered and highlighted in a sleek, contemporary composition ideal for e-commerce.',
   },
   {
-    label: 'Urbain contemporain',
-    value: 'Contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot.'
+    labelFr: 'Urbain contemporain',
+    labelEn: 'Contemporary urban',
+    value: 'Contemporary urban background with industrial elements, concrete textures, large windows, and modern architecture. Stylish, modern city-inspired atmosphere that enhances the product in a premium lifestyle shot.',
   },
   {
-    label: 'Urbain contemporain',
-    value: 'Place this product in a contemporary urban setting with industrial elements and modern aesthetics'
+    labelFr: 'Urbain industriel',
+    labelEn: 'Urban industrial',
+    value: 'Place this product in a contemporary urban setting with industrial elements and modern aesthetics',
   },
   {
-    label: 'Élégance classique',
-    value: 'Place this product in an elegant classical setting with refined decorative elements and soft warm lighting'
+    labelFr: 'Élégance classique',
+    labelEn: 'Classic elegance',
+    value: 'Place this product in an elegant classical setting with refined decorative elements and soft warm lighting',
   },
 ];
 
@@ -87,15 +94,15 @@ export function BackgroundDialog({
   customPrompt = '',
   onCustomPromptChange,
 }: BackgroundDialogProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [localPrompt, setLocalPrompt] = useState(customPrompt);
   const [selectedPreset, setSelectedPreset] = useState<string>('');
 
-  const successfulPreviews = previews.filter(p => p.status === 'success');
-  const isGenerating = previews.some(p => p.status === 'generating');
+  const successfulPreviews = previews.filter((preview) => preview.status === 'success');
+  const isGenerating = previews.some((preview) => preview.status === 'generating');
   const isSingleImage = previews.length === 1;
 
   useEffect(() => {
@@ -110,56 +117,47 @@ export function BackgroundDialog({
 
   const handlePromptChange = (value: string) => {
     setLocalPrompt(value);
-    if (onCustomPromptChange) {
-      onCustomPromptChange(value);
-    }
+    onCustomPromptChange?.(value);
   };
 
   const handlePresetChange = (value: string) => {
     setSelectedPreset(value);
-    const preset = PRESET_PROMPTS.find(p => p.value === value);
-    if (preset) {
-      handlePromptChange(preset.value);
-    }
+    const preset = PRESET_PROMPTS.find((item) => item.value === value);
+    if (preset) handlePromptChange(preset.value);
   };
 
   const handleToggleSelect = (productId: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(productId)) {
-      newSelected.delete(productId);
-    } else {
-      newSelected.add(productId);
-    }
-    setSelectedIds(newSelected);
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
   };
 
   const handleSelectAll = () => {
     if (selectedIds.size === successfulPreviews.length) {
       setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(successfulPreviews.map(p => p.productId)));
+      return;
     }
+    setSelectedIds(new Set(successfulPreviews.map((preview) => preview.productId)));
   };
 
   const handleApply = async () => {
     if (selectedIds.size === 0) return;
-    
+
     setApplying(true);
     const toastId = toast.loading(t.backgroundDialog.applyAndSync);
-    
+
     try {
       await onApply(Array.from(selectedIds));
-      
-      // 🔥 AUTO-SYNC to Shopify after applying - FORCED SYNC
-      console.log('🔄 Force-syncing applied background images to Shopify...');
-      
+
       let syncSkipped = 0;
       let syncOk = 0;
       let syncErrors = 0;
-      
+
       for (const productId of Array.from(selectedIds)) {
         try {
-          // Vérifier si le produit a un shopify_product_id
           const { data: product } = await supabase
             .from('shopify_products')
             .select('shopify_id')
@@ -167,37 +165,28 @@ export function BackgroundDialog({
             .single();
 
           if (!product?.shopify_id) {
-            console.warn(`⏭️ Product ${productId} has no shopify_id, sync skipped`);
             syncSkipped++;
             continue;
           }
 
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-            body: { productId, allowCreateReplace: true } // 🔐 Explicit: AI background removal images should sync
+            body: { productId, allowCreateReplace: true },
           });
-          
-          console.log('[BackgroundDialog] Shopify sync response', { productId, syncData, syncError });
-          
-          if (syncError) {
-            syncErrors++;
-            console.error(`❌ Sync error for product ${productId}:`, syncError);
-          } else if (syncData?.error) {
-            syncErrors++;
-            console.error(`❌ Sync logic error for ${productId}:`, syncData.error);
-          } else {
-            syncOk++;
-            console.log(`✅ Successfully synced product ${productId}`);
-          }
-        } catch (error: any) {
-          console.error(`❌ Exception syncing product ${productId}:`, error);
+
+          if (syncError || syncData?.error) syncErrors++;
+          else syncOk++;
+        } catch (error) {
+          console.error('[BackgroundDialog] Shopify sync exception:', error);
           syncErrors++;
         }
       }
-      
+
       if (syncErrors > 0) {
         toast.error(t.backgroundDialog.imagesAppliedSyncPartial, {
           id: toastId,
-          description: `${syncOk} ${t.backgroundDialog.syncPartial.replace('{successCount}', String(syncOk)).replace('{errorCount}', String(syncErrors))}`,
+          description: `${syncOk} ${t.backgroundDialog.syncPartial
+            .replace('{successCount}', String(syncOk))
+            .replace('{errorCount}', String(syncErrors))}`,
           duration: 8000,
         });
       } else if (syncSkipped > 0 && syncOk === 0) {
@@ -209,16 +198,18 @@ export function BackgroundDialog({
       } else if (syncSkipped > 0 && syncOk > 0) {
         toast.warning(t.backgroundDialog.partialSync, {
           id: toastId,
-          description: t.backgroundDialog.partialSyncDesc.replace('{{synced}}', String(syncOk)).replace('{{skipped}}', String(syncSkipped)),
+          description: t.backgroundDialog.partialSyncDesc
+            .replace('{{synced}}', String(syncOk))
+            .replace('{{skipped}}', String(syncSkipped)),
           duration: 8000,
         });
       } else {
         toast.success(`✅ ${syncOk} ${t.backgroundDialog.imagesApplied}`, { id: toastId });
       }
-      
+
       onOpenChange(false);
-    } catch (error: any) {
-      console.error('Erreur application:', error);
+    } catch (error) {
+      console.error('[BackgroundDialog] Apply failed:', error);
       toast.error(t.backgroundDialog.syncError, { id: toastId });
     } finally {
       setApplying(false);
@@ -227,46 +218,36 @@ export function BackgroundDialog({
 
   const handleSyncToShopify = async () => {
     if (selectedIds.size === 0) return;
-    
+
     setSyncing(true);
     const toastId = toast.loading(t.backgroundDialog.syncInProgress);
-    
+
     try {
       let syncSkipped = 0;
       let syncOk = 0;
       let syncErrors = 0;
-      
+
       for (const productId of Array.from(selectedIds)) {
         try {
           const { data: syncData, error: syncError } = await supabase.functions.invoke('sync-product-images-to-shopify', {
-            body: { productId, allowCreateReplace: true } // 🔐 Explicit: Manual sync button means user wants to push to Shopify
+            body: { productId, allowCreateReplace: true },
           });
-          
-          console.log('[BackgroundDialog] Manual sync response', { productId, syncData, syncError });
-          
-          if (syncError) {
-            syncErrors++;
-            console.error(`Erreur sync produit ${productId}:`, syncError);
-          } else if (syncData?.skipped) {
-            syncSkipped++;
-            console.log(`⏭️ Sync skipped for ${productId} (no shopify_product_id)`);
-          } else if (syncData?.error) {
-            syncErrors++;
-            console.error(`Erreur logique sync ${productId}:`, syncData.error);
-          } else {
-            syncOk++;
-            console.log(`✅ Successfully synced product ${productId}`);
-          }
-        } catch (error: any) {
-          console.error(`Erreur sync produit ${productId}:`, error);
+
+          if (syncError || syncData?.error) syncErrors++;
+          else if (syncData?.skipped) syncSkipped++;
+          else syncOk++;
+        } catch (error) {
+          console.error('[BackgroundDialog] Manual Shopify sync exception:', error);
           syncErrors++;
         }
       }
-      
+
       if (syncErrors > 0) {
         toast.error(t.backgroundDialog.syncError, {
           id: toastId,
-          description: `${syncOk} ${t.backgroundDialog.syncPartial.replace('{successCount}', String(syncOk)).replace('{errorCount}', String(syncErrors))}`,
+          description: `${syncOk} ${t.backgroundDialog.syncPartial
+            .replace('{successCount}', String(syncOk))
+            .replace('{errorCount}', String(syncErrors))}`,
         });
       } else if (syncSkipped > 0 && syncOk === 0) {
         toast.warning(t.backgroundDialog.noImagesSynced, {
@@ -276,13 +257,17 @@ export function BackgroundDialog({
       } else if (syncSkipped > 0 && syncOk > 0) {
         toast.warning(t.backgroundDialog.partialSync, {
           id: toastId,
-          description: t.backgroundDialog.partialSyncDesc.replace('{{synced}}', String(syncOk)).replace('{{skipped}}', String(syncSkipped)),
+          description: t.backgroundDialog.partialSyncDesc
+            .replace('{{synced}}', String(syncOk))
+            .replace('{{skipped}}', String(syncSkipped)),
         });
       } else {
-        toast.success(`✅ ${syncOk} ${t.backgroundDialog.syncSuccess.replace('{count}', String(syncOk))}`, { id: toastId });
+        toast.success(`✅ ${syncOk} ${t.backgroundDialog.syncSuccess.replace('{count}', String(syncOk))}`, {
+          id: toastId,
+        });
       }
-    } catch (error: any) {
-      console.error('Erreur synchronisation:', error);
+    } catch (error) {
+      console.error('[BackgroundDialog] Synchronization failed:', error);
       toast.error(t.backgroundDialog.syncError, { id: toastId });
     } finally {
       setSyncing(false);
@@ -297,12 +282,9 @@ export function BackgroundDialog({
             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
             <span className="line-clamp-1">{t.backgroundDialog.title}</span>
           </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm">
-            {t.backgroundDialog.description}
-          </DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">{t.backgroundDialog.description}</DialogDescription>
         </DialogHeader>
 
-        {/* Prompt Section (optional regenerate) */}
         {onCustomPromptChange && (
           <div className="space-y-2 border-b pb-3 sm:pb-4 flex-shrink-0">
             <Label className="text-xs sm:text-sm font-medium">{t.backgroundDialog.customPrompt}</Label>
@@ -314,7 +296,7 @@ export function BackgroundDialog({
                 <SelectContent>
                   {PRESET_PROMPTS.map((preset) => (
                     <SelectItem key={preset.value} value={preset.value} className="text-xs sm:text-sm">
-                      {preset.label}
+                      {language === 'fr' ? preset.labelFr : preset.labelEn}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -322,7 +304,7 @@ export function BackgroundDialog({
               <div className="flex gap-2">
                 <Textarea
                   value={localPrompt}
-                  onChange={(e) => handlePromptChange(e.target.value)}
+                  onChange={(event) => handlePromptChange(event.target.value)}
                   placeholder={t.backgroundDialog.describeEnvironment}
                   className="min-h-[50px] sm:min-h-[60px] text-xs sm:text-sm resize-none flex-1"
                 />
@@ -344,10 +326,7 @@ export function BackgroundDialog({
 
         <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 space-y-3 sm:space-y-4 min-h-0">
           {previews.map((preview) => (
-            <div
-              key={preview.productId}
-              className="border rounded-lg p-2 sm:p-3 space-y-2 sm:space-y-3"
-            >
+            <div key={preview.productId} className="border rounded-lg p-2 sm:p-3 space-y-2 sm:space-y-3">
               <div className="flex items-start justify-between flex-col sm:flex-row gap-2">
                 <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
                   {!isSingleImage && (
@@ -400,18 +379,12 @@ export function BackgroundDialog({
                 <div className="space-y-1 sm:space-y-2">
                   <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">{t.backgroundDialog.original}</p>
                   <div className="aspect-square bg-muted rounded-md overflow-hidden border">
-                    <img
-                      src={preview.originalUrl}
-                      alt="Original"
-                      className="w-full h-full object-contain"
-                    />
+                    <img src={preview.originalUrl} alt={t.backgroundDialog.original} className="w-full h-full object-contain" />
                   </div>
                 </div>
 
                 <div className="space-y-1 sm:space-y-2">
-                  <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">
-                    {t.backgroundDialog.ai}
-                  </p>
+                  <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">{t.backgroundDialog.ai}</p>
                   <div className="aspect-square bg-muted rounded-md overflow-hidden border">
                     {preview.status === 'generating' && (
                       <div className="w-full h-full flex items-center justify-center">
@@ -419,11 +392,7 @@ export function BackgroundDialog({
                       </div>
                     )}
                     {preview.status === 'success' && preview.generatedUrl && (
-                      <img
-                        src={preview.generatedUrl}
-                        alt={t.backgroundDialog.title}
-                        className="w-full h-full object-contain"
-                      />
+                      <img src={preview.generatedUrl} alt={t.backgroundDialog.title} className="w-full h-full object-contain" />
                     )}
                     {preview.status === 'error' && (
                       <div className="w-full h-full flex items-center justify-center text-center p-2 sm:p-4">
@@ -451,7 +420,9 @@ export function BackgroundDialog({
                   disabled={isGenerating}
                   className="text-[10px] sm:text-xs w-full sm:w-auto whitespace-nowrap h-8"
                 >
-                  {selectedIds.size === successfulPreviews.length ? t.backgroundDialog.deselectAll : t.backgroundDialog.selectAll}
+                  {selectedIds.size === successfulPreviews.length
+                    ? t.backgroundDialog.deselectAll
+                    : t.backgroundDialog.selectAll}
                 </Button>
               )}
               <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
