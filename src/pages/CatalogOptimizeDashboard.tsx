@@ -31,6 +31,16 @@ type ProductHealthRow = {
   seo_synced_to_shopify: boolean | null;
 };
 
+type ResourceSeoStats = {
+  collections: number | null; pages: number | null; articles: number | null;
+  collectionCount: number; pageCount: number; articleCount: number;
+  missingCollections: number; missingPages: number; missingArticles: number;
+};
+const initialResourceSeo: ResourceSeoStats = {
+  collections: null, pages: null, articles: null, collectionCount: 0, pageCount: 0, articleCount: 0,
+  missingCollections: 0, missingPages: 0, missingArticles: 0,
+};
+
 type CatalogStats = {
   total: number;
   incomplete: number;
@@ -64,6 +74,7 @@ export default function CatalogOptimizeDashboard() {
   const [loading, setLoading] = useState(false);
   const [scanError, setScanError] = useState(false);
   const [scanNonce, setScanNonce] = useState(0);
+  const [resourceSeo, setResourceSeo] = useState<ResourceSeoStats>(initialResourceSeo);
 
   useEffect(() => {
     if (!user?.id || !selectedStore?.id) {
@@ -121,6 +132,34 @@ export default function CatalogOptimizeDashboard() {
     return () => { mounted = false; };
   }, [user?.id, selectedStore?.id, scanNonce]);
 
+  useEffect(() => {
+    if (!selectedStore?.id) { setResourceSeo(initialResourceSeo); return; }
+    let mounted = true;
+    const loadResourceSeo = async () => {
+      const [collectionsResult, pagesResult, articlesResult] = await Promise.all([
+        supabase.from("shopify_collections").select("seo_title,seo_description").eq("store_id", selectedStore.id).range(0, 9999),
+        supabase.from("shopify_pages").select("seo_title,seo_description").eq("store_id", selectedStore.id).range(0, 9999),
+        supabase.from("blog_articles").select("seo_title,meta_description").eq("store_id", selectedStore.id).range(0, 9999),
+      ]);
+      const collections = (collectionsResult.data || []) as Array<Record<string, unknown>>;
+      const pages = (pagesResult.data || []) as Array<Record<string, unknown>>;
+      const articles = (articlesResult.data || []) as Array<Record<string, unknown>>;
+      const score = (rows: Array<Record<string, unknown>>, descriptionField: string) => {
+        if (!rows.length) return null;
+        const failures = rows.filter((row) => !String(row.seo_title || "").trim()).length + rows.filter((row) => !String(row[descriptionField] || "").trim()).length;
+        return Math.max(0, Math.round((((rows.length * 2) - failures) / (rows.length * 2)) * 100));
+      };
+      const missing = (rows: Array<Record<string, unknown>>, descriptionField: string) => rows.filter((row) => !String(row.seo_title || "").trim() || !String(row[descriptionField] || "").trim()).length;
+      if (mounted) setResourceSeo({
+        collections: score(collections, "seo_description"), pages: score(pages, "seo_description"), articles: score(articles, "meta_description"),
+        collectionCount: collections.length, pageCount: pages.length, articleCount: articles.length,
+        missingCollections: missing(collections, "seo_description"), missingPages: missing(pages, "seo_description"), missingArticles: missing(articles, "meta_description"),
+      });
+    };
+    loadResourceSeo().catch((error) => console.error("[CatalogOptimizeDashboard] SEO resources scan failed", error));
+    return () => { mounted = false; };
+  }, [selectedStore?.id, scanNonce]);
+
   const contentScore = useMemo(() => {
     if (!stats.total) return null;
     const checks = stats.total * 3;
@@ -128,12 +167,22 @@ export default function CatalogOptimizeDashboard() {
     return Math.max(0, Math.round(((checks - failures) / checks) * 100));
   }, [stats]);
 
-  const seoScore = useMemo(() => {
+  const productSeoScore = useMemo(() => {
     if (!stats.total) return null;
     const checks = stats.total * 2;
     const failures = stats.missingSeoTitles + stats.missingSeoDescriptions;
     return Math.max(0, Math.round(((checks - failures) / checks) * 100));
   }, [stats]);
+
+  const seoScore = useMemo(() => {
+    const parts = [
+      { value: productSeoScore, weight: 50 }, { value: resourceSeo.collections, weight: 20 },
+      { value: resourceSeo.pages, weight: 15 }, { value: resourceSeo.articles, weight: 15 },
+    ].filter((part): part is { value: number; weight: number } => part.value !== null);
+    if (!parts.length) return null;
+    const totalWeight = parts.reduce((sum, part) => sum + part.weight, 0);
+    return Math.round(parts.reduce((sum, part) => sum + part.value * part.weight, 0) / totalWeight);
+  }, [productSeoScore, resourceSeo]);
 
   // Catalog health is an explainable composite: 60% catalog content + 40% SEO.
   const health = useMemo(() => {
@@ -165,6 +214,9 @@ export default function CatalogOptimizeDashboard() {
     { label: fr ? "Modifications non synchronisées" : "Changes not synced", value: stats.notSyncedToShopify, href: "/products", icon: RefreshCw },
     { label: fr ? "Images principales manquantes" : "Missing primary images", value: stats.missingImages, href: "/products/title-description?view=images", icon: Image },
     { label: fr ? "Tags manquants" : "Missing tags", value: stats.missingTags, href: "/seo?tab=tags", icon: Tags },
+    { label: fr ? "SEO collections incomplet" : "Incomplete collection SEO", value: resourceSeo.missingCollections, href: "/seo?tab=collections", icon: Package },
+    { label: fr ? "SEO pages incomplet" : "Incomplete page SEO", value: resourceSeo.missingPages, href: "/seo?tab=pages", icon: FileText },
+    { label: fr ? "SEO articles incomplet" : "Incomplete article SEO", value: resourceSeo.missingArticles, href: "/seo?tab=articles", icon: FileText },
   ].sort((a, b) => b.value - a.value);
 
   if (storesLoading) return <div className="grid min-h-[360px] place-items-center"><Loader2 className="h-7 w-7 animate-spin text-violet-600" /></div>;
@@ -266,6 +318,22 @@ export default function CatalogOptimizeDashboard() {
             <Progress value={score.value ?? 0} className="mt-3 h-1.5" />
           </Link>
         ))}
+      </section>
+      <section>
+        <div className="mb-3"><h2 className="text-lg font-semibold text-slate-950">{fr ? "Score SEO détaillé" : "SEO score breakdown"}</h2><p className="text-sm text-slate-500">{fr ? "Titres et descriptions SEO de chaque type de contenu." : "SEO titles and descriptions for every content type."}</p></div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: fr ? "Produits" : "Products", value: productSeoScore, count: stats.total, weight: "50%", href: "/seo?tab=products" },
+            { label: "Collections", value: resourceSeo.collections, count: resourceSeo.collectionCount, weight: "20%", href: "/seo?tab=collections" },
+            { label: "Pages", value: resourceSeo.pages, count: resourceSeo.pageCount, weight: "15%", href: "/seo?tab=pages" },
+            { label: "Articles", value: resourceSeo.articles, count: resourceSeo.articleCount, weight: "15%", href: "/seo?tab=articles" },
+          ].map((item) => (
+            <Link key={item.href} to={item.href} className="rounded-lg border border-slate-200 bg-white p-3 transition hover:border-violet-300">
+              <div className="flex items-center justify-between"><span className="text-sm font-medium">{item.label}</span><strong>{item.value === null ? "—" : `${item.value}%`}</strong></div>
+              <p className="mt-1 text-xs text-slate-500">{item.count} {fr ? "éléments" : "items"} · {fr ? "poids" : "weight"} {item.weight}</p>
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );
