@@ -10,7 +10,7 @@ export default function ApiDocs() {
     <div className="container mx-auto py-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Documentation API</h1>
-        <p className="text-muted-foreground">Guide complet d'utilisation de l'API NewAI.sale</p>
+        <p className="text-muted-foreground">Guide complet d'utilisation de l'API CatalogueOptimize AI.sale</p>
       </div>
 
       <Tabs defaultValue="intro" className="space-y-6">
@@ -29,7 +29,7 @@ export default function ApiDocs() {
                 <CardTitle>Bienvenue</CardTitle>
               </div>
               <CardDescription>
-                L'API NewAI.sale vous permet d'automatiser toutes les fonctionnalités de la plateforme
+                L'API CatalogueOptimize AI.sale vous permet d'automatiser toutes les fonctionnalités de la plateforme
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
