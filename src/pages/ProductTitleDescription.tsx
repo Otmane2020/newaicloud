@@ -270,7 +270,7 @@ export default function ProductTitleDescription() {
   const [pendingAiConfig, setPendingAiConfig] = useState<AiBackgroundConfig | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [pendingApplyProductIds, setPendingApplyProductIds] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<"grid" | "table">("table");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(2);
   // White background variant states
   const [whiteBgApplyTo, setWhiteBgApplyTo] = useState<"simple" | "variants">("simple");
@@ -1950,59 +1950,6 @@ export default function ProductTitleDescription() {
     }
   };
 
-  const renderImageStudioMenu = () => (
-    <details className="relative">
-      <summary
-        className="grid h-9 w-9 cursor-pointer list-none place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-violet-700"
-        title={language === "fr" ? "Ouvrir Image Studio" : "Open Image Studio"}
-      >
-        <Images className="h-4 w-4" />
-        <span className="sr-only">{language === "fr" ? "Options de génération d’images" : "Image generation options"}</span>
-      </summary>
-      <div className="absolute right-0 z-40 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
-        <p className="px-2 py-1.5 text-xs font-semibold text-slate-500">Image Studio</p>
-        <Button variant="ghost" size="sm" className="w-full justify-start" disabled={selectedProducts.size === 0 || generatingWhiteBg} onClick={() => {
-          if (!canDoAction("optimizations")) {
-            toast.error(t.contentOptimization.toasts.limitReached);
-            setShowUpgradeDialog(true);
-            return;
-          }
-          const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
-          const hasVariants = selectedProductsList.some((p) => p.variants?.length > 1 || (p.variants?.[0] && p.variants[0].title !== "Default Title"));
-          setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
-          setShowWhiteBgConfigDialog(true);
-          loadGalleryImages(Array.from(selectedProducts), true);
-        }}>
-          <Square className="mr-2 h-4 w-4" />{language === "fr" ? "Fond blanc" : "White background"}
-        </Button>
-        <Button variant="ghost" size="sm" className="w-full justify-start" disabled={selectedProducts.size === 0 || generatingAiBg} onClick={async () => {
-          if (!canDoAction("optimizations")) {
-            toast.error(t.contentOptimization.toasts.limitReached);
-            setShowUpgradeDialog(true);
-            return;
-          }
-          await loadGalleryImages(Array.from(selectedProducts));
-          setShowAiConfigDialog(true);
-        }}>
-          <Palette className="mr-2 h-4 w-4" />{language === "fr" ? "Créer un décor IA" : "Generate AI background"}
-        </Button>
-        <Button variant="ghost" size="sm" className="w-full justify-start" disabled={selectedProducts.size === 0} onClick={() => setShowSmartBgDialog(true)}>
-          <Wand2 className="mr-2 h-4 w-4" />{language === "fr" ? "Décor intelligent" : "Smart background"}
-        </Button>
-        <Button variant="ghost" size="sm" className="w-full justify-start" disabled={selectedProducts.size === 0} onClick={() => setShowBulkAIImagesDialog(true)}>
-          <Layers className="mr-2 h-4 w-4" />{language === "fr" ? "Génération en lot" : "Bulk generation"}
-        </Button>
-        <div className="my-1 border-t border-slate-100" />
-        <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => navigate("/shopping?focus=images")}>
-          <ShoppingCart className="mr-2 h-4 w-4" />Google Shopping
-        </Button>
-        <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => navigate("/products/media-history")}>
-          <History className="mr-2 h-4 w-4" />{language === "fr" ? "Historique" : "History"}
-        </Button>
-      </div>
-    </details>
-  );
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -2012,21 +1959,21 @@ export default function ProductTitleDescription() {
   }
 
   return (
-    <div className="w-full">
-      <div className="mx-auto w-full max-w-[1600px] space-y-4">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto w-full max-w-[1600px] space-y-6">
         <WorkspacePageHeader
           section="Content"
-          page={workspace === "content" ? (language === "fr" ? "Titres et descriptions" : "Titles & Descriptions") : workspace === "landing" ? (language === "fr" ? "Pages produit" : "Landing Pages") : workspace === "images" ? (language === "fr" ? "Images IA" : "AI Images") : (language === "fr" ? "Actions groupées" : "Bulk Actions")}
+          page={workspace === "content" ? "Titles & Descriptions" : workspace === "landing" ? "Landing Pages" : workspace === "images" ? "AI Images" : "Bulk Actions"}
           count={products.length}
-          title={workspace === "content" ? (language === "fr" ? "Titres et descriptions" : "Titles & Descriptions") : workspace === "landing" ? (language === "fr" ? "Pages produit" : "Product Pages") : workspace === "images" ? "Image Studio" : (language === "fr" ? "Optimisation groupée" : "Bulk Optimization")}
+          title={workspace === "content" ? "Titles & Descriptions" : workspace === "landing" ? "Product Landing Pages" : workspace === "images" ? "AI Image Studio" : "Bulk Optimization"}
           description={
             workspace === "content"
-              ? (language === "fr" ? "Améliorez les titres et descriptions des produits sélectionnés." : "Improve titles and descriptions for selected products.")
+              ? "Improve titles and descriptions for selected Shopify products."
               : workspace === "landing"
-                ? (language === "fr" ? "Créez des pages produit enrichies à partir du catalogue." : "Create richer product pages from your catalog.")
+                ? "Create richer product pages from your existing catalog data."
                 : workspace === "images"
-                  ? (language === "fr" ? "Créez et améliorez les visuels sans modifier le produit." : "Create and improve visuals without changing the product.")
-                  : (language === "fr" ? "Appliquez une action contrôlée aux produits sélectionnés." : "Apply one controlled action to selected products.")
+                  ? "Create or improve product visuals without changing the product itself."
+                  : "Apply one controlled operation to several selected products."
           }
           actions={
             <>
@@ -2052,10 +1999,10 @@ export default function ProductTitleDescription() {
                 disabled={generating || filteredProducts.length === 0}
               >
                 {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : workspace === "images" ? <Images className="mr-2 h-4 w-4" /> : workspace === "landing" ? <FileText className="mr-2 h-4 w-4" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                {workspace === "images" ? (language === "fr" ? "Générer les images" : "Generate images") : workspace === "landing" ? (language === "fr" ? "Générer les pages" : "Generate pages") : t.contentOptimization.buttons.optimizeAll}
+                {workspace === "images" ? "Generate images" : workspace === "landing" ? "Generate pages" : t.contentOptimization.buttons.optimizeAll}
               </Button>
               <details className="relative">
-                <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-lg border px-3 text-sm font-medium hover:bg-muted">{language === "fr" ? "Plus" : "More"}</summary>
+                <summary className="flex min-h-10 cursor-pointer list-none items-center rounded-lg border px-3 text-sm font-medium hover:bg-muted">More</summary>
                 <div className="absolute right-0 z-30 mt-2 grid w-56 gap-1 rounded-xl border bg-white p-2 shadow-xl">
                   <Button variant="ghost" className="justify-start" onClick={() => {
                     const productsToSync = filteredProducts.filter((product) => product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title));
@@ -2071,49 +2018,131 @@ export default function ProductTitleDescription() {
           }
         />
 
-        <nav className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-white px-1" aria-label="Product workspace">
+        <nav className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm lg:grid-cols-4" aria-label="Product workspace">
           {[
             { id: "content", label: language === "fr" ? "Contenu" : "Content", icon: FileText },
             { id: "landing", label: "Landing pages", icon: Sparkles },
             { id: "images", label: language === "fr" ? "Images" : "Images", icon: Images },
             { id: "bulk", label: language === "fr" ? "Actions groupées" : "Bulk actions", icon: Layers },
           ].map(({ id, label, icon: Icon }) => (
-            <Button key={id} type="button" variant={workspace === id ? "default" : "ghost"} onClick={() => setSearchParams({ view: id })} className="h-9 rounded-none border-b-2 border-transparent px-3 text-sm data-[state=active]:border-violet-600">
+            <Button key={id} type="button" variant={workspace === id ? "default" : "ghost"} onClick={() => setSearchParams({ view: id })} className="justify-start gap-2">
               <Icon className="h-4 w-4" />{label}
             </Button>
           ))}
         </nav>
 
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 sm:grid-cols-4 sm:divide-y-0">
-            {[
-              { key: "all", label: language === "fr" ? "Produits" : "Products", value: products.length, tone: "text-slate-950" },
-              { key: "optimized", label: language === "fr" ? "Optimisés" : "Optimized", value: products.filter((p) => hasRichHtmlDescription(p)).length, tone: "text-emerald-700" },
-              { key: "notOptimized", label: language === "fr" ? "À optimiser" : "To optimize", value: products.filter((p) => !hasRichHtmlDescription(p)).length, tone: "text-amber-700" },
-              { key: "toSync", label: language === "fr" ? "À synchroniser" : "To sync", value: products.filter((p) => hasRichHtmlDescription(p)).length, tone: "text-violet-700" },
-            ].map((stat) => (
-              <button
-                key={stat.key}
-                type="button"
-                onClick={() => setStatusFilter(stat.key === "all" || statusFilter === stat.key ? "all" : stat.key as typeof statusFilter)}
-                className={`flex min-h-16 items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-50 ${statusFilter === stat.key ? "bg-violet-50/60" : ""}`}
-              >
-                <span className="text-xs font-medium text-slate-500">{stat.label}</span>
-                <strong className={`text-lg tabular-nums ${stat.tone}`}>{stat.value}</strong>
-              </button>
-            ))}
+        {workspace === "images" && (
+          <section className="rounded-xl border border-slate-200 bg-white p-3" aria-label={language === "fr" ? "Outils Image Studio" : "Image Studio tools"}>
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold text-slate-950">Image Studio</h2>
+              <p className="text-xs text-slate-500">{language === "fr" ? "Toutes les opérations image dans un seul espace." : "Every image operation in one workspace."}</p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              <Button variant="outline" className="h-auto justify-start gap-3 p-3" disabled={selectedProducts.size === 0} onClick={() => {
+                const selectedProductsList = products.filter((product) => selectedProducts.has(product.id));
+                const hasVariants = selectedProductsList.some((product) => product.variants?.length > 1 || (product.variants?.[0] && product.variants[0].title !== "Default Title"));
+                setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
+                setShowWhiteBgConfigDialog(true);
+                loadGalleryImages(Array.from(selectedProducts), true);
+              }}>
+                <Square className="h-4 w-4 text-violet-600" /><span className="text-left"><strong className="block text-sm">{language === "fr" ? "Fond blanc" : "White background"}</strong><small className="text-slate-500">{language === "fr" ? "Photos catalogue" : "Catalog photos"}</small></span>
+              </Button>
+              <Button variant="outline" className="h-auto justify-start gap-3 p-3" disabled={selectedProducts.size === 0} onClick={() => setShowAiConfigDialog(true)}>
+                <Wand2 className="h-4 w-4 text-violet-600" /><span className="text-left"><strong className="block text-sm">{language === "fr" ? "Arrière-plan IA" : "AI background"}</strong><small className="text-slate-500">{language === "fr" ? "Créer une ambiance" : "Create a scene"}</small></span>
+              </Button>
+              <Button variant="outline" className="h-auto justify-start gap-3 p-3" onClick={() => navigate("/shopping?focus=images")}>
+                <ShoppingCart className="h-4 w-4 text-violet-600" /><span className="text-left"><strong className="block text-sm">Google Shopping</strong><small className="text-slate-500">{language === "fr" ? "Images conformes" : "Compliant images"}</small></span>
+              </Button>
+              <Button variant="outline" className="h-auto justify-start gap-3 p-3" onClick={() => navigate("/seo?tab=alt")}>
+                <ImageIcon className="h-4 w-4 text-violet-600" /><span className="text-left"><strong className="block text-sm">ALT text</strong><small className="text-slate-500">{language === "fr" ? "Accessibilité et SEO" : "Accessibility and SEO"}</small></span>
+              </Button>
+              <Button variant="outline" className="h-auto justify-start gap-3 p-3" onClick={() => navigate("/products/media-history")}>
+                <History className="h-4 w-4 text-violet-600" /><span className="text-left"><strong className="block text-sm">{language === "fr" ? "Historique" : "History"}</strong><small className="text-slate-500">{language === "fr" ? "Retrouver les créations" : "Review creations"}</small></span>
+              </Button>
+            </div>
+            {selectedProducts.size === 0 && <p className="mt-2 text-xs text-slate-500">{language === "fr" ? "Sélectionnez un ou plusieurs produits pour générer un fond." : "Select one or more products to generate a background."}</p>}
+          </section>
+        )}
+
+        {/* Total Products Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <ImageIcon className="h-6 w-6 text-primary" />
+          <div>
+            <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.totalProducts}</p>
+            <p className="text-3xl font-bold">{products.length}</p>
           </div>
-        </section>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card
+            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
+              statusFilter === "optimized"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "hover:border-primary/30"
+            }`}
+            onClick={() => setStatusFilter(statusFilter === "optimized" ? "all" : "optimized")}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <Sparkles className="h-5 w-5 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.optimized}</p>
+                <p className="text-2xl font-bold">{products.filter((p) => hasRichHtmlDescription(p)).length}</p>
+              </div>
+            </div>
+            {statusFilter === "optimized" && (
+              <Badge variant="default" className="mt-2">
+                Filtre actif
+              </Badge>
+            )}
+          </Card>
+
+          <Card
+            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${
+              statusFilter === "notOptimized"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "hover:border-primary/30"
+            }`}
+            onClick={() => setStatusFilter(statusFilter === "notOptimized" ? "all" : "notOptimized")}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-500/10 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.notOptimized}</p>
+                <p className="text-2xl font-bold">{products.filter((p) => !hasRichHtmlDescription(p)).length}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card
+            className={`p-4 cursor-pointer transition-all hover:shadow-md border-2 ${statusFilter === "toSync" ? "border-primary bg-primary/5" : ""}`}
+            onClick={() => setStatusFilter(statusFilter === "toSync" ? "all" : "toSync")}
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Upload className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">{t.contentOptimization.stats.toSync}</p>
+                <p className="text-2xl font-bold">{products.filter((p) => hasRichHtmlDescription(p)).length}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
 
         {/* Search & Filter Bar - Isolated */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 rounded-xl border border-slate-200 bg-white p-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-muted/30 rounded-lg border">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={t.contentOptimization.search.placeholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 bg-white pl-9"
+              className="pl-9 h-10 bg-background"
             />
           </div>
           
@@ -2121,7 +2150,7 @@ export default function ProductTitleDescription() {
             setCollectionFilter(value);
             setCollectionSearchTerm("");
           }}>
-            <SelectTrigger className="h-9 w-full bg-white sm:w-[240px]">
+            <SelectTrigger className="w-full sm:w-[280px] h-10 bg-background">
               <SelectValue placeholder={t.contentOptimization.filters.selectCollection} />
             </SelectTrigger>
             <SelectContent>
@@ -2161,7 +2190,7 @@ export default function ProductTitleDescription() {
               variant="ghost"
               size="sm"
               onClick={() => setCollectionFilter("all")}
-              className="h-9"
+              className="h-10"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -2169,12 +2198,106 @@ export default function ProductTitleDescription() {
         </div>
 
         {/* Contextual actions: each workspace only exposes relevant workflows. */}
-        <Card className="rounded-xl border-slate-200 p-3 shadow-none">
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <Card className="p-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-sm font-semibold">
                 {workspace === "content" && (language === "fr" ? "Optimiser les fiches" : "Optimize product content")}
-                {workspace === "images" && renderImageStudioMenu()}
+                {workspace === "images" && (language === "fr" ? "Créer et améliorer les visuels" : "Create and improve visuals")}
+                {workspace === "landing" && (language === "fr" ? "Créer des pages produit enrichies" : "Create enriched product pages")}
+                {workspace === "bulk" && (language === "fr" ? "Traiter plusieurs produits" : "Process multiple products")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {selectedProducts.size > 0
+                  ? `${selectedProducts.size} ${language === "fr" ? "produit(s) sélectionné(s)" : "product(s) selected"}`
+                  : language === "fr" ? "Sélectionnez des produits pour activer les actions." : "Select products to enable actions."}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center overflow-hidden rounded-lg border bg-background" aria-label={language === "fr" ? "Mode d’affichage" : "Display mode"}>
+                <Button variant={viewMode === "table" ? "secondary" : "ghost"} size="sm" onClick={() => setViewMode("table")} className="rounded-none px-3">
+                  <List className="h-4 w-4" />
+                  <span className="sr-only">{language === "fr" ? "Tableau" : "Table"}</span>
+                </Button>
+                <Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="sm" onClick={() => setViewMode("grid")} className="rounded-none px-3">
+                  <Grid3x3 className="h-4 w-4" />
+                  <span className="sr-only">{language === "fr" ? "Grille" : "Grid"}</span>
+                </Button>
+              </div>
+
+              {(workspace === "content" || workspace === "bulk") && (
+                <Button
+                  variant={workspace === "content" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    if (!canDoAction("optimizations")) {
+                      toast.error(t.contentOptimization.toasts.limitReached);
+                      setShowUpgradeDialog(true);
+                      return;
+                    }
+                    handleOptimizeSelected();
+                  }}
+                  disabled={generating || selectedProducts.size === 0}
+                >
+                  {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                  {language === "fr" ? "Optimiser le contenu" : "Optimize content"} ({selectedProducts.size})
+                </Button>
+              )}
+
+              {workspace === "images" && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!canDoAction("optimizations")) {
+                        toast.error(t.contentOptimization.toasts.limitReached);
+                        setShowUpgradeDialog(true);
+                        return;
+                      }
+                      const selectedProductsList = products.filter((p) => selectedProducts.has(p.id));
+                      const hasVariants = selectedProductsList.some((p) => p.variants?.length > 1 || (p.variants?.[0] && p.variants[0].title !== "Default Title"));
+                      setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
+                      setShowWhiteBgConfigDialog(true);
+                      loadGalleryImages(Array.from(selectedProducts), true);
+                    }}
+                    disabled={generatingWhiteBg || selectedProducts.size === 0}
+                  >
+                    <Square className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Fond blanc" : "White background"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      if (!canDoAction("optimizations")) {
+                        toast.error(t.contentOptimization.toasts.limitReached);
+                        setShowUpgradeDialog(true);
+                        return;
+                      }
+                      await loadGalleryImages(Array.from(selectedProducts));
+                      setShowAiConfigDialog(true);
+                    }}
+                    disabled={generatingAiBg || selectedProducts.size === 0}
+                  >
+                    <Palette className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Créer un décor IA" : "Create AI background"}
+                  </Button>
+                  <details className="relative">
+                    <summary className="list-none cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted">
+                      {language === "fr" ? "Plus d’outils" : "More tools"}
+                    </summary>
+                    <div className="absolute right-0 z-30 mt-2 grid min-w-56 gap-1 rounded-xl border bg-background p-2 shadow-xl">
+                      <Button variant="ghost" size="sm" className="justify-start" onClick={() => setShowSmartBgDialog(true)} disabled={selectedProducts.size === 0}>
+                        <Wand2 className="mr-2 h-4 w-4" /> Smart Background
+                      </Button>
+                      <Button variant="ghost" size="sm" className="justify-start" onClick={() => setShowBulkAIImagesDialog(true)} disabled={selectedProducts.size === 0}>
+                        <Layers className="mr-2 h-4 w-4" /> AI Images Bulk
+                      </Button>
+                    </div>
+                  </details>
+                </>
+              )}
 
               {workspace === "landing" && (
                 <>
@@ -2202,16 +2325,29 @@ export default function ProductTitleDescription() {
 
               {workspace === "bulk" && (
                 <>
-                  {renderImageStudioMenu()}
+                  <Button variant="outline" size="sm" onClick={() => setShowBulkAIImagesDialog(true)} disabled={selectedProducts.size === 0}>
+                    <Images className="mr-2 h-4 w-4" />
+                    {language === "fr" ? "Images en lot" : "Bulk images"}
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => setShowBulkLandingConfigDialog(true)} disabled={selectedProducts.size === 0}>
                     <FileText className="mr-2 h-4 w-4" />
-                    {language === "fr" ? "Pages produit" : "Product pages"}
+                    {language === "fr" ? "Pages en lot" : "Bulk pages"}
                   </Button>
                 </>
               )}
             </div>
           </div>
         </Card>
+
+        {workspace === "images" && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <ImageIcon className="h-4 w-4" />
+            <AlertDescription>
+              <strong>{t.contentOptimization.tooltips.whiteBg}:</strong> {t.contentOptimization.alerts.whiteBg.split(": ")[1]}{" "}
+              <strong>{t.contentOptimization.tooltips.aiBg}:</strong> {t.contentOptimization.alerts.aiBg.split(": ")[1]}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Products Table/Grid */}
         <Card className="overflow-hidden">
@@ -2233,7 +2369,7 @@ export default function ProductTitleDescription() {
                         {t.contentOptimization.table.headers.description}
                       </TableHead>
                       <TableHead className="w-32">{t.contentOptimization.table.headers.status}</TableHead>
-                      <TableHead className="w-24">{language === "fr" ? "État" : "State"}</TableHead>
+                      <TableHead className="w-24">État</TableHead>
                       <TableHead className="w-48">{t.contentOptimization.table.headers.actions}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -2370,12 +2506,12 @@ export default function ProductTitleDescription() {
                             {product.status === "active" ? (
                               <>
                                 <Power className="h-4 w-4" />
-                                <span className="hidden xl:inline">{language === "fr" ? "Actif" : "Active"}</span>
+                                <span className="hidden xl:inline">Actif</span>
                               </>
                             ) : (
                               <>
                                 <PowerOff className="h-4 w-4" />
-                                <span className="hidden xl:inline">{language === "fr" ? "Brouillon" : "Draft"}</span>
+                                <span className="hidden xl:inline">Brouillon</span>
                               </>
                             )}
                           </Button>
@@ -2533,7 +2669,7 @@ export default function ProductTitleDescription() {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>{language === "fr" ? "Supprimer le produit" : "Delete product"}</p>
+                                <p>Supprimer le produit</p>
                               </TooltipContent>
                             </Tooltip>
                           </div>
@@ -2562,14 +2698,14 @@ export default function ProductTitleDescription() {
                    {paginatedProducts.map((product) => (
                      <Card
                        key={product.id}
-                       className="group flex cursor-pointer flex-col overflow-hidden border-slate-200 shadow-none transition hover:border-slate-300 hover:shadow-sm"
+                       className="group cursor-pointer hover:shadow-lg transition-all overflow-hidden flex flex-col"
                        onClick={() => {
                         setPreviewProduct(product);
                          setShowPreviewDialog(true);
                        }}
                      >
                        {/* Image with action buttons */}
-                       <div className="relative aspect-[4/3] bg-slate-50">
+                       <div className="aspect-square bg-muted/50 relative">
                          {product.image_url ? (
                            <img
                              src={product.image_url}
@@ -2640,7 +2776,7 @@ export default function ProductTitleDescription() {
                              {product.status === "active" ? (
                                <>
                                  <Power className="h-3 w-3 mr-1" />
-                                 {language === "fr" ? "Actif" : "Active"}
+                                 Actif
                                </>
                              ) : (
                                <>
@@ -2651,34 +2787,204 @@ export default function ProductTitleDescription() {
                            </Badge>
                          </div>
 
-                         <details className="absolute right-2 top-2">
-                           <summary className="grid h-8 w-8 cursor-pointer list-none place-items-center rounded-lg border border-white/70 bg-white/95 text-slate-600 shadow-sm hover:text-violet-700" onClick={(e) => e.stopPropagation()}>
-                             <Images className="h-4 w-4" />
-                             <span className="sr-only">{language === "fr" ? "Actions produit" : "Product actions"}</span>
-                           </summary>
-                           <div className="absolute right-0 z-30 mt-1 grid w-52 gap-0.5 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl" onClick={(e) => e.stopPropagation()}>
-                             <Button variant="ghost" size="sm" className="justify-start" onClick={() => {
-                               setSelectedProducts(new Set([product.id]));
-                               const hasVariants = product.variants && product.variants.length > 0 && !(product.variants.length === 1 && product.variants[0].title === "Default Title");
-                               setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
-                               setShowWhiteBgConfigDialog(true);
-                               loadGalleryImages([product.id], true);
-                             }}><Square className="mr-2 h-4 w-4" />{language === "fr" ? "Fond blanc" : "White background"}</Button>
-                             <Button variant="ghost" size="sm" className="justify-start" onClick={async () => {
-                               setSelectedProducts(new Set([product.id]));
-                               await loadGalleryImages([product.id]);
-                               setShowAiConfigDialog(true);
-                             }}><Palette className="mr-2 h-4 w-4" />{language === "fr" ? "Décor IA" : "AI background"}</Button>
-                             <Button variant="ghost" size="sm" className="justify-start" onClick={() => {
-                               setSelectedLandingProduct(product);
-                               setShowLandingConfigDialog(true);
-                             }}><FileText className="mr-2 h-4 w-4" />{language === "fr" ? "Page produit" : "Product page"}</Button>
-                             <Button variant="ghost" size="sm" className="justify-start text-rose-600" onClick={() => {
-                               setProductToDelete(product);
-                               setShowDeleteDialog(true);
-                             }}><Trash2 className="mr-2 h-4 w-4" />{language === "fr" ? "Supprimer" : "Delete"}</Button>
-                           </div>
-                         </details>
+                         {/* Action buttons - always visible */}
+                         <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-100">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!canDoAction("optimizations")) {
+                                    toast.error(t.contentOptimization.toasts.limitReached);
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  setSelectedProducts(new Set([product.id]));
+                                  // Auto-détecter si le produit a des variantes
+                                  const hasVariants = product.variants && product.variants.length > 0 
+                                    && !(product.variants.length === 1 && product.variants[0].title === "Default Title");
+                                  setWhiteBgApplyTo(hasVariants ? "variants" : "simple");
+                                  setShowWhiteBgConfigDialog(true);
+                                  loadGalleryImages([product.id], true); // Pré-sélection intelligente
+                                }}
+                                disabled={generatingWhiteBg}
+                              >
+                                <Square className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t.contentOptimization.tooltips.whiteBg}</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!canDoAction("optimizations")) {
+                                    toast.error(t.contentOptimization.toasts.limitReached);
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  setSelectedProducts(new Set([product.id]));
+                                  await loadGalleryImages([product.id]);
+                                  setShowAiConfigDialog(true);
+                                }}
+                                disabled={generatingAiBg}
+                              >
+                                <Palette className="h-4 w-4 text-purple-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t.contentOptimization.tooltips.aiBg}</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!canDoAction("optimizations")) {
+                                    toast.error(t.contentOptimization.toasts.limitReached);
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  setSelectedLandingProduct(product);
+                                  setShowLandingConfigDialog(true);
+                                }}
+                              >
+                                <Sparkles className="h-4 w-4 text-primary" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t.contentOptimization.tooltips.generateLanding}</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!canDoAction("optimizations")) {
+                                    toast.error(t.contentOptimization.toasts.limitReached);
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  setSelectedProducts(new Set([product.id]));
+                                  setShowSmartBgDialog(true);
+                                }}
+                              >
+                                <Wand2 className="h-4 w-4 text-emerald-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Smart Background</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {/* AI Images Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!canDoAction("optimizations")) {
+                                    toast.error(t.contentOptimization.toasts.limitReached);
+                                    setShowUpgradeDialog(true);
+                                    return;
+                                  }
+                                  setSelectedProducts(new Set([product.id]));
+                                  setShowAIImagesDialog(true);
+                                }}
+                              >
+                                <Images className="h-4 w-4 text-indigo-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>AI Images</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {product.shopify_id && (hasRichHtmlDescription(product) || product.seo_title) && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="secondary"
+                                  size="icon"
+                                  className="h-8 w-8 bg-white/90 hover:bg-white shadow-sm"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const toastId = toast.loading(t.contentOptimization.buttons.synchronizing);
+                                    try {
+                                      const { error } = await supabase.functions.invoke("sync-seo-to-shopify", {
+                                        body: {
+                                          productId: product.id,
+                                          shopifyId: product.shopify_id,
+                                          seoTitle: product.seo_title,
+                                          seoDescription: product.seo_description,
+                                        },
+                                      });
+
+                                      if (error) throw error;
+                                      toast.success(t.contentOptimization.toasts.productsSynced, { id: toastId });
+                                    } catch (error) {
+                                      console.error("Error syncing:", error);
+                                      toast.error("Erreur lors de la synchronisation", { id: toastId });
+                                    }
+                                  }}
+                                >
+                                  <Upload className="h-4 w-4 text-blue-600" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t.contentOptimization.tooltips.sync}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                size="icon"
+                                className="h-8 w-8 bg-white/90 hover:bg-white hover:bg-destructive/10 shadow-sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setProductToDelete(product);
+                                  setShowDeleteDialog(true);
+                                }}
+                                disabled={deletingProductId === product.id}
+                              >
+                                {deletingProductId === product.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Supprimer le produit</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                       </div>
 
                        {/* Product info */}
@@ -2727,7 +3033,7 @@ export default function ProductTitleDescription() {
                              onChange={(e) => setEditingValue(e.target.value)}
                              className="h-7 text-xs w-40"
                              autoFocus
-                             placeholder={language === "fr" ? "Marque" : "Brand"}
+                             placeholder="Marque"
                              onKeyDown={(e) => {
                                if (e.key === "Enter") {
                                  e.preventDefault();
@@ -2858,7 +3164,7 @@ export default function ProductTitleDescription() {
                                  className="group flex items-center gap-1 cursor-pointer hover:bg-accent/50 rounded px-1"
                                  onClick={() => startEditing(product.id, "price", (product as any).variants?.[0]?.price?.toString() || "")}
                                >
-                                 <span className="text-muted-foreground">{language === "fr" ? "Prix : " : "Price: "}</span>
+                                 <span className="text-muted-foreground">Prix: </span>
                                  <span className="font-semibold">
                                    {(product as any).variants?.[0]?.price 
                                      ? `${Number((product as any).variants[0].price).toFixed(2)} €` 
@@ -2904,7 +3210,7 @@ export default function ProductTitleDescription() {
                                  className="group flex items-center gap-1 cursor-pointer hover:bg-accent/50 rounded px-1"
                                  onClick={() => startEditing(product.id, "cost", (product as any).variants?.[0]?.cost_price?.toString() || "")}
                                >
-                                 <span className="text-muted-foreground">{language === "fr" ? "Coût : " : "Cost: "}</span>
+                                 <span className="text-muted-foreground">Coût: </span>
                                  <span className="font-medium">
                                    {(product as any).variants?.[0]?.cost_price 
                                      ? `${Number((product as any).variants[0].cost_price).toFixed(2)} €` 
@@ -2927,7 +3233,7 @@ export default function ProductTitleDescription() {
                            {hasRichHtmlDescription(product) ? (
                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
                                <CheckCircle className="h-3 w-3 mr-1" />
-                               {language === "fr" ? "Optimisé" : "Optimized"}
+                               Optimisé
                              </Badge>
                            ) : product.seo_title || product.seo_description ? (
                              <Badge variant="secondary" className="text-xs">
