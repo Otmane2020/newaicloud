@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ServerStatusAlert } from '@/components/ServerStatusAlert';
 import { CatalogOptimizeLogo } from '@/components/CatalogOptimizeLogo';
@@ -40,16 +39,12 @@ export default function Auth() {
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [facebookLoading, setFacebookLoading] = useState(false);
   const [serverOffline, setServerOffline] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const {
     signIn,
     signUp,
-    signInWithGoogle,
-    signInWithFacebook,
     user,
     serverStatus,
     markManualSignOut,
@@ -72,11 +67,6 @@ export default function Auth() {
         forgotPassword: 'Mot de passe oublié ?',
         signIn: 'Se connecter',
         createAccount: 'Créer un compte',
-        or: 'ou',
-        googleLogin: 'Continuer avec Google',
-        googleSignup: 'Créer avec Google',
-        facebookLogin: 'Continuer avec Facebook',
-        facebookSignup: 'Créer avec Facebook',
         noAccount: "Vous n'avez pas de compte ?",
         haveAccount: 'Vous avez déjà un compte ?',
         signupAction: 'Créer un compte',
@@ -95,11 +85,6 @@ export default function Auth() {
         forgotPassword: 'Forgot password?',
         signIn: 'Sign in',
         createAccount: 'Create account',
-        or: 'or',
-        googleLogin: 'Continue with Google',
-        googleSignup: 'Sign up with Google',
-        facebookLogin: 'Continue with Facebook',
-        facebookSignup: 'Sign up with Facebook',
         noAccount: "Don't have an account?",
         haveAccount: 'Already have an account?',
         signupAction: 'Create account',
@@ -282,25 +267,7 @@ export default function Auth() {
     window.location.reload();
   };
 
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    try {
-      await signInWithGoogle();
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    setFacebookLoading(true);
-    try {
-      await signInWithFacebook();
-    } finally {
-      setFacebookLoading(false);
-    }
-  };
-
-  const isBusy = loading || googleLoading || facebookLoading;
+  const isBusy = loading;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
@@ -448,45 +415,6 @@ export default function Auth() {
                 {loading ? copy.loading : mode === 'login' ? copy.signIn : copy.createAccount}
               </Button>
             </form>
-
-            <div className="my-5 flex items-center gap-3">
-              <Separator className="flex-1 bg-slate-200" />
-              <span className="text-xs font-medium uppercase tracking-[0.12em] text-slate-400">{copy.or}</span>
-              <Separator className="flex-1 bg-slate-200" />
-            </div>
-
-            <div className="space-y-2.5">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 w-full rounded-xl border-slate-200 bg-white font-medium text-slate-700 shadow-none hover:bg-slate-50"
-                onClick={handleGoogleSignIn}
-                disabled={isBusy}
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" className="mr-2 shrink-0">
-                  <g fill="none" fillRule="evenodd">
-                    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4" />
-                    <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z" fill="#34A853" />
-                    <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.55 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05" />
-                    <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.485 0 2.44 2.017.96 4.958L3.967 7.29c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335" />
-                  </g>
-                </svg>
-                {googleLoading ? copy.loading : mode === 'login' ? copy.googleLogin : copy.googleSignup}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 w-full rounded-xl border-slate-200 bg-white font-medium text-slate-700 shadow-none hover:bg-slate-50"
-                onClick={handleFacebookSignIn}
-                disabled={isBusy}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 shrink-0">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2" />
-                </svg>
-                {facebookLoading ? copy.loading : mode === 'login' ? copy.facebookLogin : copy.facebookSignup}
-              </Button>
-            </div>
           </Card>
 
           <p className="mt-5 text-center text-sm text-slate-500">
