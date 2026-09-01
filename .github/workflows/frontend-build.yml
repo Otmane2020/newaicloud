@@ -26,5 +26,21 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Build
+      - name: Build frontend
         run: npm run build
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Check billing edge functions
+        run: |
+          deno check supabase/functions/create-checkout/index.ts
+          deno check supabase/functions/create-credit-checkout/index.ts
+          deno check supabase/functions/verify-credit-checkout/index.ts
+          deno check supabase/functions/stripe-credit-webhook/index.ts
+          deno check supabase/functions/ensure-stripe-plans/index.ts
+          deno check supabase/functions/generate-image/index.ts
+          deno check supabase/functions/generate-social-caption/index.ts
+          deno check supabase/functions/generate-video-script/index.ts
