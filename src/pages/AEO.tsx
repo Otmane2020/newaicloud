@@ -96,6 +96,7 @@ export default function AEO() {
           .select("id,title,published_at,created_at,shopify_article_id,source")
           .eq("user_id", user.id)
           .eq("store_id", selectedStore.id)
+          .eq("source", "aeo")
           .eq("status", "published")
           .order("published_at", { ascending: false })
           .limit(100),
