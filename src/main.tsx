@@ -3,6 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import "./styles/workspace-stat-colors.css";
 import "./styles/ai-image-studio.css";
+import "./styles/auth-social-hide.css";
 import { installImageStudioPolish } from "./lib/imageStudioPolish";
 
 installImageStudioPolish();
