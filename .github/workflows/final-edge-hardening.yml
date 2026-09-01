@@ -1,0 +1,62 @@
+name: Final Edge hardening
+
+on:
+  push:
+    paths:
+      - '.github/workflows/final-edge-hardening.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Apply final Edge fixes
+        run: python scripts/final-edge-hardening.py
+
+      - name: Verify single request body read
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          issues=[]
+          for p in Path('supabase/functions').glob('*/index.ts'):
+              c=len(re.findall(r'await\s+req\.json\s*\(', p.read_text()))
+              if c>1: issues.append((str(p),c))
+          print('multiple_req_json=', len(issues))
+          print('\n'.join(f'{c}x {p}' for p,c in issues))
+          raise SystemExit(1 if issues else 0)
+          PY
+
+      - name: Verify strict AI coverage
+        run: |
+          total=$(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts | wc -l)
+          covered=$(grep -l 'strict-ai-generation.ts' supabase/functions/*/index.ts | wc -l)
+          echo "Strict AI coverage: $covered/$total"
+          test "$covered" -eq "$total"
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit and cleanup
+        run: |
+          rm -f .github/workflows/final-edge-hardening.yml scripts/final-edge-hardening.py
+          git config user.name "catalog-optimize-bot"
+          git config user.email "actions@github.com"
+          git add supabase/functions .github/workflows/final-edge-hardening.yml scripts/final-edge-hardening.py
+          git commit -m "fix: eliminate remaining Edge runtime failure paths"
+          git pull --rebase origin main
+          git push origin main
