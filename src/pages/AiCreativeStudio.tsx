@@ -20,7 +20,7 @@ import {
   Image as ImageIcon,
   ImageIcon as ImageIconLucide,
   Instagram,
-  Link,
+  Link as LinkIcon,
   Loader2,
   RefreshCw,
   Search,
@@ -44,6 +44,7 @@ type GenerationMode = "showcase" | "strengths";
 type PostType = "image" | "withLink";
 type SocialPlatform = "facebook" | "instagram";
 type WizardStep = 1 | 2 | 3 | 4;
+type CreativeFormat = "square" | "portrait" | "story" | "landscape";
 
 interface ShopifyProduct {
   id: string;
@@ -79,6 +80,18 @@ const WIZARD_STEPS = [
   { id: 4 as const, label: "Validation" },
 ];
 
+const CREATIVE_FORMATS: Array<{
+  id: CreativeFormat;
+  label: string;
+  ratio: string;
+  dimensions: string;
+}> = [
+  { id: "square", label: "Square", ratio: "1:1", dimensions: "1080×1080" },
+  { id: "portrait", label: "Portrait", ratio: "4:5", dimensions: "1080×1350" },
+  { id: "story", label: "Story / Reel", ratio: "9:16", dimensions: "1080×1920" },
+  { id: "landscape", label: "Landscape", ratio: "16:9", dimensions: "1920×1080" },
+];
+
 const detectLanguage = (text: string): "fr" | "en" => {
   const frenchWords = [
     "canapé",
@@ -105,13 +118,35 @@ const detectLanguage = (text: string): "fr" | "en" => {
     "design",
   ];
   const lowerText = text.toLowerCase();
-  const matchCount = frenchWords.filter((word) => lowerText.includes(word)).length;
-  return matchCount >= 1 ? "fr" : "en";
+  return frenchWords.some((word) => lowerText.includes(word)) ? "fr" : "en";
+};
+
+const formatDefinition = (creativeFormat: CreativeFormat) =>
+  CREATIVE_FORMATS.find((item) => item.id === creativeFormat) || CREATIVE_FORMATS[0];
+
+const readFunctionError = async (error: any, data?: any) => {
+  if (data?.error || data?.details) {
+    return [data?.error, data?.details].filter(Boolean).join(" — ");
+  }
+
+  try {
+    if (error?.context && typeof error.context.json === "function") {
+      const payload = await error.context.json();
+      if (payload?.error || payload?.details) {
+        return [payload?.error, payload?.details].filter(Boolean).join(" — ");
+      }
+    }
+  } catch {
+    // Keep the original Supabase error below.
+  }
+
+  return error?.message || "Creative generation failed";
 };
 
 export default function AiCreativeStudio() {
   const { selectedStore } = useStore();
-  const { t, language } = useTranslation();
+  const { language } = useTranslation();
+  const fr = language === "fr";
   const [activeTab, setActiveTab] = useState("studio");
 
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
@@ -122,10 +157,11 @@ export default function AiCreativeStudio() {
 
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState<WizardStep>(1);
-
   const [caption, setCaption] = useState("");
   const [generationMode, setGenerationMode] = useState<GenerationMode>("showcase");
   const [showPrice, setShowPrice] = useState(true);
+  const [creativeFormat, setCreativeFormat] = useState<CreativeFormat>("square");
+  const [creativePrompt, setCreativePrompt] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>([]);
   const [postType, setPostType] = useState<PostType>("withLink");
   const [socialCaption, setSocialCaption] = useState("");
@@ -133,6 +169,7 @@ export default function AiCreativeStudio() {
 
   const [generating, setGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [generatedMimeType, setGeneratedMimeType] = useState("image/png");
   const [publishing, setPublishing] = useState(false);
 
   const [history, setHistory] = useState<CreativeHistoryItem[]>([]);
@@ -140,11 +177,11 @@ export default function AiCreativeStudio() {
   const [previewImage, setPreviewImage] = useState<CreativeHistoryItem | null>(null);
 
   useEffect(() => {
-    loadShopifyProducts();
-  }, [selectedStore]);
+    void loadShopifyProducts();
+  }, [selectedStore?.id]);
 
   useEffect(() => {
-    if (activeTab === "history") loadHistory();
+    if (activeTab === "history") void loadHistory();
   }, [activeTab]);
 
   const loadShopifyProducts = async () => {
@@ -156,9 +193,7 @@ export default function AiCreativeStudio() {
 
     setLoadingProducts(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: productsData, error: productsError } = await (supabase.from("shopify_products") as any)
@@ -180,7 +215,6 @@ export default function AiCreativeStudio() {
 
       for (let i = 0; i < productIds.length; i += batchSize) {
         const batchIds = productIds.slice(i, i + batchSize);
-
         const { data: imagesData } = await (supabase.from("product_images") as any)
           .select("product_id, src")
           .in("product_id", batchIds)
@@ -223,7 +257,7 @@ export default function AiCreativeStudio() {
       );
     } catch (error) {
       console.error("Error loading products:", error);
-      toast.error(t.toasts.error.loading);
+      toast.error(fr ? "Impossible de charger les produits" : "Unable to load products");
     } finally {
       setLoadingProducts(false);
     }
@@ -232,9 +266,7 @@ export default function AiCreativeStudio() {
   const loadHistory = async () => {
     setLoadingHistory(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
@@ -258,10 +290,10 @@ export default function AiCreativeStudio() {
       const { error } = await supabase.from("creative_history").delete().eq("id", id);
       if (error) throw error;
       setHistory((current) => current.filter((item) => item.id !== id));
-      toast.success("Creative deleted");
+      toast.success(fr ? "Créatif supprimé" : "Creative deleted");
     } catch (error) {
       console.error("Error deleting creative:", error);
-      toast.error("Unable to delete this creative");
+      toast.error(fr ? "Suppression impossible" : "Unable to delete this creative");
     }
   };
 
@@ -280,8 +312,11 @@ export default function AiCreativeStudio() {
     setCaption("");
     setSocialCaption("");
     setGeneratedImage(null);
+    setGeneratedMimeType("image/png");
     setGenerationMode("showcase");
     setShowPrice(true);
+    setCreativeFormat(style.size as CreativeFormat);
+    setCreativePrompt(style.aiPromptStyle || "");
     setSelectedPlatforms([]);
     setPostType("withLink");
     setWizardStep(1);
@@ -302,7 +337,7 @@ export default function AiCreativeStudio() {
 
   const generateSocialCaption = async () => {
     if (!selectedProduct) {
-      toast.error("Select a product first");
+      toast.error(fr ? "Sélectionnez d’abord un produit" : "Select a product first");
       return;
     }
 
@@ -327,7 +362,7 @@ export default function AiCreativeStudio() {
       if (data?.caption) setSocialCaption(data.caption);
     } catch (error) {
       console.error("Error generating caption:", error);
-      toast.error("Unable to generate the social caption");
+      toast.error(fr ? "Impossible de générer la légende" : "Unable to generate the social caption");
     } finally {
       setGeneratingCaption(false);
     }
@@ -335,11 +370,18 @@ export default function AiCreativeStudio() {
 
   const generateCreative = async () => {
     if (!selectedProduct || !selectedStyle) {
-      toast.error("Select a template and a product first");
+      toast.error(fr ? "Sélectionnez un template et un produit" : "Select a template and a product first");
+      return false;
+    }
+
+    const effectivePrompt = creativePrompt.trim() || selectedStyle.aiPromptStyle?.trim();
+    if (!effectivePrompt) {
+      toast.error(fr ? "Le prompt IA de ce template est vide" : "This template has no AI prompt");
       return false;
     }
 
     setGenerating(true);
+    setGeneratedImage(null);
     try {
       const productLanguage = detectLanguage(selectedProduct.title);
       const productForGeneration = {
@@ -355,31 +397,31 @@ export default function AiCreativeStudio() {
           template: {
             id: selectedStyle.id,
             name: selectedStyle.name,
-            size: selectedStyle.size,
+            size: creativeFormat,
             category: selectedStyle.category,
-            aiPromptStyle: selectedStyle.aiPromptStyle,
+            aiPromptStyle: effectivePrompt,
             accentColor: selectedStyle.accentColor,
           },
-          caption,
-          format: "png",
+          caption: caption.trim(),
           mode: generationMode,
           showPrice,
           language: productLanguage,
         },
       });
 
-      if (error) throw error;
-      if (!data?.base64) throw new Error("The generator did not return an image");
+      if (error || data?.error) {
+        throw new Error(await readFunctionError(error, data));
+      }
+      if (!data?.base64) throw new Error(fr ? "Le générateur n’a retourné aucune image" : "The generator did not return an image");
 
-      const imageUrl = `data:image/png;base64,${data.base64}`;
+      const mimeType = typeof data.mimeType === "string" && data.mimeType.startsWith("image/") ? data.mimeType : "image/png";
+      const imageUrl = `data:${mimeType};base64,${data.base64}`;
+      setGeneratedMimeType(mimeType);
       setGeneratedImage(imageUrl);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from("creative_history").insert({
+        const { error: historyError } = await supabase.from("creative_history").insert({
           user_id: user.id,
           store_id: selectedStore?.id,
           product_id: selectedProduct.id,
@@ -390,14 +432,15 @@ export default function AiCreativeStudio() {
           generation_mode: generationMode,
           caption,
         });
+        if (historyError) console.warn("Creative generated but history insert failed:", historyError);
       }
 
       setWizardStep(3);
-      toast.success("Preview generated");
+      toast.success(fr ? "Preview générée" : "Preview generated");
       return true;
     } catch (error: any) {
       console.error("Error generating creative:", error);
-      toast.error(error?.message || "Creative generation failed");
+      toast.error(error?.message || (fr ? "La génération a échoué" : "Creative generation failed"));
       return false;
     } finally {
       setGenerating(false);
@@ -406,19 +449,17 @@ export default function AiCreativeStudio() {
 
   const publishToSocial = async () => {
     if (!generatedImage || selectedPlatforms.length === 0) {
-      toast.error("Choose at least one social platform");
+      toast.error(fr ? "Choisissez au moins un réseau social" : "Choose at least one social platform");
       return false;
     }
     if (!socialCaption.trim()) {
-      toast.error("Add or generate a social caption before publishing");
+      toast.error(fr ? "Ajoutez une légende avant de publier" : "Add or generate a social caption before publishing");
       return false;
     }
 
     setPublishing(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return false;
 
       const productLink =
@@ -444,19 +485,18 @@ export default function AiCreativeStudio() {
 
       if (postError) throw postError;
 
-      const { error: publishError } = await supabase.functions.invoke("publish-social-post", {
+      const { data, error: publishError } = await supabase.functions.invoke("publish-social-post", {
         body: { postId: post.id, userId: user.id },
       });
+      if (publishError || data?.error) throw new Error(await readFunctionError(publishError, data));
 
-      if (publishError) throw publishError;
-
-      toast.success("Creative published");
+      toast.success(fr ? "Créatif publié" : "Creative published");
       setWizardOpen(false);
       setActiveTab("history");
       return true;
     } catch (error: any) {
       console.error("Error publishing:", error);
-      toast.error(error?.message || "Publishing failed");
+      toast.error(error?.message || (fr ? "Publication échouée" : "Publishing failed"));
       return false;
     } finally {
       setPublishing(false);
@@ -465,18 +505,20 @@ export default function AiCreativeStudio() {
 
   const downloadImage = (image = generatedImage, fileName?: string) => {
     if (!image) return;
+    const extension = generatedMimeType.includes("jpeg") ? "jpg" : generatedMimeType.includes("webp") ? "webp" : "png";
     const link = document.createElement("a");
     link.href = image;
-    link.download = fileName || `${selectedProduct?.title?.replace(/[^a-z0-9]/gi, "-").toLowerCase() || "creative"}.png`;
+    link.download = fileName || `${selectedProduct?.title?.replace(/[^a-z0-9]/gi, "-").toLowerCase() || "creative"}.${extension}`;
     link.click();
   };
 
   const approveCreative = () => {
-    toast.success("Creative approved");
+    toast.success(fr ? "Créatif validé" : "Creative approved");
     setWizardOpen(false);
     setActiveTab("history");
   };
 
+  const currentFormat = formatDefinition(creativeFormat);
   const canMoveFromProduct = Boolean(selectedProduct);
   const canPublish = Boolean(generatedImage && selectedPlatforms.length > 0 && socialCaption.trim());
 
@@ -490,7 +532,9 @@ export default function AiCreativeStudio() {
             </div>
             <div>
               <h1 className="text-xl font-bold">AI Creative Studio</h1>
-              <p className="text-sm text-muted-foreground">Choose a template, then complete the creative in a guided wizard.</p>
+              <p className="text-sm text-muted-foreground">
+                {fr ? "Choisissez un template puis réglez prompt, format et génération dans le wizard." : "Choose a template, then set prompt, format and generation in the wizard."}
+              </p>
             </div>
           </div>
         </div>
@@ -499,23 +543,17 @@ export default function AiCreativeStudio() {
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
-            <TabsTrigger value="studio" className="gap-2">
-              <Wand2 className="h-4 w-4" />
-              Templates
-            </TabsTrigger>
-            <TabsTrigger value="history" className="gap-2">
-              <History className="h-4 w-4" />
-              History
-            </TabsTrigger>
+            <TabsTrigger value="studio" className="gap-2"><Wand2 className="h-4 w-4" /> Templates</TabsTrigger>
+            <TabsTrigger value="history" className="gap-2"><History className="h-4 w-4" /> History</TabsTrigger>
           </TabsList>
 
           <TabsContent value="studio">
             <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
               <div className="border-b bg-muted/30 px-5 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">Ad creatives</p>
-                <h2 className="mt-1 text-lg font-semibold">Choose a template</h2>
+                <h2 className="mt-1 text-lg font-semibold">{fr ? "Choisissez un template" : "Choose a template"}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Clicking a template opens the full Product → Creative setup → Preview → Validation flow.
+                  {fr ? "Chaque template conserve son propre prompt IA. Vous pourrez le modifier avant génération." : "Each template keeps its own AI prompt. You can edit it before generation."}
                 </p>
               </div>
               <div className="p-4">
@@ -529,65 +567,32 @@ export default function AiCreativeStudio() {
               <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-3">
                 <div>
                   <h2 className="font-semibold">Creative history</h2>
-                  <p className="text-xs text-muted-foreground">Previously generated and approved visuals.</p>
+                  <p className="text-xs text-muted-foreground">{fr ? "Visuels précédemment générés." : "Previously generated visuals."}</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={loadHistory} className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  Refresh
-                </Button>
+                <Button variant="ghost" size="sm" onClick={() => void loadHistory()} className="gap-2"><RefreshCw className="h-4 w-4" /> Refresh</Button>
               </div>
-
               <div className="p-4">
                 {loadingHistory ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  </div>
+                  <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
                 ) : history.length === 0 ? (
-                  <div className="py-12 text-center text-muted-foreground">
-                    <ImageIcon className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                    <p>No creatives yet.</p>
-                  </div>
+                  <div className="py-12 text-center text-muted-foreground"><ImageIcon className="mx-auto mb-4 h-12 w-12 opacity-50" /><p>No creatives yet.</p></div>
                 ) : (
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                     {history.map((item) => (
                       <div key={item.id} className="group relative cursor-pointer" onClick={() => setPreviewImage(item)}>
-                        <img
-                          src={item.image_url}
-                          alt={item.product_title || "Creative"}
-                          className="aspect-square w-full rounded-lg object-cover transition-transform group-hover:scale-[1.02]"
-                        />
+                        <img src={item.image_url} alt={item.product_title || "Creative"} className="aspect-square w-full rounded-lg object-cover transition-transform group-hover:scale-[1.02]" />
                         <div className="absolute inset-0 flex flex-col justify-between rounded-lg bg-black/60 p-2 opacity-0 transition-opacity group-hover:opacity-100">
                           <div className="flex justify-between">
-                            <Button
-                              variant="secondary"
-                              size="icon"
-                              className="h-7 w-7 bg-white/20 hover:bg-white/40"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setPreviewImage(item);
-                              }}
-                            >
+                            <Button variant="secondary" size="icon" className="h-7 w-7 bg-white/20 hover:bg-white/40" onClick={(event) => { event.stopPropagation(); setPreviewImage(item); }}>
                               <ZoomIn className="h-4 w-4 text-white" />
                             </Button>
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                deleteHistoryItem(item.id);
-                              }}
-                            >
+                            <Button variant="destructive" size="icon" className="h-7 w-7" onClick={(event) => { event.stopPropagation(); void deleteHistoryItem(item.id); }}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                           <div className="text-xs text-white">
                             <p className="truncate font-medium">{item.product_title}</p>
-                            <p className="opacity-70">
-                              {format(new Date(item.created_at), "dd/MM/yyyy", {
-                                locale: language === "fr" ? frLocale : enUS,
-                              })}
-                            </p>
+                            <p className="opacity-70">{format(new Date(item.created_at), "dd/MM/yyyy", { locale: fr ? frLocale : enUS })}</p>
                           </div>
                         </div>
                       </div>
@@ -601,7 +606,7 @@ export default function AiCreativeStudio() {
       </div>
 
       <Dialog open={wizardOpen} onOpenChange={setWizardOpen}>
-        <DialogContent className="flex h-[88vh] max-w-6xl flex-col gap-0 overflow-hidden p-0">
+        <DialogContent className="flex h-[90vh] max-w-6xl flex-col gap-0 overflow-hidden p-0">
           <DialogTitle className="sr-only">Ad creative wizard</DialogTitle>
 
           <div className="border-b bg-white px-6 py-5">
@@ -611,9 +616,8 @@ export default function AiCreativeStudio() {
                   <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-100">{selectedStyle?.name}</Badge>
                   <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Ad creative wizard</span>
                 </div>
-                <h2 className="mt-2 text-xl font-semibold text-slate-950">Build and validate your creative</h2>
+                <h2 className="mt-2 text-xl font-semibold text-slate-950">{fr ? "Créer et valider le visuel" : "Build and validate your creative"}</h2>
               </div>
-
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {WIZARD_STEPS.map((step, index) => {
                   const active = wizardStep === step.id;
@@ -621,16 +625,7 @@ export default function AiCreativeStudio() {
                   return (
                     <div key={step.id} className="flex items-center gap-2">
                       <div className="flex items-center gap-2 whitespace-nowrap">
-                        <span
-                          className={cn(
-                            "grid h-8 w-8 place-items-center rounded-full border text-xs font-bold",
-                            active && "border-violet-600 bg-violet-600 text-white",
-                            done && "border-emerald-500 bg-emerald-500 text-white",
-                            !active && !done && "border-slate-200 bg-white text-slate-500",
-                          )}
-                        >
-                          {done ? <Check className="h-4 w-4" /> : step.id}
-                        </span>
+                        <span className={cn("grid h-8 w-8 place-items-center rounded-full border text-xs font-bold", active && "border-violet-600 bg-violet-600 text-white", done && "border-emerald-500 bg-emerald-500 text-white", !active && !done && "border-slate-200 bg-white text-slate-500")}>{done ? <Check className="h-4 w-4" /> : step.id}</span>
                         <span className={cn("text-xs font-semibold", active ? "text-slate-950" : "text-slate-500")}>{step.label}</span>
                       </div>
                       {index < WIZARD_STEPS.length - 1 && <div className="h-px w-6 bg-slate-200" />}
@@ -646,57 +641,27 @@ export default function AiCreativeStudio() {
               <div className="mx-auto max-w-5xl space-y-5">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">Step 1</p>
-                  <h3 className="mt-1 text-2xl font-semibold text-slate-950">Select a product</h3>
-                  <p className="mt-1 text-sm text-slate-500">Choose the Shopify product that will be placed into this template.</p>
+                  <h3 className="mt-1 text-2xl font-semibold text-slate-950">{fr ? "Sélectionnez un produit" : "Select a product"}</h3>
+                  <p className="mt-1 text-sm text-slate-500">{fr ? "L’image catalogue sert de référence obligatoire à la génération." : "The catalog image is the generation reference."}</p>
                 </div>
-
                 <div className="relative max-w-xl">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search products by name, brand or type…"
-                    className="h-11 bg-white pl-9"
-                  />
+                  <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder={fr ? "Rechercher produit, marque ou type…" : "Search products by name, brand or type…"} className="h-11 bg-white pl-9" />
                 </div>
-
                 {loadingProducts ? (
-                  <div className="grid min-h-72 place-items-center rounded-2xl border bg-white">
-                    <Loader2 className="h-7 w-7 animate-spin text-violet-600" />
-                  </div>
+                  <div className="grid min-h-72 place-items-center rounded-2xl border bg-white"><Loader2 className="h-7 w-7 animate-spin text-violet-600" /></div>
                 ) : (
                   <ScrollArea className="h-[48vh] rounded-2xl border bg-white p-3">
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
                       {filteredProducts.map((product) => {
                         const active = selectedProduct?.id === product.id;
                         return (
-                          <button
-                            key={product.id}
-                            type="button"
-                            onClick={() => selectProduct(product)}
-                            className={cn(
-                              "relative overflow-hidden rounded-2xl border bg-white text-left transition hover:-translate-y-0.5 hover:shadow-md",
-                              active ? "border-violet-500 ring-2 ring-violet-100" : "border-slate-200",
-                            )}
-                          >
+                          <button key={product.id} type="button" onClick={() => selectProduct(product)} className={cn("relative overflow-hidden rounded-2xl border bg-white text-left transition hover:-translate-y-0.5 hover:shadow-md", active ? "border-violet-500 ring-2 ring-violet-100" : "border-slate-200")}>
                             <div className="aspect-[4/3] bg-slate-50 p-3">
-                              {product.image ? (
-                                <img src={product.image} alt={product.title} className="h-full w-full object-contain" />
-                              ) : (
-                                <div className="grid h-full place-items-center text-slate-300">
-                                  <ImageIcon className="h-8 w-8" />
-                                </div>
-                              )}
+                              {product.image ? <img src={product.image} alt={product.title} className="h-full w-full object-contain" /> : <div className="grid h-full place-items-center text-slate-300"><ImageIcon className="h-8 w-8" /></div>}
                             </div>
-                            <div className="p-3">
-                              <p className="line-clamp-2 text-sm font-semibold text-slate-950">{product.title}</p>
-                              <p className="mt-1 truncate text-xs text-slate-500">{product.vendor || product.product_type || "Catalog product"}</p>
-                            </div>
-                            {active && (
-                              <span className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-violet-600 text-white shadow-lg">
-                                <Check className="h-4 w-4" />
-                              </span>
-                            )}
+                            <div className="p-3"><p className="line-clamp-2 text-sm font-semibold text-slate-950">{product.title}</p><p className="mt-1 truncate text-xs text-slate-500">{product.vendor || product.product_type || "Catalog product"}</p></div>
+                            {active && <span className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-violet-600 text-white shadow-lg"><Check className="h-4 w-4" /></span>}
                           </button>
                         );
                       })}
@@ -707,57 +672,65 @@ export default function AiCreativeStudio() {
             )}
 
             {wizardStep === 2 && (
-              <div className="mx-auto grid max-w-5xl gap-5 lg:grid-cols-2">
+              <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
                 <section className="rounded-2xl border bg-white p-5 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">Step 2</p>
                   <h3 className="mt-1 text-xl font-semibold text-slate-950">Creative setup</h3>
-                  <p className="mt-1 text-sm text-slate-500">Configure the generation before creating the preview.</p>
+                  <p className="mt-1 text-sm text-slate-500">{fr ? "Le prompt du template, le format et le mode sont tous envoyés au générateur." : "Template prompt, format and mode are all sent to the generator."}</p>
 
-                  <div className="mt-5 space-y-4">
+                  <div className="mt-5 space-y-5">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-800">Generation mode</label>
+                      <label className="text-sm font-medium text-slate-800">{fr ? "Mode de génération" : "Generation mode"}</label>
                       <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setGenerationMode("showcase")}
-                          className={cn(
-                            "flex items-center gap-2 rounded-xl border p-3 text-sm font-medium",
-                            generationMode === "showcase" ? "border-violet-500 bg-violet-50 text-violet-800" : "border-slate-200",
-                          )}
-                        >
-                          <Eye className="h-4 w-4" /> Showcase
-                          {generationMode === "showcase" && <Check className="ml-auto h-4 w-4" />}
+                        <button type="button" onClick={() => setGenerationMode("showcase")} className={cn("flex items-center gap-2 rounded-xl border p-3 text-sm font-medium", generationMode === "showcase" ? "border-violet-500 bg-violet-50 text-violet-800" : "border-slate-200")}>
+                          <Eye className="h-4 w-4" /> Showcase {generationMode === "showcase" && <Check className="ml-auto h-4 w-4" />}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setGenerationMode("strengths")}
-                          className={cn(
-                            "flex items-center gap-2 rounded-xl border p-3 text-sm font-medium",
-                            generationMode === "strengths" ? "border-violet-500 bg-violet-50 text-violet-800" : "border-slate-200",
-                          )}
-                        >
-                          <Star className="h-4 w-4" /> Strengths
-                          {generationMode === "strengths" && <Check className="ml-auto h-4 w-4" />}
+                        <button type="button" onClick={() => setGenerationMode("strengths")} className={cn("flex items-center gap-2 rounded-xl border p-3 text-sm font-medium", generationMode === "strengths" ? "border-violet-500 bg-violet-50 text-violet-800" : "border-slate-200")}>
+                          <Star className="h-4 w-4" /> Strengths {generationMode === "strengths" && <Check className="ml-auto h-4 w-4" />}
                         </button>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <label className="text-sm font-medium text-slate-800">{fr ? "Format" : "Format"}</label>
+                        <span className="text-xs text-slate-400">{fr ? "Indépendant du template" : "Independent from template"}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+                        {CREATIVE_FORMATS.map((item) => {
+                          const active = creativeFormat === item.id;
+                          return (
+                            <button key={item.id} type="button" onClick={() => { setCreativeFormat(item.id); setGeneratedImage(null); }} className={cn("rounded-xl border p-3 text-left transition", active ? "border-violet-500 bg-violet-50 ring-1 ring-violet-100" : "border-slate-200 hover:border-violet-300")}>
+                              <div className="flex items-center justify-between gap-2"><span className="text-sm font-semibold text-slate-900">{item.label}</span>{active && <Check className="h-4 w-4 text-violet-600" />}</div>
+                              <p className="mt-1 text-xs font-medium text-violet-700">{item.ratio}</p>
+                              <p className="mt-0.5 text-[10px] text-slate-400">{item.dimensions}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 rounded-xl border border-violet-100 bg-violet-50/40 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <label className="text-sm font-semibold text-slate-900">{fr ? "Prompt IA du template" : "AI prompt (template)"}</label>
+                          <p className="text-xs text-slate-500">{fr ? "Prérempli automatiquement pour chaque template et réellement utilisé à la génération." : "Automatically loaded for each template and used by generation."}</p>
+                        </div>
+                        <Button type="button" variant="outline" size="sm" className="h-8 shrink-0 gap-1 text-xs" onClick={() => setCreativePrompt(selectedStyle?.aiPromptStyle || "")}>
+                          <RefreshCw className="h-3 w-3" /> {fr ? "Restaurer" : "Reset"}
+                        </Button>
+                      </div>
+                      <Textarea value={creativePrompt} onChange={(event) => { setCreativePrompt(event.target.value); setGeneratedImage(null); }} rows={10} className="bg-white font-mono text-xs leading-5" placeholder={fr ? "Décrivez précisément la direction visuelle…" : "Describe the visual direction precisely…"} />
                     </div>
 
                     <div className="flex items-center justify-between rounded-xl border bg-slate-50 p-3">
-                      <div>
-                        <p className="text-sm font-medium text-slate-800">Show price</p>
-                        <p className="text-xs text-slate-500">Optional price inside the generated creative.</p>
-                      </div>
-                      <Switch checked={showPrice} onCheckedChange={setShowPrice} />
+                      <div><p className="text-sm font-medium text-slate-800">{fr ? "Afficher le prix" : "Show price"}</p><p className="text-xs text-slate-500">{fr ? "Désactivé = aucune mention de prix/remise dans le prompt." : "Off = no price/discount mention in the prompt."}</p></div>
+                      <Switch checked={showPrice} onCheckedChange={(checked) => { setShowPrice(checked); setGeneratedImage(null); }} />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-800">Creative tagline / instruction</label>
-                      <Textarea
-                        value={caption}
-                        onChange={(event) => setCaption(event.target.value)}
-                        placeholder="Example: Limited offer · premium collection · minimalist headline…"
-                        rows={4}
-                      />
+                      <label className="text-sm font-medium text-slate-800">{fr ? "Instruction créative optionnelle" : "Creative tagline / instruction"}</label>
+                      <Textarea value={caption} onChange={(event) => { setCaption(event.target.value); setGeneratedImage(null); }} placeholder={fr ? "Ex. : collection premium, headline minimaliste, ambiance parisienne…" : "Example: premium collection · minimalist headline…"} rows={4} />
                     </div>
                   </div>
                 </section>
@@ -765,77 +738,26 @@ export default function AiCreativeStudio() {
                 <section className="rounded-2xl border bg-white p-5 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">Publishing setup</p>
                   <h3 className="mt-1 text-xl font-semibold text-slate-950">Social options</h3>
-                  <p className="mt-1 text-sm text-slate-500">Prepare the final caption and channels now; publishing still requires validation.</p>
-
+                  <p className="mt-1 text-sm text-slate-500">{fr ? "Préparez les réseaux et la légende. La publication demande toujours validation." : "Prepare channels and caption. Publishing still requires validation."}</p>
                   <div className="mt-5 space-y-4">
                     <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => togglePlatform("facebook")}
-                        className={cn(
-                          "flex items-center gap-2 rounded-xl border p-3 text-sm font-medium",
-                          selectedPlatforms.includes("facebook") ? "border-blue-500 bg-blue-50 text-blue-800" : "border-slate-200",
-                        )}
-                      >
-                        <Facebook className="h-4 w-4" /> Facebook
-                        {selectedPlatforms.includes("facebook") && <Check className="ml-auto h-4 w-4" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => togglePlatform("instagram")}
-                        className={cn(
-                          "flex items-center gap-2 rounded-xl border p-3 text-sm font-medium",
-                          selectedPlatforms.includes("instagram") ? "border-pink-500 bg-pink-50 text-pink-800" : "border-slate-200",
-                        )}
-                      >
-                        <Instagram className="h-4 w-4" /> Instagram
-                        {selectedPlatforms.includes("instagram") && <Check className="ml-auto h-4 w-4" />}
-                      </button>
+                      <button type="button" onClick={() => togglePlatform("facebook")} className={cn("flex items-center gap-2 rounded-xl border p-3 text-sm font-medium", selectedPlatforms.includes("facebook") ? "border-blue-500 bg-blue-50 text-blue-800" : "border-slate-200")}><Facebook className="h-4 w-4" /> Facebook {selectedPlatforms.includes("facebook") && <Check className="ml-auto h-4 w-4" />}</button>
+                      <button type="button" onClick={() => togglePlatform("instagram")} className={cn("flex items-center gap-2 rounded-xl border p-3 text-sm font-medium", selectedPlatforms.includes("instagram") ? "border-pink-500 bg-pink-50 text-pink-800" : "border-slate-200")}><Instagram className="h-4 w-4" /> Instagram {selectedPlatforms.includes("instagram") && <Check className="ml-auto h-4 w-4" />}</button>
                     </div>
-
                     <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setPostType("image")}
-                        className={cn(
-                          "flex items-center gap-2 rounded-xl border p-3 text-sm font-medium",
-                          postType === "image" ? "border-violet-500 bg-violet-50 text-violet-800" : "border-slate-200",
-                        )}
-                      >
-                        <ImageIconLucide className="h-4 w-4" /> Image only
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPostType("withLink")}
-                        className={cn(
-                          "flex items-center gap-2 rounded-xl border p-3 text-sm font-medium",
-                          postType === "withLink" ? "border-violet-500 bg-violet-50 text-violet-800" : "border-slate-200",
-                        )}
-                      >
-                        <Link className="h-4 w-4" /> With link
-                      </button>
+                      <button type="button" onClick={() => setPostType("image")} className={cn("flex items-center gap-2 rounded-xl border p-3 text-sm font-medium", postType === "image" ? "border-violet-500 bg-violet-50 text-violet-800" : "border-slate-200")}><ImageIconLucide className="h-4 w-4" /> Image only</button>
+                      <button type="button" onClick={() => setPostType("withLink")} className={cn("flex items-center gap-2 rounded-xl border p-3 text-sm font-medium", postType === "withLink" ? "border-violet-500 bg-violet-50 text-violet-800" : "border-slate-200")}><LinkIcon className="h-4 w-4" /> With link</button>
                     </div>
-
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-3">
                         <label className="text-sm font-medium text-slate-800">Social caption</label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={generateSocialCaption}
-                          disabled={generatingCaption}
-                          className="h-8 gap-1 text-xs"
-                        >
-                          {generatingCaption ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                          Generate with AI
-                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => void generateSocialCaption()} disabled={generatingCaption} className="h-8 gap-1 text-xs">{generatingCaption ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />} Generate with AI</Button>
                       </div>
-                      <Textarea
-                        value={socialCaption}
-                        onChange={(event) => setSocialCaption(event.target.value)}
-                        placeholder="Write or generate the caption used when you publish."
-                        rows={6}
-                      />
+                      <Textarea value={socialCaption} onChange={(event) => setSocialCaption(event.target.value)} placeholder={fr ? "Légende utilisée lors de la publication." : "Write or generate the caption used when you publish."} rows={7} />
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+                      <strong className="text-slate-900">{currentFormat.label} {currentFormat.ratio}</strong> · {currentFormat.dimensions}<br />
+                      {fr ? "Le format sélectionné sera envoyé au moteur IA avec le prompt du template." : "The selected format is sent to the AI engine with the template prompt."}
                     </div>
                   </div>
                 </section>
@@ -844,58 +766,24 @@ export default function AiCreativeStudio() {
 
             {wizardStep === 3 && (
               <div className="mx-auto max-w-5xl">
-                <div className="mb-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">Step 3</p>
-                  <h3 className="mt-1 text-2xl font-semibold text-slate-950">Preview</h3>
-                  <p className="mt-1 text-sm text-slate-500">Review the generated visual before final validation.</p>
-                </div>
-
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="mb-5"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">Step 3</p><h3 className="mt-1 text-2xl font-semibold text-slate-950">Preview</h3><p className="mt-1 text-sm text-slate-500">{fr ? "Vérifiez le visuel généré avant validation." : "Review the generated visual before final validation."}</p></div>
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
                   <section className="grid min-h-[480px] place-items-center overflow-hidden rounded-2xl border bg-white p-5 shadow-sm">
-                    {generating ? (
-                      <div className="text-center">
-                        <Loader2 className="mx-auto h-10 w-10 animate-spin text-violet-600" />
-                        <p className="mt-3 text-sm text-slate-500">Generating your preview…</p>
-                      </div>
-                    ) : generatedImage ? (
-                      <img src={generatedImage} alt="Generated ad creative" className="max-h-[60vh] max-w-full rounded-xl object-contain shadow-xl" />
-                    ) : (
-                      <div className="text-center text-slate-400">
-                        <ImageIcon className="mx-auto h-12 w-12" />
-                        <p className="mt-3 text-sm">No preview generated yet.</p>
-                      </div>
-                    )}
+                    {generating ? <div className="text-center"><Loader2 className="mx-auto h-10 w-10 animate-spin text-violet-600" /><p className="mt-3 text-sm text-slate-500">Generating your preview…</p></div> : generatedImage ? <img src={generatedImage} alt="Generated ad creative" className="max-h-[60vh] max-w-full rounded-xl object-contain shadow-xl" /> : <div className="text-center text-slate-400"><ImageIcon className="mx-auto h-12 w-12" /><p className="mt-3 text-sm">No preview generated yet.</p></div>}
                   </section>
-
                   <aside className="rounded-2xl border bg-white p-5 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Creative summary</p>
                     <div className="mt-4 space-y-4 text-sm">
-                      <div>
-                        <p className="text-xs text-slate-500">Template</p>
-                        <p className="font-semibold text-slate-950">{selectedStyle?.name}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500">Product</p>
-                        <p className="font-semibold text-slate-950">{selectedProduct?.title}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500">Mode</p>
-                        <p className="font-semibold capitalize text-slate-950">{generationMode}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500">Price</p>
-                        <p className="font-semibold text-slate-950">{showPrice ? "Visible" : "Hidden"}</p>
-                      </div>
+                      <div><p className="text-xs text-slate-500">Template</p><p className="font-semibold text-slate-950">{selectedStyle?.name}</p></div>
+                      <div><p className="text-xs text-slate-500">Product</p><p className="font-semibold text-slate-950">{selectedProduct?.title}</p></div>
+                      <div><p className="text-xs text-slate-500">Format</p><p className="font-semibold text-slate-950">{currentFormat.label} · {currentFormat.ratio} · {currentFormat.dimensions}</p></div>
+                      <div><p className="text-xs text-slate-500">Mode</p><p className="font-semibold capitalize text-slate-950">{generationMode}</p></div>
+                      <div><p className="text-xs text-slate-500">Price</p><p className="font-semibold text-slate-950">{showPrice ? "Visible" : "Hidden"}</p></div>
+                      <div><p className="text-xs text-slate-500">Template prompt</p><p className="mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-2 text-[11px] leading-4 text-slate-600">{creativePrompt}</p></div>
                     </div>
-
                     <div className="mt-6 space-y-2">
-                      <Button variant="outline" className="w-full gap-2" onClick={() => setWizardStep(2)}>
-                        <ArrowLeft className="h-4 w-4" /> Edit setup
-                      </Button>
-                      <Button className="w-full gap-2" onClick={generateCreative} disabled={generating}>
-                        {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                        Regenerate preview
-                      </Button>
+                      <Button variant="outline" className="w-full gap-2" onClick={() => setWizardStep(2)}><ArrowLeft className="h-4 w-4" /> Edit setup</Button>
+                      <Button className="w-full gap-2" onClick={() => void generateCreative()} disabled={generating}>{generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Regenerate preview</Button>
                     </div>
                   </aside>
                 </div>
@@ -904,63 +792,23 @@ export default function AiCreativeStudio() {
 
             {wizardStep === 4 && (
               <div className="mx-auto max-w-5xl">
-                <div className="mb-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">Step 4</p>
-                  <h3 className="mt-1 text-2xl font-semibold text-slate-950">Validation</h3>
-                  <p className="mt-1 text-sm text-slate-500">Approve the creative, download it, or publish it to the selected channels.</p>
-                </div>
-
+                <div className="mb-5"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">Step 4</p><h3 className="mt-1 text-2xl font-semibold text-slate-950">Validation</h3><p className="mt-1 text-sm text-slate-500">{fr ? "Validez, téléchargez ou publiez le créatif." : "Approve, download or publish the creative."}</p></div>
                 <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-                  <section className="grid min-h-[460px] place-items-center overflow-hidden rounded-2xl border bg-white p-5 shadow-sm">
-                    {generatedImage && <img src={generatedImage} alt="Creative ready for validation" className="max-h-[58vh] max-w-full rounded-xl object-contain shadow-xl" />}
-                  </section>
-
+                  <section className="grid min-h-[460px] place-items-center overflow-hidden rounded-2xl border bg-white p-5 shadow-sm">{generatedImage && <img src={generatedImage} alt="Creative ready for validation" className="max-h-[58vh] max-w-full rounded-xl object-contain shadow-xl" />}</section>
                   <aside className="rounded-2xl border bg-white p-5 shadow-sm">
-                    <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-3 text-emerald-800">
-                      <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-500 text-white">
-                        <Check className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold">Ready for validation</p>
-                        <p className="text-xs text-emerald-700">Nothing is published until you confirm.</p>
-                      </div>
-                    </div>
-
+                    <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-3 text-emerald-800"><span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-500 text-white"><Check className="h-5 w-5" /></span><div><p className="text-sm font-semibold">Ready for validation</p><p className="text-xs text-emerald-700">Nothing is published until you confirm.</p></div></div>
                     <div className="mt-5 space-y-3 text-sm">
-                      <div className="flex items-center justify-between gap-4 border-b pb-3">
-                        <span className="text-slate-500">Template</span>
-                        <strong className="text-right text-slate-950">{selectedStyle?.name}</strong>
-                      </div>
-                      <div className="flex items-center justify-between gap-4 border-b pb-3">
-                        <span className="text-slate-500">Product</span>
-                        <strong className="max-w-[220px] truncate text-right text-slate-950">{selectedProduct?.title}</strong>
-                      </div>
-                      <div className="flex items-center justify-between gap-4 border-b pb-3">
-                        <span className="text-slate-500">Channels</span>
-                        <strong className="text-right capitalize text-slate-950">{selectedPlatforms.length ? selectedPlatforms.join(" · ") : "None"}</strong>
-                      </div>
-                      <div>
-                        <p className="text-slate-500">Caption</p>
-                        <p className="mt-1 max-h-28 overflow-y-auto rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-700">
-                          {socialCaption || "No publishing caption configured."}
-                        </p>
-                      </div>
+                      <div className="flex items-center justify-between gap-4 border-b pb-3"><span className="text-slate-500">Template</span><strong className="text-right text-slate-950">{selectedStyle?.name}</strong></div>
+                      <div className="flex items-center justify-between gap-4 border-b pb-3"><span className="text-slate-500">Product</span><strong className="max-w-[220px] truncate text-right text-slate-950">{selectedProduct?.title}</strong></div>
+                      <div className="flex items-center justify-between gap-4 border-b pb-3"><span className="text-slate-500">Format</span><strong className="text-right text-slate-950">{currentFormat.ratio} · {currentFormat.dimensions}</strong></div>
+                      <div className="flex items-center justify-between gap-4 border-b pb-3"><span className="text-slate-500">Channels</span><strong className="text-right capitalize text-slate-950">{selectedPlatforms.length ? selectedPlatforms.join(" · ") : "None"}</strong></div>
+                      <div><p className="text-slate-500">Caption</p><p className="mt-1 max-h-28 overflow-y-auto rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-700">{socialCaption || "No publishing caption configured."}</p></div>
                     </div>
-
                     <div className="mt-6 space-y-2">
-                      <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={approveCreative}>
-                        <Check className="h-4 w-4" /> Approve creative
-                      </Button>
-                      <Button variant="outline" className="w-full gap-2" onClick={() => downloadImage()}>
-                        <Download className="h-4 w-4" /> Download
-                      </Button>
-                      <Button className="w-full gap-2" onClick={publishToSocial} disabled={!canPublish || publishing}>
-                        {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        Publish now
-                      </Button>
-                      {!canPublish && (
-                        <p className="text-center text-[11px] leading-4 text-slate-400">To publish, choose a channel and add a social caption in step 2.</p>
-                      )}
+                      <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={approveCreative}><Check className="h-4 w-4" /> Approve creative</Button>
+                      <Button variant="outline" className="w-full gap-2" onClick={() => downloadImage()}><Download className="h-4 w-4" /> Download</Button>
+                      <Button className="w-full gap-2" onClick={() => void publishToSocial()} disabled={!canPublish || publishing}>{publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Publish now</Button>
+                      {!canPublish && <p className="text-center text-[11px] leading-4 text-slate-400">{fr ? "Choisissez un réseau et une légende à l’étape 2 pour publier." : "Choose a channel and add a social caption in step 2."}</p>}
                     </div>
                   </aside>
                 </div>
@@ -969,36 +817,11 @@ export default function AiCreativeStudio() {
           </div>
 
           <div className="flex items-center justify-between border-t bg-white px-6 py-4">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                if (wizardStep === 1) setWizardOpen(false);
-                else setWizardStep((wizardStep - 1) as WizardStep);
-              }}
-              disabled={generating || publishing}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {wizardStep === 1 ? "Cancel" : "Back"}
-            </Button>
-
+            <Button variant="ghost" onClick={() => { if (wizardStep === 1) setWizardOpen(false); else setWizardStep((wizardStep - 1) as WizardStep); }} disabled={generating || publishing} className="gap-2"><ArrowLeft className="h-4 w-4" />{wizardStep === 1 ? "Cancel" : "Back"}</Button>
             <div className="flex items-center gap-2">
-              {wizardStep === 1 && (
-                <Button onClick={() => setWizardStep(2)} disabled={!canMoveFromProduct} className="gap-2">
-                  Continue <ArrowRight className="h-4 w-4" />
-                </Button>
-              )}
-              {wizardStep === 2 && (
-                <Button onClick={generateCreative} disabled={generating || !selectedProduct} className="gap-2">
-                  {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  Generate preview
-                </Button>
-              )}
-              {wizardStep === 3 && (
-                <Button onClick={() => setWizardStep(4)} disabled={!generatedImage || generating} className="gap-2">
-                  Continue to validation <ArrowRight className="h-4 w-4" />
-                </Button>
-              )}
+              {wizardStep === 1 && <Button onClick={() => setWizardStep(2)} disabled={!canMoveFromProduct} className="gap-2">Continue <ArrowRight className="h-4 w-4" /></Button>}
+              {wizardStep === 2 && <Button onClick={() => void generateCreative()} disabled={generating || !selectedProduct || !creativePrompt.trim()} className="gap-2">{generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Generate preview</Button>}
+              {wizardStep === 3 && <Button onClick={() => setWizardStep(4)} disabled={!generatedImage || generating} className="gap-2">Continue to validation <ArrowRight className="h-4 w-4" /></Button>}
             </div>
           </div>
         </DialogContent>
@@ -1009,31 +832,12 @@ export default function AiCreativeStudio() {
           <DialogTitle className="sr-only">{previewImage?.product_title || "Creative preview"}</DialogTitle>
           {previewImage && (
             <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-2 z-10 rounded-full text-white hover:bg-white/20"
-                onClick={() => setPreviewImage(null)}
-              >
-                <X className="h-5 w-5" />
-              </Button>
+              <Button variant="ghost" size="icon" className="absolute right-2 top-2 z-10 rounded-full text-white hover:bg-white/20" onClick={() => setPreviewImage(null)}><X className="h-5 w-5" /></Button>
               <img src={previewImage.image_url} alt={previewImage.product_title || "Creative"} className="max-h-[80vh] w-full object-contain" />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0 text-white">
-                    <p className="truncate text-lg font-semibold">{previewImage.product_title}</p>
-                    <p className="text-sm opacity-70">
-                      {previewImage.template_name} · {format(new Date(previewImage.created_at), "dd MMMM yyyy", { locale: language === "fr" ? frLocale : enUS })}
-                    </p>
-                  </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => downloadImage(previewImage.image_url, `creative-${previewImage.id}.png`)}
-                  >
-                    <Download className="h-4 w-4" /> Download
-                  </Button>
+                  <div className="min-w-0 text-white"><p className="truncate text-lg font-semibold">{previewImage.product_title}</p><p className="text-sm opacity-70">{previewImage.template_name} · {format(new Date(previewImage.created_at), "dd MMMM yyyy", { locale: fr ? frLocale : enUS })}</p></div>
+                  <Button variant="secondary" size="sm" className="gap-2" onClick={() => downloadImage(previewImage.image_url, `creative-${previewImage.id}.png`)}><Download className="h-4 w-4" /> Download</Button>
                 </div>
               </div>
             </div>
