@@ -101,7 +101,9 @@ export function CatalogDemoShowcase() {
                 alt={active.alt}
                 loading="eager"
                 decoding="async"
-                className="aspect-[4/3] w-full bg-white object-contain object-top"
+                width={1448}
+                height={1086}
+                className="block h-auto w-full bg-white object-contain"
               />
 
               <Button
