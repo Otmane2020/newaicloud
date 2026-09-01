@@ -6,7 +6,6 @@ import { AIImagesDialog } from "@/components/seo/AIImagesDialog";
 import { SmartBackgroundDialog } from "@/components/seo/SmartBackgroundDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,8 +43,8 @@ const MODES: ModeDefinition[] = [
     icon: Camera,
     titleFr: "Product Shot AI",
     titleEn: "Product Shot AI",
-    descriptionFr: "Créez de vraies photos produit à partir de vos images catalogue.",
-    descriptionEn: "Create real product shots from your catalog images.",
+    descriptionFr: "Créez des photos produit cohérentes à partir de vos images catalogue.",
+    descriptionEn: "Create consistent product shots from your catalog images.",
     detailFr: "Face · 45° · profil · arrière · dessus · zoom matière · zoom détail · décor",
     detailEn: "Front · 45° · profile · back · top · material zoom · detail zoom · scene",
   },
@@ -54,8 +53,8 @@ const MODES: ModeDefinition[] = [
     icon: Wand2,
     titleFr: "Smart Background",
     titleEn: "Smart Background",
-    descriptionFr: "Changez le décor sans transformer le produit.",
-    descriptionEn: "Change the setting without changing the product.",
+    descriptionFr: "Changez l’environnement visuel tout en conservant le produit comme référence.",
+    descriptionEn: "Change the visual environment while keeping the product as the reference.",
     detailFr: "Fond blanc · lifestyle · studio · nature · showroom · 3D · prompt libre",
     detailEn: "White · lifestyle · studio · nature · showroom · 3D · custom prompt",
   },
@@ -336,15 +335,15 @@ export default function StudioSmart() {
           <div className="max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="bg-slate-950 text-white hover:bg-slate-950"><Sparkles className="mr-1.5 h-3.5 w-3.5" />Studio</Badge>
-              <Badge variant="secondary">{fr ? "3 outils réels" : "3 real tools"}</Badge>
+              <Badge variant="secondary">{fr ? "3 workflows créatifs" : "3 creative workflows"}</Badge>
             </div>
             <h1 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-              {fr ? "Créer les visuels de vos produits, sans faux outils." : "Create product visuals without fake tools."}
+              {fr ? "Un Studio centré sur vos produits" : "A Studio built around your products"}
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
               {fr
-                ? "Le Studio regroupe uniquement les moteurs créatifs réellement branchés au catalogue : photos produit IA, arrière-plans intelligents et créatifs publicitaires avec publication sociale."
-                : "Studio contains only creative engines that are actually connected to the catalog: AI product shots, smart backgrounds and ad creatives with social publishing."}
+                ? "Créez des photos produit, adaptez leurs arrière-plans et produisez vos créatifs publicitaires depuis les moteurs déjà connectés au catalogue."
+                : "Create product shots, adapt their backgrounds and produce ad creatives using the engines already connected to your catalog."}
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <Button onClick={() => openMode("shots")}><Camera className="mr-2 h-4 w-4" />Product Shot AI</Button>
@@ -354,11 +353,11 @@ export default function StudioSmart() {
           </div>
 
           <div className="rounded-2xl bg-slate-950 p-5 text-white">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">{fr ? "Flux simple" : "Simple flow"}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">{fr ? "Flux de création" : "Creation flow"}</p>
             <div className="mt-4 space-y-3">
-              <FlowStep number="1" title={fr ? "Choisissez le produit" : "Choose the product"} text={fr ? "Le catalogue Shopify reste la source." : "Shopify catalog stays the source."} />
-              <FlowStep number="2" title={fr ? "Choisissez l’action" : "Choose the action"} text={fr ? "Photo, décor ou publicité — rien d’autre." : "Photo, background or ad — nothing else."} />
-              <FlowStep number="3" title={fr ? "Générez puis appliquez" : "Generate and apply"} text={fr ? "Prévisualisation, sauvegarde et synchro via les moteurs existants." : "Preview, save and sync through the existing engines."} />
+              <FlowStep number="1" title={fr ? "Choisissez le produit" : "Choose the product"} text={fr ? "Le catalogue Shopify reste la source de référence." : "Shopify catalog remains the source of truth."} />
+              <FlowStep number="2" title={fr ? "Choisissez le rendu" : "Choose the output"} text={fr ? "Photo produit, nouveau décor ou créatif publicitaire." : "Product photo, new setting or ad creative."} />
+              <FlowStep number="3" title={fr ? "Générez et appliquez" : "Generate and apply"} text={fr ? "Prévisualisez, sauvegardez et synchronisez avec les flux existants." : "Preview, save and sync using the existing flows."} />
             </div>
           </div>
         </div>
