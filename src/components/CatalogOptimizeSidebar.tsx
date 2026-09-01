@@ -29,6 +29,11 @@ export function CatalogOptimizeSidebar() {
   const { language } = useTranslation();
   const fr = language === "fr";
 
+  const pinnedContent: NavItem[] = useMemo(() => [
+    { label: "Tags", href: "/seo?tab=tags", icon: Tags },
+    { label: fr ? "ALT Images" : "Image ALT", href: "/seo?tab=alt", icon: Images },
+  ], [fr]);
+
   const sections: NavSection[] = useMemo(() => [
     {
       label: fr ? "Catalogue" : "Catalog",
@@ -59,16 +64,6 @@ export function CatalogOptimizeSidebar() {
           href: "/seo?tab=collections",
           icon: Layers3,
           aliases: ["/seo?tab=pages", "/seo?tab=homepage"],
-        },
-        {
-          label: "Tags",
-          href: "/seo?tab=tags",
-          icon: Tags,
-        },
-        {
-          label: fr ? "ALT Images" : "Image ALT",
-          href: "/seo?tab=alt",
-          icon: Images,
         },
         {
           label: "Blog",
@@ -179,6 +174,17 @@ export function CatalogOptimizeSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              {pinnedContent.map((item) => (
+                <SidebarMenuItem key={`pinned-${item.href}`}>
+                  <SidebarMenuButton asChild isActive={active(item)}>
+                    <NavLink to={item.href} onClick={closeMobile}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
 
               {sections.map((section) => (
                 <Collapsible key={section.label} defaultOpen={section.items.some(active)}>
