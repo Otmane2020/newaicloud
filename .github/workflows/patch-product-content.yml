@@ -1,0 +1,63 @@
+name: Patch product content loading
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-product-content.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Patch ProductTitleDescription
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/pages/ProductTitleDescription.tsx')
+          text = path.read_text()
+
+          old = '''const hasRichHtmlDescription = (product: Product): boolean => {\n  // Check landing_page first (AI-generated content)'''
+          new = '''const hasRichHtmlDescription = (product: Product): boolean => {\n  // Fast path: the persisted flag avoids loading duplicate heavy HTML fields just to render status.\n  if (product.has_landing_page) return true;\n\n  // Check landing_page first (AI-generated content)'''
+          if old not in text:
+              raise SystemExit('hasRichHtmlDescription anchor not found')
+          text = text.replace(old, new, 1)
+
+          old = '''  // Rafraîchir les limites au montage et toutes les 10 secondes\n  useEffect(() => {\n    refreshLimits();\n    const interval = setInterval(() => {\n      refreshLimits();\n    }, 10000); // 10 secondes\n\n    return () => clearInterval(interval);\n  }, [refreshLimits]);\n\n'''
+          if old not in text:
+              raise SystemExit('usage polling anchor not found')
+          text = text.replace(old, '''  // useUsageLimits already loads entitlements on mount.\n  // Do not poll the Edge Function from this catalog screen: product rendering must stay independent\n  // from billing/usage availability. refreshLimits is still called after billable actions.\n\n''', 1)
+
+          old_select = '''            "id, title, description, landing_page, landing_page_html, has_landing_page, last_landing_generation_at, seo_title, seo_description, optimized_title, regenerated_title, optimized_description, body_html, image_url, shopify_id, vendor, handle, status, tags, product_type, category, sub_category, price, compare_at_price, cost_price, currency, inventory_quantity, ai_color, ai_material, ai_pattern, ai_shape, ai_texture, ai_finish, style, room, height, height_unit, width, width_unit, length, length_unit, ai_weight, ai_weight_unit, store_id, collection_ids",'''
+          new_select = '''            "id, title, description, landing_page, has_landing_page, last_landing_generation_at, seo_title, seo_description, optimized_title, regenerated_title, optimized_description, image_url, shopify_id, vendor, handle, status, tags, product_type, category, sub_category, price, compare_at_price, cost_price, currency, inventory_quantity, store_id, collection_ids",'''
+          if old_select not in text:
+              raise SystemExit('heavy product select anchor not found')
+          text = text.replace(old_select, new_select, 1)
+
+          anchor = '''      if (rawProductsData && rawProductsData.length > 0) {\n        const productIds = rawProductsData.map((p) => p.id);'''
+          replacement = '''      if (rawProductsData && rawProductsData.length > 0) {\n        // Render the base catalog immediately. Variants and gallery images are optional enrichment\n        // and must never keep Product content blank while their secondary queries are running.\n        setProducts(rawProductsData as Product[]);\n\n        const productIds = rawProductsData.map((p) => p.id);'''
+          if anchor not in text:
+              raise SystemExit('base render anchor not found')
+          text = text.replace(anchor, replacement, 1)
+
+          old_catch = '''    } catch (error) {\n      console.error("Error fetching products:", error);\n      toast.error("Erreur lors du chargement des produits");\n    } finally {'''
+          new_catch = '''    } catch (error) {\n      console.error("Error fetching products:", error);\n      // Keep any already-loaded base products visible; only show a catalog-specific error.\n      if (products.length === 0) {\n        toast.error(language === "fr" ? "Impossible de charger le catalogue produit" : "Unable to load product catalog");\n      }\n    } finally {'''
+          if old_catch not in text:
+              raise SystemExit('fetch catch anchor not found')
+          text = text.replace(old_catch, new_catch, 1)
+
+          path.write_text(text)
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/ProductTitleDescription.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: keep product content resilient"
+          git push origin main
