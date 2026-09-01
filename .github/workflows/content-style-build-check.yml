@@ -1,0 +1,31 @@
+name: Content style build check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/content-style-build-check.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      - name: Build
+        run: npm run build
+      - name: Cleanup workflow
+        if: success()
+        run: |
+          git config user.name "Otmane2020"
+          git config user.email "61626050+Otmane2020@users.noreply.github.com"
+          git rm .github/workflows/content-style-build-check.yml
+          git commit -m "chore: remove Content style build check"
+          git push origin main
