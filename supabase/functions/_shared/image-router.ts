@@ -268,9 +268,10 @@ export async function routeImage(options: ImageRouteOptions): Promise<ImageRoute
   const attempts = [
     () => tryCloudflare(options),
     () => tryGemini(options),
-    () => tryOpenAI(options),
     () => tryLovable(options),
+    () => tryOpenAI(options),
   ];
+
 
   for (const attempt of attempts) {
     try {
