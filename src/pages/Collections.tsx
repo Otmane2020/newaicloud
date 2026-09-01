@@ -208,7 +208,18 @@ export default function Collections() {
     const toastId = toast.loading(language === "fr" ? "Import des collections..." : "Importing collections...");
 
     try {
-      const { error: importError } = await supabase.functions.invoke("import-shopify-collections");
+      const shopName = selectedStore.store_url
+        .replace(/^https?:\/\//i, "")
+        .replace(/\/.*$/, "")
+        .replace(/\.myshopify\.com$/i, "");
+
+      if (!shopName) {
+        throw new Error(language === "fr" ? "URL Shopify invalide" : "Invalid Shopify URL");
+      }
+
+      const { error: importError } = await supabase.functions.invoke("import-shopify-collections", {
+        body: { storeId: selectedStore.id, shopName },
+      });
       if (importError) throw importError;
 
       const { error: syncError } = await supabase.functions.invoke("sync-product-collections", {
