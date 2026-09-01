@@ -71,6 +71,20 @@ Rules:
 - Return only the ALT text.`;
 }
 
+function buildSafeFallbackAlt(input: { lang: string; title: string; contentType: string; productType?: string; category?: string }): string {
+  const clean = (value = "") => value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  if (input.contentType === "homepage") return input.lang === "fr" ? "Accueil de la boutique en ligne" : "Online store homepage";
+  const parts = [clean(input.title), clean(input.productType), clean(input.category)]
+    .filter(Boolean)
+    .filter((value, index, values) => values.findIndex((other) => other.toLowerCase() === value.toLowerCase()) === index);
+  const candidate = cleanAltText(parts.join(" – "));
+  if (isUsefulAltText(candidate)) return candidate;
+  const labels: Record<string, string> = input.lang === "fr"
+    ? { product: "Produit de la boutique", collection: "Collection de produits", page: "Page de la boutique", article: "Article du blog", content: "Contenu de la boutique" }
+    : { product: "Store product", collection: "Product collection", page: "Store page", article: "Blog article", content: "Store content" };
+  return labels[input.contentType] || labels.content;
+}
+
 async function callDeepSeek(prompt: string): Promise<string> {
   const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
   if (!apiKey) throw new Error("DEEPSEEK_API_KEY not configured");
@@ -301,7 +315,9 @@ serve(async (req) => {
           finalAlt = seed;
           console.warn("[smart-alt-text] Gemini failed; using DeepSeek seed:", geminiError);
         } else {
-          throw geminiError;
+          provider = "safe-fallback";
+          finalAlt = buildSafeFallbackAlt({ lang, title, contentType, productType, category });
+          console.warn("[smart-alt-text] Gemini/DeepSeek unavailable; using safe contextual fallback:", geminiError);
         }
       }
     }
