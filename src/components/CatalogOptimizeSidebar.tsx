@@ -260,7 +260,7 @@ export function CatalogOptimizeSidebar() {
     <Sidebar className="border-r border-slate-200 shadow-[8px_0_30px_rgba(15,23,42,0.03)]">
       <SidebarContent className="bg-white">
         <div className="border-b border-slate-200 bg-white px-3 py-4">
-          <CatalogOptimizeLogo compact={state !== "expanded"} />
+          <CatalogOptimizeLogo compact={state !== "expanded"} size="sm" />
           {state === "expanded" && (
             <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
               <StoreSelector />
