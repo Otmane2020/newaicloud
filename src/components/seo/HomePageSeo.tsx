@@ -11,6 +11,39 @@ import { Textarea } from "@/components/ui/textarea";
 import { SeoConfidenceBadge } from "./SeoConfidenceBadge";
 import { toast } from "sonner";
 
+const INTERNAL_SEO_MARKERS = [
+  "boutique e-commerce réelle",
+  "nom exact de la boutique",
+  "url de la boutique",
+  "secteur d'activité détecté",
+  "contenu réel de la page",
+  "produits réels de la boutique",
+  "rappel critique",
+  "store url",
+  "exact store name",
+  "detected business",
+  "real homepage content",
+  "use only the information",
+  ".myshopify.com",
+];
+
+function normalizeSeo(value: unknown, maxLength: number) {
+  const clean = String(value || "")
+    .replace(/```(?:json)?/gi, " ")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  if (clean.length <= maxLength) return clean;
+  const clipped = clean.slice(0, maxLength + 1);
+  const lastSpace = clipped.lastIndexOf(" ");
+  return (lastSpace > Math.floor(maxLength * 0.65) ? clipped.slice(0, lastSpace) : clean.slice(0, maxLength)).trim();
+}
+
+function isUnsafeSeo(value: unknown) {
+  const lower = String(value || "").toLowerCase();
+  return INTERNAL_SEO_MARKERS.some((marker) => lower.includes(marker));
+}
+
 export function HomePageSeo() {
   const { selectedStore } = useStore();
   const { language } = useTranslation();
@@ -20,6 +53,41 @@ export function HomePageSeo() {
   const [syncing, setSyncing] = useState(false);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
+
+  const storeLabel = normalizeSeo(
+    selectedStore?.store_label ||
+      (selectedStore?.store_name && !selectedStore.store_name.includes(".myshopify.com") ? selectedStore.store_name : "") ||
+      "Online Store",
+    40,
+  );
+
+  const safeFallback = () => ({
+    title: normalizeSeo(`${storeLabel} | ${fr ? "Boutique en ligne" : "Online Store"}`, 60),
+    description: normalizeSeo(
+      fr
+        ? `Découvrez ${storeLabel}, ses produits et ses collections. Parcourez la boutique en ligne et trouvez les articles adaptés à vos envies.`
+        : `Discover ${storeLabel}, its products and collections. Browse the online store and find the items that fit what you are looking for.`,
+      160,
+    ),
+  });
+
+  const applySafeSeo = (title: unknown, description: unknown, useFallback = false) => {
+    const unsafe = isUnsafeSeo(title) || isUnsafeSeo(description);
+    if (unsafe || useFallback) {
+      const fallback = safeFallback();
+      setSeoTitle(fallback.title);
+      setSeoDescription(fallback.description);
+      return { ...fallback, unsafe: true };
+    }
+    const safe = {
+      title: normalizeSeo(title, 60),
+      description: normalizeSeo(description, 160),
+      unsafe: false,
+    };
+    setSeoTitle(safe.title);
+    setSeoDescription(safe.description);
+    return safe;
+  };
 
   const loadExistingSeoData = async () => {
     if (!selectedStore?.id) { setLoading(false); return; }
@@ -34,8 +102,12 @@ export function HomePageSeo() {
         .eq("store_id", selectedStore.id)
         .maybeSingle();
       if (error && error.code !== "PGRST116") throw error;
-      setSeoTitle(data?.seo_title || "");
-      setSeoDescription(data?.seo_description || "");
+      if (data?.seo_title || data?.seo_description) {
+        applySafeSeo(data?.seo_title, data?.seo_description);
+      } else {
+        setSeoTitle("");
+        setSeoDescription("");
+      }
     } catch (error: any) {
       toast.error(error?.message || (fr ? "Impossible de charger le SEO de la page d’accueil" : "Could not load homepage SEO"));
     } finally {
@@ -50,14 +122,26 @@ export function HomePageSeo() {
     try {
       setGenerating(true);
       const { data, error } = await supabase.functions.invoke("generate-page-seo", {
-        body: { pageId: "homepage", isHomepage: true, storeId: selectedStore.id, force: true },
+        body: { pageId: "homepage", isHomepage: true, storeId: selectedStore.id, force: true, language },
       });
       if (error) throw error;
-      if (data?.seo_title) setSeoTitle(data.seo_title);
-      if (data?.seo_description) setSeoDescription(data.seo_description);
-      toast.success(fr ? "SEO de la page d’accueil optimisé" : "Homepage SEO optimized");
+
+      const result = applySafeSeo(data?.seo_title, data?.seo_description, !data?.seo_title || !data?.seo_description);
+      if (result.unsafe) {
+        toast.warning(fr
+          ? "La réponse IA contenait des données internes. Une version SEO sûre a été générée à la place."
+          : "The AI response contained internal data. A safe SEO version was generated instead.");
+      } else {
+        toast.success(fr ? "SEO de la page d’accueil optimisé" : "Homepage SEO optimized");
+      }
     } catch (error: any) {
-      toast.error(error?.message || (fr ? "Optimisation impossible" : "Optimization failed"));
+      const fallback = safeFallback();
+      setSeoTitle(fallback.title);
+      setSeoDescription(fallback.description);
+      toast.warning(fr
+        ? "L’IA SEO est indisponible. Une version sûre a été préparée et peut être modifiée avant synchronisation."
+        : "SEO AI is unavailable. A safe version was prepared and can be edited before syncing.");
+      console.error("Homepage SEO generation failed", error);
     } finally {
       setGenerating(false);
     }
@@ -68,22 +152,35 @@ export function HomePageSeo() {
       toast.error(fr ? "Complétez le titre et la meta description" : "Complete the title and meta description");
       return;
     }
+
+    const safeTitle = normalizeSeo(seoTitle, 60);
+    const safeDescription = normalizeSeo(seoDescription, 160);
+    if (isUnsafeSeo(safeTitle) || isUnsafeSeo(safeDescription)) {
+      toast.error(fr
+        ? "Ce contenu ressemble à des instructions internes et ne peut pas être envoyé à Shopify."
+        : "This content looks like internal instructions and cannot be sent to Shopify.");
+      return;
+    }
+
     try {
       setSyncing(true);
+      setSeoTitle(safeTitle);
+      setSeoDescription(safeDescription);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
       const { error: saveError } = await supabase.from("homepage_seo").upsert({
         user_id: user.id,
         store_id: selectedStore.id,
-        seo_title: seoTitle,
-        seo_description: seoDescription,
+        seo_title: safeTitle,
+        seo_description: safeDescription,
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id,store_id", ignoreDuplicates: false });
       if (saveError) throw saveError;
-      const { error } = await supabase.functions.invoke("sync-homepage-seo", {
-        body: { seoTitle, seoDescription, storeId: selectedStore.id },
+      const { data, error } = await supabase.functions.invoke("sync-homepage-seo", {
+        body: { seoTitle: safeTitle, seoDescription: safeDescription, storeId: selectedStore.id },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       toast.success(fr ? "SEO synchronisé avec Shopify" : "SEO synced to Shopify");
     } catch (error: any) {
       toast.error(error?.message || (fr ? "Synchronisation impossible" : "Sync failed"));
@@ -111,7 +208,7 @@ export function HomePageSeo() {
           </div>
           <Button size="sm" onClick={generateSeoWithAI} disabled={generating} className="rounded-xl">
             {generating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1.5 h-4 w-4" />}
-            Optimize Homepage
+            {fr ? "Optimiser la page d’accueil" : "Optimize Homepage"}
           </Button>
         </CardContent>
       </Card>
@@ -138,7 +235,7 @@ export function HomePageSeo() {
             )}
 
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={generateSeoWithAI} disabled={generating} className="rounded-xl"><Sparkles className="mr-1.5 h-4 w-4" />Optimize Homepage</Button>
+              <Button variant="outline" size="sm" onClick={generateSeoWithAI} disabled={generating} className="rounded-xl"><Sparkles className="mr-1.5 h-4 w-4" />{fr ? "Optimiser la page d’accueil" : "Optimize Homepage"}</Button>
               <Button size="sm" onClick={syncToShopify} disabled={syncing || !seoTitle || !seoDescription} className="rounded-xl">{syncing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}{fr ? "Synchroniser Shopify" : "Sync to Shopify"}</Button>
             </div>
           </CardContent>

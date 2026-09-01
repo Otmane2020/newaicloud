@@ -26,9 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    if (!stripeSecret) {
-      return json({ error: 'Stripe is not configured. Missing STRIPE_SECRET_KEY.' }, 500);
-    }
+    if (!stripeSecret) return json({ error: 'Stripe is not configured. Missing STRIPE_SECRET_KEY.' }, 500);
 
     const validation = validateCreateCheckout(body);
     if (!validation.success || !validation.data) {
@@ -41,7 +39,11 @@ serve(async (req) => {
       success_url,
       cancel_url,
       use_manual_promo,
+      currency,
     } = validation.data;
+    const language = String(body.language || '').toLowerCase();
+    const desiredCurrency: 'eur' | 'usd' = String(currency || '').toLowerCase() === 'usd' ||
+      (!currency && language.startsWith('en')) ? 'usd' : 'eur';
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return json({ error: 'Authentication required' }, 401);
@@ -57,7 +59,6 @@ serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-
     const productCount = Number(usage?.products_count || 0);
 
     const { data: plan, error: planError } = await (supabase as any)
@@ -66,7 +67,6 @@ serve(async (req) => {
       .eq('id', plan_id)
       .eq('is_active', true)
       .single();
-
     if (planError || !plan) return json({ error: 'Plan not found' }, 404);
 
     const maxProducts = Number(plan.max_products ?? -1);
@@ -76,25 +76,22 @@ serve(async (req) => {
         .select('id, max_products')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
-
       const suggestedPlan = alternatives?.find(
         (candidate: any) => Number(candidate.max_products) === -1 || Number(candidate.max_products) >= productCount,
       );
-
       return json({
-        error: `Votre boutique contient ${productCount} produits, au-dessus de la limite de ${maxProducts} du plan ${plan.name}.`,
+        error: `Your store contains ${productCount} products, above the ${maxProducts} limit for ${plan.name}.`,
         suggested_plan_id: suggestedPlan?.id || null,
       }, 400);
     }
 
     const isYearly = billing_period === 'yearly';
-    const priceColumn = isYearly ? 'stripe_price_id_yearly' : 'stripe_price_id_monthly';
-    let priceId = plan[priceColumn] as string | null;
+    const interval: 'month' | 'year' = isYearly ? 'year' : 'month';
+    const basePriceColumn = isYearly ? 'stripe_price_id_yearly' : 'stripe_price_id_monthly';
+    const currencyPriceColumn = `${basePriceColumn}_${desiredCurrency}`;
     let productId = plan.stripe_product_id as string | null;
 
-    // Create the Stripe Product/Price server-side when the DB plan exists but
-    // Stripe IDs have not been synchronized yet. This makes checkout self-healing.
-    if (!productId || !productId.startsWith('prod_')) {
+    if (!productId?.startsWith('prod_')) {
       const product = await stripe.products.create({
         name: `Nexora AI — ${plan.name}`,
         description: plan.description || `Nexora AI ${plan.name} subscription`,
@@ -105,46 +102,67 @@ serve(async (req) => {
         },
       });
       productId = product.id;
-    }
-
-    if (!priceId || !priceId.startsWith('price_')) {
-      const rawAmount = isYearly
-        ? (plan.price_yearly_eur ?? plan.price_yearly)
-        : (plan.price_monthly_eur ?? plan.price_monthly);
-      const amount = Number(rawAmount);
-
-      if (!Number.isFinite(amount) || amount <= 0) {
-        return json({
-          error: `Le prix ${isYearly ? 'annuel' : 'mensuel'} du plan ${plan.name} n'est pas configuré.`,
-        }, 400);
-      }
-
-      const price = await stripe.prices.create({
-        product: productId,
-        unit_amount: Math.round(amount * 100),
-        currency: 'eur',
-        recurring: { interval: isYearly ? 'year' : 'month' },
-        metadata: {
-          billing_type: 'subscription',
-          plan_id: plan.id,
-          billing_period,
-        },
-      });
-      priceId = price.id;
-
-      const { error: priceSyncError } = await (supabase as any)
-        .from('subscription_plans')
-        .update({
-          stripe_product_id: productId,
-          [priceColumn]: priceId,
-        })
-        .eq('id', plan.id);
-      if (priceSyncError) throw priceSyncError;
-    } else if (productId !== plan.stripe_product_id) {
       await (supabase as any)
         .from('subscription_plans')
         .update({ stripe_product_id: productId })
         .eq('id', plan.id);
+    }
+
+    const rawAmount = desiredCurrency === 'eur'
+      ? (isYearly ? (plan.price_yearly_eur ?? plan.price_yearly) : (plan.price_monthly_eur ?? plan.price_monthly))
+      : (isYearly ? (plan.price_yearly_usd ?? plan.price_yearly) : (plan.price_monthly_usd ?? plan.price_monthly));
+    const amount = Number(rawAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return json({ error: `The ${isYearly ? 'yearly' : 'monthly'} price for ${plan.name} is not configured.` }, 400);
+    }
+    const unitAmount = Math.round(amount * 100);
+
+    const candidateIds = [plan[currencyPriceColumn], plan[basePriceColumn]]
+      .filter((value: unknown, index: number, values: unknown[]) =>
+        typeof value === 'string' && value.startsWith('price_') && values.indexOf(value) === index,
+      ) as string[];
+
+    let priceId: string | null = null;
+    for (const candidateId of candidateIds) {
+      try {
+        const candidate = await stripe.prices.retrieve(candidateId);
+        if (
+          candidate.active &&
+          candidate.currency === desiredCurrency &&
+          candidate.unit_amount === unitAmount &&
+          candidate.recurring?.interval === interval
+        ) {
+          priceId = candidate.id;
+          break;
+        }
+      } catch (priceError) {
+        console.warn('Checkout price candidate unavailable', { candidateId, priceError });
+      }
+    }
+
+    if (!priceId) {
+      const existingPrices = await stripe.prices.list({ product: productId, active: true, limit: 100 });
+      priceId = existingPrices.data.find((candidate) =>
+        candidate.currency === desiredCurrency &&
+        candidate.unit_amount === unitAmount &&
+        candidate.recurring?.interval === interval
+      )?.id || null;
+    }
+
+    if (!priceId) {
+      const price = await stripe.prices.create({
+        product: productId,
+        unit_amount: unitAmount,
+        currency: desiredCurrency,
+        recurring: { interval },
+        metadata: {
+          billing_type: 'subscription',
+          plan_id: plan.id,
+          billing_period,
+          checkout_currency: desiredCurrency,
+        },
+      });
+      priceId = price.id;
     }
 
     const { data: profile } = await (supabase as any)
@@ -162,12 +180,10 @@ serve(async (req) => {
         customerId = null;
       }
     }
-
     if (!customerId && user.email) {
       const customers = await stripe.customers.list({ email: user.email, limit: 1 });
       customerId = customers.data[0]?.id || null;
     }
-
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
@@ -182,20 +198,17 @@ serve(async (req) => {
       .update({ stripe_customer_id: customerId, updated_at: new Date().toISOString() })
       .eq('id', user.id);
 
-    const existingSubscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: 'all',
-      limit: 100,
-    });
+    const existingSubscriptions = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 100 });
     const activeStatuses = new Set(['active', 'trialing', 'past_due', 'unpaid']);
     const activeSubscription = existingSubscriptions.data.find((sub) => activeStatuses.has(sub.status));
-
     if (activeSubscription) {
       return json({
-        error: 'Vous avez déjà un abonnement Stripe actif. Utilisez « Changer de plan » pour le modifier.',
+        error: language.startsWith('fr')
+          ? 'Vous avez déjà un abonnement Stripe actif. Utilisez « Changer de plan » pour le modifier.'
+          : 'You already have an active Stripe subscription. Use “Change plan” to modify it.',
         redirect_to_upgrade: true,
         stripe_subscription_id: activeSubscription.id,
-      }, 400);
+      }, 409);
     }
 
     const origin = req.headers.get('origin') || Deno.env.get('PUBLIC_APP_URL') || 'http://localhost:8080';
@@ -205,6 +218,7 @@ serve(async (req) => {
       billing_period,
       plan_name: plan.name,
       billing_type: 'subscription',
+      currency: desiredCurrency,
     };
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
@@ -219,11 +233,10 @@ serve(async (req) => {
       success_url: success_url || `${origin}/subscription?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancel_url || `${origin}/subscription?checkout=cancelled&plan_id=${encodeURIComponent(plan.id)}`,
       billing_address_collection: 'required',
+      locale: language.startsWith('fr') ? 'fr' : language.startsWith('en') ? 'en' : 'auto',
     };
 
-    if (use_manual_promo === true) {
-      sessionConfig.allow_promotion_codes = true;
-    }
+    if (use_manual_promo === true) sessionConfig.allow_promotion_codes = true;
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
     if (!session.url) throw new Error('Stripe did not return a checkout URL');
@@ -233,9 +246,10 @@ serve(async (req) => {
       user_id: user.id,
       plan_id: plan.id,
       billing_period,
+      currency: desiredCurrency,
     });
 
-    return json({ url: session.url, session_id: session.id, free: false });
+    return json({ url: session.url, session_id: session.id, currency: desiredCurrency, free: false });
   } catch (error) {
     console.error('create-checkout failed', error);
     return json({ error: error instanceof Error ? error.message : 'Checkout failed' }, 500);

@@ -40,6 +40,7 @@ const FALLBACK_PACKAGES: CreditPackage[] = [
 export function CreditWallet({ userId }: { userId: string }) {
   const { language } = useTranslation();
   const isFr = language === "fr";
+  const checkoutCurrency = isFr ? "eur" : "usd";
   const [open, setOpen] = useState(false);
   const [balance, setBalance] = useState<number>(50);
   const [packages, setPackages] = useState<CreditPackage[]>(FALLBACK_PACKAGES);
@@ -54,9 +55,7 @@ export function CreditWallet({ userId }: { userId: string }) {
       .eq("id", userId)
       .single();
 
-    if (!error && typeof data?.credits === "number") {
-      setBalance(data.credits);
-    }
+    if (!error && typeof data?.credits === "number") setBalance(data.credits);
   }, [userId]);
 
   const loadPackages = useCallback(async () => {
@@ -86,9 +85,7 @@ export function CreditWallet({ userId }: { userId: string }) {
   }, [loadBalance, loadPackages]);
 
   useEffect(() => {
-    if (balance <= 0) {
-      setOpen(true);
-    }
+    if (balance <= 0) setOpen(true);
   }, [balance]);
 
   useEffect(() => {
@@ -120,11 +117,7 @@ export function CreditWallet({ userId }: { userId: string }) {
 
         if (data?.paid) {
           if (typeof data.balance === "number") setBalance(data.balance);
-          toast.success(
-            isFr
-              ? `Recharge confirmée : +${data.added} crédits.`
-              : `Top-up confirmed: +${data.added} credits.`,
-          );
+          toast.success(isFr ? `Recharge confirmée : +${data.added} crédits.` : `Top-up confirmed: +${data.added} credits.`);
         } else {
           toast.info(isFr ? "Paiement en cours de confirmation." : "Payment is still being confirmed.");
         }
@@ -174,14 +167,23 @@ export function CreditWallet({ userId }: { userId: string }) {
     setCheckoutLoading(creditPackage.id);
     try {
       const { data, error } = await supabase.functions.invoke("create-credit-checkout", {
-        body: { package_id: creditPackage.id },
+        body: {
+          package_id: creditPackage.id,
+          currency: checkoutCurrency,
+          language,
+        },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       if (!data?.url) throw new Error("Stripe checkout URL missing");
+
+      // Same-tab navigation is intentional: browsers can block window.open after an async edge-function call.
       window.location.assign(data.url);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unable to create credit checkout", error);
-      toast.error(isFr ? "Impossible d'ouvrir le paiement Stripe." : "Unable to open Stripe checkout.");
+      toast.error(
+        error?.message || (isFr ? "Impossible d'ouvrir le paiement Stripe." : "Unable to open Stripe checkout."),
+      );
       setCheckoutLoading(null);
     }
   };
@@ -189,7 +191,7 @@ export function CreditWallet({ userId }: { userId: string }) {
   const formatPrice = (pack: CreditPackage) =>
     new Intl.NumberFormat(isFr ? "fr-FR" : "en-US", {
       style: "currency",
-      currency: (pack.currency || "eur").toUpperCase(),
+      currency: checkoutCurrency.toUpperCase(),
     }).format(pack.amount_cents / 100);
 
   return (
@@ -264,9 +266,7 @@ export function CreditWallet({ userId }: { userId: string }) {
                   disabled={checkoutLoading !== null}
                   onClick={() => startCheckout(pack)}
                 >
-                  {checkoutLoading === pack.id ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
+                  {checkoutLoading === pack.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {isFr ? "Recharger" : "Top up"}
                 </Button>
               </div>
