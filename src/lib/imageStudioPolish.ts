@@ -35,6 +35,16 @@ const findBorderContainer = (element: Element | null, stopAt: Element) => {
 const markStudioBlocks = (page: HTMLElement) => {
   page.setAttribute("data-ai-image-studio-page", "true");
 
+  const pageHeader = page.querySelector("header[data-ui-version='catalog-compact-header-v1']");
+  if (pageHeader) {
+    pageHeader.setAttribute("data-studio-page-header", "true");
+    const headerButtons = pageHeader.querySelector("button");
+    const headerActions = headerButtons?.parentElement;
+    if (headerActions) headerActions.setAttribute("data-studio-header-actions", "true");
+    const description = pageHeader.querySelector("p");
+    if (description) description.setAttribute("data-studio-header-description", "true");
+  }
+
   const buttons = Array.from(page.querySelectorAll("button"));
   const whiteBackgroundButton = buttons.find((button) => hasAnyText(button, ["White background", "Fond blanc"]));
   const toolsSection = whiteBackgroundButton?.closest("section");
