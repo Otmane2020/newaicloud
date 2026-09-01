@@ -38,7 +38,7 @@ export function LandingPagePreviewDialog({
   onGenerateClick,
   onLandingPageGenerated,
 }: LandingPagePreviewDialogProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   // Bouton Sync supprimé - auto-sync activé après génération
   const [productUrl, setProductUrl] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
@@ -47,6 +47,17 @@ export function LandingPagePreviewDialog({
   const [viewShopifyMode, setViewShopifyMode] = useState(false);
   const [iframeError, setIframeError] = useState(false);
   const [isIframeLoading, setIsIframeLoading] = useState(false);
+  const [isGeneratingLanding, setIsGeneratingLanding] = useState(false);
+  const [generatedLandingPage, setGeneratedLandingPage] = useState<string | null>(null);
+
+  const landingPageHtml = generatedLandingPage || currentLandingPage;
+
+  useEffect(() => {
+    if (!open) {
+      setGeneratedLandingPage(null);
+      setIsGeneratingLanding(false);
+    }
+  }, [open, productId]);
 
   // Check if user has added Shopify theme CSS
   useEffect(() => {
@@ -97,7 +108,7 @@ export function LandingPagePreviewDialog({
 
   const getPreviewHtml = () => {
     // ⚡ Fallback minimal si pas de contenu
-    if (!currentLandingPage || currentLandingPage.trim() === "") {
+    if (!landingPageHtml || landingPageHtml.trim() === "") {
       console.log("No landing page content, using fallback");
       return `<!DOCTYPE html>
 <html lang="fr">
@@ -122,10 +133,10 @@ export function LandingPagePreviewDialog({
 </html>`;
     }
     
-    console.log("Landing page content length:", currentLandingPage.length);
-    console.log("First 200 chars:", currentLandingPage.substring(0, 200));
+    console.log("Landing page content length:", landingPageHtml.length);
+    console.log("First 200 chars:", landingPageHtml.substring(0, 200));
     
-    let htmlContent = currentLandingPage;
+    let htmlContent = landingPageHtml;
     
     // Ensure proper HTML structure
     if (!htmlContent.includes("<!DOCTYPE") && !htmlContent.includes("<html")) {
@@ -158,8 +169,8 @@ ${htmlContent}
   // Ce commentaire documente le changement pour référence future
 
   const handleDownload = () => {
-    if (!currentLandingPage) return;
-    const blob = new Blob([currentLandingPage], { type: "text/html" });
+    if (!landingPageHtml) return;
+    const blob = new Blob([landingPageHtml], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -194,13 +205,13 @@ ${content.trim()}
   };
 
   const handleCopyWordPress = async () => {
-    if (!currentLandingPage) {
+    if (!landingPageHtml) {
       toast.error(t.landingGeneration.errors.noContent);
       return;
     }
     
     try {
-      const wordpressCode = convertToWordPress(currentLandingPage);
+      const wordpressCode = convertToWordPress(landingPageHtml);
       await navigator.clipboard.writeText(wordpressCode);
       toast.success(t.landingGeneration.preview.wordpressCopied || "Code WordPress copié !");
     } catch (error) {
@@ -209,11 +220,100 @@ ${content.trim()}
     }
   };
 
+  /**
+   * Empty-state CTA: generate immediately with the standard landing defaults.
+   * This intentionally bypasses the configuration dialog. The normal
+   * regenerate/configure entry points remain unchanged.
+   */
+  const handleGenerateLandingDirectly = async () => {
+    if (!productId || isGeneratingLanding) return;
+
+    setIsGeneratingLanding(true);
+    const toastId = toast.loading(t.landingGeneration.preview.generationInProgress || "Génération de la landing page...");
+
+    try {
+      const { data: product, error: productError } = await supabase
+        .from("shopify_products")
+        .select("id, title, description, image_url, vendor, seo_title, seo_description")
+        .eq("id", productId)
+        .single();
+
+      if (productError) throw productError;
+
+      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
+        body: {
+          productId,
+          productTitle: product?.seo_title || product?.title || productTitle,
+          seo_title: product?.seo_title || seoTitle || productTitle,
+          imageUrl: product?.image_url || null,
+          description: product?.description || "",
+          vendor: product?.vendor || "",
+          imageAnalysis: "",
+          language,
+          fastMode: false,
+          options: {
+            colorScheme: {
+              paletteId: "modern",
+              primary: "#000000",
+              secondary: "#333333",
+              background: "#FFFFFF",
+              surface: "#F5F5F5",
+              text: "#000000",
+              textMuted: "#666666",
+            },
+            layout: "2 colonnes",
+            designStyle: "modern",
+            contentLength: "moyenne (800 mots)",
+            customHighlights: "",
+            theme: "light",
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      const html = data?.html?.trim();
+      if (!html) {
+        throw new Error(data?.error || t.landingGeneration.errors.noGenerated || "Aucun HTML généré");
+      }
+
+      // Persist explicitly as a safety net. generate-landing-ai also handles
+      // landing persistence, but this keeps the one-click path deterministic.
+      const { error: updateError } = await supabase
+        .from("shopify_products")
+        .update({
+          landing_page: html,
+          landing_page_html: html,
+          has_landing_page: true,
+          last_landing_generation_at: new Date().toISOString(),
+        })
+        .eq("id", productId);
+
+      if (updateError) {
+        console.warn("[Landing Preview] HTML generated but explicit persistence failed:", updateError);
+      }
+
+      setGeneratedLandingPage(html);
+      setIframeError(false);
+      setIsIframeLoading(true);
+      onLandingPageGenerated?.(html);
+      toast.success(t.landingGeneration.success.generated || "Landing page générée", { id: toastId });
+    } catch (error: any) {
+      console.error("[Landing Preview] Direct generation failed:", error);
+      toast.error(t.landingGeneration.errors.generation || "Erreur lors de la génération", {
+        id: toastId,
+        description: error?.message || undefined,
+      });
+    } finally {
+      setIsGeneratingLanding(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`${responsiveDialogClasses.xxlarge} max-h-[90vh] p-0`}>
         <DialogHeader className="px-6 pt-6 pb-4">
-          {currentLandingPage && (
+          {landingPageHtml && (
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
@@ -273,7 +373,7 @@ ${content.trim()}
                         variant="outline" 
                         size="sm" 
                         onClick={handleCopyWordPress} 
-                        disabled={!currentLandingPage}
+                        disabled={!landingPageHtml}
                       >
                         <Copy className="h-4 w-4 mr-2" />
                         {t.landingGeneration.preview.copyWordPress}
@@ -284,7 +384,7 @@ ${content.trim()}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <Button variant="outline" size="sm" onClick={handleDownload} disabled={!currentLandingPage}>
+                <Button variant="outline" size="sm" onClick={handleDownload} disabled={!landingPageHtml}>
                   {t.landingGeneration.preview.downloadHtml}
                 </Button>
                 {/* Bouton Sync supprimé - auto-sync intégré dans la génération */}
@@ -304,7 +404,7 @@ ${content.trim()}
           )}
         </DialogHeader>
 
-        {!themeCssAdded && currentLandingPage && (
+        {!themeCssAdded && landingPageHtml && (
           <Alert className="mx-6 border-orange-200 bg-orange-50">
             <AlertTriangle className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800 text-sm">
@@ -320,7 +420,7 @@ ${content.trim()}
         )}
 
         <div className="h-[calc(90vh-200px)] md:h-[calc(90vh-180px)] overflow-auto bg-background px-4 md:px-6">
-          {currentLandingPage ? (
+          {landingPageHtml ? (
             <div className="relative w-full h-full flex items-center justify-center py-4">
               {isIframeLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
@@ -403,17 +503,19 @@ ${content.trim()}
                   {t.landingGeneration.preview.noLandingPageDesc}
                 </p>
                 <Button
-                  onClick={() => {
-                    onOpenChange(false);
-                    if (onGenerateClick) {
-                      onGenerateClick();
-                    }
-                  }}
+                  onClick={handleGenerateLandingDirectly}
+                  disabled={isGeneratingLanding || !productId}
                   className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
                   size="lg"
                 >
-                  <Sparkles className="mr-2 h-5 w-5" />
-                  {t.landingGeneration.preview.generateMyLanding}
+                  {isGeneratingLanding ? (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-5 w-5" />
+                  )}
+                  {isGeneratingLanding
+                    ? (t.landingGeneration.preview.generationInProgress || "Génération...")
+                    : t.landingGeneration.preview.generateMyLanding}
                 </Button>
                 <p className="text-xs mt-4 text-muted-foreground/70">{t.landingGeneration.preview.generationTakes}</p>
               </div>
