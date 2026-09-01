@@ -89,7 +89,45 @@ export function CatalogOptimizeSidebar() {
       label: "GEO & AI Search",
       icon: Bot,
       items: [
-        { label: "AEO & AI Answers", href: "/aeo-chatgpt", icon: Sparkles },
+        {
+          label: fr ? "Opportunités GEO" : "GEO Opportunities",
+          href: "/aeo?tab=opportunities",
+          icon: Sparkles,
+          aliases: ["/aeo"],
+        },
+        {
+          label: fr ? "Assistant GEO" : "GEO Assistant",
+          href: "/aeo?tab=wizard",
+          icon: Bot,
+        },
+        {
+          label: "ChatGPT",
+          href: "/aeo-chatgpt",
+          icon: Bot,
+          badge: "AI",
+        },
+        {
+          label: "Gemini",
+          href: "/aeo-gemini",
+          icon: Sparkles,
+          badge: "AI",
+        },
+        {
+          label: "Copilot",
+          href: "/aeo-copilot",
+          icon: Bot,
+          badge: "AI",
+        },
+        {
+          label: fr ? "Calendrier AEO" : "AEO Calendar",
+          href: "/aeo-calendar",
+          icon: Activity,
+        },
+        {
+          label: fr ? "Connexions GEO" : "GEO Connections",
+          href: "/aeo?tab=integrations",
+          icon: Settings,
+        },
       ],
     },
     {
