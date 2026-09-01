@@ -5,125 +5,94 @@ import { toast } from 'sonner';
 import { useAutoSyncProgress } from '@/contexts/AutoSyncContext';
 import { useTranslation } from '@/lib/language';
 
-// Failsafe timeout: 10 minutes for large imports
-const FAILSAFE_MS = 10 * 60 * 1000;
-// Stuck timeout: 2 minutes if no progress
-const STUCK_TIMEOUT_MS = 2 * 60 * 1000;
+const POLL_INTERVAL_MS = 2000;
+const RECENT_SYNC_WINDOW_MS = 15 * 60 * 1000;
+const FAILSAFE_MS = 15 * 60 * 1000;
 
 /**
- * Hook qui écoute les nouvelles connexions Shopify et déclenche automatiquement
- * la synchronisation pour TOUS les flux (OAuth et API)
+ * Watches Shopify connections and keeps synchronization state in step with the
+ * server. The UI must never invent a successful completion locally.
  */
 export const useAutoSync = (userId: string | undefined) => {
   const { startSync, completeSync, endSync, updateProgress, isSyncing } = useAutoSyncProgress();
   const location = useLocation();
   const { t, tf } = useTranslation();
   const syncCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  // Track the specific sync ID we're monitoring
   const currentSyncIdRef = useRef<string | null>(null);
-  // Debounce sync triggers to prevent double-triggering
   const lastConnectionEventRef = useRef<number>(0);
 
   useEffect(() => {
     if (!userId) return;
-    let isMounted = true;
-    let stuckTimeoutId: NodeJS.Timeout | null = null;
-    let failsafeTimeoutId: NodeJS.Timeout | null = null;
 
-    console.log('🔄 [AutoSync] Monitoring new Shopify connections for user:', userId);
-    
-    // Helper to check sync status and handle completion
+    let isMounted = true;
+    let failsafeTimeoutId: NodeJS.Timeout | null = null;
     let checkCount = 0;
+
+    const clearMonitoring = () => {
+      if (syncCheckIntervalRef.current) {
+        clearInterval(syncCheckIntervalRef.current);
+        syncCheckIntervalRef.current = null;
+      }
+      if (failsafeTimeoutId) {
+        clearTimeout(failsafeTimeoutId);
+        failsafeTimeoutId = null;
+      }
+    };
+
     const checkSyncStatus = async () => {
-      checkCount++;
-      console.log('🔍 [AutoSync] Checking sync status... (attempt', checkCount, ')');
-      
-      // Query syncs for this user - check both by ID and recent ones
-      let latestSync = null;
-      
-      // If we have a specific sync ID, check it first
+      checkCount += 1;
+      let latestSync: {
+        id: string;
+        status: string;
+        items_synced: number | null;
+        started_at: string | null;
+        sync_type: string | null;
+        completed_at: string | null;
+      } | null = null;
+
       if (currentSyncIdRef.current) {
         const { data, error } = await supabase
           .from('sync_history')
           .select('id, status, items_synced, started_at, sync_type, completed_at')
           .eq('id', currentSyncIdRef.current)
           .maybeSingle();
-        
-        if (!error && data) {
-          latestSync = data;
-          console.log('📊 [AutoSync] Found tracked sync:', latestSync.id, 'status:', latestSync.status, 'type:', latestSync.sync_type);
-        }
+
+        if (!error && data) latestSync = data;
       }
-      
-      // Fallback: Check most recent sync (extend window to 10 minutes for large imports)
+
       if (!latestSync) {
-        const tenMinutesAgo = new Date(Date.now() - 600000).toISOString();
+        const recentSince = new Date(Date.now() - RECENT_SYNC_WINDOW_MS).toISOString();
         const { data, error } = await supabase
           .from('sync_history')
           .select('id, status, items_synced, started_at, sync_type, completed_at')
           .eq('user_id', userId)
-          .gte('started_at', tenMinutesAgo)
+          .gte('started_at', recentSince)
           .order('started_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        
+
         if (!error && data) {
           latestSync = data;
-          // Track this sync ID for future checks
-          if (!currentSyncIdRef.current) {
-            currentSyncIdRef.current = data.id;
-            console.log('🔗 [AutoSync] Now tracking sync ID:', currentSyncIdRef.current);
-          }
-          console.log('📊 [AutoSync] Found recent sync:', latestSync.id, 'status:', latestSync.status, 'type:', latestSync.sync_type);
+          currentSyncIdRef.current = data.id;
         }
       }
-      
+
       if (!latestSync) {
-        // Only log warning after a few attempts (sync record may still be creating)
-        if (checkCount > 3) {
-          console.log('⚠️ [AutoSync] No sync record found yet...');
-        }
+        if (checkCount > 3) console.log('[AutoSync] No recent synchronization record yet');
         return false;
       }
-      
-      console.log('📊 [AutoSync] Sync status check:', {
-        id: latestSync.id,
-        status: latestSync.status,
-        sync_type: latestSync.sync_type,
-        items_synced: latestSync.items_synced,
-        completed_at: latestSync.completed_at,
-      });
-      
-      // Check completion: status is success/failed OR completed_at is set
-      const isCompleted = 
-        latestSync.status === 'success' || 
-        latestSync.status === 'failed' ||
-        !!latestSync.completed_at;
-      
-      if (isCompleted) {
-        console.log('✅ [AutoSync] Import terminé! Status:', latestSync.status, 'Items:', latestSync.items_synced);
-        
-        // Clear the tracking ref
+
+      const normalizedStatus = latestSync.status?.toLowerCase();
+      const isSuccess = normalizedStatus === 'success';
+      const isFailure = normalizedStatus === 'failed' || normalizedStatus === 'error';
+
+      // A completed_at timestamp alone is not enough to declare success/failure.
+      // The backend status is the source of truth.
+      if (isSuccess || isFailure) {
         currentSyncIdRef.current = null;
-        
-        if (syncCheckIntervalRef.current) {
-          clearInterval(syncCheckIntervalRef.current);
-          syncCheckIntervalRef.current = null;
-        }
-        
-        if (stuckTimeoutId) {
-          clearTimeout(stuckTimeoutId);
-          stuckTimeoutId = null;
-        }
-        
-        if (failsafeTimeoutId) {
-          clearTimeout(failsafeTimeoutId);
-          failsafeTimeoutId = null;
-        }
-        
+        clearMonitoring();
+
         if (isMounted) {
-          const isSuccess = latestSync.status === 'success';
-          
           if (isSuccess) {
             completeSync(latestSync.items_synced || 0);
             toast.success(t.dialogs.autoSync.syncComplete, {
@@ -138,157 +107,103 @@ export const useAutoSync = (userId: string | undefined) => {
         }
         return true;
       }
-      
-      // Update progress for real-time display
-      if (latestSync.sync_type && latestSync.status === 'running') {
+
+      if (latestSync.sync_type && (normalizedStatus === 'running' || normalizedStatus === 'pending')) {
         updateProgress(latestSync.sync_type, latestSync.items_synced || 0);
       }
-      
+
       return false;
     };
-    
-    // Détecte si l'utilisateur vient de Shopify "Open app" (host= sans pending_token)
-    const comingFromShopifyOpenApp = location.search.includes('host=') && 
-                                      !location.search.includes('pending_token');
-    
-    if (comingFromShopifyOpenApp) {
-      console.log('⏭️ [AutoSync] Coming from Shopify Open app - skipping auto-sync');
-      return;
-    }
-    
-    // Check if there's a pending sync from onboarding page
+
+    const beginMonitoring = (storeName: string) => {
+      clearMonitoring();
+      checkCount = 0;
+      startSync(storeName);
+      void checkSyncStatus();
+      syncCheckIntervalRef.current = setInterval(() => void checkSyncStatus(), POLL_INTERVAL_MS);
+
+      // This is only a UI failsafe. It does not write or fake any server status.
+      // Fifteen minutes leaves enough room for large catalog imports.
+      failsafeTimeoutId = setTimeout(() => {
+        clearMonitoring();
+        if (isMounted) {
+          endSync();
+          toast.error(t.toasts.error.sync || 'Synchronization status timeout', {
+            description: t.toasts.error.generic || 'Refresh to check the import status.',
+          });
+        }
+      }, FAILSAFE_MS);
+    };
+
+    const comingFromShopifyOpenApp =
+      location.search.includes('host=') && !location.search.includes('pending_token');
+
+    if (comingFromShopifyOpenApp) return;
+
     const pendingSync = sessionStorage.getItem('pending_sync');
     if (pendingSync && location.pathname === '/dashboard') {
-      console.log('✅ [AutoSync] Found pending sync, showing dialog on dashboard:', pendingSync);
       sessionStorage.removeItem('pending_sync');
-      startSync(pendingSync);
-      
-      // Try to find the sync ID for better tracking
-      const findSyncId = async () => {
+      beginMonitoring(pendingSync);
+
+      void (async () => {
         const { data: syncRecords } = await supabase
           .from('sync_history')
           .select('id')
           .eq('user_id', userId)
-          .eq('status', 'running')
+          .in('status', ['running', 'pending'])
           .order('started_at', { ascending: false })
           .limit(1);
-        
-        if (syncRecords?.[0]?.id) {
-          currentSyncIdRef.current = syncRecords[0].id;
-          console.log('🔗 [AutoSync] Tracking sync ID:', currentSyncIdRef.current);
-        }
-      };
-      findSyncId();
-      
-      // Check immediately then every 2 seconds
-      checkSyncStatus();
-      syncCheckIntervalRef.current = setInterval(checkSyncStatus, 2000);
-      
-      // Global stuck timeout: force close after 2 minutes if dialog is stuck
-      stuckTimeoutId = setTimeout(() => {
-        if (isMounted) {
-          console.warn('⚠️ [AutoSync] Dialog stuck for 2 minutes, forcing close');
-          endSync();
-          if (syncCheckIntervalRef.current) {
-            clearInterval(syncCheckIntervalRef.current);
-            syncCheckIntervalRef.current = null;
-          }
-        }
-      }, STUCK_TIMEOUT_MS);
-      
-      // Failsafe: close dialog after 10 minutes for large imports
-      failsafeTimeoutId = setTimeout(() => {
-        if (syncCheckIntervalRef.current) {
-          clearInterval(syncCheckIntervalRef.current);
-          syncCheckIntervalRef.current = null;
-        }
-        if (isMounted) {
-          endSync();
-        }
-      }, FAILSAFE_MS);
+
+        if (syncRecords?.[0]?.id) currentSyncIdRef.current = syncRecords[0].id;
+      })();
     }
 
-    // Écouter les insertions ET updates dans shopify_connections
     const channel = supabase
-      .channel('shopify-connection-changes')
+      .channel(`shopify-connection-changes-${userId}`)
       .on(
         'postgres_changes',
         {
-          event: '*', // Écouter INSERT et UPDATE
+          event: '*',
           schema: 'public',
           table: 'shopify_connections',
           filter: `user_id=eq.${userId}`,
         },
         async (payload) => {
-          if (!isMounted) return;
-          
-          // Ignore DELETE events (disconnection)
-          if (payload.eventType === 'DELETE') {
-            console.log('⏭️ [AutoSync] Ignoring DELETE event (store disconnection)');
-            return;
-          }
-          
-          console.log('🆕 [AutoSync] Shopify connection event:', payload.eventType, payload.new);
-          
+          if (!isMounted || payload.eventType === 'DELETE') return;
+
           const connection = payload.new as any;
-          
-          // Safety check: ensure we have valid connection data
-          if (!connection || !connection.store_name) {
-            console.log('⏭️ [AutoSync] Invalid connection data, skipping');
-            return;
-          }
-          
-          // 🔥 FIX: Ignore events if store is being disconnected (is_active = false)
-          if (connection.is_active === false) {
-            console.log('⏭️ [AutoSync] Store is being disconnected (is_active=false), skipping');
-            return;
-          }
-          
-          // 🔥 FIX: Wait 500ms and verify connection still exists (prevents false triggers during deletion)
+          if (!connection?.store_name || connection.is_active === false) return;
+
           await new Promise(resolve => setTimeout(resolve, 500));
+          if (!isMounted) return;
+
           const { data: stillExists } = await supabase
             .from('shopify_connections')
             .select('id')
             .eq('id', connection.id)
             .maybeSingle();
-          
-          if (!stillExists) {
-            console.log('⏭️ [AutoSync] Connection deleted during check, skipping');
-            return;
-          }
-          
-          // Debounce: prevent multiple triggers within 8 seconds
+
+          if (!stillExists) return;
+
           const now = Date.now();
-          if (now - lastConnectionEventRef.current < 8000) {
-            console.log('⏸️ [AutoSync] Debouncing connection event - too soon after last event');
-            return;
-          }
-          
-          // Ne déclencher que si c'est une vraie nouvelle connexion (INSERT) 
-          // ou un UPDATE qui vient juste d'être connecté (OAuth flow)
-          // ou un UPDATE avec last_sync_at null (API keys first connection)
+          if (now - lastConnectionEventRef.current < 8000) return;
+
           const isNewConnection = payload.eventType === 'INSERT';
-          const isJustConnected = payload.eventType === 'UPDATE' && 
-                                 connection.connected_at && 
-                                 new Date(connection.connected_at).getTime() > Date.now() - 5000;
-          const isApiKeysFirstSync = payload.eventType === 'UPDATE' && 
-                                    connection.connection_type === 'api_keys' &&
-                                    !connection.last_sync_at;
-          
-          if (!isNewConnection && !isJustConnected && !isApiKeysFirstSync) {
-            console.log('⏭️ [AutoSync] Skipping - not a new connection');
-            return;
-          }
+          const isJustConnected =
+            payload.eventType === 'UPDATE' &&
+            connection.connected_at &&
+            new Date(connection.connected_at).getTime() > Date.now() - 5000;
+          const isApiKeysFirstSync =
+            payload.eventType === 'UPDATE' &&
+            connection.connection_type === 'api_keys' &&
+            !connection.last_sync_at;
 
-          // Mark this event as processed
+          if (!isNewConnection && !isJustConnected && !isApiKeysFirstSync) return;
+
           lastConnectionEventRef.current = now;
-
-          // ✅ Pour TOUTES les connexions (OAuth ET Admin API), 
-          // montrer le dialog et surveiller sync_history
-          console.log('✅ [AutoSync] New connection detected, showing sync dialog');
-          
+          currentSyncIdRef.current = null;
           const storeName = connection.store_name || connection.store_url;
-          
+
           const isExcludedPage =
             location.pathname.startsWith('/onboarding') ||
             location.pathname === '/auth' ||
@@ -296,84 +211,48 @@ export const useAutoSync = (userId: string | undefined) => {
             location.pathname.startsWith('/shopify/');
 
           if (isExcludedPage) {
-            console.log('⏭️ [AutoSync] On excluded page, storing sync for dashboard display');
             sessionStorage.setItem('pending_sync', storeName);
             return;
           }
-          
-          // Si on est déjà sur dashboard, afficher immédiatement et surveiller l'état
-          console.log('✅ [AutoSync] Showing sync dialog and monitoring import');
-          startSync(storeName);
-          
-          // Check immediately then every 2 seconds
-          checkSyncStatus();
-          syncCheckIntervalRef.current = setInterval(checkSyncStatus, 2000);
-          
-          // Global stuck timeout: force close after 2 minutes if dialog is stuck
-          stuckTimeoutId = setTimeout(() => {
-            if (isMounted) {
-              console.warn('⚠️ [AutoSync] Dialog stuck for 2 minutes, forcing close');
-              endSync();
-              if (syncCheckIntervalRef.current) {
-                clearInterval(syncCheckIntervalRef.current);
-                syncCheckIntervalRef.current = null;
-              }
-            }
-          }, STUCK_TIMEOUT_MS);
-          
-          // Failsafe: close dialog after 10 minutes for large imports
-          failsafeTimeoutId = setTimeout(() => {
-            if (syncCheckIntervalRef.current) {
-              clearInterval(syncCheckIntervalRef.current);
-              syncCheckIntervalRef.current = null;
-            }
-            if (isMounted) {
-              endSync();
-            }
-          }, FAILSAFE_MS);
-        }
+
+          beginMonitoring(storeName);
+        },
       )
-      .subscribe((status) => {
-        if (isMounted) {
-          console.log('🔴 [AutoSync] Subscription status:', status);
-        }
-      });
+      .subscribe();
 
     return () => {
       isMounted = false;
-      console.log('⏹️ [AutoSync] Unsubscribing from connection changes');
+      clearMonitoring();
+      currentSyncIdRef.current = null;
       try {
         supabase.removeChannel(channel);
-      } catch (e) {
-        // Ignore cleanup errors during rapid navigation
-        console.warn('[AutoSync] Cleanup warning:', e);
-      }
-      if (syncCheckIntervalRef.current) {
-        clearInterval(syncCheckIntervalRef.current);
-        syncCheckIntervalRef.current = null;
-      }
-      if (stuckTimeoutId) {
-        clearTimeout(stuckTimeoutId);
+      } catch (error) {
+        console.warn('[AutoSync] Cleanup warning:', error);
       }
     };
-  }, [userId, startSync, endSync, location.pathname]);
+  }, [
+    userId,
+    startSync,
+    completeSync,
+    endSync,
+    updateProgress,
+    location.pathname,
+    location.search,
+    t,
+    tf,
+  ]);
 
-  // Reset sync state when navigating to auth / Shopify related pages
   useEffect(() => {
     const isExcludedPage =
       location.pathname === '/auth' ||
       location.pathname === '/reset-password' ||
       location.pathname.startsWith('/shopify/');
 
-    if (isExcludedPage) {
-      endSync();
-    }
+    if (isExcludedPage) endSync();
   }, [location.pathname, endSync]);
 
-  // Cleanup intervals when sync ends manually (via endSync)
   useEffect(() => {
     if (!isSyncing && syncCheckIntervalRef.current) {
-      console.log('🧹 [AutoSync] Cleaning up interval - sync ended manually');
       clearInterval(syncCheckIntervalRef.current);
       syncCheckIntervalRef.current = null;
       currentSyncIdRef.current = null;

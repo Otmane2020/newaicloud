@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { X } from "lucide-react";
+import { CalendarCheck2, Loader2, Send } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 
 interface DemoBookingDialogProps {
@@ -14,47 +14,50 @@ interface DemoBookingDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+type FormData = {
+  businessEmail: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+};
+
+const emptyForm: FormData = {
+  businessEmail: "",
+  firstName: "",
+  lastName: "",
+  role: "",
+};
+
 export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps) {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    businessEmail: "",
-    firstName: "",
-    lastName: "",
-    role: "",
-  });
-  const [errors, setErrors] = useState({
-    businessEmail: "",
-    firstName: "",
-    lastName: "",
-    role: "",
-  });
+  const [formData, setFormData] = useState<FormData>(emptyForm);
+  const [errors, setErrors] = useState<FormData>(emptyForm);
   const { toast } = useToast();
 
-  const validateForm = () => {
-    const newErrors = {
-      businessEmail: "",
-      firstName: "",
-      lastName: "",
-      role: "",
-    };
-    let isValid = true;
+  const updateField = (field: keyof FormData, value: string) => {
+    setFormData(current => ({ ...current, [field]: value }));
+    setErrors(current => ({ ...current, [field]: "" }));
+  };
 
-    if (!formData.businessEmail || !formData.businessEmail.includes('@')) {
+  const validateForm = () => {
+    const newErrors: FormData = { ...emptyForm };
+    let isValid = true;
+    const email = formData.businessEmail.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
       newErrors.businessEmail = t.dialogs.demoBooking.errors.invalidEmail;
       isValid = false;
     }
-
     if (!formData.firstName.trim()) {
       newErrors.firstName = t.dialogs.demoBooking.errors.firstNameRequired;
       isValid = false;
     }
-
     if (!formData.lastName.trim()) {
       newErrors.lastName = t.dialogs.demoBooking.errors.lastNameRequired;
       isValid = false;
     }
-
     if (!formData.role) {
       newErrors.role = t.dialogs.demoBooking.errors.roleRequired;
       isValid = false;
@@ -64,17 +67,14 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
     return isValid;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!validateForm() || isLoading) return;
 
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.functions.invoke('send-demo-booking', {
+      const { data, error } = await supabase.functions.invoke('send-demo-booking', {
         body: {
           businessEmail: formData.businessEmail.trim(),
           firstName: formData.firstName.trim(),
@@ -84,27 +84,19 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
       });
 
       if (error) throw error;
+      if (!data?.success || !data?.emailId) {
+        throw new Error(data?.error || 'The demo request was not accepted by the email provider.');
+      }
 
       toast({
         title: t.dialogs.demoBooking.success,
-        description: t.dialogs.demoBooking.successDesc + formData.businessEmail,
+        description: t.dialogs.demoBooking.successDesc + formData.businessEmail.trim(),
       });
 
-      // Reset form
-      setFormData({
-        businessEmail: "",
-        firstName: "",
-        lastName: "",
-        role: "",
-      });
-      setErrors({
-        businessEmail: "",
-        firstName: "",
-        lastName: "",
-        role: "",
-      });
+      setFormData(emptyForm);
+      setErrors(emptyForm);
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error sending demo booking:', error);
       toast({
         title: t.toasts.error.generic,
@@ -118,93 +110,86 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[540px] bg-white dark:bg-gray-900 p-8">
-        <button
-          onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-        >
-          <X className="h-6 w-6 text-muted-foreground" />
-          <span className="sr-only">Close</span>
-        </button>
-
-        <DialogHeader className="space-y-3">
-          <DialogTitle className="text-3xl font-bold text-center text-foreground">
-            {t.dialogs.demoBooking.title}
-          </DialogTitle>
-          <p className="text-center text-lg text-muted-foreground">
-            {t.dialogs.demoBooking.description}
-          </p>
+      <DialogContent className="sm:max-w-[560px]">
+        <DialogHeader>
+          <div className="mb-2 flex items-center gap-3">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10">
+              <CalendarCheck2 className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <DialogTitle className="text-2xl">{t.dialogs.demoBooking.title}</DialogTitle>
+              <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">NewAI · Product demo</p>
+            </div>
+          </div>
+          <DialogDescription>{t.dialogs.demoBooking.description}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+        <form onSubmit={handleSubmit} className="space-y-5 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="businessEmail" className="text-sm font-medium">
-              {t.dialogs.demoBooking.businessEmail} <span className="text-red-500">{t.dialogs.demoBooking.required}</span>
+            <Label htmlFor="businessEmail">
+              {t.dialogs.demoBooking.businessEmail} <span className="text-destructive">{t.dialogs.demoBooking.required}</span>
             </Label>
             <Input
               id="businessEmail"
               type="email"
+              autoComplete="email"
               placeholder={t.dialogs.demoBooking.businessEmailPlaceholder}
               value={formData.businessEmail}
-              onChange={(e) => setFormData({ ...formData, businessEmail: e.target.value })}
-              className="h-12"
+              onChange={(event) => updateField('businessEmail', event.target.value)}
+              className="h-11 rounded-xl"
+              aria-invalid={Boolean(errors.businessEmail)}
               required
             />
-            {errors.businessEmail && (
-              <p className="text-sm text-red-500">{errors.businessEmail}</p>
-            )}
+            {errors.businessEmail && <p className="text-sm text-destructive">{errors.businessEmail}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="firstName" className="text-sm font-medium">
-                {t.dialogs.demoBooking.firstName} <span className="text-red-500">{t.dialogs.demoBooking.required}</span>
+              <Label htmlFor="firstName">
+                {t.dialogs.demoBooking.firstName} <span className="text-destructive">{t.dialogs.demoBooking.required}</span>
               </Label>
               <Input
                 id="firstName"
                 type="text"
+                autoComplete="given-name"
                 placeholder={t.dialogs.demoBooking.firstNamePlaceholder}
                 value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="h-12"
+                onChange={(event) => updateField('firstName', event.target.value)}
+                className="h-11 rounded-xl"
+                aria-invalid={Boolean(errors.firstName)}
                 required
               />
-              {errors.firstName && (
-                <p className="text-sm text-red-500">{errors.firstName}</p>
-              )}
+              {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="lastName" className="text-sm font-medium">
-                {t.dialogs.demoBooking.lastName} <span className="text-red-500">{t.dialogs.demoBooking.required}</span>
+              <Label htmlFor="lastName">
+                {t.dialogs.demoBooking.lastName} <span className="text-destructive">{t.dialogs.demoBooking.required}</span>
               </Label>
               <Input
                 id="lastName"
                 type="text"
+                autoComplete="family-name"
                 placeholder={t.dialogs.demoBooking.lastNamePlaceholder}
                 value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="h-12"
+                onChange={(event) => updateField('lastName', event.target.value)}
+                className="h-11 rounded-xl"
+                aria-invalid={Boolean(errors.lastName)}
                 required
               />
-              {errors.lastName && (
-                <p className="text-sm text-red-500">{errors.lastName}</p>
-              )}
+              {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role" className="text-sm font-medium">
-              {t.dialogs.demoBooking.roleBest} <span className="text-red-500">{t.dialogs.demoBooking.required}</span>
+            <Label htmlFor="role">
+              {t.dialogs.demoBooking.roleBest} <span className="text-destructive">{t.dialogs.demoBooking.required}</span>
             </Label>
-            <Select
-              value={formData.role}
-              onValueChange={(value) => setFormData({ ...formData, role: value })}
-            >
-              <SelectTrigger className="h-12">
+            <Select value={formData.role} onValueChange={(value) => updateField('role', value)}>
+              <SelectTrigger id="role" className="h-11 rounded-xl" aria-invalid={Boolean(errors.role)}>
                 <SelectValue placeholder={t.dialogs.demoBooking.selectPlaceholder} />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-gray-900 border shadow-lg z-50">
+              <SelectContent className="z-[60] border-border/70 bg-background/95 shadow-xl backdrop-blur-xl">
                 <SelectItem value="ecommerce-manager">{t.dialogs.demoBooking.roles.ecommerce_manager}</SelectItem>
                 <SelectItem value="marketing-director">{t.dialogs.demoBooking.roles.marketing_director}</SelectItem>
                 <SelectItem value="ceo-founder">{t.dialogs.demoBooking.roles.ceo_founder}</SelectItem>
@@ -213,16 +198,15 @@ export function DemoBookingDialog({ open, onOpenChange }: DemoBookingDialogProps
                 <SelectItem value="other">{t.dialogs.demoBooking.roles.other}</SelectItem>
               </SelectContent>
             </Select>
-            {errors.role && (
-              <p className="text-sm text-red-500">{errors.role}</p>
-            )}
+            {errors.role && <p className="text-sm text-destructive">{errors.role}</p>}
           </div>
 
-          <Button
-            type="submit"
-            className="w-full h-12 text-lg bg-cyan-500 hover:bg-cyan-600 text-white rounded-full"
-            disabled={isLoading}
-          >
+          <div className="rounded-2xl border border-border/60 bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
+            La demande n’est confirmée qu’après acceptation par le service d’envoi d’e-mail.
+          </div>
+
+          <Button type="submit" className="h-11 w-full rounded-xl" disabled={isLoading}>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
             {isLoading ? t.dialogs.demoBooking.submitting : t.dialogs.demoBooking.submit}
           </Button>
         </form>
