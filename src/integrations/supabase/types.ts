@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -1246,6 +1246,7 @@ export type Database = {
           content: string
           created_at: string
           featured_image: string | null
+          handle: string | null
           id: string
           keywords: string[] | null
           last_optimization_at: string | null
@@ -1272,6 +1273,7 @@ export type Database = {
           content: string
           created_at?: string
           featured_image?: string | null
+          handle?: string | null
           id?: string
           keywords?: string[] | null
           last_optimization_at?: string | null
@@ -1298,6 +1300,7 @@ export type Database = {
           content?: string
           created_at?: string
           featured_image?: string | null
+          handle?: string | null
           id?: string
           keywords?: string[] | null
           last_optimization_at?: string | null
@@ -5225,6 +5228,7 @@ export type Database = {
           image_alt: string | null
           image_url: string | null
           last_optimization_at: string | null
+          last_synced_at: string | null
           optimization_count: number | null
           products_count: number | null
           seo_description: string | null
@@ -5244,6 +5248,7 @@ export type Database = {
           image_alt?: string | null
           image_url?: string | null
           last_optimization_at?: string | null
+          last_synced_at?: string | null
           optimization_count?: number | null
           products_count?: number | null
           seo_description?: string | null
@@ -5263,6 +5268,7 @@ export type Database = {
           image_alt?: string | null
           image_url?: string | null
           last_optimization_at?: string | null
+          last_synced_at?: string | null
           optimization_count?: number | null
           products_count?: number | null
           seo_description?: string | null
