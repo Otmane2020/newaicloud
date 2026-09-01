@@ -66,17 +66,6 @@ export function CatalogOptimizeSidebar() {
   const { language } = useTranslation();
   const fr = language === "fr";
 
-  const productOptimization: NavItem = {
-    label: "Product Optimization",
-    href: "/content?tool=catalog",
-    icon: Wand2,
-    aliases: [
-      "/products/title-description",
-      "/products/title-description?view=content",
-      "/products/title-description?view=landing",
-    ],
-  };
-
   const sections: NavSection[] = useMemo(
     () => [
       {
@@ -84,6 +73,13 @@ export function CatalogOptimizeSidebar() {
         icon: Package,
         items: [
           { label: fr ? "Produits" : "Products", href: "/products", icon: Package },
+          {
+            label: fr ? "Titres & descriptions" : "Titles & Descriptions",
+            href: "/products/title-description?view=content",
+            icon: Wand2,
+            badge: "AI",
+            aliases: ["/content?tool=catalog"],
+          },
           { label: "Collections", href: "/collections", icon: Layers3 },
           {
             label: "Smart Pricing",
@@ -279,15 +275,6 @@ export function CatalogOptimizeSidebar() {
                   <NavLink to="/dashboard" onClick={closeMobile}>
                     <LayoutDashboard className="h-4 w-4" />
                     <span>{fr ? "Tableau de bord" : "Dashboard"}</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={active(productOptimization)}>
-                  <NavLink to={productOptimization.href} onClick={closeMobile}>
-                    <Wand2 className="h-4 w-4" />
-                    <span>Product Optimization</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
