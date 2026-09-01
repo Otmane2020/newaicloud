@@ -85,7 +85,6 @@ export function CatalogOptimizeSidebar() {
           icon: Newspaper,
           aliases: ["/blog-monitoring"],
         },
-        { label: fr ? "Nouvel article" : "New article", href: "/blog/management?new=1", icon: Newspaper },
         {
           label: fr ? "Collections & pages" : "Collections & pages",
           href: "/seo?tab=collections",
@@ -95,6 +94,7 @@ export function CatalogOptimizeSidebar() {
         { label: "Tags", href: "/seo?tab=tags", icon: Tags },
         { label: fr ? "ALT Images" : "Image ALT", href: "/seo?tab=alt", icon: Images },
         { label: fr ? "SEO accueil" : "Homepage SEO", href: "/seo?tab=homepage", icon: Home },
+        { label: fr ? "Nouvel article" : "New article", href: "/blog/management?new=1", icon: Newspaper },
       ],
     },
     {
