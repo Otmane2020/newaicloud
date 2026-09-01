@@ -86,6 +86,12 @@ export function CreditWallet({ userId }: { userId: string }) {
   }, [loadBalance, loadPackages]);
 
   useEffect(() => {
+    if (balance <= 0) {
+      setOpen(true);
+    }
+  }, [balance]);
+
+  useEffect(() => {
     if (open) loadTransactions();
   }, [open, loadTransactions]);
 
