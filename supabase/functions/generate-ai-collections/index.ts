@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,65 +55,6 @@ function cleanAIJson(raw: string): SuggestionsPayload {
         product_ids: Array.isArray(item.product_ids) ? item.product_ids.map(String) : [],
       })),
   };
-}
-
-async function callDeepSeek(apiKey: string, systemPrompt: string, userPrompt: string): Promise<string> {
-  const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "deepseek-chat",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.2,
-      max_tokens: 8000,
-      response_format: { type: "json_object" },
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`DeepSeek ${response.status}: ${detail.slice(0, 500)}`);
-  }
-
-  const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error("DeepSeek returned an empty response");
-  return content;
-}
-
-async function callLovable(apiKey: string, systemPrompt: string, userPrompt: string): Promise<string> {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.2,
-      max_tokens: 8000,
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Lovable AI ${response.status}: ${detail.slice(0, 500)}`);
-  }
-
-  const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error("Lovable AI returned an empty response");
-  return content;
 }
 
 function buildLocalFallback(products: Product[], language: string): SuggestionsPayload {
@@ -225,41 +167,35 @@ serve(async (req) => {
     const minCollections = Math.max(3, estimatedCollections - 2);
     const maxCollections = estimatedCollections + 2;
     const systemPrompt = language === "fr"
-      ? `Tu es un expert e-commerce et merchandising. Regroupe les produits en collections commerciales cohérentes.\nRÈGLES:\n- Crée entre ${minCollections} et ${maxCollections} collections quand le catalogue le permet.\n- Tous les produits doivent être assignés à au moins une collection.\n- Maximum 150 produits par collection.\n- Nom court, commercial, maximum 30 caractères.\n- Description SEO: une phrase, maximum 150 caractères.\n- Utilise exactement les IDs fournis.\n- Réponds uniquement avec un objet JSON: {"collections":[{"name":"Nom","description":"Description","product_ids":["id"]}]}`
-      : `You are an e-commerce merchandising expert. Group products into coherent commercial collections.\nRULES:\n- Create between ${minCollections} and ${maxCollections} collections when the catalog allows it.\n- Every product must belong to at least one collection.\n- Maximum 150 products per collection.\n- Short commercial name, maximum 30 characters.\n- SEO description: one sentence, maximum 150 characters.\n- Use the supplied product IDs exactly.\n- Return only a JSON object: {"collections":[{"name":"Name","description":"Description","product_ids":["id"]}]}`;
+      ? `Tu es un expert e-commerce et merchandising. Regroupe les produits en collections commerciales cohérentes.\nRÈGLES:\n- Crée entre ${minCollections} et ${maxCollections} collections quand le catalogue le permet.\n- Tous les produits doivent être assignés à au moins une collection.\n- Maximum 150 produits par collection.\n- Nom court, commercial, maximum 30 caractères.\n- Description SEO: une phrase, maximum 150 caractères.\n- Utilise exactement les IDs fournis.\n- Réponds uniquement avec un objet JSON valide: {"collections":[{"name":"Nom","description":"Description","product_ids":["id"]}]}`
+      : `You are an e-commerce merchandising expert. Group products into coherent commercial collections.\nRULES:\n- Create between ${minCollections} and ${maxCollections} collections when the catalog allows it.\n- Every product must belong to at least one collection.\n- Maximum 150 products per collection.\n- Short commercial name, maximum 30 characters.\n- SEO description: one sentence, maximum 150 characters.\n- Use the supplied product IDs exactly.\n- Return only a valid JSON object: {"collections":[{"name":"Name","description":"Description","product_ids":["id"]}]}`;
 
     const userPrompt = language === "fr"
       ? `Analyse ces ${products.length} produits et crée les collections:\n${productDataForAI}`
       : `Analyze these ${products.length} products and create the collections:\n${productDataForAI}`;
 
-    const deepseekKey = Deno.env.get("DEEPSEEK_API_KEY");
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
     const providerErrors: string[] = [];
     let suggestions: SuggestionsPayload | null = null;
     let provider = "local-fallback";
+    let aiModel: string | undefined;
 
-    if (deepseekKey) {
-      try {
-        console.log("[generate-ai-collections] Trying DeepSeek");
-        suggestions = cleanAIJson(await callDeepSeek(deepseekKey, systemPrompt, userPrompt));
-        provider = "deepseek";
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        providerErrors.push(message);
-        console.error("[generate-ai-collections] DeepSeek failed, trying fallback", message);
-      }
-    }
-
-    if (!suggestions && lovableKey) {
-      try {
-        console.log("[generate-ai-collections] Trying Lovable AI fallback");
-        suggestions = cleanAIJson(await callLovable(lovableKey, systemPrompt, userPrompt));
-        provider = "lovable-gemini";
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        providerErrors.push(message);
-        console.error("[generate-ai-collections] Lovable AI failed, using local fallback", message);
-      }
+    try {
+      console.log("[generate-ai-collections] Routing with OpenAI -> Gemini -> Kimi -> DeepSeek -> OpenRouter");
+      const aiResult = await routeAI({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.2,
+        maxTokens: 8000,
+      });
+      suggestions = cleanAIJson(aiResult.content);
+      provider = aiResult.provider;
+      aiModel = aiResult.model;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      providerErrors.push(message);
+      console.error("[generate-ai-collections] All AI providers failed, using local fallback", message);
     }
 
     if (!suggestions?.collections?.length) {
@@ -367,7 +303,8 @@ serve(async (req) => {
       success: true,
       collections: createdCollections,
       provider,
-      fallbackUsed: provider !== "deepseek",
+      aiModel,
+      fallbackUsed: provider !== "openai",
       providerErrors: providerErrors.length ? providerErrors : undefined,
       message: language === "fr"
         ? `${createdCollections.length} collections créées avec succès`
