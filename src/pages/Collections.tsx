@@ -601,22 +601,22 @@ export default function Collections() {
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="p-5">
+        <Card className="border-violet-200/70 bg-violet-50/40 p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-primary/10 p-3"><Package className="h-5 w-5 text-primary" /></div>
-            <div><p className="text-2xl font-bold">{totalCount}</p><p className="text-sm text-muted-foreground">Collections</p></div>
+            <div className="rounded-xl bg-violet-100 p-3"><Package className="h-5 w-5 text-violet-600" /></div>
+            <div><p className="text-2xl font-bold text-violet-700">{totalCount}</p><p className="text-sm text-muted-foreground">Collections</p></div>
           </div>
         </Card>
-        <Card className="p-5">
+        <Card className="border-sky-200/70 bg-sky-50/40 p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-muted p-3"><ImageIcon className="h-5 w-5" /></div>
-            <div><p className="text-2xl font-bold">{collections.reduce((sum, item) => sum + (item.image_count || 0), 0)}</p><p className="text-sm text-muted-foreground">{language === "fr" ? "Images sur cette page" : "Images on this page"}</p></div>
+            <div className="rounded-xl bg-sky-100 p-3"><ImageIcon className="h-5 w-5 text-sky-600" /></div>
+            <div><p className="text-2xl font-bold text-sky-700">{collections.reduce((sum, item) => sum + (item.image_count || 0), 0)}</p><p className="text-sm text-muted-foreground">{language === "fr" ? "Images sur cette page" : "Images on this page"}</p></div>
           </div>
         </Card>
-        <Card className="p-5">
+        <Card className="border-emerald-200/70 bg-emerald-50/40 p-5">
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-muted p-3"><FileText className="h-5 w-5" /></div>
-            <div><p className="text-2xl font-bold">{collections.filter((item) => item.seo_title && item.seo_description).length}</p><p className="text-sm text-muted-foreground">SEO complet</p></div>
+            <div className="rounded-xl bg-emerald-100 p-3"><FileText className="h-5 w-5 text-emerald-600" /></div>
+            <div><p className="text-2xl font-bold text-emerald-700">{collections.filter((item) => item.seo_title && item.seo_description).length}</p><p className="text-sm text-muted-foreground">SEO complet</p></div>
           </div>
         </Card>
       </div>
