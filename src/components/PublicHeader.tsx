@@ -27,17 +27,15 @@ export const PublicHeader = () => {
     <header className="sticky top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Official CatalogueOptimize AI brand */}
           <button
             type="button"
             className="min-w-0 cursor-pointer text-left"
             onClick={() => navigate("/")}
-            aria-label="CatalogOptimize AI home"
+            aria-label="CatalogueOptimize AI home"
           >
-            <CatalogOptimizeLogo className="origin-left scale-[0.9] sm:scale-100" />
+            <CatalogOptimizeLogo size="sm" />
           </button>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-7">
             <button
               onClick={() => scrollToSection("hero")}
@@ -71,7 +69,6 @@ export const PublicHeader = () => {
             </button>
           </nav>
 
-          {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
             <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => window.open('https://cal.com/new-ai-isgo1m/30min?overlayCalendar=true', '_blank')}>
               <Play className="w-4 h-4 mr-1" />
@@ -84,7 +81,6 @@ export const PublicHeader = () => {
             <Button onClick={() => navigate("/auth?mode=signup")}>{t.landing.header.signup}</Button>
           </div>
 
-          {/* Mobile Menu Button */}
           <button className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             {isMobileMenuOpen ? (
               <X className="w-6 h-6 text-foreground" />
@@ -94,7 +90,6 @@ export const PublicHeader = () => {
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden py-4 border-t bg-background/95 backdrop-blur-md">
             <nav className="flex flex-col gap-4">
