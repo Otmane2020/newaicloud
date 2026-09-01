@@ -85,20 +85,35 @@ export function CreditWallet({ userId }: { userId: string }) {
     loadPackages();
   }, [loadBalance, loadPackages]);
 
+  // Keep the small header counter fresh after AI actions without requiring a
+  // page reload or depending on Realtime being enabled for profiles.
   useEffect(() => {
-    if (open) loadTransactions();
-  }, [open, loadTransactions]);
+    const interval = window.setInterval(() => void loadBalance(), 15000);
+    return () => window.clearInterval(interval);
+  }, [loadBalance]);
+
+  useEffect(() => {
+    if (open) {
+      loadBalance();
+      loadTransactions();
+    }
+  }, [open, loadBalance, loadTransactions]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const status = params.get("credit_payment");
     const sessionId = params.get("session_id");
 
-    if (status === "cancelled") {
-      toast.info(isFr ? "Recharge annulée. Aucun crédit débité." : "Top-up cancelled. No credits were charged.");
+    const cleanPaymentParams = () => {
       params.delete("credit_payment");
       params.delete("session_id");
-      window.history.replaceState({}, "", `${window.location.pathname}${params.size ? `?${params}` : ""}${window.location.hash}`);
+      const query = params.toString();
+      window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+    };
+
+    if (status === "cancelled") {
+      toast.info(isFr ? "Recharge annulée. Aucun crédit débité." : "Top-up cancelled. No credits were charged.");
+      cleanPaymentParams();
       return;
     }
 
@@ -126,14 +141,12 @@ export function CreditWallet({ userId }: { userId: string }) {
         console.error("Credit checkout verification failed", error);
         await loadBalance();
       } finally {
-        params.delete("credit_payment");
-        params.delete("session_id");
-        window.history.replaceState({}, "", `${window.location.pathname}${params.size ? `?${params}` : ""}${window.location.hash}`);
+        cleanPaymentParams();
         setVerifying(false);
       }
     };
 
-    verify();
+    void verify();
   }, [isFr, loadBalance, verifying]);
 
   const level = useMemo(() => {
@@ -186,6 +199,13 @@ export function CreditWallet({ userId }: { userId: string }) {
       currency: (pack.currency || "eur").toUpperCase(),
     }).format(pack.amount_cents / 100);
 
+  const costGuide = [
+    { cost: 1, fr: "Texte & SEO", en: "Text & SEO", noteFr: "titres, captions, optimisations simples", noteEn: "titles, captions, simple optimizations" },
+    { cost: 2, fr: "Contenu avancé", en: "Advanced content", noteFr: "articles courts, scripts et rédaction avancée", noteEn: "short articles, scripts and advanced writing" },
+    { cost: 4, fr: "Image IA", en: "AI image", noteFr: "génération ou création visuelle", noteEn: "image generation or visual creation" },
+    { cost: 8, fr: "Vidéo IA", en: "AI video", noteFr: "rendu vidéo quand disponible", noteEn: "video rendering when available" },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -227,6 +247,31 @@ export function CreditWallet({ userId }: { userId: string }) {
               </p>
             </div>
           </div>
+        </div>
+
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-slate-900">{isFr ? "Bien utiliser vos crédits" : "Spend credits wisely"}</p>
+            <span className="text-[11px] text-slate-500">{isFr ? "Coût par action" : "Cost per action"}</span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {costGuide.map((item) => (
+              <div key={item.cost} className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{isFr ? item.fr : item.en}</p>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">{isFr ? item.noteFr : item.noteEn}</p>
+                </div>
+                <Badge variant="outline" className="shrink-0 border-violet-200 text-violet-700">
+                  {item.cost} {item.cost === 1 ? (isFr ? "crédit" : "credit") : (isFr ? "crédits" : "credits")}
+                </Badge>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-slate-500">
+            {isFr
+              ? "Conseil : commencez par les actions à 1–2 crédits, puis utilisez les images/vidéos sur les produits qui ont le plus fort potentiel. Une génération échouée est remboursée automatiquement."
+              : "Tip: start with 1–2 credit actions, then use images/videos on your highest-potential products. Failed generations are refunded automatically."}
+          </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
@@ -285,7 +330,11 @@ export function CreditWallet({ userId }: { userId: string }) {
                     <p className="font-medium text-slate-800">
                       {transaction.type === "stripe_topup"
                         ? (isFr ? "Recharge Stripe" : "Stripe top-up")
-                        : transaction.type}
+                        : transaction.type === "ai_refund"
+                          ? (isFr ? "Remboursement IA" : "AI refund")
+                          : transaction.type.startsWith("ai_")
+                            ? (isFr ? "Action IA" : "AI action")
+                            : transaction.type}
                     </p>
                     <p className="text-slate-500">{new Date(transaction.created_at).toLocaleDateString(isFr ? "fr-FR" : "en-US")}</p>
                   </div>
