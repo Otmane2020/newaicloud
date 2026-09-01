@@ -2,93 +2,36 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ============= UTILITY FUNCTIONS =============
+const MAX_PRODUCTS_PER_REQUEST = 5;
+const DEFAULT_MARKET = "fr";
 
-// Generate unique request ID for tracing
-function generateRequestId(): string {
-  return `REQ-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase();
-}
+type MarketConfig = {
+  code: string;
+  location: string;
+  gl: string;
+  hl: string;
+  languageCode: string;
+  currency: string;
+};
 
-// Global timeout wrapper for API calls
-const DEFAULT_TIMEOUT_MS = 15000;
+type PriceSource = "serpapi_shopping" | "dataforseo_shopping" | "dataforseo_serp";
 
-async function withTimeout<T>(promise: Promise<T>, ms: number = DEFAULT_TIMEOUT_MS, operation: string = 'operation'): Promise<T> {
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error(`Timeout: ${operation} exceeded ${ms}ms`)), ms)
-  );
-  return Promise.race([promise, timeout]);
-}
+type MarketPrice = {
+  url: string;
+  title: string;
+  price: number;
+  currency: string;
+  imageUrl?: string;
+  seller?: string;
+  source: PriceSource;
+  similarity?: number;
+};
 
-// Sanitize competitor URLs (remove tracking params)
-function sanitizeUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref', 'aff_id', 'gclid', 'fbclid', 'tag', 'source', 'clickid'];
-    trackingParams.forEach(param => parsed.searchParams.delete(param));
-    return parsed.toString();
-  } catch {
-    return url;
-  }
-}
-
-// Fetch image as Data URI (robust version from smart-price-scanner)
-async function fetchImageAsDataUri(imageUrl: string): Promise<string | null> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-    const response = await fetch(imageUrl, {
-      signal: controller.signal,
-      headers: { 'Accept': 'image/*' }
-    });
-    clearTimeout(timeoutId);
-
-    if (!response.ok) return null;
-
-    const buffer = await response.arrayBuffer();
-    if (buffer.byteLength > 5 * 1024 * 1024) {
-      console.warn('⚠️ Image too large (>5MB)');
-      return null;
-    }
-
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-    const mimeType = response.headers.get('content-type') || 'image/jpeg';
-    return `data:${mimeType};base64,${base64}`;
-  } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.warn(`⚠️ Failed to fetch image: ${errorMsg}`);
-    return null;
-  }
-}
-
-// Calculate confidence score
-function calculateConfidenceScore(
-  shoppingCount: number,
-  imageCount: number,
-  serpCount: number,
-  avgSimilarity: number | null,
-  priceConsistency: number
-): { score: number; breakdown: Record<string, number> } {
-  const breakdown = {
-    shopping: Math.min(shoppingCount * 7, 35), // 35% max for Shopping sources
-    similarity: avgSimilarity ? Math.round(avgSimilarity * 25) : 0, // 25% for Vision similarity
-    serp: Math.min(serpCount * 3, 15), // 15% max for SERP
-    images: Math.min(imageCount * 4, 10), // 10% for image search
-    consistency: Math.round(priceConsistency * 15) // 15% for price consistency
-  };
-  
-  const score = Math.min(100, breakdown.shopping + breakdown.similarity + breakdown.serp + breakdown.images + breakdown.consistency);
-  
-  return { score, breakdown };
-}
-
-// ============= INTERFACES =============
-
-interface CompetitorPrice {
+type CompetitorPrice = {
   url: string;
   title: string;
   price: number;
@@ -96,1092 +39,571 @@ interface CompetitorPrice {
   similarity: number;
   imageUrl?: string;
   source: string;
+};
+
+type ProviderDiagnostics = {
+  provider: string;
+  ok: boolean;
+  count: number;
+  error?: string;
+};
+
+function generateRequestId(): string {
+  return `REQ-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`.toUpperCase();
 }
 
-interface PriceData {
-  price: number;
-  currency: string;
-  url: string;
-  title: string;
-  imageUrl?: string;
-  source?: 'serp' | 'image_search' | 'shopping';
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-interface ImagePriceRange {
-  minPrice: number | null;
-  maxPrice: number | null;
-  segment?: string;
+function getMarketConfig(code?: string): MarketConfig {
+  const market = (code || DEFAULT_MARKET).toLowerCase();
+  const configs: Record<string, MarketConfig> = {
+    fr: { code: "fr", location: "France", gl: "fr", hl: "fr", languageCode: "fr", currency: "EUR" },
+    be: { code: "be", location: "Belgium", gl: "be", hl: "fr", languageCode: "fr", currency: "EUR" },
+    de: { code: "de", location: "Germany", gl: "de", hl: "de", languageCode: "de", currency: "EUR" },
+    es: { code: "es", location: "Spain", gl: "es", hl: "es", languageCode: "es", currency: "EUR" },
+    it: { code: "it", location: "Italy", gl: "it", hl: "it", languageCode: "it", currency: "EUR" },
+    gb: { code: "gb", location: "United Kingdom", gl: "gb", hl: "en", languageCode: "en", currency: "GBP" },
+    us: { code: "us", location: "United States", gl: "us", hl: "en", languageCode: "en", currency: "USD" },
+  };
+  return configs[market] || configs.fr;
 }
 
-// ============= SEARCH FUNCTIONS =============
-
-async function generateSearchQueries(productTitle: string, requestId: string): Promise<string[]> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    console.warn(`[${requestId}] ⚠️ Lovable API key not configured`);
-    return [productTitle, `${productTitle} prix`, `acheter ${productTitle}`];
-  }
-
-  const prompt = `Génère 3 requêtes de recherche Google Shopping optimales pour trouver ce produit et ses prix:
-"${productTitle}"
-
-Réponds UNIQUEMENT avec un tableau JSON de 3 chaînes:
-["requête 1", "requête 2", "requête 3"]`;
-
+function sanitizeUrl(url: string): string {
+  if (!url) return "";
   try {
-    const startTime = Date.now();
-    const response = await withTimeout(
-      fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.5,
-          max_tokens: 150,
-        }),
-      }),
-      10000,
-      'generateSearchQueries'
-    );
+    const parsed = new URL(url);
+    ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid", "ref", "tag"].forEach((key) => {
+      parsed.searchParams.delete(key);
+    });
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
 
+function safeNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return null;
+  const raw = value.trim().replace(/\u00a0/g, " ").replace(/[^0-9.,\s-]/g, "");
+  if (!raw) return null;
+  let normalized = raw.replace(/\s/g, "");
+  const lastComma = normalized.lastIndexOf(",");
+  const lastDot = normalized.lastIndexOf(".");
+  if (lastComma >= 0 && lastDot >= 0) {
+    if (lastComma > lastDot) normalized = normalized.replace(/\./g, "").replace(",", ".");
+    else normalized = normalized.replace(/,/g, "");
+  } else if (lastComma >= 0) {
+    const decimals = normalized.length - lastComma - 1;
+    normalized = decimals > 0 && decimals <= 2 ? normalized.replace(",", ".") : normalized.replace(/,/g, "");
+  } else if (lastDot >= 0) {
+    const decimals = normalized.length - lastDot - 1;
+    if (decimals > 2) normalized = normalized.replace(/\./g, "");
+  }
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function extractPriceFromText(text: string): number | null {
+  if (!text) return null;
+  const matches = [
+    text.match(/([0-9][0-9\s.,]{0,12})\s*(?:€|EUR)\b/i),
+    text.match(/(?:€|EUR)\s*([0-9][0-9\s.,]{0,12})/i),
+    text.match(/([0-9][0-9\s.,]{0,12})\s*(?:£|GBP)\b/i),
+    text.match(/(?:£|GBP)\s*([0-9][0-9\s.,]{0,12})/i),
+    text.match(/(?:\$|USD)\s*([0-9][0-9\s.,]{0,12})/i),
+  ];
+  for (const match of matches) {
+    const price = safeNumber(match?.[1]);
+    if (price != null && price > 1) return price;
+  }
+  return null;
+}
+
+function normalizeText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function titleSimilarity(productTitle: string, competitorTitle: string): number {
+  const stop = new Set(["de", "du", "des", "la", "le", "les", "un", "une", "et", "avec", "pour", "the", "and", "with", "for"]);
+  const a = new Set(normalizeText(productTitle).split(" ").filter((token) => token.length > 2 && !stop.has(token)));
+  const b = new Set(normalizeText(competitorTitle).split(" ").filter((token) => token.length > 2 && !stop.has(token)));
+  if (!a.size || !b.size) return 0.5;
+  let overlap = 0;
+  a.forEach((token) => {
+    if (b.has(token)) overlap += 1;
+  });
+  return Math.min(1, overlap / Math.max(1, Math.min(a.size, b.size)));
+}
+
+async function fetchJson(url: string, init: RequestInit, timeoutMs = 18000): Promise<any> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal });
+    const text = await response.text();
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = { raw: text };
+    }
     if (!response.ok) {
-      console.warn(`[${requestId}] ⚠️ Lovable AI error: ${response.status}`);
-      return [productTitle, `${productTitle} prix`, `acheter ${productTitle}`];
+      const detail = data?.error || data?.message || data?.status_message || text.slice(0, 300);
+      throw new Error(`${response.status} ${detail || response.statusText}`);
     }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    
-    const jsonMatch = content?.match(/\[[\s\S]*?\]/);
-    if (jsonMatch) {
-      const queries = JSON.parse(jsonMatch[0]);
-      console.log(`[${requestId}] 📝 Generated queries in ${Date.now() - startTime}ms:`, queries);
-      return queries;
-    }
-    
-    return [productTitle, `${productTitle} prix`, `acheter ${productTitle}`];
-  } catch (error) {
-    console.error(`[${requestId}] Search query generation error:`, error);
-    return [productTitle, `${productTitle} prix`, `acheter ${productTitle}`];
+    return data;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-async function searchWithDataForSEOShopping(keyword: string, requestId: string): Promise<PriceData[]> {
-  const DATAFORSEO_LOGIN = Deno.env.get('DATAFORSEO_LOGIN');
-  const DATAFORSEO_PASSWORD = Deno.env.get('DATAFORSEO_PASSWORD');
-  
-  if (!DATAFORSEO_LOGIN || !DATAFORSEO_PASSWORD) {
-    throw new Error('DataForSEO non configuré');
-  }
-
-  console.log(`[${requestId}] 🛍️ DataForSEO Shopping: "${keyword}"`);
-  const startTime = Date.now();
-
-  const endpoint = 'https://api.dataforseo.com/v3/merchant/google/products/live/advanced';
-  
-  const payload = [{
-    keyword: keyword,
-    location_code: 2250,
-    language_code: "fr",
-    depth: 20,
-  }];
-
-  const response = await withTimeout(
-    fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Basic ' + btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    }),
-    20000,
-    'DataForSEO Shopping'
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[${requestId}] ❌ DataForSEO Shopping error: ${response.status} - ${errorText}`);
-    throw new Error(`DataForSEO Shopping error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  
-  if (data.tasks?.[0]?.status_code !== 20000) {
-    console.error(`[${requestId}] ❌ DataForSEO Shopping API error:`, data.tasks?.[0]?.status_message);
-    throw new Error(data.tasks?.[0]?.status_message || 'DataForSEO Shopping error');
-  }
-
-  const items = data.tasks[0].result[0].items || [];
-  console.log(`[${requestId}] 🛒 DataForSEO Shopping: ${items.length} products in ${Date.now() - startTime}ms`);
-
-  const priceData: PriceData[] = [];
-
+function dedupePrices(items: MarketPrice[]): MarketPrice[] {
+  const map = new Map<string, MarketPrice>();
   for (const item of items) {
-    const price = item.price || item.price_value;
-    const currency = item.currency || 'EUR';
-    
-    if (price && item.url) {
-      priceData.push({
-        price: parseFloat(price),
-        currency: currency,
-        url: sanitizeUrl(item.url),
-        title: item.title || keyword,
-        imageUrl: item.thumbnail || item.image,
-        source: 'shopping'
-      });
-    }
+    if (!Number.isFinite(item.price) || item.price <= 1 || !item.title) continue;
+    const key = `${normalizeText(item.title)}|${normalizeText(item.seller || "")}|${item.price.toFixed(2)}`;
+    const existing = map.get(key);
+    if (!existing || (item.url && !existing.url)) map.set(key, item);
   }
-
-  console.log(`[${requestId}] ✅ Extracted ${priceData.length} prices from Shopping`);
-  return priceData;
+  return [...map.values()];
 }
 
-async function searchWithDataForSEO(keyword: string, requestId: string): Promise<PriceData[]> {
-  const DATAFORSEO_LOGIN = Deno.env.get('DATAFORSEO_LOGIN');
-  const DATAFORSEO_PASSWORD = Deno.env.get('DATAFORSEO_PASSWORD');
-  
-  if (!DATAFORSEO_LOGIN || !DATAFORSEO_PASSWORD) {
-    throw new Error('DataForSEO non configuré');
-  }
+async function searchSerpApiShopping(keyword: string, market: MarketConfig, requestId: string): Promise<MarketPrice[]> {
+  const apiKey = Deno.env.get("SERPAPI_API_KEY") || Deno.env.get("SERP_API_KEY");
+  if (!apiKey) throw new Error("SERPAPI_API_KEY non configurée");
 
-  console.log(`[${requestId}] 🔍 DataForSEO Organic: "${keyword}"`);
-  const startTime = Date.now();
-
-  const endpoint = 'https://api.dataforseo.com/v3/serp/google/organic/live/advanced';
-  
-  const payload = [{
-    keyword: keyword,
-    language_code: "fr",
-    location_code: 2250,
-    depth: 30,
-  }];
-
-  const response = await withTimeout(
-    fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Basic ' + btoa(`${DATAFORSEO_LOGIN}:${DATAFORSEO_PASSWORD}`),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    }),
-    20000,
-    'DataForSEO Organic'
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[${requestId}] ❌ DataForSEO error: ${response.status} - ${errorText}`);
-    throw new Error(`DataForSEO error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  
-  if (data.tasks?.[0]?.status_code !== 20000) {
-    console.error(`[${requestId}] ❌ DataForSEO API error:`, data.tasks?.[0]?.status_message);
-    throw new Error(data.tasks?.[0]?.status_message || 'DataForSEO error');
-  }
-
-  const items = data.tasks[0].result[0].items || [];
-  console.log(`[${requestId}] 📦 DataForSEO Organic: ${items.length} results in ${Date.now() - startTime}ms`);
-
-  const priceData: PriceData[] = [];
-
-  for (const item of items) {
-    const text = `${item.title || ''} ${item.description || ''}`;
-    const priceMatch = text.match(/(\d+[,\s]*\d*)\s*€|€\s*(\d+[,\s]*\d*)/);
-    
-    if (priceMatch) {
-      const priceStr = (priceMatch[1] || priceMatch[2]).replace(/[\s,]/g, '.');
-      const price = parseFloat(priceStr);
-      
-      if (!isNaN(price) && price > 1) {
-        priceData.push({
-          price,
-          currency: 'EUR',
-          url: sanitizeUrl(item.url || ''),
-          title: item.title || '',
-          imageUrl: item.images?.[0]?.url
-        });
-      }
-    }
-  }
-
-  console.log(`[${requestId}] ✅ Extracted ${priceData.length} prices from SERP`);
-  return priceData;
-}
-
-async function searchWithGoogleImages(
-  imageUrl: string,
-  productTitle: string,
-  requestId: string
-): Promise<PriceData[]> {
-  const GOOGLE_API_KEY = Deno.env.get('GOOGLE_CSE_API_KEY');
-  const SEARCH_ENGINE_ID = Deno.env.get('GOOGLE_CSE_ID');
-  
-  if (!GOOGLE_API_KEY || !SEARCH_ENGINE_ID) {
-    console.warn(`[${requestId}] ⚠️ Google Custom Search API not configured`);
-    return [];
-  }
-
-  console.log(`[${requestId}] 🖼️ Google Image Search: "${productTitle}"`);
-  const startTime = Date.now();
-  
-  const endpoint = `https://www.googleapis.com/customsearch/v1`;
   const params = new URLSearchParams({
-    key: GOOGLE_API_KEY,
-    cx: SEARCH_ENGINE_ID,
-    q: productTitle,
-    searchType: 'image',
-    imgSize: 'large',
-    num: '10',
-    safe: 'active'
+    engine: "google_shopping",
+    q: keyword,
+    api_key: apiKey,
+    gl: market.gl,
+    hl: market.hl,
+    location: market.location,
   });
 
-  try {
-    const response = await withTimeout(
-      fetch(`${endpoint}?${params}`),
-      15000,
-      'Google Images'
-    );
-    
-    if (!response.ok) {
-      console.error(`[${requestId}] ❌ Google API error: ${response.status}`);
-      return [];
-    }
+  console.log(`[${requestId}] SerpAPI Google Shopping: ${keyword}`);
+  const data = await fetchJson(`https://serpapi.com/search.json?${params.toString()}`, { method: "GET" }, 20000);
+  if (data?.error) throw new Error(String(data.error));
 
-    const data = await response.json();
-    const items = data.items || [];
-    
-    console.log(`[${requestId}] 📸 Google Images: ${items.length} matches in ${Date.now() - startTime}ms`);
-    
-    const priceData: PriceData[] = [];
-    
-    for (const item of items) {
-      const pageUrl = item.image?.contextLink || item.link;
-      const imgUrl = item.link;
-      const snippet = item.snippet || '';
-      
-      const priceMatch = snippet.match(/(\d+[.,]\d{2})\s*€|€\s*(\d+[.,]\d{2})/);
-      
-      if (priceMatch && pageUrl) {
-        const priceStr = (priceMatch[1] || priceMatch[2]).replace(/,/g, '.');
-        const price = parseFloat(priceStr);
-        
-        if (!isNaN(price) && price > 1) {
-          priceData.push({
-            price,
-            currency: 'EUR',
-            url: sanitizeUrl(pageUrl),
-            title: item.title || productTitle,
-            imageUrl: imgUrl,
-            source: 'image_search'
-          });
-        }
-      }
-    }
-    
-    console.log(`[${requestId}] ✅ Extracted ${priceData.length} prices from Images`);
-    return priceData;
-  } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[${requestId}] ❌ Google Image Search error: ${errorMsg}`);
-    return [];
-  }
+  const direct = Array.isArray(data?.shopping_results) ? data.shopping_results : [];
+  const categorized = Array.isArray(data?.categorized_shopping_results)
+    ? data.categorized_shopping_results.flatMap((group: any) => Array.isArray(group?.shopping_results) ? group.shopping_results : [])
+    : [];
+
+  return dedupePrices([...direct, ...categorized].map((item: any) => {
+    const price = safeNumber(item?.extracted_price ?? item?.price);
+    const title = String(item?.title || "").trim();
+    const fallbackUrl = title ? `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}` : "";
+    return {
+      title,
+      price: price || 0,
+      currency: market.currency,
+      url: sanitizeUrl(item?.link || item?.product_link || fallbackUrl),
+      imageUrl: item?.thumbnail || item?.thumbnails?.[0],
+      seller: item?.source || undefined,
+      source: "serpapi_shopping" as PriceSource,
+    };
+  }));
 }
 
-// ============= VISION ANALYSIS =============
-
-async function analyzeProductWithVision(
-  productImage: string,
-  competitorImages: string[],
-  requestId: string
-): Promise<{ similarities: number[] }> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    console.warn(`[${requestId}] ⚠️ Lovable API key not configured`);
-    return { similarities: [] };
+function collectDataForSeoShoppingItems(value: any, market: MarketConfig, output: MarketPrice[]) {
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    value.forEach((entry) => collectDataForSeoShoppingItems(entry, market, output));
+    return;
   }
 
-  console.log(`[${requestId}] 🖼️ Vision analysis: ${competitorImages.length} images`);
-  const startTime = Date.now();
-
-  const similarities: number[] = [];
-  const productDataUri = await fetchImageAsDataUri(productImage);
-  
-  if (!productDataUri) {
-    console.warn(`[${requestId}] ⚠️ Could not fetch product image`);
-    return { similarities: [] };
+  const title = typeof value.title === "string" ? value.title.trim() : "";
+  const price = safeNumber(value.price?.current ?? value.price);
+  if (title && price != null && price > 1) {
+    const seller = value.seller || value.domain || value.source || undefined;
+    const fallbackUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(title)}`;
+    output.push({
+      title,
+      price,
+      currency: value.currency || market.currency,
+      url: sanitizeUrl(value.shopping_url || value.url || fallbackUrl),
+      imageUrl: value.product_images?.[0] || value.thumbnail || value.image_url,
+      seller,
+      source: "dataforseo_shopping",
+    });
   }
 
-  for (const compImage of competitorImages.slice(0, 5)) {
+  if (Array.isArray(value.items)) collectDataForSeoShoppingItems(value.items, market, output);
+}
+
+async function searchDataForSeoShopping(keyword: string, market: MarketConfig, requestId: string): Promise<MarketPrice[]> {
+  const login = Deno.env.get("DATAFORSEO_LOGIN");
+  const password = Deno.env.get("DATAFORSEO_PASSWORD");
+  if (!login || !password) throw new Error("DataForSEO non configuré");
+
+  const auth = `Basic ${btoa(`${login}:${password}`)}`;
+  console.log(`[${requestId}] DataForSEO Google Shopping task: ${keyword}`);
+
+  const post = await fetchJson(
+    "https://api.dataforseo.com/v3/merchant/google/products/task_post",
+    {
+      method: "POST",
+      headers: { Authorization: auth, "Content-Type": "application/json" },
+      body: JSON.stringify([{
+        keyword,
+        location_name: market.location,
+        language_code: market.languageCode,
+        depth: 40,
+        priority: 2,
+      }]),
+    },
+    15000,
+  );
+
+  if (post?.status_code !== 20000) throw new Error(post?.status_message || "DataForSEO task_post failed");
+  const task = post?.tasks?.[0];
+  const taskId = task?.id;
+  if (!taskId) throw new Error(task?.status_message || "DataForSEO n'a pas retourné de task id");
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    await delay(attempt === 0 ? 1200 : 1500);
+    const get = await fetchJson(
+      `https://api.dataforseo.com/v3/merchant/google/products/task_get/advanced/${encodeURIComponent(taskId)}`,
+      { method: "GET", headers: { Authorization: auth, "Content-Type": "application/json" } },
+      12000,
+    );
+    const resultTask = get?.tasks?.[0];
+    if (resultTask?.status_code === 20000 && Array.isArray(resultTask?.result)) {
+      const output: MarketPrice[] = [];
+      collectDataForSeoShoppingItems(resultTask.result, market, output);
+      return dedupePrices(output);
+    }
+  }
+
+  throw new Error("DataForSEO Google Shopping: résultat non prêt dans le délai");
+}
+
+async function searchDataForSeoSerp(keyword: string, market: MarketConfig, requestId: string): Promise<MarketPrice[]> {
+  const login = Deno.env.get("DATAFORSEO_LOGIN");
+  const password = Deno.env.get("DATAFORSEO_PASSWORD");
+  if (!login || !password) throw new Error("DataForSEO non configuré");
+
+  console.log(`[${requestId}] DataForSEO SERP live fallback: ${keyword}`);
+  const auth = `Basic ${btoa(`${login}:${password}`)}`;
+  const data = await fetchJson(
+    "https://api.dataforseo.com/v3/serp/google/organic/live/advanced",
+    {
+      method: "POST",
+      headers: { Authorization: auth, "Content-Type": "application/json" },
+      body: JSON.stringify([{
+        keyword,
+        location_name: market.location,
+        language_code: market.languageCode,
+        depth: 20,
+      }]),
+    },
+    18000,
+  );
+
+  const task = data?.tasks?.[0];
+  if (task?.status_code !== 20000) throw new Error(task?.status_message || "DataForSEO SERP failed");
+  const items = task?.result?.[0]?.items || [];
+  const output: MarketPrice[] = [];
+
+  for (const item of items) {
+    const structured = safeNumber(item?.price?.current ?? item?.price);
+    const textPrice = extractPriceFromText(`${item?.title || ""} ${item?.description || ""}`);
+    const price = structured ?? textPrice;
+    if (price == null || price <= 1 || !item?.title) continue;
+    output.push({
+      title: item.title,
+      price,
+      currency: item?.currency || market.currency,
+      url: sanitizeUrl(item?.url || `https://www.google.com/search?q=${encodeURIComponent(item.title)}`),
+      imageUrl: item?.images?.[0]?.url || item?.image_url,
+      seller: item?.domain || undefined,
+      source: "dataforseo_serp",
+    });
+  }
+
+  return dedupePrices(output);
+}
+
+async function searchMarket(keyword: string, market: MarketConfig, requestId: string) {
+  const diagnostics: ProviderDiagnostics[] = [];
+  const all: MarketPrice[] = [];
+  const serpApiConfigured = Boolean(Deno.env.get("SERPAPI_API_KEY") || Deno.env.get("SERP_API_KEY"));
+  const dataForSeoConfigured = Boolean(Deno.env.get("DATAFORSEO_LOGIN") && Deno.env.get("DATAFORSEO_PASSWORD"));
+
+  if (serpApiConfigured) {
     try {
-      const compDataUri = await fetchImageAsDataUri(compImage);
-      if (!compDataUri) continue;
-
-      const response = await withTimeout(
-        fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [{
-              role: 'user',
-              content: [
-                { type: 'image_url', image_url: { url: productDataUri } },
-                { type: 'image_url', image_url: { url: compDataUri } },
-                { type: 'text', text: `Ces 2 produits sont-ils similaires? Réponds avec JSON: {"similarity": 0.85, "reasoning": "court"}` }
-              ]
-            }],
-            temperature: 0.3,
-            max_tokens: 200,
-          }),
-        }),
-        15000,
-        'Vision comparison'
-      );
-
-      if (!response.ok) continue;
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-      if (content) {
-        const jsonMatch = content.match(/\{[\s\S]*?\}/);
-        if (jsonMatch) {
-          const result = JSON.parse(jsonMatch[0]);
-          similarities.push(result.similarity || 0.5);
-          console.log(`[${requestId}] ✅ Similarity: ${(result.similarity * 100).toFixed(0)}%`);
-        }
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 800));
-    } catch (error: unknown) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[${requestId}] ⚠️ Vision error: ${errorMsg}`);
+      const results = await searchSerpApiShopping(keyword, market, requestId);
+      all.push(...results);
+      diagnostics.push({ provider: "SerpAPI Google Shopping", ok: true, count: results.length });
+    } catch (error) {
+      diagnostics.push({ provider: "SerpAPI Google Shopping", ok: false, count: 0, error: error instanceof Error ? error.message : String(error) });
     }
   }
 
-  console.log(`[${requestId}] 📊 Vision complete: ${similarities.length} similarities in ${Date.now() - startTime}ms`);
-  return { similarities };
+  if (all.length < 5 && dataForSeoConfigured) {
+    try {
+      const results = await searchDataForSeoShopping(keyword, market, requestId);
+      all.push(...results);
+      diagnostics.push({ provider: "DataForSEO Google Shopping", ok: true, count: results.length });
+    } catch (error) {
+      diagnostics.push({ provider: "DataForSEO Google Shopping", ok: false, count: 0, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  if (all.length < 5 && dataForSeoConfigured) {
+    try {
+      const results = await searchDataForSeoSerp(keyword, market, requestId);
+      all.push(...results);
+      diagnostics.push({ provider: "DataForSEO SERP", ok: true, count: results.length });
+    } catch (error) {
+      diagnostics.push({ provider: "DataForSEO SERP", ok: false, count: 0, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  return { prices: dedupePrices(all), diagnostics, serpApiConfigured, dataForSeoConfigured };
 }
 
-async function estimatePriceRangeFromImage(
-  productImage: string,
+function median(values: number[]): number | null {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function filterOutliers(values: MarketPrice[]): MarketPrice[] {
+  if (values.length < 5) return values;
+  const sorted = [...values].sort((a, b) => a.price - b.price);
+  const q1 = sorted[Math.floor((sorted.length - 1) * 0.25)].price;
+  const q3 = sorted[Math.floor((sorted.length - 1) * 0.75)].price;
+  const iqr = q3 - q1;
+  const min = Math.max(1, q1 - iqr * 1.5);
+  const max = q3 + iqr * 1.5;
+  return values.filter((item) => item.price >= min && item.price <= max);
+}
+
+function psychologicalPrice(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return value;
+  const rounded = Math.round(value);
+  if (rounded < 20) return Math.max(1, Math.floor(value) + 0.99);
+  return Math.max(1, Math.ceil(value) - 0.1);
+}
+
+function calculatePricing(
   productTitle: string,
-  requestId: string
-): Promise<ImagePriceRange | null> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    console.warn(`[${requestId}] ⚠️ Lovable API key not configured for image price range`);
-    return null;
-  }
-
-  try {
-    console.log(`[${requestId}] 🖼️ Estimating price range from image...`);
-    const startTime = Date.now();
-
-    const dataUri = await fetchImageAsDataUri(productImage);
-    if (!dataUri) {
-      console.warn(`[${requestId}] ⚠️ Cannot fetch product image for price estimation`);
-      return null;
-    }
-
-    const response = await withTimeout(
-      fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image_url', image_url: { url: dataUri } },
-              {
-                type: 'text',
-                text: `Ce produit est potentiellement HAUT DE GAMME.
-Titre: "${productTitle}"
-
-Simule une recherche Google par photo (Google Lens) pour des produits SIMILAIRES.
-Devine la GAMME DE PRIX réaliste en euros pour ce type de produit sur le marché français.
-
-Réponds UNIQUEMENT avec un JSON de la forme:
-{"segment": "milieu de gamme" | "haut de gamme" | "luxe", "minPrice": 500, "maxPrice": 1200}`,
-              },
-            ],
-          }],
-          temperature: 0.3,
-          max_tokens: 200,
-        }),
-      }),
-      15000,
-      'Price range estimation'
-    );
-
-    if (!response.ok) {
-      console.warn(`[${requestId}] ⚠️ AI price range estimation failed with status ${response.status}`);
-      return null;
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content as string | undefined;
-    const jsonMatch = content?.match(/\{[\s\S]*?\}/);
-    if (!jsonMatch) return null;
-
-    const parsed = JSON.parse(jsonMatch[0]);
-    const minPrice = typeof parsed.minPrice === 'number' ? parsed.minPrice : null;
-    const maxPrice = typeof parsed.maxPrice === 'number' ? parsed.maxPrice : null;
-
-    console.log(`[${requestId}] ✅ Image price range in ${Date.now() - startTime}ms:`, parsed);
-    return { minPrice, maxPrice, segment: parsed.segment };
-  } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[${requestId}] ⚠️ Image price range estimation error: ${errorMsg}`);
-    return null;
-  }
-}
-
-// ============= PRICING CALCULATIONS =============
-
-function calculateNetMargin(
-  salesPrice: number,
+  currentPrice: number,
   costPrice: number,
   shippingCost: number,
-  taxRate: number
-): number {
-  const priceExcludingTax = (salesPrice - shippingCost) / (1 + taxRate / 100);
-  const netMargin = priceExcludingTax - costPrice;
-  return netMargin;
-}
-
-async function analyzeWithAI(
-  productTitle: string,
-  costPrice: number,
-  shippingCost: number,
-  competitorPrices: CompetitorPrice[],
   taxRate: number,
-  imagePriceRange: ImagePriceRange | null = null,
-  productType: string | null = null,
-  requestId: string = 'UNKNOWN'
-): Promise<{ marketPrice: number | null; smartPrice: number | null; reasoning: string; competitors: CompetitorPrice[] }> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  
-  const totalCost = costPrice + shippingCost;
-  const minPriceWithMargin = totalCost * 1.3;
+  rawPrices: MarketPrice[],
+) {
+  const ranked = rawPrices
+    .map((item) => ({ ...item, similarity: titleSimilarity(productTitle, item.title) }))
+    .filter((item) => item.similarity >= 0.2)
+    .sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
 
-  if (!competitorPrices || competitorPrices.length === 0) {
-    const costMarkup = 2.5;
-    const smartPrice = Math.round(totalCost * costMarkup * 100) / 100;
-    
-    return {
-      marketPrice: null,
-      smartPrice: smartPrice,
-      reasoning: `Prix calculé sans concurrents trouvés. Coûts: ${totalCost.toFixed(2)}€ + marge ${((costMarkup - 1) * 100).toFixed(0)}% = ${smartPrice.toFixed(2)}€. Aucune donnée concurrente disponible.`,
-      competitors: []
-    };
-  }
+  const filtered = filterOutliers(ranked).slice(0, 20);
+  const marketPrice = median(filtered.map((item) => item.price));
+  if (marketPrice == null) return null;
 
-  if (!LOVABLE_API_KEY) {
-    const avgPrice = competitorPrices.reduce((sum, c) => sum + c.price, 0) / competitorPrices.length;
-    return {
-      marketPrice: avgPrice,
-      smartPrice: Math.max(avgPrice, minPriceWithMargin),
-      reasoning: "Prix moyen marché",
-      competitors: competitorPrices.slice(0, 10)
-    };
-  }
+  const taxMultiplier = 1 + Math.max(0, taxRate) / 100;
+  const minimumPriceForMargin = costPrice > 0
+    ? costPrice * 1.3 * taxMultiplier + Math.max(0, shippingCost)
+    : 0;
+  const recommendedBase = Math.max(marketPrice, minimumPriceForMargin);
+  const smartPrice = psychologicalPrice(recommendedBase);
 
-  try {
-    const startTime = Date.now();
-    const avgCompetitorPrice = competitorPrices.reduce((sum, c) => sum + c.price, 0) / competitorPrices.length;
-    const top10 = competitorPrices.slice(0, 10);
+  const competitors: CompetitorPrice[] = filtered.slice(0, 15).map((item) => ({
+    url: item.url,
+    title: item.title,
+    price: Math.round(item.price * 100) / 100,
+    currency: item.currency,
+    similarity: Math.round((item.similarity || 0.5) * 100) / 100,
+    imageUrl: item.imageUrl,
+    source: `${item.seller || (item.source === "serpapi_shopping" ? "Google Shopping" : "Google")} · ${item.source === "serpapi_shopping" ? "SerpAPI" : "DataForSEO"}`,
+  }));
 
-    const list = top10.map((c, i) => {
-      const sourceEmoji = c.source?.includes('🛍️') ? '[SHOPPING]' : c.source?.includes('🖼️') ? '[IMAGE]' : '[SERP]';
-      return `${i + 1}. ${sourceEmoji} ${c.title.substring(0, 50)} - ${c.price.toFixed(2)}€ (${(c.similarity * 100).toFixed(0)}%)`;
-    }).join('\n');
+  const gap = currentPrice > 0 ? ((currentPrice - marketPrice) / marketPrice) * 100 : null;
+  const sources = [...new Set(filtered.map((item) => item.source === "serpapi_shopping" ? "SerpAPI Shopping" : item.source === "dataforseo_shopping" ? "DataForSEO Shopping" : "DataForSEO SERP"))];
+  const reasoning = `Médiane marché ${marketPrice.toFixed(2)} ${filtered[0]?.currency || "EUR"} sur ${filtered.length} résultats réels (${sources.join(", ")}).${gap == null ? "" : ` Prix actuel ${gap >= 0 ? "+" : ""}${gap.toFixed(1)}% vs marché.`}${minimumPriceForMargin > 0 ? ` Plancher marge 30%: ${minimumPriceForMargin.toFixed(2)}.` : ""}`;
 
-    const shoppingCount = top10.filter(c => c.source?.includes('🛍️')).length;
-    const imageCount = top10.filter(c => c.source?.includes('🖼️')).length;
-
-    const prompt = `Expert pricing. Recommande prix optimal pour produit HAUT DE GAMME.
-
-PRODUIT: "${productTitle}"
-COÛTS: ${totalCost.toFixed(2)}€ | Min+30%: ${minPriceWithMargin.toFixed(2)}€
-MARCHÉ: Moy ${avgCompetitorPrice.toFixed(2)}€ | Min ${Math.min(...competitorPrices.map(c => c.price)).toFixed(2)}€ | Max ${Math.max(...competitorPrices.map(c => c.price)).toFixed(2)}€${imagePriceRange && imagePriceRange.minPrice && imagePriceRange.maxPrice ? `
-
-🎯 ANALYSE IMAGE (Google Lens):
-Segment détecté: ${imagePriceRange.segment?.toUpperCase() || 'NON DÉFINI'}
-Gamme de prix estimée: ${imagePriceRange.minPrice.toFixed(2)}€ - ${imagePriceRange.maxPrice.toFixed(2)}€
-⚠️ Cette estimation basée sur l'image du produit indique le niveau de gamme et la fourchette de prix attendue.` : ''}
-
-SOURCES DE PRIX (par fiabilité):
-- 🛍️ Google Shopping (${shoppingCount}): HAUTE FIABILITÉ - prix réels produits similaires
-- 🖼️ Image Search (${imageCount}): FIABILITÉ MOYENNE - basé sur visuel
-- SERP organique: FAIBLE FIABILITÉ - peut inclure produits gamme différente
-
-TOP 10 CONCURRENTS:
-${list}
-
-⚠️ RÈGLES DE PRICING HAUT DE GAMME:
-1. Privilégie les prix [SHOPPING] qui sont les plus précis${imagePriceRange && imagePriceRange.segment ? `
-2. Le segment détecté "${imagePriceRange.segment}" suggère un positionnement ${imagePriceRange.segment === 'luxe' ? 'très premium' : imagePriceRange.segment === 'haut de gamme' ? 'haut de gamme' : 'standard'}` : ''}
-3. Pour un produit HAUT DE GAMME, le prix doit être significativement au-dessus de la moyenne
-4. Vise les concurrents dans la fourchette HAUTE (top 30%)${imagePriceRange && imagePriceRange.maxPrice ? `
-5. Prix conseillé entre ${(imagePriceRange.minPrice || 0).toFixed(2)}€ et ${imagePriceRange.maxPrice.toFixed(2)}€ selon analyse image` : ''}
-
-JSON: {"smartPrice": 89.90, "reasoning": "Positionnement haut de gamme: [analyse des concurrents haut de gamme] + [justification du prix]"}
-smartPrice ≥ ${minPriceWithMargin.toFixed(2)}€`;
-
-    const response = await withTimeout(
-      fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.4,
-          max_tokens: 500,
-        }),
-      }),
-      20000,
-      'AI pricing analysis'
-    );
-
-    if (!response.ok) throw new Error(`AI error: ${response.status}`);
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    const jsonMatch = content?.match(/\{[\s\S]*?\}/);
-    if (!jsonMatch) throw new Error("Invalid format");
-
-    const aiResponse = JSON.parse(jsonMatch[0]);
-    const finalPrice = Math.max(aiResponse.smartPrice, minPriceWithMargin);
-
-    console.log(`[${requestId}] 🤖 AI analysis complete in ${Date.now() - startTime}ms`);
-
-    return {
-      marketPrice: avgCompetitorPrice,
-      smartPrice: Math.round(finalPrice * 100) / 100,
-      reasoning: aiResponse.reasoning,
-      competitors: top10
-    };
-  } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[${requestId}] ❌ AI analysis failed: ${errorMsg}`);
-    
-    if (competitorPrices.length > 0) {
-      const avgPrice = competitorPrices.reduce((sum, c) => sum + c.price, 0) / competitorPrices.length;
-      const smartPrice = Math.max(avgPrice, minPriceWithMargin);
-      
-      return {
-        marketPrice: avgPrice,
-        smartPrice: Math.round(smartPrice * 100) / 100,
-        reasoning: `Prix moyen marché (${competitorPrices.length} concurrents) avec marge minimum. IA indisponible.`,
-        competitors: competitorPrices.slice(0, 10)
-      };
-    }
-    
-    const emergencyPrice = Math.round(minPriceWithMargin * 1.5 * 100) / 100;
-    return {
-      marketPrice: null,
-      smartPrice: emergencyPrice,
-      reasoning: `Prix d'urgence: coûts ${totalCost.toFixed(2)}€ + marge 50%. Analyse échouée.`,
-      competitors: []
-    };
-  }
+  return {
+    marketPrice: Math.round(marketPrice * 100) / 100,
+    smartPrice: Math.round(smartPrice * 100) / 100,
+    reasoning,
+    competitors,
+    competitorCount: competitors.length,
+  };
 }
-
-// ============= MAIN HANDLER =============
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // Parse body safely for healthCheck
   const body = await req.json().catch(() => ({}));
-
-  // HealthCheck handler
   if (body?.healthCheck === true) {
-    return new Response(JSON.stringify({ ok: true }), {
+    return new Response(JSON.stringify({ ok: true, engine: "pricing-market-v2" }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   const requestId = generateRequestId();
-  const startTime = Date.now();
+  const startedAt = Date.now();
 
   try {
-    console.log(`[${requestId}] 🤖 [ANALYZE-PRICING] Enhanced analysis: DataForSEO + Gemini Vision`);
-    
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceRoleKey) throw new Error("Supabase service configuration missing");
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const DATAFORSEO_LOGIN = Deno.env.get('DATAFORSEO_LOGIN');
-    const DATAFORSEO_PASSWORD = Deno.env.get('DATAFORSEO_PASSWORD');
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Missing authorization header");
 
-    if (!LOVABLE_API_KEY) {
-      console.warn(`[${requestId}] ⚠️ LOVABLE_API_KEY not configured`);
-    }
-    if (!DATAFORSEO_LOGIN || !DATAFORSEO_PASSWORD) {
-      console.warn(`[${requestId}] ⚠️ DataForSEO credentials not configured`);
-    }
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (userError || !user) throw new Error("Unauthorized");
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('Missing authorization header');
+    const productIds = Array.isArray(body?.productIds) ? body.productIds.filter(Boolean) : [];
+    if (!productIds.length) throw new Error("No products specified");
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (userError || !user) throw new Error('Unauthorized');
-
-    const { productIds, variantId, taxRate = 0, debugImageOnly = false } = body;
-
-    if (!productIds || productIds.length === 0) {
-      throw new Error('No products specified');
+    const serpApiConfigured = Boolean(Deno.env.get("SERPAPI_API_KEY") || Deno.env.get("SERP_API_KEY"));
+    const dataForSeoConfigured = Boolean(Deno.env.get("DATAFORSEO_LOGIN") && Deno.env.get("DATAFORSEO_PASSWORD"));
+    if (!serpApiConfigured && !dataForSeoConfigured) {
+      throw new Error("Aucun moteur de recherche marché configuré. Ajoutez SERPAPI_API_KEY ou DATAFORSEO_LOGIN + DATAFORSEO_PASSWORD dans Supabase Secrets.");
     }
 
-    console.log(`[${requestId}] 📊 Analyzing ${productIds.length} products${variantId ? ' (variant-specific)' : ''}`);
+    const requestedMarkets = Array.isArray(body?.markets) && body.markets.length ? body.markets : [DEFAULT_MARKET];
+    const market = getMarketConfig(requestedMarkets[0]);
+    const taxRate = Number.isFinite(Number(body?.taxRate)) ? Number(body.taxRate) : 20;
+    const idsToProcess = productIds.slice(0, MAX_PRODUCTS_PER_REQUEST);
+    const truncated = productIds.length > idsToProcess.length;
 
-    const results = [];
+    console.log(`[${requestId}] Pricing market v2: ${idsToProcess.length}/${productIds.length} products, market=${market.code}, SerpAPI=${serpApiConfigured}, DataForSEO=${dataForSeoConfigured}`);
 
-    for (const productId of productIds) {
+    const results: any[] = [];
+
+    for (const productId of idsToProcess) {
       try {
-        const query = supabase
-          .from('shopify_products')
+        const { data: product, error: productError } = await supabase
+          .from("shopify_products")
           .select(`
-            id,
-            title,
-            image_url,
-            price,
-            cost_price,
-            shipping_cost,
-            product_type,
-            product_variants!product_id(id, cost_price, price, image_url, title, option1, option2, option3)
+            id,title,vendor,image_url,price,cost_price,shipping_cost,currency,seller_id,
+            product_variants!product_id(id,title,sku,price,cost_price)
           `)
-          .eq('id', productId);
+          .eq("id", productId)
+          .eq("seller_id", user.id)
+          .single();
 
-        const { data: product, error: productError } = await query.single();
+        if (productError || !product) throw new Error("Produit introuvable ou non autorisé");
 
-        if (productError || !product) {
-          console.warn(`[${requestId}] ⚠️ Product ${productId} not found`);
-          continue;
+        const variants = Array.isArray((product as any).product_variants) ? (product as any).product_variants : [];
+        const variantCosts = variants.map((variant: any) => safeNumber(variant?.cost_price)).filter((value: number | null): value is number => value != null && value > 0);
+        const avgVariantCost = variantCosts.length ? variantCosts.reduce((sum: number, value: number) => sum + value, 0) / variantCosts.length : 0;
+        const costPrice = safeNumber((product as any).cost_price) ?? avgVariantCost;
+        const currentPrice = safeNumber((product as any).price) ?? safeNumber(variants?.[0]?.price) ?? 0;
+        const shippingCost = safeNumber((product as any).shipping_cost) ?? 0;
+        const query = [product.title, product.vendor].filter(Boolean).join(" ").trim();
+
+        const marketSearch = await searchMarket(query, market, requestId);
+        const pricing = calculatePricing(product.title, currentPrice, costPrice, shippingCost, taxRate, marketSearch.prices);
+
+        if (!pricing) {
+          const providerErrors = marketSearch.diagnostics.filter((entry) => !entry.ok).map((entry) => `${entry.provider}: ${entry.error}`).join(" | ");
+          throw new Error(providerErrors || "Aucun prix concurrent réel trouvé");
         }
 
-        // Si on analyse une variante spécifique
-        if (variantId) {
-          const variant = ((product as any).product_variants || []).find((v: any) => v.id === variantId);
-          
-          if (!variant) {
-            console.warn(`[${requestId}] ⚠️ Variant ${variantId} not found`);
-            continue;
-          }
-
-          console.log(`[${requestId}] 🔍 Analyzing variant: ${product.title} - ${variant.option1 || ''}`);
-          
-          const variantTitle = `${product.title} ${variant.option1 || ''} ${variant.option2 || ''} ${variant.option3 || ''}`.trim();
-          const variantImageUrl = variant.image_url || product.image_url;
-          const variantPrice = variant.price;
-          const variantCost = variant.cost_price || 0;
-          const shippingCost = product.shipping_cost || 5.99;
-
-          console.log(`[${requestId}] 💰 Costs - Variant: ${variantCost}€, Shipping: ${shippingCost}€`);
-
-          let imagePriceRange: ImagePriceRange | null = null;
-          if (variantImageUrl) {
-            try {
-              imagePriceRange = await estimatePriceRangeFromImage(variantImageUrl, variantTitle, requestId);
-            } catch (error) {
-              console.error(`[${requestId}] ⚠️ Image price range estimation failed`);
-            }
-          }
-
-          if (debugImageOnly) {
-            results.push({
-              productId,
-              variantId,
-              imagePriceRange: imagePriceRange || { minPrice: null, maxPrice: null, segment: 'N/A' }
-            });
-            continue;
-          }
-
-          const queries = await generateSearchQueries(variantTitle, requestId);
-          const allPriceData: PriceData[] = [];
-          
-          console.log(`[${requestId}] 🛍️ Starting DataForSEO Shopping Search...`);
-          for (const q of queries.slice(0, 2)) {
-            try {
-              const shoppingPrices = await searchWithDataForSEOShopping(q, requestId);
-              shoppingPrices.forEach(p => p.source = 'shopping');
-              allPriceData.push(...shoppingPrices);
-              await new Promise(resolve => setTimeout(resolve, 1200));
-            } catch (error) {
-              console.error(`[${requestId}] ❌ Shopping failed for "${q}"`);
-            }
-          }
-
-          if (variantImageUrl) {
-            console.log(`[${requestId}] 🖼️ Starting Google Image Search...`);
-            try {
-              const imageResults = await searchWithGoogleImages(variantImageUrl, variantTitle, requestId);
-              allPriceData.push(...imageResults);
-              await new Promise(resolve => setTimeout(resolve, 800));
-            } catch (error) {
-              console.error(`[${requestId}] ❌ Image Search failed`);
-            }
-          }
-
-          for (const q of queries.slice(0, 1)) {
-            try {
-              const serpPrices = await searchWithDataForSEO(q, requestId);
-              serpPrices.forEach(p => p.source = 'serp');
-              allPriceData.push(...serpPrices);
-              await new Promise(resolve => setTimeout(resolve, 1200));
-            } catch (error) {
-              console.error(`[${requestId}] ❌ SERP failed for "${q}"`);
-            }
-          }
-
-          const uniquePrices = Array.from(
-            new Map(allPriceData.map(p => [sanitizeUrl(p.url), p])).values()
-          );
-
-          console.log(`[${requestId}] 📈 Total unique prices: ${uniquePrices.length}`);
-
-          const visionResults: { similarities: number[] } = { similarities: [] };
-          const competitorImages = uniquePrices.filter(p => p.imageUrl).map(p => p.imageUrl!);
-
-          if (variantImageUrl && competitorImages.length > 0) {
-            console.log(`[${requestId}] 🖼️ Vision analysis for ${competitorImages.length} images`);
-            try {
-              const result = await analyzeProductWithVision(variantImageUrl, competitorImages, requestId);
-              visionResults.similarities = result.similarities;
-            } catch (error) {
-              console.error(`[${requestId}] ⚠️ Vision failed`);
-            }
-          }
-
-          const competitorPrices: CompetitorPrice[] = uniquePrices
-            .map((data, index) => {
-              let baseSimilarity = visionResults.similarities[index] ||
-                (data.source === 'shopping' ? 0.95 :
-                 data.source === 'image_search' ? 0.8 : 0.7);
-
-              if (imagePriceRange && imagePriceRange.minPrice && imagePriceRange.maxPrice) {
-                const min = imagePriceRange.minPrice;
-                const max = imagePriceRange.maxPrice;
-
-                if (data.price < min * 0.7) {
-                  baseSimilarity *= 0.4;
-                } else if (data.price < min) {
-                  baseSimilarity *= 0.7;
-                } else if (data.price >= min && data.price <= max * 1.2) {
-                  baseSimilarity *= 1.1;
-                }
-              }
-
-              return {
-                url: sanitizeUrl(data.url),
-                title: data.title,
-                price: data.price,
-                currency: data.currency,
-                similarity: Math.min(baseSimilarity, 1.0),
-                imageUrl: data.imageUrl,
-                source: `${data.source}${
-                  data.source === 'shopping' ? ' 🛍️' : 
-                  data.source === 'image_search' ? ' 🖼️' : ''
-                }`
-              } as CompetitorPrice;
-            })
-            .filter(c => c.similarity >= 0.5)
-            .sort((a, b) => b.similarity - a.similarity)
-            .slice(0, 15);
-
-          console.log(`[${requestId}] ✅ ${competitorPrices.length} relevant competitors`);
-
-          const analysis = await analyzeWithAI(
-            variantTitle,
-            variantCost,
-            shippingCost,
-            competitorPrices,
-            taxRate || 20,
-            imagePriceRange,
-            null,
-            requestId
-          );
-
-          const netMargin = analysis.smartPrice 
-            ? calculateNetMargin(analysis.smartPrice, variantCost, shippingCost, taxRate || 20)
-            : null;
-
-          // Calculate confidence score
-          const shoppingCount = competitorPrices.filter(c => c.source?.includes('🛍️')).length;
-          const imageCount = competitorPrices.filter(c => c.source?.includes('🖼️')).length;
-          const serpCount = competitorPrices.filter(c => !c.source?.includes('🛍️') && !c.source?.includes('🖼️')).length;
-          const avgSimilarity = visionResults.similarities.length > 0
-            ? visionResults.similarities.reduce((a, b) => a + b, 0) / visionResults.similarities.length
-            : null;
-          
-          const prices = competitorPrices.map(c => c.price);
-          const priceConsistency = prices.length > 1 
-            ? 1 - (Math.max(...prices) - Math.min(...prices)) / (Math.max(...prices) + 1)
-            : 0.5;
-          
-          const confidence = calculateConfidenceScore(shoppingCount, imageCount, serpCount, avgSimilarity, priceConsistency);
-
-          results.push({
-            productId: productId,
-            variantId: variantId,
-            title: variantTitle,
-            currentPrice: variantPrice,
-            costPrice: variantCost,
-            shippingCost,
-            marketPrice: analysis.marketPrice,
-            smartPrice: analysis.smartPrice,
-            netMargin: netMargin ? Math.round(netMargin * 100) / 100 : null,
-            reasoning: analysis.reasoning,
-            competitors: analysis.competitors,
-            competitorCount: analysis.competitors.length,
-            visionAnalysis: {
-              analyzedImages: visionResults.similarities.length,
-              avgSimilarity: avgSimilarity ? Math.round(avgSimilarity * 100) / 100 : null
-            },
-            confidence: confidence
-          });
-
-          console.log(`[${requestId}] ✅ ${variantTitle}: Smart ${analysis.smartPrice}€, Confidence ${confidence.score}%`);
-          continue;
-        }
-
-        // Analyse du produit normal
-        const variants = (product as any).product_variants || [];
-        const avgCost = variants.length > 0
-          ? variants.reduce((sum: number, v: any) => sum + (v.cost_price || 0), 0) / variants.length
-          : product.cost_price || 0;
-
-        const shippingCost = product.shipping_cost || 5.99;
-
-        console.log(`[${requestId}] 🔍 Analyzing: ${product.title}`);
-        console.log(`[${requestId}] 💰 Costs - Product: ${avgCost}€, Shipping: ${shippingCost}€`);
-
-        let imagePriceRange: ImagePriceRange | null = null;
-        if (product.image_url) {
-          try {
-            imagePriceRange = await estimatePriceRangeFromImage(product.image_url, product.title, requestId);
-          } catch (error) {
-            console.error(`[${requestId}] ⚠️ Image price range estimation failed`);
-          }
-        }
-
-        const queries = await generateSearchQueries(product.title, requestId);
-        const allPriceData: PriceData[] = [];
-        
-        console.log(`[${requestId}] 🛍️ Starting DataForSEO Shopping Search...`);
-        for (const q of queries.slice(0, 2)) {
-          try {
-            const shoppingPrices = await searchWithDataForSEOShopping(q, requestId);
-            shoppingPrices.forEach(p => p.source = 'shopping');
-            allPriceData.push(...shoppingPrices);
-            await new Promise(resolve => setTimeout(resolve, 1200));
-          } catch (error) {
-            console.error(`[${requestId}] ❌ Shopping failed for "${q}"`);
-          }
-        }
-
-        if (product.image_url) {
-          console.log(`[${requestId}] 🖼️ Starting Google Image Search...`);
-          try {
-            const imageResults = await searchWithGoogleImages(product.image_url, product.title, requestId);
-            allPriceData.push(...imageResults);
-            await new Promise(resolve => setTimeout(resolve, 800));
-          } catch (error) {
-            console.error(`[${requestId}] ❌ Image Search failed`);
-          }
-        }
-
-        for (const q of queries.slice(0, 1)) {
-          try {
-            const serpPrices = await searchWithDataForSEO(q, requestId);
-            serpPrices.forEach(p => p.source = 'serp');
-            allPriceData.push(...serpPrices);
-            await new Promise(resolve => setTimeout(resolve, 1200));
-          } catch (error) {
-            console.error(`[${requestId}] ❌ SERP failed for "${q}"`);
-          }
-        }
-
-        const uniquePrices = Array.from(
-          new Map(allPriceData.map(p => [sanitizeUrl(p.url), p])).values()
-        );
-
-        console.log(`[${requestId}] 📈 Total unique prices: ${uniquePrices.length}`);
-
-        const visionResults: { similarities: number[] } = { similarities: [] };
-        const competitorImages = uniquePrices.filter(p => p.imageUrl).map(p => p.imageUrl!);
-
-        if (product.image_url && competitorImages.length > 0) {
-          console.log(`[${requestId}] 🖼️ Vision analysis for ${competitorImages.length} images`);
-          try {
-            const result = await analyzeProductWithVision(product.image_url, competitorImages, requestId);
-            visionResults.similarities = result.similarities;
-          } catch (error) {
-            console.error(`[${requestId}] ⚠️ Vision failed`);
-          }
-        }
-
-        const competitorPrices: CompetitorPrice[] = uniquePrices
-          .map((data, index) => {
-            let baseSimilarity = visionResults.similarities[index] ||
-              (data.source === 'shopping' ? 0.95 :
-               data.source === 'image_search' ? 0.8 : 0.7);
-
-            if (imagePriceRange && imagePriceRange.minPrice && imagePriceRange.maxPrice) {
-              const min = imagePriceRange.minPrice;
-              const max = imagePriceRange.maxPrice;
-
-              if (data.price < min * 0.5) {
-                baseSimilarity *= 0.4;
-              } else if (data.price < min) {
-                baseSimilarity *= 0.7;
-              } else if (data.price >= min && data.price <= max * 1.2) {
-                baseSimilarity *= 1.1;
-              }
-            }
-
-            return {
-              url: sanitizeUrl(data.url),
-              title: data.title,
-              price: data.price,
-              currency: data.currency,
-              similarity: Math.min(1, baseSimilarity),
-              imageUrl: data.imageUrl,
-              source: `${new URL(data.url).hostname}${
-                data.source === 'shopping' ? ' 🛍️' : 
-                data.source === 'image_search' ? ' 🖼️' : ''
-              }`
-            } as CompetitorPrice;
-          })
-          .filter(c => c.similarity >= 0.5)
-          .sort((a, b) => b.similarity - a.similarity)
-          .slice(0, 15);
-
-        console.log(`[${requestId}] ✅ ${competitorPrices.length} relevant competitors`);
-
-        const analysis = await analyzeWithAI(
-          product.title,
-          avgCost,
-          shippingCost,
-          competitorPrices,
-          taxRate || 20,
-          imagePriceRange,
-          null,
-          requestId
-        );
-
-        const netMargin = analysis.smartPrice 
-          ? calculateNetMargin(analysis.smartPrice, avgCost, shippingCost, taxRate || 20)
+        const netMargin = pricing.smartPrice > 0
+          ? (pricing.smartPrice - shippingCost) / (1 + taxRate / 100) - costPrice
           : null;
 
-        // Calculate confidence score
-        const shoppingCount = competitorPrices.filter(c => c.source?.includes('🛍️')).length;
-        const imageCount = competitorPrices.filter(c => c.source?.includes('🖼️')).length;
-        const serpCount = competitorPrices.filter(c => !c.source?.includes('🛍️') && !c.source?.includes('🖼️')).length;
-        const avgSimilarity = visionResults.similarities.length > 0
-          ? visionResults.similarities.reduce((a, b) => a + b, 0) / visionResults.similarities.length
-          : null;
-        
-        const prices = competitorPrices.map(c => c.price);
-        const priceConsistency = prices.length > 1 
-          ? 1 - (Math.max(...prices) - Math.min(...prices)) / (Math.max(...prices) + 1)
-          : 0.5;
-        
-        const confidence = calculateConfidenceScore(shoppingCount, imageCount, serpCount, avgSimilarity, priceConsistency);
+        const dbUpdate = {
+          market_price: pricing.marketPrice,
+          smart_price: pricing.smartPrice,
+          ai_reasoning: pricing.reasoning,
+          competitors: pricing.competitors,
+          last_pricing_analysis: new Date().toISOString(),
+        };
+        const { error: updateError } = await supabase
+          .from("shopify_products")
+          .update(dbUpdate)
+          .eq("id", product.id)
+          .eq("seller_id", user.id);
+        if (updateError) console.error(`[${requestId}] DB update failed for ${product.id}: ${updateError.message}`);
 
         results.push({
           productId: product.id,
           title: product.title,
-          currentPrice: product.price,
-          costPrice: avgCost,
+          currentPrice,
+          costPrice,
           shippingCost,
-          marketPrice: analysis.marketPrice,
-          smartPrice: analysis.smartPrice,
-          netMargin: netMargin ? Math.round(netMargin * 100) / 100 : null,
-          reasoning: analysis.reasoning,
-          competitors: analysis.competitors,
-          competitorCount: analysis.competitors.length,
-          visionAnalysis: {
-            analyzedImages: visionResults.similarities.length,
-            avgSimilarity: avgSimilarity ? Math.round(avgSimilarity * 100) / 100 : null
+          marketPrice: pricing.marketPrice,
+          smartPrice: pricing.smartPrice,
+          netMargin: netMargin == null ? null : Math.round(netMargin * 100) / 100,
+          reasoning: pricing.reasoning,
+          competitors: pricing.competitors,
+          competitorCount: pricing.competitorCount,
+          providers: marketSearch.diagnostics,
+          confidence: {
+            score: Math.min(100, 35 + Math.min(45, pricing.competitorCount * 5) + (marketSearch.diagnostics.some((entry) => entry.ok && entry.provider.includes("Shopping")) ? 20 : 0)),
+            breakdown: {
+              competitors: pricing.competitorCount,
+              shopping: marketSearch.diagnostics.some((entry) => entry.ok && entry.provider.includes("Shopping")) ? 20 : 0,
+            },
           },
-          confidence: confidence
         });
-
-        console.log(`[${requestId}] ✅ ${product.title}: Smart ${analysis.smartPrice}€, Confidence ${confidence.score}%`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-      } catch (productError: unknown) {
-        const errorMsg = productError instanceof Error ? productError.message : 'Unknown error';
-        console.error(`[${requestId}] ❌ Failed to analyze product ${productId}: ${errorMsg}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[${requestId}] Product ${productId} failed: ${message}`);
         results.push({
           productId,
-          error: errorMsg,
+          error: message,
           marketPrice: null,
           smartPrice: null,
-          reasoning: 'Échec de l\'analyse',
+          reasoning: message,
           competitors: [],
-          confidence: { score: 0, breakdown: {} }
+          competitorCount: 0,
+          confidence: { score: 0, breakdown: {} },
         });
       }
     }
 
-    const totalTime = Date.now() - startTime;
-    console.log(`[${requestId}] ✅ Analysis complete: ${results.length} products in ${totalTime}ms`);
+    const analyzed = results.filter((result) => !result.error).length;
+    const failed = results.length - analyzed;
+    if (analyzed === 0) {
+      const firstError = results.find((result) => result.error)?.error || "Analyse marché impossible";
+      throw new Error(firstError);
+    }
 
-    return new Response(
-      JSON.stringify({
-        success: results.length > 0,
-        requestId,
-        results,
-        summary: {
-          total: productIds.length,
-          analyzed: results.filter(r => !r.error).length,
-          failed: results.filter(r => r.error).length,
-          totalTimeMs: totalTime
-        }
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
-
-  } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[${requestId}] ❌ [ANALYZE-PRICING] Fatal error: ${errorMsg}`);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        requestId,
-        error: errorMsg
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(JSON.stringify({
+      success: true,
+      requestId,
+      results,
+      providerConfig: { serpApi: serpApiConfigured, dataForSeo: dataForSeoConfigured },
+      summary: {
+        totalRequested: productIds.length,
+        processed: idsToProcess.length,
+        analyzed,
+        failed,
+        truncated,
+        maxProductsPerRequest: MAX_PRODUCTS_PER_REQUEST,
+        totalTimeMs: Date.now() - startedAt,
+      },
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[${requestId}] Fatal pricing analysis error: ${message}`);
+    return new Response(JSON.stringify({ success: false, requestId, error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
