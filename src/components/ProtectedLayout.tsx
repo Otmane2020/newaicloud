@@ -8,6 +8,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NoStoreConnectedPrompt } from "@/components/NoStoreConnectedPrompt";
 import { CreditWallet } from "@/components/CreditWallet";
+import { StripePlanBootstrap } from "@/components/StripePlanBootstrap";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
@@ -132,6 +133,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SubscriptionGuard>
+      <StripePlanBootstrap userId={user.id} />
       <SidebarProvider>
         <div className="min-h-screen flex w-full bg-slate-100/70 overflow-x-hidden">
           <CatalogOptimizeSidebar />
