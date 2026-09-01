@@ -36,7 +36,7 @@ export const PublicHeader = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-7">
             <button
               onClick={() => scrollToSection("hero")}
               className="font-medium text-foreground transition-colors hover:text-primary"
@@ -54,6 +54,12 @@ export const PublicHeader = () => {
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
               {t.landing.header.benefits}
+            </button>
+            <button
+              onClick={() => navigate("/blog")}
+              className="font-medium text-foreground transition-colors hover:text-primary"
+            >
+              Blog
             </button>
             <button
               onClick={() => scrollToSection("pricing")}
@@ -107,6 +113,15 @@ export const PublicHeader = () => {
                 className="text-left font-medium hover:text-primary transition-colors"
               >
                 {t.landing.header.benefits}
+              </button>
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  navigate("/blog");
+                }}
+                className="text-left font-medium hover:text-primary transition-colors"
+              >
+                Blog
               </button>
               <button
                 onClick={() => scrollToSection("pricing")}
