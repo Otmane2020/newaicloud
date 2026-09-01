@@ -30,14 +30,23 @@ function cleanFallbackAlt(value: string): string {
     .slice(0, 125);
 }
 
-async function callGeminiVision(imageUrl: string, title: string, language: string): Promise<string> {
+async function callGeminiVision(
+  imageUrl: string,
+  title: string,
+  language: string,
+  siblingAltTexts: string[] = [],
+): Promise<string> {
   const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
 
+  const siblings = siblingAltTexts.filter(Boolean).slice(0, 10);
+  const siblingContext = siblings.length
+    ? `\nDo not duplicate these ALT texts already used by sibling images:\n${siblings.map((alt, index) => `${index + 1}. ${alt}`).join("\n")}`
+    : "";
   const isFrench = language.toLowerCase().startsWith("fr");
   const prompt = isFrench
-    ? `Génère UN SEUL texte ALT en français pour cette image e-commerce.\nTitre: ${title}\nDécris précisément ce qui est visible, sans inventer. 8 à 12 mots si possible, 125 caractères maximum. Ne commence pas par « Image de » ou « Photo de ». Réponds uniquement avec le texte ALT.`
-    : `Generate ONE ALT text in English for this ecommerce image.\nTitle: ${title}\nDescribe what is actually visible without inventing details. Prefer 8-12 words, maximum 125 characters. Do not start with “Image of” or “Photo of”. Return only the ALT text.`;
+    ? `Génère UN SEUL texte ALT en français pour cette image e-commerce.\nTitre: ${title}\nDécris précisément CE QUI DIFFÈRE sur cette image (angle, couleur, finition, texture ou détail visible), sans inventer. 8 à 12 mots si possible, 125 caractères maximum. Ne commence pas par « Image de » ou « Photo de ».${siblingContext}\nRéponds uniquement avec le texte ALT.`
+    : `Generate ONE ALT text in English for this ecommerce image.\nTitle: ${title}\nDescribe what is specific to THIS image (angle, color, finish, texture, or visible detail) without inventing details. Prefer 8-12 words, maximum 125 characters. Do not start with “Image of” or “Photo of”.${siblingContext}\nReturn only the ALT text.`;
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -141,12 +150,16 @@ Deno.serve(async (req: Request) => {
         let description = "";
         let contentType = requestedImageType;
         let isContentImage = requestedImageType !== "product";
+        let imagePosition: number | null = null;
+        let siblingAltTexts: string[] = [];
+        let productId: string | null = null;
+        let contentId: string | null = null;
 
         if (!isContentImage) {
           const { data: productImage } = await supabaseClient
             .from("product_images")
             .select(`
-              id, src, alt_text, optimization_count, shopify_image_id, product_id,
+              id, src, alt_text, optimization_count, shopify_image_id, product_id, position,
               shopify_products!inner(
                 id, title, body_html, seller_id, store_id,
                 shopify_connections!inner(store_language)
@@ -157,6 +170,8 @@ Deno.serve(async (req: Request) => {
 
           if (productImage) {
             image = productImage;
+            productId = productImage.product_id;
+            imagePosition = productImage.position ?? null;
             const product = (productImage as any).shopify_products;
             title = product?.title || "Product";
             description = product?.body_html || "";
@@ -164,13 +179,22 @@ Deno.serve(async (req: Request) => {
             storeId = product?.store_id || null;
             storeLanguage = body.language || product?.shopify_connections?.store_language || "en-US";
             contentType = "product";
+
+            const { data: siblings } = await supabaseClient
+              .from("product_images")
+              .select("alt_text")
+              .eq("product_id", productId)
+              .neq("id", imageId)
+              .not("alt_text", "is", null)
+              .limit(10);
+            siblingAltTexts = (siblings || []).map((row: any) => row.alt_text).filter(Boolean);
           }
         }
 
         if (!image) {
           const { data: contentImage } = await supabaseClient
             .from("content_images")
-            .select("id, src, alt_text, optimization_count, shopify_image_id, content_id, content_type, user_id, store_id")
+            .select("id, src, alt_text, optimization_count, shopify_image_id, content_id, content_type, user_id, store_id, position")
             .eq("id", imageId)
             .maybeSingle();
 
@@ -179,7 +203,20 @@ Deno.serve(async (req: Request) => {
             isContentImage = true;
             sellerId = contentImage.user_id;
             storeId = contentImage.store_id;
+            contentId = contentImage.content_id;
             contentType = contentImage.content_type || "content";
+            imagePosition = contentImage.position ?? null;
+
+            const { data: siblings } = await supabaseClient
+              .from("content_images")
+              .select("alt_text")
+              .eq("store_id", storeId)
+              .eq("content_id", contentId)
+              .eq("content_type", contentType)
+              .neq("id", imageId)
+              .not("alt_text", "is", null)
+              .limit(10);
+            siblingAltTexts = (siblings || []).map((row: any) => row.alt_text).filter(Boolean);
 
             if (contentType === "collection") {
               const { data: collection } = await supabaseClient
@@ -246,12 +283,14 @@ Deno.serve(async (req: Request) => {
             description,
             language: storeLanguage,
             contentType,
+            imagePosition,
+            siblingAltTexts,
           });
           console.log(`[ALT-TEXTS] ✅ Kimi generated ALT for ${imageId}: "${altText}"`);
         } catch (kimiError) {
           provider = "gemini-fallback";
-          console.warn(`[ALT-TEXTS] ⚠️ Kimi unavailable for ${imageId}; falling back to Gemini:`, kimiError);
-          altText = await callGeminiVision(image.src, title, storeLanguage);
+          console.warn(`[ALT-TEXTS] ⚠️ Kimi unavailable after retry for ${imageId}; falling back to Gemini:`, kimiError);
+          altText = await callGeminiVision(image.src, title, storeLanguage, siblingAltTexts);
         }
 
         const tableName = isContentImage ? "content_images" : "product_images";
