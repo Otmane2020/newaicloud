@@ -8,6 +8,11 @@ import { useTranslation } from '@/lib/language';
 const POLL_INTERVAL_MS = 2000;
 const RECENT_SYNC_WINDOW_MS = 15 * 60 * 1000;
 const FAILSAFE_MS = 15 * 60 * 1000;
+const SHOPIFY_REAUTH_PATTERN = /SHOPIFY_REAUTH_REQUIRED|unauthori[sz]ed|authorization expired|reconnect|invalid.*access token|access token.*invalid|\b401\b/i;
+
+function needsShopifyReconnect(message?: string | null) {
+  return Boolean(message && SHOPIFY_REAUTH_PATTERN.test(message));
+}
 
 /**
  * Watches Shopify connections and keeps synchronization state in step with the
@@ -48,12 +53,13 @@ export const useAutoSync = (userId: string | undefined) => {
         started_at: string | null;
         sync_type: string | null;
         completed_at: string | null;
+        error_message: string | null;
       } | null = null;
 
       if (currentSyncIdRef.current) {
         const { data, error } = await supabase
           .from('sync_history')
-          .select('id, status, items_synced, started_at, sync_type, completed_at')
+          .select('id, status, items_synced, started_at, sync_type, completed_at, error_message')
           .eq('id', currentSyncIdRef.current)
           .maybeSingle();
 
@@ -64,7 +70,7 @@ export const useAutoSync = (userId: string | undefined) => {
         const recentSince = new Date(Date.now() - RECENT_SYNC_WINDOW_MS).toISOString();
         const { data, error } = await supabase
           .from('sync_history')
-          .select('id, status, items_synced, started_at, sync_type, completed_at')
+          .select('id, status, items_synced, started_at, sync_type, completed_at, error_message')
           .eq('user_id', userId)
           .gte('started_at', recentSince)
           .order('started_at', { ascending: false })
@@ -100,9 +106,22 @@ export const useAutoSync = (userId: string | undefined) => {
             });
           } else {
             endSync();
-            toast.error(t.toasts.error.sync || 'Synchronization error', {
-              description: t.toasts.error.generic || 'An error occurred',
-            });
+            const reconnectRequired = needsShopifyReconnect(latestSync.error_message);
+            toast.error(
+              reconnectRequired ? 'Shopify reconnection required' : (t.toasts.error.sync || 'Synchronization error'),
+              {
+                description: reconnectRequired
+                  ? 'Shopify authorization has expired. Open Product Sources and reconnect the store.'
+                  : latestSync.error_message || t.toasts.error.generic || 'An error occurred',
+                duration: reconnectRequired ? 10000 : 6500,
+                action: reconnectRequired
+                  ? {
+                      label: 'Reconnect',
+                      onClick: () => { window.location.href = '/product-source'; },
+                    }
+                  : undefined,
+              },
+            );
           }
         }
         return true;
