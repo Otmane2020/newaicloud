@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import {
-  BadgeDollarSign,
-  Calculator,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -26,8 +23,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MarketSelectorDialog } from "@/components/seo/MarketSelectorDialog";
 import { toast } from "sonner";
-
-type Workspace = "costs" | "competitors" | "recommendations";
 
 type Competitor = {
   source?: string;
@@ -65,28 +60,9 @@ type PricingProduct = {
   product_variants: Variant[];
 };
 
-const markets = [
-  { code: "fr", label: "France" },
-  { code: "be", label: "Belgique" },
-  { code: "de", label: "Allemagne" },
-  { code: "es", label: "Espagne" },
-  { code: "it", label: "Italie" },
-  { code: "uk", label: "Royaume-Uni" },
-  { code: "nl", label: "Pays-Bas" },
-  { code: "ch", label: "Suisse" },
-];
-
 const PAGE_SIZE = 50;
 
 export function PricingWorkspace() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const requestedTab = searchParams.get("tab");
-  const workspace: Workspace = requestedTab === "competitors"
-    ? "competitors"
-    : requestedTab === "recommendations"
-      ? "recommendations"
-      : "costs";
-
   const { selectedStore } = useStore();
   const { language } = useTranslation();
   const fr = language === "fr";
@@ -149,7 +125,7 @@ export function PricingWorkspace() {
 
   useEffect(() => {
     setPage(1);
-  }, [query, workspace]);
+  }, [query]);
 
   const displayProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -236,6 +212,8 @@ export function PricingWorkspace() {
     });
   };
 
+  const defaultTargets = () => selectedCount > 0 ? selectedProducts : displayProducts;
+
   const importCosts = async () => {
     try {
       setBusy("import-costs");
@@ -253,7 +231,7 @@ export function PricingWorkspace() {
   };
 
   const applyBulk = async () => {
-    const targets = selectedCount > 0 ? selectedProducts : displayProducts;
+    const targets = defaultTargets();
     if (!targets.length || bulkAmount <= 0) return;
 
     try {
@@ -276,8 +254,8 @@ export function PricingWorkspace() {
     }
   };
 
-  const analyzeMarket = async () => {
-    const targets = selectedCount > 0 ? selectedProducts : displayProducts;
+  const analyzeMarket = async (overrideTargets?: PricingProduct[]) => {
+    const targets = overrideTargets ?? defaultTargets();
     if (!targets.length) return;
 
     try {
@@ -316,9 +294,8 @@ export function PricingWorkspace() {
     }
   };
 
-  const applyAndSyncRecommendations = async () => {
-    const targets = (selectedCount > 0 ? selectedProducts : displayProducts)
-      .filter((product) => product.smart_price != null);
+  const applyAndSyncRecommendations = async (overrideTargets?: PricingProduct[]) => {
+    const targets = (overrideTargets ?? defaultTargets()).filter((product) => product.smart_price != null);
     if (!targets.length) {
       toast.error(fr ? "Aucune recommandation à appliquer" : "No recommendations to apply");
       return;
@@ -344,7 +321,7 @@ export function PricingWorkspace() {
       if (syncError) throw syncError;
 
       toast.success(fr ? `${targets.length} prix appliqués et synchronisés` : `${targets.length} prices applied and synced`);
-      setSelected(new Set());
+      if (!overrideTargets) setSelected(new Set());
       await loadProducts();
     } catch (error: any) {
       toast.error(error?.message || (fr ? "Application impossible" : "Could not apply recommendations"));
@@ -353,9 +330,10 @@ export function PricingWorkspace() {
     }
   };
 
-  const syncCurrentPrices = async () => {
-    const targets = selectedCount > 0 ? selectedProducts : displayProducts;
+  const syncCurrentPrices = async (overrideTargets?: PricingProduct[]) => {
+    const targets = overrideTargets ?? defaultTargets();
     if (!targets.length) return;
+
     try {
       setBusy("sync");
       const { error } = await supabase.functions.invoke("sync-pricing-to-shopify", {
@@ -382,48 +360,21 @@ export function PricingWorkspace() {
     return <div className="grid min-h-[360px] place-items-center"><Loader2 className="h-7 w-7 animate-spin" /></div>;
   }
 
-  const title = workspace === "costs"
-    ? (fr ? "Coûts & marges" : "Costs & Margins")
-    : workspace === "competitors"
-      ? (fr ? "Prix concurrents" : "Competitor Prices")
-      : (fr ? "Recommandations" : "Recommendations");
-
   return (
     <div className="space-y-4">
       <WorkspacePageHeader
-        section={fr ? "Tarification" : "Pricing"}
-        page={title}
+        section="Pricing"
+        page="Pricing"
         count={products.length}
-        title={title}
-        description={
-          workspace === "costs"
-            ? (fr ? "Pilotez coût, prix et marge nette dans un seul tableau." : "Manage cost, selling price, and net margin in one table.")
-            : workspace === "competitors"
-              ? (fr ? "Comparez le marché uniquement quand vous en avez besoin." : "Run market comparisons only when you need them.")
-              : (fr ? "Validez les Smart Prices avant toute modification Shopify." : "Review Smart Prices before any Shopify change.")
+        title="Pricing"
+        description={fr
+          ? "Prix, coûts, marges, marché et recommandations dans un seul tableau."
+          : "Prices, costs, margins, market data, and recommendations in one table."
         }
       />
 
-      <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-200 bg-white p-1.5">
-        {[
-          { id: "costs", label: fr ? "Coûts & marges" : "Costs & margins", icon: Calculator },
-          { id: "competitors", label: fr ? "Concurrents" : "Competitors", icon: Globe },
-          { id: "recommendations", label: fr ? "Recommandations" : "Recommendations", icon: Sparkles },
-        ].map(({ id, label, icon: Icon }) => (
-          <Button
-            key={id}
-            size="sm"
-            variant={workspace === id ? "secondary" : "ghost"}
-            className="h-8 gap-1.5"
-            onClick={() => setSearchParams({ tab: id })}
-          >
-            <Icon className="h-3.5 w-3.5" />{label}
-          </Button>
-        ))}
-      </div>
-
       <Card className="p-3 shadow-none">
-        <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-2 2xl:flex-row 2xl:items-center 2xl:justify-between">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -438,112 +389,88 @@ export function PricingWorkspace() {
             <Badge variant="outline">{displayProducts.length} {fr ? "produits" : "products"}</Badge>
             {selectedCount > 0 && <Badge>{selectedCount} {fr ? "sélectionnés" : "selected"}</Badge>}
 
-            {workspace === "costs" && (
-              <>
-                <div className="flex items-center gap-1 rounded-lg border px-2">
-                  <span className="text-xs text-muted-foreground">TVA</span>
-                  <Input
-                    type="number"
-                    value={taxRate}
-                    onChange={(event) => setTaxRate(Number(event.target.value) || 0)}
-                    className="h-8 w-16 border-0 px-1 text-right shadow-none focus-visible:ring-0"
-                  />
-                  <span className="text-xs">%</span>
-                </div>
-                <Button size="sm" variant="outline" onClick={importCosts} disabled={busy !== null}>
-                  {busy === "import-costs" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
-                  {fr ? "Importer coûts" : "Import costs"}
-                </Button>
-                <Button size="sm" onClick={syncCurrentPrices} disabled={busy !== null}>
-                  {busy === "sync" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
-                  {selectedCount > 0 ? (fr ? "Sync sélection" : "Sync selected") : (fr ? "Sync visibles" : "Sync visible")}
-                </Button>
-              </>
-            )}
+            <div className="flex items-center gap-1 rounded-lg border px-2">
+              <span className="text-xs text-muted-foreground">TVA</span>
+              <Input
+                type="number"
+                value={taxRate}
+                onChange={(event) => setTaxRate(Number(event.target.value) || 0)}
+                className="h-8 w-14 border-0 px-1 text-right shadow-none focus-visible:ring-0"
+              />
+              <span className="text-xs">%</span>
+            </div>
 
-            {workspace === "competitors" && (
-              <>
-                <Button size="sm" variant="outline" onClick={() => setShowMarkets(true)}>
-                  <Globe className="mr-1.5 h-4 w-4" />
-                  {selectedMarkets.length} {fr ? "marché(s)" : "market(s)"}
-                </Button>
-                <Button size="sm" onClick={analyzeMarket} disabled={busy !== null}>
-                  {busy === "analyze" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1.5 h-4 w-4" />}
-                  {selectedCount > 0 ? (fr ? "Analyser sélection" : "Analyze selected") : (fr ? "Analyser visibles" : "Analyze visible")}
-                </Button>
-              </>
-            )}
+            <Button size="sm" variant="outline" onClick={importCosts} disabled={busy !== null} title={fr ? "Importer les coûts Shopify" : "Import Shopify costs"}>
+              {busy === "import-costs" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
+              {fr ? "Coûts" : "Costs"}
+            </Button>
 
-            {workspace === "recommendations" && (
-              <>
-                <Button size="sm" variant="outline" onClick={analyzeMarket} disabled={busy !== null}>
-                  {busy === "analyze" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-1.5 h-4 w-4" />}
-                  {fr ? "Actualiser" : "Refresh"}
-                </Button>
-                <Button size="sm" onClick={applyAndSyncRecommendations} disabled={busy !== null}>
-                  {busy === "apply-sync" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Check className="mr-1.5 h-4 w-4" />}
-                  {selectedCount > 0 ? (fr ? "Appliquer & sync" : "Apply & sync") : (fr ? "Appliquer visibles" : "Apply visible")}
-                </Button>
-              </>
-            )}
+            <Button size="sm" variant="outline" onClick={() => setShowMarkets(true)} title={fr ? "Choisir les marchés" : "Choose markets"}>
+              <Globe className="mr-1.5 h-4 w-4" />
+              {selectedMarkets.length} {fr ? "marché(s)" : "market(s)"}
+            </Button>
+
+            <Button size="sm" variant="outline" onClick={() => analyzeMarket()} disabled={busy !== null} title={fr ? "Analyser les prix concurrents" : "Analyze competitor prices"}>
+              {busy === "analyze" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1.5 h-4 w-4" />}
+              {fr ? "Analyser" : "Analyze"}
+            </Button>
+
+            <Button size="sm" variant="secondary" onClick={() => applyAndSyncRecommendations()} disabled={busy !== null} title={fr ? "Appliquer les Smart Prices et synchroniser" : "Apply Smart Prices and sync"}>
+              {busy === "apply-sync" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Check className="mr-1.5 h-4 w-4" />}
+              {fr ? "Smart Price" : "Smart Price"}
+            </Button>
+
+            <Button size="sm" onClick={() => syncCurrentPrices()} disabled={busy !== null} title={fr ? "Synchroniser les prix avec Shopify" : "Sync prices with Shopify"}>
+              {busy === "sync" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
+              {fr ? "Sync" : "Sync"}
+            </Button>
           </div>
         </div>
 
-        {workspace === "costs" && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
-            <span className="text-xs font-medium text-muted-foreground">{fr ? "Ajustement groupé" : "Bulk adjustment"}</span>
-            <Select value={bulkMode} onValueChange={(value: "discount" | "increase") => setBulkMode(value)}>
-              <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="discount">{fr ? "Réduction" : "Discount"}</SelectItem>
-                <SelectItem value="increase">{fr ? "Hausse" : "Increase"}</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center rounded-lg border">
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                value={bulkAmount || ""}
-                onChange={(event) => setBulkAmount(Math.max(0, Math.min(100, Number(event.target.value) || 0)))}
-                className="h-8 w-20 border-0 text-right shadow-none focus-visible:ring-0"
-                placeholder="0"
-              />
-              <span className="pr-2 text-xs">%</span>
-            </div>
-            <Button size="sm" variant="secondary" onClick={applyBulk} disabled={bulkAmount <= 0 || busy !== null}>
-              {busy === "bulk" && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-              {selectedCount > 0 ? (fr ? "Appliquer sélection" : "Apply selected") : (fr ? "Appliquer visibles" : "Apply visible")}
-            </Button>
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
+          <span className="text-xs font-medium text-muted-foreground">{fr ? "Ajustement groupé" : "Bulk adjustment"}</span>
+          <Select value={bulkMode} onValueChange={(value: "discount" | "increase") => setBulkMode(value)}>
+            <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="discount">{fr ? "Réduction" : "Discount"}</SelectItem>
+              <SelectItem value="increase">{fr ? "Hausse" : "Increase"}</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex items-center rounded-lg border">
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              value={bulkAmount || ""}
+              onChange={(event) => setBulkAmount(Math.max(0, Math.min(100, Number(event.target.value) || 0)))}
+              className="h-8 w-20 border-0 text-right shadow-none focus-visible:ring-0"
+              placeholder="0"
+            />
+            <span className="pr-2 text-xs">%</span>
           </div>
-        )}
+          <Button size="sm" variant="secondary" onClick={applyBulk} disabled={bulkAmount <= 0 || busy !== null}>
+            {busy === "bulk" && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+            {selectedCount > 0 ? (fr ? "Appliquer sélection" : "Apply selected") : (fr ? "Appliquer visibles" : "Apply visible")}
+          </Button>
+        </div>
       </Card>
 
       <Card className="overflow-hidden shadow-none">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[1540px] text-sm">
             <thead className="border-b bg-slate-50/70 text-left text-xs text-muted-foreground">
               <tr>
                 <th className="w-10 px-3 py-2.5"><Checkbox checked={pageProducts.length > 0 && pageProducts.every((product) => selected.has(product.id))} onCheckedChange={togglePage} /></th>
                 <th className="px-3 py-2.5">{fr ? "Produit" : "Product"}</th>
-                {workspace === "costs" && <>
-                  <th className="px-3 py-2.5">{fr ? "Prix" : "Price"}</th>
-                  <th className="px-3 py-2.5">{fr ? "Coût" : "Cost"}</th>
-                  <th className="px-3 py-2.5">{fr ? "Livraison" : "Shipping"}</th>
-                  <th className="px-3 py-2.5">{fr ? "Marge nette" : "Net margin"}</th>
-                </>}
-                {workspace === "competitors" && <>
-                  <th className="px-3 py-2.5">{fr ? "Prix actuel" : "Current"}</th>
-                  <th className="px-3 py-2.5">{fr ? "Marché" : "Market"}</th>
-                  <th className="px-3 py-2.5">{fr ? "Sources" : "Sources"}</th>
-                  <th className="px-3 py-2.5">{fr ? "Écart" : "Gap"}</th>
-                </>}
-                {workspace === "recommendations" && <>
-                  <th className="px-3 py-2.5">{fr ? "Actuel" : "Current"}</th>
-                  <th className="px-3 py-2.5">{fr ? "Smart Price" : "Smart Price"}</th>
-                  <th className="px-3 py-2.5">{fr ? "Variation" : "Change"}</th>
-                  <th className="px-3 py-2.5">{fr ? "Pourquoi" : "Reason"}</th>
-                </>}
+                <th className="px-3 py-2.5">{fr ? "Prix" : "Price"}</th>
+                <th className="px-3 py-2.5">{fr ? "Coût" : "Cost"}</th>
+                <th className="px-3 py-2.5">{fr ? "Livraison" : "Shipping"}</th>
+                <th className="px-3 py-2.5">{fr ? "Marge" : "Margin"}</th>
+                <th className="px-3 py-2.5">{fr ? "Marché" : "Market"}</th>
+                <th className="px-3 py-2.5">{fr ? "Sources" : "Sources"}</th>
+                <th className="px-3 py-2.5">Smart Price</th>
+                <th className="px-3 py-2.5">{fr ? "Recommandation" : "Recommendation"}</th>
+                <th className="w-32 px-3 py-2.5 text-right">{fr ? "Actions" : "Actions"}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -559,44 +486,82 @@ export function PricingWorkspace() {
                 return (
                   <tr key={product.id} className="hover:bg-slate-50/60">
                     <td className="px-3 py-2.5"><Checkbox checked={selected.has(product.id)} onCheckedChange={() => toggle(product.id)} /></td>
-                    <td className="min-w-[260px] px-3 py-2.5">
+                    <td className="min-w-[250px] px-3 py-2.5">
                       <div className="flex items-center gap-3">
                         <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100">
                           {product.image_url ? <img src={product.image_url} alt="" className="h-full w-full object-cover" /> : <Package className="h-4 w-4 text-slate-400" />}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate font-medium text-slate-900">{product.title}</p>
-                          <p className="truncate text-xs text-muted-foreground">
+                          <p className="max-w-[250px] truncate font-medium text-slate-900">{product.title}</p>
+                          <p className="max-w-[250px] truncate text-xs text-muted-foreground">
                             {product.vendor || (fr ? "Sans marque" : "No vendor")}
                             {product.product_variants.length > 1 ? ` · ${product.product_variants.length} variants` : ""}
                           </p>
                         </div>
                       </div>
                     </td>
-
-                    {workspace === "costs" && <>
-                      <td className="px-3 py-2.5"><CompactMoneyInput value={price} onCommit={(value) => updateField(product.id, "price", value)} /></td>
-                      <td className="px-3 py-2.5"><CompactMoneyInput value={cost} onCommit={(value) => updateField(product.id, "cost_price", value)} /></td>
-                      <td className="px-3 py-2.5"><CompactMoneyInput value={product.shipping_cost || 0} onCommit={(value) => updateField(product.id, "shipping_cost", value)} /></td>
-                      <td className="px-3 py-2.5">
-                        <div className="font-medium">{money(net.value, product.currency || "EUR")}</div>
-                        <div className={`text-xs ${net.percent < 0 ? "text-red-600" : net.percent < 20 ? "text-amber-600" : "text-emerald-600"}`}>{net.percent.toFixed(1)}%</div>
-                      </td>
-                    </>}
-
-                    {workspace === "competitors" && <>
-                      <td className="px-3 py-2.5 font-medium">{money(price, product.currency || "EUR")}</td>
-                      <td className="px-3 py-2.5 font-medium">{money(market, product.currency || "EUR")}</td>
-                      <td className="px-3 py-2.5"><Badge variant="outline">{product.competitors.length}</Badge></td>
-                      <td className="px-3 py-2.5">{marketGap == null ? "—" : <span className={Math.abs(marketGap) <= 5 ? "text-emerald-600" : "text-amber-600"}>{marketGap > 0 ? "+" : ""}{marketGap.toFixed(1)}%</span>}</td>
-                    </>}
-
-                    {workspace === "recommendations" && <>
-                      <td className="px-3 py-2.5">{money(price, product.currency || "EUR")}</td>
-                      <td className="px-3 py-2.5 font-semibold text-violet-700">{money(smart, product.currency || "EUR")}</td>
-                      <td className="px-3 py-2.5">{smartChange == null ? "—" : <Badge variant="outline">{smartChange > 0 ? "+" : ""}{smartChange.toFixed(1)}%</Badge>}</td>
-                      <td className="max-w-[360px] px-3 py-2.5 text-xs text-muted-foreground"><p className="line-clamp-2">{product.ai_reasoning || (fr ? "Analyse non disponible" : "No analysis yet")}</p></td>
-                    </>}
+                    <td className="px-3 py-2.5"><CompactMoneyInput value={price} onCommit={(value) => updateField(product.id, "price", value)} /></td>
+                    <td className="px-3 py-2.5"><CompactMoneyInput value={cost} onCommit={(value) => updateField(product.id, "cost_price", value)} /></td>
+                    <td className="px-3 py-2.5"><CompactMoneyInput value={product.shipping_cost || 0} onCommit={(value) => updateField(product.id, "shipping_cost", value)} /></td>
+                    <td className="px-3 py-2.5">
+                      <div className="font-medium">{money(net.value, product.currency || "EUR")}</div>
+                      <div className={`text-xs ${net.percent < 0 ? "text-red-600" : net.percent < 20 ? "text-amber-600" : "text-emerald-600"}`}>{net.percent.toFixed(1)}%</div>
+                    </td>
+                    <td className="min-w-[120px] px-3 py-2.5">
+                      <div className="font-medium">{money(market, product.currency || "EUR")}</div>
+                      {marketGap == null ? (
+                        <div className="text-[11px] text-muted-foreground">{fr ? "Non analysé" : "Not analyzed"}</div>
+                      ) : (
+                        <div className={`text-[11px] ${Math.abs(marketGap) <= 5 ? "text-emerald-600" : "text-amber-600"}`}>
+                          {marketGap > 0 ? "+" : ""}{marketGap.toFixed(1)}%
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5"><Badge variant="outline">{product.competitors.length}</Badge></td>
+                    <td className="min-w-[120px] px-3 py-2.5">
+                      <div className="font-semibold text-violet-700">{money(smart, product.currency || "EUR")}</div>
+                      {smartChange != null && <Badge variant="outline" className="mt-1 h-5 px-1.5 text-[10px]">{smartChange > 0 ? "+" : ""}{smartChange.toFixed(1)}%</Badge>}
+                    </td>
+                    <td className="max-w-[290px] px-3 py-2.5 text-xs text-muted-foreground">
+                      <p className="line-clamp-2">{product.ai_reasoning || (fr ? "Lancez une analyse pour obtenir une recommandation." : "Run an analysis to get a recommendation.")}</p>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => analyzeMarket([product])}
+                          disabled={busy !== null}
+                          title={fr ? "Analyser le marché" : "Analyze market"}
+                          aria-label={fr ? "Analyser le marché" : "Analyze market"}
+                        >
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => applyAndSyncRecommendations([product])}
+                          disabled={busy !== null || smart == null}
+                          title={fr ? "Appliquer Smart Price" : "Apply Smart Price"}
+                          aria-label={fr ? "Appliquer Smart Price" : "Apply Smart Price"}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => syncCurrentPrices([product])}
+                          disabled={busy !== null}
+                          title={fr ? "Synchroniser avec Shopify" : "Sync with Shopify"}
+                          aria-label={fr ? "Synchroniser avec Shopify" : "Sync with Shopify"}
+                        >
+                          <Upload className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
