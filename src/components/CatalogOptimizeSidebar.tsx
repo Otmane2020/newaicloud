@@ -81,18 +81,6 @@ export function CatalogOptimizeSidebar() {
       ],
     },
     {
-      label: fr ? "Tarification" : "Pricing",
-      icon: BadgeDollarSign,
-      items: [
-        {
-          label: fr ? "Prix & marges" : "Pricing",
-          href: "/pricing?tab=costs",
-          icon: BadgeDollarSign,
-          aliases: ["/pricing?tab=competitors", "/pricing?tab=recommendations"],
-        },
-      ],
-    },
-    {
       label: fr ? "Canaux" : "Channels",
       icon: Store,
       items: [
@@ -171,6 +159,15 @@ export function CatalogOptimizeSidebar() {
                   <NavLink to="/dashboard" onClick={closeMobile}>
                     <LayoutDashboard className="h-4 w-4" />
                     <span>{fr ? "Tableau de bord" : "Dashboard"}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/pricing"}>
+                  <NavLink to="/pricing" onClick={closeMobile}>
+                    <BadgeDollarSign className="h-4 w-4" />
+                    <span>Pricing</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
