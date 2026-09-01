@@ -4,20 +4,36 @@ body[data-ai-image-studio-route] [data-ai-image-studio-page] {
   --studio-ink: rgb(15 23 42);
   --studio-accent: rgb(124 58 237);
   max-width: 1500px;
-  gap: 14px;
 }
 
-/* The image workspace is intentionally list-first: remove dashboard-like noise. */
+body[data-ai-image-studio-route] [data-ai-image-studio-page] > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Keep a compact title, search/filter row and the product table. Everything else is noise here. */
 body[data-ai-image-studio-route] [data-studio-tools],
 body[data-ai-image-studio-route] [data-studio-total],
 body[data-ai-image-studio-route] [data-studio-kpis],
 body[data-ai-image-studio-route] [data-studio-actions],
-body[data-ai-image-studio-route] [data-studio-help] {
+body[data-ai-image-studio-route] [data-studio-help],
+body[data-ai-image-studio-route] [data-studio-header-actions],
+body[data-ai-image-studio-route] [data-studio-header-description] {
   display: none !important;
 }
 
+body[data-ai-image-studio-route] [data-studio-page-header] {
+  padding: 2px 0 4px;
+}
+
+body[data-ai-image-studio-route] [data-studio-page-header] h1 {
+  margin-top: 6px;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
 body[data-ai-image-studio-route] [data-studio-filters] {
-  margin: 0;
+  margin-top: 12px !important;
   padding: 10px 12px;
   border: 1px solid var(--studio-border);
   border-radius: 14px;
@@ -31,6 +47,7 @@ body[data-ai-image-studio-route] [data-studio-filters] button {
 }
 
 body[data-ai-image-studio-route] [data-studio-table-card] {
+  margin-top: 12px !important;
   border: 1px solid var(--studio-border) !important;
   border-radius: 16px !important;
   background: white;
@@ -38,8 +55,8 @@ body[data-ai-image-studio-route] [data-studio-table-card] {
 }
 
 body[data-ai-image-studio-route] [data-studio-table-scroll] {
-  max-height: calc(100vh - 250px) !important;
-  min-height: 420px;
+  max-height: calc(100vh - 220px) !important;
+  min-height: 440px;
   overflow: auto;
 }
 
@@ -63,7 +80,7 @@ body[data-ai-image-studio-route] [data-studio-product-table] thead th {
 }
 
 body[data-ai-image-studio-route] [data-studio-product-table] tbody tr {
-  transition: background-color 140ms ease, box-shadow 140ms ease;
+  transition: background-color 140ms ease;
 }
 
 body[data-ai-image-studio-route] [data-studio-product-table] tbody tr:hover {
@@ -72,8 +89,8 @@ body[data-ai-image-studio-route] [data-studio-product-table] tbody tr:hover {
 
 body[data-ai-image-studio-route] [data-studio-product-table] tbody td {
   min-height: 72px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: 9px;
+  padding-bottom: 9px;
   border-bottom-color: rgb(241 245 249);
   vertical-align: middle;
 }
@@ -90,7 +107,7 @@ body[data-ai-image-studio-route] [data-studio-product-table] tbody td:nth-child(
 body[data-ai-image-studio-route] [data-studio-product-table] tbody td:nth-child(3) p:first-child {
   color: var(--studio-ink);
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 body[data-ai-image-studio-route] [data-studio-product-table] tbody td:nth-child(4) p {
@@ -100,7 +117,7 @@ body[data-ai-image-studio-route] [data-studio-product-table] tbody td:nth-child(
   line-height: 1.45;
 }
 
-/* Row actions become the visual focus: compact, obvious icon buttons. */
+/* Row-level icons are the primary actions in this workspace. */
 body[data-ai-image-studio-route] [data-studio-product-table] tbody td:last-child > div {
   justify-content: flex-end;
   gap: 4px;
