@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
+import { CatalogDemoShowcase } from "@/components/landing/CatalogDemoShowcase";
 
 const pillars = [
   { icon: Package, title: "Catalog", text: "Products, collections, variants, bulk editing and imports." },
@@ -118,6 +119,7 @@ export default function CatalogOptimizeLanding() {
           <Link to="/" aria-label="CatalogOptimize AI home"><CatalogOptimizeLogo /></Link>
           <nav className="hidden items-center gap-7 text-sm text-slate-600 md:flex">
             <a href="#product">Product</a>
+            <a href="#demo">Demo</a>
             <a href="#solutions">Solutions</a>
             <a href="#pricing">Pricing</a>
             <Link to="/documentation">Resources</Link>
@@ -149,7 +151,7 @@ export default function CatalogOptimizeLanding() {
                 <Button size="lg" asChild className="bg-violet-600 hover:bg-violet-700">
                   <Link to="/auth?redirect=%2Fdashboard-light%3Fscan%3D1">Scan my Shopify catalog <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild><Link to="/demo">Watch the demo</Link></Button>
+                <Button size="lg" variant="outline" asChild><a href="#demo">Watch the demo</a></Button>
               </div>
               <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500">
                 {["Free catalog scan", "No credit card required", "Review every change before sync"].map((item) => (
@@ -187,6 +189,8 @@ export default function CatalogOptimizeLanding() {
             </Card>
           </div>
         </section>
+
+        <CatalogDemoShowcase />
 
         <section id="product" className="mx-auto max-w-7xl px-5 py-20">
           <div className="max-w-3xl">
