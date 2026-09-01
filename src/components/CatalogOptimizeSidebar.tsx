@@ -2,14 +2,14 @@ import { useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Layers3, Database, FileText,
-  Sparkles, BadgeDollarSign, Store, ShoppingCart, RefreshCw, Settings,
+  Sparkles, Store, ShoppingCart, RefreshCw, Settings,
   User, CreditCard, ChevronDown, LogOut, FlaskConical, Bot,
-  Newspaper, Activity, Camera, Tags, Images
+  Newspaper, Activity, Camera, Tags, Images, Home,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar
+  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -29,18 +29,13 @@ export function CatalogOptimizeSidebar() {
   const { language } = useTranslation();
   const fr = language === "fr";
 
-  const pinnedContent: NavItem[] = useMemo(() => [
-    { label: "Tags", href: "/seo?tab=tags", icon: Tags },
-    { label: fr ? "ALT Images" : "Image ALT", href: "/seo?tab=alt", icon: Images },
-  ], [fr]);
-
   const sections: NavSection[] = useMemo(() => [
     {
       label: fr ? "Catalogue" : "Catalog",
       icon: Package,
       items: [
         { label: fr ? "Produits" : "Products", href: "/products", icon: Package },
-        { label: fr ? "Collections" : "Collections", href: "/collections", icon: Layers3 },
+        { label: "Collections", href: "/collections", icon: Layers3 },
         { label: fr ? "Données enrichies" : "Enriched Data", href: "/product-source", icon: Database },
       ],
     },
@@ -60,12 +55,6 @@ export function CatalogOptimizeSidebar() {
           ],
         },
         {
-          label: fr ? "Collections & pages" : "Collections & pages",
-          href: "/seo?tab=collections",
-          icon: Layers3,
-          aliases: ["/seo?tab=pages", "/seo?tab=homepage"],
-        },
-        {
           label: "Blog",
           href: "/blog/management",
           icon: Newspaper,
@@ -78,6 +67,21 @@ export function CatalogOptimizeSidebar() {
           badge: "AI",
           aliases: ["/ai-creative-studio", "/products/media-history", "/social-media"],
         },
+      ],
+    },
+    {
+      label: "SEO",
+      icon: Sparkles,
+      items: [
+        {
+          label: fr ? "Collections & pages" : "Collections & pages",
+          href: "/seo?tab=collections",
+          icon: Layers3,
+          aliases: ["/seo?tab=pages"],
+        },
+        { label: "Tags", href: "/seo?tab=tags", icon: Tags },
+        { label: fr ? "ALT Images" : "Image ALT", href: "/seo?tab=alt", icon: Images },
+        { label: fr ? "SEO accueil" : "Homepage SEO", href: "/seo?tab=homepage", icon: Home },
       ],
     },
     {
@@ -162,26 +166,6 @@ export function CatalogOptimizeSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/pricing"}>
-                  <NavLink to="/pricing" onClick={closeMobile}>
-                    <BadgeDollarSign className="h-4 w-4" />
-                    <span>Pricing</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              {pinnedContent.map((item) => (
-                <SidebarMenuItem key={`pinned-${item.href}`}>
-                  <SidebarMenuButton asChild isActive={active(item)}>
-                    <NavLink to={item.href} onClick={closeMobile}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
 
               {sections.map((section) => (
                 <Collapsible key={section.label} defaultOpen={section.items.some(active)}>
