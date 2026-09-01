@@ -1,9 +1,9 @@
 # CatalogOptimizer demo assets
 
-The landing page demo slider uses the real 1448×1086 screenshots stored in this folder:
+Landing slider assets are real screenshot files rendered directly by the browser:
 
-- `catalogoptimizer-studio.webp`
-- `catalogoptimizer-product.webp`
-- `catalogoptimizer-seo.webp`
+- `catalogoptimizer-studio.webp` — 1448×1086
+- `catalogoptimizer-product.webp` — 1448×1086
+- `catalogoptimizer-seo.webp` — 1448×1086
 
-They are rendered directly by `src/components/landing/CatalogDemoShowcase.tsx`.
+Component: `src/components/landing/CatalogDemoShowcase.tsx`.
