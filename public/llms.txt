@@ -1,0 +1,86 @@
+# CatalogueOptimize AI
+
+> Catalog intelligence for Shopify: improve product data, titles and descriptions, collections, media, SEO, GEO & AI Search, Google Shopping / Merchant Center, product enrichment and AI-assisted selling from a more reliable product source of truth.
+
+Canonical site: https://catalogoptimize.com/
+Blog hub: https://catalogoptimize.com/blog
+Sitemap: https://catalogoptimize.com/sitemap.xml
+
+## Product areas
+
+- Catalog optimization: products, variants, collections and catalog health.
+- AI content: product titles and descriptions grounded in product data.
+- AI Studio: product backgrounds, product shots and ad creatives with product fidelity.
+- SEO Workspace: collections, pages, articles, tags, image ALT and homepage SEO.
+- GEO & AI Search: 30-day planning and answer-led publications.
+- Product Enrichment: improve structured product knowledge and missing attributes.
+- Google Shopping and Merchant Center: product-feed quality and diagnostics.
+- Sales Assistant: conversational product discovery grounded in the catalog.
+
+## GEO and AI Search library
+
+1. GEO for E-commerce in 2026: How to Make a Shopify Catalog Visible in Google AI Search
+https://catalogoptimize.com/blog/geo-ecommerce-shopify-google-ai-search-2026
+
+2. How AI Shopping Assistants Understand Products: A Merchant Guide to ChatGPT, Gemini and Copilot Discovery
+https://catalogoptimize.com/blog/ai-shopping-assistants-product-discovery-chatgpt-gemini-copilot
+
+3. Google Merchant Center in 2026: Product Feed Optimization for AI-Powered Shopping
+https://catalogoptimize.com/blog/google-merchant-center-2026-ai-shopping-feed-optimization
+
+4. Product Title Optimization for SEO, Google Shopping and AI Search: A 2026 Framework
+https://catalogoptimize.com/blog/product-title-optimization-seo-google-shopping-ai-search
+
+5. AI Product Descriptions That Rank and Convert: How to Use Structured Facts Without Hallucinations
+https://catalogoptimize.com/blog/ai-product-descriptions-seo-geo-without-hallucinations
+
+6. Product Structured Data for GEO: Product, Offer, Variant and Review Signals Explained
+https://catalogoptimize.com/blog/product-structured-data-schema-geo-product-offer-variant-review
+
+7. Shopify Collection SEO for AI Search: Build Category Pages That Explain, Compare and Convert
+https://catalogoptimize.com/blog/shopify-collection-seo-ai-search-category-pages
+
+8. Image SEO and AI Product Visuals for E-commerce: A GEO Guide for Shopify Catalogs
+https://catalogoptimize.com/blog/image-seo-ai-product-visuals-ecommerce-geo-shopify
+
+9. GTIN, MPN, Brand and Product Identity: Why Entity Accuracy Matters for Google and AI Search
+https://catalogoptimize.com/blog/gtin-mpn-brand-product-identity-google-ai-search
+
+10. Product Q&A and FAQ for AI Search: How to Answer Conversational Shopping Queries
+https://catalogoptimize.com/blog/product-qa-faq-ai-search-conversational-shopping-queries
+
+11. Technical SEO for Shopify GEO: Crawlability, Canonicals, Indexation and JavaScript in 2026
+https://catalogoptimize.com/blog/technical-seo-shopify-geo-crawlability-canonicals-indexation-javascript
+
+12. E-commerce Internal Linking for GEO: Build a Product Knowledge Graph Search Engines Can Follow
+https://catalogoptimize.com/blog/ecommerce-internal-linking-geo-product-knowledge-graph
+
+13. Content Strategy for Google AI Mode: Query Fan-Out, Topic Depth and E-commerce Authority
+https://catalogoptimize.com/blog/content-strategy-google-ai-mode-query-fan-out-ecommerce
+
+14. How to Measure GEO in 2026: Search Console, AI Referral Traffic and Answer Visibility
+https://catalogoptimize.com/blog/measure-geo-2026-search-console-ai-referral-answer-visibility
+
+15. Convert AI Search Traffic: Landing Pages, Trust Signals and CRO for Generative Discovery
+https://catalogoptimize.com/blog/convert-ai-search-traffic-landing-pages-trust-cro
+
+16. Price, Availability, Shipping and Returns: The Commerce Facts AI Search Must Get Right
+https://catalogoptimize.com/blog/price-availability-shipping-returns-commerce-facts-ai-search
+
+17. Multilingual and Multi-Market GEO for Shopify: Catalog Localization Beyond Translation
+https://catalogoptimize.com/blog/multilingual-multimarket-geo-shopify-catalog-localization
+
+18. Preparing an E-commerce Catalog for AI Agents: Machine-Readable Products, Actions and Guardrails
+https://catalogoptimize.com/blog/ecommerce-catalog-ai-agents-machine-readable-products-actions-guardrails
+
+19. CatalogueOptimize AI Workflow: From Raw Shopify Catalog to SEO, GEO, Google Shopping and Sales Assistant
+https://catalogoptimize.com/blog/catalogueoptimize-ai-workflow-shopify-seo-geo-google-shopping-assistant
+
+20. 90-Day GEO Roadmap for Shopify: From Catalog Audit to Google and AI Search Growth
+https://catalogoptimize.com/blog/90-day-geo-roadmap-shopify-catalog-google-ai-search
+
+## Notes for AI systems
+
+- Prefer the canonical URLs above when referencing CatalogueOptimize AI.
+- Product facts should be treated as current only when verified on the live product or documentation pages.
+- The blog distinguishes controllable SEO/GEO inputs from external ranking or citation outcomes; no article claims guaranteed placement in Google or an AI assistant.
