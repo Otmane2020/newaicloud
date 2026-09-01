@@ -16,7 +16,10 @@ import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import RegenerateLanding from "@/components/seo/RegenerateLanding";
+import type { LandingConfig } from "@/components/seo/LandingConfigDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
 import { useTranslation } from "@/lib/language";
@@ -27,6 +30,7 @@ type FilterId = "todo" | "ready" | "all";
 type ProductRow = {
   id: string;
   title: string | null;
+  handle: string | null;
   seo_title: string | null;
   seo_description: string | null;
   landing_page: string | null;
@@ -46,6 +50,27 @@ type ScoredProduct = ProductRow & {
 
 const TOOL_IDS: ToolId[] = ["landing", "shots", "catalog", "background"];
 
+const QUICK_LANDING_CONFIG: LandingConfig = {
+  layout: "2 colonnes",
+  colorScheme: {
+    paletteId: "modern",
+    primary: "#111827",
+    secondary: "#374151",
+    background: "#FFFFFF",
+    surface: "#F8FAFC",
+    text: "#0F172A",
+    textMuted: "#64748B",
+  },
+  contentLength: "medium",
+  vendorSource: "shopify",
+  customHighlights: "",
+  designStyle: "modern",
+  theme: "light",
+  regenerateTitle: true,
+  activeOnly: true,
+  redoExisting: false,
+};
+
 export default function ContentWorkspace() {
   const { selectedStore } = useStore();
   const { language } = useTranslation();
@@ -55,6 +80,7 @@ export default function ContentWorkspace() {
   const activeTool: ToolId = requestedTool && TOOL_IDS.includes(requestedTool) ? requestedTool : "landing";
   const [filter, setFilter] = useState<FilterId>(activeTool === "shots" || activeTool === "background" ? "ready" : "todo");
   const [search, setSearch] = useState("");
+  const [selectedLandingProduct, setSelectedLandingProduct] = useState<ScoredProduct | null>(null);
 
   useEffect(() => {
     setFilter(activeTool === "shots" || activeTool === "background" ? "ready" : "todo");
@@ -67,7 +93,7 @@ export default function ContentWorkspace() {
       icon: PanelsTopLeft,
       label: "Landing Pages",
       description: fr ? "Créez une page produit riche à partir du catalogue." : "Create a rich product page from catalog data.",
-      action: fr ? "Créer les pages" : "Create pages",
+      action: fr ? "Génération groupée" : "Bulk generation",
       href: "/products/title-description?view=landing",
     },
     {
@@ -98,7 +124,7 @@ export default function ContentWorkspace() {
 
   const currentTool = tools.find((tool) => tool.id === activeTool) || tools[0];
 
-  const { data: products = [], isLoading } = useQuery<ProductRow[]>({
+  const { data: products = [], isLoading, refetch } = useQuery<ProductRow[]>({
     queryKey: ["product-optimization-quick", selectedStore?.id],
     enabled: !!selectedStore?.id,
     queryFn: async () => {
@@ -107,7 +133,7 @@ export default function ContentWorkspace() {
 
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, seo_title, seo_description, landing_page, body_html, image_url, product_type, category, tags")
+        .select("id, title, handle, seo_title, seo_description, landing_page, body_html, image_url, product_type, category, tags")
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id)
         .order("imported_at", { ascending: false });
@@ -184,12 +210,14 @@ export default function ContentWorkspace() {
     return product.imageReady ? (fr ? "Image prête" : "Image ready") : (fr ? "Image manquante" : "Image missing");
   };
 
-  const rowAction = (product: ScoredProduct) => {
+  const rowLinkAction = (product: ScoredProduct) => {
     if (activeTool === "landing" && product.landingReady) {
       return { label: fr ? "Voir" : "Preview", href: `/product-landing/${product.id}` };
     }
     return { label: currentTool.action, href: currentTool.href };
   };
+
+  const plainDescription = (html: string | null) => (html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-4">
@@ -303,7 +331,9 @@ export default function ContentWorkspace() {
           <div className="divide-y divide-slate-100">
             {visibleRows.map((product) => {
               const ready = readyForTool(product);
-              const action = rowAction(product);
+              const action = rowLinkAction(product);
+              const quickLanding = activeTool === "landing" && !product.landingReady;
+
               return (
                 <div key={product.id} className="flex flex-col gap-3 p-3 transition hover:bg-slate-50/60 sm:flex-row sm:items-center">
                   <Link to={`/products/${product.id}`} className="flex min-w-0 flex-1 items-center gap-3">
@@ -331,9 +361,15 @@ export default function ContentWorkspace() {
                     >
                       {productStatus(product)}
                     </Badge>
-                    <Button asChild variant={ready ? "outline" : "default"} size="sm" className="min-w-24 rounded-xl">
-                      <Link to={action.href}>{action.label}</Link>
-                    </Button>
+                    {quickLanding ? (
+                      <Button size="sm" className="min-w-24 rounded-xl" onClick={() => setSelectedLandingProduct(product)}>
+                        {fr ? "Créer" : "Create"}
+                      </Button>
+                    ) : (
+                      <Button asChild variant={ready ? "outline" : "default"} size="sm" className="min-w-24 rounded-xl">
+                        <Link to={action.href}>{action.label}</Link>
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
@@ -349,6 +385,33 @@ export default function ContentWorkspace() {
           </div>
         )}
       </Card>
+
+      <Dialog open={Boolean(selectedLandingProduct)} onOpenChange={(open) => !open && setSelectedLandingProduct(null)}>
+        <DialogContent className="max-h-[92vh] max-w-6xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{fr ? "Créer la Landing Page" : "Create Landing Page"}</DialogTitle>
+            <DialogDescription>
+              {fr ? "Configuration rapide appliquée automatiquement. Vous gardez l’aperçu et la synchronisation existants." : "Quick configuration is applied automatically. Existing preview and sync remain available."}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLandingProduct && (
+            <RegenerateLanding
+              product={{
+                id: selectedLandingProduct.id,
+                title: selectedLandingProduct.seo_title || selectedLandingProduct.title || (fr ? "Produit" : "Product"),
+                seo_title: selectedLandingProduct.seo_title || undefined,
+                handle: selectedLandingProduct.handle || undefined,
+                description: plainDescription(selectedLandingProduct.body_html),
+                image_url: selectedLandingProduct.image_url || undefined,
+              }}
+              config={QUICK_LANDING_CONFIG}
+              autoGenerate
+              onGenerated={() => void refetch()}
+              onClose={() => setSelectedLandingProduct(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
