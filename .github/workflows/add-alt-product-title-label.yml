@@ -24,13 +24,16 @@ jobs:
           from pathlib import Path
           path = Path('src/components/seo/SeoAltImageList.tsx')
           text = path.read_text()
-          old = '''                          <div className="text-left">
+          if 'Product title' in text:
+              print('Product title label already present.')
+          else:
+              old = '''<div className="text-left">
                             <h3 className="font-semibold">{product.title}</h3>
                             <p className="text-sm text-muted-foreground">
                               {product.images.length} image(s)
                             </p>
                           </div>'''
-          new = '''                          <div className="min-w-0 text-left">
+              new = '''<div className="min-w-0 text-left">
                             <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                               Product title
                             </p>
@@ -39,16 +42,19 @@ jobs:
                               {product.images.length} image(s)
                             </p>
                           </div>'''
-          if old not in text:
-              raise SystemExit('Target product title block not found; aborting without changes.')
-          text = text.replace(old, new, 1)
-          path.write_text(text)
+              if old not in text:
+                  raise SystemExit('Target product title block not found; aborting without changes.')
+              path.write_text(text.replace(old, new, 1))
 
       - name: Validate diff
         run: git diff --check
 
       - name: Commit patch
         run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
           git config user.name "catalog-optimize-bot"
           git config user.email "catalog-optimize-bot@users.noreply.github.com"
           git add src/components/seo/SeoAltImageList.tsx
