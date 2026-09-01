@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Package, Layers3, Database, FileText,
   Sparkles, Store, ShoppingCart, Settings,
   User, CreditCard, ChevronDown, LogOut, Bot,
-  Newspaper, Activity, Camera, Tags, Images, Home,
+  Newspaper, Activity, Camera, Tags, Images, Home, Wand2, Megaphone,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -54,12 +54,29 @@ export function CatalogOptimizeSidebar() {
             "/products/title-description?view=bulk",
           ],
         },
+      ],
+    },
+    {
+      label: "Studio",
+      icon: Camera,
+      items: [
         {
-          label: "Studio",
-          href: "/studio",
+          label: "Product Shot AI",
+          href: "/studio?mode=shots",
           icon: Camera,
           badge: "AI",
-          aliases: ["/ai-creative-studio", "/products/media-history"],
+        },
+        {
+          label: "Background",
+          href: "/studio?mode=backgrounds",
+          icon: Wand2,
+          badge: "Ambience / White",
+        },
+        {
+          label: "Ads Assets",
+          href: "/studio?mode=creative",
+          icon: Megaphone,
+          aliases: ["/ai-creative-studio"],
         },
       ],
     },
@@ -214,7 +231,10 @@ export function CatalogOptimizeSidebar() {
               </SidebarMenuItem>
 
               {sections.map((section) => (
-                <Collapsible key={section.label} defaultOpen={section.items.some(active)}>
+                <Collapsible
+                  key={section.label}
+                  defaultOpen={section.items.some(active) || (section.label === "Studio" && pathname === "/studio")}
+                >
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton>
