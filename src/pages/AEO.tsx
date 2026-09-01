@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CampaignWizard } from "@/components/blog/CampaignWizard";
 import { toast } from "sonner";
 
 type Campaign = {
@@ -73,6 +74,8 @@ export default function AEO() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [publishedArticles, setPublishedArticles] = useState<PublishedArticle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCampaignWizard, setShowCampaignWizard] = useState(false);
+  const [emptyPlanPromptedStoreId, setEmptyPlanPromptedStoreId] = useState<string | null>(null);
 
   const load = async () => {
     if (!user?.id || !selectedStore?.id) {
@@ -151,6 +154,21 @@ export default function AEO() {
     return rows.sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [campaigns]);
 
+  useEffect(() => {
+    const storeId = selectedStore?.id;
+    if (loading || currentTab !== "planning" || !user?.id || !storeId) return;
+
+    if (plan.length > 0) {
+      if (emptyPlanPromptedStoreId === storeId) setEmptyPlanPromptedStoreId(null);
+      return;
+    }
+
+    if (emptyPlanPromptedStoreId !== storeId) {
+      setEmptyPlanPromptedStoreId(storeId);
+      setShowCampaignWizard(true);
+    }
+  }, [loading, currentTab, plan.length, user?.id, selectedStore?.id, emptyPlanPromptedStoreId]);
+
   const autoPostCount = plan.filter((entry) => entry.autoPost).length;
 
   const changeTab = (value: string) => {
@@ -225,6 +243,10 @@ export default function AEO() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   {fr ? "Le planning reprend vos campagnes blog actives existantes." : "The plan uses your existing active blog campaigns."}
                 </p>
+                <Button className="mt-5" onClick={() => setShowCampaignWizard(true)}>
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {fr ? "Créer le plan 30 jours" : "Create 30-day plan"}
+                </Button>
               </div>
             ) : (
               <Table>
@@ -303,6 +325,12 @@ export default function AEO() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <CampaignWizard
+        open={showCampaignWizard}
+        onOpenChange={setShowCampaignWizard}
+        onSuccess={load}
+      />
     </div>
   );
 }
