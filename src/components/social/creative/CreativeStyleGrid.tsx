@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Bookmark, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bookmark, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,11 +11,18 @@ import {
   CreativeTemplatePreview,
   type CreativeOutputFormat,
 } from "./CreativeTemplatePreview";
+import {
+  CATEGORY_DESCRIPTORS,
+  CATEGORY_LABELS,
+  getCreativeStyleDisplayName,
+} from "./creativeStyleDisplay";
 
 interface CreativeStyleGridProps {
   selectedStyle: CreativeStyle | null;
   onSelectStyle: (style: CreativeStyle) => void;
 }
+
+const PAGE_SIZE = 9;
 
 const OUTPUT_FORMATS: Array<{
   id: CreativeOutputFormat;
@@ -27,16 +34,6 @@ const OUTPUT_FORMATS: Array<{
   { id: "story", label: "Story", ratio: "9:16" },
   { id: "landscape", label: "Landscape", ratio: "16:9" },
 ];
-
-const CATEGORY_LABELS: Record<string, string> = {
-  luxury: "Luxury & Premium",
-  lifestyle: "Lifestyle",
-  minimal: "Minimalist",
-  neon: "Neon & Tech",
-  seasonal: "Seasonal",
-  editorial: "Editorial",
-  dynamic: "Dynamic",
-};
 
 const CATEGORY_TONES: Record<string, string> = {
   luxury: "bg-violet-50 text-violet-700",
@@ -50,6 +47,7 @@ const CATEGORY_TONES: Record<string, string> = {
 
 export function CreativeStyleGrid({ selectedStyle, onSelectStyle }: CreativeStyleGridProps) {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [outputFormat, setOutputFormat] = useState<CreativeOutputFormat>(() => {
     const current = selectedStyle?.size as CreativeOutputFormat | undefined;
     return current && OUTPUT_FORMATS.some((format) => format.id === current) ? current : "square";
@@ -59,13 +57,26 @@ export function CreativeStyleGrid({ selectedStyle, onSelectStyle }: CreativeStyl
   const filteredStyles = CREATIVE_STYLES.filter(
     (style) => activeCategory === "all" || style.category === activeCategory,
   );
+  const totalPages = Math.max(1, Math.ceil(filteredStyles.length / PAGE_SIZE));
+  const paginatedStyles = filteredStyles.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const selectStyle = (style: CreativeStyle) => {
-    // The output format is deliberately independent from the template's native preview size.
-    // `portrait` is supported by the generation function at runtime while legacy templates
-    // keep their existing CreativeStyle type unchanged.
     onSelectStyle({
       ...style,
+      name: getCreativeStyleDisplayName(style),
       size: outputFormat as CreativeStyle["size"],
     });
   };
@@ -77,6 +88,7 @@ export function CreativeStyleGrid({ selectedStyle, onSelectStyle }: CreativeStyl
       const baseStyle = CREATIVE_STYLES.find((style) => style.id === selectedStyle.id) || selectedStyle;
       onSelectStyle({
         ...baseStyle,
+        name: getCreativeStyleDisplayName(baseStyle),
         size: nextFormat as CreativeStyle["size"],
       });
     }
@@ -111,7 +123,7 @@ export function CreativeStyleGrid({ selectedStyle, onSelectStyle }: CreativeStyl
                   : "border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700",
               )}
             >
-              {CATEGORY_LABELS[category.id] || category.name}
+              {CATEGORY_LABELS[category.id]}
             </button>
           ))}
         </div>
@@ -140,18 +152,20 @@ export function CreativeStyleGrid({ selectedStyle, onSelectStyle }: CreativeStyl
         <div>
           <p className="text-sm font-semibold text-slate-900">Visual templates</p>
           <p className="text-xs text-slate-500">
-            Pick a style first. The selected format applies to any template.
+            Choose a professional style. The selected format applies to any template.
           </p>
         </div>
         <div className="hidden text-xs font-medium text-slate-400 sm:block">
-          {filteredStyles.length} templates
+          {filteredStyles.length} templates{totalPages > 1 ? ` · Page ${currentPage} of ${totalPages}` : ""}
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {filteredStyles.map((style) => {
+        {paginatedStyles.map((style) => {
           const isSelected = selectedStyle?.id === style.id;
           const formatLabel = OUTPUT_FORMATS.find((format) => format.id === outputFormat)?.ratio || "1:1";
+          const displayName = getCreativeStyleDisplayName(style);
+          const descriptors = CATEGORY_DESCRIPTORS[style.category];
 
           return (
             <article
@@ -166,7 +180,7 @@ export function CreativeStyleGrid({ selectedStyle, onSelectStyle }: CreativeStyl
                 type="button"
                 className="block w-full text-left"
                 onClick={() => selectStyle(style)}
-                aria-label={`Use ${style.name}`}
+                aria-label={`Use ${displayName}`}
               >
                 <div className="relative">
                   <CreativeTemplatePreview style={style} format={outputFormat} />
@@ -181,13 +195,13 @@ export function CreativeStyleGrid({ selectedStyle, onSelectStyle }: CreativeStyl
               <div className="space-y-3 p-3.5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-950">{style.name}</p>
+                    <p className="truncate text-sm font-semibold text-slate-950">{displayName}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <span className={cn("rounded-md px-2 py-1 text-[10px] font-semibold", CATEGORY_TONES[style.category])}>
-                        {CATEGORY_LABELS[style.category] || style.category}
+                        {CATEGORY_LABELS[style.category]}
                       </span>
                       <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-500">
-                        {style.moodKeywords.slice(0, 2).join(" · ")}
+                        {descriptors.join(" · ")}
                       </span>
                     </div>
                   </div>
@@ -211,7 +225,7 @@ export function CreativeStyleGrid({ selectedStyle, onSelectStyle }: CreativeStyl
                     size="icon"
                     className="h-9 w-9 shrink-0 rounded-xl border-slate-200 text-slate-500"
                     onClick={(event) => event.stopPropagation()}
-                    aria-label={`Save ${style.name}`}
+                    aria-label={`Save ${displayName}`}
                   >
                     <Bookmark className="h-4 w-4" />
                   </Button>
@@ -226,6 +240,51 @@ export function CreativeStyleGrid({ selectedStyle, onSelectStyle }: CreativeStyl
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 py-12 text-center text-sm text-slate-500">
           No templates found for this category.
         </div>
+      )}
+
+      {filteredStyles.length > 0 && totalPages > 1 && (
+        <nav className="flex flex-wrap items-center justify-center gap-2 pt-1" aria-label="Template pagination">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 rounded-xl border-slate-200 px-3 text-xs font-semibold text-slate-600"
+            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Previous
+          </Button>
+
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+            <button
+              key={page}
+              type="button"
+              onClick={() => setCurrentPage(page)}
+              aria-current={page === currentPage ? "page" : undefined}
+              className={cn(
+                "grid h-9 min-w-9 place-items-center rounded-xl border px-3 text-xs font-bold transition",
+                page === currentPage
+                  ? "border-violet-600 bg-violet-600 text-white shadow-sm"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-violet-200 hover:text-violet-700",
+              )}
+            >
+              {page}
+            </button>
+          ))}
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 rounded-xl border-slate-200 px-3 text-xs font-semibold text-slate-600"
+            onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </nav>
       )}
     </div>
   );
