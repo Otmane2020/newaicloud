@@ -1897,6 +1897,7 @@ export type Database = {
           id: string
           is_ai_generated: boolean | null
           last_optimization_at: string | null
+          last_synced_at: string | null
           optimization_count: number | null
           position: number | null
           shopify_image_id: number | null
@@ -1915,6 +1916,7 @@ export type Database = {
           id?: string
           is_ai_generated?: boolean | null
           last_optimization_at?: string | null
+          last_synced_at?: string | null
           optimization_count?: number | null
           position?: number | null
           shopify_image_id?: number | null
@@ -1933,6 +1935,7 @@ export type Database = {
           id?: string
           is_ai_generated?: boolean | null
           last_optimization_at?: string | null
+          last_synced_at?: string | null
           optimization_count?: number | null
           position?: number | null
           shopify_image_id?: number | null
@@ -5588,6 +5591,7 @@ export type Database = {
           id: string
           image_url: string | null
           imported_at: string | null
+          inventory_managed: boolean
           inventory_quantity: number | null
           landing_page: string | null
           landing_page_html: string | null
@@ -5722,6 +5726,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           imported_at?: string | null
+          inventory_managed?: boolean
           inventory_quantity?: number | null
           landing_page?: string | null
           landing_page_html?: string | null
@@ -5856,6 +5861,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           imported_at?: string | null
+          inventory_managed?: boolean
           inventory_quantity?: number | null
           landing_page?: string | null
           landing_page_html?: string | null
