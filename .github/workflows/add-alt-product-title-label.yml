@@ -22,29 +22,39 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import re
+
           path = Path('src/components/seo/SeoAltImageList.tsx')
           text = path.read_text()
+
           if 'Product title' in text:
               print('Product title label already present.')
           else:
-              old = '''<div className="text-left">
-                            <h3 className="font-semibold">{product.title}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {product.images.length} image(s)
-                            </p>
-                          </div>'''
-              new = '''<div className="min-w-0 text-left">
-                            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                              Product title
-                            </p>
-                            <h3 className="truncate font-semibold leading-tight text-foreground">{product.title}</h3>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {product.images.length} image(s)
-                            </p>
-                          </div>'''
-              if old not in text:
-                  raise SystemExit('Target product title block not found; aborting without changes.')
-              path.write_text(text.replace(old, new, 1))
+              pattern = re.compile(
+                  r'<div className="text-left">\s*'
+                  r'<h3 className="font-semibold">\{product\.title\}</h3>\s*'
+                  r'<p className="text-sm text-muted-foreground">\s*'
+                  r'\{product\.images\.length\} image\(s\)\s*'
+                  r'</p>\s*</div>'
+              )
+              indent = ' ' * 26
+              inner = ' ' * 28
+              deep = ' ' * 30
+              replacement = (
+                  '<div className="min-w-0 text-left">\n'
+                  + inner + '<p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">\n'
+                  + deep + 'Product title\n'
+                  + inner + '</p>\n'
+                  + inner + '<h3 className="truncate font-semibold leading-tight text-foreground">{product.title}</h3>\n'
+                  + inner + '<p className="mt-1 text-sm text-muted-foreground">\n'
+                  + deep + '{product.images.length} image(s)\n'
+                  + inner + '</p>\n'
+                  + indent + '</div>'
+              )
+              updated, count = pattern.subn(replacement, text, count=1)
+              if count != 1:
+                  raise SystemExit(f'Expected one product title block, found {count}; aborting.')
+              path.write_text(updated)
 
       - name: Validate diff
         run: git diff --check
