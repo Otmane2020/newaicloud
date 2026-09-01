@@ -7,11 +7,11 @@ import { LimitWarningBanner } from "@/components/LimitWarningBanner";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NoStoreConnectedPrompt } from "@/components/NoStoreConnectedPrompt";
+import { CreditWallet } from "@/components/CreditWallet";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Coins, RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
+import { RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
 import { useAutoSyncProgress } from "@/contexts/AutoSyncContext";
-import { useUsageLimits } from "@/hooks/useUsageLimits";
 import { useTranslation } from "@/lib/language";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -22,25 +22,19 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const { stores, loading: storesLoading, serverError: storeServerError } = useStore();
   const { isSyncing } = useAutoSyncProgress();
-  const { limits } = useUsageLimits();
   const { language } = useTranslation();
   const { pathname, search } = useLocation();
-  
+
   // ✅ Global 10s timeout state
   const [globalTimeout, setGlobalTimeout] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Safe calculation of remaining credits - prevent NaN/object rendering (React error #300)
-  const maxOpts = Number(limits?.limits?.max_optimizations) || 0;
-  const usedOpts = Number(limits?.usage?.optimizations_count) || 0;
-  const remainingCredits = Math.max(0, maxOpts - usedOpts);
 
   // Check if Shopify auth redirect is in progress - show loading instead of redirecting to /auth
   const isShopifyAuthInProgress = sessionStorage.getItem('shopify_auth_redirect') === 'true';
-  
+
   const isLoading = loading || storesLoading || isShopifyAuthInProgress;
-  
+
   // ✅ Global 10-second timeout
   useEffect(() => {
     if (isLoading && !globalTimeout) {
@@ -55,7 +49,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
       }
       setGlobalTimeout(false);
     }
-    
+
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -68,7 +62,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   if (pathname === "/blog") {
     return <BlogNewAI />;
   }
-  
+
   const handleRetry = () => {
     setIsRetrying(true);
     setGlobalTimeout(false);
@@ -87,23 +81,23 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
           </AlertTitle>
           <AlertDescription className="space-y-4">
             <p className="text-base">
-              {language === 'fr' 
+              {language === 'fr'
                 ? 'Le chargement prend trop de temps. Nos serveurs peuvent être temporairement indisponibles.'
                 : 'Loading is taking too long. Our servers may be temporarily unavailable.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <Button 
-                onClick={handleRetry} 
+              <Button
+                onClick={handleRetry}
                 disabled={isRetrying}
                 className="flex items-center gap-2"
               >
                 <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
-                {isRetrying 
+                {isRetrying
                   ? (language === 'fr' ? 'Rechargement...' : 'Reloading...')
                   : (language === 'fr' ? 'Réessayer' : 'Retry')}
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => window.open('https://status.supabase.com', '_blank')}
                 className="flex items-center gap-2"
               >
@@ -116,7 +110,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  
+
   // Wait for both auth AND stores to finish loading to prevent "undefined" UUID errors
   if (isLoading) {
     // Clear flag after showing loading (will be set again if needed)
@@ -153,12 +147,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 dark:from-violet-500/20 dark:to-fuchsia-500/20 rounded-full border border-violet-300/50 dark:border-violet-500/30">
-                    <Coins className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
-                    <span className="text-xs font-bold bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-                      {String(remainingCredits)}
-                    </span>
-                  </div>
+                  <CreditWallet userId={user.id} />
                   <LanguageSwitcher />
                   <NotificationCenter />
                 </div>
