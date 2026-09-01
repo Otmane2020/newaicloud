@@ -28,7 +28,7 @@ export function Footer() {
             <h4 className="font-semibold mb-4">{t.footer.resources}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><a href="/documentation" className="hover:text-primary transition-colors">{t.footer.documentation}</a></li>
-              <li><a href="/blog-NewAI" className="hover:text-primary transition-colors">{t.footer.blog}</a></li>
+              <li><a href="/blog" className="hover:text-primary transition-colors">{t.footer.blog}</a></li>
               <li><a href="mailto:support@newai.com" className="hover:text-primary transition-colors">{t.footer.support}</a></li>
             </ul>
           </div>
