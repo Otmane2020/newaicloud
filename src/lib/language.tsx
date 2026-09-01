@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { fr, en, Translations } from './translations';
+import { en, Translations } from './translations';
 
 // Helper function to ensure a value is always a string (prevents React error #300)
 export function safeString(value: any, fallback: string = ''): string {
@@ -29,63 +29,50 @@ interface LanguageProviderProps {
 }
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
-  const [language, setLanguage] = useState<Language>(() => {
-    try {
-      const saved = localStorage.getItem('app-language');
-      if (saved === 'fr' || saved === 'en') return saved;
-      
-      // Auto-detect browser language on first visit
-      const browserLang = navigator.language.toLowerCase();
-      if (browserLang.startsWith('fr')) {
-        return 'fr';
-      }
-      return 'en'; // Default to English
-    } catch {
-      return 'en';
-    }
-  });
+  // CatalogOptimize AI is English-only. Keep the setter for API compatibility,
+  // but always resolve the active UI language to English.
+  const [language, setLanguageState] = useState<Language>('en');
 
-  const translations = { fr, en };
-  
-  // Defensive loading - ensure translations are loaded
-  if (!translations[language]) {
-    console.error('[LanguageProvider] Missing translations for language:', language);
-    return <div>Loading translations...</div>;
-  }
-  
-  const t = translations[language];
+  const setLanguage = (_lang: Language) => {
+    setLanguageState('en');
+    try {
+      localStorage.setItem('app-language', 'en');
+    } catch {}
+  };
+
+  const t = en;
 
   const tf = (key: string, vars?: Record<string, any>): string => {
     const keys = key.split('.');
     let value: any = t;
-    
+
     for (const k of keys) {
       value = value?.[k];
     }
-    
+
     // Ensure we always return a string, never an object
     if (!value || typeof value !== 'string') {
       console.warn('[tf] Translation key returned non-string value:', key, typeof value);
       return key;
     }
-    
+
     if (vars) {
       return Object.entries(vars).reduce(
         (str, [k, val]) => str.replace(`{{${k}}}`, String(val)),
         value
       );
     }
-    
+
     return value;
   };
 
   useEffect(() => {
     try {
-      localStorage.setItem('app-language', language);
-      document.documentElement.lang = language;
-      document.documentElement.setAttribute('data-language', language);
+      localStorage.setItem('app-language', 'en');
+      document.documentElement.lang = 'en';
+      document.documentElement.setAttribute('data-language', 'en');
     } catch {}
-  }, [language]);
+  }, []);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t, tf }}>
