@@ -1,0 +1,65 @@
+name: Harden all Edge Functions
+
+on:
+  push:
+    paths:
+      - '.github/workflows/harden-all-edge-functions.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  harden-build-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Harden every Edge Function
+        run: python scripts/harden-all-edge-functions.py
+
+      - name: Verify strict bootstrap coverage
+        run: |
+          total=$(find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts | wc -l)
+          covered=$(grep -l 'strict-ai-generation.ts' supabase/functions/*/index.ts | wc -l)
+          echo "Strict AI coverage: $covered/$total"
+          test "$covered" -eq "$total"
+
+      - name: Audit dangerous request-body double reads
+        run: |
+          cat edge-functions-audit.txt
+          if grep -q '^multiple_req_json=[1-9]' edge-functions-audit.txt; then
+            echo 'WARNING: functions with multiple req.json() calls remain; inspect audit report.'
+          fi
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build application
+        run: npm run build
+
+      - name: Optional deploy all Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo 'SUPABASE_ACCESS_TOKEN is not configured in GitHub Actions; skipping Edge deployment.'
+            exit 0
+          fi
+          npx --yes supabase@latest functions deploy --project-ref xkrrcusvmxifbiejxker
+
+      - name: Commit hardened functions and cleanup
+        run: |
+          rm -f .github/workflows/harden-all-edge-functions.yml scripts/harden-all-edge-functions.py
+          git config user.name "catalog-optimize-bot"
+          git config user.email "actions@github.com"
+          git add supabase/functions edge-functions-audit.txt .github/workflows/harden-all-edge-functions.yml scripts/harden-all-edge-functions.py
+          git commit -m "fix: harden all edge functions and AI providers"
+          git pull --rebase origin main
+          git push origin main
