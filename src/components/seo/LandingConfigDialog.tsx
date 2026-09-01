@@ -144,7 +144,7 @@ const COLOR_PALETTES = [
 const STORAGE_KEY = "landing-config-preferences";
 
 export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitle }: LandingConfigDialogProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [config, setConfig] = useState<LandingConfig>({
     layout: "2 colonnes",
     colorScheme: {
@@ -745,22 +745,6 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
             </div>
           </div>
 
-          {/* Option régénérer les landing pages existantes */}
-          <div className="space-y-3 border-t pt-4 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label className="text-base font-semibold">🔄 {t.landingConfig.redoExisting?.title || "Régénérer existantes"}</Label>
-                <p className="text-xs text-muted-foreground">
-                  {t.landingConfig.redoExisting?.description || "Régénère aussi les landing pages des produits qui en ont déjà une"}
-                </p>
-              </div>
-              <Switch
-                checked={config.redoExisting ?? false}
-                onCheckedChange={(checked) => setConfig({ ...config, redoExisting: checked })}
-              />
-            </div>
-          </div>
-
           {/* Champ de saisie libre pour highlights personnalisés */}
           <div className="space-y-3 pb-2 border-t pt-4 animate-fade-in">
             <Label className="text-base font-semibold">✨ {t.landingConfig.customHighlights.title}</Label>
@@ -773,6 +757,26 @@ export function LandingConfigDialog({ open, onOpenChange, onConfirm, productTitl
               rows={4}
             />
             <p className="text-xs text-muted-foreground italic">{t.landingConfig.customHighlights.tip}</p>
+          </div>
+
+          {/* Replace existing landing pages — keep this final generation option at the bottom */}
+          <div className="space-y-3 border-t pt-4 animate-fade-in order-last">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Label className="text-base font-semibold">
+                  🔄 {language === "fr" ? "Remplacer les landing pages actuelles" : "Replace current landing pages"}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {language === "fr"
+                    ? "Si activé, la nouvelle génération remplacera la landing page déjà enregistrée pour les produits concernés."
+                    : "When enabled, the new generation replaces the landing page already saved for the affected products."}
+                </p>
+              </div>
+              <Switch
+                checked={config.redoExisting ?? false}
+                onCheckedChange={(checked) => setConfig({ ...config, redoExisting: checked })}
+              />
+            </div>
           </div>
         </div>
 
