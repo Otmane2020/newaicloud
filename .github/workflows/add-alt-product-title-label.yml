@@ -1,0 +1,56 @@
+name: Add ALT product title label
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/add-alt-product-title-label.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Add product title hierarchy label
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('src/components/seo/SeoAltImageList.tsx')
+          text = path.read_text()
+          old = '''                          <div className="text-left">
+                            <h3 className="font-semibold">{product.title}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {product.images.length} image(s)
+                            </p>
+                          </div>'''
+          new = '''                          <div className="min-w-0 text-left">
+                            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                              Product title
+                            </p>
+                            <h3 className="truncate font-semibold leading-tight text-foreground">{product.title}</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {product.images.length} image(s)
+                            </p>
+                          </div>'''
+          if old not in text:
+              raise SystemExit('Target product title block not found; aborting without changes.')
+          text = text.replace(old, new, 1)
+          path.write_text(text)
+
+      - name: Validate diff
+        run: git diff --check
+
+      - name: Commit patch
+        run: |
+          git config user.name "catalog-optimize-bot"
+          git config user.email "catalog-optimize-bot@users.noreply.github.com"
+          git add src/components/seo/SeoAltImageList.tsx
+          git commit -m "Improve ALT image product hierarchy"
+          git push origin main
