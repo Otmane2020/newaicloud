@@ -19,6 +19,14 @@ type RouteOptions = {
   preferredFreeModel?: string;
 };
 
+// When the legacy generation shim is installed it saves the original network
+// fetch here. Provider calls MUST use it to avoid recursively intercepting the
+// router's own requests.
+async function providerFetch(input: any, init?: RequestInit): Promise<Response> {
+  const nativeFetch = (globalThis as any).__STRICT_AI_NATIVE_FETCH__ as typeof fetch | undefined;
+  return nativeFetch ? nativeFetch(input, init) : fetch(input, init);
+}
+
 function textFromGemini(data: any): string {
   return data?.candidates?.[0]?.content?.parts
     ?.map((part: any) => part?.text || "")
@@ -99,7 +107,7 @@ async function tryOpenAI(options: RouteOptions): Promise<AIRouteResult | null> {
 
   const model = Deno.env.get("OPENAI_TEXT_MODEL") || "gpt-4o-mini";
   const expectsJson = requestExpectsJson(options);
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await providerFetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -142,7 +150,7 @@ async function tryGemini(options: RouteOptions): Promise<AIRouteResult | null> {
     }));
   const expectsJson = requestExpectsJson(options);
 
-  const response = await fetch(
+  const response = await providerFetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       method: "POST",
@@ -178,7 +186,7 @@ async function tryKimi(options: RouteOptions): Promise<AIRouteResult | null> {
   if (!apiKey) return null;
 
   const model = Deno.env.get("KIMI_TEXT_MODEL") || "moonshot-v1-8k";
-  const response = await fetch("https://api.moonshot.ai/v1/chat/completions", {
+  const response = await providerFetch("https://api.moonshot.ai/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -208,7 +216,7 @@ async function tryDeepSeek(options: RouteOptions): Promise<AIRouteResult | null>
   if (!apiKey || options.vision) return null;
 
   const model = Deno.env.get("DEEPSEEK_TEXT_MODEL") || "deepseek-chat";
-  const response = await fetch("https://api.deepseek.com/chat/completions", {
+  const response = await providerFetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -238,7 +246,7 @@ async function tryOpenRouter(options: RouteOptions): Promise<AIRouteResult | nul
   if (!apiKey || options.vision) return null;
 
   const model = options.preferredFreeModel?.trim() || Deno.env.get("OPENROUTER_TEXT_MODEL") || "openrouter/free";
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const response = await providerFetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -321,7 +329,7 @@ export async function routeVision(messages: AIMessage[], maxTokens = 600): Promi
   }
 
   const model = Deno.env.get("KIMI_VISION_MODEL") || "kimi-k2.6";
-  const response = await fetch("https://api.moonshot.ai/v1/chat/completions", {
+  const response = await providerFetch("https://api.moonshot.ai/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
