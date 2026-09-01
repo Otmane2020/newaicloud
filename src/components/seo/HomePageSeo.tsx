@@ -240,7 +240,7 @@ export function HomePageSeo() {
               {generating ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t.seo.homepage.actions.generating}</>
               ) : (
-                <><Sparkles className="mr-2 h-4 w-4" /> {t.seo.homepage.actions.generateAI}</>
+                <><Sparkles className="mr-2 h-4 w-4" /> Optimize Homepage</>
               )}
             </Button>
           </div>
@@ -297,7 +297,7 @@ export function HomePageSeo() {
             variant="outline"
           >
             <Sparkles className="h-4 w-4 mr-2" />
-            {generating ? t.seo.homepage.actions.generating : t.seo.homepage.actions.generateAI}
+            {generating ? t.seo.homepage.actions.generating : "Optimize Homepage"}
           </Button>
 
           <Button
