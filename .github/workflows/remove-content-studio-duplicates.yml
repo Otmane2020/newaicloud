@@ -1,0 +1,105 @@
+name: Remove Content Studio duplicates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/remove-content-studio-duplicates.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Remove Studio-only tools from Content
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/pages/ContentWorkspace.tsx')
+          source = path.read_text()
+
+          replacements = [
+            ('type ToolId = "landing" | "shots" | "catalog" | "background";\n',
+             'type ToolId = "landing" | "catalog";\n'),
+            ('const TOOL_IDS: ToolId[] = ["landing", "shots", "catalog", "background"];\n',
+             'const TOOL_IDS: ToolId[] = ["landing", "catalog"];\n'),
+            ('  const [filter, setFilter] = useState<FilterId>(activeTool === "shots" || activeTool === "background" ? "ready" : "todo");\n',
+             '  const [filter, setFilter] = useState<FilterId>("todo");\n'),
+            ('    setFilter(activeTool === "shots" || activeTool === "background" ? "ready" : "todo");\n',
+             '    setFilter("todo");\n'),
+            ('''    {\n      id: "shots" as const,\n      icon: Camera,\n      label: "Product Shot AI",\n      description: fr ? "Générez rapidement de nouvelles vues produit." : "Quickly generate new product views.",\n      action: fr ? "Créer des photos" : "Create photos",\n      href: "/studio?mode=shots",\n    },\n''', ''),
+            ('''    {\n      id: "background" as const,\n      icon: Wand2,\n      label: "Background",\n      description: fr ? "Fond blanc ou ambiance en gardant le produit fidèle." : "White or lifestyle background while preserving the product.",\n      action: fr ? "Changer les fonds" : "Change backgrounds",\n      href: "/studio?mode=backgrounds",\n    },\n''', ''),
+            ('''  const readyForTool = (product: ScoredProduct) => {\n    if (activeTool === "landing") return product.landingReady;\n    if (activeTool === "catalog") return product.catalogReady;\n    return product.imageReady;\n  };\n''',
+             '''  const readyForTool = (product: ScoredProduct) => {\n    if (activeTool === "landing") return product.landingReady;\n    return product.catalogReady;\n  };\n'''),
+            ('  const preferredFilter: FilterId = activeTool === "shots" || activeTool === "background" ? "ready" : "todo";\n',
+             '  const preferredFilter: FilterId = "todo";\n'),
+            ('''    if (id === "ready") return activeTool === "shots" || activeTool === "background"\n      ? (fr ? "Avec image" : "With image")\n      : (fr ? "Prêts" : "Ready");\n    if (activeTool === "shots" || activeTool === "background") return fr ? "Sans image" : "Missing image";\n''',
+             '''    if (id === "ready") return fr ? "Prêts" : "Ready";\n'''),
+            ('''  const productStatus = (product: ScoredProduct) => {\n    if (activeTool === "landing") return product.landingReady ? (fr ? "Page prête" : "Page ready") : (fr ? "À créer" : "Create");\n    if (activeTool === "catalog") return product.catalogReady ? (fr ? "Complet" : "Complete") : `${product.catalogScore}%`;\n    return product.imageReady ? (fr ? "Image prête" : "Image ready") : (fr ? "Image manquante" : "Image missing");\n  };\n''',
+             '''  const productStatus = (product: ScoredProduct) => {\n    if (activeTool === "landing") return product.landingReady ? (fr ? "Page prête" : "Page ready") : (fr ? "À créer" : "Create");\n    return product.catalogReady ? (fr ? "Complet" : "Complete") : `${product.catalogScore}%`;\n  };\n'''),
+            ('      <nav className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm lg:grid-cols-4" aria-label="Product optimization tools">\n',
+             '      <nav className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm" aria-label="Product optimization tools">\n'),
+          ]
+
+          for old, new in replacements:
+            count = source.count(old)
+            if count != 1:
+              raise SystemExit(f'Expected exactly one match, found {count}: {old[:100]!r}')
+            source = source.replace(old, new, 1)
+
+          # Remove icons that belonged only to the duplicated Studio entries.
+          source = source.replace('  Camera,\n', '')
+          source = source.replace('  Wand2,\n', '')
+
+          forbidden = [
+            'id: "shots" as const',
+            'id: "background" as const',
+            'activeTool === "shots"',
+            'activeTool === "background"',
+            'href: "/studio?mode=shots"',
+            'href: "/studio?mode=backgrounds"',
+          ]
+          for token in forbidden:
+            if token in source:
+              raise SystemExit(f'Duplicate Studio token still present in ContentWorkspace: {token}')
+
+          path.write_text(source)
+          PY
+
+          git diff --check
+          git diff -- src/pages/ContentWorkspace.tsx
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Commit and push latest main
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/ContentWorkspace.tsx
+          git commit -m "refactor(content): keep image generation in Studio only"
+
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Concurrent main update detected; retrying ($attempt/3)"
+          done
+
+          exit 1
