@@ -6,6 +6,7 @@ import {
   Camera,
   ChevronDown,
   CreditCard,
+  DollarSign,
   FileText,
   History,
   LayoutDashboard,
@@ -84,6 +85,12 @@ export function CatalogOptimizeSidebar() {
         items: [
           { label: fr ? "Produits" : "Products", href: "/products", icon: Package },
           { label: "Collections", href: "/collections", icon: Layers3 },
+          {
+            label: "Smart Pricing",
+            href: "/products/media-history?view=smart-pricing",
+            icon: DollarSign,
+            badge: "AI",
+          },
         ],
       },
       {
@@ -116,7 +123,7 @@ export function CatalogOptimizeSidebar() {
           },
           {
             label: fr ? "Historique média" : "Media History",
-            href: "/products/media-history",
+            href: "/products/media-history?view=history",
             icon: History,
           },
         ],
