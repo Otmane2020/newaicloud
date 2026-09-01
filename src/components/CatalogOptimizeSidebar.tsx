@@ -3,8 +3,8 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Layers3, Database, FileText,
   Sparkles, BadgeDollarSign, Store, ShoppingCart, RefreshCw, Settings,
-  User, CreditCard, Key, Code, ChevronDown, LogOut, FlaskConical, Bot,
-  Megaphone, Search, Newspaper, Activity, Camera
+  User, CreditCard, ChevronDown, LogOut, FlaskConical, Bot,
+  Newspaper, Activity, Camera
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -81,9 +81,12 @@ export function CatalogOptimizeSidebar() {
       label: fr ? "Tarification" : "Pricing",
       icon: BadgeDollarSign,
       items: [
-        { label: fr ? "Coûts & marges" : "Costs & Margins", href: "/pricing?tab=costs", icon: BadgeDollarSign },
-        { label: fr ? "Prix concurrents" : "Competitor Prices", href: "/pricing?tab=competitors", icon: Search },
-        { label: fr ? "Recommandations" : "Recommendations", href: "/pricing?tab=recommendations", icon: Sparkles },
+        {
+          label: fr ? "Prix & marges" : "Pricing",
+          href: "/pricing?tab=costs",
+          icon: BadgeDollarSign,
+          aliases: ["/pricing?tab=competitors", "/pricing?tab=recommendations"],
+        },
       ],
     },
     {
@@ -110,16 +113,12 @@ export function CatalogOptimizeSidebar() {
         { label: fr ? "Boutiques & intégrations" : "Stores & Integrations", href: "/account?tab=integrations", icon: Store },
         { label: fr ? "Compte & utilisation" : "Account & Usage", href: "/account?tab=profile", icon: User },
         { label: fr ? "Abonnement" : "Subscription", href: "/subscription", icon: CreditCard },
-        { label: "API", href: "/api-keys", icon: Key },
       ],
     },
   ], [fr]);
 
   const labs: NavItem[] = [
     { label: "AEO & AI Answers", href: "/aeo-chatgpt", icon: Sparkles },
-    { label: "Google Ads", href: "/google-ads", icon: Megaphone },
-    { label: fr ? "Assistant commercial" : "Commerce Assistant", href: "/chat", icon: Bot },
-    { label: fr ? "Modèles boutique" : "Store Templates", href: "/store-templates", icon: Code },
   ];
 
   const closeMobile = () => {
