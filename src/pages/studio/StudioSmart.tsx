@@ -175,12 +175,11 @@ export default function StudioSmart() {
   };
 
   const openProductImagePicker = (productId: string) => {
-    // Radix Dialog is more reliable when the product list is fully unmounted
-    // before the gallery view is mounted. This prevents the blank/empty state
-    // that could occur when swapping both views inside the same open dialog.
-    setShowSelection(false);
+    // Keep the controlled Dialog open and switch its keyed content directly.
+    // Closing it here fired onOpenChange(false), which cleared pickerProductId
+    // before the gallery could render.
     setPickerProductId(productId);
-    window.requestAnimationFrame(() => setShowSelection(true));
+    setShowSelection(true);
   };
 
   const selectProductSource = (productId: string, imageUrl: string) => {
@@ -194,11 +193,16 @@ export default function StudioSmart() {
       next.set(productId, imageUrl);
       return next;
     });
-    // Image source is confirmed: return to Studio instead of silently
-    // switching back to the product list inside the same modal.
+    // The source image is confirmed. Close product selection and continue
+    // directly into the active generation tool instead of making the user
+    // click a second CTA on the Studio page.
     setShowSelection(false);
     setPickerProductId(null);
     setSearch("");
+    window.requestAnimationFrame(() => {
+      if (activeMode === "shots") setShowProductShot(true);
+      if (activeMode === "backgrounds") setShowBackground(true);
+    });
   };
 
   const removeProductSelection = (productId: string) => {
