@@ -41,5 +41,8 @@ jobs:
       - name: Deploy generate-page-seo
         run: supabase functions deploy generate-page-seo --project-ref "$PROJECT_REF"
 
+      - name: Deploy import-shopify-collections
+        run: supabase functions deploy import-shopify-collections --project-ref "$PROJECT_REF"
+
       - name: Deployment summary
-        run: echo "generate-page-seo deployed to Supabase project $PROJECT_REF"
+        run: echo "generate-page-seo and import-shopify-collections deployed to Supabase project $PROJECT_REF"
