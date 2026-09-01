@@ -63,13 +63,30 @@ export default function Products() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [filteredCount, setFilteredCount] = useState(0);
   const [generatingBg, setGeneratingBg] = useState<{ productId: string; type: 'white' | 'ai' | 'smart' } | null>(null);
   const ITEMS_PER_PAGE = 20;
+
+  // Debounce the query, then restart result pagination from page 1.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+      setCurrentPage(1);
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Filters and global sorting are applied by Supabase before pagination.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, sortBy, selectedStore?.id]);
 
   // Scroll to top when page changes
   useEffect(() => {
@@ -259,6 +276,7 @@ export default function Products() {
       console.log('⚠️ [PRODUCTS] No store ID, clearing products');
       setProducts([]);
       setTotalCount(0);
+      setFilteredCount(0);
       setLoading(false);
       return;
     }
@@ -273,26 +291,77 @@ export default function Products() {
       setLoading(true);
       console.log('📦 [PRODUCTS] Loading products for store:', selectedStore.store_name, 'ID:', selectedStore.id);
       
-      // Count total products first
-      console.log('📊 [PRODUCTS] Executing count query with store_id:', selectedStore.id);
-      const { count } = await supabase
+      // Keep the total catalog count for the page header / empty-catalog state.
+      const { count: catalogCount, error: catalogCountError } = await supabase
         .from("shopify_products")
-        .select("*", { count: 'exact', head: true })
+        .select("*", { count: "exact", head: true })
         .eq("seller_id", user?.id)
         .eq("store_id", selectedStore.id);
-      
-      console.log('📊 [PRODUCTS] Count result for store', selectedStore.store_name, ':', count);
-      
-      setTotalCount(count || 0);
-      
-      // Charger les produits avec pagination et filtre store_id
-      console.log('📊 [PRODUCTS] Executing products query with store_id:', selectedStore.id);
-      const { data: rawData, error } = await supabase
+
+      if (catalogCountError) throw catalogCountError;
+      setTotalCount(catalogCount || 0);
+
+      // Search/filter the COMPLETE catalog in Supabase before applying the 20-row page range.
+      // Previously the UI searched only the already-loaded page, so products on later pages
+      // could never be found.
+      const searchKeywords = debouncedSearchQuery
+        .normalize("NFKC")
+        .replace(/[^\p{L}\p{N}\s_-]/gu, " ")
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 8);
+      const searchableColumns = ["title", "description", "vendor", "product_type", "sku", "handle"];
+
+      let filteredCountQuery = supabase
+        .from("shopify_products")
+        .select("*", { count: "exact", head: true })
+        .eq("seller_id", user?.id)
+        .eq("store_id", selectedStore.id);
+
+      let productsQuery = supabase
         .from("shopify_products")
         .select("*, store_id")
         .eq("seller_id", user?.id)
-        .eq("store_id", selectedStore.id)
-        .order("created_at", { ascending: false })
+        .eq("store_id", selectedStore.id);
+
+      if (statusFilter !== "all") {
+        filteredCountQuery = filteredCountQuery.eq("status", statusFilter);
+        productsQuery = productsQuery.eq("status", statusFilter);
+      }
+
+      // Repeated OR groups are ANDed together by PostgREST: every typed keyword must
+      // match at least one searchable product field, while each keyword may match a
+      // different field (for example title + SKU).
+      for (const keyword of searchKeywords) {
+        const searchFilter = searchableColumns
+          .map((column) => `${column}.ilike.%${keyword}%`)
+          .join(",");
+        filteredCountQuery = filteredCountQuery.or(searchFilter);
+        productsQuery = productsQuery.or(searchFilter);
+      }
+
+      const { count: matchingCount, error: matchingCountError } = await filteredCountQuery;
+      if (matchingCountError) throw matchingCountError;
+      setFilteredCount(matchingCount || 0);
+
+      const sortConfig = (() => {
+        switch (sortBy) {
+          case "price-asc":
+            return { column: "price", ascending: true };
+          case "price-desc":
+            return { column: "price", ascending: false };
+          case "name-asc":
+            return { column: "title", ascending: true };
+          case "name-desc":
+            return { column: "title", ascending: false };
+          case "recent":
+          default:
+            return { column: "created_at", ascending: false };
+        }
+      })();
+
+      const { data: rawData, error } = await productsQuery
+        .order(sortConfig.column, { ascending: sortConfig.ascending })
         .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
 
       if (error) throw error;
@@ -305,7 +374,7 @@ export default function Products() {
       // ✅ Vérifier la cohérence après setState
       verifyStateCoherence(data, selectedStore.id, 'Products', 'product');
       
-      console.log(`✅ [PRODUCTS] Loaded ${data.length} products for store ${selectedStore.store_name} (page ${currentPage}/${Math.ceil((count || 0) / ITEMS_PER_PAGE)})`);
+      console.log(`✅ [PRODUCTS] Loaded ${data.length} products for store ${selectedStore.store_name} (page ${currentPage}/${Math.ceil((matchingCount || 0) / ITEMS_PER_PAGE)})`);
     } catch (error) {
       console.error("❌ [PRODUCTS] Error loading products:", error);
       toast.error(t.products.loadError);
@@ -330,51 +399,18 @@ export default function Products() {
     } else if (!selectedStore) {
       setProducts([]);
       setTotalCount(0);
+      setFilteredCount(0);
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, currentPage, selectedStore?.id]);
+  }, [user, currentPage, selectedStore?.id, debouncedSearchQuery, statusFilter, sortBy]);
 
   useEffect(() => {
     filterAndSortProducts();
-  }, [products, searchQuery, statusFilter, sortBy]);
+  }, [products, statusFilter, sortBy]);
 
   const filterAndSortProducts = () => {
     let filtered = [...products];
-
-    // Search filter - Recherche intelligente
-    if (searchQuery) {
-      // Fonction pour normaliser le texte (enlever accents, ponctuation, minuscules)
-      const normalizeText = (text: string | null | undefined): string => {
-        if (!text) return '';
-        return text
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '') // Enlève les accents
-          .replace(/[^\w\s]/g, ' ') // Remplace la ponctuation par des espaces
-          .replace(/\s+/g, ' ') // Remplace les espaces multiples par un seul
-          .trim();
-      };
-
-      // Normaliser le terme de recherche et le diviser en mots-clés
-      const searchKeywords = normalizeText(searchQuery).split(' ').filter(k => k.length > 0);
-      
-      if (searchKeywords.length > 0) {
-        filtered = filtered.filter(p => {
-          // Construire une chaîne de recherche avec tous les champs du produit
-          const searchableText = normalizeText([
-            p.title,
-            p.description,
-            p.vendor,
-            p.product_type,
-            p.status
-          ].filter(Boolean).join(' '));
-
-          // Vérifier que tous les mots-clés sont présents
-          return searchKeywords.every(keyword => searchableText.includes(keyword));
-        });
-      }
-    }
 
     // Status filter
     if (statusFilter !== "all") {
@@ -785,7 +821,7 @@ export default function Products() {
 
       <div>
 
-        {products.length === 0 ? (
+        {totalCount === 0 ? (
           <Card className="overflow-hidden rounded-3xl border-violet-100 bg-gradient-to-br from-white to-violet-50/60 shadow-sm">
             <CardContent className="flex flex-col items-center px-6 py-14 text-center">
               <span className="grid h-14 w-14 place-items-center rounded-2xl bg-violet-100 text-violet-700"><Package className="h-7 w-7" /></span>
@@ -1054,7 +1090,7 @@ export default function Products() {
             )}
             
             {/* Pagination */}
-            {filteredProducts.length > 0 && totalCount > ITEMS_PER_PAGE && (
+            {filteredProducts.length > 0 && filteredCount > ITEMS_PER_PAGE && (
               <div className="flex items-center justify-center gap-2 mt-6">
                 <Button
                   variant="outline"
@@ -1068,7 +1104,7 @@ export default function Products() {
                   Précédent
                 </Button>
                 <span className="text-sm text-muted-foreground px-4">
-                  Page {currentPage} sur {Math.ceil(totalCount / ITEMS_PER_PAGE)}
+                  Page {currentPage} sur {Math.ceil(filteredCount / ITEMS_PER_PAGE)}
                 </span>
                 <Button
                   variant="outline"
@@ -1077,7 +1113,7 @@ export default function Products() {
                     setCurrentPage(p => p + 1);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  disabled={currentPage >= Math.ceil(totalCount / ITEMS_PER_PAGE)}
+                  disabled={currentPage >= Math.ceil(filteredCount / ITEMS_PER_PAGE)}
                 >
                   Suivant
                 </Button>
