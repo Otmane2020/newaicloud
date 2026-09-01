@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Package, Layers3, Database, FileText,
   Sparkles, BadgeDollarSign, Store, ShoppingCart, RefreshCw, Settings,
   User, CreditCard, ChevronDown, LogOut, FlaskConical, Bot,
-  Newspaper, Activity, Camera
+  Newspaper, Activity, Camera, Tags, Images
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -52,8 +52,6 @@ export function CatalogOptimizeSidebar() {
             "/products/title-description?view=content",
             "/products/title-description?view=landing",
             "/products/title-description?view=bulk",
-            "/seo?tab=tags",
-            "/seo?tab=alt",
           ],
         },
         {
@@ -61,6 +59,16 @@ export function CatalogOptimizeSidebar() {
           href: "/seo?tab=collections",
           icon: Layers3,
           aliases: ["/seo?tab=pages", "/seo?tab=homepage"],
+        },
+        {
+          label: "Tags",
+          href: "/seo?tab=tags",
+          icon: Tags,
+        },
+        {
+          label: fr ? "ALT Images" : "Image ALT",
+          href: "/seo?tab=alt",
+          icon: Images,
         },
         {
           label: "Blog",
