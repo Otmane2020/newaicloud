@@ -40,6 +40,7 @@ jobs:
           deno check supabase/functions/create-credit-checkout/index.ts
           deno check supabase/functions/verify-credit-checkout/index.ts
           deno check supabase/functions/stripe-credit-webhook/index.ts
+          deno check supabase/functions/sync-credit-topups/index.ts
           deno check supabase/functions/ensure-stripe-plans/index.ts
           deno check supabase/functions/generate-image/index.ts
           deno check supabase/functions/generate-social-caption/index.ts
