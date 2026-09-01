@@ -6,7 +6,6 @@ import {
   Camera,
   ChevronDown,
   CreditCard,
-  Database,
   FileText,
   LayoutDashboard,
   Layers3,
@@ -84,7 +83,6 @@ export function CatalogOptimizeSidebar() {
         items: [
           { label: fr ? "Produits" : "Products", href: "/products", icon: Package },
           { label: "Collections", href: "/collections", icon: Layers3 },
-          { label: fr ? "Données enrichies" : "Enriched Data", href: "/product-source", icon: Database },
         ],
       },
       {
@@ -153,15 +151,27 @@ export function CatalogOptimizeSidebar() {
         ],
       },
       {
-        label: fr ? "Vente & canaux" : "Sales & Channels",
-        icon: Store,
+        label: "AI Chat",
+        icon: Bot,
         items: [
           {
-            label: fr ? "Assistant vendeur IA" : "AI Sales Assistant",
+            label: fr ? "Assistant vendeur" : "Sales Assistant",
             href: "/storefront-assistant",
             icon: Bot,
             badge: "AI",
+            aliases: ["/chat"],
           },
+          {
+            label: "Product Enrichment",
+            href: "/product-enrichment",
+            icon: Sparkles,
+          },
+        ],
+      },
+      {
+        label: fr ? "Vente & canaux" : "Sales & Channels",
+        icon: Store,
+        items: [
           {
             label: "Google Shopping",
             href: "/shopping",
