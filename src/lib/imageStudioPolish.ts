@@ -15,6 +15,14 @@ const hasAnyText = (element: Element, values: string[]) => {
   return values.some((value) => text.includes(normalize(value)));
 };
 
+const renameProductOptimization = () => {
+  document.querySelectorAll("span").forEach((element) => {
+    const text = normalize(element.textContent);
+    if (text === "product content") element.textContent = "Product Optimization";
+    if (text === "contenu produit") element.textContent = "Optimisation produit";
+  });
+};
+
 const findBorderContainer = (element: Element | null, stopAt: Element) => {
   let current = element?.parentElement || null;
   while (current && current !== stopAt) {
@@ -50,6 +58,12 @@ const markStudioBlocks = (page: HTMLElement) => {
   const actionBar = findBorderContainer(actionTitle || null, page);
   if (actionBar) actionBar.setAttribute("data-studio-actions", "true");
 
+  page.querySelectorAll('[role="alert"]').forEach((alert) => {
+    if (hasAnyText(alert, ["White background", "Fond blanc"]) && hasAnyText(alert, ["AI", "IA"])) {
+      alert.setAttribute("data-studio-help", "true");
+    }
+  });
+
   const searchInput = Array.from(page.querySelectorAll("input")).find((input) => {
     const placeholder = normalize(input.getAttribute("placeholder"));
     return placeholder.includes("search") || placeholder.includes("recher");
@@ -68,8 +82,10 @@ const markStudioBlocks = (page: HTMLElement) => {
   const table = page.querySelector("table");
   if (table) {
     table.setAttribute("data-studio-product-table", "true");
-    const scroller = table.closest("div.max-h\\[600px\\]") || table.parentElement;
+    const scroller = table.parentElement;
     if (scroller instanceof HTMLElement) scroller.setAttribute("data-studio-table-scroll", "true");
+    const card = table.closest("[class*='overflow-hidden']");
+    if (card instanceof HTMLElement) card.setAttribute("data-studio-table-card", "true");
   }
 };
 
@@ -77,7 +93,6 @@ const forceListAsInitialView = (page: HTMLElement) => {
   const routeKey = `${window.location.pathname}${window.location.search}`;
   if (lastForcedRoute === routeKey) return;
 
-  // If a table is already rendered, the preferred list view is already active.
   if (page.querySelector("table")) {
     lastForcedRoute = routeKey;
     return;
@@ -114,6 +129,7 @@ const cleanLeakedMarkupPreviews = (page: HTMLElement) => {
 
 const applyImageStudioPolish = () => {
   scheduled = false;
+  renameProductOptimization();
   document.body.toggleAttribute("data-ai-image-studio-route", isImageStudioRoute());
 
   if (!isImageStudioRoute()) {
