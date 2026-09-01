@@ -38,19 +38,11 @@ jobs:
 
           git diff --check
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Type-check patched article function
-        run: deno check supabase/functions/import-shopify-articles/index.ts
-
-      - name: Commit validated fix
+      - name: Commit cleanup
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add supabase/functions/import-shopify-articles/index.ts
-          git commit -m "Validate Shopify OAuth 401 article import fix"
+          git commit -m "Fix Shopify OAuth article import residue"
           git push origin HEAD:main
