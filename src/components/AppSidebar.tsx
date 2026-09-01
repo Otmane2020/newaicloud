@@ -13,6 +13,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/contexts/AuthContext";
 import { StoreSelector } from "@/components/StoreSelector";
+import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
 
 type NavItem = { label: string; to: string; icon: typeof Package };
 type NavGroup = { label: string; icon: typeof Package; items: NavItem[] };
@@ -85,12 +86,8 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r border-slate-200 bg-white">
       <div className="border-b border-slate-200 px-4 py-4">
-        <NavLink to="/dashboard" className="flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-600 text-sm font-bold text-white">C</span>
-          <div className="min-w-0">
-            <p className="truncate text-[15px] font-semibold tracking-tight text-slate-950">CatalogOptimize <span className="text-violet-600">AI</span></p>
-            <p className="text-[10px] font-medium uppercase tracking-[.16em] text-slate-500">Product operations</p>
-          </div>
+        <NavLink to="/dashboard" className="block overflow-hidden" aria-label="CatalogueOptimize AI dashboard">
+          <CatalogOptimizeLogo size="sm" />
         </NavLink>
         <div className="mt-4"><StoreSelector /></div>
       </div>
