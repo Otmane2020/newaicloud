@@ -285,7 +285,7 @@ async function tryOpenRouter(options: RouteOptions): Promise<AIRouteResult | nul
 
 /**
  * Text generation order is STRICT and must not be changed locally:
- * OpenAI -> Gemini -> Kimi -> DeepSeek -> OpenRouter (last-resort only).
+ * OpenRouter (free) -> Gemini -> Kimi (direct key) -> DeepSeek -> OpenAI (last resort).
  *
  * For JSON prompts, a provider is accepted only if its response can be parsed
  * as JSON; otherwise the router automatically tries the next provider.
@@ -297,12 +297,13 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
 
   const expectsJson = requestExpectsJson(options);
   const attempts: Array<{ provider: AIProvider; run: () => Promise<AIRouteResult | null> }> = [
-    { provider: "openai", run: () => tryOpenAI(options) },
+    { provider: "openrouter-free", run: () => tryOpenRouter(options) },
     { provider: "gemini", run: () => tryGemini(options) },
     { provider: "kimi", run: () => tryKimi(options) },
     { provider: "deepseek", run: () => tryDeepSeek(options) },
-    { provider: "openrouter-free", run: () => tryOpenRouter(options) },
+    { provider: "openai", run: () => tryOpenAI(options) },
   ];
+
 
   for (const attempt of attempts) {
     try {
