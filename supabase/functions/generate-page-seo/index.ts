@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
 import { resolveLanguage } from "../_shared/language-detector.ts";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -534,33 +535,41 @@ ${baseContent}
 
     const systemRole = getSystemRole(storeLanguage, 'page');
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+    let content = "";
+    let aiProvider = "deterministic-fallback";
+    let aiModel = "context-only";
+
+    try {
+      const routed = await routeAI({
         messages: [
-          { 
-            role: 'system', 
-            content: `Tu es un expert SEO. Tu DOIS analyser précisément les données fournies et générer du SEO qui reflète EXACTEMENT l'activité réelle. N'invente JAMAIS de contenu. Réponds uniquement en JSON valide sans markdown.` 
+          {
+            role: "system",
+            content: `${systemRole} Use only facts present in the supplied page/store context. Never invent offers, shipping, warranties, materials or claims. Return valid JSON only.`,
           },
-          { role: 'user', content: prompt }
+          { role: "user", content: prompt },
         ],
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
+        maxTokens: 1000,
+        temperature: 0.35,
+      });
+      content = routed.content;
+      aiProvider = routed.provider;
+      aiModel = routed.model;
+    } catch (aiError) {
+      console.warn('[GENERATE-PAGE-SEO] All AI providers unavailable, using context-only fallback:', aiError);
+      const factualText = String(textContent || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      const factualTitle = String(pageTitle || (isHomepage ? "Home" : "Page"))
+        .replace(/\s+/g, " ")
+        .trim();
+      const fallbackTitle = factualTitle.slice(0, 60) || (isHomepage ? "Home" : "Page");
+      const fallbackDescription = (factualText || factualTitle).slice(0, 160);
+      content = JSON.stringify({
+        seo_title: fallbackTitle,
+        seo_description: fallbackDescription,
+      });
     }
-
-    const aiData = await aiResponse.json();
-    const content = aiData.choices[0].message.content;
-    
     // Nettoyer les balises markdown si présentes
     let cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
     
@@ -713,7 +722,9 @@ ${baseContent}
     const responseData: any = { 
       success: true, 
       seo_title: seoData.seo_title,
-      seo_description: seoData.seo_description
+      seo_description: seoData.seo_description,
+      ai_provider: aiProvider,
+      ai_model: aiModel
     };
     
     // Add sync status only for non-homepage pages (variables are defined in the non-homepage block)

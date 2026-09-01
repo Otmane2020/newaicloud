@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
 import { resolveLanguage, getLanguageName, getGenerationLanguage } from "../_shared/language-detector.ts";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,52 +47,6 @@ interface SeoResult {
     title: number;
     description: number;
   };
-}
-
-// Lovable AI caller (replacing DeepSeek due to insufficient balance)
-async function callLovableAI(messages: any[], maxTokens = 500, retries = 3): Promise<any> {
-  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-
-  if (!lovableApiKey) {
-    throw new Error("Lovable API key not configured");
-  }
-
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${lovableApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages,
-          temperature: 0.7,
-          max_tokens: maxTokens,
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 429 && attempt < retries) {
-          const waitTime = Math.pow(2, attempt) * 1000;
-          console.log(`Rate limited, waiting ${waitTime}ms before retry ${attempt}`);
-          await new Promise((resolve) => setTimeout(resolve, waitTime));
-          continue;
-        }
-
-        const errorText = await response.text();
-        throw new Error(`Lovable AI error: ${response.status} - ${errorText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (attempt === retries) {
-        throw error;
-      }
-      console.log(`Attempt ${attempt} failed, retrying...`, error);
-    }
-  }
 }
 
 // Enhanced SEO content validator
@@ -387,27 +342,44 @@ Deno.serve(async (req: Request) => {
 
     const systemRole = getSystemRole(language, 'product');
     
-    const response = await callLovableAI(
-      [
-        { role: "system", content: systemRole },
-        { role: "user", content: enhancedSeoPrompt }
-      ],
-      1000,
-      3
-    );
-
-    let seoContent = response.choices[0].message.content;
-    
-    // Clean JSON response
-    if (seoContent.startsWith('```json')) {
-      seoContent = seoContent.replace(/^```json\s*\n?/, '').replace(/\n?```\s*$/, '');
-    } else if (seoContent.startsWith('```')) {
-      seoContent = seoContent.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '');
+    let seoContent = "";
+    let aiProvider = "deterministic-fallback";
+    let aiModel = "context-only";
+    try {
+      const routed = await routeAI({
+        messages: [
+          { role: "system", content: `${systemRole} Use only real product data supplied in the prompt. Never invent features, offers, materials, delivery promises or warranties. Return valid JSON only.` },
+          { role: "user", content: enhancedSeoPrompt }
+        ],
+        maxTokens: 1000,
+        temperature: 0.35,
+      });
+      seoContent = routed.content.trim();
+      aiProvider = routed.provider;
+      aiModel = routed.model;
+    } catch (aiError) {
+      console.warn(`[SEO-GENERATION] AI unavailable for ${productId}; using factual fallback`, aiError);
+      const factualDescription = String(product.description || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      const factualParts = [product.title, product.product_type, product.category, product.vendor, product.tags]
+        .filter(Boolean)
+        .map((value) => String(value).replace(/\s+/g, " ").trim());
+      seoContent = JSON.stringify({
+        seo_title: String(product.title || "Product").slice(0, 65),
+        seo_description: (factualDescription || factualParts.join(" — ")).slice(0, 165),
+      });
     }
+
+    // Extract JSON even when a provider wraps it in markdown or extra text.
+    seoContent = seoContent.replace(/```json\s*|```/gi, "").trim();
+    const jsonStart = seoContent.indexOf("{");
+    const jsonEnd = seoContent.lastIndexOf("}");
+    if (jsonStart >= 0 && jsonEnd > jsonStart) seoContent = seoContent.slice(jsonStart, jsonEnd + 1);
 
     const parsed = JSON.parse(seoContent);
     const { seo_title, seo_description } = parsed;
-
     // Validate
     const validation = validateSeoContent(seo_title, seo_description);
     if (!validation.isValid) {
@@ -486,7 +458,8 @@ Deno.serve(async (req: Request) => {
         },
         metadata: {
           generated_at: new Date().toISOString(),
-          model: "google/gemini-2.5-flash",
+          model: aiModel,
+          provider: aiProvider,
         },
       }),
       {

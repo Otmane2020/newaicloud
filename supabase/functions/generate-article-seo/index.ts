@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
 import { resolveLanguage } from "../_shared/language-detector.ts";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,9 +26,6 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-    
-    if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
 
     const supabase = createClient(supabaseUrl!, supabaseKey!);
 
@@ -276,32 +274,31 @@ ${labels.instruction}`;
 
         const systemRole = getSystemRole(storeLanguage, 'article');
 
-        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${lovableApiKey}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+        let content = "";
+        let aiProvider = "deterministic-fallback";
+        let aiModel = "context-only";
+        try {
+          const routed = await routeAI({
             messages: [
-              { role: "system", content: systemRole },
+              { role: "system", content: `${systemRole} Use only facts from the supplied article. Never invent claims. Return valid JSON only.` },
               { role: "user", content: prompt }
-            ]
-          })
-        });
-
-        if (!aiResponse.ok) {
-          const err = await aiResponse.text();
-          console.error(`❌ AI Error for ${article_id}: ${err}`);
-          errorCount++;
-          results.push({ article_id, success: false, error: "AI generation failed" });
-          continue;
+            ],
+            maxTokens: 700,
+            temperature: 0.35,
+          });
+          content = routed.content.trim();
+          aiProvider = routed.provider;
+          aiModel = routed.model;
+        } catch (aiError) {
+          console.warn(`[ARTICLE-SEO] AI unavailable for ${article_id}; using factual fallback`, aiError);
+          const factualContent = String(article.content || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+          content = JSON.stringify({
+            seo_title: String(article.title || "Article").slice(0, 60),
+            meta_description: (factualContent || String(article.title || "Article")).slice(0, 160),
+            keywords: Array.isArray(article.keywords) ? article.keywords : [],
+          });
         }
-
-        const result = await aiResponse.json();
-        const content = result.choices[0].message.content.trim();
-        
+        console.log(`[ARTICLE-SEO] provider=${aiProvider}, model=${aiModel}`);
         // Parser le JSON
         let seoData;
         try {
