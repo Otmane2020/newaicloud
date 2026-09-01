@@ -8,115 +8,48 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2025-08-27.basil',
-});
-
+const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY') || '';
+const stripe = new Stripe(stripeSecret, { apiVersion: '2025-08-27.basil' });
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  { auth: { persistSession: false } },
 );
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   const body = await req.json().catch(() => ({}));
   if (body?.healthCheck === true) {
-    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+    return json({ ok: true, stripe_configured: Boolean(stripeSecret) });
   }
 
   try {
-    console.log('🚀 Starting checkout session creation...');
-
-    const requestBody = body;
-
-    // Validate input
-    const validation = validateCreateCheckout(requestBody);
-    if (!validation.success || !validation.data) {
-      console.error('Validation errors:', validation.errors);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Validation failed', 
-          details: validation.errors 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!stripeSecret) {
+      return json({ error: 'Stripe is not configured. Missing STRIPE_SECRET_KEY.' }, 500);
     }
 
-    const { plan_id, billing_period, success_url, cancel_url, force_immediate_payment, use_manual_promo } = validation.data;
+    const validation = validateCreateCheckout(body);
+    if (!validation.success || !validation.data) {
+      return json({ error: 'Validation failed', details: validation.errors }, 400);
+    }
+
+    const {
+      plan_id,
+      billing_period = 'monthly',
+      success_url,
+      cancel_url,
+      use_manual_promo,
+    } = validation.data;
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    if (!authHeader) return json({ error: 'Authentication required' }, 401);
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token) as { data: { user: any }, error: any };
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) return json({ error: 'Invalid session' }, 401);
 
-    if (userError || !user) {
-      console.error('❌ Authentication error:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to authenticate user' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('✅ User authenticated:', user.id);
-
-    // 🆓 FREE MODE: bypass Stripe entirely — grant active subscription and return dashboard URL
-    {
-      const now = new Date();
-      const periodEnd = new Date(now);
-      periodEnd.setFullYear(periodEnd.getFullYear() + 10);
-
-      const { error: upsertErr } = await supabase
-        .from('subscriptions')
-        .upsert(
-          {
-            seller_id: user.id,
-            plan_id: plan_id,
-            status: 'active',
-            billing_period: billing_period || 'monthly',
-            current_period_start: now.toISOString(),
-            current_period_end: periodEnd.toISOString(),
-            cancel_at_period_end: false,
-          },
-          { onConflict: 'seller_id' }
-        );
-
-      if (upsertErr) {
-        console.error('⚠️ Free-mode subscription upsert error:', upsertErr);
-      }
-
-      const { error: profileErr } = await supabase
-        .from('profiles')
-        .update({
-          subscription_status: 'active',
-          current_plan_id: plan_id,
-          onboarding_completed: true,
-          updated_at: now.toISOString(),
-        })
-        .eq('id', user.id);
-
-      if (profileErr) {
-        console.error('⚠️ Free-mode profile update error:', profileErr);
-      }
-
-      const origin = req.headers.get('origin') || '';
-      const redirectUrl = success_url || `${origin}/dashboard`;
-      return new Response(
-        JSON.stringify({ url: redirectUrl, free: true }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get user's product count to determine appropriate plan
-    const { data: usage } = await supabase
+    const { data: usage } = await (supabase as any)
       .from('usage_tracking')
       .select('products_count')
       .eq('seller_id', user.id)
@@ -124,428 +57,193 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    const productCount = usage?.products_count || 0;
-    console.log('📊 User product count:', productCount);
+    const productCount = Number(usage?.products_count || 0);
 
-    // Get all active plans to determine appropriate plan based on product count
-    const { data: allPlans } = await (supabase as any)
+    const { data: plan, error: planError } = await (supabase as any)
       .from('subscription_plans')
       .select('*')
+      .eq('id', plan_id)
       .eq('is_active', true)
-      .order('price_monthly_eur', { ascending: true });
-
-    if (!allPlans || allPlans.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'No active plans available' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Find appropriate plan based on product count
-    let plan = allPlans.find((p: any) => p.id === plan_id);
-    
-    if (!plan) {
-      console.error('❌ Requested plan not found:', plan_id);
-      return new Response(
-        JSON.stringify({ error: 'Plan not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check if user's product count exceeds the selected plan's limit
-    // CRITICAL FIX: Ne pas auto-upgrade si l'utilisateur choisit explicitement un plan
-    // L'auto-upgrade ne devrait s'appliquer que si l'utilisateur DÉPASSE la limite du plan sélectionné
-    // Si l'utilisateur a 600 produits et sélectionne pro-500, on doit l'informer, PAS le forcer vers pro-1000
-    if (productCount > plan.max_products && plan.max_products !== -1) {
-      console.log(`⚠️ Product count (${productCount}) exceeds plan limit (${plan.max_products})`);
-      
-      // Ne PAS auto-upgrade - retourner une erreur explicite à l'utilisateur
-      return new Response(
-        JSON.stringify({ 
-          error: `Votre boutique contient ${productCount} produits, ce qui dépasse la limite de ${plan.max_products} produits du plan ${plan.name}. Veuillez sélectionner un plan supérieur.`,
-          suggested_plan_id: allPlans.find((p: any) => p.max_products === -1 || p.max_products >= productCount)?.id
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('📋 Final selected plan:', plan.name);
-
-    // Get Stripe Price ID based on billing period
-    // All prices are in EUR
-    let stripePriceId;
-
-    if (billing_period === 'yearly') {
-      stripePriceId = plan.stripe_price_id_yearly;
-    } else {
-      stripePriceId = plan.stripe_price_id_monthly;
-    }
-
-    console.log(`💰 Selected price ID: ${stripePriceId} (${billing_period})`);
-
-    if (!stripePriceId || !stripePriceId.startsWith('price_')) {
-      console.error(`❌ Invalid Stripe Price ID: ${stripePriceId}`);
-      return new Response(
-        JSON.stringify({ 
-          error: `Configuration incomplète: Le forfait "${plan.name}" n'a pas de tarif Stripe configuré pour la période ${billing_period}.` 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get or create profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
       .single();
 
-    // Vérifier si l'utilisateur a un trial actif
-    const hasActiveTrial = profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date();
-    const trialDaysRemaining = hasActiveTrial 
-      ? Math.ceil((new Date(profile.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-      : 0;
+    if (planError || !plan) return json({ error: 'Plan not found' }, 404);
 
-    console.log('🎯 Trial status:', {
-      hasActiveTrial,
-      trialDaysRemaining,
-      trialEndsAt: profile?.trial_ends_at,
-      subscriptionStatus: profile?.subscription_status
-    });
+    const maxProducts = Number(plan.max_products ?? -1);
+    if (maxProducts !== -1 && productCount > maxProducts) {
+      const { data: alternatives } = await (supabase as any)
+        .from('subscription_plans')
+        .select('id, max_products')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
 
-    let customerId = profile?.stripe_customer_id;
+      const suggestedPlan = alternatives?.find(
+        (candidate: any) => Number(candidate.max_products) === -1 || Number(candidate.max_products) >= productCount,
+      );
 
-    // Si customer existe, vérifier les conflits de devise
-    if (customerId) {
-      console.log('🔍 Checking existing customer for currency conflicts...');
-      
-      try {
-        // Vérifier s'il y a des éléments en devise différente
-        const [subscriptions, invoiceItems, schedules] = await Promise.all([
-          stripe.subscriptions.list({ customer: customerId, limit: 100 }),
-          stripe.invoiceItems.list({ customer: customerId, limit: 100 }),
-          stripe.subscriptionSchedules.list({ customer: customerId, limit: 100 })
-        ]);
-
-        let hasCurrencyConflict = false;
-
-        // Vérifier les abonnements
-        for (const sub of subscriptions.data) {
-          const subPrice = sub.items.data[0]?.price;
-          if (subPrice && subPrice.currency !== 'eur') {
-            console.log(`⚠️ Currency conflict found in subscription ${sub.id}: ${subPrice.currency} vs eur`);
-            hasCurrencyConflict = true;
-            break;
-          }
-        }
-
-        // Vérifier les invoice items
-        if (!hasCurrencyConflict) {
-          for (const item of invoiceItems.data) {
-            if (item.currency !== 'eur') {
-              console.log(`⚠️ Currency conflict found in invoice item ${item.id}: ${item.currency} vs eur`);
-              hasCurrencyConflict = true;
-              break;
-            }
-          }
-        }
-
-        // Si conflit détecté, créer un nouveau customer
-        if (hasCurrencyConflict) {
-          console.log('🔄 Creating new Stripe customer to resolve currency conflict...');
-          const newCustomer = await stripe.customers.create({
-            email: user.email,
-            name: profile?.full_name || user.user_metadata?.full_name,
-            metadata: {
-              user_id: user.id,
-              replaced_customer: customerId,
-              reason: 'currency_conflict'
-            }
-          });
-          
-          customerId = newCustomer.id;
-          console.log(`✅ New customer created: ${customerId}`);
-
-          // Mettre à jour le profil avec le nouveau customer_id
-          await supabase
-            .from('profiles')
-            .update({ 
-              stripe_customer_id: customerId,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', user.id);
-        } else {
-          console.log('✅ No currency conflict detected');
-        }
-
-      } catch (checkError) {
-        console.error('⚠️ Error checking currency conflicts:', checkError);
-        // En cas d'erreur, créer un nouveau customer par sécurité
-        console.log('🔄 Creating new customer as fallback...');
-        const newCustomer = await stripe.customers.create({
-          email: user.email,
-          name: profile?.full_name || user.user_metadata?.full_name,
-          metadata: {
-            user_id: user.id,
-            replaced_customer: customerId,
-            reason: 'check_error'
-          }
-        });
-        customerId = newCustomer.id;
-        
-        await supabase
-          .from('profiles')
-          .update({ 
-            stripe_customer_id: customerId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id);
-      }
-    } else {
-      // Pas de customer existant, en créer un nouveau
-      console.log('👥 Creating new Stripe customer...');
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: profile?.full_name || user.user_metadata?.full_name,
-        metadata: {
-          user_id: user.id
-        }
-      });
-      customerId = customer.id;
-
-      await supabase
-        .from('profiles')
-        .update({ 
-          stripe_customer_id: customerId,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      return json({
+        error: `Votre boutique contient ${productCount} produits, au-dessus de la limite de ${maxProducts} du plan ${plan.name}.`,
+        suggested_plan_id: suggestedPlan?.id || null,
+      }, 400);
     }
 
-    // ✅ CORRECTION PRORATION : Bloquer si abonnement actif existe
-    console.log('🔍 Checking for existing subscriptions...');
+    const isYearly = billing_period === 'yearly';
+    const priceColumn = isYearly ? 'stripe_price_id_yearly' : 'stripe_price_id_monthly';
+    let priceId = plan[priceColumn] as string | null;
+    let productId = plan.stripe_product_id as string | null;
+
+    // Create the Stripe Product/Price server-side when the DB plan exists but
+    // Stripe IDs have not been synchronized yet. This makes checkout self-healing.
+    if (!productId || !productId.startsWith('prod_')) {
+      const product = await stripe.products.create({
+        name: `Nexora AI — ${plan.name}`,
+        description: plan.description || `Nexora AI ${plan.name} subscription`,
+        metadata: {
+          billing_type: 'subscription',
+          plan_id: plan.id,
+          plan_name: plan.name,
+        },
+      });
+      productId = product.id;
+    }
+
+    if (!priceId || !priceId.startsWith('price_')) {
+      const rawAmount = isYearly
+        ? (plan.price_yearly_eur ?? plan.price_yearly)
+        : (plan.price_monthly_eur ?? plan.price_monthly);
+      const amount = Number(rawAmount);
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return json({
+          error: `Le prix ${isYearly ? 'annuel' : 'mensuel'} du plan ${plan.name} n'est pas configuré.`,
+        }, 400);
+      }
+
+      const price = await stripe.prices.create({
+        product: productId,
+        unit_amount: Math.round(amount * 100),
+        currency: 'eur',
+        recurring: { interval: isYearly ? 'year' : 'month' },
+        metadata: {
+          billing_type: 'subscription',
+          plan_id: plan.id,
+          billing_period,
+        },
+      });
+      priceId = price.id;
+
+      const { error: priceSyncError } = await (supabase as any)
+        .from('subscription_plans')
+        .update({
+          stripe_product_id: productId,
+          [priceColumn]: priceId,
+        })
+        .eq('id', plan.id);
+      if (priceSyncError) throw priceSyncError;
+    } else if (productId !== plan.stripe_product_id) {
+      await (supabase as any)
+        .from('subscription_plans')
+        .update({ stripe_product_id: productId })
+        .eq('id', plan.id);
+    }
+
+    const { data: profile } = await (supabase as any)
+      .from('profiles')
+      .select('stripe_customer_id, full_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    let customerId = profile?.stripe_customer_id as string | null;
+    if (customerId) {
+      try {
+        const customer = await stripe.customers.retrieve(customerId);
+        if ((customer as Stripe.DeletedCustomer).deleted) customerId = null;
+      } catch {
+        customerId = null;
+      }
+    }
+
+    if (!customerId && user.email) {
+      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+      customerId = customers.data[0]?.id || null;
+    }
+
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: profile?.full_name || user.user_metadata?.full_name || undefined,
+        metadata: { user_id: user.id },
+      });
+      customerId = customer.id;
+    }
+
+    await (supabase as any)
+      .from('profiles')
+      .update({ stripe_customer_id: customerId, updated_at: new Date().toISOString() })
+      .eq('id', user.id);
+
     const existingSubscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: 'all',
       limit: 100,
     });
-    
-    // Vérifier s'il y a un abonnement actif ou trialing
-    const activeStatuses = ['active', 'trialing', 'past_due'];
-    const hasActiveSubscription = existingSubscriptions.data.some((sub: any) => 
-      activeStatuses.includes(sub.status)
-    );
-    
-    if (hasActiveSubscription) {
-      console.log('❌ BLOCKED: User has active subscription - must use upgrade flow');
-      return new Response(
-        JSON.stringify({ 
-          error: 'Vous avez déjà un abonnement actif. Utilisez la fonction "Changer de plan" pour modifier votre abonnement.',
-          redirect_to_upgrade: true,
-          existing_subscriptions: existingSubscriptions.data.map((s: any) => ({
-            id: s.id,
-            status: s.status,
-            plan: s.items.data[0]?.price?.id
-          }))
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    console.log('✅ No active subscription found, proceeding with checkout creation');
-    
-    // Variable pour tracker si on a annulé un trial (réintroduite pour compatibilité)
-    let canceledTrialSub = false;
-    
-    console.log('🎫 Creating Stripe checkout session...');
+    const activeStatuses = new Set(['active', 'trialing', 'past_due', 'unpaid']);
+    const activeSubscription = existingSubscriptions.data.find((sub) => activeStatuses.has(sub.status));
 
-    const origin = req.headers.get('origin') || 'http://localhost:8080';
-    
-    // Determine if we should auto-apply a coupon or allow manual promo codes
-    let discountCoupon = null;
-    const useManualPromo = use_manual_promo === true;
-    
-    if (!useManualPromo) {
-      // Auto-apply coupon based on plan
-      if (plan_id.startsWith('pro-') || plan_id === 'professional') {
-        discountCoupon = 'AiM3d23W'; // 20% off for Pro
-        console.log('🎁 Auto-applying 20% coupon for Pro plan');
-      } else if (plan_id.startsWith('enterprise-')) {
-        discountCoupon = '2hHOrJhU'; // 30% off for Enterprise
-        console.log('🎁 Auto-applying 30% coupon for Enterprise plan');
-      }
-    } else {
-      console.log('🎫 Manual promotion code requested - auto-discount disabled');
+    if (activeSubscription) {
+      return json({
+        error: 'Vous avez déjà un abonnement Stripe actif. Utilisez « Changer de plan » pour le modifier.',
+        redirect_to_upgrade: true,
+        stripe_subscription_id: activeSubscription.id,
+      }, 400);
     }
-    
-    // SECURITY: Configuration de base avec carte OBLIGATOIRE
-    // Même pour les trials, Stripe capture les infos de carte sans charger
-    const sessionConfig: any = {
+
+    const origin = req.headers.get('origin') || Deno.env.get('PUBLIC_APP_URL') || 'http://localhost:8080';
+    const metadata = {
+      user_id: user.id,
+      plan_id: plan.id,
+      billing_period,
+      plan_name: plan.name,
+      billing_type: 'subscription',
+    };
+
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
+      payment_method_collection: 'always',
       mode: 'subscription',
       customer: customerId,
       client_reference_id: user.id,
-      line_items: [{
-        price: stripePriceId,
-        quantity: 1
-      }],
-      metadata: {
-        user_id: user.id,
-        plan_id: plan_id,
-        billing_period: billing_period,
-        plan_name: plan.name,
-        upgraded_from_trial: hasActiveTrial ? 'true' : 'false'
-      },
-      success_url: success_url || `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancel_url || `${origin}/onboarding?checkout=cancelled&plan_id=${plan_id}`,
+      line_items: [{ price: priceId, quantity: 1 }],
+      metadata,
+      subscription_data: { metadata },
+      success_url: success_url || `${origin}/subscription?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancel_url || `${origin}/subscription?checkout=cancelled&plan_id=${encodeURIComponent(plan.id)}`,
       billing_address_collection: 'required',
-      // CRITICAL: Toujours collecter le moyen de paiement
-      payment_method_collection: 'always'
     };
-    
-    // Apply discount coupon if applicable
-    // NOTE: Cannot use both allow_promotion_codes AND discounts - must choose one
-    if (discountCoupon) {
-      sessionConfig.discounts = [{
-        coupon: discountCoupon
-      }];
-      console.log('🎫 Auto-applying discount, promotion codes disabled');
-    } else {
-      // Allow manual promotion codes if no auto-discount or if explicitly requested
+
+    if (use_manual_promo === true) {
       sessionConfig.allow_promotion_codes = true;
-      console.log('🎫 Manual promotion codes enabled');
-    }
-
-    // Les prix annuels dans la base de données sont déjà réduits de 20%
-    if (billing_period === 'yearly') {
-      console.log('💰 Using pre-discounted yearly price (20% discount already applied in price)');
-    }
-
-    // Vérifier si l'utilisateur a déjà utilisé son trial à vie
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('has_used_trial')
-      .eq('id', user.id)
-      .single();
-    
-    const hasUsedTrial = profileData?.has_used_trial || false;
-    console.log(`🎁 User trial status: has_used_trial=${hasUsedTrial}`);
-
-    // Déterminer la configuration du trial
-    // RÈGLES:
-    // 1. Stripe n'accepte PAS trial_period_days: 0 - on doit OMETTRE ce champ pour paiement immédiat
-    // 2. Trial UNIQUEMENT si: !hasUsedTrial && plan.trial_days > 0 && !force_immediate_payment && !hasActiveTrial
-    // 3. Starter plan a trial_days = 0, donc PAS de trial possible
-    if (force_immediate_payment) {
-      // Paiement forcé immédiat (limite atteinte OU upgrade depuis trial) - PAS de trial
-      console.log('💳 Force immediate payment - no trial period (PAYMENT REQUIRED NOW)');
-      sessionConfig.subscription_data = {
-        metadata: {
-          user_id: user.id,
-          plan_id: plan_id,
-          billing_period: billing_period,
-          upgraded_from_trial: hasActiveTrial ? 'true' : 'false',
-          forced_payment: 'true',
-          trial_cancelled: canceledTrialSub ? 'true' : 'false'
-        }
-        // trial_period_days omis = paiement immédiat
-      };
-    } else if (hasActiveTrial && billing_period === 'monthly') {
-      // Trial actif + abonnement mensuel = paiement immédiat SANS trial
-      console.log('💳 Active trial with monthly plan - immediate payment');
-      sessionConfig.subscription_data = {
-        metadata: {
-          user_id: user.id,
-          plan_id: plan_id,
-          billing_period: billing_period,
-          upgraded_from_trial: 'true',
-          forced_payment: 'false'
-        }
-        // trial_period_days omis = paiement immédiat
-      };
-    } else if (hasActiveTrial && billing_period === 'yearly') {
-      // Trial actif + abonnement annuel = paiement immédiat
-      console.log('💳 Active trial with yearly plan - immediate payment');
-      sessionConfig.subscription_data = {
-        metadata: {
-          user_id: user.id,
-          plan_id: plan_id,
-          billing_period: billing_period,
-          upgraded_from_trial: 'true',
-          forced_payment: 'false'
-        }
-      };
-    } else {
-      // Nouveau user ou user avec trial expiré
-      const trialDays = plan.trial_days ?? 0;
-      
-      // RÈGLE: Trial UNIQUEMENT si l'utilisateur ne l'a JAMAIS utilisé ET le plan offre un trial
-      if (trialDays > 0 && !hasUsedTrial) {
-        // Appliquer le trial ET marquer comme utilisé
-        console.log(`🎁 FIRST TIME TRIAL - Applying ${trialDays} days trial for user (lifetime trial)`);
-        sessionConfig.subscription_data = {
-          trial_period_days: trialDays,
-          metadata: {
-            user_id: user.id,
-            plan_id: plan_id,
-            billing_period: billing_period,
-            upgraded_from_trial: 'false',
-            forced_payment: 'false',
-            first_trial: 'true'
-          }
-        };
-        
-        // Marquer le trial comme utilisé (une seule fois dans la vie de l'utilisateur)
-        await supabase
-          .from('profiles')
-          .update({ has_used_trial: true })
-          .eq('id', user.id);
-        
-        console.log('✅ User marked as has_used_trial=true (lifetime trial claimed)');
-      } else {
-        // Pas de trial: soit déjà utilisé, soit plan sans trial (Starter)
-        if (hasUsedTrial) {
-          console.log(`💳 User already used their lifetime trial - immediate payment`);
-        } else if (trialDays === 0) {
-          console.log(`💳 Plan "${plan.name}" has no trial (trial_days=0) - immediate payment`);
-        }
-        
-        sessionConfig.subscription_data = {
-          metadata: {
-            user_id: user.id,
-            plan_id: plan_id,
-            billing_period: billing_period,
-            upgraded_from_trial: 'false',
-            forced_payment: 'false',
-            trial_already_used: hasUsedTrial ? 'true' : 'false'
-          }
-          // trial_period_days omis = paiement immédiat
-        };
-      }
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
+    if (!session.url) throw new Error('Stripe did not return a checkout URL');
 
-    console.log('✅ Checkout session created:', session.id);
+    console.log('Stripe checkout created', {
+      session_id: session.id,
+      user_id: user.id,
+      plan_id: plan.id,
+      billing_period,
+    });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        session_id: session.id,
-        url: session.url,
-        customer_id: customerId
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
+    return json({ url: session.url, session_id: session.id, free: false });
   } catch (error) {
-    console.error('💥 Checkout error:', error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Une erreur est survenue' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error('create-checkout failed', error);
+    return json({ error: error instanceof Error ? error.message : 'Checkout failed' }, 500);
   }
 });
+
+function json(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
