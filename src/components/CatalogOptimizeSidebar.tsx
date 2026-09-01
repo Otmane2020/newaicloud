@@ -14,6 +14,7 @@ import {
   Megaphone,
   Newspaper,
   Package,
+  PanelsTopLeft,
   Settings,
   ShoppingCart,
   Sparkles,
@@ -69,7 +70,6 @@ export function CatalogOptimizeSidebar() {
     href: "/content?tool=catalog",
     icon: Wand2,
     aliases: [
-      "/content?tool=landing",
       "/products/title-description",
       "/products/title-description?view=content",
       "/products/title-description?view=landing",
@@ -90,6 +90,11 @@ export function CatalogOptimizeSidebar() {
         label: "Studio",
         icon: Sparkles,
         items: [
+          {
+            label: "Landing Pages",
+            href: "/content?tool=landing",
+            icon: PanelsTopLeft,
+          },
           {
             label: "Background",
             href: "/studio?mode=backgrounds",
