@@ -33,6 +33,7 @@ serve(async (req) => {
 
     console.log("🎨 Generating creative for:", product.title);
     console.log("📐 Style:", template?.id, template?.name);
+    console.log("📏 Output format:", template?.size || "square");
     console.log("🎭 Mode:", mode);
     console.log("🌐 Language:", language);
 
@@ -43,12 +44,19 @@ serve(async (req) => {
       ? Math.round((1 - salePrice / originalPrice) * 100)
       : 0;
 
-    // Determine dimensions based on template size
-    let aspectHint = "square 1:1 (1024x1024 pixels)";
-    if (template?.size === "story") {
-      aspectHint = "vertical 9:16 story format (576x1024 pixels)";
+    // Output ratio is independent from the visual template.
+    // The frontend can apply any of these formats to any creative style.
+    let aspectHint = "square 1:1 social format (1080x1080 pixels)";
+    let compositionHint = "balanced square composition with safe margins on every side";
+    if (template?.size === "portrait") {
+      aspectHint = "vertical Instagram portrait 4:5 format (1080x1350 pixels)";
+      compositionHint = "portrait composition, keep the product centered vertically and all important text inside the central 80% safe area";
+    } else if (template?.size === "story") {
+      aspectHint = "vertical 9:16 story/reel format (1080x1920 pixels)";
+      compositionHint = "tall mobile-first composition, keep important content away from the top and bottom UI safe zones";
     } else if (template?.size === "landscape") {
-      aspectHint = "horizontal 16:9 banner (1024x576 pixels)";
+      aspectHint = "horizontal 16:9 landscape format (1920x1080 pixels)";
+      compositionHint = "wide horizontal composition with product and copy balanced across the frame";
     }
 
     // Use the template's aiPromptStyle - THIS IS THE KEY to different visuals
@@ -72,10 +80,15 @@ Use these characteristics to enhance the scene lighting and environment colors.
 
     // Language-specific text
     const ctaText = language === "fr" ? "ACHETER MAINTENANT" : "SHOP NOW";
-    const discountLabel = language === "fr" ? "OFFRE" : "SALE";
 
     // Build the master prompt for stunning social media creative
     const imagePrompt = `CREATE A STUNNING ${aspectHint} PROFESSIONAL SOCIAL MEDIA ADVERTISING CREATIVE.
+
+=== OUTPUT FORMAT — MUST FOLLOW ===
+- Final canvas: ${aspectHint}
+- Composition: ${compositionHint}
+- Do not crop the hero product or important typography.
+- Preserve the requested aspect ratio; do not silently convert it to a square.
 
 === CRITICAL: FOLLOW THIS EXACT VISUAL STYLE ===
 ${visualStyle}
@@ -97,11 +110,11 @@ ${salePrice > 0 ? `💰 PRICE: ${salePrice}€ - Display LARGE and BOLD with acc
 ${discount > 0 && originalPrice > 0 ? `❌ ORIGINAL: ${originalPrice}€ - Show crossed out, smaller` : ''}
 
 === MANDATORY COMPOSITION RULES ===
-1. PRODUCT IS THE HERO - Large, centered, dominating the frame
+1. PRODUCT IS THE HERO - Large, centered, dominating the frame without cropping important product details
 2. REALISTIC EFFECTS:
-   - Glossy/reflective floor with mirror reflection
-   - Volumetric light beams from spotlight above
-   - Floating particles (sparkles, dust, or style-specific elements)
+   - Glossy/reflective floor with mirror reflection when appropriate for the selected style
+   - Volumetric light beams or soft directional lighting appropriate to the style
+   - Floating particles or style-specific atmosphere only when visually relevant
    - Professional rim lighting on product edges
 3. ENVIRONMENT matches "${template?.category || 'luxury'}" category:
    - ${template?.category === 'luxury' ? 'Dark elegant showroom, gold accents, marble textures' : 
@@ -111,19 +124,20 @@ ${discount > 0 && originalPrice > 0 ? `❌ ORIGINAL: ${originalPrice}€ - Show 
       template?.category === 'seasonal' ? 'Thematic decorations matching the season/event' :
       template?.category === 'editorial' ? 'Magazine-quality interior photography' :
       'Dynamic energy, motion effects, action-packed composition'}
-4. CTA BUTTON: "${ctaText}" - Premium button at bottom (gold/accent gradient, rounded, professional)
-5. BRAND QUALITY: Must look like a paid ad from a LUXURY furniture brand (think EURODESIGN, Roche Bobois level)
+4. CTA BUTTON: "${ctaText}" - Premium button at bottom, kept inside safe margins
+5. BRAND QUALITY: Must look like a paid ad from a premium e-commerce brand
 
 === DO NOT ===
-❌ DO NOT use plain/boring backgrounds
+❌ DO NOT use plain/boring backgrounds unless the selected style is intentionally minimal
 ❌ DO NOT make it look amateur or stock-photo-like
 ❌ DO NOT ignore the visual style instructions above
 ❌ DO NOT add too much text - let the image speak
+❌ DO NOT change the product's shape, material, proportions, finish, color or distinctive details
 
 === QUALITY REQUIREMENTS ===
 ✅ 8K render quality, photorealistic
 ✅ Professional advertising photography level
-✅ Ready for Facebook/Instagram feed
+✅ Ready for Facebook/Instagram publishing
 ✅ Must inspire DESIRE to purchase`;
 
     let generatedImageBase64: string | null = null;
@@ -179,6 +193,8 @@ ${discount > 0 && originalPrice > 0 ? `❌ ORIGINAL: ${originalPrice}€ - Show 
       
       const fallbackPrompt = `Create a stunning ${aspectHint} promotional social media ad.
 
+Output composition: ${compositionHint}
+Preserve the requested aspect ratio exactly.
 Product: ${product.title}
 ${product.vendor ? `Brand: ${product.vendor}` : ''}
 ${discount > 0 ? `Discount: -${discount}%` : ''}
@@ -187,9 +203,9 @@ ${salePrice > 0 ? `Price: ${salePrice}€` : ''}
 Visual Style: ${visualStyle}
 
 Requirements:
-- Professional luxury advertising quality
-- Dramatic lighting with reflections
-- "${ctaText}" button at bottom
+- Professional premium advertising quality
+- Keep product identity and proportions faithful
+- "${ctaText}" button at bottom inside safe margins
 - ${template?.category === 'luxury' ? 'Gold accents, dark background, sparkles' : 
    template?.category === 'neon' ? 'Neon glows, cyberpunk style' : 
    'Premium clean design'}
@@ -223,7 +239,7 @@ Requirements:
     }
 
     return new Response(
-      JSON.stringify({ base64: generatedImageBase64 }),
+      JSON.stringify({ base64: generatedImageBase64, outputFormat: template?.size || "square" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
