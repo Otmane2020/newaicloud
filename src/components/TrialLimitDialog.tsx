@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Zap } from "lucide-react";
+import { Check, CreditCard, Loader2, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language";
@@ -28,22 +28,34 @@ export function TrialLimitDialog({
   isTrialing = true,
 }: TrialLimitDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { t, tf } = useTranslation();
+  const { t } = useTranslation();
   const { isShopifyUser, billingProvider } = useShopifyBilling();
   const navigate = useNavigate();
 
+  const isShopifyBilling = isShopifyUser || billingProvider === "shopify";
+  const dialogTexts = isTrialing
+    ? t.dialogs.trialLimit
+    : (t.dialogs as any).planLimit || t.dialogs.trialLimit;
+
+  const formatUsage = () => {
+    const template = dialogTexts.usageFormat || "{{limitType}}: {{currentUsage}}/{{maxUsage}} used";
+    return template
+      .replace('{{limitType}}', limitType)
+      .replace('{{currentUsage}}', String(currentUsage))
+      .replace('{{maxUsage}}', String(trialMaxUsage ?? maxUsage));
+  };
+
   const handlePayNow = async () => {
+    if (loading) return;
     setLoading(true);
-    
-    // Shopify OAuth users → redirect to subscription page with Shopify Billing
-    if (isShopifyUser || billingProvider === "shopify") {
+
+    if (isShopifyBilling) {
       onOpenChange(false);
       navigate("/subscription");
       setLoading(false);
       return;
     }
-    
-    // Stripe users → force-payment flow
+
     try {
       const { data, error } = await supabase.functions.invoke("force-payment", {
         body: {
@@ -53,130 +65,109 @@ export function TrialLimitDialog({
       });
 
       if (error) throw error;
-
-      if (data?.url) {
-        window.open(data.url, "_blank");
-      } else {
+      if (!data?.url || typeof data.url !== 'string') {
         throw new Error("No checkout URL returned");
       }
+
+      let checkoutUrl: URL;
+      try {
+        checkoutUrl = new URL(data.url);
+      } catch {
+        throw new Error("Invalid checkout URL returned");
+      }
+
+      if (checkoutUrl.protocol !== 'https:') {
+        throw new Error("Unsafe checkout URL returned");
+      }
+
+      // Async window.open calls are frequently blocked by browsers. A same-tab
+      // redirect is reliable and Stripe returns the user to success_url/cancel_url.
+      onOpenChange(false);
+      window.location.assign(checkoutUrl.toString());
     } catch (error) {
       console.error("Error creating immediate payment:", error);
       toast.error(t.toasts.error.payment);
-    } finally {
       setLoading(false);
     }
   };
 
-  // Use appropriate translations based on trial/paid status
-  const dialogTexts = isTrialing 
-    ? t.dialogs.trialLimit 
-    : (t.dialogs as any).planLimit || t.dialogs.trialLimit;
-
-  // Format usage string directly using the dialogTexts object
-  const formatUsage = () => {
-    const template = dialogTexts.usageFormat || "{{limitType}}: {{currentUsage}}/{{maxUsage}} used";
-    return template
-      .replace('{{limitType}}', limitType)
-      .replace('{{currentUsage}}', String(currentUsage))
-      .replace('{{maxUsage}}', String(trialMaxUsage || maxUsage));
-  };
+  const features = [
+    t.dialogs.upgrade.starter.features.products,
+    t.dialogs.upgrade.starter.features.optimizations,
+    t.dialogs.upgrade.starter.features.articles,
+    t.dialogs.upgrade.starter.features.searches,
+    t.dialogs.upgrade.starter.features.chatResponses,
+    t.dialogs.upgrade.starter.features.stores,
+    t.dialogs.upgrade.starter.features.automation,
+    t.dialogs.upgrade.starter.features.support,
+  ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-md mx-2 sm:mx-auto">
-        <DialogHeader className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
-              <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+    <Dialog open={open} onOpenChange={(nextOpen) => !loading && onOpenChange(nextOpen)}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="mb-2 flex items-center gap-3">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10">
+              <Zap className="h-6 w-6 text-primary" />
             </div>
-            <DialogTitle className="text-lg sm:text-xl leading-tight">{dialogTexts.title}</DialogTitle>
+            <div>
+              <DialogTitle>{dialogTexts.title}</DialogTitle>
+              <p className="mt-1 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                {isTrialing ? 'Usage limit' : 'Plan limit'}
+              </p>
+            </div>
           </div>
-          <DialogDescription className="text-sm sm:text-base pt-2">
+          <DialogDescription>
             {dialogTexts.description}
             {limitType && (
-              <div className="mt-2 font-semibold text-foreground">
-                {formatUsage()}
-              </div>
+              <span className="mt-2 block font-semibold text-foreground">{formatUsage()}</span>
             )}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2 sm:py-4">
-          <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="text-sm font-semibold">{t.dialogs.upgrade.starter.title}</div>
-              <div className="text-xl sm:text-2xl font-bold">
-                {isShopifyUser || billingProvider === "shopify" ? (
-                  <>$9.99<span className="text-xs sm:text-sm font-normal text-muted-foreground">/month</span></>
-                ) : (
-                  <>{t.dialogs.upgrade.starter.price}<span className="text-xs sm:text-sm font-normal text-muted-foreground">{t.dialogs.upgrade.starter.perMonth}</span></>
-                )}
+        <div className="space-y-4 pt-2">
+          <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Starter</p>
+                <p className="mt-1 text-lg font-semibold">{t.dialogs.upgrade.starter.title}</p>
+              </div>
+              <div className="text-right text-2xl font-bold tracking-tight">
+                {isShopifyBilling ? '$9.99' : t.dialogs.upgrade.starter.price}
+                <span className="ml-0.5 text-xs font-normal text-muted-foreground">
+                  {isShopifyBilling ? '/month' : t.dialogs.upgrade.starter.perMonth}
+                </span>
               </div>
             </div>
-            <ul className="text-xs sm:text-sm space-y-1.5 sm:space-y-2">
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">{t.dialogs.upgrade.starter.features.products}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">{t.dialogs.upgrade.starter.features.optimizations}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">{t.dialogs.upgrade.starter.features.articles}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="text-muted-foreground">{t.dialogs.upgrade.starter.features.searches}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">{t.dialogs.upgrade.starter.features.chatResponses}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">{t.dialogs.upgrade.starter.features.stores}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">{t.dialogs.upgrade.starter.features.automation}</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary font-bold mt-0.5">✅</span>
-                <span className="flex-1">{t.dialogs.upgrade.starter.features.support}</span>
-              </li>
-            </ul>
+
+            <div className="grid gap-2">
+              {features.map((feature, index) => (
+                <div key={index} className="flex items-start gap-2 text-sm">
+                  <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <Check className="h-3 w-3 text-primary" />
+                  </span>
+                  <span>{feature}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2 sm:gap-3">
-            <Button
-              size="lg"
-              onClick={handlePayNow}
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-sm sm:text-base h-11 sm:h-12"
-            >
-              {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
-              ) : (
-                <>
-                  <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  {dialogTexts.activateMyPlan}
-                </>
-              )}
+          <div className="grid gap-2">
+            <Button onClick={handlePayNow} disabled={loading} className="h-11 w-full rounded-xl">
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+              {loading ? t.dialogs.upgrade.loading : dialogTexts.activateMyPlan}
             </Button>
             <Button
-              size="lg"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="w-full text-sm sm:text-base h-11 sm:h-12"
+              className="h-11 w-full rounded-xl"
             >
               {dialogTexts.later}
             </Button>
           </div>
 
-          <p className="text-xs text-center text-muted-foreground px-2">
+          <p className="px-2 text-center text-xs leading-relaxed text-muted-foreground">
             {dialogTexts.unlockFeatures}
           </p>
         </div>
