@@ -1,0 +1,23 @@
+/*
+ * CatalogOptimizeAI auth safeguard.
+ * Some deployed/cached auth bundles can still render the legacy OAuth block.
+ * Keep the email/password login visible while hiding Google/Facebook controls
+ * and the "or / ou" separator that belongs to that legacy block.
+ */
+
+.max-w-\[430px\] button:has(svg path[fill="#4285F4"]),
+.max-w-\[430px\] button:has(svg path[fill="#1877F2"]) {
+  display: none !important;
+}
+
+/* Hide the wrapper containing the two legacy OAuth buttons. */
+.max-w-\[430px\] div:has(> button svg path[fill="#4285F4"]),
+.max-w-\[430px\] div:has(> button svg path[fill="#1877F2"]) {
+  display: none !important;
+}
+
+/* Hide the separator immediately before the legacy OAuth button group. */
+.max-w-\[430px\] div:has(+ div > button svg path[fill="#4285F4"]),
+.max-w-\[430px\] div:has(+ div > button svg path[fill="#1877F2"]) {
+  display: none !important;
+}
