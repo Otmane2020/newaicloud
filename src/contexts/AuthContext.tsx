@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { translations as fr } from '@/lib/translations/fr';
 import { translations as en } from '@/lib/translations/en';
 import { isAeoreplyDomain } from '@/hooks/useAppMode';
+import { showFriendlyAuthError } from '@/lib/authErrorMessages';
 
 // Resolve a safe in-app destination after authentication.
 const getPostLoginPath = () => {
@@ -192,7 +193,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
-      toast.error(error.message);
+      const lang = (localStorage.getItem('app-language') || 'en') === 'fr' ? 'fr' : 'en';
+      showFriendlyAuthError(error, lang, (title, options) => toast.error(title, options));
     } else {
       // Send welcome email with user's language preference
       try {
