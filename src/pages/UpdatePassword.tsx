@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { showFriendlyAuthError } from '@/lib/authErrorMessages';
+import { CatalogOptimizeLogo } from '@/components/CatalogOptimizeLogo';
 import { z } from 'zod';
 
 const passwordSchema = z.object({
@@ -65,16 +65,10 @@ export default function UpdatePassword() {
     <div className="min-h-screen bg-gradient-subtle pt-24 pb-12">
       <div className="container mx-auto px-4 max-w-md">
         <Card className="p-8 shadow-elegant">
-          {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-2">
-              <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                CatalogueOptimize AI
-              </span>
-            </div>
+            <button type="button" onClick={() => navigate('/')} aria-label="CatalogOptimize AI home">
+              <CatalogOptimizeLogo />
+            </button>
           </div>
 
           <h1 className="text-3xl font-bold text-center mb-2">
