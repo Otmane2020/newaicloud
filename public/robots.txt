@@ -4,6 +4,11 @@ Allow: /
 User-agent: Bingbot
 Allow: /
 
+# OpenAI search discovery crawler. GPTBot training preferences are intentionally
+# left separate; OAI-SearchBot is the relevant crawler for ChatGPT search.
+User-agent: OAI-SearchBot
+Allow: /
+
 User-agent: Twitterbot
 Allow: /
 

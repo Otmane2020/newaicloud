@@ -18,6 +18,10 @@ export const PublicHeader = () => {
     }
   };
 
+  const openPublicBlog = () => {
+    window.location.assign("/blog");
+  };
+
   return (
     <header className="sticky top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
       <div className="container mx-auto px-4">
@@ -36,7 +40,7 @@ export const PublicHeader = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-7">
             <button
               onClick={() => scrollToSection("hero")}
               className="font-medium text-foreground transition-colors hover:text-primary"
@@ -54,6 +58,12 @@ export const PublicHeader = () => {
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
               {t.landing.header.benefits}
+            </button>
+            <button
+              onClick={openPublicBlog}
+              className="font-medium text-foreground transition-colors hover:text-primary"
+            >
+              Blog
             </button>
             <button
               onClick={() => scrollToSection("pricing")}
@@ -107,6 +117,12 @@ export const PublicHeader = () => {
                 className="text-left font-medium hover:text-primary transition-colors"
               >
                 {t.landing.header.benefits}
+              </button>
+              <button
+                onClick={openPublicBlog}
+                className="text-left font-medium hover:text-primary transition-colors"
+              >
+                Blog
               </button>
               <button
                 onClick={() => scrollToSection("pricing")}

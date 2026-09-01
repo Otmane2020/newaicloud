@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import PublicGeoBlog from "./pages/PublicGeoBlog";
 import "./index.css";
 import "./styles/workspace-stat-colors.css";
 import "./styles/ai-image-studio.css";
@@ -22,6 +23,13 @@ if ("caches" in window) {
   });
 }
 
+// /blog is the public, crawlable editorial hub. Keep the authenticated product
+// routes such as /blog/management inside the normal application router.
+const normalizedPath = window.location.pathname.replace(/\/+$/, "") || "/";
+const isPublicBlog =
+  normalizedPath === "/blog" ||
+  (normalizedPath.startsWith("/blog/") && normalizedPath !== "/blog/management");
+
 createRoot(document.getElementById("root")!).render(
-  <App />
+  isPublicBlog ? <PublicGeoBlog /> : <App />
 );
