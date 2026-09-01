@@ -217,7 +217,6 @@ export default function ShopifyConnectionsList() {
     setEditedStoreName(store.store_name || '');
     setShowEditNameDialog(true);
   };
-
   const handleManualSync = async (storeToSync: ShopifyConnection) => {
     if (!storeToSync) {
       toast.error(t.toasts.dashboard.noStoreSelected);
@@ -437,7 +436,6 @@ export default function ShopifyConnectionsList() {
         .from('shopify_pages')
         .select('*', { count: 'exact', head: true })
         .eq('store_id', storeToSync.id);
-
       const { count: articlesAfter } = await supabase
         .from('blog_articles')
         .select('*', { count: 'exact', head: true })
@@ -677,8 +675,17 @@ export default function ShopifyConnectionsList() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4 flex-1">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                    <Store className="w-6 h-6 text-white" />
+                  <div className="relative w-12 h-12 shrink-0 rounded-xl border border-border/70 bg-white shadow-sm flex items-center justify-center overflow-hidden">
+                    <Store className="w-6 h-6 text-emerald-600" />
+                    <img
+                      src={`https://${store.store_url.replace(/^https?:\/\//, '').replace(/\/.*$/, '')}/favicon.ico`}
+                      alt={`${store.store_name || 'Shopify Store'} logo`}
+                      className="absolute inset-0 h-full w-full bg-white object-contain p-2"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.style.display = 'none';
+                      }}
+                    />
                   </div>
                   
                   <div className="flex-1 min-w-0">
