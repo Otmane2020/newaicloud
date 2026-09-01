@@ -1,0 +1,78 @@
+name: Fix Studio product gallery flow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-studio-product-gallery.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Patch Studio product-to-gallery flow
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/pages/studio/StudioSmart.tsx')
+          source = path.read_text()
+
+          replacements = [
+            (
+              '''  const selectProductSource = (productId: string, imageUrl: string) => {\n''',
+              '''  const openProductImagePicker = (productId: string) => {\n    // Radix Dialog is more reliable when the product list is fully unmounted\n    // before the gallery view is mounted. This prevents the blank/empty state\n    // that could occur when swapping both views inside the same open dialog.\n    setShowSelection(false);\n    setPickerProductId(productId);\n    window.requestAnimationFrame(() => setShowSelection(true));\n  };\n\n  const selectProductSource = (productId: string, imageUrl: string) => {\n'''
+            ),
+            (
+              '''    setSelectedSourceImages((current) => {\n      const next = new Map(current);\n      next.set(productId, imageUrl);\n      return next;\n    });\n    setPickerProductId(null);\n  };\n''',
+              '''    setSelectedSourceImages((current) => {\n      const next = new Map(current);\n      next.set(productId, imageUrl);\n      return next;\n    });\n    // Image source is confirmed: return to Studio instead of silently\n    // switching back to the product list inside the same modal.\n    setShowSelection(false);\n    setPickerProductId(null);\n    setSearch(\"\");\n  };\n'''
+            ),
+            (
+              '''                      onClick={() => {\n                        setPickerProductId(product.id);\n                        setShowSelection(true);\n                      }}\n''',
+              '''                      onClick={() => openProductImagePicker(product.id)}\n'''
+            ),
+            (
+              '''          <DialogContent className=\"max-h-[88vh] max-w-5xl overflow-hidden p-0\">\n''',
+              '''          <DialogContent\n            key={pickerProduct ? `gallery-${pickerProduct.id}` : \"product-list\"}\n            className=\"max-h-[88vh] max-w-5xl overflow-hidden p-0\"\n          >\n'''
+            ),
+            (
+              '''                            onClick={() => setPickerProductId(product.id)}\n''',
+              '''                            onClick={() => openProductImagePicker(product.id)}\n'''
+            ),
+          ]
+
+          for old, new in replacements:
+            count = source.count(old)
+            if count != 1:
+              raise SystemExit(f'Expected exactly one Studio match, found {count}: {old[:90]!r}')
+            source = source.replace(old, new, 1)
+
+          path.write_text(source)
+          PY
+
+          git diff --check
+          git diff -- src/pages/studio/StudioSmart.tsx
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Commit validated Studio fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/studio/StudioSmart.tsx
+          git commit -m "fix(studio): open product gallery before Product Shot"
+          git push origin HEAD:main
