@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { ProductMediaGallery } from "@/components/products/ProductMediaGallery";
 import { LandingPagePreviewDialog } from "@/components/seo/LandingPagePreviewDialog";
 import RegenerateLanding from "@/components/seo/RegenerateLanding";
 import type { LandingConfig } from "@/components/seo/LandingConfigDialog";
@@ -58,7 +59,9 @@ type Product = {
   has_landing_page: boolean | null;
   last_landing_generation_at: string | null;
   seo_title?: string | null;
+  seo_description?: string | null;
   tags: string | null;
+  shopify_id?: number | null;
 };
 
 type LandingMode = "preview" | "html";
@@ -373,6 +376,13 @@ export default function ProductDetail() {
           </CardContent>
         </Card>
       </div>
+
+      <ProductMediaGallery
+        product={product}
+        storeId={selectedStore?.id}
+        fr={fr}
+        onMainImageChange={(imageUrl) => setProduct((current) => current ? { ...current, image_url: imageUrl } : current)}
+      />
 
       <Card className="rounded-2xl border-slate-200 shadow-none">
         <CardContent className="space-y-4 p-5">
