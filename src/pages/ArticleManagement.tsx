@@ -19,9 +19,10 @@ export default function ArticleManagement(_props: ArticleManagementProps) {
   const [categories, setCategories] = useState<string[]>([]);
   const [workspaceVersion, setWorkspaceVersion] = useState(0);
   const showNewArticle = searchParams.get("new") === "1";
+  const storeId = selectedStore?.id;
 
   useEffect(() => {
-    if (!showNewArticle || !selectedStore?.id) {
+    if (!showNewArticle || !storeId) {
       setCategories([]);
       return;
     }
@@ -32,7 +33,7 @@ export default function ArticleManagement(_props: ArticleManagementProps) {
       const { data } = await supabase
         .from("shopify_products")
         .select("category")
-        .eq("store_id", selectedStore.id)
+        .eq("store_id", storeId)
         .not("category", "is", null);
 
       if (cancelled) return;
@@ -43,7 +44,7 @@ export default function ArticleManagement(_props: ArticleManagementProps) {
     return () => {
       cancelled = true;
     };
-  }, [selectedStore?.id, showNewArticle]);
+  }, [storeId, showNewArticle]);
 
   const closeNewArticle = () => {
     const next = new URLSearchParams(searchParams);
@@ -54,7 +55,7 @@ export default function ArticleManagement(_props: ArticleManagementProps) {
 
   return (
     <>
-      <BlogWorkspace key={`${selectedStore?.id || "no-store"}-${workspaceVersion}`} />
+      <BlogWorkspace key={`${storeId || "no-store"}-${workspaceVersion}`} />
       {showNewArticle && <BlogWizard onClose={closeNewArticle} categories={categories} />}
     </>
   );
