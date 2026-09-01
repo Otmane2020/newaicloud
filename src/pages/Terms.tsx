@@ -19,7 +19,7 @@ export default function Terms() {
                 <FileText className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-4xl font-bold mb-4">{t.terms.title}</h1>
-              <p className="text-muted-foreground">{t.terms.lastUpdated}: 27 octobre 2025</p>
+              <p className="text-muted-foreground">{t.terms.lastUpdated}: October 27, 2025</p>
             </div>
 
             {/* Content */}
