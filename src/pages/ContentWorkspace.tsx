@@ -3,14 +3,12 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
-  Camera,
   CheckCircle2,
   CircleAlert,
   Database,
   Image as ImageIcon,
   PanelsTopLeft,
   Search,
-  Wand2,
 } from "lucide-react";
 import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
 import { useTranslation } from "@/lib/language";
 
-type ToolId = "landing" | "shots" | "catalog" | "background";
+type ToolId = "landing" | "catalog";
 type FilterId = "todo" | "ready" | "all";
 
 type ProductRow = {
@@ -48,7 +46,7 @@ type ScoredProduct = ProductRow & {
   catalogScore: number;
 };
 
-const TOOL_IDS: ToolId[] = ["landing", "shots", "catalog", "background"];
+const TOOL_IDS: ToolId[] = ["landing", "catalog"];
 
 const QUICK_LANDING_CONFIG: LandingConfig = {
   layout: "2 colonnes",
@@ -78,12 +76,12 @@ export default function ContentWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTool = searchParams.get("tool") as ToolId | null;
   const activeTool: ToolId = requestedTool && TOOL_IDS.includes(requestedTool) ? requestedTool : "landing";
-  const [filter, setFilter] = useState<FilterId>(activeTool === "shots" || activeTool === "background" ? "ready" : "todo");
+  const [filter, setFilter] = useState<FilterId>("todo");
   const [search, setSearch] = useState("");
   const [selectedLandingProduct, setSelectedLandingProduct] = useState<ScoredProduct | null>(null);
 
   useEffect(() => {
-    setFilter(activeTool === "shots" || activeTool === "background" ? "ready" : "todo");
+    setFilter("todo");
     setSearch("");
   }, [activeTool]);
 
@@ -97,28 +95,12 @@ export default function ContentWorkspace() {
       href: "/products/title-description?view=landing",
     },
     {
-      id: "shots" as const,
-      icon: Camera,
-      label: "Product Shot AI",
-      description: fr ? "Générez rapidement de nouvelles vues produit." : "Quickly generate new product views.",
-      action: fr ? "Créer des photos" : "Create photos",
-      href: "/studio?mode=shots",
-    },
-    {
       id: "catalog" as const,
       icon: Database,
       label: fr ? "Catalogue" : "Catalog",
       description: fr ? "Complétez titres, descriptions et données catalogue." : "Complete titles, descriptions and catalog data.",
       action: fr ? "Optimiser le catalogue" : "Optimize catalog",
       href: "/products/title-description?view=content",
-    },
-    {
-      id: "background" as const,
-      icon: Wand2,
-      label: "Background",
-      description: fr ? "Fond blanc ou ambiance en gardant le produit fidèle." : "White or lifestyle background while preserving the product.",
-      action: fr ? "Changer les fonds" : "Change backgrounds",
-      href: "/studio?mode=backgrounds",
     },
   ], [fr]);
 
@@ -166,13 +148,12 @@ export default function ContentWorkspace() {
 
   const readyForTool = (product: ScoredProduct) => {
     if (activeTool === "landing") return product.landingReady;
-    if (activeTool === "catalog") return product.catalogReady;
-    return product.imageReady;
+    return product.catalogReady;
   };
 
   const readyCount = useMemo(() => rows.filter(readyForTool).length, [rows, activeTool]);
   const needsCount = rows.length - readyCount;
-  const preferredFilter: FilterId = activeTool === "shots" || activeTool === "background" ? "ready" : "todo";
+  const preferredFilter: FilterId = "todo";
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -197,17 +178,13 @@ export default function ContentWorkspace() {
 
   const filterLabel = (id: FilterId) => {
     if (id === "all") return fr ? "Tous" : "All";
-    if (id === "ready") return activeTool === "shots" || activeTool === "background"
-      ? (fr ? "Avec image" : "With image")
-      : (fr ? "Prêts" : "Ready");
-    if (activeTool === "shots" || activeTool === "background") return fr ? "Sans image" : "Missing image";
+    if (id === "ready") return fr ? "Prêts" : "Ready";
     return fr ? "À faire" : "To do";
   };
 
   const productStatus = (product: ScoredProduct) => {
     if (activeTool === "landing") return product.landingReady ? (fr ? "Page prête" : "Page ready") : (fr ? "À créer" : "Create");
-    if (activeTool === "catalog") return product.catalogReady ? (fr ? "Complet" : "Complete") : `${product.catalogScore}%`;
-    return product.imageReady ? (fr ? "Image prête" : "Image ready") : (fr ? "Image manquante" : "Image missing");
+    return product.catalogReady ? (fr ? "Complet" : "Complete") : `${product.catalogScore}%`;
   };
 
   const rowLinkAction = (product: ScoredProduct) => {
@@ -231,7 +208,7 @@ export default function ContentWorkspace() {
           : "Choose a goal, see only what needs action, then launch the tool."}
       />
 
-      <nav className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm lg:grid-cols-4" aria-label="Product optimization tools">
+      <nav className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm" aria-label="Product optimization tools">
         {tools.map(({ id, icon: Icon, label }) => {
           const active = activeTool === id;
           return (
