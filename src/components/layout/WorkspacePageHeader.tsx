@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { PanelsTopLeft, Sparkles } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 interface WorkspacePageHeaderProps {
   section: string;
@@ -17,6 +19,9 @@ export function WorkspacePageHeader({
   description,
   actions,
 }: WorkspacePageHeaderProps) {
+  const { pathname } = useLocation();
+  const showLandingPagesCta = pathname === "/products";
+
   return (
     <header data-ui-version="catalog-compact-header-v1" className="py-1">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -42,9 +47,22 @@ export function WorkspacePageHeader({
           )}
         </div>
 
-        {actions && (
+        {(actions || showLandingPagesCta) && (
           <div className="flex flex-wrap items-center gap-2 lg:justify-end [&_button]:h-9 [&_button]:rounded-lg [&_button]:px-3 [&_button]:text-sm">
             {actions}
+            {showLandingPagesCta && (
+              <Link
+                to="/products/title-description?view=landing"
+                className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 px-4 text-sm font-semibold text-white shadow-md shadow-violet-500/20 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 sm:w-auto"
+                aria-label="Generate landing pages"
+              >
+                <span className="relative grid h-6 w-6 place-items-center rounded-lg bg-white/15 ring-1 ring-white/20">
+                  <PanelsTopLeft className="h-3.5 w-3.5" />
+                  <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 transition-transform duration-200 group-hover:scale-125" />
+                </span>
+                <span>Generate landing pages</span>
+              </Link>
+            )}
           </div>
         )}
       </div>
