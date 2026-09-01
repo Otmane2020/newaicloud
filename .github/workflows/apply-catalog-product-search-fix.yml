@@ -47,3 +47,5 @@ jobs:
           fi
           git commit -m "fix: search complete product catalog"
           git push origin HEAD:main
+
+# trigger: catalog-search-fix-v2
