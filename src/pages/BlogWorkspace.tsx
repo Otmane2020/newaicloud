@@ -74,7 +74,7 @@ export default function BlogWorkspace() {
       setLoading(true);
       const { data, error } = await supabase
         .from("blog_articles")
-        .select("id,title,content,meta_description,keywords,status,published_at,shopify_article_id,created_at,source,featured_image,optimization_count,seo_title,handle")
+        .select("id,title,content,meta_description,keywords,status,published_at,shopify_article_id,created_at,source,featured_image,optimization_count,seo_title")
         .eq("store_id", selectedStore.id)
         .order("created_at", { ascending: false });
       if (error) throw error;

@@ -240,7 +240,7 @@ export function PricingWorkspace() {
         const current = effectivePrice(product);
         const factor = bulkMode === "discount" ? 1 - bulkAmount / 100 : 1 + bulkAmount / 100;
         const nextPrice = Math.max(0, Math.round(current * factor * 100) / 100);
-        const update: Record<string, number | null> = { price: nextPrice };
+        const update: any = { price: nextPrice };
         if (bulkMode === "discount") update.compare_at_price = current;
         const { error } = await supabase.from("shopify_products").update(update).eq("id", product.id);
         if (error) throw error;
