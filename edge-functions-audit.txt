@@ -1,61 +1,35 @@
 edge_functions=260
 strict_bootstrap_coverage=260/260
-lovable_gateway=33
-  supabase/functions/analyze-dimension-images/index.ts
-  supabase/functions/analyze-price-from-image/index.ts
-  supabase/functions/audit-homepage-seo/index.ts
-  supabase/functions/auto-fix-translations/index.ts
-  supabase/functions/export-creative-image/index.ts
-  supabase/functions/generate-ai-background-variants/index.ts
-  supabase/functions/generate-ai-product-background/index.ts
-  supabase/functions/generate-ai-product-images/index.ts
-  supabase/functions/generate-ai-query-opportunities/index.ts
-  supabase/functions/generate-alt-texts/index.ts
-  supabase/functions/generate-blog-article/index.ts
-  supabase/functions/generate-image/index.ts
-  supabase/functions/generate-image-background/index.ts
-  supabase/functions/generate-landing-bulk/index.ts
-  supabase/functions/generate-landing-deepseek/index.ts
-  supabase/functions/generate-nano-banana-image/index.ts
-  supabase/functions/generate-product-background/index.ts
-  supabase/functions/generate-promotional-article/index.ts
-  supabase/functions/generate-promotional-articles/index.ts
-  supabase/functions/generate-smart-landing/index.ts
-  supabase/functions/generate-social-caption/index.ts
-  supabase/functions/generate-social-post/index.ts
-  supabase/functions/generate-template-text/index.ts
-  supabase/functions/generate-title-description/index.ts
-  supabase/functions/generate-vendor-name/index.ts
-  supabase/functions/generate-video-script/index.ts
-  supabase/functions/generate-white-background/index.ts
-  supabase/functions/robot-stt/index.ts
-  supabase/functions/scan-repo-translations/index.ts
-  supabase/functions/scan-translation-issues/index.ts
-  supabase/functions/search-similar-products-specs/index.ts
-  supabase/functions/smart-ai/index.ts
-  supabase/functions/smart-price-scanner/index.ts
-gemini_direct=4
-  supabase/functions/analyze-seo-with-ai/index.ts
-  supabase/functions/generate-product-background/index.ts
-  supabase/functions/generate-white-background/index.ts
-  supabase/functions/smart-alt-text/index.ts
-openai_direct=3
-  supabase/functions/analyze-website-for-aeo/index.ts
-  supabase/functions/generate-image-background/index.ts
-  supabase/functions/generate-white-background/index.ts
-deepseek_direct=9
-  supabase/functions/assistant-ai/index.ts
-  supabase/functions/chat-smart/index.ts
-  supabase/functions/classify-product-category/index.ts
-  supabase/functions/generate-daily-opportunities/index.ts
-  supabase/functions/generate-landing-deepseek/index.ts
-  supabase/functions/generate-scheduled-article/index.ts
-  supabase/functions/generate-store-summary/index.ts
-  supabase/functions/optimize-shopping-feed/index.ts
-  supabase/functions/smart-alt-text/index.ts
-openrouter_direct=0
-moonshot_direct=0
-multiple_req_json=3
-  2x supabase/functions/analyze-serp-competitors/index.ts
-  3x supabase/functions/api-v1/index.ts
-  2x supabase/functions/sync-blog-to-shopify/index.ts
+multiple_req_json=0
+
+ai_routing=text: OpenAI -> Gemini -> Kimi -> DeepSeek -> OpenRouter
+image_routing=Cloudflare -> Gemini -> OpenAI -> Lovable
+vision_routing=OpenAI -> Gemini -> Kimi/Moonshot -> optional OpenRouter vision
+
+legacy_provider_calls=intercepted_by_strict_ai_bootstrap
+legacy_lovable_gateway_references=33
+legacy_gemini_direct_references=4
+legacy_openai_direct_references=3
+legacy_deepseek_direct_references=9
+
+critical_fixes:
+- SEO page/collection/article/product/landing generators use resilient routing/fallbacks
+- enrich-product preserves real catalog/vision data when all text providers fail
+- image/background generation uses multi-provider routing
+- generate-ai-product-background and generate-image-background charge credits only after successful generation
+- analyze-image-with-vision uses multi-provider vision routing and application-level errors
+- generate-google-category does not fabricate taxonomy when providers fail and returns needs_review instead of runtime 500
+- generate-gtin no longer fabricates checksum-valid but unassigned GS1 identifiers
+- analyze-serp-competitors reads request body once and reuses it for fallback
+- sync-blog-to-shopify reads request body once and can safely restore draft state after failure
+- api-v1 parses POST request bodies once in the router
+
+verification:
+- npm install --legacy-peer-deps: success
+- npm run build: success
+- static request-body audit: clean
+- strict AI bootstrap coverage: 260/260
+
+deployment:
+- GitHub Edge deployment skipped because SUPABASE_ACCESS_TOKEN is not configured in GitHub Actions
+- source fixes are committed; Supabase Edge runtime still requires deployment through Lovable Cloud or an authorized Supabase token
