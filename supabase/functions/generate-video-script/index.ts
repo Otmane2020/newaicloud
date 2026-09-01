@@ -1,18 +1,24 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  creditErrorResponse,
+  refundCredits,
+  reserveCredits,
+  type CreditReservation,
+} from "../_shared/credit-billing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-idempotency-key",
 };
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Health check
+  let creditReservation: CreditReservation | null = null;
+
   try {
     const body = await req.json();
     if (body?.healthCheck === true) {
@@ -27,6 +33,14 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    // A video script is advanced text content (2 credits). Full video rendering
+    // remains a separate, more expensive action.
+    creditReservation = await reserveCredits(req, "content", {
+      feature: "generate-video-script",
+      language,
+      audience,
+    });
 
     const systemPrompt = `You are an expert video ad scriptwriter specializing in SaaS and e-commerce products.
 Your task is to generate high-impact, scroll-stopping video ad scripts optimized for TikTok, Instagram Reels, and Facebook.
@@ -79,16 +93,19 @@ Generate a compelling, ${language === "fr" ? "French" : "English"} video ad scri
     });
 
     if (!response.ok) {
+      await refundCredits(creditReservation, `provider_http_${response.status}`);
+      creditReservation = null;
+
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+          JSON.stringify({ error: "Rate limit exceeded. Please try again later.", credits_refunded: true }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "Payment required. Please add credits to your Lovable workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "AI provider temporarily unavailable. No Nexora credits were used.", credits_refunded: true }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const errorText = await response.text();
@@ -103,10 +120,8 @@ Generate a compelling, ${language === "fr" ? "French" : "English"} video ad scri
       throw new Error("No content in AI response");
     }
 
-    // Parse the JSON from the response
     let script;
     try {
-      // Try to extract JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         script = JSON.parse(jsonMatch[0]);
@@ -115,7 +130,6 @@ Generate a compelling, ${language === "fr" ? "French" : "English"} video ad scri
       }
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
-      // Return a fallback script
       script = language === "fr" ? {
         hook: "⚡ Tu perds des ventes à cause de mauvaises photos ?",
         problem: "Créer des fiches produits prend des heures et ne convertit pas.",
@@ -140,13 +154,27 @@ Generate a compelling, ${language === "fr" ? "French" : "English"} video ad scri
     }
 
     return new Response(
-      JSON.stringify({ script }),
+      JSON.stringify({
+        script,
+        credit_cost: creditReservation.cost,
+        credit_balance: creditReservation.balanceAfter,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
+    const creditResponse = creditErrorResponse(error, corsHeaders);
+    if (creditResponse) return creditResponse;
+
+    if (creditReservation) {
+      await refundCredits(
+        creditReservation,
+        error instanceof Error ? error.message.slice(0, 180) : "video_script_failed",
+      );
+    }
+
     console.error("Error in generate-video-script:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error", credits_refunded: !!creditReservation }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
