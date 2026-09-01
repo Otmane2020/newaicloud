@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="CatalogOptimize AI">
+  <defs>
+    <linearGradient id="catalog-ai-gradient" x1="7" y1="7" x2="41" y2="41" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED" />
+      <stop offset="1" stop-color="#2563EB" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="44" height="44" rx="14" fill="url(#catalog-ai-gradient)" />
+  <path d="M31.5 15.5a13 13 0 1 0 0 17" fill="none" stroke="#fff" stroke-width="4.2" stroke-linecap="round" />
+  <path d="M34 9.5l1.7 4.3 4.3 1.7-4.3 1.7-1.7 4.3-1.7-4.3-4.3-1.7 4.3-1.7L34 9.5Z" fill="#C4B5FD" />
+  <circle cx="25" cy="24" r="3.2" fill="#fff" />
+</svg>
