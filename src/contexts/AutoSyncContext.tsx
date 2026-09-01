@@ -13,6 +13,7 @@ interface AutoSyncContextType {
 }
 
 const AutoSyncContext = createContext<AutoSyncContextType | undefined>(undefined);
+const COMPLETION_DISPLAY_MS = 1800;
 
 export function AutoSyncProvider({ children }: { children: ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
@@ -22,38 +23,14 @@ export function AutoSyncProvider({ children }: { children: ReactNode }) {
   const [itemsSynced, setItemsSynced] = useState(0);
   const autoCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startSync = useCallback((name: string) => {
-    console.log('🚀 [AutoSyncContext] startSync called:', name);
+  const clearAutoClose = useCallback(() => {
     if (autoCloseTimeoutRef.current) {
       clearTimeout(autoCloseTimeoutRef.current);
       autoCloseTimeoutRef.current = null;
     }
-    setStoreName(name);
-    setIsSyncing(true);
-    setIsCompleted(false);
-    setCurrentType('products');
-    setItemsSynced(0);
   }, []);
 
-  const updateProgress = useCallback((type: string, items: number) => {
-    console.log('📊 [AutoSyncContext] updateProgress:', type, items);
-    setCurrentType(type);
-    setItemsSynced(items);
-  }, []);
-
-  const completeSync = useCallback((items: number) => {
-    console.log('✅ [AutoSyncContext] completeSync:', items);
-    setIsCompleted(true);
-    setItemsSynced(items);
-    setCurrentType('completed');
-  }, []);
-
-  const endSync = useCallback(() => {
-    console.log('🛑 [AutoSyncContext] endSync called - setting isSyncing=false');
-    if (autoCloseTimeoutRef.current) {
-      clearTimeout(autoCloseTimeoutRef.current);
-      autoCloseTimeoutRef.current = null;
-    }
+  const resetState = useCallback(() => {
     setIsSyncing(false);
     setIsCompleted(false);
     setCurrentType('products');
@@ -61,25 +38,55 @@ export function AutoSyncProvider({ children }: { children: ReactNode }) {
     setItemsSynced(0);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (autoCloseTimeoutRef.current) {
-        clearTimeout(autoCloseTimeoutRef.current);
-      }
-    };
+  const startSync = useCallback((name: string) => {
+    clearAutoClose();
+    setStoreName(name);
+    setIsSyncing(true);
+    setIsCompleted(false);
+    setCurrentType('products');
+    setItemsSynced(0);
+  }, [clearAutoClose]);
+
+  const updateProgress = useCallback((type: string, items: number) => {
+    setCurrentType(type);
+    setItemsSynced(items);
   }, []);
 
+  const completeSync = useCallback((items: number) => {
+    clearAutoClose();
+    setIsSyncing(true);
+    setIsCompleted(true);
+    setItemsSynced(items);
+    setCurrentType('completed');
+
+    // Keep the completed state visible briefly, then fully release the global
+    // synchronization lock so a future import can start normally.
+    autoCloseTimeoutRef.current = setTimeout(() => {
+      autoCloseTimeoutRef.current = null;
+      resetState();
+    }, COMPLETION_DISPLAY_MS);
+  }, [clearAutoClose, resetState]);
+
+  const endSync = useCallback(() => {
+    clearAutoClose();
+    resetState();
+  }, [clearAutoClose, resetState]);
+
+  useEffect(() => {
+    return () => clearAutoClose();
+  }, [clearAutoClose]);
+
   return (
-    <AutoSyncContext.Provider value={{ 
-      isSyncing, 
+    <AutoSyncContext.Provider value={{
+      isSyncing,
       isCompleted,
-      currentType, 
-      storeName, 
+      currentType,
+      storeName,
       itemsSynced,
-      startSync, 
+      startSync,
       updateProgress,
       completeSync,
-      endSync 
+      endSync,
     }}>
       {children}
     </AutoSyncContext.Provider>
