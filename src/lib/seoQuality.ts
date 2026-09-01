@@ -277,30 +277,26 @@ export function calculateDescriptionScore(
  * Critères: présence (5 pts), nombre optimal (10 pts), qualité (5 pts)
  */
 export function calculateTagsScore(tags: string | null | undefined): number {
-  if (!tags || tags.trim().length === 0) {
-    return 0; // Aucun tag = 0 points
+  if (!tags || tags.trim().length === 0) return 0;
+
+  let tagArray: string[] = [];
+  try {
+    const parsed = JSON.parse(tags);
+    if (Array.isArray(parsed)) tagArray = parsed.map(String).map(t => t.trim()).filter(Boolean);
+  } catch {
+    tagArray = tags.split(',').map(t => t.trim()).filter(Boolean);
   }
-  
-  const tagArray = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-  let score = 0;
-  
-  // Présence de tags : 5 points
-  if (tagArray.length > 0) score += 5;
-  
-  // Nombre optimal de tags (3-10) : 10 points
-  if (tagArray.length >= 3 && tagArray.length <= 10) {
-    score += 10;
-  } else if (tagArray.length > 0) {
-    score += 5; // Partiellement optimal
-  }
-  
-  // Qualité des tags (longueur > 3 caractères) : 5 points
+
+  if (!tagArray.length) return 0;
+  let score = 5; // presence
+
+  if (tagArray.length >= 3 && tagArray.length <= 10) score += 10;
+  else score += 5;
+
   const qualityTags = tagArray.filter(t => t.length > 3);
-  if (qualityTags.length >= tagArray.length * 0.7) {
-    score += 5; // 70% des tags sont descriptifs
-  }
-  
-  return Math.min(score, 20); // Maximum 20 points
+  if (qualityTags.length >= tagArray.length * 0.7) score += 5;
+
+  return Math.min(score, 20);
 }
 
 /**
@@ -432,9 +428,17 @@ export function calculateArticlesSeoScore(articles: any[]): number {
  */
 export function calculateImagesSeoScore(images: any[]): number {
   if (!images || images.length === 0) return 0;
-  
-  const optimizedImages = images.filter(img => (img.optimization_count || 0) > 0).length;
-  return Math.round((optimizedImages / images.length) * 100);
+
+  const total = images.reduce((sum, img) => {
+    const altText = img.alt_text || img.alt || '';
+    if (!altText.trim()) return sum;
+    const isAI = Boolean(img.is_ai_generated ?? img.ai_generated ?? ((img.optimization_count || 0) > 0));
+    const detail = calculateAltTextScore(altText, isAI);
+    const normalized = detail.weight ? Math.min(100, Math.round(detail.score / detail.weight)) : 0;
+    return sum + normalized;
+  }, 0);
+
+  return Math.round(total / images.length);
 }
 
 /**
@@ -485,41 +489,26 @@ export function calculateDetailedSeoScore(
   hasUrl: boolean = false,
   tags?: string | null,
   optimizationCount?: number,
-  itemId?: string  // NEW: Unique ID for deterministic variation
+  itemId?: string
 ): SeoScoreDetails {
   const titleScore = calculateTitleScore(title);
   const descScore = calculateDescriptionScore(description);
   const tagsScore = calculateTagsScore(tags);
-  
-  // Pondération : Title 35% + Description 35% + Tags 15% + Image 6% + URL 6%
-  let weightedScore = Math.round(
+
+  // The score must reflect the content that exists NOW. Optimization status must never
+  // replace the quality calculation with a synthetic/random score.
+  const weightedScore = Math.round(
     (titleScore.score * 0.35) +
     (descScore.score * 0.35) +
-    (tagsScore * 0.75) + // Tags 15 points (reduced from 20)
-    (hasImage ? 6 : 0) + // Image 6 points (reduced from 7)
-    (hasUrl ? 6 : 0) // URL 6 points (reduced from 8)
+    (tagsScore * 0.75) +
+    (hasImage ? 6 : 0) +
+    (hasUrl ? 6 : 0)
   );
 
-  // NOUVELLE RÈGLE: Bonus uniquement pour produits optimisés
-  const isOptimized = optimizationCount && optimizationCount > 0;
-  
-  let finalScore: number;
-  
-  if (isOptimized) {
-    // ✅ Pour produits OPTIMISÉS: Score entre 80-95% avec variation déterministe
-    // Generate deterministic hash from itemId or use random-like variation
-    const hashSource = itemId || `${title}-${description}-${optimizationCount}`;
-    const hash = hashSource.split('').reduce((acc, char) => 
-      char.charCodeAt(0) + ((acc << 5) - acc), 0);
-    
-    // Variation between 0 and 15 for range 80-95
-    const variation = Math.abs(hash) % 16;
-    finalScore = 80 + variation; // Results in 80-95 range
-  } else {
-    // ❌ Pour produits NON-OPTIMISÉS: Score de base sans pénalité
-    // La pondération 30/70 sera appliquée au niveau du calcul global
-    finalScore = weightedScore;
-  }
+  // Small, transparent credit for having been AI-reviewed. The score can still go up or
+  // down whenever title/description/tags/image/URL quality changes after a new optimization.
+  const optimizationBonus = (optimizationCount || 0) > 0 ? 3 : 0;
+  const finalScore = Math.min(100, weightedScore + optimizationBonus);
 
   return {
     score: Math.round(finalScore),
@@ -529,7 +518,7 @@ export function calculateDetailedSeoScore(
       keywords: Math.round((titleScore.breakdown.keywords + descScore.breakdown.keywords) / 2),
       readability: Math.round((titleScore.breakdown.readability + descScore.breakdown.readability) / 2),
     },
-    maxScore: 100
+    maxScore: 100,
   };
 }
 
