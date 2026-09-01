@@ -3,7 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Layers3, Database, FileText,
   Sparkles, Store, ShoppingCart, RefreshCw, Settings,
-  User, CreditCard, ChevronDown, LogOut, FlaskConical, Bot,
+  User, CreditCard, ChevronDown, LogOut, Bot,
   Newspaper, Activity, Camera, Tags, Images, Home,
 } from "lucide-react";
 import {
@@ -20,7 +20,7 @@ import { useTranslation } from "@/lib/language";
 import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
 
 type NavItem = { label: string; href: string; icon: typeof Package; badge?: string; aliases?: string[] };
-type NavSection = { label: string; icon: typeof Package; items: NavItem[] };
+type NavSection = { label: string; icon: typeof Package; items: NavItem[]; forceOpen?: boolean };
 
 export function CatalogOptimizeSidebar() {
   const { state, isMobile, openMobile, toggleSidebar } = useSidebar();
@@ -72,7 +72,15 @@ export function CatalogOptimizeSidebar() {
     {
       label: "SEO",
       icon: Sparkles,
+      forceOpen: true,
       items: [
+        {
+          label: "GEO & AI Search",
+          href: "/geo-ai-search",
+          icon: Sparkles,
+          badge: "AI",
+          aliases: ["/aeo", "/aeo-chatgpt", "/aeo-gemini", "/aeo-copilot", "/aeo-calendar"],
+        },
         {
           label: fr ? "Collections & pages" : "Collections & pages",
           href: "/seo?tab=collections",
@@ -112,10 +120,6 @@ export function CatalogOptimizeSidebar() {
     },
   ], [fr]);
 
-  const labs: NavItem[] = [
-    { label: "AEO & AI Answers", href: "/aeo-chatgpt", icon: Sparkles },
-  ];
-
   const closeMobile = () => {
     if (isMobile && openMobile) toggleSidebar();
   };
@@ -144,12 +148,15 @@ export function CatalogOptimizeSidebar() {
   );
 
   return (
-    <Sidebar className="border-r border-slate-200 shadow-[8px_0_30px_rgba(15,23,42,0.03)]">
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-slate-200 bg-white shadow-[8px_0_30px_rgba(15,23,42,0.03)]"
+    >
       <SidebarContent className="bg-white">
         <div className="border-b border-slate-200 bg-white px-3 py-4">
           <CatalogOptimizeLogo compact={state !== "expanded"} />
           {state === "expanded" && (
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2">
+            <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 p-2">
               <StoreSelector />
             </div>
           )}
@@ -168,36 +175,21 @@ export function CatalogOptimizeSidebar() {
               </SidebarMenuItem>
 
               {sections.map((section) => (
-                <Collapsible key={section.label} defaultOpen={section.items.some(active)}>
+                <Collapsible key={section.label} defaultOpen={section.forceOpen || section.items.some(active)}>
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
-                      <SidebarMenuButton>
+                      <SidebarMenuButton tooltip={section.label}>
                         <section.icon className="h-4 w-4" />
                         <span>{section.label}</span>
-                        <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                        <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180 group-data-[collapsible=icon]:hidden" />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
-                    <CollapsibleContent>
+                    <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
                       <SidebarMenuSub>{section.items.map(navItem)}</SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>
                 </Collapsible>
               ))}
-
-              <Collapsible defaultOpen={labs.some(active)}>
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
-                      <FlaskConical className="h-4 w-4" />
-                      <span>Labs</span>
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>{labs.map(navItem)}</SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -206,7 +198,7 @@ export function CatalogOptimizeSidebar() {
       <SidebarFooter className="border-t border-slate-200 bg-white">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild tooltip={fr ? "Déconnexion" : "Log out"}>
               <Button variant="ghost" className="w-full justify-start" onClick={() => signOut()}>
                 <LogOut className="h-4 w-4" />
                 {state === "expanded" && <span>{fr ? "Déconnexion" : "Log out"}</span>}
