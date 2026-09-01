@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { showFriendlyAuthError } from '@/lib/authErrorMessages';
 import { z } from 'zod';
 
 const passwordSchema = z.object({
@@ -52,7 +53,8 @@ export default function UpdatePassword() {
     setLoading(false);
 
     if (error) {
-      toast.error(error.message);
+      const language = (localStorage.getItem('app-language') || 'en') === 'fr' ? 'fr' : 'en';
+      showFriendlyAuthError(error, language, (title, options) => toast.error(title, options));
     } else {
       toast.success('Mot de passe mis à jour avec succès !');
       setTimeout(() => navigate('/dashboard'), 1500);
