@@ -1,0 +1,64 @@
+name: Fix ALT generate button
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-alt-generate-button.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Fix ALT generation flow
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/components/seo/SeoAltImageList.tsx')
+          text = path.read_text()
+
+          replacements = [
+            (
+              "const handleGenerateForSelected = async () => {\n    const allImages = products.flatMap(p => p.images);\n    const imagesToGenerate = allImages.filter(\n      img => selectedImages.has(img.id) && !img.alt_text\n    );",
+              "const handleGenerateForSelected = async (requestedImageIds?: string[]) => {\n    const allImages = products.flatMap(p => p.images);\n    const requestedIds = requestedImageIds ? new Set(requestedImageIds) : selectedImages;\n    const imagesToGenerate = allImages.filter(\n      img => requestedIds.has(img.id) && !img.alt_text\n    );"
+            ),
+            (
+              "        if (!error && data) {\n          const product = products.find(p => p.id === imagesToGenerate[i].product_id);\n          generatedImages.push({\n            ...imagesToGenerate[i],\n            alt_text: data.alt_text,\n            product_title: product?.title\n          });",
+              "        const generatedAlt = data?.altText ?? data?.alt_text ?? data?.results?.[0]?.altText ?? data?.results?.[0]?.alt_text;\n\n        if (!error && data?.success !== false && generatedAlt) {\n          const product = products.find(p => p.id === imagesToGenerate[i].product_id);\n          generatedImages.push({\n            ...imagesToGenerate[i],\n            alt_text: generatedAlt,\n            product_title: product?.title\n          });"
+            ),
+            (
+              "          // Select all images without ALT\n          setSelectedImages(new Set(imagesToGenerate.map(img => img.id)));\n          // Trigger generation\n          await handleGenerateForSelected();",
+              "          // Pass the IDs directly: React state updates are asynchronous.\n          // This avoids launching generation with a stale/empty selection.\n          await handleGenerateForSelected(imagesToGenerate.map(img => img.id));"
+            ),
+            (
+              "              onClick={handleGenerateForSelected}",
+              "              onClick={() => handleGenerateForSelected()}"
+            ),
+          ]
+
+          for old, new in replacements:
+            if old not in text:
+              raise SystemExit(f'Target block not found:\n{old[:180]}')
+            text = text.replace(old, new, 1)
+
+          path.write_text(text)
+
+      - name: Validate diff
+        run: git diff --check
+
+      - name: Commit patch
+        run: |
+          git config user.name "catalog-optimize-bot"
+          git config user.email "catalog-optimize-bot@users.noreply.github.com"
+          git add src/components/seo/SeoAltImageList.tsx
+          git commit -m "Fix ALT image generate button"
+          git push origin main
