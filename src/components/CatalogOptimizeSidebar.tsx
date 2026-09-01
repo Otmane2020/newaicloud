@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Layers3, Database, FileText,
@@ -29,6 +29,18 @@ export function CatalogOptimizeSidebar() {
   const { language } = useTranslation();
   const fr = language === "fr";
 
+  const productOptimizationItem: NavItem = useMemo(() => ({
+    label: "Product Optimization",
+    href: "/content",
+    icon: FileText,
+    aliases: [
+      "/products/title-description",
+      "/products/title-description?view=content",
+      "/products/title-description?view=landing",
+      "/products/title-description?view=bulk",
+    ],
+  }), []);
+
   const sections: NavSection[] = useMemo(() => [
     {
       label: fr ? "Catalogue" : "Catalog",
@@ -37,23 +49,6 @@ export function CatalogOptimizeSidebar() {
         { label: fr ? "Produits" : "Products", href: "/products", icon: Package },
         { label: "Collections", href: "/collections", icon: Layers3 },
         { label: fr ? "Données enrichies" : "Enriched Data", href: "/product-source", icon: Database },
-      ],
-    },
-    {
-      label: fr ? "Contenu" : "Content",
-      icon: FileText,
-      items: [
-        {
-          label: fr ? "Optimisation produit" : "Product Optimization",
-          href: "/content",
-          icon: FileText,
-          aliases: [
-            "/products/title-description",
-            "/products/title-description?view=content",
-            "/products/title-description?view=landing",
-            "/products/title-description?view=bulk",
-          ],
-        },
       ],
     },
     {
@@ -190,24 +185,36 @@ export function CatalogOptimizeSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {sections.map((section) => (
-                <Collapsible
-                  key={section.label}
-                  defaultOpen={section.items.some(active) || (section.label === "Studio" && pathname === "/studio")}
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton>
-                        <section.icon className="h-4 w-4" />
-                        <span>{section.label}</span>
-                        <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+              {sections.map((section, index) => (
+                <Fragment key={section.label}>
+                  <Collapsible
+                    defaultOpen={section.items.some(active) || (section.label === "Studio" && pathname === "/studio")}
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton>
+                          <section.icon className="h-4 w-4" />
+                          <span>{section.label}</span>
+                          <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>{section.items.map(navItem)}</SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+
+                  {index === 0 && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={active(productOptimizationItem)}>
+                        <NavLink to={productOptimizationItem.href} onClick={closeMobile}>
+                          <productOptimizationItem.icon className="h-4 w-4" />
+                          <span>{productOptimizationItem.label}</span>
+                        </NavLink>
                       </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>{section.items.map(navItem)}</SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
+                    </SidebarMenuItem>
+                  )}
+                </Fragment>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
