@@ -1,0 +1,113 @@
+name: Apply SEO bulk and ALT repair
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/seo-bulk-alt-fix-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Patch bulk CTAs and ALT generation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'pattern not found: {label}')
+              return text.replace(old, new, 1)
+
+          p = Path('src/components/seo/MinimalMetadataWorkspaces.tsx')
+          s = p.read_text()
+
+          helper = '''function EmptyState({ icon: Icon, text }: { icon: typeof Package; text: string }) {\n  return (\n    <div className="grid min-h-48 place-items-center p-8 text-center text-sm text-muted-foreground">\n      <div><Icon className="mx-auto mb-2 h-7 w-7 text-slate-300" />{text}</div>\n    </div>\n  );\n}\n'''
+          helper_plus = helper + '''\nasync function runInBatches<T>(items: T[], worker: (item: T) => Promise<boolean>, batchSize = 4) {\n  let success = 0;\n  let failed = 0;\n  for (let index = 0; index < items.length; index += batchSize) {\n    const batch = items.slice(index, index + batchSize);\n    const results = await Promise.all(batch.map(async (item) => {\n      try { return await worker(item); } catch { return false; }\n    }));\n    success += results.filter(Boolean).length;\n    failed += results.filter((result) => !result).length;\n  }\n  return { success, failed };\n}\n'''
+          s = replace_once(s, helper, helper_plus, 'batch helper')
+
+          old = '''  const optimize = async (ids: string[]) => {\n    if (!ids.length) return;\n    try {\n      setBusy(true);\n      let success = 0;\n      for (const id of ids) {\n        const { error } = await supabase.functions.invoke("generate-collection-seo", { body: { collection_ids: [id], force: true } });\n        if (!error) success += 1;\n      }\n      toast.success(fr ? `${success} collection(s) optimisée(s)` : `${success} collection(s) optimized`);\n      setSelected(new Set());\n      await load();\n    } finally { setBusy(false); }\n  };'''
+          new = '''  const optimize = async (ids: string[]) => {\n    if (!ids.length) return;\n    try {\n      setBusy(true);\n      const result = await runInBatches(ids, async (id) => {\n        const { data, error } = await supabase.functions.invoke("generate-collection-seo", { body: { collection_ids: [id], force: true } });\n        return !error && data?.success !== false;\n      });\n      if (result.success) toast.success(fr ? `${result.success} collection(s) optimisée(s)` : `${result.success} collection(s) optimized`);\n      if (result.failed) toast.error(fr ? `${result.failed} collection(s) en échec` : `${result.failed} collection(s) failed`);\n      setSelected(new Set());\n      await load();\n    } finally { setBusy(false); }\n  };'''
+          s = replace_once(s, old, new, 'collections handler')
+          s = replace_once(s,
+            '''<span className="text-xs text-muted-foreground">{selected.size ? `${selected.size} sélectionnées` : `${filtered.length} collections`}</span>\n            <Button size="sm" disabled={!selected.size || busy} onClick={() => optimize([...selected])}>''',
+            '''<span className="text-xs text-muted-foreground">{selected.size ? `${selected.size} sélectionnées` : `${filtered.length} collections`}</span>\n            <Button size="sm" variant="outline" disabled={!missing || busy} onClick={() => optimize(items.filter((i) => !(i.optimization_count > 0)).map((i) => i.id))}><Sparkles className="mr-1.5 h-4 w-4" />{fr ? "Tout optimiser" : "Optimize All"}</Button>\n            <Button size="sm" disabled={!selected.size || busy} onClick={() => optimize([...selected])}>''',
+            'collections CTA')
+
+          old = '''  const optimize = async (ids: string[]) => { if (!ids.length) return; try { setBusy(true); let success = 0; for (const id of ids) { const { error } = await supabase.functions.invoke("generate-page-seo", { body: { pageId: id, storeId: selectedStore?.id, force: true } }); if (!error) success += 1; } toast.success(fr ? `${success} page(s) optimisée(s)` : `${success} page(s) optimized`); setSelected(new Set()); await load(); } finally { setBusy(false); } };'''
+          new = '''  const optimize = async (ids: string[]) => { if (!ids.length) return; try { setBusy(true); const result = await runInBatches(ids, async (id) => { const { data, error } = await supabase.functions.invoke("generate-page-seo", { body: { pageId: id, storeId: selectedStore?.id, force: true } }); return !error && data?.success !== false; }); if (result.success) toast.success(fr ? `${result.success} page(s) optimisée(s)` : `${result.success} page(s) optimized`); if (result.failed) toast.error(fr ? `${result.failed} page(s) en échec` : `${result.failed} page(s) failed`); setSelected(new Set()); await load(); } finally { setBusy(false); } };'''
+          s = replace_once(s, old, new, 'pages handler')
+          s = replace_once(s,
+            '''<span className="text-xs text-muted-foreground">{selected.size ? `${selected.size} sélectionnées` : `${filtered.length} pages`}</span><Button size="sm" disabled={!selected.size || busy} onClick={() => optimize([...selected])}>''',
+            '''<span className="text-xs text-muted-foreground">{selected.size ? `${selected.size} sélectionnées` : `${filtered.length} pages`}</span><Button size="sm" variant="outline" disabled={!items.some((i) => !(i.optimization_count > 0)) || busy} onClick={() => optimize(items.filter((i) => !(i.optimization_count > 0)).map((i) => i.id))}><Sparkles className="mr-1.5 h-4 w-4" />{fr ? "Tout optimiser" : "Optimize All"}</Button><Button size="sm" disabled={!selected.size || busy} onClick={() => optimize([...selected])}>''',
+            'pages CTA')
+
+          old = '''  const generate = async (ids: string[]) => { if (!ids.length) return; try { setBusy(true); let success = 0; for (const id of ids) { const { data, error } = await supabase.functions.invoke("generate-tags", { body: { productId: id, force: true } }); if (!error && data?.success !== false) success += 1; } toast.success(fr ? `${success} produit(s) traité(s)` : `${success} product(s) processed`); setSelected(new Set()); await load(); } finally { setBusy(false); } };'''
+          new = '''  const generate = async (ids: string[]) => { if (!ids.length) return; try { setBusy(true); const result = await runInBatches(ids, async (id) => { const { data, error } = await supabase.functions.invoke("generate-tags", { body: { productId: id, force: true } }); return !error && data?.success !== false; }); if (result.success) toast.success(fr ? `${result.success} produit(s) traité(s)` : `${result.success} product(s) processed`); if (result.failed) toast.error(fr ? `${result.failed} produit(s) en échec` : `${result.failed} product(s) failed`); setSelected(new Set()); await load(); } finally { setBusy(false); } };'''
+          s = replace_once(s, old, new, 'tags handler')
+          s = replace_once(s,
+            '''<span className="text-xs text-muted-foreground">{selected.size ? `${selected.size} sélectionnés` : `${filtered.length} produits`}</span><Button size="sm" disabled={!selected.size || busy} onClick={() => generate([...selected])}>''',
+            '''<span className="text-xs text-muted-foreground">{selected.size ? `${selected.size} sélectionnés` : `${filtered.length} produits`}</span><Button size="sm" variant="outline" disabled={!missing || busy} onClick={() => generate(items.filter((i) => !optimized(i)).map((i) => i.id))}><Sparkles className="mr-1.5 h-4 w-4" />{fr ? "Tout optimiser" : "Optimize All"}</Button><Button size="sm" disabled={!selected.size || busy} onClick={() => generate([...selected])}>''',
+            'tags CTA')
+
+          s = replace_once(s,
+            'type AltItem = { id: string; src: string; alt_text: string | null; optimization_count: number | null; last_synced_at: string | null; imageType: "product" | "content"; title: string; subtitle: string };',
+            'type AltItem = { id: string; src: string; alt_text: string | null; optimization_count: number | null; last_synced_at: string | null; imageType: "product" | "collection" | "page" | "article" | "homepage" | "content"; title: string; subtitle: string };',
+            'ALT item type')
+          s = replace_once(s,
+            'imageType: "content", title: row.content_type === "homepage"',
+            'imageType: (row.content_type || "content") as AltItem["imageType"], title: row.content_type === "homepage"',
+            'ALT content type')
+
+          old = '''  const generate = async (targets: AltItem[]) => { if (!targets.length) return; try { setBusy(true); let success = 0; for (const item of targets) { const { data, error } = await supabase.functions.invoke("smart-alt-text", { body: { image_id: item.id, imageType: item.imageType, force: true } }); if (!error && data?.success !== false) success += 1; } toast.success(fr ? `${success} ALT généré(s)` : `${success} ALT text(s) generated`); setSelected(new Set()); await load(); } finally { setBusy(false); } };'''
+          new = '''  const generate = async (targets: AltItem[]) => { if (!targets.length) return; try { setBusy(true); const failures: string[] = []; const result = await runInBatches(targets, async (item) => { const { data, error } = await supabase.functions.invoke("smart-alt-text", { body: { image_id: item.id, imageType: item.imageType, force: true } }); if (error || data?.success === false) { failures.push(data?.error || error?.message || item.title); return false; } return true; }, 3); if (result.success) toast.success(fr ? `${result.success} ALT généré(s)` : `${result.success} ALT text(s) generated`); if (result.failed) toast.error(fr ? `${result.failed} ALT en échec${failures[0] ? ` : ${failures[0]}` : ""}` : `${result.failed} ALT failed${failures[0] ? `: ${failures[0]}` : ""}`); setSelected(new Set()); await load(); } finally { setBusy(false); } };'''
+          s = replace_once(s, old, new, 'ALT handler')
+          s = replace_once(s,
+            '''<span className="text-xs text-muted-foreground">{selected.size ? `${selected.size} sélectionnées` : `${filtered.length} images`}</span><Button size="sm" disabled={!selected.size || busy} onClick={() => generate(items.filter((item) => selected.has(item.id)))}>''',
+            '''<span className="text-xs text-muted-foreground">{selected.size ? `${selected.size} sélectionnées` : `${filtered.length} images`}</span><Button size="sm" variant="outline" disabled={!missing || busy} onClick={() => generate(items.filter((item) => !optimized(item)))}><Sparkles className="mr-1.5 h-4 w-4" />{fr ? "Tout optimiser" : "Optimize All"}</Button><Button size="sm" disabled={!selected.size || busy} onClick={() => generate(items.filter((item) => selected.has(item.id)))}>''',
+            'ALT CTA')
+
+          p.write_text(s)
+
+          # Robust fallback in smart-alt-text when external providers are unavailable.
+          p = Path('supabase/functions/smart-alt-text/index.ts')
+          s = p.read_text()
+          marker = 'async function callDeepSeek(prompt: string): Promise<string> {'
+          fallback = '''function buildSafeFallbackAlt(input: { lang: string; title: string; contentType: string; productType?: string; category?: string }): string {\n  const clean = (value = "") => value.replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim();\n  if (input.contentType === "homepage") return input.lang === "fr" ? "Accueil de la boutique en ligne" : "Online store homepage";\n  const parts = [clean(input.title), clean(input.productType), clean(input.category)]\n    .filter(Boolean)\n    .filter((value, index, values) => values.findIndex((other) => other.toLowerCase() === value.toLowerCase()) === index);\n  const candidate = cleanAltText(parts.join(" – "));\n  if (isUsefulAltText(candidate)) return candidate;\n  const labels: Record<string, string> = input.lang === "fr"\n    ? { product: "Produit de la boutique", collection: "Collection de produits", page: "Page de la boutique", article: "Article du blog", content: "Contenu de la boutique" }\n    : { product: "Store product", collection: "Product collection", page: "Store page", article: "Blog article", content: "Store content" };\n  return labels[input.contentType] || labels.content;\n}\n\n'''
+          s = replace_once(s, marker, fallback + marker, 'safe ALT fallback')
+          s = replace_once(s,
+            '''        } else {\n          throw geminiError;\n        }''',
+            '''        } else {\n          provider = "safe-fallback";\n          finalAlt = buildSafeFallbackAlt({ lang, title, contentType, productType, category });\n          console.warn("[smart-alt-text] Gemini/DeepSeek unavailable; using safe contextual fallback:", geminiError);\n        }''',
+            'provider fallback')
+          p.write_text(s)
+
+          for wf in ['.github/workflows/seo-bulk-alt-fix.yml', '.github/workflows/seo-bulk-alt-fix-v2.yml']:
+              q = Path(wf)
+              if q.exists(): q.unlink()
+          PY
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit changes
+        run: |
+          git config user.name "Otmane2020"
+          git config user.email "61626050+Otmane2020@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: add SEO bulk actions and repair ALT generation"
+          git push
