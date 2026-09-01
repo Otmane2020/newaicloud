@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Loader2, CheckCircle2, AlertCircle, Package, Image, FileText, Newspaper } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ interface SyncData {
   items_synced: number | null;
   store_name?: string;
   started_at?: string;
+  error_message?: string | null;
 }
 
 const syncTypeConfig: Record<string, { icon: React.ElementType; label: string; progress: number }> = {
@@ -26,6 +27,11 @@ const syncTypeConfig: Record<string, { icon: React.ElementType; label: string; p
 
 const POLL_INTERVAL_MS = 2000;
 const RECENT_SYNC_WINDOW_MS = 15 * 60 * 1000;
+const SHOPIFY_REAUTH_PATTERN = /SHOPIFY_REAUTH_REQUIRED|unauthori[sz]ed|authorization expired|reconnect|invalid.*access token|access token.*invalid|\b401\b/i;
+
+function needsShopifyReconnect(message?: string | null) {
+  return Boolean(message && SHOPIFY_REAUTH_PATTERN.test(message));
+}
 
 export function AutoSyncProgressDialog() {
   const location = useLocation();
@@ -65,7 +71,7 @@ export function AutoSyncProgressDialog() {
       const recentSince = new Date(Date.now() - RECENT_SYNC_WINDOW_MS).toISOString();
       const { data, error } = await supabase
         .from('sync_history')
-        .select('id, status, sync_type, items_synced, store_id, started_at')
+        .select('id, status, sync_type, items_synced, store_id, started_at, error_message')
         .eq('user_id', user.id)
         .gte('started_at', recentSince)
         .order('started_at', { ascending: false })
@@ -140,14 +146,21 @@ export function AutoSyncProgressDialog() {
         }
         closeAndReset(1200);
       } else if (isFailure) {
+        const reconnectRequired = needsShopifyReconnect(data.error_message);
+        const description = reconnectRequired
+          ? 'Shopify authorization has expired. Reconnect the store to resume synchronization.'
+          : data.error_message || t.toasts.error.generic || 'The import could not be completed.';
+
         if (hasShownToastRef.current !== data.id) {
           hasShownToastRef.current = data.id;
-          toast.error(t.toasts.error.sync || 'Synchronization error', {
-            description: t.toasts.error.generic || 'The import could not be completed.',
-            duration: 5000,
-          });
+          toast.error(
+            reconnectRequired ? 'Shopify reconnection required' : (t.toasts.error.sync || 'Synchronization error'),
+            { description, duration: reconnectRequired ? 10000 : 6500 },
+          );
         }
-        closeAndReset(700);
+
+        // Keep an authorization failure visible so the user can use the reconnect action.
+        if (!reconnectRequired) closeAndReset(6500);
       }
     };
 
@@ -165,7 +178,6 @@ export function AutoSyncProgressDialog() {
       if (!data) {
         if (activeSyncIdRef.current) {
           missingPollsRef.current += 1;
-          // A transient Supabase/network miss should not instantly dismiss the popup.
           if (missingPollsRef.current >= 3) {
             toast.error(t.toasts.error.sync || 'Synchronization status unavailable', {
               description: t.toasts.error.generic || 'Please refresh the catalog status.',
@@ -201,8 +213,12 @@ export function AutoSyncProgressDialog() {
 
   const isComplete = syncData.status === 'success' || progress >= 99;
   const isFailure = syncData.status === 'failed' || syncData.status === 'error';
+  const reconnectRequired = isFailure && needsShopifyReconnect(syncData.error_message);
   const currentConfig = syncTypeConfig[syncData.sync_type || 'full'] || syncTypeConfig.full;
   const CurrentIcon = currentConfig.icon;
+  const failureText = reconnectRequired
+    ? 'L’autorisation Shopify a expiré ou a été refusée. Reconnectez la boutique puis relancez la synchronisation.'
+    : syncData.error_message || 'La synchronisation n’a pas été marquée comme réussie. Vérifiez le détail de l’import.';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-3 backdrop-blur-sm animate-in fade-in duration-200">
@@ -226,7 +242,13 @@ export function AutoSyncProgressDialog() {
                 <Loader2 className="h-5 w-5 animate-spin text-primary" />
               )}
               <h3 className="text-xl font-semibold tracking-tight text-foreground">
-                {isFailure ? 'Import interrompu' : isComplete ? 'Import terminé' : 'Synchronisation en cours'}
+                {reconnectRequired
+                  ? 'Reconnexion Shopify requise'
+                  : isFailure
+                    ? 'Import interrompu'
+                    : isComplete
+                      ? 'Import terminé'
+                      : 'Synchronisation en cours'}
               </h3>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -265,11 +287,30 @@ export function AutoSyncProgressDialog() {
 
           <p className="mt-4 text-center text-xs leading-relaxed text-muted-foreground">
             {isFailure
-              ? 'La synchronisation n’a pas été marquée comme réussie. Vérifiez le détail de l’import.'
+              ? failureText
               : isComplete
                 ? 'Les données ont été confirmées par le serveur.'
                 : 'Cette fenêtre reste ouverte jusqu’à confirmation réelle du serveur.'}
           </p>
+
+          {reconnectRequired && (
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              <Link
+                to="/product-source"
+                onClick={() => closeAndReset()}
+                className="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Reconnecter Shopify
+              </Link>
+              <button
+                type="button"
+                onClick={() => closeAndReset()}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-muted"
+              >
+                Fermer
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
