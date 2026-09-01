@@ -3,7 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Layers3, Database, FileText,
   Sparkles, Store, ShoppingCart, Settings,
-  User, CreditCard, ChevronDown, LogOut, FlaskConical, Bot,
+  User, CreditCard, ChevronDown, LogOut, Bot,
   Newspaper, Activity, Camera, Tags, Images, Home,
 } from "lucide-react";
 import {
@@ -55,12 +55,6 @@ export function CatalogOptimizeSidebar() {
           ],
         },
         {
-          label: "Blog",
-          href: "/blog/management",
-          icon: Newspaper,
-          aliases: ["/blog-monitoring"],
-        },
-        {
           label: "Studio",
           href: "/studio",
           icon: Camera,
@@ -73,6 +67,12 @@ export function CatalogOptimizeSidebar() {
       label: "SEO",
       icon: Sparkles,
       items: [
+        {
+          label: "Blog",
+          href: "/blog/management",
+          icon: Newspaper,
+          aliases: ["/blog-monitoring"],
+        },
         { label: fr ? "Nouvel article" : "New article", href: "/blog/management?new=1", icon: Newspaper },
         {
           label: fr ? "Collections & pages" : "Collections & pages",
@@ -83,6 +83,13 @@ export function CatalogOptimizeSidebar() {
         { label: "Tags", href: "/seo?tab=tags", icon: Tags },
         { label: fr ? "ALT Images" : "Image ALT", href: "/seo?tab=alt", icon: Images },
         { label: fr ? "SEO accueil" : "Homepage SEO", href: "/seo?tab=homepage", icon: Home },
+      ],
+    },
+    {
+      label: "GEO & AI Search",
+      icon: Bot,
+      items: [
+        { label: "AEO & AI Answers", href: "/aeo-chatgpt", icon: Sparkles },
       ],
     },
     {
@@ -105,10 +112,6 @@ export function CatalogOptimizeSidebar() {
       ],
     },
   ], [fr]);
-
-  const labs: NavItem[] = [
-    { label: "AEO & AI Answers", href: "/aeo-chatgpt", icon: Sparkles },
-  ];
 
   const closeMobile = () => {
     if (isMobile && openMobile) toggleSidebar();
@@ -177,21 +180,6 @@ export function CatalogOptimizeSidebar() {
                   </SidebarMenuItem>
                 </Collapsible>
               ))}
-
-              <Collapsible defaultOpen={labs.some(active)}>
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
-                      <FlaskConical className="h-4 w-4" />
-                      <span>Labs</span>
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>{labs.map(navItem)}</SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
