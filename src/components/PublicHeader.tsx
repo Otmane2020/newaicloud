@@ -18,6 +18,10 @@ export const PublicHeader = () => {
     }
   };
 
+  const openPublicBlog = () => {
+    window.location.assign("/blog");
+  };
+
   return (
     <header className="sticky top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
       <div className="container mx-auto px-4">
@@ -56,7 +60,7 @@ export const PublicHeader = () => {
               {t.landing.header.benefits}
             </button>
             <button
-              onClick={() => navigate("/blog")}
+              onClick={openPublicBlog}
               className="font-medium text-foreground transition-colors hover:text-primary"
             >
               Blog
@@ -115,10 +119,7 @@ export const PublicHeader = () => {
                 {t.landing.header.benefits}
               </button>
               <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  navigate("/blog");
-                }}
+                onClick={openPublicBlog}
                 className="text-left font-medium hover:text-primary transition-colors"
               >
                 Blog
