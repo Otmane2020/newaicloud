@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, Check, History, Image as ImageIcon, Images, Palette, Search, Sparkles, Star } from "lucide-react";
+import { Camera, Check, ChevronLeft, ChevronRight, History, Image as ImageIcon, Images, Palette, Search, Sparkles, Star } from "lucide-react";
 import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { AIImagesDialog } from "@/components/seo/AIImagesDialog";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
@@ -23,6 +22,8 @@ interface StudioProduct {
   product_images?: Array<{ id: string; src: string }> | null;
 }
 
+const PAGE_SIZE = 20;
+
 function ProductStar({ imageCount }: { imageCount: number }) {
   const className = imageCount >= 4
     ? "fill-emerald-500 text-emerald-500"
@@ -37,6 +38,7 @@ export default function ImageStudio() {
   const { language } = useTranslation();
   const fr = language === "fr";
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<StudioProduct | null>(null);
   const [showProductShot, setShowProductShot] = useState(false);
 
@@ -67,13 +69,27 @@ export default function ImageStudio() {
     );
   }, [products, search]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const paginatedProducts = useMemo(
+    () => filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredProducts, page],
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, selectedStore?.id]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   const openProductShot = () => {
     if (!selectedProduct?.image_url) return;
     setShowProductShot(true);
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-5">
+    <div className="mx-auto w-full max-w-[1500px] space-y-4">
       <WorkspacePageHeader
         section="Studio"
         page="Product images"
@@ -81,60 +97,36 @@ export default function ImageStudio() {
         title="Studio"
         description={fr ? "Sélectionnez un produit, puis créez vos visuels." : "Select a product, then create visuals."}
         actions={
-          <Button onClick={openProductShot} disabled={!selectedProduct?.image_url}>
+          <Button size="sm" onClick={openProductShot} disabled={!selectedProduct?.image_url}>
             <Camera className="mr-2 h-4 w-4" />Product Shot AI
           </Button>
         }
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <button
-          type="button"
-          onClick={openProductShot}
-          disabled={!selectedProduct?.image_url}
-          className="rounded-xl border border-violet-200 bg-violet-50/60 p-4 text-left transition hover:border-violet-300 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Camera className="h-5 w-5 text-violet-700" />
-          <p className="mt-4 text-sm font-semibold text-slate-950">Product Shot AI</p>
-          <p className="mt-1 text-xs text-slate-500">Face · 45° · détails · décor</p>
-        </button>
-
-        <Link to="/products/title-description?view=images" className="rounded-xl border border-slate-200 bg-white p-4 transition hover:border-violet-300">
-          <ImageIcon className="h-5 w-5 text-slate-600" />
-          <p className="mt-4 text-sm font-semibold text-slate-950">{fr ? "Fond blanc" : "White background"}</p>
-          <p className="mt-1 text-xs text-slate-500">Shopping</p>
-        </Link>
-
-        <Link to="/products/title-description?view=images" className="rounded-xl border border-slate-200 bg-white p-4 transition hover:border-violet-300">
-          <Palette className="h-5 w-5 text-slate-600" />
-          <p className="mt-4 text-sm font-semibold text-slate-950">{fr ? "Décor IA" : "AI scene"}</p>
-          <p className="mt-1 text-xs text-slate-500">Lifestyle</p>
-        </Link>
-
-        <Link to="/seo?tab=alt" className="rounded-xl border border-slate-200 bg-white p-4 transition hover:border-violet-300">
-          <Sparkles className="h-5 w-5 text-slate-600" />
-          <p className="mt-4 text-sm font-semibold text-slate-950">ALT</p>
-          <p className="mt-1 text-xs text-slate-500">SEO</p>
-        </Link>
-
-        <Link to="/products/media-history" className="rounded-xl border border-slate-200 bg-white p-4 transition hover:border-violet-300">
-          <History className="h-5 w-5 text-slate-600" />
-          <p className="mt-4 text-sm font-semibold text-slate-950">{fr ? "Historique" : "History"}</p>
-          <p className="mt-1 text-xs text-slate-500">Versions</p>
-        </Link>
+      <section className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-2">
+        <Button size="sm" variant="secondary" onClick={openProductShot} disabled={!selectedProduct?.image_url}>
+          <Camera className="mr-1.5 h-4 w-4" />Product Shot AI
+        </Button>
+        <Button size="sm" variant="ghost" asChild><Link to="/products/title-description?view=images"><ImageIcon className="mr-1.5 h-4 w-4" />{fr ? "Fond blanc" : "White background"}</Link></Button>
+        <Button size="sm" variant="ghost" asChild><Link to="/products/title-description?view=images"><Palette className="mr-1.5 h-4 w-4" />{fr ? "Décor IA" : "AI scene"}</Link></Button>
+        <Button size="sm" variant="ghost" asChild><Link to="/seo?tab=alt"><Sparkles className="mr-1.5 h-4 w-4" />ALT</Link></Button>
+        <Button size="sm" variant="ghost" asChild><Link to="/products/media-history"><History className="mr-1.5 h-4 w-4" />{fr ? "Historique" : "History"}</Link></Button>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center gap-3 border-b border-slate-100 p-3">
-          <div className="relative max-w-md flex-1">
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="flex flex-col gap-2 border-b border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={fr ? "Rechercher un produit" : "Search products"} className="h-9 pl-9" />
           </div>
-          {selectedProduct && <span className="hidden text-xs text-slate-500 sm:inline">{selectedProduct.title}</span>}
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span>{filteredProducts.length} {fr ? "produits" : "products"}</span>
+            {selectedProduct && <span className="hidden max-w-[240px] truncate sm:inline">· {selectedProduct.title}</span>}
+          </div>
         </div>
 
         <div className="grid gap-3 p-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
-          {filteredProducts.map((product) => {
+          {paginatedProducts.map((product) => {
             const selected = selectedProduct?.id === product.id;
             const imageCount = product.product_images?.length || (product.image_url ? 1 : 0);
             return (
@@ -163,6 +155,24 @@ export default function ImageStudio() {
             );
           })}
         </div>
+
+        {filteredProducts.length === 0 && (
+          <div className="p-10 text-center text-sm text-slate-500">{fr ? "Aucun produit trouvé." : "No products found."}</div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2.5">
+            <span className="text-xs text-slate-500">{fr ? "Page" : "Page"} {page}/{totalPages}</span>
+            <div className="flex items-center gap-1">
+              <Button size="icon" variant="ghost" className="h-8 w-8" disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8" disabled={page === totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </section>
 
       <AIImagesDialog
