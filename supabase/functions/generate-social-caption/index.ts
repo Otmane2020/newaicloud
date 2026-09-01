@@ -1,15 +1,23 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  creditErrorResponse,
+  refundCredits,
+  reserveCredits,
+  type CreditReservation,
+} from "../_shared/credit-billing.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  let creditReservation: CreditReservation | null = null;
 
   try {
     const body = await req.json();
@@ -29,16 +37,15 @@ serve(async (req) => {
       comparePrice,
       productType,
       storeName,
-      topic, // For admin simple caption generation
-      style, // promotional, informative, engaging
+      topic,
+      style,
       includeEmojis = true,
       includeHashtags = true,
       language = 'fr',
-      tone = 'engaging', // engaging, professional, playful, luxury
-      platform = 'facebook' // instagram, facebook
+      tone = 'engaging',
+      platform = 'facebook'
     } = body;
 
-    // Support both admin simple mode (topic/style) and product mode (productTitle)
     const isAdminMode = !!topic && !productTitle;
     
     if (!productTitle && !topic) {
@@ -53,7 +60,13 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Build prompt based on language and tone
+    creditReservation = await reserveCredits(req, "text", {
+      feature: "generate-social-caption",
+      platform,
+      language,
+      mode: isAdminMode ? "topic" : "product",
+    });
+
     const toneDescriptions: Record<string, { fr: string; en: string }> = {
       engaging: { 
         fr: 'engageant, dynamique et incitatif à l\'action', 
@@ -73,6 +86,7 @@ serve(async (req) => {
       }
     };
 
+    const selectedTone = toneDescriptions[tone] || toneDescriptions.engaging;
     const platformHashtags = platform === 'instagram' 
       ? language === 'fr' 
         ? '5-8 hashtags pertinents en français' 
@@ -86,8 +100,8 @@ serve(async (req) => {
       parseFloat(productPrice.replace(/[^\d.,]/g, '').replace(',', '.'));
 
     const systemPrompt = language === 'fr' 
-      ? `Tu es un expert en marketing social media pour e-commerce. Tu crées des captions ${toneDescriptions[tone].fr} qui convertissent.`
-      : `You are a social media marketing expert for e-commerce. You create ${toneDescriptions[tone].en} captions that convert.`;
+      ? `Tu es un expert en marketing social media pour e-commerce. Tu crées des captions ${selectedTone.fr} qui convertissent.`
+      : `You are a social media marketing expert for e-commerce. You create ${selectedTone.en} captions that convert.`;
 
     const userPrompt = language === 'fr'
       ? `Génère une caption ${platform === 'instagram' ? 'Instagram' : 'Facebook'} pour ce produit:
@@ -100,7 +114,7 @@ ${productType ? `Type: ${productType}` : ''}
 ${storeName ? `Boutique: ${storeName}` : ''}
 
 Règles:
-- Ton: ${toneDescriptions[tone].fr}
+- Ton: ${selectedTone.fr}
 - Commence par un hook accrocheur (question ou affirmation)
 - ${hasDiscount ? 'Mets en avant la promotion et l\'urgence' : 'Mets en avant les bénéfices'}
 - Inclus un call-to-action clair
@@ -118,7 +132,7 @@ ${productType ? `Type: ${productType}` : ''}
 ${storeName ? `Store: ${storeName}` : ''}
 
 Rules:
-- Tone: ${toneDescriptions[tone].en}
+- Tone: ${selectedTone.en}
 - Start with a catchy hook (question or statement)
 - ${hasDiscount ? 'Highlight the promotion and urgency' : 'Highlight the benefits'}
 - Include a clear call-to-action
@@ -127,7 +141,6 @@ Rules:
 - Use relevant emojis (not too many)
 - Do NOT put quotes around the response`;
 
-    // Admin mode: simple topic-based generation
     if (isAdminMode) {
       const styleInstructions: Record<string, string> = {
         promotional: "Create an exciting, action-oriented caption that highlights benefits and includes a call-to-action. Use persuasive language.",
@@ -185,13 +198,14 @@ Return ONLY the caption text, nothing else.`;
         caption: adminCaption.replace(/^["']|["']$/g, '').trim(),
         platform,
         language: 'fr',
-        style
+        style,
+        credit_cost: creditReservation.cost,
+        credit_balance: creditReservation.balanceAfter,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Product mode: detailed product-based generation
     console.log('Generating caption for:', productTitle);
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -214,9 +228,11 @@ Return ONLY the caption text, nothing else.`;
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AI Gateway error:', response.status, errorText);
+      await refundCredits(creditReservation, `provider_http_${response.status}`);
+      creditReservation = null;
       
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded, please try again later' }), {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded, please try again later', credits_refunded: true }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -232,24 +248,35 @@ Return ONLY the caption text, nothing else.`;
       throw new Error('No caption generated');
     }
 
-    // Clean up any surrounding quotes
     const cleanCaption = caption.replace(/^["']|["']$/g, '').trim();
-
     console.log('Generated caption length:', cleanCaption.length);
 
     return new Response(JSON.stringify({ 
       caption: cleanCaption,
       platform,
       language,
-      tone
+      tone,
+      credit_cost: creditReservation.cost,
+      credit_balance: creditReservation.balanceAfter,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
+    const creditResponse = creditErrorResponse(error, corsHeaders);
+    if (creditResponse) return creditResponse;
+
+    if (creditReservation) {
+      await refundCredits(
+        creditReservation,
+        error instanceof Error ? error.message.slice(0, 180) : 'caption_generation_failed',
+      );
+    }
+
     console.error('Error generating caption:', error);
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      credits_refunded: !!creditReservation,
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
