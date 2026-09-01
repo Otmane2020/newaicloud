@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -55,6 +55,11 @@ export default function ContentWorkspace() {
   const activeTool: ToolId = requestedTool && TOOL_IDS.includes(requestedTool) ? requestedTool : "landing";
   const [filter, setFilter] = useState<FilterId>(activeTool === "shots" || activeTool === "background" ? "ready" : "todo");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    setFilter(activeTool === "shots" || activeTool === "background" ? "ready" : "todo");
+    setSearch("");
+  }, [activeTool]);
 
   const tools = useMemo(() => [
     {
@@ -142,29 +147,26 @@ export default function ContentWorkspace() {
   const readyCount = useMemo(() => rows.filter(readyForTool).length, [rows, activeTool]);
   const needsCount = rows.length - readyCount;
   const preferredFilter: FilterId = activeTool === "shots" || activeTool === "background" ? "ready" : "todo";
-  const effectiveFilter = filter === "todo" && preferredFilter === "ready" ? "ready" : filter;
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return rows.filter((product) => {
       const ready = readyForTool(product);
-      if (effectiveFilter === "todo" && ready) return false;
-      if (effectiveFilter === "ready" && !ready) return false;
+      if (filter === "todo" && ready) return false;
+      if (filter === "ready" && !ready) return false;
       if (!query) return true;
 
       return [product.title, product.category, product.product_type]
         .some((value) => value?.toLowerCase().includes(query));
     });
-  }, [rows, activeTool, effectiveFilter, search]);
+  }, [rows, activeTool, filter, search]);
 
   const visibleRows = filteredRows.slice(0, 80);
   const CurrentIcon = currentTool.icon;
 
   const selectTool = (tool: ToolId) => {
     setSearchParams({ tool });
-    setSearch("");
-    setFilter(tool === "shots" || tool === "background" ? "ready" : "todo");
   };
 
   const filterLabel = (id: FilterId) => {
@@ -172,6 +174,7 @@ export default function ContentWorkspace() {
     if (id === "ready") return activeTool === "shots" || activeTool === "background"
       ? (fr ? "Avec image" : "With image")
       : (fr ? "Prêts" : "Ready");
+    if (activeTool === "shots" || activeTool === "background") return fr ? "Sans image" : "Missing image";
     return fr ? "À faire" : "To do";
   };
 
@@ -267,7 +270,7 @@ export default function ContentWorkspace() {
                 type="button"
                 onClick={() => setFilter(id)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                  effectiveFilter === id ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  filter === id ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"
                 }`}
               >
                 {filterLabel(id)}
