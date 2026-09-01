@@ -40,12 +40,12 @@ export default function SEO() {
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-4">
       <WorkspacePageHeader
-        section={fr ? "Contenu" : "Content"}
-        page={fr ? "Collections & pages" : "Collections & pages"}
-        title={fr ? "Collections & pages" : "Collections & pages"}
+        section="SEO"
+        page="SEO"
+        title="SEO"
         description={fr
-          ? "Collections, pages, tags et ALT dans un espace simple et cohérent."
-          : "Collections, pages, tags, and ALT in one simple workspace."}
+          ? "Optimisez collections, pages, tags, images ALT et page d’accueil depuis un seul espace."
+          : "Optimize collections, pages, tags, image ALT, and homepage SEO from one workspace."}
       />
 
       <nav className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1.5" aria-label={fr ? "Outils SEO" : "SEO tools"}>
