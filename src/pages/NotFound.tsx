@@ -1,28 +1,18 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useTranslation } from "@/lib/language";
 import CatalogSeoLanding, { getCatalogSeoSlug } from "@/pages/CatalogSeoLanding";
-
-const STUDIO_SHORTCUTS = new Set(["images", "creative", "video", "ads", "animate", "social", "library"]);
 
 const NotFound = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const seoSlug = getCatalogSeoSlug(location.pathname);
-  const studioMatch = location.pathname.match(/^\/studio\/([^/]+)\/?$/);
-  const studioTool = studioMatch?.[1];
 
   useEffect(() => {
-    if (!seoSlug && !(studioTool && STUDIO_SHORTCUTS.has(studioTool))) {
+    if (!seoSlug) {
       console.error("404 Error: User attempted to access non-existent route:", location.pathname);
     }
-  }, [location.pathname, seoSlug, studioTool]);
-
-  if (studioTool && STUDIO_SHORTCUTS.has(studioTool)) {
-    const current = new URLSearchParams(location.search);
-    current.set("tool", studioTool);
-    return <Navigate to={`/studio?${current.toString()}`} replace />;
-  }
+  }, [location.pathname, seoSlug]);
 
   if (seoSlug) {
     return <CatalogSeoLanding slug={seoSlug} />;
