@@ -1,3 +1,5 @@
+import "./strict-ai-generation.ts";
+
 // Intelligent Language Detection System
 // Detects language from content text (product titles, descriptions, etc.)
 
@@ -50,26 +52,21 @@ export function detectContentLanguage(text: string): string {
     ],
   };
 
-  // Count occurrences of indicator words for each language
   const counts: Record<string, number> = { fr: 0, en: 0, de: 0, es: 0, it: 0 };
-  
-  // Split text into words and check against indicators
   const words = cleanText.split(/\s+/);
-  
+
   for (const [lang, langIndicators] of Object.entries(indicators)) {
     for (const indicator of langIndicators) {
-      // Check for word boundaries to avoid false positives
-      if (words.includes(indicator) || cleanText.includes(` ${indicator} `) || 
+      if (words.includes(indicator) || cleanText.includes(` ${indicator} `) ||
           cleanText.startsWith(`${indicator} `) || cleanText.endsWith(` ${indicator}`)) {
         counts[lang]++;
       }
     }
   }
 
-  // Find the language with the highest count
   let maxLang = "fr";
   let maxCount = 0;
-  
+
   for (const [lang, count] of Object.entries(counts)) {
     if (count > maxCount) {
       maxCount = count;
@@ -77,11 +74,10 @@ export function detectContentLanguage(text: string): string {
     }
   }
 
-  // Adaptive threshold: 1 for short texts (< 50 chars), 2 for longer texts
   const threshold = isShortText ? 1 : 2;
-  
+
   console.log(`🔍 Language detection: text="${cleanText.substring(0, 40)}..." counts=${JSON.stringify(counts)} maxLang=${maxLang} maxCount=${maxCount} threshold=${threshold} isShort=${isShortText}`);
-  
+
   return maxCount >= threshold ? maxLang : "fr";
 }
 
@@ -93,11 +89,10 @@ export function detectContentLanguage(text: string): string {
  * 4. Default: French
  */
 export function resolveLanguage(options: {
-  explicitLanguage?: string;   // Language passed explicitly in request body
-  contentText?: string;        // Product title, description, or other content
-  storeLanguage?: string;      // Language from shopify_connections.store_language
+  explicitLanguage?: string;
+  contentText?: string;
+  storeLanguage?: string;
 }): string {
-  // 1. Explicit language has highest priority
   if (options.explicitLanguage) {
     const lang = options.explicitLanguage.split('-')[0].toLowerCase();
     if (['fr', 'en', 'de', 'es', 'it'].includes(lang)) {
@@ -105,9 +100,7 @@ export function resolveLanguage(options: {
       return lang;
     }
   }
-  
-  // 2. Store language has priority over content detection for consistency
-  // This ensures all products/collections/articles in a store use the same language
+
   if (options.storeLanguage) {
     const lang = options.storeLanguage.split('-')[0].toLowerCase();
     if (['fr', 'en', 'de', 'es', 'it'].includes(lang)) {
@@ -115,15 +108,13 @@ export function resolveLanguage(options: {
       return lang;
     }
   }
-  
-  // 3. Detect from content text (fallback if no store language)
+
   if (options.contentText && options.contentText.length >= 3) {
     const detected = detectContentLanguage(options.contentText);
     console.log(`🌍 Language detected from content (fallback): ${detected}`);
     return detected;
   }
-  
-  // 4. Default to French
+
   console.log(`🌍 Using default language: fr`);
   return 'fr';
 }
@@ -139,7 +130,7 @@ export function getLanguageInstructions(lang: string): string {
     es: "Responde únicamente en español. Utiliza un estilo natural y comercial adaptado al mercado hispanohablante.",
     it: "Rispondi solo in italiano. Utilizza uno stile naturale e commerciale adatto al mercato italiano.",
   };
-  
+
   return instructions[lang] || instructions.fr;
 }
 
@@ -154,7 +145,7 @@ export function getLanguageName(lang: string): string {
     es: "español",
     it: "italiano",
   };
-  
+
   return names[lang] || names.fr;
 }
 
@@ -169,7 +160,7 @@ export function getSeoPromptByLanguage(lang: string): string {
     es: "Eres un experto en SEO de comercio electrónico. Genera contenido optimizado para motores de búsqueda en español.",
     it: "Sei un esperto SEO di e-commerce. Genera contenuti ottimizzati per i motori di ricerca in italiano.",
   };
-  
+
   return prompts[lang] || prompts.fr;
 }
 
@@ -178,12 +169,12 @@ export function getSeoPromptByLanguage(lang: string): string {
  * Returns validated language with full logging for debugging
  */
 export interface LanguageGuardResult {
-  language: string;           // Detected language code (fr, en, de, es, it)
-  languageName: string;       // Full name (français, English, etc.)
-  instructions: string;       // Language-specific instructions for AI
-  seoPrompt: string;          // SEO-specific system prompt
-  isContentDetected: boolean; // True if detected from content, false if fallback
-  sourceText: string;         // First 50 chars of text used for detection
+  language: string;
+  languageName: string;
+  instructions: string;
+  seoPrompt: string;
+  isContentDetected: boolean;
+  sourceText: string;
 }
 
 export function getGenerationLanguage(options: {
@@ -195,32 +186,29 @@ export function getGenerationLanguage(options: {
   explicitLanguage?: string;
   storeLanguage?: string;
 }): LanguageGuardResult {
-  // Build content text from all available sources
   const contentParts: string[] = [];
-  
+
   if (options.productTitle) contentParts.push(options.productTitle);
   if (options.productDescription) contentParts.push(options.productDescription);
   if (options.collectionTitle) contentParts.push(options.collectionTitle);
   if (options.pageTitle) contentParts.push(options.pageTitle);
   if (options.articleTitle) contentParts.push(options.articleTitle);
-  
+
   const contentText = contentParts.join(' ').trim();
-  
-  // Detect language using priority system
+
   const language = resolveLanguage({
     explicitLanguage: options.explicitLanguage,
     contentText: contentText,
     storeLanguage: options.storeLanguage,
   });
-  
+
   const languageName = getLanguageName(language);
   const instructions = getLanguageInstructions(language);
   const seoPrompt = getSeoPromptByLanguage(language);
   const isContentDetected = contentText.length >= 3;
-  
-  // 🛡️ CRITICAL LOG - Always log for debugging
+
   console.log(`🛡️ LANGUAGE GUARD: detected="${language}" (${languageName}), contentDetected=${isContentDetected}, source="${contentText.substring(0, 50)}..."`);
-  
+
   return {
     language,
     languageName,
