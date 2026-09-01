@@ -73,6 +73,7 @@ export function CatalogOptimizeSidebar() {
       label: "SEO",
       icon: Sparkles,
       items: [
+        { label: fr ? "Nouvel article" : "New article", href: "/blog/management?new=1", icon: Newspaper },
         {
           label: fr ? "Collections & pages" : "Collections & pages",
           href: "/seo?tab=collections",
