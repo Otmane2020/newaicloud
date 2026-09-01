@@ -31,6 +31,12 @@ function languageLabel(lang: string): string {
   return "English";
 }
 
+function siblingContext(siblingAltTexts: string[] = []): string {
+  const siblings = siblingAltTexts.filter(Boolean).slice(0, 10);
+  if (!siblings.length) return "";
+  return `\nALT texts already used for sibling images:\n${siblings.map((alt, index) => `${index + 1}. ${alt}`).join("\n")}\nDo not duplicate them.`;
+}
+
 function buildTextPrompt(input: {
   lang: string;
   title: string;
@@ -38,6 +44,8 @@ function buildTextPrompt(input: {
   contentType: string;
   productType?: string;
   category?: string;
+  imagePosition?: number | null;
+  siblingAltTexts?: string[];
 }): string {
   const isProduct = input.contentType === "product";
   return `You are an ecommerce SEO specialist. Generate exactly ONE ALT text in ${languageLabel(input.lang)}.
@@ -46,26 +54,36 @@ Title: ${input.title || "Untitled"}
 Content type: ${input.contentType}
 ${input.productType ? `Product type: ${input.productType}` : ""}
 ${input.category ? `Category: ${input.category}` : ""}
-Description: ${input.description || "Not available"}
+${input.imagePosition ? `Image position: ${input.imagePosition} (context only; never write the number in the ALT)` : ""}
+Description: ${input.description || "Not available"}${siblingContext(input.siblingAltTexts)}
 
 Rules:
 - Prefer 8-12 words and never exceed 125 characters.
-- ${isProduct ? "Describe only the product itself: visible type, material, finish, color and design. Ignore staging and surrounding decor." : "Describe the main visible subject, style or purpose of the content image."}
+- ${isProduct ? "Describe only this product image: visible type, material, finish, color, angle, texture or detail. If this product has several images, make this ALT specific to what differs in this exact image. Ignore staging and surrounding decor." : "Describe the main visible subject, style or purpose of this exact content image."}
 - Do not invent details.
+- Never reuse the exact same ALT for sibling images.
 - No keyword stuffing.
 - Do not start with “Image of”, “Photo of”, “Image de” or similar.
 - Return only the final ALT text, with no quotes, label, list or explanation.`;
 }
 
-function buildVisionPrompt(lang: string, seed: string, contentType: string): string {
+function buildVisionPrompt(
+  lang: string,
+  seed: string,
+  contentType: string,
+  imagePosition?: number | null,
+  siblingAltTexts: string[] = [],
+): string {
   return `Analyze the supplied ecommerce ${contentType} image and return exactly ONE ALT text in ${languageLabel(lang)}.
 ${seed ? `A text-only model suggested this starting point: ${seed}` : ""}
+${imagePosition ? `This is image position ${imagePosition}; use that only as context and never write the number.` : ""}${siblingContext(siblingAltTexts)}
 
 Rules:
-- Describe what is genuinely visible.
+- Describe what is genuinely visible in THIS image.
 - Prefer 8-12 words, maximum 125 characters.
-- ${contentType === "product" ? "Focus on the product itself and ignore staging/decor unless necessary to identify it." : "Capture the key visible subject, style or purpose."}
+- ${contentType === "product" ? "Focus on the product itself. Distinguish this image by visible angle, color, finish, texture or detail when applicable. Ignore staging/decor unless necessary to identify it." : "Capture the key visible subject, style or purpose."}
 - Do not invent materials, colors or features that are not visible.
+- Never duplicate a sibling ALT exactly.
 - No keyword stuffing.
 - No “Image of”, “Photo of”, “Image de” or similar prefix.
 - Return only the ALT text.`;
@@ -120,35 +138,45 @@ async function callGeminiVision(imageUrl: string, prompt: string): Promise<strin
 
   const mimeType = (imageResponse.headers.get("content-type") || "image/jpeg").split(";")[0];
   const base64 = arrayBufferToBase64(await imageResponse.arrayBuffer());
+  const configuredModel = Deno.env.get("GEMINI_ALT_MODEL")?.trim();
+  const models = [...new Set([configuredModel, "gemini-3.6-flash", "gemini-2.5-flash"].filter(Boolean) as string[])];
+  const errors: string[] = [];
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: mimeType, data: base64 } },
-            ],
+  for (const model of models) {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: prompt },
+                { inline_data: { mime_type: mimeType, data: base64 } },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 100,
           },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 100,
-        },
-      }),
-    },
-  );
+        }),
+      },
+    );
 
-  if (!response.ok) {
-    throw new Error(`Gemini ${response.status}: ${(await response.text()).slice(0, 300)}`);
+    if (response.ok) {
+      const data = await response.json();
+      const text = cleanAltText(data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "");
+      if (isUsefulAltText(text)) return text;
+      errors.push(`${model}: empty/generic response`);
+      continue;
+    }
+
+    errors.push(`${model} ${response.status}: ${(await response.text()).slice(0, 180)}`);
   }
 
-  const data = await response.json();
-  return cleanAltText(data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "");
+  throw new Error(`Gemini fallback failed: ${errors.join(" | ")}`);
 }
 
 serve(async (req) => {
@@ -157,7 +185,7 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     if (body?.healthCheck === true) {
-      return new Response(JSON.stringify({ ok: true, primaryModel: KIMI_ALT_MODEL }), {
+      return new Response(JSON.stringify({ ok: true, primaryModel: KIMI_ALT_MODEL, fallbackModels: ["gemini-3.6-flash", "gemini-2.5-flash"] }), {
         status: 200,
         headers: { ...cors, "Content-Type": "application/json" },
       });
@@ -180,11 +208,13 @@ serve(async (req) => {
     let productType = "";
     let category = "";
     let contentType = isContentImage ? imageType : "product";
+    let imagePosition: number | null = null;
+    let siblingAltTexts: string[] = [];
 
     if (isContentImage) {
       const { data: contentImage, error } = await supabase
         .from("content_images")
-        .select("id, src, alt_text, optimization_count, shopify_image_id, content_id, content_type, store_id, user_id")
+        .select("id, src, alt_text, optimization_count, shopify_image_id, content_id, content_type, store_id, user_id, position")
         .eq("id", image_id)
         .single();
 
@@ -193,6 +223,18 @@ serve(async (req) => {
       sellerId = contentImage.user_id;
       storeId = contentImage.store_id;
       contentType = contentImage.content_type || imageType || "content";
+      imagePosition = contentImage.position ?? null;
+
+      const { data: siblings } = await supabase
+        .from("content_images")
+        .select("alt_text")
+        .eq("store_id", storeId)
+        .eq("content_id", contentImage.content_id)
+        .eq("content_type", contentType)
+        .neq("id", image_id)
+        .not("alt_text", "is", null)
+        .limit(10);
+      siblingAltTexts = (siblings || []).map((row: any) => row.alt_text).filter(Boolean);
 
       if (contentType === "collection") {
         const { data } = await supabase
@@ -224,12 +266,13 @@ serve(async (req) => {
     } else {
       const { data: productImage, error } = await supabase
         .from("product_images")
-        .select("id, src, alt_text, optimization_count, shopify_image_id, product_id")
+        .select("id, src, alt_text, optimization_count, shopify_image_id, product_id, position")
         .eq("id", image_id)
         .single();
 
       if (error || !productImage) throw new Error("Product image not found");
       image = productImage;
+      imagePosition = productImage.position ?? null;
 
       const { data: product, error: productError } = await supabase
         .from("shopify_products")
@@ -245,6 +288,15 @@ serve(async (req) => {
       productType = product.product_type || "";
       category = product.category || "";
       contentType = "product";
+
+      const { data: siblings } = await supabase
+        .from("product_images")
+        .select("alt_text")
+        .eq("product_id", product.id)
+        .neq("id", image_id)
+        .not("alt_text", "is", null)
+        .limit(10);
+      siblingAltTexts = (siblings || []).map((row: any) => row.alt_text).filter(Boolean);
     }
 
     if (image.alt_text?.trim() && (image.optimization_count ?? 0) > 0 && !force) {
@@ -273,7 +325,7 @@ serve(async (req) => {
       storeLanguage: rawStoreLanguage,
     });
 
-    console.log(`[smart-alt-text] ${image_id}: Kimi-first (${KIMI_ALT_MODEL}), language=${lang}, type=${contentType}`);
+    console.log(`[smart-alt-text] ${image_id}: Kimi-first (${KIMI_ALT_MODEL}), language=${lang}, type=${contentType}, position=${imagePosition ?? "n/a"}`);
 
     let finalAlt = "";
     let provider = "kimi";
@@ -285,10 +337,12 @@ serve(async (req) => {
         description: plainDescription,
         language: lang,
         contentType,
+        imagePosition,
+        siblingAltTexts,
       });
       console.log(`[smart-alt-text] ✅ Kimi ALT: "${finalAlt}"`);
     } catch (kimiError) {
-      console.warn("[smart-alt-text] ⚠️ Kimi unavailable; using existing DeepSeek/Gemini fallback:", kimiError);
+      console.warn("[smart-alt-text] ⚠️ Kimi unavailable after retry; using DeepSeek/Gemini fallback:", kimiError);
       provider = "gemini-fallback";
 
       const textPrompt = buildTextPrompt({
@@ -298,6 +352,8 @@ serve(async (req) => {
         contentType,
         productType,
         category,
+        imagePosition,
+        siblingAltTexts,
       });
 
       let seed = "";
@@ -308,7 +364,7 @@ serve(async (req) => {
       }
 
       try {
-        finalAlt = await callGeminiVision(image.src, buildVisionPrompt(lang, seed, contentType));
+        finalAlt = await callGeminiVision(image.src, buildVisionPrompt(lang, seed, contentType, imagePosition, siblingAltTexts));
       } catch (geminiError) {
         if (isUsefulAltText(seed)) {
           provider = "deepseek-fallback";
