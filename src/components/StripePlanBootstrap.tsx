@@ -2,20 +2,42 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Keeps subscription_plans usable even when Stripe Product/Price IDs have not
- * been provisioned yet. The server function is idempotent and only creates
- * missing Stripe objects. We cache a successful run for the browser session.
+ * Bootstraps billing for an authenticated session:
+ * - recovers any paid credit checkout that was not credited after redirect
+ * - creates missing Stripe subscription Products/Prices from DB plans
+ * Both server operations are idempotent.
  */
 export function StripePlanBootstrap({ userId }: { userId: string }) {
   useEffect(() => {
     if (!userId) return;
 
-    const storageKey = `stripe-plans-synced:${userId}`;
-    if (sessionStorage.getItem(storageKey) === "true") return;
-
     let cancelled = false;
+    const planStorageKey = `stripe-plans-synced:${userId}`;
+    const topupStorageKey = `stripe-credit-topups-recovered:${userId}`;
 
-    const sync = async () => {
+    const recoverTopups = async () => {
+      if (sessionStorage.getItem(topupStorageKey) === "true") return;
+
+      try {
+        const { data, error } = await supabase.functions.invoke("sync-credit-topups", {
+          body: { source: "app_bootstrap" },
+        });
+        if (cancelled) return;
+        if (error) {
+          console.warn("Stripe credit recovery skipped:", error.message);
+          return;
+        }
+        if (data?.ok === true) {
+          sessionStorage.setItem(topupStorageKey, "true");
+        }
+      } catch (error) {
+        console.warn("Stripe credit recovery failed:", error);
+      }
+    };
+
+    const syncPlans = async () => {
+      if (sessionStorage.getItem(planStorageKey) === "true") return;
+
       try {
         const { data, error } = await supabase.functions.invoke("ensure-stripe-plans", {
           body: { source: "app_bootstrap" },
@@ -32,7 +54,7 @@ export function StripePlanBootstrap({ userId }: { userId: string }) {
           (typeof data?.synced === "number" && data.synced > 0);
 
         if (successful) {
-          sessionStorage.setItem(storageKey, "true");
+          sessionStorage.setItem(planStorageKey, "true");
 
           // Subscription.tsx historically hides DB plans that do not yet have
           // Stripe IDs. If this sync just created them while that page was
@@ -46,7 +68,14 @@ export function StripePlanBootstrap({ userId }: { userId: string }) {
       }
     };
 
-    void sync();
+    const bootstrap = async () => {
+      // Recover money already paid before doing anything that might reload the
+      // subscription page.
+      await recoverTopups();
+      if (!cancelled) await syncPlans();
+    };
+
+    void bootstrap();
     return () => {
       cancelled = true;
     };
