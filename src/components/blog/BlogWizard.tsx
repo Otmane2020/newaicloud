@@ -122,38 +122,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { limits, loading: limitsLoading, refresh: refreshLimits } = useUsageLimits();
 
-  // Steps with translations - Enhanced steps
+  // Parcours court et orienté résultat.
   const steps: WizardStep[] = [
-    { 
-      id: 1, 
-      title: t.wizards.blog.steps.topic, 
-      icon: Target, 
-      description: t.wizards.blog.descriptions.topic 
-    },
-    { 
-      id: 2, 
-      title: t.wizards.blog.steps.products, 
-      icon: Package, 
-      description: t.wizards.blog.descriptions.products 
-    },
-    { 
-      id: 3, 
-      title: t.wizards.blog.steps.keywords, 
-      icon: TrendingUp, 
-      description: t.wizards.blog.descriptions.keywords 
-    },
-    { 
-      id: 4, 
-      title: t.wizards.blog.steps.design, 
-      icon: Palette, 
-      description: t.wizards.blog.descriptions.design 
-    },
-    { 
-      id: 5, 
-      title: t.wizards.blog.steps.generate, 
-      icon: Sparkles, 
-      description: t.wizards.blog.descriptions.generate 
-    },
+    { id: 1, title: "Sujet", icon: Target, description: "Angle, audience et collections" },
+    { id: 2, title: "Produits", icon: Package, description: "Produits à mettre en avant" },
+    { id: 3, title: "Mots-clés", icon: TrendingUp, description: "Requêtes SEO et GEO" },
+    { id: 4, title: "Style", icon: Palette, description: "Mise en page de l’article" },
+    { id: 5, title: "Générer", icon: Sparkles, description: "Créer l’article optimisé" },
   ];
 
   // Génération de suggestions de mots-clés IA
@@ -590,22 +565,22 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           <div className="space-y-6">
             {/* Sélection de l'angle éditorial */}
             <div>
-              <label className="block text-sm font-semibold mb-3">{t.blogWizardExtended.editorialAngle.title}</label>
+              <label className="block text-sm font-semibold mb-3">Angle éditorial</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { value: "guide", label: t.blogWizardExtended.editorialAngle.guide, description: t.blogWizardExtended.editorialAngle.guideDesc },
-                  { value: "comparison", label: t.blogWizardExtended.editorialAngle.comparison, description: t.blogWizardExtended.editorialAngle.comparisonDesc },
-                  { value: "review", label: t.blogWizardExtended.editorialAngle.review, description: t.blogWizardExtended.editorialAngle.reviewDesc },
-                  { value: "tutorial", label: t.blogWizardExtended.editorialAngle.tutorial, description: t.blogWizardExtended.editorialAngle.tutorialDesc },
+                  { value: "guide", label: "Guide", description: "Guide complet" },
+                  { value: "comparison", label: "Comparatif", description: "Comparaison de produits" },
+                  { value: "review", label: "Avis", description: "Tests et avis" },
+                  { value: "tutorial", label: "Tutoriel", description: "Guide pratique" },
                 ].map((angle) => (
                   <button
                     key={angle.value}
                     type="button"
                     onClick={() => setFormData({ ...formData, articleAngle: angle.value as any })}
-                    className={`p-4 border-2 rounded-xl text-center transition-all ${
+                    className={`p-3.5 border rounded-xl text-left transition-colors ${
                       formData.articleAngle === angle.value
                         ? "border-primary bg-primary/5"
-                        : "border-gray-200 hover:border-primary/50"
+                        : "border-border hover:bg-muted/50"
                     }`}
                   >
                     <div className="font-semibold">{angle.label}</div>
@@ -617,12 +592,12 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
             {/* Audience cible */}
             <div>
-              <label className="block text-sm font-semibold mb-3">{t.blogWizardExtended.targetAudience.title}</label>
+              <label className="block text-sm font-semibold mb-3">Audience cible</label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { value: "beginner", label: t.blogWizardExtended.targetAudience.beginner, icon: Users },
-                  { value: "general", label: t.blogWizardExtended.targetAudience.general, icon: Target },
-                  { value: "expert", label: t.blogWizardExtended.targetAudience.expert, icon: Zap },
+                  { value: "beginner", label: "Débutant", icon: Users },
+                  { value: "general", label: "Grand public", icon: Target },
+                  { value: "expert", label: "Expert", icon: Zap },
                 ].map((audience) => {
                   const Icon = audience.icon;
                   return (
@@ -630,13 +605,13 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                       key={audience.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, targetAudience: audience.value as any })}
-                      className={`p-4 border-2 rounded-xl text-center transition-all ${
+                      className={`p-3.5 border rounded-xl text-left transition-colors ${
                         formData.targetAudience === audience.value
                           ? "border-primary bg-primary/5"
-                          : "border-gray-200 hover:border-primary/50"
+                          : "border-border hover:bg-muted/50"
                       }`}
                     >
-                      <Icon className="w-6 h-6 mx-auto mb-2" />
+                      <Icon className="w-4 h-4 mb-2 text-muted-foreground" />
                       <div className="font-semibold text-sm">{audience.label}</div>
                     </button>
                   );
@@ -646,7 +621,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
             {/* Sélection des collections */}
             <div>
-              <label className="block text-sm font-semibold mb-3">{t.blogWizardExtended.collections.title}</label>
+              <label className="block text-sm font-semibold mb-3">Collections</label>
               
               {formData.collection_ids.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -671,7 +646,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={t.blogWizardExtended.collections.searchPlaceholder}
+                  placeholder="Rechercher une collection…"
                   value={collectionSearchTerm}
                   onChange={(e) => setCollectionSearchTerm(e.target.value)}
                   className="pl-9"
@@ -710,7 +685,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                           </div>
                           <span className="flex-1 text-sm font-medium">{collection.title}</span>
                           <Badge variant="outline" className="ml-auto">
-                            {productCount} {t.blogWizardExtended.collections.productsCount}
+                            {productCount} {productCount === 1 ? "produit" : "produits"}
                           </Badge>
                         </div>
                       );
@@ -729,21 +704,21 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
             {/* Longueur de l'article */}
             <div>
-              <label className="block text-sm font-semibold mb-3">{t.blogWizardExtended.articleLength.title}</label>
+              <label className="block text-sm font-semibold mb-3">Longueur de l’article</label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { value: "700", label: t.blogWizardExtended.articleLength.short, words: t.blogWizardExtended.articleLength.shortWords, time: t.blogWizardExtended.articleLength.shortTime },
-                  { value: "2000", label: t.blogWizardExtended.articleLength.long, words: t.blogWizardExtended.articleLength.longWords, time: t.blogWizardExtended.articleLength.longTime },
-                  { value: "4000", label: t.blogWizardExtended.articleLength.complete, words: t.blogWizardExtended.articleLength.completeWords, time: t.blogWizardExtended.articleLength.completeTime },
+                  { value: "700", label: "Court", words: "~700 mots", time: "3–4 min" },
+                  { value: "2000", label: "Long", words: "~2 000 mots", time: "8–10 min" },
+                  { value: "4000", label: "Complet", words: "~4 000 mots", time: "15–20 min" },
                 ].map((length) => (
                   <button
                     key={length.value}
                     type="button"
                     onClick={() => setFormData({ ...formData, articleLength: length.value as any })}
-                    className={`p-4 border-2 rounded-xl text-center transition-all ${
+                    className={`p-3.5 border rounded-xl text-left transition-colors ${
                       formData.articleLength === length.value
-                        ? "bg-primary text-white border-primary"
-                        : "bg-white border-gray-300 hover:border-primary"
+                        ? "border-primary bg-primary/5 text-foreground"
+                        : "border-border bg-background hover:bg-muted/50"
                     }`}
                   >
                     <div className="font-semibold">{length.label}</div>
@@ -814,7 +789,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                     className={`p-4 cursor-pointer transition-all border-2 ${
                       isSelected 
                         ? "border-primary bg-primary/5" 
-                        : "border-gray-200 hover:border-primary/50"
+                        : "border-border hover:bg-muted/50"
                     }`}
                     onClick={() => {
                       if (isSelected) {
@@ -896,7 +871,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
 
               {/* Suggestions IA - Filtrer les mots-clés déjà sélectionnés */}
               {keywordSuggestions.filter(s => !keywords.includes(s)).length > 0 && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+                <div className="mb-6 p-4 bg-muted/30 rounded-xl border">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <h4 className="font-semibold text-blue-900 flex items-center gap-2">
@@ -1022,7 +997,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
             />
             
             {/* Aperçu rapide de la configuration */}
-            <Card className="p-4 bg-gradient-to-r from-gray-50 to-blue-50">
+            <Card className="p-4 bg-muted/30">
               <h4 className="font-semibold mb-3 flex items-center gap-2">
                 <Eye className="w-4 h-4" />
                 Aperçu de la configuration
@@ -1033,7 +1008,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                   <span className="font-medium ml-2 capitalize">{articleConfig.style}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Layout :</span>
+                  <span className="text-muted-foreground">Mise en page :</span>
                   <span className="font-medium ml-2">{articleConfig.layout}</span>
                 </div>
                 <div>
@@ -1059,7 +1034,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
         return (
           <div className="space-y-6">
             {/* Résumé de la configuration */}
-            <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
+            <Card className="p-5 bg-muted/30 border-border">
               <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-600" />
                 Récapitulatif de votre article
@@ -1193,17 +1168,20 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-6xl max-h-[95vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-3 md:p-4">
+      <Card className="w-full max-w-5xl max-h-[92vh] overflow-y-auto border-0 rounded-2xl shadow-2xl">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                {t.wizards.blog.title}
+              <Badge variant="outline" className="mb-2 rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-muted-foreground">
+                SEO · GEO
+              </Badge>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                Traffic Gain
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Créez un article SEO optimisé avec vos produits
+              <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+                Créez du trafic organique avec des articles optimisés SEO & GEO à partir de vos produits.
               </p>
             </div>
             <button 
@@ -1232,53 +1210,41 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
           )}
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-between mb-8">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              const isActive = currentStep === step.id;
-              const isCompleted = currentStep > step.id;
+          <div className="grid grid-cols-5 gap-1.5 mb-6 rounded-xl bg-muted/40 p-1.5">
+            {steps.map((wizardStep) => {
+              const isActive = currentStep === wizardStep.id;
+              const isCompleted = currentStep > wizardStep.id;
 
               return (
-                <div key={step.id} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center relative">
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                        isActive
-                          ? "bg-primary text-white shadow-lg shadow-primary/25"
-                          : isCompleted
-                            ? "bg-green-500 text-white shadow-lg shadow-green-500/25"
-                            : "bg-gray-200 text-gray-500"
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle className="w-6 h-6" />
-                      ) : (
-                        <Icon className="w-6 h-6" />
-                      )}
-                    </div>
-                    <span className={`text-sm mt-2 text-center font-medium ${
-                      isActive ? "text-primary" : isCompleted ? "text-green-600" : "text-gray-500"
+                <div
+                  key={wizardStep.id}
+                  className={`min-w-0 rounded-lg px-2 py-2.5 transition-colors ${
+                    isActive ? "bg-background shadow-sm ring-1 ring-border" : ""
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : isCompleted
+                          ? "bg-primary/10 text-primary"
+                          : "bg-muted text-muted-foreground"
                     }`}>
-                      {step.title}
+                      {isCompleted ? <Check className="h-3 w-3" /> : wizardStep.id}
                     </span>
-                    {isActive && (
-                      <div className="absolute -bottom-6 w-32 text-xs text-center text-primary font-medium">
-                        {step.description}
-                      </div>
-                    )}
+                    <span className={`truncate text-xs font-medium ${
+                      isActive ? "text-foreground" : "text-muted-foreground"
+                    }`}>
+                      {wizardStep.title}
+                    </span>
                   </div>
-                  {index < steps.length - 1 && (
-                    <div className={`flex-1 h-1 mx-2 transition-colors ${
-                      isCompleted ? "bg-green-500" : "bg-gray-200"
-                    }`} />
-                  )}
                 </div>
               );
             })}
           </div>
 
           {/* Step Content */}
-          <div className="mb-8 min-h-[400px]">
+          <div className="mb-6 min-h-[380px]">
             {renderStepContent()}
           </div>
 
@@ -1303,7 +1269,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
               <Button 
                 onClick={handleGenerate} 
                 disabled={generating}
-                className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+                className="gap-2"
               >
                 {generating ? (
                   <>
@@ -1313,7 +1279,7 @@ export function BlogWizard({ onClose, categories }: BlogWizardProps) {
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    Générer l'article SEO
+                    Générer l'article SEO & GEO
                   </>
                 )}
               </Button>
