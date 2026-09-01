@@ -44,5 +44,8 @@ jobs:
       - name: Deploy import-shopify-collections
         run: supabase functions deploy import-shopify-collections --project-ref "$PROJECT_REF"
 
+      - name: Deploy export-creative-image
+        run: supabase functions deploy export-creative-image --project-ref "$PROJECT_REF"
+
       - name: Deployment summary
-        run: echo "generate-page-seo and import-shopify-collections deployed to Supabase project $PROJECT_REF"
+        run: echo "SEO, Shopify collections and creative image functions deployed to Supabase project $PROJECT_REF"
