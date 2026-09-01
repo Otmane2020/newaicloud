@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,10 +23,8 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const openaiKey = Deno.env.get('OPENAI_API_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1. Get recent Q&A articles from the past week
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
@@ -55,7 +54,6 @@ serve(async (req) => {
       });
     }
 
-    // 2. Get store info for context
     let storeName = '';
     let storeUrl = '';
     if (store_id) {
@@ -71,7 +69,6 @@ serve(async (req) => {
       }
     }
 
-    // 3. Extract common topic/theme from Q&A
     const allKeywords = recentAnswers.flatMap(a => a.keywords || []);
     const keywordCounts: Record<string, number> = {};
     allKeywords.forEach(k => {
@@ -86,8 +83,7 @@ serve(async (req) => {
       `- Question: "${a.question}"\n  Answer: "${a.direct_answer}"`
     ).join('\n\n');
 
-    // 4. Generate pillar article with OpenAI
-    console.log('🤖 Generating pillar article with AI...');
+    console.log('🤖 Generating pillar article through strict AI router...');
     
     const prompt = `You are an expert SEO content writer. Create a comprehensive pillar article (1500-2000 words) that synthesizes the following Q&A content into an authoritative guide.
 
@@ -113,7 +109,7 @@ Requirements:
 - Make it AEO-optimized (clear answers, structured data)
 - Include internal linking placeholders: [LINK_TO_QA_X] where X is the question number
 
-Return JSON with:
+Return ONLY valid JSON with:
 {
   "title": "SEO title",
   "meta_description": "Meta description (max 155 chars)",
@@ -121,44 +117,22 @@ Return JSON with:
   "keywords": ["array", "of", "keywords"]
 }`;
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 4000,
-      }),
+    const aiResult = await routeAI({
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      maxTokens: 4000,
     });
+    const aiContent = aiResult.content;
+    console.log(`✅ AI provider used: ${aiResult.provider} (${aiResult.model})`);
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('❌ OpenAI error:', errorText);
-      throw new Error(`OpenAI API error: ${errorText}`);
-    }
-
-    const aiResult = await openaiResponse.json();
-    const aiContent = aiResult.choices[0]?.message?.content;
-    
-    if (!aiContent) {
-      throw new Error('No content generated from AI');
-    }
-
-    // Parse JSON response
     let articleData;
     try {
-      // Extract JSON from potential markdown code blocks
       const jsonMatch = aiContent.match(/```json\n?([\s\S]*?)\n?```/) || 
                        aiContent.match(/```\n?([\s\S]*?)\n?```/);
       const jsonStr = jsonMatch ? jsonMatch[1] : aiContent;
       articleData = JSON.parse(jsonStr.trim());
     } catch (e) {
       console.error('❌ Error parsing AI response:', e);
-      // Fallback: create basic structure
       articleData = {
         title: `Complete Guide: ${topKeywords[0] || 'Expert Insights'}`,
         meta_description: `Comprehensive guide covering everything you need to know about ${topKeywords.join(', ')}`,
@@ -169,7 +143,6 @@ Return JSON with:
 
     console.log(`📄 Generated article: "${articleData.title}"`);
 
-    // 5. Save pillar article to aeo_pillar_articles
     const linkedQaIds = recentAnswers.map(a => a.id);
     
     const { data: pillarArticle, error: pillarError } = await supabase
@@ -194,7 +167,6 @@ Return JSON with:
       throw pillarError;
     }
 
-    // 6. Also create in blog_articles for consistency
     const { data: blogArticle, error: blogError } = await supabase
       .from('blog_articles')
       .insert({
@@ -213,19 +185,14 @@ Return JSON with:
     if (blogError) {
       console.error('⚠️ Error saving to blog_articles:', blogError);
     } else {
-      // Link pillar to blog article
       await supabase
         .from('aeo_pillar_articles')
         .update({ article_id: blogArticle.id })
         .eq('id', pillarArticle.id);
     }
 
-    // 7. Update linked Q&A with pillar reference (if enabled)
     if (link_to_qas && pillarArticle) {
       console.log('🔗 Linking Q&A articles to pillar...');
-      
-      // We could update the Q&A articles to include a link to the pillar
-      // For now, just log this - the actual linking happens via linked_qa_ids
     }
 
     console.log('✅ Pillar article created successfully');
@@ -238,6 +205,8 @@ Return JSON with:
         blog_article_id: blogArticle?.id,
       },
       linked_qa_count: linkedQaIds.length,
+      ai_provider: aiResult.provider,
+      ai_model: aiResult.model,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
