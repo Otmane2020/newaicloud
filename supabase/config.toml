@@ -1,4 +1,5 @@
 project_id = "xkrrcusvmxifbiejxker"
 
+# Edge Functions are deployed from GitHub Actions on changes under supabase/functions/.
 [functions.stripe-credit-webhook]
 verify_jwt = false
