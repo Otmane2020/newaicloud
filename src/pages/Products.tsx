@@ -10,6 +10,7 @@ import { SimpleSyncProgress } from "@/components/integration/SyncProgressDialog"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
 import { Plus, Search, Filter, Package, Grid3x3, List, ChevronDown, RefreshCw, Infinity, Loader2, ImageOff, Wand2, Sparkles } from "lucide-react";
@@ -45,6 +46,9 @@ interface Product {
   currency: string;
   image_url: string | null;
   inventory_quantity: number;
+  inventory_managed?: boolean;
+  handle?: string | null;
+  sku?: string | null;
   created_at: string;
 }
 
@@ -54,7 +58,7 @@ export default function Products() {
   const { limits, refresh: refreshLimits } = useUsageLimits();
   const { selectedStore } = useStore();
   const { isSyncing, currentSyncType, syncShopifyStore } = useShopifySync();
-  const { t, tf } = useTranslation();
+  const { t, tf, language } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -231,6 +235,22 @@ export default function Products() {
     } catch (error: any) {
       console.error('Error updating product status:', error);
       toast.error(t.toasts.products.statusUpdateError);
+    }
+  };
+
+  const updateProductInline = async (productId: string, patch: Partial<Product>) => {
+    try {
+      const { error } = await supabase
+        .from("shopify_products")
+        .update({ ...patch, updated_at: new Date().toISOString() } as any)
+        .eq("id", productId);
+
+      if (error) throw error;
+
+      setProducts((current) => current.map((item) => item.id === productId ? { ...item, ...patch } : item));
+    } catch (error: any) {
+      console.error("Error updating product inline:", error);
+      toast.error(error?.message || (language === "fr" ? "Mise à jour impossible" : "Could not update product"));
     }
   };
 
@@ -792,7 +812,7 @@ export default function Products() {
                   return (
                     <Card
                       key={product.id}
-                      onClick={() => navigate(`/product-landing/${product.id}`)}
+                      onClick={() => navigate(`/products/${product.id}`)}
                       className="cursor-pointer overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md active:scale-[.99]"
                     >
                       <div className="aspect-square bg-muted/50 relative overflow-hidden group">
@@ -931,17 +951,17 @@ export default function Products() {
             ) : (
               // Optimized mobile list - Like the photo
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <div className="hidden grid-cols-[56px_minmax(0,1fr)_110px_120px_110px_32px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-500 md:grid"><span /><span>Product</span><span>Status</span><span>Price</span><span>Stock</span><span /></div>
+                <div className="hidden grid-cols-[56px_minmax(0,1fr)_135px_155px_210px_32px] gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-500 md:grid"><span /><span>Product</span><span>Status</span><span>Price</span><span>Stock</span><span /></div>
                 {filteredProducts.map((product) => {
                   const discount = calculateDiscount(product.price, product.compare_at_price);
 
                   return (
                     <Card
                       key={product.id}
-                      onClick={() => navigate(`/product-landing/${product.id}`)}
+                      onClick={() => navigate(`/products/${product.id}`)}
                       className="cursor-pointer rounded-none border-0 border-b border-slate-100 p-3 shadow-none transition-colors last:border-b-0 hover:bg-slate-50"
                     >
-                      <div className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3 md:grid-cols-[56px_minmax(0,1fr)_110px_120px_110px_32px]">
+                      <div className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3 md:grid-cols-[56px_minmax(0,1fr)_135px_155px_210px_32px]">
                         {/* Product image */}
                         <div className="relative h-14 w-14 overflow-hidden rounded-lg bg-slate-100">
                           {product.image_url ? (
@@ -967,12 +987,64 @@ export default function Products() {
                             <span className="text-sm font-medium">{product.price?.toFixed(2) || "0.00"} {product.currency}</span>
                           </div>
                         </div>
-                        <Badge variant="outline" className={product.status === "active" ? "hidden w-fit border-emerald-200 bg-emerald-50 text-emerald-700 md:inline-flex" : "hidden w-fit md:inline-flex"}>{product.status === "active" ? t.common.active : t.common.draft}</Badge>
-                        <div className="hidden text-sm font-medium text-slate-900 md:block">
-                          {product.price?.toFixed(2) || "0.00"} {product.currency}
-                          {product.compare_at_price && product.compare_at_price > (product.price || 0) && <span className="ml-1 block text-xs font-normal text-slate-400 line-through">{product.compare_at_price.toFixed(2)} {product.currency}</span>}
+                        <div className="hidden md:block" onClick={(event) => event.stopPropagation()}>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={product.status === "active"}
+                              onCheckedChange={(checked) => void updateProductInline(product.id, { status: checked ? "active" : "draft" })}
+                              aria-label={language === "fr" ? "Statut produit" : "Product status"}
+                            />
+                            <span className={`text-xs font-medium ${product.status === "active" ? "text-emerald-700" : "text-slate-500"}`}>
+                              {product.status === "active" ? (language === "fr" ? "Actif" : "Active") : (language === "fr" ? "Inactif" : "Inactive")}
+                            </span>
+                          </div>
                         </div>
-                        <span className={`hidden text-sm md:block ${product.inventory_quantity > 0 ? "text-slate-700" : "text-red-700"}`}>{formatNumber(product.inventory_quantity)}</span>
+                        <div className="hidden md:block" onClick={(event) => event.stopPropagation()}>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              key={`${product.id}-price-${product.price}`}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              defaultValue={product.price ?? 0}
+                              className="h-8 w-24 rounded-lg px-2 text-sm font-medium"
+                              onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }}
+                              onBlur={(event) => {
+                                const next = Number(event.currentTarget.value);
+                                if (Number.isFinite(next) && next >= 0 && next !== Number(product.price ?? 0)) {
+                                  void updateProductInline(product.id, { price: next });
+                                }
+                              }}
+                            />
+                            <span className="text-xs font-medium text-slate-500">{product.currency}</span>
+                          </div>
+                          {product.compare_at_price && product.compare_at_price > (product.price || 0) && <span className="mt-1 block text-xs font-normal text-slate-400 line-through">{product.compare_at_price.toFixed(2)} {product.currency}</span>}
+                        </div>
+                        <div className="hidden md:block" onClick={(event) => event.stopPropagation()}>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={product.inventory_managed !== false}
+                              onCheckedChange={(checked) => void updateProductInline(product.id, { inventory_managed: checked })}
+                              aria-label={language === "fr" ? "Gestion du stock" : "Inventory tracking"}
+                            />
+                            <span className="w-16 text-[11px] text-slate-500">{product.inventory_managed !== false ? (language === "fr" ? "Géré" : "Managed") : (language === "fr" ? "Non géré" : "Unmanaged")}</span>
+                            <Input
+                              key={`${product.id}-stock-${product.inventory_quantity}`}
+                              type="number"
+                              step="1"
+                              defaultValue={product.inventory_quantity ?? 0}
+                              disabled={product.inventory_managed === false}
+                              className="h-8 w-20 rounded-lg px-2 text-sm disabled:bg-slate-50"
+                              onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }}
+                              onBlur={(event) => {
+                                const next = Number.parseInt(event.currentTarget.value || "0", 10);
+                                if (Number.isFinite(next) && next !== Number(product.inventory_quantity ?? 0)) {
+                                  void updateProductInline(product.id, { inventory_quantity: next });
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
                         <span className="hidden text-slate-400 md:block">›</span>
                       </div>
                     </Card>

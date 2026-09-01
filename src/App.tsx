@@ -293,6 +293,14 @@ function NewAIRoutes() {
               }
             />
             <Route
+              path="/products/:id"
+              element={
+                <ProtectedLayout>
+                  <ProductDetail />
+                </ProtectedLayout>
+              }
+            />
+            <Route
               path="/content"
               element={
                 <ProtectedLayout>
