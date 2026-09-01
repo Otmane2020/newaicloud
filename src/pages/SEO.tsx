@@ -1,399 +1,79 @@
-import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { ProductOptimizationTabs } from '@/components/seo/ProductOptimizationTabs';
-import { TagOptimization } from '@/components/seo/TagOptimization';
-import { SeoAltImage } from '@/components/seo/SeoAltImage';
-import { SmartTitle } from '@/components/seo/SmartTitle';
-import { SeoAutomation } from '@/components/seo/SeoAutomation';
-import { PageOptimization } from '@/components/seo/PageOptimization';
-import { HomePageSeo } from '@/components/seo/HomePageSeo';
-import { HomePageSeoAudit } from '@/components/seo/HomePageSeoAudit';
-import { SeoAuditReports } from '@/components/seo/SeoAuditReports';
-import { CollectionOptimization } from '@/components/seo/CollectionOptimization';
-import ArticleManagement, { ArticleManagementRef } from '@/pages/ArticleManagement';
-import { SeoAuditDashboard } from '@/components/seo/SeoAuditDashboard';
-import { GoogleSearchConsole } from '@/components/seo/GoogleSearchConsole';
-import { Sparkles, Tags, Image, Settings, FileText, PenSquare, TrendingUp, Package, RefreshCw, Clock } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
-import { calculateArticleSeoScore, calculateDetailedSeoScore } from '@/lib/seoQuality';
-import { toast } from 'sonner';
-import { useTranslation } from '@/lib/language';
-import { useStore } from '@/contexts/StoreContext';
-import { ProgressBanner } from '@/components/seo/ProgressBanner';
-import { useOptimization } from '@/contexts/OptimizationContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { FileText, Home, Images, Layers3, Tags } from "lucide-react";
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
+import { Button } from "@/components/ui/button";
+import { CollectionOptimization } from "@/components/seo/CollectionOptimization";
+import { PageOptimization } from "@/components/seo/PageOptimization";
+import { TagOptimization } from "@/components/seo/TagOptimization";
+import { SeoAltImage } from "@/components/seo/SeoAltImage";
+import { HomePageSeo } from "@/components/seo/HomePageSeo";
+import { useTranslation } from "@/lib/language";
 
-// Full access email
-const FULL_ACCESS_EMAIL = 'oben.rockman@gmail.com';
+type WorkspaceTab = "collections" | "pages" | "tags" | "alt" | "homepage";
+
+const normalizeTab = (tab: string | null): WorkspaceTab => {
+  if (tab === "pages" || tab === "tags" || tab === "alt" || tab === "homepage") return tab;
+  return "collections";
+};
 
 export default function SEO() {
-  const { t, language } = useTranslation();
-  const { user } = useAuth();
-  const { selectedStore } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'products');
-  const [articlesSeoScore, setArticlesSeoScore] = useState<number>(0);
-  const [pagesSeoScore, setPagesSeoScore] = useState<number>(0);
-  const [loadingScores, setLoadingScores] = useState(false);
-  const articleManagementRef = useRef<ArticleManagementRef>(null);
-  const { state: optimizationState, setShowCompletedDialog, cancelOptimization } = useOptimization();
-  
-  // Check if user has full access (for Blog tabs only)
-  const hasFullAccess = user?.email === FULL_ACCESS_EMAIL;
-  
-  // Blog tabs restricted to full access users
-  const isBlogTab = activeTab === 'pages' || activeTab === 'articles';
-
-  const handleSyncShopify = async () => {
-    try {
-      toast.loading(t.sync.syncing, { id: 'sync' });
-      
-      // Reload articles and recalculate score
-      if (activeTab === 'articles') {
-        await calculateArticlesSeoScore();
-      } else if (activeTab === 'pages') {
-        await calculatePagesSeoScore();
-      }
-      
-      toast.success(t.toasts.success.syncSuccess, { id: 'sync' });
-      
-      // Reload page to see changes
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    } catch (error) {
-      toast.error(t.toasts.smartAI.syncError, { id: 'sync' });
-    }
-  };
+  const { language } = useTranslation();
+  const fr = language === "fr";
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(() => normalizeTab(searchParams.get("tab")));
 
   useEffect(() => {
-    const tab = searchParams.get('tab');
-    const validTabs = ['products', 'optimization', 'tags', 'pages', 'articles', 'collections', 'homepage', 'audit', 'audit-dashboard', 'alt', 'smart-title', 'automation', 'google-console'];
-    
-    if (tab && validTabs.includes(tab)) {
-      if (tab === 'optimization') {
-        setActiveTab('products');
-      } else {
-        setActiveTab(tab);
-      }
-    }
+    setActiveTab(normalizeTab(searchParams.get("tab")));
   }, [searchParams]);
 
-  useEffect(() => {
-    if (selectedStore) {
-      if (activeTab === 'articles') {
-        calculateArticlesSeoScore();
-      } else if (activeTab === 'pages') {
-        calculatePagesSeoScore();
-      }
-    }
-  }, [activeTab, selectedStore]);
+  const tabs = [
+    { id: "collections" as const, label: fr ? "Collections" : "Collections", icon: Layers3 },
+    { id: "pages" as const, label: fr ? "Pages" : "Pages", icon: FileText },
+    { id: "tags" as const, label: "Tags", icon: Tags },
+    { id: "alt" as const, label: fr ? "ALT images" : "Image ALT", icon: Images },
+    { id: "homepage" as const, label: fr ? "Accueil" : "Homepage", icon: Home },
+  ];
 
-
-  const calculateArticlesSeoScore = async () => {
-    if (!selectedStore) {
-      setArticlesSeoScore(0);
-      return;
-    }
-
-    try {
-      setLoadingScores(true);
-      const { data, error } = await supabase
-        .from('blog_articles')
-        .select('id, title, seo_title, meta_description, keywords, featured_image, status, optimization_count')
-        .eq('store_id', selectedStore.id);
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const scores = data.map((article: any) => {
-          const score = calculateArticleSeoScore(
-            article.title,
-            article.seo_title || article.title,
-            article.meta_description || '',
-            article.keywords ? (typeof article.keywords === 'string' ? [] : article.keywords) : [],
-            !!article.featured_image,
-            article.status === 'published',
-            article.optimization_count || 0,
-            article.id
-          );
-          
-          return score.score;
-        });
-
-        const avgScore = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
-        setArticlesSeoScore(avgScore);
-      }
-    } catch (error) {
-      console.error('Error calculating articles SEO score:', error);
-    } finally {
-      setLoadingScores(false);
-    }
-  };
-
-  const calculatePagesSeoScore = async () => {
-    if (!selectedStore) {
-      setPagesSeoScore(0);
-      return;
-    }
-
-    try {
-      setLoadingScores(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('shopify_pages')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('store_id', selectedStore.id);
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const scores = data.map((page: any) => {
-          const detailedScore = calculateDetailedSeoScore(
-            page.seo_title || page.title,
-            page.seo_description,
-            false,
-            true,
-            null,
-            page.optimization_count
-          );
-          return detailedScore.score;
-        });
-
-        const avgScore = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
-        setPagesSeoScore(avgScore);
-      }
-    } catch (error) {
-      console.error('Error calculating pages SEO score:', error);
-    } finally {
-      setLoadingScores(false);
-    }
-  };
-
-  const handleClearCache = () => {
-    // Clear browser cache and reload
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        names.forEach((name) => {
-          caches.delete(name);
-        });
-      });
-    }
-    
-    // Clear localStorage (preserving auth)
-    const authData = localStorage.getItem('supabase.auth.token');
-    localStorage.clear();
-    if (authData) {
-      localStorage.setItem('supabase.auth.token', authData);
-    }
-    
-    toast.success(t.seo.cacheCleared);
-    window.location.reload();
+  const openTab = (tab: WorkspaceTab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-1 sm:mb-2 break-words">
-            {t.seo.title}
-          </h1>
-          <p className="text-muted-foreground text-sm sm:text-base break-words">
-            {t.seo.description}
-          </p>
-        </div>
-      </div>
+    <div className="mx-auto w-full max-w-[1500px] space-y-4">
+      <WorkspacePageHeader
+        section={fr ? "Contenu" : "Content"}
+        page={fr ? "Collections & pages" : "Collections & pages"}
+        title={fr ? "Collections & pages" : "Collections & pages"}
+        description={fr
+          ? "Optimisez les métadonnées essentielles sans multiplier les écrans."
+          : "Optimize essential metadata without jumping between multiple screens."}
+      />
 
-      <nav className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1" aria-label={language === "fr" ? "Métadonnées SEO" : "SEO metadata"}>
-        {[
-          { id: "products", label: language === "fr" ? "Produits" : "Products", icon: Package },
-          { id: "collections", label: language === "fr" ? "Collections" : "Collections", icon: Tags },
-          { id: "pages", label: language === "fr" ? "Pages" : "Pages", icon: FileText },
-          { id: "articles", label: language === "fr" ? "Articles" : "Articles", icon: PenSquare },
-        ].map(({ id, label, icon: Icon }) => (
+      <nav className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1.5" aria-label={fr ? "Outils SEO" : "SEO tools"}>
+        {tabs.map(({ id, label, icon: Icon }) => (
           <Button
             key={id}
             type="button"
             size="sm"
-            variant={activeTab === id ? "default" : "ghost"}
-            className={activeTab === id ? "bg-violet-600 hover:bg-violet-700" : ""}
-            onClick={() => {
-              setActiveTab(id);
-              setSearchParams({ tab: id });
-            }}
+            variant={activeTab === id ? "secondary" : "ghost"}
+            className="h-8 gap-1.5"
+            onClick={() => openTab(id)}
           >
-            <Icon className="mr-2 h-4 w-4" />{label}
-            {id === "pages" && pagesSeoScore > 0 && <span className="ml-2 text-xs opacity-80">{pagesSeoScore}%</span>}
-            {id === "articles" && articlesSeoScore > 0 && <span className="ml-2 text-xs opacity-80">{articlesSeoScore}%</span>}
+            <Icon className="h-3.5 w-3.5" />
+            {label}
           </Button>
         ))}
       </nav>
 
-      {/* SEO resource content */}
-      <div className="mt-6">
-        {(activeTab === 'products' || activeTab === 'optimization') && <ProductOptimizationTabs />}
-        {activeTab === 'tags' && <TagOptimization />}
-        {activeTab === 'collections' && <CollectionOptimization />}
-        {activeTab === 'alt' && <SeoAltImage />}
-        
-        {/* Blog tabs - now available to all users */}
-        
-        {activeTab === 'pages' && (
-          <>
-            {/* Banner for Pages */}
-            <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 dark:from-purple-950 dark:via-pink-950 dark:to-rose-950 border-2 border-purple-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
-              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
-                <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 flex-shrink-0" />
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent break-words">
-                      {t.seo.banners.pages.title}
-                    </h2>
-                  </div>
-                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg break-words">
-                    {t.seo.banners.pages.description}
-                  </p>
-                  <div className="flex flex-wrap gap-2 sm:gap-3 pt-1 sm:pt-2">
-                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                      <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
-                      <span className="font-medium break-words">{t.seo.banners.pages.seoOptimized}</span>
-                    </div>
-                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                      <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />
-                      <span className="font-medium break-words">{t.seo.banners.pages.betterRankings}</span>
-                    </div>
-                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                      <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 flex-shrink-0" />
-                      <span className="font-medium break-words">{t.seo.banners.pages.aiEnhanced}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 sm:gap-3 items-center w-full lg:w-auto flex-shrink-0">
-                  {optimizationState.isRunning && optimizationState.type === 'pages' ? (
-                    <ProgressBanner
-                      current={optimizationState.current}
-                      total={optimizationState.total}
-                      label={t.seo.banners.pages.optimizingLabel}
-                      onCancel={cancelOptimization}
-                    />
-                  ) : (
-                    <>
-                      <div className="text-center">
-                        <div className={`text-3xl sm:text-4xl font-bold ${
-                          loadingScores ? 'text-muted-foreground' :
-                          pagesSeoScore >= 80 ? 'text-green-600' : 
-                          pagesSeoScore >= 60 ? 'text-purple-600' : 
-                          pagesSeoScore >= 40 ? 'text-yellow-600' : 
-                          'text-red-600'
-                        }`}>
-                          {loadingScores ? '...' : `${pagesSeoScore}/100`}
-                        </div>
-                        <div className="text-xs sm:text-sm text-muted-foreground">{t.seo.banners.pages.seoScore}</div>
-                      </div>
-                      <Button
-                        size="lg"
-                        onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 shadow-lg w-full lg:w-auto"
-                      >
-                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                        <span className="truncate">{t.seo.banners.pages.optimizeBtn}</span>
-                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </Card>
-            <PageOptimization />
-          </>
-        )}
-        {activeTab === 'articles' && (
-          <>
-            {/* Banner for Articles */}
-            <Card className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
-              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
-                <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <PenSquare className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0" />
-                    <h2 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent break-words">
-                      {t.seo.banners.articles.title}
-                    </h2>
-                  </div>
-                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg break-words">
-                    {t.seo.banners.articles.description}
-                  </p>
-                  <div className="flex flex-wrap gap-2 sm:gap-3 pt-1 sm:pt-2">
-                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                      <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 flex-shrink-0" />
-                      <span className="font-medium break-words">{t.seo.banners.articles.seoOptimized}</span>
-                    </div>
-                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                      <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 flex-shrink-0" />
-                      <span className="font-medium break-words">{t.seo.banners.articles.trafficBoost}</span>
-                    </div>
-                    <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                      <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 flex-shrink-0" />
-                      <span className="font-medium break-words">{t.seo.banners.articles.aiEnhanced}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 sm:gap-3 items-center w-full lg:w-auto flex-shrink-0">
-                  {optimizationState.isRunning && optimizationState.type === 'articles' ? (
-                    <ProgressBanner
-                      current={optimizationState.current}
-                      total={optimizationState.total}
-                      label={t.seo.banners.articles.optimizingLabel}
-                      onCancel={cancelOptimization}
-                    />
-                  ) : (
-                    <>
-                      <div className="text-center">
-                        <div className={`text-3xl sm:text-4xl font-bold ${
-                          loadingScores ? 'text-muted-foreground' :
-                          articlesSeoScore >= 80 ? 'text-green-600' : 
-                          articlesSeoScore >= 60 ? 'text-blue-600' : 
-                          articlesSeoScore >= 40 ? 'text-yellow-600' : 
-                          'text-red-600'
-                        }`}>
-                          {loadingScores ? '...' : `${articlesSeoScore}/100`}
-                        </div>
-                        <div className="text-xs sm:text-sm text-muted-foreground">{t.seo.banners.articles.seoScore}</div>
-                      </div>
-                      <Button
-                        size="lg"
-                        onClick={() => articleManagementRef.current?.optimizeAllArticles()}
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 gap-2 shadow-lg w-full lg:w-auto"
-                      >
-                        <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                        <span className="truncate">{t.seo.banners.articles.optimizeBtn}</span>
-                        <FileText className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </Card>
-            <ArticleManagement 
-              ref={articleManagementRef} 
-              onOptimizationComplete={calculateArticlesSeoScore}
-            />
-          </>
-        )}
-        {activeTab === 'homepage' && <HomePageSeoAudit />}
-        {activeTab === 'audit' && <SeoAuditReports />}
-        {activeTab === 'audit-dashboard' && <SeoAuditDashboard />}
-        {activeTab === 'smart-title' && <SmartTitle />}
-        {activeTab === 'automation' && <SeoAutomation />}
-        {activeTab === 'google-console' && <GoogleSearchConsole />}
-      </div>
-
-      {/* OptimizationCompletedDialog removed - handled by SeoOptimization.tsx ResultsDialog */}
+      <section className="min-w-0">
+        {activeTab === "collections" && <CollectionOptimization />}
+        {activeTab === "pages" && <PageOptimization />}
+        {activeTab === "tags" && <TagOptimization />}
+        {activeTab === "alt" && <SeoAltImage />}
+        {activeTab === "homepage" && <HomePageSeo />}
+      </section>
     </div>
   );
 }
