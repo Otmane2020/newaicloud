@@ -44,7 +44,7 @@ export function CatalogOptimizeSidebar() {
       icon: FileText,
       items: [
         {
-          label: fr ? "Contenu produit" : "Product content",
+          label: fr ? "Optimisation produit" : "Product Optimization",
           href: "/content",
           icon: FileText,
           aliases: [
