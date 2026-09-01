@@ -82,12 +82,6 @@ export function CatalogOptimizeSidebar() {
           },
           { label: "Collections", href: "/collections", icon: Layers3 },
           {
-            label: "Product Enrich",
-            href: "/product-source",
-            icon: Sparkles,
-            aliases: ["/product-enrichment"],
-          },
-          {
             label: "Smart Pricing",
             href: "/products/media-history?view=smart-pricing",
             icon: DollarSign,
@@ -167,6 +161,12 @@ export function CatalogOptimizeSidebar() {
             label: "Publications",
             href: "/aeo?tab=history",
             icon: FileText,
+          },
+          {
+            label: "Product Enrich",
+            href: "/product-source",
+            icon: Sparkles,
+            aliases: ["/product-enrichment"],
           },
         ],
       },
