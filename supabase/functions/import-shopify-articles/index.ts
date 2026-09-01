@@ -205,14 +205,6 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!accessToken) {
-        accessToken = connection.access_token;
-        console.log('✅ [ARTICLES] Using OAuth token from database (length:', accessToken?.length, ')');
-      }
-      
-      console.log('✅ [ARTICLES] Shop name extracted from database:', shopName);
-    }
-    
-    if (!accessToken) {
       return new Response(
         JSON.stringify({ error: 'No access token available' }),
         {
@@ -280,7 +272,7 @@ Deno.serve(async (req: Request) => {
         );
       }
       
-        if (blogsResponse.status === 401) {
+      if (blogsResponse.status === 401) {
         return new Response(
           JSON.stringify({
             error: isOAuthMode
