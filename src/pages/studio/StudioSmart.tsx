@@ -1,87 +1,82 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import {
-  ArrowRight,
-  ChevronLeft,
-  Film,
-  Image as ImageIcon,
-  Images,
-  LayoutTemplate,
-  Library,
-  Megaphone,
-  Search,
-  Share2,
-  Smartphone,
-  Sparkles,
-  WandSparkles,
-  Zap,
-} from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { ArrowRight, Camera, Check, History, Images, Megaphone, Search, Sparkles, Wand2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { AIImagesDialog } from "@/components/seo/AIImagesDialog";
+import { SmartBackgroundDialog } from "@/components/seo/SmartBackgroundDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/lib/language";
-import StudioImages from "../StudioImages";
-import StudioCreativeWorkspace from "./StudioCreativeWorkspace";
-import MobileAds from "../MobileAds";
-import AnimationAds from "../AnimationAds";
-import SocialMedia from "../SocialMedia";
-import MediaHistory from "../MediaHistory";
-import NewAIVideoGenerator from "@/components/video/NewAIVideoGenerator";
+import AiCreativeStudio from "../AiCreativeStudio";
 
-type StudioToolId = "images" | "creative" | "ads" | "animate" | "video" | "social" | "library";
+type StudioMode = "shots" | "backgrounds" | "creative";
 
 type StudioProduct = {
   id: string;
   title: string;
   image_url: string | null;
   vendor?: string | null;
+  handle?: string | null;
   product_type?: string | null;
+  body_html?: string | null;
+  seo_description?: string | null;
   product_images?: Array<{ id: string; src: string }> | null;
 };
 
-type RecentCreative = {
-  id: string;
-  product_title: string | null;
-  image_url: string;
-  created_at: string;
-};
-
-type StudioTool = {
-  id: StudioToolId;
+type ModeDefinition = {
+  id: StudioMode;
+  icon: typeof Camera;
   titleFr: string;
   titleEn: string;
   descriptionFr: string;
   descriptionEn: string;
-  badge: string;
-  icon: typeof Images;
+  detailFr: string;
+  detailEn: string;
 };
 
-const STUDIO_TOOLS: StudioTool[] = [
-  { id: "images", titleFr: "Photos produit", titleEn: "Product photos", descriptionFr: "Product Shot AI, fond blanc, décors IA et variantes catalogue.", descriptionEn: "Product Shot AI, white backgrounds, AI scenes and catalog variants.", badge: "Image", icon: Images },
-  { id: "creative", titleFr: "Créatifs IA", titleEn: "AI creatives", descriptionFr: "Un workflow produit → style → visuel → légende → publication.", descriptionEn: "One product → style → visual → caption → publishing workflow.", badge: "AI", icon: WandSparkles },
-  { id: "video", titleFr: "Vidéo", titleEn: "Video", descriptionFr: "Transformez un produit ou un visuel en contenu vidéo prêt à diffuser.", descriptionEn: "Turn a product or visual into ready-to-publish video content.", badge: "Video", icon: Film },
-  { id: "ads", titleFr: "Ads mobile", titleEn: "Mobile ads", descriptionFr: "Formats verticaux et campagnes conçus pour les placements mobiles.", descriptionEn: "Vertical formats and campaigns designed for mobile placements.", badge: "Ads", icon: Smartphone },
-  { id: "animate", titleFr: "Animation", titleEn: "Animation", descriptionFr: "Animez vos assets et produisez des créations publicitaires dynamiques.", descriptionEn: "Animate assets and produce dynamic advertising creatives.", badge: "Motion", icon: LayoutTemplate },
-  { id: "social", titleFr: "Publication sociale", titleEn: "Social publishing", descriptionFr: "Préparez et diffusez les créations vers les réseaux connectés.", descriptionEn: "Prepare and distribute creatives to connected social networks.", badge: "Social", icon: Share2 },
-  { id: "library", titleFr: "Médiathèque", titleEn: "Media library", descriptionFr: "Retrouvez toutes les créations générées et réutilisez-les.", descriptionEn: "Find every generated asset and reuse it.", badge: "Library", icon: Library },
+const MODES: ModeDefinition[] = [
+  {
+    id: "shots",
+    icon: Camera,
+    titleFr: "Product Shot AI",
+    titleEn: "Product Shot AI",
+    descriptionFr: "Créez de vraies photos produit à partir de vos images catalogue.",
+    descriptionEn: "Create real product shots from your catalog images.",
+    detailFr: "Face · 45° · profil · arrière · dessus · zoom matière · zoom détail · décor",
+    detailEn: "Front · 45° · profile · back · top · material zoom · detail zoom · scene",
+  },
+  {
+    id: "backgrounds",
+    icon: Wand2,
+    titleFr: "Smart Background",
+    titleEn: "Smart Background",
+    descriptionFr: "Changez le décor sans transformer le produit.",
+    descriptionEn: "Change the setting without changing the product.",
+    detailFr: "Fond blanc · lifestyle · studio · nature · showroom · 3D · prompt libre",
+    detailEn: "White · lifestyle · studio · nature · showroom · 3D · custom prompt",
+  },
+  {
+    id: "creative",
+    icon: Megaphone,
+    titleFr: "Créatifs publicitaires",
+    titleEn: "Ad creatives",
+    descriptionFr: "Passez du produit au visuel publicitaire puis à la publication.",
+    descriptionEn: "Go from product to ad creative and publishing.",
+    detailFr: "Styles · texte · prix optionnel · légende IA · Facebook · Instagram",
+    detailEn: "Styles · copy · optional price · AI caption · Facebook · Instagram",
+  },
 ];
 
-function ToolRenderer({ tool }: { tool: StudioToolId }) {
-  switch (tool) {
-    case "images": return <StudioImages />;
-    case "creative": return <StudioCreativeWorkspace />;
-    case "ads": return <MobileAds />;
-    case "animate": return <AnimationAds />;
-    case "video": return <NewAIVideoGenerator />;
-    case "social": return <SocialMedia />;
-    case "library": return <MediaHistory />;
-    default: return null;
-  }
-}
+const LEGACY_MODE_MAP: Record<string, StudioMode> = {
+  images: "shots",
+  creative: "creative",
+  shots: "shots",
+  backgrounds: "backgrounds",
+};
 
 export default function StudioSmart() {
   const { language } = useTranslation();
@@ -89,144 +84,374 @@ export default function StudioSmart() {
   const fr = language === "fr";
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(searchParams.get("product"));
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showProductShot, setShowProductShot] = useState(false);
+  const [showBackground, setShowBackground] = useState(false);
 
-  const requestedTool = searchParams.get("tool") as StudioToolId | null;
-  const activeTool = STUDIO_TOOLS.some((tool) => tool.id === requestedTool) ? requestedTool : null;
+  const requestedMode = searchParams.get("mode") || searchParams.get("tool");
+  const activeMode = requestedMode ? LEGACY_MODE_MAP[requestedMode] || null : null;
 
-  const { data: products = [] } = useQuery({
-    queryKey: ["studio-smart-products", selectedStore?.id],
-    enabled: !!selectedStore?.id && !activeTool,
+  const { data: products = [], refetch, isLoading } = useQuery({
+    queryKey: ["studio-real-products", selectedStore?.id],
+    enabled: !!selectedStore?.id,
     queryFn: async (): Promise<StudioProduct[]> => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !selectedStore?.id) return [];
+
       const { data, error } = await supabase
         .from("shopify_products")
-        .select("id, title, image_url, vendor, product_type, product_images(id, src)")
+        .select("id, title, image_url, vendor, handle, product_type, body_html, seo_description, product_images(id, src)")
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id)
         .order("updated_at", { ascending: false })
-        .limit(120);
+        .limit(240);
+
       if (error) throw error;
       return (data || []) as StudioProduct[];
     },
   });
 
-  const { data: recent = [] } = useQuery({
-    queryKey: ["studio-smart-recent", selectedStore?.id],
-    enabled: !!selectedStore?.id && !activeTool,
-    queryFn: async (): Promise<RecentCreative[]> => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from("creative_history")
-        .select("id, product_title, image_url, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      if (error) return [];
-      return (data || []) as RecentCreative[];
-    },
-  });
-
   const filteredProducts = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter((product) => `${product.title} ${product.vendor || ""} ${product.product_type || ""}`.toLowerCase().includes(q));
+    const query = search.trim().toLowerCase();
+    if (!query) return products;
+    return products.filter((product) =>
+      `${product.title} ${product.vendor || ""} ${product.product_type || ""}`.toLowerCase().includes(query),
+    );
   }, [products, search]);
 
-  const selectedProduct = products.find((product) => product.id === selectedProductId) || null;
-  const selectedImageCount = selectedProduct?.product_images?.length || (selectedProduct?.image_url ? 1 : 0);
+  const selectedProducts = useMemo(
+    () => products.filter((product) => selectedIds.has(product.id)),
+    [products, selectedIds],
+  );
 
-  const openTool = (tool: StudioToolId, productId?: string | null) => {
+  const usableSelectedProducts = useMemo(
+    () => selectedProducts.filter((product) => Boolean(product.image_url)),
+    [selectedProducts],
+  );
+
+  const currentDefinition = activeMode ? MODES.find((mode) => mode.id === activeMode) : null;
+
+  const openMode = (mode: StudioMode) => {
     const next = new URLSearchParams();
-    next.set("tool", tool);
-    if (productId) next.set("product", productId);
+    next.set("mode", mode);
     setSearchParams(next);
+    if (mode === "creative") setSelectedIds(new Set());
   };
 
   const goHome = () => {
-    const next = new URLSearchParams();
-    if (selectedProductId) next.set("product", selectedProductId);
-    setSearchParams(next);
+    setSearchParams({});
+    setSelectedIds(new Set());
   };
 
-  const recommendation = selectedProduct
-    ? selectedImageCount === 0
-      ? { tool: "images" as StudioToolId, title: fr ? "Créer la première photo produit" : "Create the first product photo", text: fr ? "Ce produit n’a aucune image exploitable. Commencez par Product Shot AI." : "This product has no usable image. Start with Product Shot AI." }
-      : selectedImageCount < 3
-        ? { tool: "images" as StudioToolId, title: fr ? "Compléter les visuels" : "Complete product visuals", text: fr ? "Ajoutez fond blanc, décor et variantes avant de lancer une campagne." : "Add white background, scenes and variants before launching a campaign." }
-        : { tool: "creative" as StudioToolId, title: fr ? "Créer la campagne" : "Create the campaign", text: fr ? "Le produit a assez de visuels. Passez directement au créatif publicitaire." : "The product has enough visuals. Go straight to ad creative." }
-    : null;
+  const toggleProduct = (id: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
-  if (activeTool) {
-    const current = STUDIO_TOOLS.find((tool) => tool.id === activeTool)!;
-    const CurrentIcon = current.icon;
+  const selectVisible = () => {
+    setSelectedIds(new Set(filteredProducts.filter((product) => product.image_url).map((product) => product.id)));
+  };
+
+  const launchCurrentAction = () => {
+    if (activeMode === "shots") setShowProductShot(true);
+    if (activeMode === "backgrounds") setShowBackground(true);
+  };
+
+  if (activeMode === "creative") {
     return (
-      <div className="space-y-4">
-        <section className="sticky top-[56px] z-30 rounded-2xl border border-slate-200 bg-white/95 shadow-sm backdrop-blur-xl">
-          <div className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={goHome}><ChevronLeft className="mr-1 h-4 w-4" />Studio</Button>
-              <span className="hidden h-6 w-px bg-slate-200 sm:block" />
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-50 text-violet-700"><CurrentIcon className="h-4 w-4" /></span>
-              <div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-950">{fr ? current.titleFr : current.titleEn}</p><p className="hidden truncate text-[11px] text-slate-400 md:block">{fr ? current.descriptionFr : current.descriptionEn}</p></div>
+      <div className="mx-auto w-full max-w-[1600px] space-y-4">
+        <StudioModeHeader mode={MODES[2]} fr={fr} onBack={goHome} onSwitch={openMode} activeMode="creative" />
+        <AiCreativeStudio />
+      </div>
+    );
+  }
+
+  if (activeMode && currentDefinition) {
+    const CurrentIcon = currentDefinition.icon;
+    const missingSourceCount = selectedProducts.length - usableSelectedProducts.length;
+
+    return (
+      <div className="mx-auto w-full max-w-[1600px] space-y-4">
+        <StudioModeHeader mode={currentDefinition} fr={fr} onBack={goHome} onSwitch={openMode} activeMode={activeMode} />
+
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">
+                  {fr ? "Sélection produit" : "Product selection"}
+                </p>
+                <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                  {fr ? "Choisissez un ou plusieurs produits" : "Choose one or more products"}
+                </h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={selectVisible} disabled={filteredProducts.length === 0}>
+                  {fr ? "Sélectionner les visibles" : "Select visible"}
+                </Button>
+                {selectedIds.size > 0 && (
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+                    {fr ? "Effacer" : "Clear"}
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="flex gap-1 overflow-x-auto">
-              {STUDIO_TOOLS.map((tool) => {
-                const Icon = tool.icon;
-                return <Button key={tool.id} size="sm" variant={tool.id === activeTool ? "secondary" : "ghost"} className="h-8 shrink-0 gap-1.5 px-2.5 text-xs" onClick={() => openTool(tool.id, searchParams.get("product"))}><Icon className="h-3.5 w-3.5" /><span className="hidden 2xl:inline">{fr ? tool.titleFr : tool.titleEn}</span></Button>;
-              })}
+
+            <div className="border-b border-slate-100 p-4">
+              <div className="relative max-w-xl">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder={fr ? "Rechercher par produit, marque ou type…" : "Search by product, brand or type…"}
+                  className="pl-9"
+                />
+              </div>
             </div>
-          </div>
-        </section>
-        <ToolRenderer tool={activeTool} />
+
+            {isLoading ? (
+              <div className="grid min-h-[360px] place-items-center text-sm text-slate-500">
+                {fr ? "Chargement du catalogue…" : "Loading catalog…"}
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="grid min-h-[360px] place-items-center p-8 text-center text-sm text-slate-500">
+                {fr ? "Aucun produit trouvé." : "No products found."}
+              </div>
+            ) : (
+              <div className="grid gap-3 p-4 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4">
+                {filteredProducts.map((product) => {
+                  const selected = selectedIds.has(product.id);
+                  const imageCount = product.product_images?.length || (product.image_url ? 1 : 0);
+                  return (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => toggleProduct(product.id)}
+                      className={`group overflow-hidden rounded-2xl border text-left transition ${
+                        selected
+                          ? "border-violet-400 bg-violet-50/30 ring-2 ring-violet-100"
+                          : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                      }`}
+                    >
+                      <div className="relative aspect-[4/3] overflow-hidden bg-slate-50">
+                        {product.image_url ? (
+                          <img src={product.image_url} alt={product.title} className="h-full w-full object-contain p-3 transition group-hover:scale-[1.02]" />
+                        ) : (
+                          <div className="grid h-full place-items-center text-slate-300"><Images className="h-9 w-9" /></div>
+                        )}
+                        <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm">
+                          {imageCount} {fr ? "image(s)" : "image(s)"}
+                        </span>
+                        <span className={`absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full border shadow-sm ${selected ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-transparent"}`}>
+                          <Check className="h-4 w-4" />
+                        </span>
+                      </div>
+                      <div className="p-3">
+                        <p className="truncate text-sm font-semibold text-slate-950">{product.title}</p>
+                        <p className="mt-1 truncate text-xs text-slate-500">{product.vendor || product.product_type || (fr ? "Produit catalogue" : "Catalog product")}</p>
+                        {!product.image_url && (
+                          <p className="mt-2 text-[11px] font-medium text-amber-600">
+                            {fr ? "Image source requise" : "Source image required"}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <aside className="space-y-3 xl:sticky xl:top-[72px] xl:self-start">
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-violet-100 text-violet-700"><CurrentIcon className="h-5 w-5" /></span>
+              <h2 className="mt-4 text-lg font-semibold text-slate-950">{fr ? currentDefinition.titleFr : currentDefinition.titleEn}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{fr ? currentDefinition.descriptionFr : currentDefinition.descriptionEn}</p>
+
+              <div className="mt-5 rounded-xl bg-slate-50 p-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-500">{fr ? "Sélection" : "Selected"}</span>
+                  <strong className="text-slate-950">{selectedProducts.length}</strong>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-sm">
+                  <span className="text-slate-500">{fr ? "Prêts à générer" : "Ready"}</span>
+                  <strong className="text-emerald-700">{usableSelectedProducts.length}</strong>
+                </div>
+              </div>
+
+              {missingSourceCount > 0 && (
+                <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+                  {fr
+                    ? `${missingSourceCount} produit(s) sans image source seront ignorés.`
+                    : `${missingSourceCount} product(s) without a source image will be skipped.`}
+                </p>
+              )}
+
+              <Button className="mt-5 w-full" size="lg" disabled={usableSelectedProducts.length === 0} onClick={launchCurrentAction}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                {activeMode === "shots"
+                  ? (fr ? "Ouvrir Product Shot" : "Open Product Shot")
+                  : (fr ? "Ouvrir Smart Background" : "Open Smart Background")}
+              </Button>
+
+              <p className="mt-3 text-xs leading-5 text-slate-500">
+                {fr ? currentDefinition.detailFr : currentDefinition.detailEn}
+              </p>
+            </section>
+
+            <Button variant="outline" className="w-full justify-between" asChild>
+              <Link to="/products/media-history">
+                <span className="flex items-center gap-2"><History className="h-4 w-4" />{fr ? "Historique des images" : "Image history"}</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </aside>
+        </div>
+
+        <AIImagesDialog
+          open={showProductShot}
+          onOpenChange={setShowProductShot}
+          selectedProducts={usableSelectedProducts}
+          onComplete={() => refetch()}
+        />
+
+        <SmartBackgroundDialog
+          open={showBackground}
+          onOpenChange={setShowBackground}
+          selectedProducts={usableSelectedProducts}
+          onComplete={() => refetch()}
+        />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-5">
-      <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-slate-950 text-white shadow-xl shadow-slate-200/60">
-        <div className="absolute -right-20 -top-32 h-80 w-80 rounded-full bg-violet-500/25 blur-3xl" />
-        <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl" />
-        <div className="relative grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr] xl:p-10">
-          <div>
-            <div className="flex flex-wrap items-center gap-2"><Badge className="border-white/10 bg-white/10 text-white hover:bg-white/10"><Sparkles className="mr-1.5 h-3.5 w-3.5" />Studio AI</Badge><Badge variant="outline" className="border-white/15 text-slate-300">{fr ? "7 workflows · 1 espace" : "7 workflows · 1 workspace"}</Badge></div>
-            <h1 className="mt-5 max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl xl:text-5xl">{fr ? "Partez du produit. Le Studio choisit le bon workflow." : "Start from the product. Studio picks the right workflow."}</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">{fr ? "Photos, créatifs, vidéos, publicités et publication sont réunis dans une seule chaîne de production. Sélectionnez un produit : Studio détecte ce qu’il lui manque et vous propose l’action suivante." : "Photos, creatives, video, ads and publishing are combined into one production chain. Select a product and Studio detects what is missing and proposes the next action."}</p>
-            <div className="mt-6 flex flex-wrap gap-2"><Button className="bg-white text-slate-950 hover:bg-slate-100" onClick={() => openTool("images", selectedProductId)}><Images className="mr-2 h-4 w-4" />{fr ? "Créer des visuels" : "Create visuals"}</Button><Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white" onClick={() => openTool("creative", selectedProductId)}><Megaphone className="mr-2 h-4 w-4" />{fr ? "Créer une campagne" : "Create campaign"}</Button><Button variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white" onClick={() => openTool("video", selectedProductId)}><Film className="mr-2 h-4 w-4" />Vidéo</Button></div>
+    <div className="mx-auto w-full max-w-[1500px] space-y-5">
+      <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.05fr_0.95fr] xl:p-10">
+          <div className="max-w-3xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="bg-slate-950 text-white hover:bg-slate-950"><Sparkles className="mr-1.5 h-3.5 w-3.5" />Studio</Badge>
+              <Badge variant="secondary">{fr ? "3 outils réels" : "3 real tools"}</Badge>
+            </div>
+            <h1 className="mt-5 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              {fr ? "Créer les visuels de vos produits, sans faux outils." : "Create product visuals without fake tools."}
+            </h1>
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+              {fr
+                ? "Le Studio regroupe uniquement les moteurs créatifs réellement branchés au catalogue : photos produit IA, arrière-plans intelligents et créatifs publicitaires avec publication sociale."
+                : "Studio contains only creative engines that are actually connected to the catalog: AI product shots, smart backgrounds and ad creatives with social publishing."}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Button onClick={() => openMode("shots")}><Camera className="mr-2 h-4 w-4" />Product Shot AI</Button>
+              <Button variant="outline" onClick={() => openMode("backgrounds")}><Wand2 className="mr-2 h-4 w-4" />Smart Background</Button>
+              <Button variant="outline" onClick={() => openMode("creative")}><Megaphone className="mr-2 h-4 w-4" />{fr ? "Créatif publicitaire" : "Ad creative"}</Button>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-md">
-            <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">Smart start</p><h2 className="mt-1 text-lg font-semibold">{fr ? "Que voulez-vous produire ?" : "What do you want to produce?"}</h2></div><Zap className="h-5 w-5 text-violet-300" /></div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {STUDIO_TOOLS.slice(0, 6).map((tool) => { const Icon = tool.icon; return <button key={tool.id} type="button" onClick={() => openTool(tool.id, selectedProductId)} className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-left transition hover:bg-white/10"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/10"><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{fr ? tool.titleFr : tool.titleEn}</span><span className="mt-0.5 block truncate text-[11px] text-slate-400">{tool.badge}</span></span><ArrowRight className="h-4 w-4 text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-white" /></button>; })}
+          <div className="rounded-2xl bg-slate-950 p-5 text-white">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">{fr ? "Flux simple" : "Simple flow"}</p>
+            <div className="mt-4 space-y-3">
+              <FlowStep number="1" title={fr ? "Choisissez le produit" : "Choose the product"} text={fr ? "Le catalogue Shopify reste la source." : "Shopify catalog stays the source."} />
+              <FlowStep number="2" title={fr ? "Choisissez l’action" : "Choose the action"} text={fr ? "Photo, décor ou publicité — rien d’autre." : "Photo, background or ad — nothing else."} />
+              <FlowStep number="3" title={fr ? "Générez puis appliquez" : "Generate and apply"} text={fr ? "Prévisualisation, sauvegarde et synchro via les moteurs existants." : "Preview, save and sync through the existing engines."} />
             </div>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-        <div className="space-y-5">
-          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">{fr ? "1 · Choisir" : "1 · Choose"}</p><h2 className="mt-1 text-lg font-semibold text-slate-950">{fr ? "Commencez par un produit" : "Start with a product"}</h2></div><div className="relative w-full sm:max-w-sm"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={search} onChange={(event) => setSearch(event.target.value)} className="h-9 bg-slate-50 pl-9" placeholder={fr ? "Rechercher dans le catalogue…" : "Search catalog…"} /></div></div>
-            <ScrollArea className="w-full"><div className="flex min-w-max gap-3 p-4">{filteredProducts.slice(0, 24).map((product) => { const selected = selectedProductId === product.id; const imageCount = product.product_images?.length || (product.image_url ? 1 : 0); return <button key={product.id} type="button" onClick={() => setSelectedProductId(product.id)} className={`w-40 overflow-hidden rounded-2xl border bg-white text-left transition ${selected ? "border-violet-400 ring-2 ring-violet-100" : "border-slate-200 hover:-translate-y-0.5 hover:shadow-md"}`}><div className="aspect-square bg-slate-50">{product.image_url ? <img src={product.image_url} alt={product.title} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center"><ImageIcon className="h-7 w-7 text-slate-300" /></div>}</div><div className="p-3"><p className="truncate text-sm font-medium text-slate-900">{product.title}</p><p className="mt-1 text-[11px] text-slate-400">{imageCount} image{imageCount > 1 ? "s" : ""}</p></div></button>; })}</div></ScrollArea>
-          </section>
+      <section className="grid gap-4 lg:grid-cols-3">
+        {MODES.map((mode, index) => {
+          const Icon = mode.icon;
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => openMode(mode.id)}
+              className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-violet-50 text-violet-700"><Icon className="h-5 w-5" /></span>
+                <span className="text-xs font-semibold text-slate-400">0{index + 1}</span>
+              </div>
+              <h2 className="mt-5 text-lg font-semibold text-slate-950">{fr ? mode.titleFr : mode.titleEn}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{fr ? mode.descriptionFr : mode.descriptionEn}</p>
+              <p className="mt-4 text-xs leading-5 text-slate-500">{fr ? mode.detailFr : mode.detailEn}</p>
+              <div className="mt-5 flex items-center gap-1 text-sm font-semibold text-violet-700">
+                {fr ? "Ouvrir" : "Open"}<ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+              </div>
+            </button>
+          );
+        })}
+      </section>
 
-          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {STUDIO_TOOLS.map((tool) => { const Icon = tool.icon; return <button key={tool.id} type="button" onClick={() => openTool(tool.id, selectedProductId)} className="group rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg"><div className="flex items-start justify-between gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-slate-950 text-white"><Icon className="h-4 w-4" /></span><Badge variant="secondary">{tool.badge}</Badge></div><h3 className="mt-4 font-semibold text-slate-950">{fr ? tool.titleFr : tool.titleEn}</h3><p className="mt-1.5 min-h-10 text-sm leading-5 text-slate-500">{fr ? tool.descriptionFr : tool.descriptionEn}</p><div className="mt-4 flex items-center gap-1 text-xs font-semibold text-violet-700">{fr ? "Ouvrir" : "Open"}<ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" /></div></button>; })}
-          </section>
+      <div className="flex justify-end">
+        <Button variant="ghost" asChild>
+          <Link to="/products/media-history"><History className="mr-2 h-4 w-4" />{fr ? "Historique des créations" : "Creation history"}</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
 
-          {recent.length > 0 && <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">{fr ? "Récent" : "Recent"}</p><h2 className="mt-1 font-semibold text-slate-950">{fr ? "Dernières créations" : "Latest creations"}</h2></div><Button variant="ghost" size="sm" onClick={() => openTool("library")}>{fr ? "Médiathèque" : "Library"}</Button></div><div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-10">{recent.map((item) => <img key={item.id} src={item.image_url} alt={item.product_title || "Creative"} className="aspect-square w-full rounded-xl object-cover" />)}</div></section>}
+function StudioModeHeader({
+  mode,
+  fr,
+  onBack,
+  onSwitch,
+  activeMode,
+}: {
+  mode: ModeDefinition;
+  fr: boolean;
+  onBack: () => void;
+  onSwitch: (mode: StudioMode) => void;
+  activeMode: StudioMode;
+}) {
+  const Icon = mode.icon;
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onBack}>Studio</Button>
+          <span className="hidden h-7 w-px bg-slate-200 sm:block" />
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-50 text-violet-700"><Icon className="h-4 w-4" /></span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-slate-950">{fr ? mode.titleFr : mode.titleEn}</p>
+            <p className="hidden truncate text-xs text-slate-500 sm:block">{fr ? mode.descriptionFr : mode.descriptionEn}</p>
+          </div>
         </div>
+        <div className="flex gap-1 overflow-x-auto">
+          {MODES.map((item) => {
+            const ItemIcon = item.icon;
+            return (
+              <Button
+                key={item.id}
+                variant={item.id === activeMode ? "secondary" : "ghost"}
+                size="sm"
+                className="shrink-0"
+                onClick={() => onSwitch(item.id)}
+              >
+                <ItemIcon className="mr-1.5 h-4 w-4" />{fr ? item.titleFr : item.titleEn}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
 
-        <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">{fr ? "Assistant Studio" : "Studio assistant"}</p>
-            {selectedProduct ? <><div className="mt-4 flex items-center gap-3"><div className="h-16 w-16 overflow-hidden rounded-xl bg-slate-100">{selectedProduct.image_url ? <img src={selectedProduct.image_url} alt={selectedProduct.title} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center"><ImageIcon className="h-5 w-5 text-slate-300" /></div>}</div><div className="min-w-0"><p className="truncate font-semibold text-slate-950">{selectedProduct.title}</p><p className="mt-1 text-xs text-slate-400">{selectedImageCount} {fr ? "image(s) détectée(s)" : "image(s) detected"}</p></div></div>{recommendation && <div className="mt-4 rounded-2xl border border-violet-100 bg-violet-50 p-4"><div className="flex items-center gap-2 text-violet-700"><Sparkles className="h-4 w-4" /><span className="text-xs font-semibold uppercase tracking-[0.12em]">{fr ? "Action recommandée" : "Recommended action"}</span></div><h3 className="mt-2 font-semibold text-slate-950">{recommendation.title}</h3><p className="mt-1 text-sm leading-5 text-slate-600">{recommendation.text}</p><Button className="mt-4 w-full" onClick={() => openTool(recommendation.tool, selectedProduct.id)}>{fr ? "Continuer" : "Continue"}<ArrowRight className="ml-2 h-4 w-4" /></Button></div>}</> : <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center"><Sparkles className="mx-auto h-6 w-6 text-slate-300" /><p className="mt-3 text-sm font-medium text-slate-700">{fr ? "Sélectionnez un produit" : "Select a product"}</p><p className="mt-1 text-xs leading-5 text-slate-400">{fr ? "Studio analysera ses visuels et proposera le prochain workflow." : "Studio will analyze its visuals and suggest the next workflow."}</p></div>}
-          </section>
-        </aside>
+function FlowStep({ number, title, text }: { number: string; title: string; text: string }) {
+  return (
+    <div className="flex gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/10 text-xs font-semibold">{number}</span>
+      <div>
+        <p className="text-sm font-semibold">{title}</p>
+        <p className="mt-0.5 text-xs leading-5 text-slate-400">{text}</p>
       </div>
     </div>
   );
