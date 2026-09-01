@@ -482,10 +482,13 @@ Réponds UNIQUEMENT en JSON valide.`;
 
     console.log(`✅ AI response received via ${routedAI.provider} (${routedAI.model})`);
 
-    const parsedData = parseAIResponse(routedAI.content);
+    const parsedData = parseAIResponse(routedAI.content) ?? {};
 
-    if (!parsedData) {
-      throw new Error('Failed to parse AI response');
+    if (Object.keys(parsedData).length === 0) {
+      console.warn('⚠️ AI response was empty or invalid JSON; continuing with safe fallbacks', {
+        provider: routedAI.provider,
+        model: routedAI.model,
+      });
     }
 
     console.log('📝 Parsed attributes:', parsedData);
