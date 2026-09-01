@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
   Database,
   ExternalLink,
@@ -59,6 +61,8 @@ type ScoredProduct = ProductRow & {
   catalogReady: boolean;
   catalogScore: number;
 };
+
+const PAGE_SIZE = 20;
 
 const QUICK_LANDING_CONFIG: LandingConfig = {
   layout: "2 colonnes",
@@ -125,6 +129,7 @@ export default function ContentWorkspace() {
 
   const [filter, setFilter] = useState<FilterId>(activeTool === "landing" ? "all" : "todo");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedLandingProduct, setSelectedLandingProduct] = useState<ScoredProduct | null>(null);
   const [generationStarted, setGenerationStarted] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<ScoredProduct | null>(null);
@@ -137,8 +142,8 @@ export default function ContentWorkspace() {
         icon: PanelsTopLeft,
         label: "Landing Pages",
         description: fr
-          ? "Générez une description HTML riche pour chaque produit Shopify et prévisualisez-la dans une vraie fiche produit."
-          : "Generate a rich HTML description for each Shopify product and preview it inside a real product page.",
+          ? "Comparez le HTML Shopify actuel à la nouvelle landing générée pour chaque produit."
+          : "Compare the current Shopify HTML with the newly generated landing for every product.",
       },
       {
         id: "catalog" as const,
@@ -197,14 +202,16 @@ export default function ContentWorkspace() {
     [products],
   );
 
-  const readyForTool = (product: ScoredProduct) => activeTool === "landing" ? product.landingReady : product.catalogReady;
-  const readyCount = useMemo(() => rows.filter(readyForTool).length, [rows, activeTool]);
+  const readyCount = useMemo(
+    () => rows.filter((product) => activeTool === "landing" ? product.landingReady : product.catalogReady).length,
+    [rows, activeTool],
+  );
   const needsCount = rows.length - readyCount;
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
     return rows.filter((product) => {
-      const ready = readyForTool(product);
+      const ready = activeTool === "landing" ? product.landingReady : product.catalogReady;
       if (filter === "todo" && ready) return false;
       if (filter === "ready" && !ready) return false;
       if (!query) return true;
@@ -213,24 +220,41 @@ export default function ContentWorkspace() {
     });
   }, [rows, activeTool, filter, search]);
 
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const paginatedRows = filteredRows.slice(pageStart, pageStart + PAGE_SIZE);
+  const visibleStart = filteredRows.length === 0 ? 0 : pageStart + 1;
+  const visibleEnd = Math.min(pageStart + PAGE_SIZE, filteredRows.length);
+
   const selectTool = (tool: ToolId) => {
     setSearchParams({ tool });
     setFilter(tool === "landing" ? "all" : "todo");
     setSearch("");
+    setPage(1);
+  };
+
+  const setProductFilter = (id: FilterId) => {
+    setFilter(id);
+    setPage(1);
   };
 
   const filterLabel = (id: FilterId) => {
     if (id === "all") return fr ? "Tous" : "All";
     if (activeTool === "landing") {
-      if (id === "ready") return fr ? "HTML généré" : "HTML generated";
-      return fr ? "À générer" : "To generate";
+      if (id === "ready") return fr ? "Générés" : "Generated";
+      return fr ? "Non générés" : "Not generated";
     }
     if (id === "ready") return fr ? "Prêts" : "Ready";
     return fr ? "À faire" : "To do";
   };
 
   const productStatus = (product: ScoredProduct) => {
-    if (activeTool === "landing") return product.landingReady ? (fr ? "HTML généré" : "HTML generated") : (fr ? "À générer" : "To generate");
+    if (activeTool === "landing") {
+      return product.landingReady
+        ? (fr ? "Généré : Oui" : "Generated: Yes")
+        : (fr ? "Généré : Non" : "Generated: No");
+    }
     return product.catalogReady ? (fr ? "Complet" : "Complete") : `${product.catalogScore}%`;
   };
 
@@ -255,7 +279,7 @@ export default function ContentWorkspace() {
     }
   };
 
-  const openPreview = (product: ScoredProduct, mode: PreviewMode = "current") => {
+  const openPreview = (product: ScoredProduct, mode: PreviewMode) => {
     setPreviewProduct(product);
     setPreviewMode(mode === "generated" && product.landingReady ? "generated" : "current");
   };
@@ -275,27 +299,27 @@ export default function ContentWorkspace() {
     : "";
   const previewDocument = buildDescriptionDocument(
     previewHtml,
-    fr ? "Aucune description HTML disponible pour ce produit." : "No HTML description is available for this product.",
+    previewMode === "generated"
+      ? (fr ? "Aucune landing générée pour ce produit." : "No generated landing is available for this product.")
+      : (fr ? "Aucune description HTML Shopify disponible pour ce produit." : "No current Shopify HTML description is available for this product."),
   );
   const previewUrl = storefrontProductUrl(previewProduct);
 
-  // Legacy URLs used to send Product Shot AI to /content, where it silently fell back to Landing Pages.
-  // Keep the old link working, but send it to the dedicated Studio tool instead of mixing both experiences.
   if (requestedTool === "shots") return <Navigate to="/studio?mode=shots" replace />;
   if (requestedTool === "background") return <Navigate to="/studio?mode=backgrounds" replace />;
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-4">
       <WorkspacePageHeader
-        section="Product Optimization"
+        section={activeTool === "landing" ? "Studio" : "Product Optimization"}
         page={activeTool === "landing" ? "Landing Pages" : currentTool.label}
         count={products.length}
         title={activeTool === "landing" ? "Landing Pages" : currentTool.label}
         description={
           activeTool === "landing"
             ? fr
-              ? "Générez le contenu HTML de la description produit, comparez-le au contenu Shopify actuel, puis synchronisez-le dans la fiche produit."
-              : "Generate the product description HTML, compare it with the current Shopify content, then sync it to the product page."
+              ? "Tous les produits Shopify, leur HTML actuel et la nouvelle landing générée au même endroit."
+              : "All Shopify products, their current HTML and the newly generated landing in one place."
             : currentTool.description
         }
       />
@@ -327,18 +351,18 @@ export default function ContentWorkspace() {
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                {readyCount} {activeTool === "landing" ? (fr ? "HTML générés" : "HTML generated") : (fr ? "prêts" : "ready")}
+                {readyCount} {activeTool === "landing" ? (fr ? "générés" : "generated") : (fr ? "prêts" : "ready")}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700">
                 <CircleAlert className="h-3.5 w-3.5" />
-                {needsCount} {activeTool === "landing" ? (fr ? "à générer" : "to generate") : (fr ? "à faire" : "to do")}
+                {needsCount} {activeTool === "landing" ? (fr ? "non générés" : "not generated") : (fr ? "à faire" : "to do")}
               </span>
             </div>
             {activeTool === "landing" && (
               <p className="mt-2 text-xs text-slate-500">
                 {fr
-                  ? "Ici, « Landing Page » désigne le HTML enrichi de la description produit. Il est synchronisé dans descriptionHtml de Shopify. Product Shot AI reste dans Studio, séparément."
-                  : "Here, “Landing Page” means the enriched HTML product description. It syncs to Shopify descriptionHtml. Product Shot AI remains separate in Studio."}
+                  ? "HTML Shopify actuel = body_html importé. Nouvelle landing = landing_page créée par CatalogOptimizer. Une description Shopify longue ne compte jamais comme une landing générée."
+                  : "Current Shopify HTML = imported body_html. New landing = landing_page created by CatalogOptimizer. A long Shopify description never counts as a generated landing."}
               </p>
             )}
           </div>
@@ -360,7 +384,7 @@ export default function ContentWorkspace() {
               <button
                 key={id}
                 type="button"
-                onClick={() => setFilter(id)}
+                onClick={() => setProductFilter(id)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${filter === id ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
               >
                 {filterLabel(id)}
@@ -371,7 +395,10 @@ export default function ContentWorkspace() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
               placeholder={fr ? "Rechercher un produit…" : "Search products…"}
               className="h-9 rounded-xl border-slate-200 bg-white pl-9 text-sm"
             />
@@ -383,45 +410,97 @@ export default function ContentWorkspace() {
         ) : filteredRows.length === 0 ? (
           <div className="grid min-h-44 place-items-center p-6 text-center text-sm text-slate-500">{fr ? "Aucun produit trouvé" : "No product found"}</div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {filteredRows.map((product) => (
-              <div key={product.id} className="flex flex-col gap-3 p-3 transition hover:bg-slate-50/60 sm:flex-row sm:items-center">
-                <Link to={`/products/${product.id}`} className="flex min-w-0 flex-1 items-center gap-3">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                    {product.image_url ? <img src={product.image_url} alt="" className="h-full w-full object-cover" loading="lazy" /> : <ImageIcon className="h-4 w-4 text-slate-400" />}
-                  </div>
-                  <div className="min-w-0 text-left">
-                    <p className="truncate text-sm font-semibold text-slate-900">{product.title || (fr ? "Produit sans titre" : "Untitled product")}</p>
-                    <p className="mt-0.5 truncate text-xs text-slate-500">{product.vendor || product.category || product.product_type || (fr ? "Produit catalogue" : "Catalog product")}</p>
-                    {activeTool === "landing" && <p className="mt-1 text-[11px] text-slate-400">{fr ? "Description HTML produit" : "Product HTML description"}</p>}
-                  </div>
-                </Link>
+          <>
+            <div className="divide-y divide-slate-100">
+              {paginatedRows.map((product) => {
+                const ready = activeTool === "landing" ? product.landingReady : product.catalogReady;
+                return (
+                  <div key={product.id} className="flex flex-col gap-3 p-3 transition hover:bg-slate-50/60 lg:flex-row lg:items-center">
+                    <Link to={`/products/${product.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                        {product.image_url ? <img src={product.image_url} alt="" className="h-full w-full object-cover" loading="lazy" /> : <ImageIcon className="h-4 w-4 text-slate-400" />}
+                      </div>
+                      <div className="min-w-0 text-left">
+                        <p className="truncate text-sm font-semibold text-slate-900">{product.title || (fr ? "Produit sans titre" : "Untitled product")}</p>
+                        <p className="mt-0.5 truncate text-xs text-slate-500">{product.vendor || product.category || product.product_type || (fr ? "Produit catalogue" : "Catalog product")}</p>
+                        {activeTool === "landing" && (
+                          <p className="mt-1 text-[11px] text-slate-400">
+                            {product.body_html?.trim()
+                              ? (fr ? "HTML Shopify disponible" : "Shopify HTML available")
+                              : (fr ? "Pas de description HTML Shopify" : "No Shopify HTML description")}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-end">
-                  <Badge variant="outline" className={`rounded-full ${readyForTool(product) ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-orange-200 bg-orange-50 text-orange-700"}`}>
-                    {productStatus(product)}
-                  </Badge>
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                      <Badge variant="outline" className={`rounded-full ${ready ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-orange-200 bg-orange-50 text-orange-700"}`}>
+                        {productStatus(product)}
+                      </Badge>
 
-                  {activeTool === "landing" ? (
-                    <>
-                      <Button variant="outline" size="sm" className="min-w-24 rounded-xl" onClick={() => openPreview(product, product.landingReady ? "generated" : "current")}>
-                        <Eye className="mr-1.5 h-3.5 w-3.5" />
-                        {fr ? "Preview" : "Preview"}
-                      </Button>
-                      <Button size="sm" className="min-w-24 rounded-xl" onClick={() => openGeneration(product)}>
-                        <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                        {product.landingReady ? (fr ? "Régénérer" : "Regenerate") : (fr ? "Générer" : "Generate")}
-                      </Button>
-                    </>
-                  ) : (
-                    <Button asChild size="sm" className="min-w-24 rounded-xl">
-                      <Link to="/products/title-description?view=content">{fr ? "Optimiser" : "Optimize"}</Link>
-                    </Button>
-                  )}
-                </div>
+                      {activeTool === "landing" ? (
+                        <>
+                          <Button variant="outline" size="sm" className="rounded-xl" onClick={() => openPreview(product, "current")}>
+                            <Eye className="mr-1.5 h-3.5 w-3.5" />
+                            {fr ? "HTML actuel" : "Current HTML"}
+                          </Button>
+                          {product.landingReady && (
+                            <Button variant="outline" size="sm" className="rounded-xl border-violet-200 text-violet-700 hover:bg-violet-50" onClick={() => openPreview(product, "generated")}>
+                              <Eye className="mr-1.5 h-3.5 w-3.5" />
+                              {fr ? "Nouvelle landing" : "Generated landing"}
+                            </Button>
+                          )}
+                          <Button size="sm" className="rounded-xl" onClick={() => openGeneration(product)}>
+                            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                            {product.landingReady ? (fr ? "Régénérer" : "Regenerate") : (fr ? "Générer" : "Generate")}
+                          </Button>
+                        </>
+                      ) : (
+                        <Button asChild size="sm" className="min-w-24 rounded-xl">
+                          <Link to="/products/title-description?view=content">{fr ? "Optimiser" : "Optimize"}</Link>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-slate-500">
+                {fr
+                  ? `${visibleStart}–${visibleEnd} sur ${filteredRows.length} produit(s)`
+                  : `${visibleStart}–${visibleEnd} of ${filteredRows.length} product(s)`}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl"
+                  disabled={safePage <= 1}
+                  onClick={() => setPage(Math.max(1, safePage - 1))}
+                >
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  {fr ? "Précédent" : "Previous"}
+                </Button>
+                <span className="min-w-24 text-center text-xs font-semibold text-slate-700">
+                  {fr ? `Page ${safePage} / ${pageCount}` : `Page ${safePage} / ${pageCount}`}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl"
+                  disabled={safePage >= pageCount}
+                  onClick={() => setPage(Math.min(pageCount, safePage + 1))}
+                >
+                  {fr ? "Suivant" : "Next"}
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
               </div>
-            ))}
-          </div>
+            </div>
+          </>
         )}
       </Card>
 
@@ -441,9 +520,15 @@ export default function ContentWorkspace() {
                 <DialogHeader>
                   <div className="flex flex-col gap-3 pr-8 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <DialogTitle className="text-lg">{fr ? "Preview fiche produit" : "Product page preview"}</DialogTitle>
+                      <DialogTitle className="text-lg">
+                        {previewMode === "generated"
+                          ? (fr ? "Aperçu de la nouvelle landing" : "Generated landing preview")
+                          : (fr ? "Aperçu HTML Shopify actuel" : "Current Shopify HTML preview")}
+                      </DialogTitle>
                       <DialogDescription className="mt-1">
-                        {fr ? "Le contenu HTML est affiché comme description dans une fiche produit, comme dans votre catalogue Shopify." : "The HTML content is shown as the description inside a product page, like in your Shopify catalog."}
+                        {fr
+                          ? "Comparez la description HTML actuellement importée depuis Shopify avec le HTML généré par CatalogOptimizer."
+                          : "Compare the HTML description currently imported from Shopify with the HTML generated by CatalogOptimizer."}
                       </DialogDescription>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -453,15 +538,15 @@ export default function ContentWorkspace() {
                           onClick={() => setPreviewMode("current")}
                           className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${previewMode === "current" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"}`}
                         >
-                          {fr ? "Shopify actuel" : "Current Shopify"}
+                          {fr ? "HTML actuel" : "Current HTML"}
                         </button>
                         {previewProduct.landingReady && (
                           <button
                             type="button"
                             onClick={() => setPreviewMode("generated")}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${previewMode === "generated" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"}`}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${previewMode === "generated" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500"}`}
                           >
-                            {fr ? "HTML généré" : "Generated HTML"}
+                            {fr ? "Nouvelle landing" : "Generated landing"}
                           </button>
                         )}
                       </div>
@@ -497,8 +582,10 @@ export default function ContentWorkspace() {
                         {previewProduct.category && <Badge variant="outline">{previewProduct.category}</Badge>}
                       </div>
                       <div className="mt-6 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
-                        <strong className="text-slate-900">{fr ? "Zone modifiée :" : "Edited area:"}</strong>{" "}
-                        {fr ? "la description HTML ci-dessous. L’image, le titre, le prix et les variantes restent des données catalogue séparées." : "the HTML description below. Image, title, price and variants remain separate catalog data."}
+                        <strong className="text-slate-900">{fr ? "Source affichée :" : "Displayed source:"}</strong>{" "}
+                        {previewMode === "generated"
+                          ? (fr ? "landing_page générée par CatalogOptimizer." : "landing_page generated by CatalogOptimizer.")
+                          : (fr ? "body_html actuellement importé depuis Shopify." : "body_html currently imported from Shopify.")}
                       </div>
                     </div>
                   </div>
@@ -507,10 +594,12 @@ export default function ContentWorkspace() {
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">{fr ? "Description produit" : "Product description"}</p>
-                        <h2 className="mt-1 text-lg font-semibold text-slate-950">{previewMode === "generated" ? (fr ? "HTML généré par l’IA" : "AI-generated HTML") : (fr ? "HTML Shopify actuel" : "Current Shopify HTML")}</h2>
+                        <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                          {previewMode === "generated" ? (fr ? "Nouvelle landing générée" : "Generated landing") : (fr ? "HTML Shopify actuel" : "Current Shopify HTML")}
+                        </h2>
                       </div>
                       <Badge className={previewMode === "generated" ? "bg-violet-100 text-violet-700 hover:bg-violet-100" : "bg-slate-100 text-slate-700 hover:bg-slate-100"}>
-                        {previewMode === "generated" ? (fr ? "Preview" : "Preview") : "Shopify"}
+                        {previewMode === "generated" ? "CatalogOptimizer" : "Shopify"}
                       </Badge>
                     </div>
                     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -537,9 +626,11 @@ export default function ContentWorkspace() {
                 <div className="flex items-center gap-2">
                   <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-100 text-violet-700"><Wand2 className="h-4 w-4" /></span>
                   <div>
-                    <DialogTitle>{fr ? "Générer la description HTML produit" : "Generate product HTML description"}</DialogTitle>
+                    <DialogTitle>{fr ? "Générer une nouvelle landing HTML" : "Generate a new HTML landing"}</DialogTitle>
                     <DialogDescription className="mt-1">
-                      {fr ? "L’IA enrichit la description de ce produit en HTML. Le résultat sera prévisualisé dans une fiche produit puis pourra être synchronisé dans descriptionHtml de Shopify." : "AI enriches this product description as HTML. The result is previewed inside a product page and can then be synced to Shopify descriptionHtml."}
+                      {fr
+                        ? "CatalogOptimizer génère une nouvelle description HTML enrichie. L'HTML Shopify actuel reste disponible pour comparaison avant synchronisation."
+                        : "CatalogOptimizer generates a new enriched HTML description. The current Shopify HTML remains available for comparison before sync."}
                     </DialogDescription>
                   </div>
                 </div>
@@ -551,17 +642,23 @@ export default function ContentWorkspace() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-slate-950">{selectedLandingProduct.title || (fr ? "Produit" : "Product")}</p>
-                  <p className="mt-1 text-xs text-slate-500">{fr ? "Sortie : HTML de description produit" : "Output: product description HTML"}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {selectedLandingProduct.landingReady
+                      ? (fr ? "Une landing existe déjà · régénération possible" : "A landing already exists · regeneration available")
+                      : (fr ? "Aucune landing CatalogOptimizer générée" : "No CatalogOptimizer landing generated")}
+                  </p>
                 </div>
-                <Badge className="rounded-full bg-violet-100 text-violet-700 hover:bg-violet-100">HTML</Badge>
+                <Badge className={selectedLandingProduct.landingReady ? "rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-100" : "rounded-full bg-orange-100 text-orange-700 hover:bg-orange-100"}>
+                  {selectedLandingProduct.landingReady ? (fr ? "Généré : Oui" : "Generated: Yes") : (fr ? "Généré : Non" : "Generated: No")}
+                </Badge>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
-                  { title: fr ? "Contenu riche" : "Rich content", text: fr ? "Sections, bénéfices, informations produit et structure lisible." : "Sections, benefits, product information and readable structure." },
-                  { title: "SEO", text: fr ? "Texte enrichi à partir des vraies données du catalogue." : "Copy enriched from real catalog data." },
-                  { title: "Mobile-first", text: fr ? "HTML responsive adapté à la description Shopify." : "Responsive HTML suited to the Shopify description." },
-                  { title: fr ? "Preview catalogue" : "Catalog preview", text: fr ? "Le résultat est montré dans une fiche produit, pas comme un site séparé." : "The result is shown inside a product page, not as a separate website." },
+                  { title: fr ? "Contenu riche" : "Rich content", text: fr ? "Sections, bénéfices et informations produit structurées." : "Structured sections, benefits and product information." },
+                  { title: "SEO", text: fr ? "Texte enrichi à partir des vraies données catalogue." : "Copy enriched from real catalog data." },
+                  { title: "Mobile-first", text: fr ? "HTML responsive pour la fiche produit Shopify." : "Responsive HTML for the Shopify product page." },
+                  { title: fr ? "Comparaison avant/après" : "Before / after", text: fr ? "Aperçu du HTML Shopify actuel et de la nouvelle landing séparément." : "Preview current Shopify HTML and the generated landing separately." },
                 ].map((item) => (
                   <div key={item.title} className="rounded-2xl border border-slate-200 bg-white p-4">
                     <div className="flex items-start gap-3">
@@ -573,13 +670,13 @@ export default function ContentWorkspace() {
               </div>
 
               <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-between">
-                <Button variant="outline" className="rounded-xl" onClick={() => { const product = selectedLandingProduct; closeGeneration(); openPreview(product, product.landingReady ? "generated" : "current"); }}>
+                <Button variant="outline" className="rounded-xl" onClick={() => { const product = selectedLandingProduct; closeGeneration(); openPreview(product, "current"); }}>
                   <Eye className="mr-2 h-4 w-4" />
-                  {fr ? "Preview fiche produit" : "Preview product page"}
+                  {fr ? "Voir HTML Shopify actuel" : "View current Shopify HTML"}
                 </Button>
                 <Button className="rounded-xl px-5" onClick={() => setGenerationStarted(true)}>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  {selectedLandingProduct.landingReady ? (fr ? "Régénérer le HTML" : "Regenerate HTML") : (fr ? "Générer le HTML" : "Generate HTML")}
+                  {selectedLandingProduct.landingReady ? (fr ? "Régénérer la landing" : "Regenerate landing") : (fr ? "Générer la landing" : "Generate landing")}
                 </Button>
               </div>
             </div>
@@ -588,9 +685,11 @@ export default function ContentWorkspace() {
           {selectedLandingProduct && generationStarted && (
             <>
               <DialogHeader className="mb-4">
-                <DialogTitle>{fr ? "Génération de la description HTML" : "HTML description generation"}</DialogTitle>
+                <DialogTitle>{fr ? "Génération de la landing HTML" : "HTML landing generation"}</DialogTitle>
                 <DialogDescription>
-                  {fr ? "Le moteur existant génère le HTML enrichi. Après génération, utilisez Preview depuis la liste pour le voir dans la fiche produit catalogue." : "The existing engine generates enriched HTML. After generation, use Preview from the list to see it inside the catalog product page."}
+                  {fr
+                    ? "Le moteur existant génère le nouveau HTML. Après génération, revenez à la liste pour comparer HTML actuel et nouvelle landing."
+                    : "The existing engine generates the new HTML. After generation, return to the list to compare current HTML and generated landing."}
                 </DialogDescription>
               </DialogHeader>
               <RegenerateLanding
