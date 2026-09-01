@@ -21,6 +21,16 @@ jobs:
         with:
           node-version: 20
 
+      - name: Repair patch script substitution handling
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('.github/scripts/fix-seo-ai-gateway.py')
+          s = p.read_text()
+          s = s.replace('re.subn(pattern, replacement, text, count=1, flags=re.S)', 're.subn(pattern, lambda _m: replacement, text, count=1, flags=re.S)')
+          p.write_text(s)
+          PY
+
       - name: Apply SEO AI gateway patch
         run: python .github/scripts/fix-seo-ai-gateway.py
 
