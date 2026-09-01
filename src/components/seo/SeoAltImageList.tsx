@@ -222,10 +222,11 @@ export function SeoAltImageList() {
     setSelectedImages(newSelected);
   };
 
-  const handleGenerateForSelected = async () => {
+  const handleGenerateForSelected = async (requestedImageIds?: string[]) => {
     const allImages = products.flatMap(p => p.images);
+    const requestedIds = requestedImageIds ? new Set(requestedImageIds) : selectedImages;
     const imagesToGenerate = allImages.filter(
-      img => selectedImages.has(img.id) && !img.alt_text
+      img => requestedIds.has(img.id) && !img.alt_text
     );
 
     if (imagesToGenerate.length === 0) {
@@ -265,11 +266,13 @@ export function SeoAltImageList() {
           }
         });
         
-        if (!error && data) {
+        const generatedAlt = data?.altText ?? data?.alt_text ?? data?.results?.[0]?.altText ?? data?.results?.[0]?.alt_text;
+
+        if (!error && data?.success !== false && generatedAlt) {
           const product = products.find(p => p.id === imagesToGenerate[i].product_id);
           generatedImages.push({
             ...imagesToGenerate[i],
-            alt_text: data.alt_text,
+            alt_text: generatedAlt,
             product_title: product?.title
           });
           // Update to success
@@ -453,10 +456,9 @@ export function SeoAltImageList() {
             toast.info(t.seo.altImage.noEmptyAlt);
             return;
           }
-          // Select all images without ALT
-          setSelectedImages(new Set(imagesToGenerate.map(img => img.id)));
-          // Trigger generation
-          await handleGenerateForSelected();
+          // Pass the IDs directly: React state updates are asynchronous.
+          // This avoids launching generation with a stale/empty selection.
+          await handleGenerateForSelected(imagesToGenerate.map(img => img.id));
         }}
         canOptimize={stats.empty > 0}
         features={[
@@ -609,7 +611,7 @@ export function SeoAltImageList() {
             <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={handleGenerateForSelected}
+              onClick={() => handleGenerateForSelected()}
               disabled={currentOperation === 'optimizing' && showProgressDialog || selectedImages.size === 0}
             >
               {(currentOperation === 'optimizing' && showProgressDialog) ? (
