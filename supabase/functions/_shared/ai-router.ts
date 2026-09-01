@@ -19,6 +19,16 @@ type RouteOptions = {
   preferredFreeModel?: string;
 };
 
+const STRICT_AI_PLACEHOLDER = "__STRICT_AI_ROUTER_PLACEHOLDER__";
+
+function envSecret(...names: string[]): string | undefined {
+  for (const name of names) {
+    const value = Deno.env.get(name);
+    if (value && value !== STRICT_AI_PLACEHOLDER) return value;
+  }
+  return undefined;
+}
+
 // When the legacy generation shim is installed it saves the original network
 // fetch here. Provider calls MUST use it to avoid recursively intercepting the
 // router's own requests.
@@ -102,7 +112,7 @@ function canParseJsonResponse(content: string): boolean {
 }
 
 async function tryOpenAI(options: RouteOptions): Promise<AIRouteResult | null> {
-  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  const apiKey = envSecret("OPENAI_API_KEY");
   if (!apiKey || options.vision) return null;
 
   const model = Deno.env.get("OPENAI_TEXT_MODEL") || "gpt-4o-mini";
@@ -134,7 +144,7 @@ async function tryOpenAI(options: RouteOptions): Promise<AIRouteResult | null> {
 }
 
 async function tryGemini(options: RouteOptions): Promise<AIRouteResult | null> {
-  const apiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY") || Deno.env.get("GEMINI_API_KEY");
+  const apiKey = envSecret("GOOGLE_GEMINI_API_KEY", "GEMINI_API_KEY");
   if (!apiKey || options.vision) return null;
 
   const model = Deno.env.get("GEMINI_TEXT_MODEL") || "gemini-2.5-flash";
@@ -182,7 +192,7 @@ async function tryKimi(options: RouteOptions): Promise<AIRouteResult | null> {
 
   // IMPORTANT: Kimi is direct-only here. OpenRouter must never be used inside
   // the Kimi attempt, otherwise it can run before DeepSeek.
-  const apiKey = Deno.env.get("KIMI_API_KEY") || Deno.env.get("MOONSHOT_API_KEY");
+  const apiKey = envSecret("KIMI_API_KEY", "MOONSHOT_API_KEY");
   if (!apiKey) return null;
 
   const model = Deno.env.get("KIMI_TEXT_MODEL") || "moonshot-v1-8k";
@@ -212,7 +222,7 @@ async function tryKimi(options: RouteOptions): Promise<AIRouteResult | null> {
 }
 
 async function tryDeepSeek(options: RouteOptions): Promise<AIRouteResult | null> {
-  const apiKey = Deno.env.get("DEEPSEEK_API_KEY");
+  const apiKey = envSecret("DEEPSEEK_API_KEY");
   if (!apiKey || options.vision) return null;
 
   const model = Deno.env.get("DEEPSEEK_TEXT_MODEL") || "deepseek-chat";
@@ -242,7 +252,7 @@ async function tryDeepSeek(options: RouteOptions): Promise<AIRouteResult | null>
 }
 
 async function tryOpenRouter(options: RouteOptions): Promise<AIRouteResult | null> {
-  const apiKey = Deno.env.get("OPENROUTER_API_KEY");
+  const apiKey = envSecret("OPENROUTER_API_KEY");
   if (!apiKey || options.vision) return null;
 
   const model = options.preferredFreeModel?.trim() || Deno.env.get("OPENROUTER_TEXT_MODEL") || "openrouter/free";
@@ -323,7 +333,7 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
  * never consumes the OpenRouter text fallback.
  */
 export async function routeVision(messages: AIMessage[], maxTokens = 600): Promise<AIRouteResult> {
-  const apiKey = Deno.env.get("MOONSHOT_API_KEY") || Deno.env.get("KIMI_API_KEY");
+  const apiKey = envSecret("MOONSHOT_API_KEY", "KIMI_API_KEY");
   if (!apiKey) {
     throw new Error("Kimi direct vision is unavailable. Configure MOONSHOT_API_KEY or KIMI_API_KEY.");
   }
