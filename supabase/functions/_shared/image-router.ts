@@ -181,7 +181,7 @@ async function tryOpenAI(options: ImageRouteOptions): Promise<ImageRouteResult |
       const form = new FormData();
       const ext = source.mimeType.includes("png") ? "png" : source.mimeType.includes("webp") ? "webp" : "jpg";
       form.append("model", model);
-      form.append("image", new File([source.bytes], `source.${ext}`, { type: source.mimeType }));
+      form.append("image", new File([source.bytes as unknown as BlobPart], `source.${ext}`, { type: source.mimeType }));
       form.append("prompt", options.prompt.slice(0, 16000));
       form.append("size", size);
       form.append("quality", "high");
@@ -268,9 +268,10 @@ export async function routeImage(options: ImageRouteOptions): Promise<ImageRoute
   const attempts = [
     () => tryCloudflare(options),
     () => tryGemini(options),
-    () => tryOpenAI(options),
     () => tryLovable(options),
+    () => tryOpenAI(options),
   ];
+
 
   for (const attempt of attempts) {
     try {

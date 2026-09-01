@@ -285,7 +285,7 @@ async function tryOpenRouter(options: RouteOptions): Promise<AIRouteResult | nul
 
 /**
  * Text generation order is STRICT and must not be changed locally:
- * OpenAI -> Gemini -> Kimi -> DeepSeek -> OpenRouter (last-resort only).
+ * OpenRouter (free) -> Gemini -> Kimi (direct key) -> DeepSeek -> OpenAI (last resort).
  *
  * For JSON prompts, a provider is accepted only if its response can be parsed
  * as JSON; otherwise the router automatically tries the next provider.
@@ -297,12 +297,13 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
 
   const expectsJson = requestExpectsJson(options);
   const attempts: Array<{ provider: AIProvider; run: () => Promise<AIRouteResult | null> }> = [
-    { provider: "openai", run: () => tryOpenAI(options) },
+    { provider: "openrouter-free", run: () => tryOpenRouter(options) },
     { provider: "gemini", run: () => tryGemini(options) },
     { provider: "kimi", run: () => tryKimi(options) },
     { provider: "deepseek", run: () => tryDeepSeek(options) },
-    { provider: "openrouter-free", run: () => tryOpenRouter(options) },
+    { provider: "openai", run: () => tryOpenAI(options) },
   ];
+
 
   for (const attempt of attempts) {
     try {
@@ -339,22 +340,16 @@ export async function routeVision(messages: AIMessage[], maxTokens = 600): Promi
     temperature: 0.15,
   };
 
-  // OpenAI and Gemini both accept the same multimodal message structures used
-  // by this project. We deliberately call their normal provider helpers without
-  // the `vision` guard so a failure simply falls through to the next provider.
-  const genericAttempts: Array<() => Promise<AIRouteResult | null>> = [
-    () => tryOpenAI(baseOptions),
-    () => tryGemini(baseOptions),
-  ];
-
-  for (const attempt of genericAttempts) {
-    try {
-      const result = await attempt();
-      if (result?.content) return result;
-    } catch (error) {
-      console.warn("[ai-router] vision provider failed", error);
-    }
+  // Gemini accepts the same multimodal message structures used by this project
+  // and is free-tier friendly, so it leads the vision chain. A failure simply
+  // falls through to the next provider (Kimi direct, then OpenRouter, then OpenAI).
+  try {
+    const result = await tryGemini(baseOptions);
+    if (result?.content) return result;
+  } catch (error) {
+    console.warn("[ai-router] Gemini vision failed", error);
   }
+
 
   // Kimi direct vision fallback.
   const kimiKey = envSecret("MOONSHOT_API_KEY", "KIMI_API_KEY");
@@ -420,6 +415,16 @@ export async function routeVision(messages: AIMessage[], maxTokens = 600): Promi
       console.warn("[ai-router] OpenRouter vision failed", error);
     }
   }
+
+  // OpenAI vision is the paid last resort.
+  try {
+    const result = await tryOpenAI(baseOptions);
+    if (result?.content) return result;
+  } catch (error) {
+    console.warn("[ai-router] OpenAI vision failed", error);
+  }
+
+
 
   throw new Error(
     "No vision provider succeeded. Configure a working OpenAI, Gemini, Kimi/Moonshot, or OPENROUTER_VISION_MODEL provider.",
