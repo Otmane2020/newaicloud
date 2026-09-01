@@ -21,6 +21,9 @@ interface OnboardingStep {
   quickWin?: boolean;
 }
 
+const SNOOZE_KEY = 'onboarding_tour_snoozed_until';
+const SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+
 export function OnboardingTour() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +32,6 @@ export function OnboardingTour() {
   const [show, setShow] = useState(false);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
 
-  // Initialize steps based on translations
   useEffect(() => {
     setSteps([
       {
@@ -40,7 +42,7 @@ export function OnboardingTour() {
         action: t.onboardingTour.steps.connectShopify.action,
         route: '/integration',
         completed: false,
-        quickWin: true
+        quickWin: true,
       },
       {
         id: 'optimize_first_product',
@@ -50,7 +52,7 @@ export function OnboardingTour() {
         action: t.onboardingTour.steps.optimizeProduct.action,
         route: '/seo',
         completed: false,
-        quickWin: true
+        quickWin: true,
       },
       {
         id: 'generate_article',
@@ -59,7 +61,7 @@ export function OnboardingTour() {
         icon: FileText,
         action: t.onboardingTour.steps.createArticle.action,
         route: '/blog',
-        completed: false
+        completed: false,
       },
       {
         id: 'setup_automation',
@@ -68,7 +70,7 @@ export function OnboardingTour() {
         icon: Zap,
         action: t.onboardingTour.steps.enableAutoOptimizations.action,
         route: '/seo',
-        completed: false
+        completed: false,
       },
       {
         id: 'view_analytics',
@@ -77,67 +79,64 @@ export function OnboardingTour() {
         icon: BarChart3,
         action: t.onboardingTour.steps.viewStatistics.action,
         route: '/dashboard',
-        completed: false
-      }
+        completed: false,
+      },
     ]);
   }, [t]);
 
   useEffect(() => {
-    const completed = localStorage.getItem('onboarding_completed');
-    if (completed === 'true') {
+    if (!user) {
       setShow(false);
       return;
     }
-    if (user) {
-      checkOnboardingStatus();
+
+    if (localStorage.getItem('onboarding_completed') === 'true') {
+      setShow(false);
+      return;
     }
+
+    const snoozedUntil = Number(localStorage.getItem(SNOOZE_KEY) || 0);
+    if (snoozedUntil > Date.now()) {
+      setShow(false);
+      return;
+    }
+    if (snoozedUntil) localStorage.removeItem(SNOOZE_KEY);
+
+    void checkOnboardingStatus();
   }, [user]);
 
   const checkOnboardingStatus = async () => {
     if (!user) return;
 
     try {
-      // Check Shopify connection
-      const { data: connections } = await supabase
-        .from('shopify_connections')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1);
+      const [connectionsResult, optimizedResult, articlesResult] = await Promise.all([
+        supabase
+          .from('shopify_connections')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1),
+        supabase
+          .from('products')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('seo_optimized', true),
+        supabase
+          .from('blog_articles')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1),
+      ]);
 
-      // Check optimized products
-      const { data: optimizedProducts } = await supabase
-        .from('products')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('seo_optimized', true)
-        .limit(1);
+      const hasConnection = Boolean(connectionsResult.data?.length);
+      const optimizedCount = optimizedResult.count ?? 0;
+      const hasArticle = Boolean(articlesResult.data?.length);
 
-      // Check blog articles
-      const { data: articles } = await supabase
-        .from('blog_articles')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1);
-
-      // Update steps based on real data
       setSteps(prev => prev.map(step => {
-        if (step.id === 'connect_shopify' && connections && connections.length > 0) {
-          return { ...step, completed: true };
-        }
-        if (step.id === 'optimize_first_product' && optimizedProducts && optimizedProducts.length > 0) {
-          return { ...step, completed: true };
-        }
-        if (step.id === 'generate_article' && articles && articles.length > 0) {
-          return { ...step, completed: true };
-        }
-        if (step.id === 'setup_automation') {
-          // Check if user has some optimized products (indicates automation usage)
-          return { ...step, completed: optimizedProducts && optimizedProducts.length > 5 };
-        }
-        if (step.id === 'view_analytics') {
-          // Consider completed if user has visited dashboard (we're on it now)
-          return { ...step, completed: true };
-        }
+        if (step.id === 'connect_shopify') return { ...step, completed: hasConnection };
+        if (step.id === 'optimize_first_product') return { ...step, completed: optimizedCount > 0 };
+        if (step.id === 'generate_article') return { ...step, completed: hasArticle };
+        if (step.id === 'setup_automation') return { ...step, completed: optimizedCount >= 5 };
+        if (step.id === 'view_analytics') return { ...step, completed: true };
         return step;
       }));
 
@@ -148,116 +147,116 @@ export function OnboardingTour() {
     }
   };
 
+  const completedCount = steps.filter(step => step.completed).length;
+  const progressPercent = steps.length ? (completedCount / steps.length) * 100 : 0;
+  const quickWins = steps.filter(step => step.quickWin && !step.completed);
+  const isComplete = steps.length > 0 && completedCount === steps.length;
+
   const handleDismiss = () => {
     setShow(false);
-    localStorage.setItem('onboarding_completed', 'true');
-    toast({
-      title: t.onboardingTour.onboardingCompleted,
-      description: t.onboardingTour.accessGuides,
-    });
+
+    if (isComplete) {
+      localStorage.setItem('onboarding_completed', 'true');
+      localStorage.removeItem(SNOOZE_KEY);
+      toast({
+        title: t.onboardingTour.onboardingCompleted,
+        description: t.onboardingTour.accessGuides,
+      });
+      return;
+    }
+
+    localStorage.setItem(SNOOZE_KEY, String(Date.now() + SNOOZE_MS));
   };
 
-  const completedCount = steps.filter(s => s.completed).length;
-  const progressPercent = (completedCount / steps.length) * 100;
-  const quickWins = steps.filter(s => s.quickWin && !s.completed);
-
-  if (!show) return null;
+  if (!show || steps.length === 0) return null;
 
   return (
-    <Card className="border-primary/20 shadow-lg">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
+    <Card className="overflow-hidden rounded-2xl border-border/70 bg-background/95 shadow-sm">
+      <CardHeader className="border-b border-border/60 bg-gradient-to-br from-primary/10 via-background to-background pb-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <CardTitle className="flex items-center gap-2 text-xl tracking-tight">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                <Sparkles className="h-4 w-4 text-primary" />
+              </span>
               {t.onboardingTour.welcome}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="max-w-xl leading-relaxed">
               {t.onboardingTour.followSteps}
             </CardDescription>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleDismiss}>
-            <X className="w-4 h-4" />
+          <Button variant="ghost" size="icon" onClick={handleDismiss} className="h-9 w-9 rounded-full" aria-label="Close onboarding tour">
+            <X className="h-4 w-4" />
           </Button>
         </div>
-        <div className="pt-4 space-y-2">
+
+        <div className="space-y-2 pt-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">{t.onboardingTour.progress}</span>
-            <span className="font-medium">{completedCount}/{steps.length} {t.onboardingTour.completed}</span>
+            <span className="font-medium tabular-nums">{completedCount}/{steps.length} {t.onboardingTour.completed}</span>
           </div>
           <Progress value={progressPercent} className="h-2" />
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+
+      <CardContent className="space-y-3 p-5 sm:p-6">
         {quickWins.length > 0 && (
-            <div className="bg-primary/5 rounded-lg p-3 mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-4 h-4 text-primary" />
-                <span className="font-semibold text-sm">{t.onboardingTour.quickWins}</span>
-                <Badge variant="secondary" className="text-xs">{t.onboardingTour.recommended}</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t.onboardingTour.startWithThese}
-              </p>
+          <div className="mb-4 rounded-xl border border-primary/15 bg-primary/5 p-3">
+            <div className="mb-1.5 flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">{t.onboardingTour.quickWins}</span>
+              <Badge variant="secondary" className="text-xs">{t.onboardingTour.recommended}</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">{t.onboardingTour.startWithThese}</p>
           </div>
         )}
 
-        {steps.map((step) => {
+        {steps.map(step => {
           const Icon = step.icon;
           return (
             <div
               key={step.id}
-              className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+              className={`flex flex-col gap-3 rounded-xl border p-3.5 transition-all sm:flex-row sm:items-center ${
                 step.completed
-                  ? 'bg-muted/50 border-muted'
+                  ? 'border-border/50 bg-muted/35'
                   : step.quickWin
-                  ? 'border-primary/30 bg-primary/5'
-                  : 'border-border hover:border-primary/20'
+                    ? 'border-primary/20 bg-primary/[0.035]'
+                    : 'border-border/70 bg-background hover:border-primary/20'
               }`}
             >
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                step.completed ? 'bg-primary' : 'bg-muted'
-              }`}>
-                {step.completed ? (
-                  <CheckCircle2 className="w-4 h-4 text-primary-foreground" />
-                ) : (
-                  <Icon className="w-4 h-4 text-muted-foreground" />
-                )}
+              <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${step.completed ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                {step.completed ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
               </div>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-medium text-sm">{step.title}</h4>
-                  {step.quickWin && !step.completed && (
-                    <Badge variant="secondary" className="text-xs">Quick Win</Badge>
-                  )}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h4 className="text-sm font-medium">{step.title}</h4>
+                  {step.quickWin && !step.completed && <Badge variant="secondary" className="text-[10px]">Quick Win</Badge>}
                 </div>
-                <p className="text-xs text-muted-foreground">{step.description}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{step.description}</p>
               </div>
 
               {!step.completed && (
                 <Button
                   size="sm"
-                  variant={step.quickWin ? "default" : "outline"}
+                  variant={step.quickWin ? 'default' : 'outline'}
                   onClick={() => navigate(step.route)}
-                  className="flex-shrink-0"
+                  className="w-full flex-shrink-0 rounded-lg sm:w-auto"
                 >
                   {step.action}
-                  <ChevronRight className="w-3 h-3 ml-1" />
+                  <ChevronRight className="ml-1 h-3 w-3" />
                 </Button>
               )}
             </div>
           );
         })}
 
-        {completedCount === steps.length && (
-          <div className="mt-4 p-4 bg-primary/10 rounded-lg text-center">
-            <CheckCircle2 className="w-8 h-8 text-primary mx-auto mb-2" />
+        {isComplete && (
+          <div className="mt-4 rounded-2xl border border-primary/15 bg-primary/5 p-5 text-center">
+            <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-primary" />
             <p className="font-semibold">{t.onboardingTour.congratulations}</p>
-            <p className="text-sm text-muted-foreground">
-              {t.onboardingTour.onboardingComplete}
-            </p>
-            <Button onClick={handleDismiss} className="mt-3" size="sm">
+            <p className="mt-1 text-sm text-muted-foreground">{t.onboardingTour.onboardingComplete}</p>
+            <Button onClick={handleDismiss} className="mt-3 rounded-xl" size="sm">
               {t.onboardingTour.startOptimization}
             </Button>
           </div>
