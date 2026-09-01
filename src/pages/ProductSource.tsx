@@ -85,6 +85,8 @@ const ProductSource = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [selectedProduct, setSelectedProduct] = useState<ProductSourceData | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [enriching, setEnriching] = useState(false);
@@ -139,6 +141,44 @@ const ProductSource = () => {
       return keywords.every((keyword) => searchable.includes(keyword));
     });
   }, [products, searchTerm, statusFilter, categoryFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const pageStart = filteredProducts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(currentPage * pageSize, filteredProducts.length);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, currentPage, pageSize]);
+
+  const paginationItems = useMemo(() => {
+    const items: Array<number | string> = [];
+
+    if (totalPages <= 7) {
+      for (let page = 1; page <= totalPages; page += 1) items.push(page);
+      return items;
+    }
+
+    items.push(1);
+
+    const windowStart = Math.max(2, currentPage - 1);
+    const windowEnd = Math.min(totalPages - 1, currentPage + 1);
+
+    if (windowStart > 2) items.push("left-ellipsis");
+    for (let page = windowStart; page <= windowEnd; page += 1) items.push(page);
+    if (windowEnd < totalPages - 1) items.push("right-ellipsis");
+
+    items.push(totalPages);
+    return items;
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, categoryFilter, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(Math.max(page, 1), totalPages));
+  }, [totalPages]);
 
   const categories = useMemo(
     () => Array.from(new Set(products.map((product) => product.category).filter((value): value is string => Boolean(value)))),
@@ -234,16 +274,22 @@ const ProductSource = () => {
     });
   };
 
+  const allPageSelected = paginatedProducts.length > 0
+    && paginatedProducts.every((product) => selectedProducts.has(product.id));
+  const selectedOnPage = paginatedProducts.filter((product) => selectedProducts.has(product.id)).length;
+
   const toggleSelectAll = () => {
-    const allVisibleSelected = filteredProducts.length > 0
-      && filteredProducts.every((product) => selectedProducts.has(product.id));
+    setSelectedProducts((current) => {
+      const next = new Set(current);
 
-    if (allVisibleSelected) {
-      setSelectedProducts(new Set());
-      return;
-    }
+      if (allPageSelected) {
+        paginatedProducts.forEach((product) => next.delete(product.id));
+      } else {
+        paginatedProducts.forEach((product) => next.add(product.id));
+      }
 
-    setSelectedProducts(new Set(filteredProducts.map((product) => product.id)));
+      return next;
+    });
   };
 
   const syncAttributesToShopify = async () => {
@@ -340,7 +386,7 @@ const ProductSource = () => {
   }
 
   return (
-    <div data-ui-version="product-source-list-v3" className="product-source-page mx-auto w-full max-w-[1600px] space-y-4">
+    <div data-ui-version="product-source-list-v4-pagination" className="product-source-page mx-auto w-full max-w-[1600px] space-y-4">
       <WorkspacePageHeader
         section={fr ? "Catalogue" : "Catalog"}
         page={fr ? "Données enrichies" : "Enriched Data"}
@@ -410,10 +456,10 @@ const ProductSource = () => {
         <div className="flex flex-col gap-2 border-b border-slate-100 p-2 sm:flex-row sm:items-center">
           <label className="flex h-9 items-center gap-2 px-2 text-sm text-slate-600">
             <Checkbox
-              checked={filteredProducts.length > 0 && filteredProducts.every((product) => selectedProducts.has(product.id))}
+              checked={allPageSelected}
               onCheckedChange={toggleSelectAll}
             />
-            <span>{fr ? "Tout sélectionner" : "Select all"} · {selectedProducts.size}/{filteredProducts.length}</span>
+            <span>{fr ? "Tout sélectionner" : "Select all"} · {selectedOnPage}/{paginatedProducts.length}</span>
           </label>
           <Input
             placeholder={fr ? "Rechercher un produit…" : "Search products…"}
@@ -440,7 +486,7 @@ const ProductSource = () => {
         </div>
 
         <div className="divide-y divide-slate-100">
-          {filteredProducts.map((product) => (
+          {paginatedProducts.map((product) => (
             <div key={product.id} className="product-source-row grid grid-cols-[auto_48px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 transition hover:bg-slate-50">
               <Checkbox checked={selectedProducts.has(product.id)} onCheckedChange={() => toggleProductSelection(product.id)} />
               <div className="h-12 w-12 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
@@ -471,6 +517,73 @@ const ProductSource = () => {
             </div>
           ))}
         </div>
+
+        {filteredProducts.length > 0 && (
+          <div className="flex flex-col gap-3 border-t border-slate-100 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+              <span>
+                {fr
+                  ? `${pageStart}–${pageEnd} sur ${filteredProducts.length} produits`
+                  : `${pageStart}–${pageEnd} of ${filteredProducts.length} products`}
+              </span>
+              <div className="flex items-center gap-2">
+                <span>{fr ? "Par page" : "Per page"}</span>
+                <Select value={String(pageSize)} onValueChange={(value) => setPageSize(Number(value))}>
+                  <SelectTrigger className="h-8 w-[76px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              >
+                {fr ? "Précédent" : "Previous"}
+              </Button>
+
+              {paginationItems.map((item) => {
+                if (typeof item === "string") {
+                  return <span key={item} className="px-1.5 text-xs text-slate-400">…</span>;
+                }
+
+                return (
+                  <Button
+                    key={item}
+                    type="button"
+                    variant={item === currentPage ? "default" : "outline"}
+                    size="sm"
+                    className="h-8 min-w-8 px-2"
+                    onClick={() => setCurrentPage(item)}
+                    aria-current={item === currentPage ? "page" : undefined}
+                  >
+                    {item}
+                  </Button>
+                );
+              })}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              >
+                {fr ? "Suivant" : "Next"}
+              </Button>
+            </div>
+          </div>
+        )}
       </section>
 
       {filteredProducts.length === 0 && (
