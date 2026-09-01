@@ -76,6 +76,60 @@ section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.div
 }
 section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(4)::before { background: rgb(16 185 129); }
 
+/* Collections KPI cards: a touch more color while keeping the workspace clean. */
+[class~="border-violet-200/70"][class~="bg-violet-50/40"] {
+  position: relative;
+  overflow: hidden;
+  border-color: rgb(196 181 253 / 0.9);
+  background: linear-gradient(135deg, rgb(245 243 255) 0%, rgb(250 245 255) 52%, rgb(255 255 255) 100%);
+  box-shadow: 0 12px 30px -24px rgb(109 40 217 / 0.8);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+[class~="border-sky-200/70"][class~="bg-sky-50/40"] {
+  position: relative;
+  overflow: hidden;
+  border-color: rgb(125 211 252 / 0.9);
+  background: linear-gradient(135deg, rgb(240 249 255) 0%, rgb(239 246 255) 52%, rgb(255 255 255) 100%);
+  box-shadow: 0 12px 30px -24px rgb(2 132 199 / 0.7);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+[class~="border-emerald-200/70"][class~="bg-emerald-50/40"] {
+  position: relative;
+  overflow: hidden;
+  border-color: rgb(110 231 183 / 0.9);
+  background: linear-gradient(135deg, rgb(236 253 245) 0%, rgb(240 253 250) 52%, rgb(255 255 255) 100%);
+  box-shadow: 0 12px 30px -24px rgb(5 150 105 / 0.72);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+[class~="border-violet-200/70"][class~="bg-violet-50/40"]::before,
+[class~="border-sky-200/70"][class~="bg-sky-50/40"]::before,
+[class~="border-emerald-200/70"][class~="bg-emerald-50/40"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+}
+
+[class~="border-violet-200/70"][class~="bg-violet-50/40"]::before { background: linear-gradient(90deg, rgb(124 58 237), rgb(167 139 250)); }
+[class~="border-sky-200/70"][class~="bg-sky-50/40"]::before { background: linear-gradient(90deg, rgb(2 132 199), rgb(56 189 248)); }
+[class~="border-emerald-200/70"][class~="bg-emerald-50/40"]::before { background: linear-gradient(90deg, rgb(5 150 105), rgb(52 211 153)); }
+
+[class~="border-violet-200/70"][class~="bg-violet-50/40"] > div > div:first-child {
+  background: linear-gradient(135deg, rgb(237 233 254), rgb(221 214 254));
+  box-shadow: inset 0 0 0 1px rgb(196 181 253 / 0.6);
+}
+[class~="border-sky-200/70"][class~="bg-sky-50/40"] > div > div:first-child {
+  background: linear-gradient(135deg, rgb(224 242 254), rgb(186 230 253));
+  box-shadow: inset 0 0 0 1px rgb(125 211 252 / 0.6);
+}
+[class~="border-emerald-200/70"][class~="bg-emerald-50/40"] > div > div:first-child {
+  background: linear-gradient(135deg, rgb(209 250 229), rgb(167 243 208));
+  box-shadow: inset 0 0 0 1px rgb(110 231 183 / 0.6);
+}
+
 /* Tables remain neutral but get a faint violet tint in their headers. */
 .catalog-workspace thead,
 .product-source-page table thead {
@@ -84,12 +138,22 @@ section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.div
 
 @media (prefers-reduced-motion: no-preference) {
   .product-source-page > section:first-of-type > .grid > div:hover,
-  section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:hover {
+  section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:hover,
+  [class~="border-violet-200/70"][class~="bg-violet-50/40"]:hover,
+  [class~="border-sky-200/70"][class~="bg-sky-50/40"]:hover,
+  [class~="border-emerald-200/70"][class~="bg-emerald-50/40"]:hover {
     transform: translateY(-1px);
   }
+
+  [class~="border-violet-200/70"][class~="bg-violet-50/40"]:hover { box-shadow: 0 18px 34px -24px rgb(109 40 217 / 0.9); }
+  [class~="border-sky-200/70"][class~="bg-sky-50/40"]:hover { box-shadow: 0 18px 34px -24px rgb(2 132 199 / 0.82); }
+  [class~="border-emerald-200/70"][class~="bg-emerald-50/40"]:hover { box-shadow: 0 18px 34px -24px rgb(5 150 105 / 0.82); }
 }
 
 .dark .product-source-page > section:first-of-type,
-.dark section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div {
+.dark section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div,
+.dark [class~="border-violet-200/70"][class~="bg-violet-50/40"],
+.dark [class~="border-sky-200/70"][class~="bg-sky-50/40"],
+.dark [class~="border-emerald-200/70"][class~="bg-emerald-50/40"] {
   background: hsl(var(--card));
 }
