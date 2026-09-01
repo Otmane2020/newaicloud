@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Layers3, Database, FileText,
-  Sparkles, Store, ShoppingCart, RefreshCw, Settings,
+  Sparkles, Store, ShoppingCart, Settings,
   User, CreditCard, ChevronDown, LogOut, FlaskConical, Bot,
   Newspaper, Activity, Camera, Tags, Images, Home,
 } from "lucide-react";
@@ -94,19 +94,12 @@ export function CatalogOptimizeSidebar() {
       ],
     },
     {
-      label: fr ? "Automatisation" : "Automation",
-      icon: RefreshCw,
-      items: [
-        { label: fr ? "Règles" : "Rules", href: "/seo?tab=automation", icon: Settings },
-        { label: fr ? "Tâches" : "Jobs", href: "/cron-monitoring", icon: Activity },
-      ],
-    },
-    {
       label: fr ? "Paramètres" : "Settings",
       icon: Settings,
       items: [
         { label: fr ? "Boutiques & intégrations" : "Stores & Integrations", href: "/account?tab=integrations", icon: Store },
         { label: fr ? "Compte & utilisation" : "Account & Usage", href: "/account?tab=profile", icon: User },
+        { label: fr ? "Tâches" : "Jobs", href: "/cron-monitoring", icon: Activity },
         { label: fr ? "Abonnement" : "Subscription", href: "/subscription", icon: CreditCard },
       ],
     },
