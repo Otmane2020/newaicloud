@@ -1,11 +1,19 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, Camera, Check, History, Images, Megaphone, Search, Sparkles, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, Check, History, Images, Megaphone, Search, Sparkles, Wand2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { AIImagesDialog } from "@/components/seo/AIImagesDialog";
 import { SmartBackgroundDialog } from "@/components/seo/SmartBackgroundDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useStore } from "@/contexts/StoreContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,6 +92,9 @@ export default function StudioSmart() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedSourceImages, setSelectedSourceImages] = useState<Map<string, string>>(new Map());
+  const [showSelection, setShowSelection] = useState(false);
+  const [pickerProductId, setPickerProductId] = useState<string | null>(null);
   const [showProductShot, setShowProductShot] = useState(false);
   const [showBackground, setShowBackground] = useState(false);
 
@@ -119,8 +130,13 @@ export default function StudioSmart() {
   }, [products, search]);
 
   const selectedProducts = useMemo(
-    () => products.filter((product) => selectedIds.has(product.id)),
-    [products, selectedIds],
+    () => products
+      .filter((product) => selectedIds.has(product.id))
+      .map((product) => ({
+        ...product,
+        image_url: selectedSourceImages.get(product.id) || product.image_url,
+      })),
+    [products, selectedIds, selectedSourceImages],
   );
 
   const usableSelectedProducts = useMemo(
@@ -128,31 +144,69 @@ export default function StudioSmart() {
     [selectedProducts],
   );
 
+  const pickerProduct = useMemo(
+    () => products.find((product) => product.id === pickerProductId) || null,
+    [products, pickerProductId],
+  );
+
   const currentDefinition = activeMode ? MODES.find((mode) => mode.id === activeMode) : null;
+
+  const getProductSourceImages = (product: StudioProduct) => {
+    const urls = [product.image_url, ...(product.product_images || []).map((image) => image.src)].filter(Boolean) as string[];
+    return Array.from(new Set(urls));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setSelectedSourceImages(new Map());
+    setPickerProductId(null);
+  };
 
   const openMode = (mode: StudioMode) => {
     const next = new URLSearchParams();
     next.set("mode", mode);
     setSearchParams(next);
-    if (mode === "creative") setSelectedIds(new Set());
+    if (mode === "creative") clearSelection();
   };
 
   const goHome = () => {
     setSearchParams({});
-    setSelectedIds(new Set());
+    clearSelection();
   };
 
-  const toggleProduct = (id: string) => {
+  const selectProductSource = (productId: string, imageUrl: string) => {
     setSelectedIds((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      next.add(productId);
+      return next;
+    });
+    setSelectedSourceImages((current) => {
+      const next = new Map(current);
+      next.set(productId, imageUrl);
+      return next;
+    });
+    setPickerProductId(null);
+  };
+
+  const removeProductSelection = (productId: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      next.delete(productId);
+      return next;
+    });
+    setSelectedSourceImages((current) => {
+      const next = new Map(current);
+      next.delete(productId);
       return next;
     });
   };
 
-  const selectVisible = () => {
-    setSelectedIds(new Set(filteredProducts.filter((product) => product.image_url).map((product) => product.id)));
+  const handleSelectionOpenChange = (open: boolean) => {
+    setShowSelection(open);
+    if (!open) {
+      setPickerProductId(null);
+      setSearch("");
+    }
   };
 
   const launchCurrentAction = () => {
@@ -171,7 +225,6 @@ export default function StudioSmart() {
 
   if (activeMode && currentDefinition) {
     const CurrentIcon = currentDefinition.icon;
-    const missingSourceCount = selectedProducts.length - usableSelectedProducts.length;
 
     return (
       <div className="mx-auto w-full max-w-[1600px] space-y-4">
@@ -179,90 +232,80 @@ export default function StudioSmart() {
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-2xl">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-600">
                   {fr ? "Sélection produit" : "Product selection"}
                 </p>
                 <h2 className="mt-1 text-lg font-semibold text-slate-950">
                   {fr ? "Choisissez un ou plusieurs produits" : "Choose one or more products"}
                 </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  {fr
+                    ? "La sélection est regroupée par produit. Cliquez, puis choisissez d’abord l’image exacte de la galerie que l’IA doit modifier."
+                    : "Selection is grouped by product. Click a product, then first choose the exact gallery image the AI should edit."}
+                </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={selectVisible} disabled={filteredProducts.length === 0}>
-                  {fr ? "Sélectionner les visibles" : "Select visible"}
-                </Button>
-                {selectedIds.size > 0 && (
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
-                    {fr ? "Effacer" : "Clear"}
-                  </Button>
-                )}
-              </div>
+              <Button size="lg" className="shrink-0" onClick={() => setShowSelection(true)}>
+                <Images className="mr-2 h-4 w-4" />
+                {fr ? "Choisir les produits" : "Choose products"}
+              </Button>
             </div>
 
-            <div className="border-b border-slate-100 p-4">
-              <div className="relative max-w-xl">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder={fr ? "Rechercher par produit, marque ou type…" : "Search by product, brand or type…"}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-
-            {isLoading ? (
-              <div className="grid min-h-[360px] place-items-center text-sm text-slate-500">
-                {fr ? "Chargement du catalogue…" : "Loading catalog…"}
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="grid min-h-[360px] place-items-center p-8 text-center text-sm text-slate-500">
-                {fr ? "Aucun produit trouvé." : "No products found."}
-              </div>
-            ) : (
-              <div className="grid gap-3 p-4 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4">
-                {filteredProducts.map((product) => {
-                  const selected = selectedIds.has(product.id);
-                  const imageCount = product.product_images?.length || (product.image_url ? 1 : 0);
-                  return (
+            <div className="border-t border-slate-100 bg-slate-50/50 p-4">
+              {usableSelectedProducts.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setShowSelection(true)}
+                  className="grid min-h-52 w-full place-items-center rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center transition hover:border-violet-300 hover:bg-violet-50/20"
+                >
+                  <div>
+                    <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-violet-50 text-violet-700"><Images className="h-5 w-5" /></span>
+                    <p className="mt-3 text-sm font-semibold text-slate-900">{fr ? "Aucun produit sélectionné" : "No product selected"}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      {fr ? "Sélectionnez un produit puis l’image source de sa galerie." : "Select a product, then choose its source gallery image."}
+                    </p>
+                  </div>
+                </button>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                  {usableSelectedProducts.map((product) => (
                     <button
                       key={product.id}
                       type="button"
-                      onClick={() => toggleProduct(product.id)}
-                      className={`group overflow-hidden rounded-2xl border text-left transition ${
-                        selected
-                          ? "border-violet-400 bg-violet-50/30 ring-2 ring-violet-100"
-                          : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
-                      }`}
+                      onClick={() => {
+                        setPickerProductId(product.id);
+                        setShowSelection(true);
+                      }}
+                      className="group overflow-hidden rounded-2xl border border-violet-200 bg-white text-left shadow-sm transition hover:border-violet-300 hover:shadow-md"
                     >
                       <div className="relative aspect-[4/3] overflow-hidden bg-slate-50">
-                        {product.image_url ? (
-                          <img src={product.image_url} alt={product.title} className="h-full w-full object-contain p-3 transition group-hover:scale-[1.02]" />
-                        ) : (
-                          <div className="grid h-full place-items-center text-slate-300"><Images className="h-9 w-9" /></div>
-                        )}
-                        <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm">
-                          {imageCount} {fr ? "image(s)" : "image(s)"}
-                        </span>
-                        <span className={`absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full border shadow-sm ${selected ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-transparent"}`}>
+                        <img src={product.image_url || ""} alt={product.title} className="h-full w-full object-contain p-3 transition group-hover:scale-[1.02]" />
+                        <span className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-violet-600 text-white shadow-sm">
                           <Check className="h-4 w-4" />
+                        </span>
+                        <span className="absolute bottom-3 left-3 rounded-md bg-slate-950/85 px-2 py-1 text-[10px] font-medium text-white">
+                          {fr ? "Image source" : "Source image"}
                         </span>
                       </div>
                       <div className="p-3">
                         <p className="truncate text-sm font-semibold text-slate-950">{product.title}</p>
-                        <p className="mt-1 truncate text-xs text-slate-500">{product.vendor || product.product_type || (fr ? "Produit catalogue" : "Catalog product")}</p>
-                        {!product.image_url && (
-                          <p className="mt-2 text-[11px] font-medium text-amber-600">
-                            {fr ? "Image source requise" : "Source image required"}
-                          </p>
-                        )}
+                        <p className="mt-1 text-xs text-violet-700">{fr ? "Cliquer pour changer l’image" : "Click to change image"}</p>
                       </div>
                     </button>
-                  );
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+
+              {selectedIds.size > 0 && (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4">
+                  <p className="text-xs text-slate-500">
+                    {fr ? `${selectedIds.size} produit(s) avec image source choisie` : `${selectedIds.size} product(s) with a selected source image`}
+                  </p>
+                  <Button variant="ghost" size="sm" onClick={clearSelection}>{fr ? "Effacer la sélection" : "Clear selection"}</Button>
+                </div>
+              )}
+            </div>
           </section>
 
           <aside className="space-y-3 xl:sticky xl:top-[72px] xl:self-start">
@@ -277,18 +320,10 @@ export default function StudioSmart() {
                   <strong className="text-slate-950">{selectedProducts.length}</strong>
                 </div>
                 <div className="mt-2 flex items-center justify-between text-sm">
-                  <span className="text-slate-500">{fr ? "Prêts à générer" : "Ready"}</span>
+                  <span className="text-slate-500">{fr ? "Images source choisies" : "Source images chosen"}</span>
                   <strong className="text-emerald-700">{usableSelectedProducts.length}</strong>
                 </div>
               </div>
-
-              {missingSourceCount > 0 && (
-                <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-                  {fr
-                    ? `${missingSourceCount} produit(s) sans image source seront ignorés.`
-                    : `${missingSourceCount} product(s) without a source image will be skipped.`}
-                </p>
-              )}
 
               <Button className="mt-5 w-full" size="lg" disabled={usableSelectedProducts.length === 0} onClick={launchCurrentAction}>
                 <Sparkles className="mr-2 h-4 w-4" />
@@ -310,6 +345,163 @@ export default function StudioSmart() {
             </Button>
           </aside>
         </div>
+
+        <Dialog open={showSelection} onOpenChange={handleSelectionOpenChange}>
+          <DialogContent className="max-h-[88vh] max-w-5xl overflow-hidden p-0">
+            {pickerProduct ? (
+              <>
+                <DialogHeader className="border-b border-slate-100 px-6 py-5 text-left">
+                  <div className="flex items-start gap-3">
+                    <Button variant="ghost" size="icon" className="mt-0.5 shrink-0" onClick={() => setPickerProductId(null)}>
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div>
+                      <DialogTitle>{fr ? "Choisissez l’image à modifier" : "Choose the image to edit"}</DialogTitle>
+                      <DialogDescription className="mt-1">
+                        {pickerProduct.title} · {fr ? "sélectionnez d’abord une image précise de la galerie" : "first select the exact gallery image you want to modify"}
+                      </DialogDescription>
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                <div className="max-h-[62vh] overflow-y-auto p-6">
+                  {getProductSourceImages(pickerProduct).length === 0 ? (
+                    <div className="grid min-h-72 place-items-center rounded-2xl border border-dashed border-slate-200 p-8 text-center">
+                      <div>
+                        <Images className="mx-auto h-9 w-9 text-slate-300" />
+                        <p className="mt-3 text-sm font-semibold text-slate-900">{fr ? "Aucune image disponible" : "No image available"}</p>
+                        <p className="mt-1 text-xs text-slate-500">{fr ? "Ajoutez une image au produit avant de lancer le Studio." : "Add an image to the product before using Studio."}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {getProductSourceImages(pickerProduct).map((imageUrl, index) => {
+                        const selected = selectedSourceImages.get(pickerProduct.id) === imageUrl;
+                        return (
+                          <button
+                            key={imageUrl}
+                            type="button"
+                            onClick={() => selectProductSource(pickerProduct.id, imageUrl)}
+                            className={`group overflow-hidden rounded-2xl border bg-white text-left transition ${selected ? "border-violet-500 ring-2 ring-violet-100" : "border-slate-200 hover:border-violet-300 hover:shadow-sm"}`}
+                          >
+                            <div className="relative aspect-square overflow-hidden bg-slate-50">
+                              <img src={imageUrl} alt={`${pickerProduct.title} ${index + 1}`} className="h-full w-full object-contain p-4 transition group-hover:scale-[1.02]" />
+                              <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm">
+                                {index === 0 ? (fr ? "Image principale" : "Main image") : `${fr ? "Galerie" : "Gallery"} ${index + 1}`}
+                              </span>
+                              {selected && (
+                                <span className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-violet-600 text-white shadow-sm"><Check className="h-4 w-4" /></span>
+                              )}
+                            </div>
+                            <div className="p-3">
+                              <p className="text-sm font-semibold text-slate-900">{fr ? "Utiliser cette image" : "Use this image"}</p>
+                              <p className="mt-1 text-xs text-slate-500">{fr ? "Elle sera la source envoyée à l’IA." : "This will be the source sent to the AI."}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter className="border-t border-slate-100 px-6 py-4 sm:justify-between">
+                  {selectedIds.has(pickerProduct.id) ? (
+                    <Button variant="ghost" onClick={() => {
+                      removeProductSelection(pickerProduct.id);
+                      setPickerProductId(null);
+                    }}>
+                      {fr ? "Retirer ce produit" : "Remove this product"}
+                    </Button>
+                  ) : <span />}
+                  <Button variant="outline" onClick={() => setPickerProductId(null)}>{fr ? "Retour aux produits" : "Back to products"}</Button>
+                </DialogFooter>
+              </>
+            ) : (
+              <>
+                <DialogHeader className="border-b border-slate-100 px-6 py-5 text-left">
+                  <DialogTitle>{fr ? "Sélection produits" : "Product selection"}</DialogTitle>
+                  <DialogDescription>
+                    {fr
+                      ? "Choisissez un produit. La galerie s’ouvrira ensuite pour sélectionner l’image exacte à modifier."
+                      : "Choose a product. Its gallery will open next so you can select the exact image to edit."}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="border-b border-slate-100 px-6 py-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative w-full max-w-xl">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder={fr ? "Rechercher par produit, marque ou type…" : "Search by product, brand or type…"}
+                        className="pl-9"
+                      />
+                    </div>
+                    {selectedIds.size > 0 && <Button variant="ghost" size="sm" onClick={clearSelection}>{fr ? "Tout effacer" : "Clear all"}</Button>}
+                  </div>
+                </div>
+
+                <div className="max-h-[58vh] overflow-y-auto p-6">
+                  {isLoading ? (
+                    <div className="grid min-h-72 place-items-center text-sm text-slate-500">{fr ? "Chargement du catalogue…" : "Loading catalog…"}</div>
+                  ) : filteredProducts.length === 0 ? (
+                    <div className="grid min-h-72 place-items-center text-sm text-slate-500">{fr ? "Aucun produit trouvé." : "No products found."}</div>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                      {filteredProducts.map((product) => {
+                        const selected = selectedIds.has(product.id);
+                        const sourceImages = getProductSourceImages(product);
+                        const selectedSource = selectedSourceImages.get(product.id);
+                        return (
+                          <button
+                            key={product.id}
+                            type="button"
+                            disabled={sourceImages.length === 0}
+                            onClick={() => setPickerProductId(product.id)}
+                            className={`group overflow-hidden rounded-2xl border text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${selected ? "border-violet-400 bg-violet-50/30 ring-2 ring-violet-100" : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"}`}
+                          >
+                            <div className="relative aspect-[4/3] overflow-hidden bg-slate-50">
+                              {(selectedSource || product.image_url) ? (
+                                <img src={selectedSource || product.image_url || ""} alt={product.title} className="h-full w-full object-contain p-3 transition group-hover:scale-[1.02]" />
+                              ) : (
+                                <div className="grid h-full place-items-center text-slate-300"><Images className="h-9 w-9" /></div>
+                              )}
+                              <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-1 text-[10px] font-medium text-slate-600 shadow-sm">
+                                {sourceImages.length} {fr ? "image(s)" : "image(s)"}
+                              </span>
+                              <span className={`absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full border shadow-sm ${selected ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-transparent"}`}>
+                                <Check className="h-4 w-4" />
+                              </span>
+                            </div>
+                            <div className="p-3">
+                              <p className="truncate text-sm font-semibold text-slate-950">{product.title}</p>
+                              <p className="mt-1 truncate text-xs text-slate-500">{product.vendor || product.product_type || (fr ? "Produit catalogue" : "Catalog product")}</p>
+                              <p className={`mt-2 text-[11px] font-medium ${selected ? "text-violet-700" : "text-slate-500"}`}>
+                                {selected
+                                  ? (fr ? "Image source choisie · cliquer pour changer" : "Source image selected · click to change")
+                                  : sourceImages.length > 0
+                                    ? (fr ? "Cliquer puis choisir une image" : "Click, then choose an image")
+                                    : (fr ? "Aucune image disponible" : "No image available")}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter className="border-t border-slate-100 px-6 py-4 sm:justify-between">
+                  <p className="text-xs text-slate-500">{fr ? `${selectedIds.size} produit(s) sélectionné(s)` : `${selectedIds.size} product(s) selected`}</p>
+                  <Button onClick={() => handleSelectionOpenChange(false)} disabled={selectedIds.size === 0}>
+                    <Check className="mr-2 h-4 w-4" />{fr ? "Terminer" : "Done"}
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <AIImagesDialog
           open={showProductShot}
@@ -355,7 +547,7 @@ export default function StudioSmart() {
           <div className="rounded-2xl bg-slate-950 p-5 text-white">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">{fr ? "Flux de création" : "Creation flow"}</p>
             <div className="mt-4 space-y-3">
-              <FlowStep number="1" title={fr ? "Choisissez le produit" : "Choose the product"} text={fr ? "Le catalogue Shopify reste la source de référence." : "Shopify catalog remains the source of truth."} />
+              <FlowStep number="1" title={fr ? "Choisissez le produit et l’image" : "Choose product and image"} text={fr ? "La galerie du produit s’ouvre avant toute génération." : "The product gallery opens before any generation."} />
               <FlowStep number="2" title={fr ? "Choisissez le rendu" : "Choose the output"} text={fr ? "Photo produit, nouveau décor ou créatif publicitaire." : "Product photo, new setting or ad creative."} />
               <FlowStep number="3" title={fr ? "Générez et appliquez" : "Generate and apply"} text={fr ? "Prévisualisez, sauvegardez et synchronisez avec les flux existants." : "Preview, save and sync using the existing flows."} />
             </div>
