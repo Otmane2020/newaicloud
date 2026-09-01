@@ -416,6 +416,16 @@ export async function routeVision(messages: AIMessage[], maxTokens = 600): Promi
     }
   }
 
+  // OpenAI vision is the paid last resort.
+  try {
+    const result = await tryOpenAI(baseOptions);
+    if (result?.content) return result;
+  } catch (error) {
+    console.warn("[ai-router] OpenAI vision failed", error);
+  }
+
+
+
   throw new Error(
     "No vision provider succeeded. Configure a working OpenAI, Gemini, Kimi/Moonshot, or OPENROUTER_VISION_MODEL provider.",
   );
