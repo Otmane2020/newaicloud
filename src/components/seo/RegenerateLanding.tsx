@@ -1,24 +1,21 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Loader2,
-  Eye,
-  Monitor,
-  Smartphone,
-  Download,
-  Send,
-  CheckCircle2,
   AlertCircle,
-  Sparkles,
-  Scan,
   Brain,
-  Wand2,
-  Layout,
+  CheckCircle2,
+  Download,
   ExternalLink,
-  Zap,
+  Eye,
+  Layout,
+  Loader2,
+  Monitor,
+  Scan,
+  Send,
+  Smartphone,
+  Sparkles,
   Target,
-  Palette,
-  FileCode,
-  LucideIcon,
+  Wand2,
+  Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,59 +23,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { LandingConfig } from "./LandingConfigDialog";
+import type { LandingConfig } from "./LandingConfigDialog";
 import { useTranslation } from "@/lib/language";
 
-// 🛡️ Template de fallback pour mode dégradé
-const generateFallbackLandingPage = (
-  title: string,
-  description: string | undefined,
-  imageUrl: string | undefined
-): string => {
-  return `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.6; color: #333; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;
-    }
-    .container { max-width: 800px; width: 100%; background: white; border-radius: 20px; 
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
-    .hero { padding: 3rem 2rem; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-      color: white; }
-    h1 { font-size: 2.5rem; margin-bottom: 1rem; font-weight: 700; }
-    .description { font-size: 1.125rem; opacity: 0.95; margin-bottom: 2rem; }
-    .image { width: 100%; height: 400px; object-fit: cover; }
-    .content { padding: 2rem; }
-    .cta { display: inline-block; margin-top: 1.5rem; padding: 1rem 2.5rem; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; 
-      text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 1.125rem;
-      transition: transform 0.2s; }
-    .cta:hover { transform: translateY(-2px); }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="hero">
-      <h1>${title}</h1>
-      ${description ? `<p class="description">${description.slice(0, 200)}...</p>` : ''}
-      <a href="#" class="cta">Découvrir →</a>
-    </div>
-    ${imageUrl ? `<img src="${imageUrl}" alt="${title}" class="image" />` : ''}
-    <div class="content">
-      <p style="color: #666; text-align: center;">
-        ⚡ Landing page générée en mode simplifié
-      </p>
-    </div>
-  </div>
-</body>
-</html>`;
+export type LandingGenerationStatus = {
+  progress: number;
+  message: string;
+  loading: boolean;
+  ready: boolean;
+  hasError: boolean;
 };
 
 interface RegenerateLandingProps {
@@ -92,772 +45,425 @@ interface RegenerateLandingProps {
   };
   config: LandingConfig;
   autoGenerate?: boolean;
+  regenerateExisting?: boolean;
   onGenerated?: (html: string) => void;
   onClose?: () => void;
+  onStatusChange?: (status: LandingGenerationStatus) => void;
 }
+
+const normalizeContentLength = (value: string): "short" | "medium" | "long" => {
+  const normalized = (value || "").toLowerCase();
+  if (normalized.includes("short") || normalized.includes("courte") || normalized.includes("400")) return "short";
+  if (normalized.includes("long") || normalized.includes("longue") || normalized.includes("1500")) return "long";
+  return "medium";
+};
+
+const fallbackLanding = (
+  title: string,
+  description: string | undefined,
+  imageUrl: string | undefined,
+  lang: "fr" | "en",
+) => {
+  const fr = lang === "fr";
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>*{box-sizing:border-box}body{margin:0;padding:20px;background:#f8fafc;color:#0f172a;font-family:Inter,system-ui,sans-serif}.card{max-width:980px;margin:auto;overflow:hidden;border:1px solid #e2e8f0;border-radius:24px;background:#fff}.hero{padding:48px 28px;text-align:center;background:#111827;color:#fff}h1{margin:0 0 16px;font-size:clamp(30px,5vw,52px);line-height:1.05}.copy{max-width:720px;margin:auto;color:#e2e8f0}.product{display:block;width:100%;max-height:560px;object-fit:contain;padding:28px}.note{padding:18px;text-align:center;color:#64748b}</style></head><body><main class="card"><section class="hero"><h1>${title}</h1>${description ? `<p class="copy">${description.slice(0, 260)}</p>` : ""}</section>${imageUrl ? `<img class="product" src="${imageUrl}" alt="${title}">` : ""}<p class="note">⚡ ${fr ? "Landing page générée en mode simplifié" : "Landing page generated in simplified mode"}</p></main></body></html>`;
+};
 
 export default function RegenerateLanding({
   product,
   config,
   autoGenerate = false,
+  regenerateExisting = false,
   onGenerated,
   onClose,
+  onStatusChange,
 }: RegenerateLandingProps) {
-  const { t, tf, language } = useTranslation();
+  const { language } = useTranslation();
+  const fr = language === "fr";
+  const contentLength = normalizeContentLength(config.contentLength);
+
+  const copy = useMemo(() => fr ? {
+    preparing: "Préparation de la génération…",
+    vendor: "Récupération de la marque…",
+    title: "Optimisation du titre SEO…",
+    vision: "Analyse du visuel avec Vision IA…",
+    content: "Génération du contenu de la landing page…",
+    finalizing: "Finalisation du design et du HTML…",
+    generated: "Landing page générée",
+    failed: "La génération de la landing page a échoué",
+    partial: "Génération partielle",
+    partialDesc: "La génération complète a échoué. Un modèle simplifié a été créé.",
+    retryFast: "Réessayer en mode rapide",
+    timeout: "Génération trop longue",
+    timeoutDesc: "La génération a dépassé le délai maximal. Vous pouvez réessayer.",
+    unknownBrand: "Marque inconnue",
+    brand: "Marque",
+    generatedBrand: "Marque générée",
+    optimizedTitle: "Titre optimisé SEO",
+    titleSync: "Synchronisez avec Shopify pour appliquer le nouveau titre.",
+    generationTitle: "Génération IA de la landing page",
+    visionAi: "Vision IA",
+    progress: [
+      "Initialisation des modèles IA…",
+      "Analyse de l’image produit avec Vision IA",
+      "Extraction des attributs visuels et du style",
+      "Analyse du contexte produit",
+      "Rédaction du contenu de conversion",
+      "Création des sections principales",
+      "Construction de la structure responsive",
+      "Application du design",
+      "Optimisation mobile",
+      "Optimisation finale",
+      "Landing page prête !",
+    ],
+    stages: ["Initialisation IA", "Analyse visuelle", "Analyse du contexte", "Génération du contenu", "Optimisation du layout", "Assemblage final", "Terminé"],
+    badges: ["Vision IA", "UX optimisée", "Mobile First", "Optimisée conversion"],
+    preview: "Prévisualisation",
+    desktop: "Ordinateur",
+    mobile: "Mobile",
+    download: "Télécharger HTML",
+    downloaded: "Fichier HTML téléchargé",
+    sync: "Synchroniser avec Shopify",
+    syncing: "Synchronisation…",
+    synced: "Landing page synchronisée avec Shopify",
+    syncError: "Impossible de synchroniser avec Shopify",
+    importRequired: "Ce produit doit d’abord être importé depuis Shopify",
+    importRequiredDesc: "Reconnectez ou importez le produit depuis les intégrations.",
+    viewLive: "Visualiser en ligne",
+    close: "Fermer",
+    retry: "Réessayer",
+    existing: "HTML existant chargé",
+    readyDesc: "Responsive, mobile-first et prête à être vérifiée avant synchronisation.",
+  } : {
+    preparing: "Preparing generation…",
+    vendor: "Resolving brand information…",
+    title: "Optimizing SEO title…",
+    vision: "Analyzing product visual with Vision AI…",
+    content: "Generating landing page content…",
+    finalizing: "Finalizing design and HTML…",
+    generated: "Landing page generated",
+    failed: "Landing page generation failed",
+    partial: "Partial generation",
+    partialDesc: "Full generation failed. A simplified fallback template was created.",
+    retryFast: "Retry in fast mode",
+    timeout: "Generation took too long",
+    timeoutDesc: "Generation exceeded the maximum duration. You can retry.",
+    unknownBrand: "Unknown brand",
+    brand: "Brand",
+    generatedBrand: "Generated brand",
+    optimizedTitle: "SEO-optimized title",
+    titleSync: "Sync with Shopify to apply the new title.",
+    generationTitle: "AI-Powered Landing Generation",
+    visionAi: "Vision AI",
+    progress: [
+      "Initializing AI models…",
+      "Analyzing product image with Vision AI",
+      "Extracting visual attributes and styling",
+      "Analyzing product context",
+      "Generating conversion-focused copy",
+      "Crafting hero sections",
+      "Building responsive structure",
+      "Applying design patterns",
+      "Optimizing for mobile",
+      "Final optimization",
+      "Landing page ready!",
+    ],
+    stages: ["AI Initialization", "Vision Analysis", "Context Processing", "Content Generation", "Layout Optimization", "Final Assembly", "Complete"],
+    badges: ["Vision AI", "UX Optimized", "Mobile First", "Conversion Focused"],
+    preview: "Preview",
+    desktop: "Desktop",
+    mobile: "Mobile",
+    download: "Download HTML",
+    downloaded: "HTML file downloaded",
+    sync: "Sync with Shopify",
+    syncing: "Syncing…",
+    synced: "Landing page synced with Shopify",
+    syncError: "Unable to sync with Shopify",
+    importRequired: "This product must first be imported from Shopify",
+    importRequiredDesc: "Reconnect or import the product from Integrations.",
+    viewLive: "View live",
+    close: "Close",
+    retry: "Retry",
+    existing: "Existing HTML loaded",
+    readyDesc: "Responsive, mobile-first and ready to review before syncing.",
+  }, [fr]);
+
   const [loading, setLoading] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
-  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState("");
+  const [progressMessage, setProgressMessage] = useState(copy.preparing);
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [error, setError] = useState<string | null>(null);
-  const [loadingExisting, setLoadingExisting] = useState(true);
-  const [syncedProductUrl, setSyncedProductUrl] = useState<string | null>(null);
   const [optimizedTitle, setOptimizedTitle] = useState<string | null>(null);
   const [titleNeedsSync, setTitleNeedsSync] = useState(false);
+  const [syncedProductUrl, setSyncedProductUrl] = useState<string | null>(null);
+  const hasGeneratedRef = useRef(false);
+  const isGeneratingRef = useRef(false);
 
-  // Charger la landing page existante directement depuis shopify_products
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
+    setLoadingExisting(true);
+    setHtmlContent("");
+    setProgress(0);
+    setError(null);
+    setOptimizedTitle(null);
+    setTitleNeedsSync(false);
+    hasGeneratedRef.current = false;
+    isGeneratingRef.current = false;
 
-    const loadExistingLanding = async () => {
+    const load = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error: loadError } = await supabase
           .from("shopify_products")
           .select("landing_page")
           .eq("id", product.id)
           .single();
-
-        if (error) throw error;
-
-        if (data?.landing_page && isMounted) {
-          setHtmlContent(data.landing_page);
-        }
-      } catch (error) {
-        console.error("Erreur chargement landing:", error);
+        if (loadError) throw loadError;
+        if (mounted && data?.landing_page) setHtmlContent(data.landing_page);
+      } catch (loadError) {
+        console.error("[Landing] Existing landing load failed", loadError);
       } finally {
-        if (isMounted) {
-          setLoadingExisting(false);
-        }
+        if (mounted) setLoadingExisting(false);
       }
     };
-
-    loadExistingLanding();
-
-    return () => {
-      isMounted = false;
-    };
+    void load();
+    return () => { mounted = false; };
   }, [product.id]);
 
-  // Ref pour éviter les générations multiples
-  const hasGeneratedRef = useRef(false);
-  const isGeneratingRef = useRef(false);
-
-  // Reset le ref quand le produit change
-  useEffect(() => {
-    console.log(`🔄 [Landing] Product changed to: ${product.id}, resetting refs`);
-    hasGeneratedRef.current = false;
-    isGeneratingRef.current = false;
-  }, [product.id]);
-
-  // Auto-generate simplifié avec double protection
-  useEffect(() => {
-    console.log(
-      `🔍 [Landing] Auto-generate check: autoGenerate=${autoGenerate}, loading=${loading}, hasContent=${!!htmlContent}, hasGenerated=${hasGeneratedRef.current}, isGenerating=${isGeneratingRef.current}`,
-    );
-
-    if (autoGenerate && !loading && !htmlContent && !hasGeneratedRef.current && !isGeneratingRef.current) {
-      console.log("🚀 [Landing] Starting generation...");
-      hasGeneratedRef.current = true;
-      isGeneratingRef.current = true;
-      handleGenerate(false).finally(() => {
-        console.log("✅ [Landing] Generation completed, releasing lock");
-        isGeneratingRef.current = false;
-      });
+  const resolveVendor = async () => {
+    if (config.vendorSource === "shopify") {
+      const { data } = await supabase.from("shopify_products").select("vendor").eq("id", product.id).single();
+      return data?.vendor || copy.unknownBrand;
     }
-  }, [autoGenerate, loading]);
-
-  /** ----------------------------
-   * 🏷️ Resolve Vendor based on config
-   -----------------------------*/
-  const resolveVendor = async (): Promise<string> => {
-    switch (config.vendorSource) {
-      case "shopify":
-        const { data: productData } = await supabase
-          .from("shopify_products")
-          .select("vendor")
-          .eq("id", product.id)
-          .single();
-        return productData?.vendor || "Marque inconnue";
-
-      case "extract":
-        const words = product.title.split(" ");
-        const capitalizedWord = words.find(
-          (word) =>
-            word.length > 2 && word[0] === word[0].toUpperCase() && word.slice(1) === word.slice(1).toLowerCase(),
-        );
-
-        if (capitalizedWord) {
-          return capitalizedWord;
-        }
-
-        const fallback = words.find((w) => w.length > 3) || "Marque";
-        return fallback;
-
-      case "generate":
-        try {
-          const { data: aiData } = await supabase.functions.invoke("generate-vendor-name", {
-            body: {
-              productTitle: product.title,
-              productDescription: product.description,
-            },
-          });
-
-          if (aiData?.vendor) {
-            return aiData.vendor;
-          }
-        } catch (err) {
-          console.error("[Vendor] AI generation failed:", err);
-        }
-
-        return "Marque générée";
-
-      default:
-        return "Marque inconnue";
+    if (config.vendorSource === "extract") {
+      const words = product.title.split(/\s+/).filter(Boolean);
+      return words.find((word) => word.length > 2 && /^[A-ZÀ-Ý][a-zà-ÿ]+$/.test(word)) || words.find((word) => word.length > 3) || copy.brand;
     }
-  };
-
-  /** ----------------------------
-   * 🖼️ Analyze Image with AI Vision
-   -----------------------------*/
-  const analyzeImageWithAI = async (imageUrl: string): Promise<string> => {
-    if (!imageUrl) {
-      console.log("[Vision] No image URL provided");
-      return "";
-    }
-
     try {
-      setProgressMessage(t.landingGeneration.analyzing);
-      setProgress(25);
-
-      const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
-        body: {
-          imageUrl: imageUrl,
-          productContext: `${product.title} ${config.vendorSource === "shopify" ? "" : ""}`,
-        },
+      const { data } = await supabase.functions.invoke("generate-vendor-name", {
+        body: { productTitle: product.title, productDescription: product.description },
       });
+      if (data?.vendor) return data.vendor;
+    } catch (vendorError) {
+      console.error("[Landing] Vendor generation failed", vendorError);
+    }
+    return copy.generatedBrand;
+  };
 
-      if (error) {
-        console.error("[Vision] Image analysis failed:", error);
-        return "";
-      }
-
-      console.log("[Vision] Image analysis completed");
+  const analyzeImage = async () => {
+    if (!product.image_url) return "";
+    setProgress(35);
+    setProgressMessage(copy.vision);
+    try {
+      const { data, error: visionError } = await supabase.functions.invoke("analyze-image-with-vision", {
+        body: { imageUrl: product.image_url, productContext: product.title },
+      });
+      if (visionError) throw visionError;
       return data?.attributes ? JSON.stringify(data.attributes) : "";
-    } catch (err) {
-      console.error("[Vision] Image analysis error:", err);
+    } catch (visionError) {
+      console.error("[Landing] Vision analysis failed", visionError);
       return "";
     }
   };
 
-  /** ----------------------------
-   * 📏 Calculate Content Length Parameters
-   -----------------------------*/
-  const getContentLengthParams = () => {
-    switch (config.contentLength) {
-      case "short":
-        return {
-          maxTokens: 800,
-          wordCount: "150-200 mots",
-          sections: 2,
-          description: "Contenu concis et impactant",
-        };
-      case "medium":
-        return {
-          maxTokens: 1200,
-          wordCount: "300-400 mots",
-          sections: 3,
-          description: "Contenu équilibré avec détails modérés",
-        };
-      case "long":
-        return {
-          maxTokens: 2000,
-          wordCount: "500-700 mots",
-          sections: 4,
-          description: "Contenu détaillé et complet",
-        };
-      default:
-        return {
-          maxTokens: 1200,
-          wordCount: "300-400 mots",
-          sections: 3,
-          description: "Contenu équilibré",
-        };
-    }
-  };
-
-  /** ----------------------------
-   * ✨ Generate Landing via AI with Progress
-   -----------------------------*/
-  const handleGenerate = async (forceFastMode = false) => {
-    // ⏱️ Client-side timeout (90 seconds max)
-    const timeoutId = setTimeout(() => {
-      setError(t.landingGeneration.timeout.tooLong);
+  const generate = async (forceFastMode = false) => {
+    if (isGeneratingRef.current) return;
+    isGeneratingRef.current = true;
+    hasGeneratedRef.current = true;
+    let timedOut = false;
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
       setLoading(false);
-      setProgress(0);
-      toast.error(t.landingGeneration.timeout.timeoutError, {
-        description: t.landingGeneration.timeout.timeoutDesc
-      });
+      setError(copy.timeoutDesc);
+      toast.error(copy.timeout, { description: copy.timeoutDesc });
     }, 90000);
 
     try {
       setLoading(true);
       setError(null);
-      setProgress(0);
-      setProgressMessage(t.landingGeneration.preparing);
+      setProgress(5);
+      setProgressMessage(copy.preparing);
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
 
-      await new Promise((resolve) => setTimeout(resolve, 300));
       setProgress(10);
-      setProgressMessage(t.landingGeneration.progressMessages.resolvingVendor);
-
-      // ✅ ÉTAPE 1 : Résoudre le vendor
-      const resolvedVendor = await resolveVendor();
-      console.log("[Landing] Resolved vendor:", resolvedVendor);
-
-      // ✅ ÉTAPE 1.1 : Mettre à jour le vendor dans la DB si généré par IA
-      if (config.vendorSource === "generate" && resolvedVendor !== "Marque générée") {
-        await supabase
-          .from("shopify_products")
-          .update({ vendor: resolvedVendor })
-          .eq("id", product.id);
-        console.log("[Landing] Vendor updated in database:", resolvedVendor);
-        toast.success(`Marque "${resolvedVendor}" créée et sauvegardée`);
+      setProgressMessage(copy.vendor);
+      const vendor = await resolveVendor();
+      if (config.vendorSource === "generate" && vendor !== copy.generatedBrand) {
+        await supabase.from("shopify_products").update({ vendor }).eq("id", product.id);
       }
 
       setProgress(20);
-      setProgressMessage(t.landingGeneration.progressMessages.optimizingTitle);
-
-      // ✅ ÉTAPE 1.5 : Optimiser le titre avec Smart Title (Vision + AI) - seulement si activé
+      setProgressMessage(copy.title);
+      let generatedTitle: string | null = null;
       if (config.regenerateTitle !== false) {
         try {
-          const { data: smartTitleData, error: smartTitleError } = await supabase.functions.invoke("smart-title", {
-            body: {
-              productId: product.id,
-              language: language,
-            },
+          const { data, error: titleError } = await supabase.functions.invoke("smart-title", {
+            body: { productId: product.id, language },
           });
-
-          if (smartTitleError) {
-            console.warn("[Landing] Smart title optimization failed:", smartTitleError);
-          } else if (smartTitleData?.success && smartTitleData?.optimizedTitle) {
-            console.log("[Landing] Title optimized with Vision AI:", smartTitleData.optimizedTitle);
-            setOptimizedTitle(smartTitleData.optimizedTitle);
+          if (titleError) throw titleError;
+          if (data?.success && data?.optimizedTitle) {
+            generatedTitle = data.optimizedTitle;
+            setOptimizedTitle(data.optimizedTitle);
             setTitleNeedsSync(true);
-            toast.success(tf("landingGeneration.progressMessages.titleOptimized", { title: smartTitleData.optimizedTitle }), {
-              description: t.landingGeneration.progressMessages.titleBasedOnVision,
-            });
           }
-        } catch (err) {
-          console.warn("[Landing] Smart title error:", err);
-          // Continue even if smart title fails
+        } catch (titleError) {
+          console.warn("[Landing] Smart title failed", titleError);
         }
-      } else {
-        console.log("[Landing] Title regeneration skipped (disabled in config)");
       }
 
-      setProgress(35);
-      setProgressMessage(t.landingGeneration.progressMessages.analyzingImages);
-
-      // ✅ ÉTAPE 2 : Analyser l'image avec vision IA
-      let imageAnalysis = "";
-      if (product.image_url) {
-        imageAnalysis = await analyzeImageWithAI(product.image_url);
-      } else {
-        setProgress(40); // Skip to same progress if no image
-      }
-
+      const imageAnalysis = await analyzeImage();
       setProgress(50);
-      setProgressMessage("Génération du contenu HTML...");
-
-      // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur
-      const contentParams = getContentLengthParams();
-
-      console.log("[Landing] Content parameters:", {
-        length: config.contentLength,
-        maxTokens: contentParams.maxTokens,
-        sections: contentParams.sections,
-        hasImageAnalysis: !!imageAnalysis,
-      });
-
-      // ✅ ÉTAPE 4 : Générer le landing avec tous les paramètres
-      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
+      setProgressMessage(copy.content);
+      const { data, error: generationError } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
           productId: product.id,
-          productTitle: optimizedTitle || product.title,
-          seo_title: product.seo_title, // ✅ Pass SEO title for landing page sync
+          productTitle: generatedTitle || product.title,
+          seo_title: product.seo_title,
           imageUrl: product.image_url,
           description: product.description,
-          vendor: resolvedVendor,
-          imageAnalysis: imageAnalysis,
-          language: language,
-          fastMode: forceFastMode || config.contentLength === "short", // ⚡ Enable fast mode for short content or if forced
+          vendor,
+          imageAnalysis,
+          language,
+          fastMode: forceFastMode || contentLength === "short",
           options: {
-            colorScheme: config.colorScheme, // Can be string (key) or object (values)
+            colorScheme: config.colorScheme,
             layout: config.layout,
             designStyle: config.designStyle || "modern",
-            contentLength: config.contentLength,
+            contentLength,
             customHighlights: config.customHighlights,
             theme: config.theme || "light",
           },
         },
       });
+      if (generationError) throw generationError;
+      if (!data?.html?.trim()) throw new Error(copy.failed);
+      if (timedOut) return;
 
-      setProgress(80);
-      setProgressMessage("Finalisation du HTML...");
-
-      if (data?.html?.trim()) {
-        const wordCount = data.html.split(/\s+/).length;
-        console.log(`[Landing] Generated content: ${wordCount} words (mobile-optimized by backend)`);
-
-        setHtmlContent(data.html);
-        setProgress(100);
-        setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
-
-        toast.success(t.landingGeneration.success.generated);
-        onGenerated?.(data.html);
-      } else {
-        throw new Error(t.landingGeneration.errors.noGenerated);
-      }
-    } catch (err: any) {
-      console.error("Error generating landing:", err);
-      const errorMsg = err?.message || t.landingGeneration.errors.generation;
-      setError(errorMsg);
-      
-      // 🛡️ Mode dégradé : générer un template basique de fallback
-      const fallbackHtml = generateFallbackLandingPage(product.title, product.description, product.image_url);
-      setHtmlContent(fallbackHtml);
+      setProgress(85);
+      setProgressMessage(copy.finalizing);
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+      setHtmlContent(data.html);
       setProgress(100);
-      
-      toast.error("Génération partielle", {
-        description: (
-          <>
-            La génération complète a échoué. Un template basique a été créé.{" "}
-            <button
-              onClick={() => handleGenerate(true)}
-              className="underline font-semibold hover:text-primary"
-            >
-              Réessayer en mode rapide
-            </button>
-          </>
-        ),
+      setProgressMessage(copy.generated);
+      toast.success(copy.generated);
+      onGenerated?.(data.html);
+    } catch (generationError: any) {
+      console.error("[Landing] Generation failed", generationError);
+      const message = generationError?.message || copy.failed;
+      setError(message);
+      const fallback = fallbackLanding(product.title, product.description, product.image_url, fr ? "fr" : "en");
+      setHtmlContent(fallback);
+      setProgress(100);
+      setProgressMessage(copy.partial);
+      toast.error(copy.partial, {
+        description: copy.partialDesc,
+        action: { label: copy.retryFast, onClick: () => void generate(true) },
         duration: 10000,
       });
-      
-      onGenerated?.(fallbackHtml);
+      onGenerated?.(fallback);
     } finally {
-      clearTimeout(timeoutId); // ⏱️ Clear timeout
+      window.clearTimeout(timeoutId);
       setLoading(false);
+      isGeneratingRef.current = false;
     }
   };
 
-  /** ----------------------------
-   * 💾 Download HTML
-   -----------------------------*/
-  const handleDownloadHTML = () => {
-    if (!htmlContent) return toast.error(t.landingGeneration.errors.noContent);
+  useEffect(() => {
+    if (!autoGenerate || loadingExisting || hasGeneratedRef.current || isGeneratingRef.current) return;
+    if (htmlContent && !regenerateExisting) return;
+    void generate(false);
+  }, [autoGenerate, loadingExisting, htmlContent, regenerateExisting]);
 
+  useEffect(() => {
+    onStatusChange?.({
+      progress,
+      message: progressMessage,
+      loading,
+      ready: Boolean(htmlContent) && !loading && (hasGeneratedRef.current || !regenerateExisting),
+      hasError: Boolean(error),
+    });
+  }, [progress, progressMessage, loading, htmlContent, error, regenerateExisting, onStatusChange]);
+
+  const download = () => {
+    if (!htmlContent) return;
     const blob = new Blob([htmlContent], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${product.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_landing.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${product.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_landing.html`;
+    link.click();
     URL.revokeObjectURL(url);
-
-    toast.success(t.landingGeneration.preview.downloaded);
+    toast.success(copy.downloaded);
   };
 
-  /** ----------------------------
-   * 🔄 Sync to Shopify
-   -----------------------------*/
-  const handleSyncToShopify = async () => {
-    if (!htmlContent) return toast.error(t.landingGeneration.errors.noContentSync);
-
+  const sync = async () => {
+    if (!htmlContent) return;
     try {
       setSyncing(true);
-      toast.info(t.landingGeneration.preview.syncInProgress);
-
-      const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
-        body: {
-          productId: product.id,
-          productTitle: product.title,
-          productHandle: product.handle,
-          htmlContent,
-        },
+      const { data, error: syncError } = await supabase.functions.invoke("sync-landing-to-shopify", {
+        body: { productId: product.id, productTitle: product.title, productHandle: product.handle, htmlContent },
       });
-
-      if (error) throw error;
+      if (syncError) throw syncError;
       if (data?.error) {
-        // Check if it's a "needs import" error
-        if (data?.needsImport || data.error.includes("non synchronisé") || data.error.includes("not synchronized")) {
-          toast.error("Ce produit doit d'abord être importé depuis Shopify", {
-            description: "Rendez-vous sur la page Intégration pour importer vos produits Shopify.",
-          });
-        } else {
-          toast.error(data.error);
-        }
+        if (data?.needsImport || String(data.error).includes("non synchronisé") || String(data.error).includes("not synchronized")) {
+          toast.error(copy.importRequired, { description: copy.importRequiredDesc });
+        } else toast.error(String(data.error));
         return;
       }
-
-      toast.success(t.landingGeneration.success.synced);
-      setTitleNeedsSync(false); // Title is now synced
-      if (data?.productUrl) {
-        setSyncedProductUrl(data.productUrl);
-      }
-    } catch (err: any) {
-      console.error("Error syncing to Shopify:", err);
-      toast.error(err?.message || t.landingGeneration.errors.sync);
+      setTitleNeedsSync(false);
+      if (data?.productUrl) setSyncedProductUrl(data.productUrl);
+      toast.success(copy.synced);
+    } catch (syncError: any) {
+      toast.error(syncError?.message || copy.syncError);
     } finally {
       setSyncing(false);
     }
   };
 
-  /** ----------------------------
-   * 🧠 UI Render
-   -----------------------------*/
+  const progressStep = progress >= 100 ? copy.progress[10] : copy.progress[Math.min(9, Math.max(0, Math.floor(progress / 10)))];
+  const stage = progress < 15 ? copy.stages[0] : progress < 30 ? copy.stages[1] : progress < 45 ? copy.stages[2] : progress < 65 ? copy.stages[3] : progress < 85 ? copy.stages[4] : progress < 100 ? copy.stages[5] : copy.stages[6];
+  const StageIcon = progress < 15 ? Loader2 : progress < 30 ? Scan : progress < 45 ? Brain : progress < 65 ? Wand2 : progress < 85 ? Layout : Sparkles;
+
   return (
-    <div className="space-y-6">
-      {/* Optimized Title Alert */}
+    <div className="space-y-5">
       {optimizedTitle && titleNeedsSync && (
-        <div className="flex items-center justify-between p-4 bg-accent/10 rounded-lg border border-accent">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent animate-pulse" />
-            <div>
-              <p className="font-medium text-sm">Titre optimisé SEO</p>
-              <p className="text-xs text-muted-foreground mb-1">{optimizedTitle}</p>
-              <p className="text-xs text-accent font-medium">
-                ⚠️ Synchronisez avec Shopify pour appliquer le nouveau titre
-              </p>
-            </div>
-          </div>
+        <div className="flex items-start gap-3 rounded-2xl border border-violet-200 bg-violet-50/70 p-4">
+          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-violet-700" />
+          <div><p className="text-sm font-semibold text-violet-950">{copy.optimizedTitle}</p><p className="mt-1 text-sm text-violet-900">{optimizedTitle}</p><p className="mt-1 text-xs font-medium text-violet-700">⚠️ {copy.titleSync}</p></div>
         </div>
       )}
 
-      {/* Existing Landing Page Status */}
-      {!loadingExisting && htmlContent && (
-        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-primary" />
-            <div>
-              <p className="font-medium text-sm">Landing page existante</p>
-              <p className="text-xs text-muted-foreground">Dernière modification • {product.title}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Progress Section */}
       {loading && (
-        <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-6 rounded-2xl border border-primary/20 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.08),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.02)_50%,transparent_75%)] bg-[length:250%_250%] animate-[gradient_8s_ease_infinite]" />
-
-          {/* Animated Title */}
-          <div className="flex items-center gap-4 mb-5 relative z-10">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-              <Sparkles className="w-8 h-8 text-accent animate-pulse relative z-10" />
+        <section className="relative overflow-hidden rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-slate-50 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-violet-600 text-white"><Sparkles className="h-5 w-5 animate-pulse" /></span>
+              <div><div className="flex flex-wrap items-center gap-2"><h3 className="text-base font-semibold text-slate-950 sm:text-lg">{copy.generationTitle}</h3><Badge variant="secondary" className="bg-violet-100 text-violet-700"><Zap className="mr-1 h-3 w-3" />{copy.visionAi}</Badge></div><p className="mt-1.5 flex items-center gap-2 text-sm text-slate-600"><Loader2 className="h-3.5 w-3.5 animate-spin text-violet-600" />{progressStep}</p></div>
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-lg text-foreground">AI-Powered Landing Generation</h3>
-                <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                  <Zap className="w-3 h-3 mr-1" />
-                  Vision AI
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                {progress < 10 && (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-                    <span className="text-sm text-muted-foreground">Initializing AI models...</span>
-                  </>
-                )}
-                {progress >= 10 && progress < 20 && (
-                  <>
-                    <Scan className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span className="text-sm text-muted-foreground">Analyzing product image with Vision AI</span>
-                  </>
-                )}
-                {progress >= 20 && progress < 30 && (
-                  <>
-                    <Eye className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Extracting visual attributes & styling</span>
-                  </>
-                )}
-                {progress >= 30 && progress < 40 && (
-                  <>
-                    <Target className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Market positioning analysis</span>
-                  </>
-                )}
-                {progress >= 40 && progress < 50 && (
-                  <>
-                    <Brain className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span className="text-sm text-muted-foreground">Generating persuasive copy</span>
-                  </>
-                )}
-                {progress >= 50 && progress < 60 && (
-                  <>
-                    <Wand2 className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Crafting hero sections</span>
-                  </>
-                )}
-                {progress >= 60 && progress < 70 && (
-                  <>
-                    <Layout className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Building responsive structure</span>
-                  </>
-                )}
-                {progress >= 70 && progress < 80 && (
-                  <>
-                    <Palette className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span className="text-sm text-muted-foreground">Applying design patterns</span>
-                  </>
-                )}
-                {progress >= 80 && progress < 90 && (
-                  <>
-                    <Smartphone className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Mobile optimization</span>
-                  </>
-                )}
-                {progress >= 90 && progress < 100 && (
-                  <>
-                    <FileCode className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Final optimization</span>
-                  </>
-                )}
-                {progress >= 100 && (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                    <span className="text-sm text-green-600 font-medium">Landing page ready!</span>
-                  </>
-                )}
-              </div>
-            </div>
+            <strong className="text-2xl tabular-nums text-slate-950">{progress}%</strong>
           </div>
-
-          {/* Progress bar */}
-          <div className="relative mt-4 z-10 space-y-3">
-            <Progress value={progress} showPercentage className="h-2" />
-
-            {/* Stage indicator */}
-            <div className="flex justify-center">
-              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-background/95 border-2 border-primary/30 shadow-lg backdrop-blur-sm">
-                {progress < 15 && (
-                  <>
-                    <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">AI Initialization</span>
-                  </>
-                )}
-                {progress >= 15 && progress < 30 && (
-                  <>
-                    <Scan className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Vision Analysis</span>
-                  </>
-                )}
-                {progress >= 30 && progress < 45 && (
-                  <>
-                    <Brain className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Context Processing</span>
-                  </>
-                )}
-                {progress >= 45 && progress < 65 && (
-                  <>
-                    <Wand2 className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Content Generation</span>
-                  </>
-                )}
-                {progress >= 65 && progress < 85 && (
-                  <>
-                    <Layout className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Layout Optimization</span>
-                  </>
-                )}
-                {progress >= 85 && progress < 100 && (
-                  <>
-                    <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Final Assembly</span>
-                  </>
-                )}
-                {progress >= 100 && (
-                  <>
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm font-semibold text-green-600">Complete</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Feature badges */}
-          <div className="flex flex-wrap gap-2 mt-5 relative z-10">
-            <div
-              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 20 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
-            >
-              <Scan className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Vision AI</span>
-            </div>
-            <div
-              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 50 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
-            >
-              <Brain className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">UX Optimized</span>
-            </div>
-            <div
-              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 70 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
-            >
-              <Smartphone className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Mobile First</span>
-            </div>
-            <div
-              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 90 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
-            >
-              <Target className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Conversion Focused</span>
-            </div>
-          </div>
-        </div>
+          <Progress value={progress} className="mt-5 h-2" />
+          <div className="mt-3 flex justify-center"><span className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700"><StageIcon className={`h-4 w-4 ${progress < 15 ? "animate-spin" : ""}`} />{stage}</span></div>
+          <div className="mt-5 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">{copy.badges.map((label, index) => { const icons = [Scan, Brain, Smartphone, Target]; const Icon = icons[index]; const active = progress >= [20, 50, 70, 90][index]; return <span key={label} className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium ${active ? "border-violet-200 bg-violet-50 text-violet-700" : "border-slate-200 bg-white text-slate-400"}`}><Icon className="h-3.5 w-3.5" />{label}</span>; })}</div>
+        </section>
       )}
 
-      {/* Error Section */}
       {error && !loading && (
-        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-destructive">{t.landingGeneration.errors.generation}</p>
-              <p className="text-sm text-destructive/90 mt-1">{error}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => handleGenerate(false)}>
-              {t.landingConfig.buttons.confirm}
-            </Button>
-          </div>
-        </div>
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4"><AlertCircle className="mt-0.5 h-5 w-5 text-amber-700" /><div className="flex-1"><p className="text-sm font-semibold text-amber-900">{copy.partial}</p><p className="mt-1 text-xs text-amber-800">{error}</p></div><Button variant="outline" size="sm" onClick={() => void generate(false)}>{copy.retry}</Button></div>
       )}
 
-      {/* Success State */}
-      {htmlContent && !loading && !error && (
+      {htmlContent && !loading && (
         <div className="space-y-4">
-          <div className="bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 rounded-xl p-3 sm:p-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-              <div className="flex-1">
-                <p className="font-semibold text-green-700 text-sm sm:text-base">
-                  {t.landingGeneration.success.generated} • {getContentLengthParams().wordCount}
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  {t.landingGeneration.preview.description} • {t.landingGeneration.preview.mobileOptimized}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                <span className="hidden sm:inline">{t.landingGeneration.preview.title}</span>
-                <span className="sm:hidden">{t.landingGeneration.preview.title}</span>
-              </h3>
-              <Tabs
-                value={previewMode}
-                onValueChange={(v) => setPreviewMode(v as "desktop" | "mobile")}
-                className="w-auto"
-              >
-                <TabsList className="h-8">
-                  <TabsTrigger value="desktop" className="text-xs sm:text-sm px-2 sm:px-3">
-                    <Monitor className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">{t.landingGeneration.preview.desktop}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="mobile" className="text-xs sm:text-sm px-2 sm:px-3">
-                    <Smartphone className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">{t.landingGeneration.preview.mobile}</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button
-                onClick={handleDownloadHTML}
-                variant="outline"
-                size="sm"
-                className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
-              >
-                <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{t.landingGeneration.preview.download}</span>
-                <span className="sm:hidden">{t.landingGeneration.preview.download}</span>
-              </Button>
-
-              {!syncedProductUrl ? (
-                <Button
-                  onClick={handleSyncToShopify}
-                  disabled={syncing}
-                  size="sm"
-                  className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
-                >
-                  {syncing ? (
-                    <>
-                      <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
-                      <span className="hidden sm:inline">{t.landingGeneration.preview.synchronizing}</span>
-                      <span className="sm:hidden">{t.landingGeneration.preview.synchronizing}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">{t.landingGeneration.preview.syncShopify}</span>
-                      <span className="sm:hidden">{t.landingGeneration.preview.syncShopify}</span>
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => window.open(syncedProductUrl, "_blank")}
-                  size="sm"
-                  className="gap-2 w-full sm:w-auto text-xs sm:text-sm bg-green-600 hover:bg-green-700"
-                >
-                  <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Visualiser en ligne</span>
-                  <span className="sm:hidden">Voir en ligne</span>
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <div
-            className={`border rounded-xl overflow-hidden bg-white shadow-inner transition-all duration-300 ${
-              previewMode === "mobile" ? "max-w-[375px] mx-auto h-[600px] sm:h-[650px]" : "h-[500px] sm:h-[650px]"
-            }`}
-          >
-            <iframe
-              srcDoc={htmlContent}
-              className="w-full h-full border-0"
-              sandbox="allow-same-origin allow-scripts"
-              title="Landing Page Preview"
-            />
-          </div>
+          <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"><CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" /><div><p className="text-sm font-semibold text-emerald-800">{hasGeneratedRef.current ? copy.generated : copy.existing}</p><p className="mt-1 text-xs text-emerald-700/80">{copy.readyDesc}</p></div></div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h3 className="flex items-center gap-2 text-base font-semibold text-slate-950"><Eye className="h-4 w-4 text-violet-600" />{copy.preview}</h3><Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as "desktop" | "mobile")}><TabsList><TabsTrigger value="desktop"><Monitor className="mr-1.5 h-4 w-4" />{copy.desktop}</TabsTrigger><TabsTrigger value="mobile"><Smartphone className="mr-1.5 h-4 w-4" />{copy.mobile}</TabsTrigger></TabsList></Tabs></div>
+          <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={download}><Download className="mr-2 h-4 w-4" />{copy.download}</Button>{!syncedProductUrl ? <Button size="sm" onClick={() => void sync()} disabled={syncing}>{syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}{syncing ? copy.syncing : copy.sync}</Button> : <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => window.open(syncedProductUrl, "_blank")}><ExternalLink className="mr-2 h-4 w-4" />{copy.viewLive}</Button>}{onClose && <Button variant="ghost" size="sm" onClick={onClose}>{copy.close}</Button>}</div>
+          <div className={`overflow-hidden rounded-2xl border border-slate-200 bg-white ${previewMode === "mobile" ? "mx-auto h-[650px] w-full max-w-[390px]" : "h-[680px] w-full"}`}><iframe srcDoc={htmlContent} className="h-full w-full border-0" sandbox="allow-same-origin allow-scripts" title={copy.preview} /></div>
         </div>
       )}
 
-      {/* Initial State */}
       {!loading && !htmlContent && !error && (
-        <div className="text-center py-10 text-muted-foreground border rounded-xl bg-muted/10">
-          <Loader2 className="w-6 h-6 mx-auto mb-2 text-primary/70 animate-pulse" />
-          <p className="text-sm">{t.landingGeneration.initializing}</p>
-        </div>
+        <div className="grid min-h-36 place-items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 text-center"><div><Loader2 className="mx-auto h-5 w-5 animate-spin text-violet-600" /><p className="mt-2 text-sm text-slate-500">{copy.preparing}</p></div></div>
       )}
     </div>
   );
