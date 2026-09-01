@@ -47,10 +47,10 @@ export function UsageReferenceTable() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          Table de Référence - Consommation d'Optimisations
+          Usage Reference — Optimization Credits
         </CardTitle>
         <CardDescription>
-          Voici combien d'optimisations sont consommées pour chaque action dans l'application
+          See how many optimization credits are used for each action in the application.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -59,9 +59,9 @@ export function UsageReferenceTable() {
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead className="w-[60px]"></TableHead>
-                <TableHead className="font-semibold">Fonctionnalité</TableHead>
+                <TableHead className="font-semibold">Feature</TableHead>
                 <TableHead className="hidden md:table-cell font-semibold">Description</TableHead>
-                <TableHead className="text-right font-semibold">Coût</TableHead>
+                <TableHead className="text-right font-semibold">Cost</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -95,21 +95,19 @@ export function UsageReferenceTable() {
         <div className="mt-6 space-y-3">
           <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 text-sm">
             <p className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-              💡 <span>Bon à savoir</span>
+              💡 <span>Good to know</span>
             </p>
             <p className="text-blue-800">
-              Les optimisations sont déduites de votre quota mensuel. Vous pouvez suivre votre consommation
-              en temps réel dans votre tableau de bord.
+              Optimization credits are deducted from your monthly quota. You can track your usage in real time from your dashboard.
             </p>
           </div>
           
           <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm">
             <p className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
-              ⚡ <span>Optimisez votre utilisation</span>
+              ⚡ <span>Optimize your usage</span>
             </p>
             <p className="text-amber-800">
-              <strong>Campagnes :</strong> Le coût varie selon la fréquence (journalière: 1, hebdomadaire: 3, mensuelle: 5).
-              Privilégiez les optimisations produits (1 crédit) pour maximiser votre quota.
+              <strong>Campaigns:</strong> cost varies by frequency (daily: 1, weekly: 3, monthly: 5). Prioritize product optimizations when you want to maximize your available quota.
             </p>
           </div>
         </div>
