@@ -9,7 +9,7 @@ const demoScreens = [
     title: "AI Creative Studio",
     eyebrow: "AI VISUALS",
     description: "Create campaign-ready product visuals with clear templates, categories and social formats before generating.",
-    image: "/demo/catalogoptimizer-studio.svg",
+    image: "/demo/catalogoptimizer-studio.webp",
     alt: "CatalogOptimizer AI Creative Studio interface",
     icon: Sparkles,
     accent: "from-violet-500/15 via-fuchsia-500/5 to-transparent",
@@ -18,7 +18,7 @@ const demoScreens = [
     title: "Product Optimization",
     eyebrow: "CATALOG",
     description: "Optimize product content, landing pages, product shots and backgrounds from one focused workspace.",
-    image: "/demo/catalogoptimizer-product.svg",
+    image: "/demo/catalogoptimizer-product.webp",
     alt: "CatalogOptimizer Product Optimization interface",
     icon: Package,
     accent: "from-emerald-500/12 via-violet-500/5 to-transparent",
@@ -27,7 +27,7 @@ const demoScreens = [
     title: "SEO Workspace",
     eyebrow: "SEO",
     description: "See smart SEO scores, missing metadata and the exact pages that need attention without jumping between tools.",
-    image: "/demo/catalogoptimizer-seo.svg",
+    image: "/demo/catalogoptimizer-seo.webp",
     alt: "CatalogOptimizer SEO Workspace interface",
     icon: SearchCheck,
     accent: "from-blue-500/15 via-violet-500/5 to-transparent",
@@ -99,7 +99,9 @@ export function CatalogDemoShowcase() {
                 key={active.image}
                 src={active.image}
                 alt={active.alt}
-                className="aspect-[4/3] w-full object-contain object-top"
+                loading="eager"
+                decoding="async"
+                className="aspect-[4/3] w-full bg-white object-contain object-top"
               />
 
               <Button
@@ -166,7 +168,7 @@ export function CatalogDemoShowcase() {
                 )}
               >
                 <div className="h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:h-24 sm:w-36">
-                  <img src={screen.image} alt="" className="h-full w-full object-cover object-top" />
+                  <img src={screen.image} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover object-top" />
                 </div>
                 <div className="min-w-0">
                   <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-50 text-violet-700">
