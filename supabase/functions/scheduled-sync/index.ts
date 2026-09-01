@@ -6,7 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Utility function to calculate next import date
 function calculateNextImport(
   frequency: string,
   scheduleHour: number,
@@ -14,73 +13,92 @@ function calculateNextImport(
   currentTime: Date
 ): Date {
   const next = new Date(currentTime);
-  
+
   console.log(`[CALC-NEXT] Input: frequency=${frequency}, hour=${scheduleHour}, day=${scheduleDay}, current=${currentTime.toISOString()}`);
-  
+
   switch (frequency) {
     case 'hourly':
-      // Simply add 1 hour
       next.setTime(next.getTime() + 60 * 60 * 1000);
       break;
-    
     case 'daily':
-      // Set to scheduled hour today, if past, move to tomorrow
       next.setUTCHours(scheduleHour, 0, 0, 0);
-      if (next <= currentTime) {
-        next.setUTCDate(next.getUTCDate() + 1);
-      }
+      if (next <= currentTime) next.setUTCDate(next.getUTCDate() + 1);
       break;
-    
-    case 'weekly':
-      // scheduleDay: 0=Sunday, 1=Monday, ..., 6=Saturday
+    case 'weekly': {
       next.setUTCHours(scheduleHour, 0, 0, 0);
       const currentDay = next.getUTCDay();
       let daysUntilTarget = scheduleDay - currentDay;
-      
-      // If same day, check if time has passed
-      if (daysUntilTarget === 0) {
-        // Same day - if scheduled time already passed, wait until next week
-        if (next <= currentTime) {
-          daysUntilTarget = 7;
-        }
-        // else daysUntilTarget stays 0 (later today)
-      } else if (daysUntilTarget < 0) {
-        // Target day already passed this week, go to next week
-        daysUntilTarget += 7;
-      }
-      
+      if (daysUntilTarget === 0 && next <= currentTime) daysUntilTarget = 7;
+      else if (daysUntilTarget < 0) daysUntilTarget += 7;
       next.setUTCDate(next.getUTCDate() + daysUntilTarget);
       break;
-    
-    case 'monthly':
-      // scheduleDay: 1-31 (day of month)
-      const targetDay = Math.min(scheduleDay, 28); // Avoid issues with short months
+    }
+    case 'monthly': {
+      const targetDay = Math.min(scheduleDay, 28);
       next.setUTCDate(targetDay);
       next.setUTCHours(scheduleHour, 0, 0, 0);
-      if (next <= currentTime) {
-        next.setUTCMonth(next.getUTCMonth() + 1);
-      }
+      if (next <= currentTime) next.setUTCMonth(next.getUTCMonth() + 1);
       break;
-      
+    }
     default:
       console.warn(`[CALC-NEXT] Unknown frequency: ${frequency}, defaulting to daily`);
       next.setUTCHours(scheduleHour, 0, 0, 0);
-      if (next <= currentTime) {
-        next.setUTCDate(next.getUTCDate() + 1);
-      }
+      if (next <= currentTime) next.setUTCDate(next.getUTCDate() + 1);
   }
-  
+
   console.log(`[CALC-NEXT] Output: ${next.toISOString()}`);
   return next;
 }
 
+function stringifyPayloadError(value: unknown): string | null {
+  if (!value) return null;
+  if (typeof value === 'string') return value.trim() || null;
+  if (value instanceof Error) return value.message;
+  if (Array.isArray(value)) {
+    const messages = value
+      .map((item) => stringifyPayloadError(item))
+      .filter((item): item is string => Boolean(item));
+    return messages.length ? messages.join('; ') : null;
+  }
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return stringifyPayloadError(record.message) || stringifyPayloadError(record.error) || JSON.stringify(record);
+  }
+  return String(value);
+}
+
+function extractInvocationError(result: any): string | null {
+  if (!result) return 'No response returned by synchronization function';
+
+  const invokeError = stringifyPayloadError(result.error);
+  if (invokeError) return invokeError;
+
+  const data = result.data;
+  if (!data || typeof data !== 'object') return null;
+
+  if (data.success === false) {
+    return stringifyPayloadError(data.error)
+      || stringifyPayloadError(data.errors)
+      || stringifyPayloadError(data.message)
+      || 'Synchronization function returned success=false';
+  }
+
+  // Some legacy Edge Functions return HTTP 200 with an `error` field instead of success=false.
+  return stringifyPayloadError(data.error);
+}
+
+function normalizeShopifyError(message: string): string {
+  if (/SHOPIFY_REAUTH_REQUIRED|unauthori[sz]ed|authorization expired|invalid.*access token|access token.*invalid|401/i.test(message)) {
+    return 'Shopify authorization expired. Please reconnect your Shopify store. [SHOPIFY_REAUTH_REQUIRED]';
+  }
+  return message;
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Safe healthCheck handler
   const body = await req.json().catch(() => ({}));
   if (body?.healthCheck === true) {
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
@@ -98,34 +116,27 @@ Deno.serve(async (req) => {
     const now = new Date();
     console.log(`[SCHEDULED-SYNC] Current time: ${now.toISOString()}`);
 
-    // Get all users with non-manual sync settings
     const { data: settings, error: settingsError } = await supabase
       .from('shopify_sync_settings')
       .select('*')
       .neq('import_frequency', 'manual');
 
-    if (settingsError) {
-      throw settingsError;
-    }
+    if (settingsError) throw settingsError;
 
     console.log(`[SCHEDULED-SYNC] Processing ${settings?.length || 0} users with auto-sync enabled`);
-    settings?.forEach(s => {
-      console.log(`  - User ${s.user_id}: ${s.import_frequency}, next: ${s.next_import_at}`);
+    settings?.forEach((setting) => {
+      console.log(`  - User ${setting.user_id}: ${setting.import_frequency}, next: ${setting.next_import_at}`);
     });
 
     for (const setting of settings || []) {
       const userId = setting.user_id;
-      const lastImport = setting.last_import_at ? new Date(setting.last_import_at) : null;
-      
       const storeId = setting.store_id;
-      
-      // Skip if no store_id (legacy data)
+
       if (!storeId) {
         console.error(`[SCHEDULED-SYNC] No store_id for user ${userId}, skipping`);
         continue;
       }
 
-      // Récupérer les credentials Shopify pour ce store spécifique
       const { data: shopifyConnection } = await supabase
         .from('shopify_connections')
         .select('store_url, access_token, id')
@@ -138,13 +149,11 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Extract shop name from store_url (e.g., "myshop.myshopify.com" -> "myshop")
       const shopName = shopifyConnection.store_url
         .replace(/^https?:\/\//, '')
         .replace(/\.myshopify\.com.*$/, '');
       const authToken = shopifyConnection.access_token;
-      const syncMode = setting.sync_mode || 'smart';
-      
+
       let shouldSync = false;
       let reason = '';
 
@@ -153,7 +162,6 @@ Deno.serve(async (req) => {
       console.log(`  Last import: ${setting.last_import_at}`);
       console.log(`  Next import: ${setting.next_import_at}`);
 
-      // Simple check: sync if next_import_at is in the past or null
       if (!setting.next_import_at) {
         shouldSync = true;
         reason = 'first sync (no next_import_at)';
@@ -167,201 +175,200 @@ Deno.serve(async (req) => {
 
       console.log(`  Should sync: ${shouldSync} (${reason})`);
 
-      if (shouldSync) {
-        console.log(`[SCHEDULED-SYNC] Starting sync for user ${userId} (${reason})`);
+      if (!shouldSync) {
+        console.log(`[SCHEDULED-SYNC] Skipping sync for user ${userId} (not scheduled)`);
+        continue;
+      }
 
-        // Create sync history entry with store_id
-        const { data: historyEntry, error: historyError } = await supabase
-          .from('sync_history')
-          .insert({
-            user_id: userId,
-            store_id: storeId,
-            sync_type: 'full', // Now includes export + import
-            content_types: setting.import_types || [],
-            status: 'running',
-          })
-          .select()
-          .single();
+      console.log(`[SCHEDULED-SYNC] Starting sync for user ${userId} (${reason})`);
 
-        if (historyError) {
-          console.error(`[SCHEDULED-SYNC] Error creating history entry for user ${userId}:`, historyError);
-          continue;
-        }
+      const { data: historyEntry, error: historyError } = await supabase
+        .from('sync_history')
+        .insert({
+          user_id: userId,
+          store_id: storeId,
+          sync_type: 'full',
+          content_types: setting.import_types || [],
+          status: 'running',
+        })
+        .select()
+        .single();
 
-        const startTime = Date.now();
-        let totalImported = 0;
-        let totalExported = 0;
-        let hasError = false;
-        let errorMessage = '';
+      if (historyError) {
+        console.error(`[SCHEDULED-SYNC] Error creating history entry for user ${userId}:`, historyError);
+        continue;
+      }
 
-        // ========================================
-        // PHASE 1: EXPORT (NewAI → Shopify)
-        // ========================================
-        // Export products with needs_export = true or modified since last export
-        if (setting.export_auto_enabled !== false) {
-          console.log(`[SCHEDULED-SYNC] PHASE 1: Exporting products to Shopify...`);
-          
-          try {
-            const exportResult = await supabase.functions.invoke('batch-export-products', {
-              body: {
-                serviceMode: true,
-                userId: setting.user_id,
-                storeId,
-                batchSize: 100,
-                onlyNeedsExport: true
-              }
-            });
+      const startTime = Date.now();
+      let totalImported = 0;
+      let totalExported = 0;
+      let hasError = false;
+      const errorMessages: string[] = [];
 
-            if (exportResult?.error) {
-              throw new Error(exportResult.error.message);
-            }
+      if (setting.export_auto_enabled !== false) {
+        console.log('[SCHEDULED-SYNC] PHASE 1: Exporting products to Shopify...');
+        try {
+          const exportResult = await supabase.functions.invoke('batch-export-products', {
+            body: {
+              serviceMode: true,
+              userId: setting.user_id,
+              storeId,
+              batchSize: 100,
+              onlyNeedsExport: true,
+            },
+          });
 
-            totalExported = exportResult?.data?.exported || 0;
-            console.log(`[SCHEDULED-SYNC] ✅ Exported ${totalExported} products to Shopify`);
-            
-            if (exportResult?.data?.errors > 0) {
-              errorMessage += `Export: ${exportResult.data.errors} errors; `;
-            }
-          } catch (exportError) {
-            console.error(`[SCHEDULED-SYNC] ⚠️ Export phase error:`, exportError);
-            const message = exportError instanceof Error ? exportError.message : String(exportError);
-            errorMessage += `Export: ${message}; `;
-            // Continue to import phase even if export fails
-          }
-        } else {
-          console.log(`[SCHEDULED-SYNC] Export disabled for user ${userId}, skipping export phase`);
-        }
+          const exportFailure = extractInvocationError(exportResult);
+          if (exportFailure) throw new Error(normalizeShopifyError(exportFailure));
 
-        // ========================================
-        // PHASE 2: IMPORT (Shopify → NewAI)
-        // ========================================
-        console.log(`[SCHEDULED-SYNC] PHASE 2: Importing from Shopify...`);
+          totalExported = Number(exportResult?.data?.exported || 0);
+          console.log(`[SCHEDULED-SYNC] ✅ Exported ${totalExported} products to Shopify`);
 
-        // Import based on selected types
-        for (const type of setting.import_types || []) {
-          try {
-            let result;
-            switch (type) {
-              case 'products':
-                result = await supabase.functions.invoke('import-products', {
-                  body: { 
-                    serviceMode: true,
-                    userId: setting.user_id,
-                    shopName,
-                    authToken,
-                    storeId
-                  }
-                });
-                break;
-              case 'collections':
-                result = await supabase.functions.invoke('import-shopify-collections', {
-                  body: { 
-                    serviceMode: true,
-                    userId: setting.user_id,
-                    shopName,
-                    storeId
-                  }
-                });
-                break;
-              case 'pages':
-                result = await supabase.functions.invoke('import-shopify-pages', {
-                  body: { 
-                    serviceMode: true,
-                    userId: setting.user_id,
-                    store_id: storeId
-                  }
-                });
-                break;
-              case 'articles':
-                result = await supabase.functions.invoke('import-shopify-articles', {
-                  body: { 
-                    serviceMode: true,
-                    userId: setting.user_id,
-                    shopName,
-                    authToken,
-                    storeId
-                  }
-                });
-                break;
-              case 'images':
-                result = await supabase.functions.invoke('import-content-images', {
-                  body: { 
-                    serviceMode: true,
-                    userId: setting.user_id,
-                    storeId,
-                    types: ['collections', 'pages', 'articles', 'homepage']
-                  }
-                });
-                break;
-            }
-
-            if (result?.error) {
-              throw new Error(result.error.message);
-            }
-
-            if (result?.data?.totalImported) {
-              totalImported += result.data.totalImported;
-            }
-
-            console.log(`[SCHEDULED-SYNC] Imported ${type} for user ${userId}: ${result?.data?.totalImported || 0} items`);
-          } catch (error) {
-            console.error(`[SCHEDULED-SYNC] Error importing ${type} for user ${userId}:`, error);
+          const exportErrorCount = Number(exportResult?.data?.errors || 0);
+          if (exportErrorCount > 0) {
             hasError = true;
-            const message = error instanceof Error ? error.message : String(error);
-            errorMessage += `${type}: ${message}; `;
+            errorMessages.push(`Export: ${exportErrorCount} product(s) failed`);
           }
+        } catch (exportError) {
+          hasError = true;
+          const rawMessage = exportError instanceof Error ? exportError.message : String(exportError);
+          const message = normalizeShopifyError(rawMessage);
+          console.error('[SCHEDULED-SYNC] ⚠️ Export phase error:', message);
+          errorMessages.push(`Export: ${message}`);
         }
+      } else {
+        console.log(`[SCHEDULED-SYNC] Export disabled for user ${userId}, skipping export phase`);
+      }
 
-        const duration = Date.now() - startTime;
+      console.log('[SCHEDULED-SYNC] PHASE 2: Importing from Shopify...');
 
-        // Update history
-        await supabase
-          .from('sync_history')
-          .update({
-            status: hasError ? 'failed' : 'success',
-            items_synced: totalImported + totalExported,
-            duration_ms: duration,
-            error_message: errorMessage || null,
-            completed_at: new Date().toISOString(),
-          })
-          .eq('id', historyEntry.id);
+      for (const type of setting.import_types || []) {
+        try {
+          let result: any = null;
 
-        // Calculate next import time
-        const nextImportDate = calculateNextImport(
-          setting.import_frequency,
-          setting.import_schedule_hour || 9,
-          setting.import_schedule_day || 1,
-          now
-        );
+          switch (type) {
+            case 'products':
+              result = await supabase.functions.invoke('import-products', {
+                body: {
+                  serviceMode: true,
+                  userId: setting.user_id,
+                  shopName,
+                  authToken,
+                  storeId,
+                },
+              });
+              break;
+            case 'collections':
+              result = await supabase.functions.invoke('import-shopify-collections', {
+                body: {
+                  serviceMode: true,
+                  userId: setting.user_id,
+                  shopName,
+                  storeId,
+                },
+              });
+              break;
+            case 'pages':
+              result = await supabase.functions.invoke('import-shopify-pages', {
+                body: {
+                  serviceMode: true,
+                  userId: setting.user_id,
+                  store_id: storeId,
+                },
+              });
+              break;
+            case 'articles':
+              result = await supabase.functions.invoke('import-shopify-articles', {
+                body: {
+                  serviceMode: true,
+                  userId: setting.user_id,
+                  shopName,
+                  authToken,
+                  storeId,
+                },
+              });
+              break;
+            case 'images':
+              result = await supabase.functions.invoke('import-content-images', {
+                body: {
+                  serviceMode: true,
+                  userId: setting.user_id,
+                  storeId,
+                  types: ['collections', 'pages', 'articles', 'homepage'],
+                },
+              });
+              break;
+            default:
+              console.warn(`[SCHEDULED-SYNC] Unknown import type "${type}", skipping`);
+              continue;
+          }
 
-        const syncTimestamp = new Date().toISOString();
-        
-        // Update last import/export AND next import timestamps for sync settings
-        await supabase
-          .from('shopify_sync_settings')
-          .update({ 
-            last_import_at: syncTimestamp,
-            last_export_at: syncTimestamp,
-            next_import_at: nextImportDate.toISOString()
-          })
-          .eq('user_id', userId)
-          .eq('store_id', storeId);
+          const importFailure = extractInvocationError(result);
+          if (importFailure) throw new Error(normalizeShopifyError(importFailure));
 
-        // ALSO update shopify_connections.last_sync_at for UI display
+          totalImported += Number(result?.data?.totalImported || 0);
+          console.log(`[SCHEDULED-SYNC] Imported ${type} for user ${userId}: ${result?.data?.totalImported || 0} items`);
+        } catch (error) {
+          hasError = true;
+          const rawMessage = error instanceof Error ? error.message : String(error);
+          const message = normalizeShopifyError(rawMessage);
+          console.error(`[SCHEDULED-SYNC] Error importing ${type} for user ${userId}:`, message);
+          errorMessages.push(`${type}: ${message}`);
+        }
+      }
+
+      const duration = Date.now() - startTime;
+      const errorMessage = errorMessages.join('; ') || null;
+
+      await supabase
+        .from('sync_history')
+        .update({
+          status: hasError ? 'failed' : 'success',
+          items_synced: totalImported + totalExported,
+          duration_ms: duration,
+          error_message: errorMessage,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', historyEntry.id);
+
+      const nextImportDate = calculateNextImport(
+        setting.import_frequency,
+        setting.import_schedule_hour || 9,
+        setting.import_schedule_day || 1,
+        now,
+      );
+
+      const syncTimestamp = new Date().toISOString();
+      const syncSettingsUpdate: Record<string, string> = {
+        next_import_at: nextImportDate.toISOString(),
+      };
+
+      // A failed attempt must never be displayed as the last successful import/export.
+      if (!hasError) {
+        syncSettingsUpdate.last_import_at = syncTimestamp;
+        syncSettingsUpdate.last_export_at = syncTimestamp;
+      }
+
+      await supabase
+        .from('shopify_sync_settings')
+        .update(syncSettingsUpdate)
+        .eq('user_id', userId)
+        .eq('store_id', storeId);
+
+      // last_sync_at is a success timestamp used by the UI, so do not advance it on failures.
+      if (!hasError) {
         await supabase
           .from('shopify_connections')
-          .update({ 
-            last_sync_at: syncTimestamp
-          })
+          .update({ last_sync_at: syncTimestamp })
           .eq('id', storeId);
-
-        console.log(`[SCHEDULED-SYNC] ✅ Completed sync for user ${userId}: exported ${totalExported}, imported ${totalImported}, ${duration}ms`);
-        console.log(`[SCHEDULED-SYNC] Next sync scheduled for: ${nextImportDate.toISOString()}`);
-        
-        // Notifications removed - no need for sync notifications
-      } else {
-        console.log(`[SCHEDULED-SYNC] Skipping sync for user ${userId} (not scheduled)`);
       }
+
+      if (hasError) {
+        console.error(`[SCHEDULED-SYNC] ❌ Sync failed for user ${userId}: ${errorMessage}`);
+      } else {
+        console.log(`[SCHEDULED-SYNC] ✅ Completed sync for user ${userId}: exported ${totalExported}, imported ${totalImported}, ${duration}ms`);
+      }
+      console.log(`[SCHEDULED-SYNC] Next sync scheduled for: ${nextImportDate.toISOString()}`);
     }
 
     console.log('[SCHEDULED-SYNC] ✅ Scheduled sync check complete');
@@ -375,9 +382,8 @@ Deno.serve(async (req) => {
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
-      }
+      },
     );
-
   } catch (error) {
     console.error('[SCHEDULED-SYNC] Error:', error);
     return new Response(
@@ -387,7 +393,7 @@ Deno.serve(async (req) => {
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
-      }
+      },
     );
   }
 });
