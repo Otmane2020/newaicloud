@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Menu, X, Sparkles, Play } from "lucide-react";
+import { Menu, X, Play } from "lucide-react";
 import { useTranslation } from "@/lib/language";
+import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
 
 export const PublicHeader = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -26,18 +27,15 @@ export const PublicHeader = () => {
     <header className="sticky top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-foreground leading-tight">CatalogueOptimize AI</span>
-                <span className="text-[10px] text-muted-foreground leading-tight">Smart Way To Scale</span>
-              </div>
-            </div>
-          </div>
+          {/* Official CatalogueOptimize AI brand */}
+          <button
+            type="button"
+            className="min-w-0 cursor-pointer text-left"
+            onClick={() => navigate("/")}
+            aria-label="CatalogOptimize AI home"
+          >
+            <CatalogOptimizeLogo className="origin-left scale-[0.9] sm:scale-100" />
+          </button>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-7">
