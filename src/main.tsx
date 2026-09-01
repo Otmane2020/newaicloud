@@ -2,6 +2,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import "./styles/workspace-stat-colors.css";
+import "./styles/ai-image-studio.css";
+import { installImageStudioPolish } from "./lib/imageStudioPolish";
+
+installImageStudioPolish();
 
 // This is an authenticated back-office, not an offline-first PWA. Remove legacy
 // service workers and caches so Lovable previews always load the latest bundle.
