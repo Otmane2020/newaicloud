@@ -66,7 +66,7 @@ const partToDataUrl = (part: any): string | null => {
     return `data:${inline.mime_type || inline.mimeType || "image/png"};base64,${inline.data}`;
   }
 
-  if (part?.b64_json) return `data:image/png;base64,${part.b64_json}`;
+  if (part?.b64_json) return `data:${part?.mime_type || part?.mimeType || "image/png"};base64,${part.b64_json}`;
   return null;
 };
 
@@ -76,7 +76,7 @@ const extractGeneratedImage = (payload: any): string | null => {
     payload?.image_url,
     payload?.url,
     payload?.data?.[0]?.url,
-    payload?.data?.[0]?.b64_json ? `data:image/png;base64,${payload.data[0].b64_json}` : null,
+    payload?.data?.[0]?.b64_json ? `data:${payload?.data?.[0]?.mime_type || "image/png"};base64,${payload.data[0].b64_json}` : null,
     payload?.choices?.[0]?.message?.images?.[0]?.image_url?.url,
     payload?.choices?.[0]?.message?.images?.[0]?.url,
     payload?.choices?.[0]?.images?.[0]?.image_url?.url,
@@ -109,7 +109,81 @@ const extractGeneratedImage = (payload: any): string | null => {
 const resolveGeneratedDataUrl = async (value: string): Promise<string> => {
   const inline = normalizeDataUrl(value);
   if (inline) return inline;
+  if (!/^https:\/\//i.test(value)) throw new Error("The AI returned an unsupported image payload");
   return await downloadImageAsDataUrl(value);
+};
+
+const buildFormat = (size: string) => {
+  if (size === "portrait") {
+    return {
+      id: "portrait",
+      ratio: "4:5",
+      dimensions: "1080x1350",
+      aspectHint: "vertical Instagram portrait 4:5 format (1080x1350)",
+      compositionHint: "portrait composition with all product details and text inside the central safe area",
+    };
+  }
+  if (size === "story") {
+    return {
+      id: "story",
+      ratio: "9:16",
+      dimensions: "1080x1920",
+      aspectHint: "vertical 9:16 story/reel format (1080x1920)",
+      compositionHint: "mobile-first vertical composition with generous top and bottom platform UI safe zones",
+    };
+  }
+  if (size === "landscape") {
+    return {
+      id: "landscape",
+      ratio: "16:9",
+      dimensions: "1920x1080",
+      aspectHint: "horizontal 16:9 landscape format (1920x1080)",
+      compositionHint: "wide composition with product and copy balanced across the frame",
+    };
+  }
+  return {
+    id: "square",
+    ratio: "1:1",
+    dimensions: "1080x1080",
+    aspectHint: "square 1:1 social format (1080x1080)",
+    compositionHint: "balanced square composition with safe margins on every side",
+  };
+};
+
+const callGateway = async ({
+  apiKey,
+  model,
+  prompt,
+  sourceDataUrl,
+}: {
+  apiKey: string;
+  model: string;
+  prompt: string;
+  sourceDataUrl: string;
+}) => {
+  return await withTimeout(
+    "https://ai.gateway.lovable.dev/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Lovable-API-Key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        modalities: ["image", "text"],
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: sourceDataUrl } },
+          ],
+        }],
+      }),
+    },
+    120_000,
+  );
 };
 
 serve(async (req) => {
@@ -145,6 +219,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    if (!template?.aiPromptStyle?.trim()) {
+      return new Response(JSON.stringify({ error: "The selected creative template has no AI prompt" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const productImageUrl = whiteBgImage || product.image;
     if (!productImageUrl) {
@@ -158,6 +238,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const sourceDataUrl = await downloadImageAsDataUrl(productImageUrl);
+    const output = buildFormat(template.size);
 
     const originalPrice = Number.parseFloat(product.compare_at_price) || 0;
     const salePrice = Number.parseFloat(product.price) || 0;
@@ -165,54 +246,62 @@ serve(async (req) => {
       ? Math.round((1 - salePrice / originalPrice) * 100)
       : 0;
 
-    let aspectHint = "square 1:1 social format (1080x1080)";
-    let compositionHint = "balanced square composition with safe margins on every side";
-    if (template.size === "portrait") {
-      aspectHint = "vertical Instagram portrait 4:5 format (1080x1350)";
-      compositionHint = "portrait composition with all product details and text inside the central safe area";
-    } else if (template.size === "story") {
-      aspectHint = "vertical 9:16 story/reel format (1080x1920)";
-      compositionHint = "mobile-first vertical composition with generous top and bottom UI safe zones";
-    } else if (template.size === "landscape") {
-      aspectHint = "horizontal 16:9 landscape format (1920x1080)";
-      compositionHint = "wide composition with product and copy balanced across the frame";
-    }
-
-    const visualStyle = template.aiPromptStyle || "Premium commercial ecommerce photography with realistic lighting, clean hierarchy and refined styling.";
+    const visualStyle = template.aiPromptStyle.trim();
     const languageInstruction = language === "fr"
-      ? "If any commercial copy is rendered in the image, write it in French."
-      : "If any commercial copy is rendered in the image, write it in English.";
+      ? "If commercial copy is rendered in the image, write it in French only."
+      : "If commercial copy is rendered in the image, write it in English only.";
     const ctaText = language === "fr" ? "DÉCOUVRIR" : "DISCOVER";
+
+    const attributes = product.vision_attributes || {};
+    const visibleFeatures = Array.isArray(attributes.features)
+      ? attributes.features.filter((item: unknown) => typeof item === "string" && item.trim()).slice(0, 5)
+      : [];
+    const enrichment = [
+      attributes.color && `Color: ${attributes.color}`,
+      attributes.material && `Material: ${attributes.material}`,
+      attributes.style && `Style: ${attributes.style}`,
+      attributes.shape && `Shape: ${attributes.shape}`,
+      visibleFeatures.length && `Known/visible features: ${visibleFeatures.join(", ")}`,
+    ].filter(Boolean).join("\n");
+
     const modeInstruction = mode === "strengths"
-      ? "Emphasize the product's strongest visible benefits without inventing technical claims."
-      : "Use a premium hero-product composition. Keep the product itself as the dominant visual element.";
+      ? `STRENGTHS MODE:\n- Highlight 2 or 3 genuine product strengths using ONLY the known/visible product information supplied above and the source image.\n- Do not invent dimensions, materials, technologies, guarantees, certifications, awards, performance claims or delivery promises.\n- The product remains the hero; benefit callouts stay visually secondary.`
+      : `SHOWCASE MODE:\n- Use a premium hero-product composition.\n- Keep the exact product as the dominant visual element.\n- Build aspiration through scene, lighting and composition, not through invented product claims.`;
 
-    const enrichment = product.vision_attributes
+    const priceInstruction = showPrice
       ? [
-          product.vision_attributes.color && `Color: ${product.vision_attributes.color}`,
-          product.vision_attributes.material && `Material: ${product.vision_attributes.material}`,
-          product.vision_attributes.style && `Style: ${product.vision_attributes.style}`,
-          product.vision_attributes.shape && `Shape: ${product.vision_attributes.shape}`,
-          product.vision_attributes.features?.length && `Visible features: ${product.vision_attributes.features.join(", ")}`,
+          salePrice > 0 ? `Verified price that may be displayed: ${salePrice}€.` : "No verified price is available; do not invent one.",
+          discount > 0 ? `Verified discount that may be displayed: -${discount}%.` : "No verified discount is available; do not invent a sale badge or percentage.",
+          discount > 0 && originalPrice > 0 ? `Verified previous price: ${originalPrice}€.` : "",
         ].filter(Boolean).join("\n")
-      : "";
+      : "PRICE RULE: Do NOT show any price, previous price, discount, percentage, sale badge, deal text or promotion anywhere in the image.";
 
-    const prompt = `Create ONE polished professional ecommerce advertising image in ${aspectHint}.
+    const customInstruction = typeof caption === "string" && caption.trim()
+      ? `USER CREATIVE INSTRUCTION:\n${caption.trim()}\nFollow this instruction only when it does not conflict with product fidelity or the selected template.`
+      : "No additional user instruction was provided.";
+
+    const prompt = `Create ONE polished professional ecommerce advertising image in ${output.aspectHint}.
 
 SOURCE IMAGE IS AN IMMUTABLE PRODUCT REFERENCE:
 - The supplied image contains the exact product that must appear in the final creative.
 - Preserve product geometry, dimensions, proportions, layout, materials, color, finish, doors, drawers, handles, legs, fireplace/lighting elements and all distinctive details.
 - Do NOT replace it with a similar product and do NOT redesign it.
+- Do NOT add, remove, duplicate or deform product parts.
 - You may change only the surrounding scene, lighting, shadows and advertising composition.
 - Show the complete hero product unless the chosen format absolutely requires a tighter crop; never crop important product details.
 
-FORMAT:
-- Canvas: ${aspectHint}
-- ${compositionHint}
+OUTPUT FORMAT — REQUIRED:
+- Canvas: ${output.aspectHint}
+- Exact requested ratio: ${output.ratio}
+- Target framing: ${output.dimensions}
+- ${output.compositionHint}
 - Do not silently change the requested aspect ratio.
 
-VISUAL TEMPLATE:
+TEMPLATE AI PROMPT — PRIMARY VISUAL DIRECTION, REQUIRED:
+Template: ${template.name || template.id}
+Category: ${template.category || "creative"}
 ${visualStyle}
+Follow this template prompt as the primary art direction. Do not ignore or replace it with a generic style.
 
 PRODUCT:
 Name: ${product.title}
@@ -220,89 +309,136 @@ ${product.vendor ? `Brand: ${product.vendor}` : ""}
 ${product.product_type ? `Category: ${product.product_type}` : ""}
 ${enrichment}
 
-CREATIVE DIRECTION:
+GENERATION DIRECTION:
 ${modeInstruction}
-${caption?.trim() ? `Optional on-image tagline: "${caption.trim()}"` : "Do not invent a tagline unless required by the template."}
-${showPrice && salePrice > 0 ? `Price to display: ${salePrice}€` : "Do not display a price."}
-${discount > 0 ? `Optional discount badge: -${discount}%` : "Do not invent a discount."}
-CTA if the template needs one: "${ctaText}".
-${languageInstruction}
+
+${customInstruction}
+
+PRICE / PROMOTION:
+${priceInstruction}
+
+COPY RULES:
+- Keep text sparse, readable and inside safe margins.
+- CTA may read "${ctaText}" only if typography can be rendered cleanly.
+- Never invent claims, ratings, awards, specifications, delivery promises, prices or promotions.
+- Never render gibberish, fake brand text, fake logos or watermarks.
+- ${languageInstruction}
 
 QUALITY:
 - Photorealistic premium commercial advertising quality.
 - Coherent contact shadows, reflections and perspective.
-- Text must be sparse, readable and inside safe margins.
-- No extra products, duplicate furniture parts, malformed geometry, fake logos, watermarks or invented specifications.`;
+- Ready for Facebook/Instagram publishing.
+- Product fidelity is more important than visual spectacle.`;
+
+    const configuredModel = Deno.env.get("LOVABLE_IMAGE_MODEL")?.trim();
+    const models = Array.from(new Set([
+      configuredModel,
+      "google/gemini-3.1-flash-image-preview",
+      "google/gemini-2.5-flash-image-preview",
+    ].filter((value): value is string => Boolean(value))));
 
     console.log("🎨 Ad creative generation", {
       product: product.title,
       template: template.id,
-      size: template.size,
+      size: output.id,
+      ratio: output.ratio,
       mode,
+      showPrice: Boolean(showPrice),
+      models,
     });
 
-    const response = await withTimeout(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
-          modalities: ["image", "text"],
-          messages: [{
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: sourceDataUrl } },
-            ],
-          }],
-        }),
-      },
-      120_000,
-    );
+    const attempts: string[] = [];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("AI gateway error", response.status, errorText.slice(0, 1200));
-      const message = response.status === 429
-        ? "AI generation is temporarily rate limited. Please try again in a moment."
-        : response.status === 402
-          ? "AI image generation credits are unavailable for this workspace."
-          : `AI image generation failed (${response.status}).`;
-      return new Response(JSON.stringify({ error: message }), {
-        status: response.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    for (const model of models) {
+      let response: Response;
+      try {
+        response = await callGateway({
+          apiKey: LOVABLE_API_KEY,
+          model,
+          prompt,
+          sourceDataUrl,
+        });
+      } catch (error: any) {
+        if (error?.name === "AbortError") {
+          attempts.push(`${model}: timed out`);
+          continue;
+        }
+        throw error;
+      }
+
+      const responseText = await response.text();
+      if (!response.ok) {
+        const concise = responseText.slice(0, 900);
+        console.error("AI gateway error", model, response.status, concise);
+
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "AI image generation credits are unavailable for this workspace.", details: concise }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "AI generation is temporarily rate limited. Please try again in a moment.", details: concise }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        attempts.push(`${model}: HTTP ${response.status}`);
+        if ([400, 404, 422].includes(response.status)) continue;
+
+        return new Response(JSON.stringify({ error: `AI image generation failed (${response.status}).`, details: concise }), {
+          status: response.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let payload: any;
+      try {
+        payload = JSON.parse(responseText);
+      } catch {
+        attempts.push(`${model}: invalid JSON response`);
+        continue;
+      }
+
+      const generated = extractGeneratedImage(payload);
+      if (!generated) {
+        attempts.push(`${model}: response contained no image`);
+        console.warn("AI response did not contain an image", model, JSON.stringify(payload).slice(0, 1200));
+        continue;
+      }
+
+      try {
+        const generatedDataUrl = await resolveGeneratedDataUrl(generated);
+        const parsed = dataUrlParts(generatedDataUrl);
+        if (!parsed) {
+          attempts.push(`${model}: invalid image payload`);
+          continue;
+        }
+
+        return new Response(JSON.stringify({
+          base64: parsed.base64,
+          mimeType: parsed.mimeType,
+          outputFormat: output.id,
+          ratio: output.ratio,
+          dimensions: output.dimensions,
+          model,
+          generatedByAI: true,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (error: any) {
+        attempts.push(`${model}: ${error?.message || "unable to resolve generated image"}`);
+      }
     }
 
-    const payload = await response.json();
-    const generated = extractGeneratedImage(payload);
-    if (!generated) {
-      console.error("AI response did not contain an image", JSON.stringify(payload).slice(0, 1600));
-      throw new Error("The AI service completed but did not return an image. Please try again.");
-    }
-
-    const generatedDataUrl = await resolveGeneratedDataUrl(generated);
-    const parsed = dataUrlParts(generatedDataUrl);
-    if (!parsed) throw new Error("The generated image response is invalid");
-
-    return new Response(JSON.stringify({
-      base64: parsed.base64,
-      mimeType: parsed.mimeType,
-      outputFormat: template.size || "square",
-      generatedByAI: true,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    throw new Error(`The available AI image models did not return a valid image. ${attempts.join(" | ")}`);
   } catch (error: any) {
     const message = error?.name === "AbortError"
       ? "AI image generation timed out. Please try again."
       : error?.message || "Creative generation failed";
     console.error("export-creative-image error:", error);
-    return new Response(JSON.stringify({ error: message }), {
+    return new Response(JSON.stringify({ error: message, details: "Ads creative generation did not produce a valid image." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
