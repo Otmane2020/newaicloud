@@ -1,0 +1,95 @@
+/* Soft KPI color system for data-heavy workspaces.
+   Keeps the UI professional while making summary stats easier to scan. */
+
+/* Enriched Data summary strip */
+.product-source-page > section:first-of-type {
+  border-color: rgb(224 231 255);
+  background: linear-gradient(135deg, rgb(250 250 255) 0%, rgb(255 255 255) 48%, rgb(248 250 252) 100%);
+  box-shadow: 0 10px 30px -24px rgb(79 70 229 / 0.35);
+}
+
+.product-source-page > section:first-of-type > .grid > div {
+  position: relative;
+  overflow: hidden;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.product-source-page > section:first-of-type > .grid > div::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 999px;
+}
+
+.product-source-page > section:first-of-type > .grid > div:nth-child(1) {
+  background: linear-gradient(135deg, rgb(245 243 255 / 0.95), rgb(255 255 255));
+}
+.product-source-page > section:first-of-type > .grid > div:nth-child(1)::before { background: rgb(124 58 237); }
+
+.product-source-page > section:first-of-type > .grid > div:nth-child(2) {
+  background: linear-gradient(135deg, rgb(255 251 235 / 0.95), rgb(255 255 255));
+}
+.product-source-page > section:first-of-type > .grid > div:nth-child(2)::before { background: rgb(245 158 11); }
+
+.product-source-page > section:first-of-type > .grid > div:nth-child(3) {
+  background: linear-gradient(135deg, rgb(236 253 245 / 0.95), rgb(255 255 255));
+}
+.product-source-page > section:first-of-type > .grid > div:nth-child(3)::before { background: rgb(16 185 129); }
+
+.product-source-page > section:first-of-type > .grid > div:nth-child(4) {
+  background: linear-gradient(135deg, rgb(240 249 255 / 0.95), rgb(255 255 255));
+}
+.product-source-page > section:first-of-type > .grid > div:nth-child(4)::before { background: rgb(14 165 233); }
+
+/* Four-column KPI strips used above data tables, including Google Shopping. */
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div {
+  position: relative;
+  overflow: hidden;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+}
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(1) {
+  background: linear-gradient(145deg, rgb(245 243 255 / 0.95), rgb(255 255 255) 72%);
+}
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(1)::before { background: rgb(124 58 237); }
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(2) {
+  background: linear-gradient(145deg, rgb(255 247 237 / 0.95), rgb(255 255 255) 72%);
+}
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(2)::before { background: rgb(249 115 22); }
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(3) {
+  background: linear-gradient(145deg, rgb(239 246 255 / 0.95), rgb(255 255 255) 72%);
+}
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(3)::before { background: rgb(59 130 246); }
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(4) {
+  background: linear-gradient(145deg, rgb(236 253 245 / 0.95), rgb(255 255 255) 72%);
+}
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(4)::before { background: rgb(16 185 129); }
+
+/* Tables remain neutral but get a faint violet tint in their headers. */
+.catalog-workspace thead,
+.product-source-page table thead {
+  background: linear-gradient(90deg, rgb(248 250 252), rgb(245 243 255 / 0.72), rgb(248 250 252));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .product-source-page > section:first-of-type > .grid > div:hover,
+  section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.dark .product-source-page > section:first-of-type,
+.dark section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div {
+  background: hsl(var(--card));
+}
