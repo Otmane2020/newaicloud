@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { createHmac } from "https://deno.land/std@0.168.0/node/crypto.ts";
 
 const corsHeaders = {

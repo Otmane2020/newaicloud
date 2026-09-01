@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { shopifyGraphQL, restIdToGid, gidToRestId } from "../_shared/shopify-graphql.ts";

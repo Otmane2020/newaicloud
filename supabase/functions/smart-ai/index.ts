@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 // ============================================================================
 // SMART AI – Analyse produit complète avec Vision AI, SERP, DataForSEO & Google Shopping
 // ============================================================================

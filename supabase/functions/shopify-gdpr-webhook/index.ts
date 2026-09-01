@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 // ✅ Type declaration for Supabase EdgeRuntime

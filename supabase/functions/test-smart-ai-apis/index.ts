@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 // ============================================================================
 // TEST SMART AI APIS – Diagnostic des APIs DataForSEO, SerpAPI et Smart AI
 // ============================================================================

@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
@@ -83,17 +84,8 @@ serve(async (req) => {
             },
           );
         }
-
-        // ✅ Incrémenter IMMÉDIATEMENT (avant génération)
-        const AI_BG_COST = 8;
-        await supabaseAdmin.rpc("increment_usage", {
-          p_seller_id: user.id,
-          p_field: "optimizations_count",
-          p_increment: AI_BG_COST,
-        });
-        console.log(
-          `[ai-bg] ✅ Usage incremented: +${AI_BG_COST} (now ${currentUsage + AI_BG_COST}/${maxOptimizations})`,
-        );
+        // Credits are charged only after an image provider succeeds.
+        console.log("[image-generation] Usage validated; charge deferred until successful generation");
       }
     }
 
@@ -547,6 +539,23 @@ RESULT: A stunning ${isMainImage ? "main product photo" : "lifestyle photo"} at 
         console.log(`[image-bg] ⏭️ Shopify sync skipped: ${shopifySyncResult.skipReason}`);
       } else {
         console.error(`[image-bg] ❌ Shopify sync failed: ${shopifySyncResult.error}`);
+      }
+    }
+
+    // POST_SUCCESS_IMAGE_CHARGE: charge only after provider success.
+    if (authenticatedUserId) {
+      try {
+        const chargeClient = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        );
+        await chargeClient.rpc("increment_usage", {
+          p_seller_id: authenticatedUserId,
+          p_field: "optimizations_count",
+          p_increment: 8,
+        });
+      } catch (chargeError) {
+        console.warn("[image-generation] Generation succeeded but usage charge failed", chargeError);
       }
     }
 

@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 // ============================================================================
 // SMART PRICE SCANNER – VERSION C (ROBUSTE / FALLBACK ULTIME / IMPOSSIBLE À CASSER)
 // ============================================================================

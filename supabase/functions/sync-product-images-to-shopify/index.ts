@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { checkTrialLimits } from "../_shared/trial-limits.ts";
 import { shopifyGraphQL, restIdToGid, handleUserErrors, extractNodes } from "../_shared/shopify-graphql.ts";

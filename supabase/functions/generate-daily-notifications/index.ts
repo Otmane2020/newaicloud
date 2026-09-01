@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getNotificationTemplate } from "../_shared/notification-templates.ts";
 

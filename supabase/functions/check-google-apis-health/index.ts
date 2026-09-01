@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 // Phase 2C: Health Check pour Google APIs
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 

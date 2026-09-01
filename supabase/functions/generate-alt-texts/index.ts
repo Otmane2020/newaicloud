@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { generateAltWithKimi, KIMI_ALT_MODEL } from "../_shared/kimi-alt.ts";
 

@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.76.1";
 import { resolveLanguage } from "../_shared/language-detector.ts";
 import { routeAI, routeVision } from "../_shared/ai-router.ts";

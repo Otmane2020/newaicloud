@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 // Supabase Edge Function: chat-smart
 // Streamed SSE assistant for product chat/show with sector detection and robust intent parsing
 

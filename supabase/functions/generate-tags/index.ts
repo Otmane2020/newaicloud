@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { getSeoPrompt, getSystemRole } from "../_shared/multilingual-prompts.ts";
 import { resolveLanguage } from "../_shared/language-detector.ts";

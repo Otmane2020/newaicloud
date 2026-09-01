@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { sanitizeGeneratedHTML, validateHTML } from "../_shared/html-normalizer.ts";
 import { resolveLanguage, getLanguageInstructions, getLanguageName, getGenerationLanguage } from "../_shared/language-detector.ts";

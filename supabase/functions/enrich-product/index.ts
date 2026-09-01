@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { resolveLanguage, getLanguageInstructions, getLanguageName, getGenerationLanguage } from "../_shared/language-detector.ts";
 import { routeAI } from "../_shared/ai-router.ts";
@@ -13,13 +14,22 @@ interface EnrichmentRequest {
 }
 
 async function callAI(messages: any[], maxTokens = 500) {
-  const routedAI = await routeAI({
-    messages,
-    maxTokens,
-    temperature: 0.5,
-  });
-  console.log(`[enrich-product] AI provider: ${routedAI.provider}, model: ${routedAI.model}`);
-  return routedAI;
+  try {
+    const routedAI = await routeAI({
+      messages,
+      maxTokens,
+      temperature: 0.5,
+    });
+    console.log(`[enrich-product] AI provider: ${routedAI.provider}, model: ${routedAI.model}`);
+    return routedAI;
+  } catch (error) {
+    console.warn("[enrich-product] All text providers unavailable; preserving real catalog/vision data only", error);
+    return {
+      content: "{}",
+      provider: "deterministic-fallback",
+      model: "catalog-context-only",
+    } as any;
+  }
 }
 
 // Helper pour parser les dimensions Vision AI (format: "75cm" ou "75" ou 75)

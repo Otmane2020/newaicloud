@@ -333,34 +333,95 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
  * never consumes the OpenRouter text fallback.
  */
 export async function routeVision(messages: AIMessage[], maxTokens = 600): Promise<AIRouteResult> {
-  const apiKey = envSecret("MOONSHOT_API_KEY", "KIMI_API_KEY");
-  if (!apiKey) {
-    throw new Error("Kimi direct vision is unavailable. Configure MOONSHOT_API_KEY or KIMI_API_KEY.");
+  const baseOptions: RouteOptions = {
+    messages,
+    maxTokens,
+    temperature: 0.15,
+  };
+
+  // OpenAI and Gemini both accept the same multimodal message structures used
+  // by this project. We deliberately call their normal provider helpers without
+  // the `vision` guard so a failure simply falls through to the next provider.
+  const genericAttempts: Array<() => Promise<AIRouteResult | null>> = [
+    () => tryOpenAI(baseOptions),
+    () => tryGemini(baseOptions),
+  ];
+
+  for (const attempt of genericAttempts) {
+    try {
+      const result = await attempt();
+      if (result?.content) return result;
+    } catch (error) {
+      console.warn("[ai-router] vision provider failed", error);
+    }
   }
 
-  const model = Deno.env.get("KIMI_VISION_MODEL") || "kimi-k2.6";
-  const response = await providerFetch("https://api.moonshot.ai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      max_tokens: maxTokens,
-      thinking: { type: "disabled" },
-    }),
-  });
+  // Kimi direct vision fallback.
+  const kimiKey = envSecret("MOONSHOT_API_KEY", "KIMI_API_KEY");
+  if (kimiKey) {
+    const model = Deno.env.get("KIMI_VISION_MODEL") || "kimi-k2.6";
+    try {
+      const response = await providerFetch("https://api.moonshot.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${kimiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          max_tokens: maxTokens,
+          thinking: { type: "disabled" },
+        }),
+      });
 
-  if (!response.ok) {
-    const detail = (await response.text().catch(() => "")).slice(0, 500);
-    throw new Error(`Kimi direct vision ${model} failed: ${response.status}${detail ? ` ${detail}` : ""}`);
+      if (response.ok) {
+        const data = await response.json();
+        const content = data?.choices?.[0]?.message?.content?.trim();
+        if (content) return { content, provider: "kimi", model: data?.model || model };
+      } else {
+        console.warn(`[ai-router] Kimi vision ${model} failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
+      }
+    } catch (error) {
+      console.warn("[ai-router] Kimi vision failed", error);
+    }
   }
 
-  const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content?.trim();
-  if (!content) throw new Error(`Kimi direct vision ${model} returned an empty response`);
+  // OpenRouter vision is optional because not every free model accepts images.
+  // When OPENROUTER_VISION_MODEL is configured we use it as the last rescue.
+  const openRouterKey = envSecret("OPENROUTER_API_KEY");
+  const openRouterVisionModel = Deno.env.get("OPENROUTER_VISION_MODEL");
+  if (openRouterKey && openRouterVisionModel) {
+    try {
+      const response = await providerFetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openRouterKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": Deno.env.get("PUBLIC_SITE_URL") || "https://catalogoptimize.com",
+          "X-Title": "CatalogOptimize AI",
+        },
+        body: JSON.stringify({
+          model: openRouterVisionModel,
+          messages,
+          max_tokens: maxTokens,
+          temperature: 0.15,
+        }),
+      });
 
-  return { content, provider: "kimi", model: data?.model || model };
+      if (response.ok) {
+        const data = await response.json();
+        const content = data?.choices?.[0]?.message?.content?.trim();
+        if (content) return { content, provider: "openrouter-free", model: data?.model || openRouterVisionModel };
+      } else {
+        console.warn(`[ai-router] OpenRouter vision ${openRouterVisionModel} failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
+      }
+    } catch (error) {
+      console.warn("[ai-router] OpenRouter vision failed", error);
+    }
+  }
+
+  throw new Error(
+    "No vision provider succeeded. Configure a working OpenAI, Gemini, Kimi/Moonshot, or OPENROUTER_VISION_MODEL provider.",
+  );
 }

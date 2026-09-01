@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 /**
  * Subscription Upgrade Logic:
  * 

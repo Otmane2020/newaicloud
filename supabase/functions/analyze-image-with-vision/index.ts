@@ -1,3 +1,4 @@
+import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { routeVision } from "../_shared/ai-router.ts";
 

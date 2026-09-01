@@ -1,0 +1,61 @@
+edge_functions=260
+strict_bootstrap_coverage=260/260
+lovable_gateway=33
+  supabase/functions/analyze-dimension-images/index.ts
+  supabase/functions/analyze-price-from-image/index.ts
+  supabase/functions/audit-homepage-seo/index.ts
+  supabase/functions/auto-fix-translations/index.ts
+  supabase/functions/export-creative-image/index.ts
+  supabase/functions/generate-ai-background-variants/index.ts
+  supabase/functions/generate-ai-product-background/index.ts
+  supabase/functions/generate-ai-product-images/index.ts
+  supabase/functions/generate-ai-query-opportunities/index.ts
+  supabase/functions/generate-alt-texts/index.ts
+  supabase/functions/generate-blog-article/index.ts
+  supabase/functions/generate-image/index.ts
+  supabase/functions/generate-image-background/index.ts
+  supabase/functions/generate-landing-bulk/index.ts
+  supabase/functions/generate-landing-deepseek/index.ts
+  supabase/functions/generate-nano-banana-image/index.ts
+  supabase/functions/generate-product-background/index.ts
+  supabase/functions/generate-promotional-article/index.ts
+  supabase/functions/generate-promotional-articles/index.ts
+  supabase/functions/generate-smart-landing/index.ts
+  supabase/functions/generate-social-caption/index.ts
+  supabase/functions/generate-social-post/index.ts
+  supabase/functions/generate-template-text/index.ts
+  supabase/functions/generate-title-description/index.ts
+  supabase/functions/generate-vendor-name/index.ts
+  supabase/functions/generate-video-script/index.ts
+  supabase/functions/generate-white-background/index.ts
+  supabase/functions/robot-stt/index.ts
+  supabase/functions/scan-repo-translations/index.ts
+  supabase/functions/scan-translation-issues/index.ts
+  supabase/functions/search-similar-products-specs/index.ts
+  supabase/functions/smart-ai/index.ts
+  supabase/functions/smart-price-scanner/index.ts
+gemini_direct=4
+  supabase/functions/analyze-seo-with-ai/index.ts
+  supabase/functions/generate-product-background/index.ts
+  supabase/functions/generate-white-background/index.ts
+  supabase/functions/smart-alt-text/index.ts
+openai_direct=3
+  supabase/functions/analyze-website-for-aeo/index.ts
+  supabase/functions/generate-image-background/index.ts
+  supabase/functions/generate-white-background/index.ts
+deepseek_direct=9
+  supabase/functions/assistant-ai/index.ts
+  supabase/functions/chat-smart/index.ts
+  supabase/functions/classify-product-category/index.ts
+  supabase/functions/generate-daily-opportunities/index.ts
+  supabase/functions/generate-landing-deepseek/index.ts
+  supabase/functions/generate-scheduled-article/index.ts
+  supabase/functions/generate-store-summary/index.ts
+  supabase/functions/optimize-shopping-feed/index.ts
+  supabase/functions/smart-alt-text/index.ts
+openrouter_direct=0
+moonshot_direct=0
+multiple_req_json=3
+  2x supabase/functions/analyze-serp-competitors/index.ts
+  3x supabase/functions/api-v1/index.ts
+  2x supabase/functions/sync-blog-to-shopify/index.ts
