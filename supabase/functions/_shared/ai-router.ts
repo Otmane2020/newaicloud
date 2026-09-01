@@ -340,22 +340,16 @@ export async function routeVision(messages: AIMessage[], maxTokens = 600): Promi
     temperature: 0.15,
   };
 
-  // OpenAI and Gemini both accept the same multimodal message structures used
-  // by this project. We deliberately call their normal provider helpers without
-  // the `vision` guard so a failure simply falls through to the next provider.
-  const genericAttempts: Array<() => Promise<AIRouteResult | null>> = [
-    () => tryOpenAI(baseOptions),
-    () => tryGemini(baseOptions),
-  ];
-
-  for (const attempt of genericAttempts) {
-    try {
-      const result = await attempt();
-      if (result?.content) return result;
-    } catch (error) {
-      console.warn("[ai-router] vision provider failed", error);
-    }
+  // Gemini accepts the same multimodal message structures used by this project
+  // and is free-tier friendly, so it leads the vision chain. A failure simply
+  // falls through to the next provider (Kimi direct, then OpenRouter, then OpenAI).
+  try {
+    const result = await tryGemini(baseOptions);
+    if (result?.content) return result;
+  } catch (error) {
+    console.warn("[ai-router] Gemini vision failed", error);
   }
+
 
   // Kimi direct vision fallback.
   const kimiKey = envSecret("MOONSHOT_API_KEY", "KIMI_API_KEY");
