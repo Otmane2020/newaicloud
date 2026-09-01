@@ -171,6 +171,19 @@ export function CatalogOptimizeSidebar() {
         ],
       },
       {
+        label: "AI Chat",
+        icon: Bot,
+        items: [
+          {
+            label: fr ? "Assistant vendeur" : "Sales Assistant",
+            href: "/storefront-assistant",
+            icon: Bot,
+            badge: "AI",
+            aliases: ["/chat"],
+          },
+        ],
+      },
+      {
         label: fr ? "Vente & canaux" : "Sales & Channels",
         icon: Store,
         items: [
