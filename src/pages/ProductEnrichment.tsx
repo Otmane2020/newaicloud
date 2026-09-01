@@ -1,29 +1,47 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from 'sonner';
-import { Zap, Sparkles, Loader2, CheckCircle, Package, RefreshCw, UploadCloud } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Database,
+  Loader2,
+  Package,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Store,
+  UploadCloud,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
+import { useStore } from "@/contexts/StoreContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "@/lib/language";
+import { toast } from "sonner";
 
 type EditableAttribute =
-  | 'ai_color'
-  | 'ai_material'
-  | 'ai_shape'
-  | 'ai_texture'
-  | 'ai_finish'
-  | 'style'
-  | 'category'
-  | 'sub_category';
+  | "ai_color"
+  | "ai_material"
+  | "ai_shape"
+  | "ai_texture"
+  | "ai_finish"
+  | "style"
+  | "category"
+  | "sub_category";
 
-interface Product {
+type FilterId = "all" | "enriched" | "pending";
+
+type Product = {
   id: string;
   shopify_id: string | number | null;
   title: string;
-  image_url: string;
+  image_url: string | null;
   enrichment_status: string;
   ai_color: string | null;
   ai_material: string | null;
@@ -49,33 +67,129 @@ interface Product {
   smart_weight_unit: string | null;
   smart_seat_height: number | null;
   smart_seat_height_unit: string | null;
-}
+};
 
-const editableAttributes: Array<{ field: EditableAttribute; label: string; placeholder: string }> = [
-  { field: 'ai_color', label: 'Couleur', placeholder: 'Ex. Chêne Wotan' },
-  { field: 'ai_material', label: 'Matériau', placeholder: 'Ex. Bois, métal' },
-  { field: 'ai_shape', label: 'Forme', placeholder: 'Ex. Rectangulaire' },
-  { field: 'ai_texture', label: 'Texture', placeholder: 'Ex. Rainuré' },
-  { field: 'ai_finish', label: 'Finition', placeholder: 'Ex. Mat' },
-  { field: 'style', label: 'Style', placeholder: 'Ex. Contemporain' },
-  { field: 'category', label: 'Catégorie', placeholder: 'Ex. Meuble' },
-  { field: 'sub_category', label: 'Sous-catégorie', placeholder: 'Ex. Meuble TV' },
-];
+type DimensionItem = {
+  key: "length" | "width" | "height" | "depth" | "diameter" | "weight" | "seat";
+  label: string;
+  value: number;
+  unit: string | null;
+  suspicious: boolean;
+};
+
+const toCentimeters = (value: number, unit: string | null) => {
+  const normalized = (unit || "").trim().toLowerCase();
+  if (!normalized || normalized === "cm") return value;
+  if (normalized === "mm") return value / 10;
+  if (normalized === "m") return value * 100;
+  return null;
+};
+
+const toKilograms = (value: number, unit: string | null) => {
+  const normalized = (unit || "").trim().toLowerCase();
+  if (!normalized || normalized === "kg") return value;
+  if (normalized === "g") return value / 1000;
+  return null;
+};
+
+const isSuspiciousDimension = (key: DimensionItem["key"], value: number, unit: string | null) => {
+  if (!Number.isFinite(value) || value <= 0) return true;
+
+  if (key === "weight") {
+    const kilograms = toKilograms(value, unit);
+    return kilograms === null ? value > 10000 : kilograms > 400;
+  }
+
+  const centimeters = toCentimeters(value, unit);
+  if (centimeters === null) return value > 10000;
+  if (key === "seat") return centimeters < 10 || centimeters > 150;
+  return centimeters < 2 || centimeters > 600;
+};
+
+const getDimensions = (product: Product, fr: boolean): DimensionItem[] => {
+  const candidates: Array<Omit<DimensionItem, "suspicious"> | null> = [
+    product.smart_length != null
+      ? { key: "length", label: fr ? "Longueur" : "Length", value: product.smart_length, unit: product.smart_length_unit }
+      : null,
+    product.smart_width != null
+      ? { key: "width", label: fr ? "Largeur" : "Width", value: product.smart_width, unit: product.smart_width_unit }
+      : null,
+    product.smart_height != null
+      ? { key: "height", label: fr ? "Hauteur" : "Height", value: product.smart_height, unit: product.smart_height_unit }
+      : null,
+    product.smart_depth != null
+      ? { key: "depth", label: fr ? "Profondeur" : "Depth", value: product.smart_depth, unit: product.smart_depth_unit }
+      : null,
+    product.smart_diameter != null
+      ? { key: "diameter", label: fr ? "Diamètre" : "Diameter", value: product.smart_diameter, unit: product.smart_diameter_unit }
+      : null,
+    product.smart_weight != null
+      ? { key: "weight", label: fr ? "Poids" : "Weight", value: product.smart_weight, unit: product.smart_weight_unit }
+      : null,
+    product.smart_seat_height != null
+      ? { key: "seat", label: fr ? "Hauteur d’assise" : "Seat height", value: product.smart_seat_height, unit: product.smart_seat_height_unit }
+      : null,
+  ];
+
+  return candidates.filter(Boolean).map((item) => {
+    const dimension = item as Omit<DimensionItem, "suspicious">;
+    return {
+      ...dimension,
+      suspicious: isSuspiciousDimension(dimension.key, dimension.value, dimension.unit),
+    };
+  });
+};
 
 export default function ProductEnrichment() {
+  const { selectedStore } = useStore();
+  const { language } = useTranslation();
+  const fr = language === "fr";
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [enriching, setEnriching] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [savingFields, setSavingFields] = useState<Record<string, boolean>>({});
+  const [expandedIds, setExpandedIds] = useState<string[]>([]);
+  const [filter, setFilter] = useState<FilterId>("all");
+  const [search, setSearch] = useState("");
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
-  const fetchProducts = async () => {
+  const editableAttributes = useMemo<Array<{ field: EditableAttribute; label: string; placeholder: string }>>(
+    () => [
+      { field: "ai_color", label: fr ? "Couleur" : "Color", placeholder: fr ? "Ex. Chêne Wotan" : "E.g. Wotan oak" },
+      { field: "ai_material", label: fr ? "Matériau" : "Material", placeholder: fr ? "Ex. Bois, métal" : "E.g. Wood, metal" },
+      { field: "ai_shape", label: fr ? "Forme" : "Shape", placeholder: fr ? "Ex. Rectangulaire" : "E.g. Rectangular" },
+      { field: "ai_texture", label: fr ? "Texture" : "Texture", placeholder: fr ? "Ex. Rainuré" : "E.g. Fluted" },
+      { field: "ai_finish", label: fr ? "Finition" : "Finish", placeholder: fr ? "Ex. Mat" : "E.g. Matte" },
+      { field: "style", label: fr ? "Style" : "Style", placeholder: fr ? "Ex. Contemporain" : "E.g. Contemporary" },
+      { field: "category", label: fr ? "Catégorie" : "Category", placeholder: fr ? "Ex. Meuble" : "E.g. Furniture" },
+      { field: "sub_category", label: fr ? "Sous-catégorie" : "Subcategory", placeholder: fr ? "Ex. Meuble TV" : "E.g. TV unit" },
+    ],
+    [fr],
+  );
+
+  const fetchProducts = useCallback(async () => {
+    if (!selectedStore?.id) {
+      setProducts([]);
+      setSelectedIds([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setProducts([]);
+        return;
+      }
+
       const { data, error } = await supabase
-        .from('shopify_products')
+        .from("shopify_products")
         .select(`
           id, shopify_id, title, image_url, enrichment_status,
           ai_color, ai_material, ai_shape, ai_texture, ai_pattern, ai_finish, ai_design_elements,
@@ -85,429 +199,581 @@ export default function ProductEnrichment() {
           smart_diameter, smart_diameter_unit, smart_weight, smart_weight_unit,
           smart_seat_height, smart_seat_height_unit
         `)
-        .order('created_at', { ascending: false })
-        .limit(100);
+        .eq("seller_id", user.id)
+        .eq("store_id", selectedStore.id)
+        .order("created_at", { ascending: false })
+        .limit(250);
 
       if (error) throw error;
       const nextProducts = (data || []) as Product[];
       setProducts(nextProducts);
-      setSelectedIds(previous => previous.filter(id => nextProducts.some(product => product.id === id)));
+      setSelectedIds((previous) => previous.filter((id) => nextProducts.some((product) => product.id === id)));
+      setExpandedIds((previous) => previous.filter((id) => nextProducts.some((product) => product.id === id)));
     } catch (error) {
-      console.error('Error fetching products:', error);
-      toast.error('Erreur lors du chargement des produits');
+      console.error("Error fetching products:", error);
+      toast.error(fr ? "Erreur lors du chargement des produits" : "Unable to load products");
     } finally {
       setLoading(false);
     }
-  };
+  }, [fr, selectedStore?.id]);
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const handleEnrichAll = async () => {
-    const productsToEnrich = products.filter(p => p.enrichment_status !== 'enriched');
-    if (productsToEnrich.length === 0) {
-      toast.info('Tous les produits sont déjà enrichis');
-      return;
-    }
-    await handleBulkEnrich(productsToEnrich.map(p => p.id));
-  };
+    void fetchProducts();
+  }, [fetchProducts]);
 
   const handleBulkEnrich = async (productIds: string[]) => {
+    if (!productIds.length) return;
     setEnriching(true);
     setProgress({ current: 0, total: productIds.length });
 
     let successCount = 0;
     let errorCount = 0;
 
-    for (let i = 0; i < productIds.length; i++) {
+    for (let index = 0; index < productIds.length; index += 1) {
       try {
-        const { data, error } = await supabase.functions.invoke('enrich-product', {
-          body: { productId: productIds[i] }
+        const { data, error } = await supabase.functions.invoke("enrich-product", {
+          body: { productId: productIds[index] },
         });
-
         if (error) throw error;
-        if (data?.success) {
-          successCount++;
-        } else {
-          errorCount++;
-        }
+        if (data?.success) successCount += 1;
+        else errorCount += 1;
       } catch (error) {
-        console.error('Error enriching product:', error);
-        errorCount++;
+        console.error("Error enriching product:", error);
+        errorCount += 1;
       }
-      setProgress({ current: i + 1, total: productIds.length });
+      setProgress({ current: index + 1, total: productIds.length });
     }
 
     setEnriching(false);
-    toast.success(`Enrichissement terminé: ${successCount} succès, ${errorCount} erreurs`);
+    toast.success(
+      fr
+        ? `Enrichissement terminé : ${successCount} succès, ${errorCount} erreur(s)`
+        : `Enrichment complete: ${successCount} succeeded, ${errorCount} failed`,
+    );
     await fetchProducts();
   };
 
-  const handleAttributeChange = (productId: string, field: EditableAttribute, value: string) => {
-    setProducts(current => current.map(product => (
-      product.id === productId ? { ...product, [field]: value } : product
-    )));
-  };
-
-  const saveAttribute = async (productId: string, field: EditableAttribute) => {
-    const product = products.find(item => item.id === productId);
-    if (!product) return;
-
-    const saveKey = `${productId}:${field}`;
-    setSavingFields(current => ({ ...current, [saveKey]: true }));
-
-    try {
-      const value = product[field]?.trim() || null;
-      const { error } = await supabase
-        .from('shopify_products')
-        .update({ [field]: value } as any)
-        .eq('id', productId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error(`Error saving ${field}:`, error);
-      toast.error("Impossible d'enregistrer l'attribut");
-    } finally {
-      setSavingFields(current => ({ ...current, [saveKey]: false }));
+  const handleEnrichAll = async () => {
+    const ids = products.filter((product) => product.enrichment_status !== "enriched").map((product) => product.id);
+    if (!ids.length) {
+      toast.info(fr ? "Tous les produits sont déjà enrichis" : "All products are already enriched");
+      return;
     }
+    await handleBulkEnrich(ids);
   };
 
-  const toggleProduct = (productId: string, checked: boolean) => {
-    setSelectedIds(current => checked
-      ? Array.from(new Set([...current, productId]))
-      : current.filter(id => id !== productId)
+  const handleAttributeChange = (productId: string, field: EditableAttribute, value: string) => {
+    setProducts((current) =>
+      current.map((product) => (product.id === productId ? { ...product, [field]: value } : product)),
     );
   };
 
-  const exportableProducts = products.filter(product => (
-    product.enrichment_status === 'enriched' && Boolean(product.shopify_id)
-  ));
-  const allExportableSelected = exportableProducts.length > 0
-    && exportableProducts.every(product => selectedIds.includes(product.id));
+  const saveAttribute = async (productId: string, field: EditableAttribute) => {
+    const product = products.find((item) => item.id === productId);
+    if (!product) return;
 
-  const toggleAllExportable = () => {
-    if (allExportableSelected) {
-      setSelectedIds(current => current.filter(id => !exportableProducts.some(product => product.id === id)));
-    } else {
-      setSelectedIds(current => Array.from(new Set([...current, ...exportableProducts.map(product => product.id)])));
+    const saveKey = `${productId}:${field}`;
+    setSavingFields((current) => ({ ...current, [saveKey]: true }));
+
+    try {
+      const value = product[field]?.trim() || null;
+      const { error } = await supabase.from("shopify_products").update({ [field]: value } as never).eq("id", productId);
+      if (error) throw error;
+    } catch (error) {
+      console.error(`Error saving ${field}:`, error);
+      toast.error(fr ? "Impossible d’enregistrer l’attribut" : "Unable to save attribute");
+    } finally {
+      setSavingFields((current) => ({ ...current, [saveKey]: false }));
     }
   };
 
+  const exportableProducts = useMemo(
+    () => products.filter((product) => product.enrichment_status === "enriched" && Boolean(product.shopify_id)),
+    [products],
+  );
+
+  const selectedExportableCount = selectedIds.filter((id) => exportableProducts.some((product) => product.id === id)).length;
+  const allExportableSelected =
+    exportableProducts.length > 0 && exportableProducts.every((product) => selectedIds.includes(product.id));
+
+  const toggleProduct = (productId: string, checked: boolean) => {
+    setSelectedIds((current) =>
+      checked ? Array.from(new Set([...current, productId])) : current.filter((id) => id !== productId),
+    );
+  };
+
+  const toggleAllExportable = () => {
+    if (allExportableSelected) {
+      setSelectedIds((current) => current.filter((id) => !exportableProducts.some((product) => product.id === id)));
+      return;
+    }
+    setSelectedIds((current) => Array.from(new Set([...current, ...exportableProducts.map((product) => product.id)])));
+  };
+
   const handleExportAttributes = async () => {
-    const selectedProducts = selectedIds.length > 0
-      ? exportableProducts.filter(product => selectedIds.includes(product.id))
+    const selectedProducts = selectedIds.length
+      ? exportableProducts.filter((product) => selectedIds.includes(product.id))
       : exportableProducts;
 
-    if (selectedProducts.length === 0) {
-      toast.info('Aucun produit enrichi à exporter');
+    if (!selectedProducts.length) {
+      toast.info(fr ? "Aucun produit enrichi à exporter" : "No enriched product to export");
       return;
     }
 
     setExporting(true);
     try {
-      // Send the current UI values as overrides so a just-edited field is exported
-      // even if its onBlur database save is still finishing.
-      const overrides = Object.fromEntries(selectedProducts.map(product => [product.id, {
-        ai_color: product.ai_color,
-        ai_material: product.ai_material,
-        ai_shape: product.ai_shape,
-        ai_texture: product.ai_texture,
-        ai_pattern: product.ai_pattern,
-        ai_finish: product.ai_finish,
-        ai_design_elements: product.ai_design_elements,
-        style: product.style,
-        category: product.category,
-        sub_category: product.sub_category,
-      }]));
+      const overrides = Object.fromEntries(
+        selectedProducts.map((product) => [
+          product.id,
+          {
+            ai_color: product.ai_color,
+            ai_material: product.ai_material,
+            ai_shape: product.ai_shape,
+            ai_texture: product.ai_texture,
+            ai_pattern: product.ai_pattern,
+            ai_finish: product.ai_finish,
+            ai_design_elements: product.ai_design_elements,
+            style: product.style,
+            category: product.category,
+            sub_category: product.sub_category,
+          },
+        ]),
+      );
 
-      const { data, error } = await supabase.functions.invoke('export-shopify-attributes', {
-        body: {
-          productIds: selectedProducts.map(product => product.id),
-          overrides,
-        },
+      const { data, error } = await supabase.functions.invoke("export-shopify-attributes", {
+        body: { productIds: selectedProducts.map((product) => product.id), overrides },
       });
-
       if (error) throw error;
-      if (!data) throw new Error('Réponse vide du serveur');
+      if (!data) throw new Error(fr ? "Réponse vide du serveur" : "Empty server response");
 
       const exportedProducts = Number(data.products_exported || 0);
       const exportedAttributes = Number(data.attributes_exported || 0);
       const failed = Number(data.failed || 0);
 
       if (failed > 0) {
-        toast.warning(`Export partiel : ${exportedProducts} produits, ${exportedAttributes} attributs, ${failed} erreur(s)`);
+        toast.warning(
+          fr
+            ? `Export partiel : ${exportedProducts} produits, ${exportedAttributes} attributs, ${failed} erreur(s)`
+            : `Partial export: ${exportedProducts} products, ${exportedAttributes} attributes, ${failed} error(s)`,
+        );
       } else {
-        toast.success(`${exportedAttributes} attributs exportés vers Shopify sur ${exportedProducts} produit(s)`);
+        toast.success(
+          fr
+            ? `${exportedAttributes} attributs exportés vers Shopify sur ${exportedProducts} produit(s)`
+            : `${exportedAttributes} attributes exported to Shopify across ${exportedProducts} product(s)`,
+        );
       }
     } catch (error) {
-      console.error('Error exporting Shopify attributes:', error);
-      toast.error('Échec de l’export des attributs vers Shopify');
+      console.error("Error exporting Shopify attributes:", error);
+      toast.error(fr ? "Échec de l’export des attributs vers Shopify" : "Failed to export attributes to Shopify");
     } finally {
       setExporting(false);
     }
   };
 
-  const dimensionBadges = (product: Product) => {
-    const dimensions = [
-      ['L', product.smart_length, product.smart_length_unit],
-      ['l', product.smart_width, product.smart_width_unit],
-      ['H', product.smart_height, product.smart_height_unit],
-      ['P', product.smart_depth, product.smart_depth_unit],
-      ['Ø', product.smart_diameter, product.smart_diameter_unit],
-      ['Poids', product.smart_weight, product.smart_weight_unit],
-      ["H. assise", product.smart_seat_height, product.smart_seat_height_unit],
-    ].filter(([, value]) => value !== null && value !== undefined);
+  const enrichedProducts = products.filter((product) => product.enrichment_status === "enriched").length;
+  const pendingProducts = products.length - enrichedProducts;
+  const enrichmentRate = products.length ? Math.round((enrichedProducts / products.length) * 100) : 0;
+  const enrichmentProgress = progress.total ? Math.round((progress.current / progress.total) * 100) : 0;
+  const suspiciousProducts = products.filter((product) => getDimensions(product, fr).some((item) => item.suspicious));
 
-    if (!dimensions.length) return null;
+  const filteredProducts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return products.filter((product) => {
+      const enriched = product.enrichment_status === "enriched";
+      if (filter === "enriched" && !enriched) return false;
+      if (filter === "pending" && enriched) return false;
+      if (!query) return true;
+      return [
+        product.title,
+        product.ai_color,
+        product.ai_material,
+        product.style,
+        product.category,
+        product.sub_category,
+      ].some((value) => value?.toLowerCase().includes(query));
+    });
+  }, [filter, products, search]);
 
-    return (
-      <div className="flex flex-wrap gap-1 pt-1">
-        {dimensions.map(([label, value, unit]) => (
-          <Badge key={`${label}-${value}`} variant="secondary" className="text-[11px] font-normal">
-            {label}: {value}{unit ? ` ${unit}` : ''}
-          </Badge>
-        ))}
-      </div>
+  const toggleExpanded = (productId: string) => {
+    setExpandedIds((current) =>
+      current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId],
     );
+  };
+
+  const filterLabel = (id: FilterId) => {
+    if (id === "enriched") return fr ? "Enrichis" : "Enriched";
+    if (id === "pending") return fr ? "À enrichir" : "To enrich";
+    return fr ? "Tous" : "All";
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="mx-auto w-full max-w-[1500px] space-y-4">
+        <WorkspacePageHeader
+          section={fr ? "Catalogue" : "Catalog"}
+          page={fr ? "Données enrichies" : "Enriched Data"}
+          title={fr ? "Enrichissement Catalogue IA" : "AI Catalog Enrichment"}
+          description={
+            fr
+              ? "Détectez et structurez automatiquement les attributs produit avant export vers Shopify."
+              : "Automatically detect and structure product attributes before exporting to Shopify."
+          }
+        />
+        <Card className="grid min-h-52 place-items-center rounded-2xl border-slate-200 bg-white">
+          <div className="text-center">
+            <Loader2 className="mx-auto h-6 w-6 animate-spin text-violet-600" />
+            <p className="mt-2 text-sm text-slate-500">{fr ? "Chargement du catalogue…" : "Loading catalog…"}</p>
+          </div>
+        </Card>
       </div>
     );
   }
 
-  const enrichedProducts = products.filter(p => p.enrichment_status === 'enriched').length;
-  const pendingProducts = products.length - enrichedProducts;
-  const enrichmentRate = products.length > 0 ? Math.round((enrichedProducts / products.length) * 100) : 0;
-  const selectedExportableCount = selectedIds.filter(id => exportableProducts.some(product => product.id === id)).length;
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <Card className="bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 border-2 border-purple-200 p-8">
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-2">
-              <Zap className="w-6 h-6 text-purple-600" />
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Enrichissement Catalogue IA
-              </h2>
+    <div className="mx-auto w-full max-w-[1500px] space-y-4">
+      <WorkspacePageHeader
+        section={fr ? "Catalogue" : "Catalog"}
+        page={fr ? "Données enrichies" : "Enriched Data"}
+        count={products.length}
+        title={fr ? "Enrichissement Catalogue IA" : "AI Catalog Enrichment"}
+        description={
+          fr
+            ? "Détectez, corrigez puis exportez couleur, matériau, forme, texture, finition, style, catégories et dimensions vers Shopify."
+            : "Detect, review and export color, material, shape, texture, finish, style, categories and dimensions to Shopify."
+        }
+      />
+
+      <Card className="rounded-2xl border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700">
+                <Sparkles className="h-3.5 w-3.5" />
+                {enrichmentRate}% {fr ? "enrichi" : "enriched"}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
+                <Package className="h-3.5 w-3.5" />
+                {products.length} {fr ? "produits" : "products"}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {enrichedProducts} {fr ? "enrichis" : "enriched"}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700">
+                {pendingProducts} {fr ? "à enrichir" : "to enrich"}
+              </span>
+              {suspiciousProducts.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  {suspiciousProducts.length} {fr ? "à vérifier" : "need review"}
+                </span>
+              )}
             </div>
-            <p className="text-muted-foreground text-lg max-w-3xl">
-              Détectez, corrigez puis exportez les attributs produit directement vers Shopify : couleur, matériau, forme, texture, finition, style, catégories et dimensions.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Dans Shopify, les attributs sont enregistrés comme metafields produit sous le namespace <strong>catalogoptimize</strong>, sans modifier vos variantes.
+
+            <Progress value={enrichmentRate} className="mt-3 h-1.5 max-w-2xl" />
+            <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+              {fr ? "Shopify reçoit ces données comme metafields produit dans" : "Shopify receives these values as product metafields in"}{" "}
+              <code className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-700">catalogoptimize</code>{" "}
+              {fr ? "sans modifier les variantes." : "without changing variants."}
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row xl:flex-col gap-3 w-full sm:w-auto">
-            <div className="text-center xl:mb-1">
-              <div className="text-4xl font-bold text-purple-600">{enrichmentRate}%</div>
-              <div className="text-sm text-muted-foreground">Produits enrichis</div>
-            </div>
+          <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto">
             <Button
-              size="lg"
-              onClick={handleEnrichAll}
+              onClick={() => void handleEnrichAll()}
               disabled={enriching || pendingProducts === 0}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 gap-2 shadow-lg"
+              className="rounded-xl"
             >
-              {enriching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-              Enrichir tout ({pendingProducts})
+              {enriching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              {fr ? "Enrichir tout" : "Enrich all"} ({pendingProducts})
             </Button>
             <Button
-              size="lg"
               variant="outline"
-              onClick={handleExportAttributes}
+              onClick={() => void handleExportAttributes()}
               disabled={exporting || exportableProducts.length === 0}
-              className="gap-2 bg-white border-purple-300 text-purple-700 hover:bg-purple-50"
+              className="rounded-xl border-slate-200"
             >
-              {exporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <UploadCloud className="w-5 h-5" />}
-              Exporter les attributs vers Shopify
-              {selectedExportableCount > 0 ? ` (${selectedExportableCount})` : ` (${exportableProducts.length})`}
+              {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+              {fr ? "Exporter vers Shopify" : "Export to Shopify"} ({selectedExportableCount || exportableProducts.length})
             </Button>
           </div>
         </div>
+
+        {enriching && (
+          <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50/60 p-3">
+            <div className="flex items-center justify-between gap-3 text-xs font-medium text-violet-800">
+              <span>{fr ? "Enrichissement en cours" : "Enrichment in progress"}</span>
+              <span className="tabular-nums">{progress.current}/{progress.total} · {enrichmentProgress}%</span>
+            </div>
+            <Progress value={enrichmentProgress} className="mt-2 h-1.5" />
+          </div>
+        )}
       </Card>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Package className="w-6 h-6 text-gray-600" />
-            <h3 className="font-semibold">Total Produits</h3>
-          </div>
-          <p className="text-4xl font-bold">{products.length}</p>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-          <div className="flex items-center gap-3 mb-2">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-            <h3 className="font-semibold text-green-900">Enrichis</h3>
-          </div>
-          <p className="text-4xl font-bold text-green-900">{enrichedProducts}</p>
-        </Card>
-
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200">
-          <div className="flex items-center gap-3 mb-2">
-            <Zap className="w-6 h-6 text-orange-600" />
-            <h3 className="font-semibold text-orange-900">À enrichir</h3>
-          </div>
-          <p className="text-4xl font-bold text-orange-900">{pendingProducts}</p>
-        </Card>
-      </div>
-
-      {/* Progress */}
-      {enriching && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium">Enrichissement en cours...</span>
-            <span className="text-sm text-muted-foreground">
-              {progress.current} / {progress.total}
-            </span>
-          </div>
-          <Progress value={progress.total > 0 ? (progress.current / progress.total) * 100 : 0} className="h-2" />
-        </Card>
-      )}
-
-      {/* Export selection */}
-      {exportableProducts.length > 0 && (
-        <Card className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Checkbox
-              checked={allExportableSelected}
-              onCheckedChange={() => toggleAllExportable()}
-              aria-label="Sélectionner tous les produits enrichis"
-            />
-            <div>
-              <p className="font-medium">Sélection pour Shopify</p>
-              <p className="text-sm text-muted-foreground">
-                {selectedExportableCount > 0
-                  ? `${selectedExportableCount} produit(s) sélectionné(s)`
-                  : `Aucune sélection : le bouton exportera les ${exportableProducts.length} produits enrichis`}
-              </p>
+      <Card className="rounded-2xl border-slate-200 bg-white p-3 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex w-fit gap-1 rounded-xl bg-slate-50 p-1">
+              {(["all", "enriched", "pending"] as FilterId[]).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setFilter(id)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    filter === id ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  {filterLabel(id)}
+                </button>
+              ))}
+            </div>
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={fr ? "Rechercher un produit ou attribut…" : "Search product or attribute…"}
+                className="h-9 rounded-xl border-slate-200 pl-9 text-sm"
+              />
             </div>
           </div>
-          {selectedExportableCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
-              Effacer la sélection
-            </Button>
-          )}
-        </Card>
-      )}
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {products.map((product) => {
-          const exportable = product.enrichment_status === 'enriched' && Boolean(product.shopify_id);
-          const selected = selectedIds.includes(product.id);
-
-          return (
-            <Card key={product.id} className={`overflow-hidden hover:shadow-md transition ${selected ? 'ring-2 ring-purple-400' : ''}`}>
-              <div className="aspect-video bg-muted relative">
-                {product.image_url ? (
-                  <img
-                    src={product.image_url}
-                    alt={product.title}
-                    className="w-full h-full object-contain bg-white"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Package className="w-12 h-12 text-muted-foreground" />
-                  </div>
-                )}
-
-                {exportable && (
-                  <div className="absolute top-2 left-2 rounded-md bg-white/95 px-2 py-1 shadow-sm flex items-center gap-2">
-                    <Checkbox
-                      checked={selected}
-                      onCheckedChange={(checked) => toggleProduct(product.id, checked === true)}
-                      aria-label={`Sélectionner ${product.title}`}
-                    />
-                    <span className="text-xs font-medium">Shopify</span>
-                  </div>
-                )}
-
-                {product.enrichment_status === 'enriched' && (
-                  <div className="absolute top-2 right-2">
-                    <Badge className="bg-green-600 text-white gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      Enrichi
-                    </Badge>
-                  </div>
-                )}
+          {exportableProducts.length > 0 && (
+            <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2">
+              <Checkbox
+                checked={allExportableSelected}
+                onCheckedChange={() => toggleAllExportable()}
+                aria-label={fr ? "Sélectionner tous les produits enrichis" : "Select all enriched products"}
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-800">{fr ? "Sélection Shopify" : "Shopify selection"}</p>
+                <p className="truncate text-[11px] text-slate-500">
+                  {selectedExportableCount > 0
+                    ? fr
+                      ? `${selectedExportableCount} produit(s) sélectionné(s)`
+                      : `${selectedExportableCount} product(s) selected`
+                    : fr
+                      ? `Aucune sélection : export des ${exportableProducts.length} enrichis`
+                      : `No selection: export all ${exportableProducts.length} enriched products`}
+                </p>
               </div>
+              {selectedExportableCount > 0 && (
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setSelectedIds([])}>
+                  {fr ? "Effacer" : "Clear"}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
 
-              <div className="p-4 space-y-4">
-                <h3 className="font-semibold line-clamp-2">{product.title}</h3>
+      <Card className="overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm">
+        {filteredProducts.length === 0 ? (
+          <div className="grid min-h-52 place-items-center p-6 text-center">
+            <div>
+              <Search className="mx-auto h-7 w-7 text-slate-300" />
+              <p className="mt-2 text-sm font-semibold text-slate-900">{fr ? "Aucun produit trouvé" : "No product found"}</p>
+              <p className="mt-1 text-xs text-slate-500">{fr ? "Modifiez la recherche ou le filtre." : "Change the search or filter."}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {filteredProducts.map((product) => {
+              const enriched = product.enrichment_status === "enriched";
+              const exportable = enriched && Boolean(product.shopify_id);
+              const selected = selectedIds.includes(product.id);
+              const expanded = expandedIds.includes(product.id);
+              const dimensions = getDimensions(product, fr);
+              const validDimensions = dimensions.filter((item) => !item.suspicious);
+              const suspiciousDimensions = dimensions.filter((item) => item.suspicious);
+              const summaryAttributes = [
+                product.ai_color,
+                product.ai_material,
+                product.style,
+                product.category,
+                product.sub_category,
+              ].filter(Boolean) as string[];
 
-                {product.enrichment_status === 'enriched' ? (
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {editableAttributes.map(({ field, label, placeholder }) => {
-                        const saveKey = `${product.id}:${field}`;
-                        return (
-                          <label key={field} className="space-y-1">
-                            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                              {label}
-                              {savingFields[saveKey] && <Loader2 className="w-3 h-3 animate-spin" />}
-                            </span>
-                            <Input
-                              value={product[field] || ''}
-                              placeholder={placeholder}
-                              onChange={(event) => handleAttributeChange(product.id, field, event.target.value)}
-                              onBlur={() => saveAttribute(product.id, field)}
-                              className="h-8 text-sm"
-                            />
-                          </label>
-                        );
-                      })}
+              return (
+                <div key={product.id} className={`transition ${selected ? "bg-violet-50/30" : "hover:bg-slate-50/50"}`}>
+                  <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:p-4">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      {exportable && (
+                        <Checkbox
+                          checked={selected}
+                          onCheckedChange={(checked) => toggleProduct(product.id, checked === true)}
+                          aria-label={`${fr ? "Sélectionner" : "Select"} ${product.title}`}
+                          className="shrink-0"
+                        />
+                      )}
+
+                      <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 sm:h-24 sm:w-24">
+                        {product.image_url ? (
+                          <img src={product.image_url} alt={product.title} className="h-full w-full object-contain bg-white" loading="lazy" />
+                        ) : (
+                          <Package className="h-6 w-6 text-slate-300" />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {product.shopify_id && (
+                            <Badge variant="outline" className="rounded-full border-slate-200 bg-white text-[10px] font-medium text-slate-500">
+                              <Store className="mr-1 h-3 w-3" />Shopify
+                            </Badge>
+                          )}
+                          {enriched ? (
+                            <Badge className="rounded-full bg-emerald-50 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-50">
+                              <CheckCircle2 className="mr-1 h-3 w-3" />{fr ? "Enrichi" : "Enriched"}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="rounded-full border-orange-200 bg-orange-50 text-[10px] font-semibold text-orange-700">
+                              {fr ? "À enrichir" : "To enrich"}
+                            </Badge>
+                          )}
+                          {suspiciousDimensions.length > 0 && (
+                            <Badge variant="outline" className="rounded-full border-amber-200 bg-amber-50 text-[10px] font-semibold text-amber-700">
+                              <AlertTriangle className="mr-1 h-3 w-3" />
+                              {suspiciousDimensions.length} {fr ? "valeur(s) à vérifier" : "value(s) to review"}
+                            </Badge>
+                          )}
+                        </div>
+
+                        <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold leading-5 text-slate-950 sm:text-base">{product.title}</h3>
+
+                        {enriched && (
+                          <>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {summaryAttributes.slice(0, 5).map((value, index) => (
+                                <span key={`${value}-${index}`} className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
+                                  {value}
+                                </span>
+                              ))}
+                              {product.ai_pattern && (
+                                <span className="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
+                                  {fr ? "Motif" : "Pattern"}: {product.ai_pattern}
+                                </span>
+                              )}
+                            </div>
+
+                            {validDimensions.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {validDimensions.map((item) => (
+                                  <span key={item.key} className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600">
+                                    <span className="font-medium text-slate-800">{item.label}</span> {item.value}{item.unit ? ` ${item.unit}` : ""}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
 
-                    {product.ai_pattern && (
-                      <div className="flex gap-1 items-center text-xs">
-                        <span className="text-muted-foreground">Motif :</span>
-                        <Badge variant="outline" className="text-xs">{product.ai_pattern}</Badge>
+                    <div className="flex shrink-0 items-center justify-end gap-2 sm:pl-3">
+                      {!enriched ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl"
+                          disabled={enriching}
+                          onClick={() => void handleBulkEnrich([product.id])}
+                        >
+                          <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                          {fr ? "Enrichir" : "Enrich"}
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" className="rounded-xl" onClick={() => toggleExpanded(product.id)}>
+                          {expanded ? <ChevronUp className="mr-1.5 h-3.5 w-3.5" /> : <ChevronDown className="mr-1.5 h-3.5 w-3.5" />}
+                          {expanded ? (fr ? "Réduire" : "Collapse") : (fr ? "Modifier" : "Edit")}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {expanded && enriched && (
+                    <div className="border-t border-slate-100 bg-slate-50/60 px-3 py-4 sm:px-4">
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {editableAttributes.map(({ field, label, placeholder }) => {
+                          const saveKey = `${product.id}:${field}`;
+                          return (
+                            <label key={field} className="space-y-1.5">
+                              <span className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                {label}
+                                {savingFields[saveKey] && <Loader2 className="h-3 w-3 animate-spin" />}
+                              </span>
+                              <Input
+                                value={product[field] || ""}
+                                placeholder={placeholder}
+                                onChange={(event) => handleAttributeChange(product.id, field, event.target.value)}
+                                onBlur={() => void saveAttribute(product.id, field)}
+                                className="h-9 rounded-xl border-slate-200 bg-white text-sm"
+                              />
+                            </label>
+                          );
+                        })}
                       </div>
-                    )}
 
-                    {dimensionBadges(product)}
+                      <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-start">
+                        <div className="rounded-xl border border-slate-200 bg-white p-3">
+                          <div className="flex items-center gap-2">
+                            <Database className="h-4 w-4 text-violet-600" />
+                            <p className="text-xs font-semibold text-slate-800">{fr ? "Dimensions détectées" : "Detected dimensions"}</p>
+                          </div>
 
-                    {!product.shopify_id && (
-                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
-                        Produit non lié à un ID Shopify : export indisponible.
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2"
-                    disabled={enriching}
-                    onClick={() => handleBulkEnrich([product.id])}
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Enrichir ce produit
-                  </Button>
-                )}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+                          {dimensions.length === 0 ? (
+                            <p className="mt-2 text-xs text-slate-500">{fr ? "Aucune dimension détectée." : "No dimensions detected."}</p>
+                          ) : (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {dimensions.map((item) => (
+                                <span
+                                  key={item.key}
+                                  title={item.suspicious ? (fr ? "Valeur atypique détectée : vérifiez la source avant export." : "Unusual value detected: verify the source before export.") : undefined}
+                                  className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] ${
+                                    item.suspicious
+                                      ? "border-amber-200 bg-amber-50 font-medium text-amber-700"
+                                      : "border-slate-200 bg-slate-50 text-slate-600"
+                                  }`}
+                                >
+                                  {item.suspicious && <AlertTriangle className="h-3 w-3" />}
+                                  <strong>{item.label}</strong> {item.value}{item.unit ? ` ${item.unit}` : ""}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {suspiciousDimensions.length > 0 && (
+                            <p className="mt-2 text-[11px] leading-5 text-amber-700">
+                              {fr
+                                ? "Les valeurs atypiques restent visibles mais ne sont plus présentées comme fiables. Vérifiez-les avant export Shopify."
+                                : "Unusual values remain visible but are no longer presented as trusted data. Review them before Shopify export."}
+                            </p>
+                          )}
+                        </div>
+
+                        {!product.shopify_id && (
+                          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                            {fr ? "ID Shopify manquant · export indisponible" : "Missing Shopify ID · export unavailable"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
 
       {products.length === 0 && (
-        <Card className="p-12 text-center">
-          <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground mb-4">Aucun produit à enrichir</p>
-          <Button onClick={fetchProducts}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Actualiser
+        <Card className="rounded-2xl border-slate-200 bg-white p-10 text-center shadow-sm">
+          <Package className="mx-auto h-9 w-9 text-slate-300" />
+          <p className="mt-3 text-sm font-semibold text-slate-900">{fr ? "Aucun produit à enrichir" : "No products to enrich"}</p>
+          <p className="mt-1 text-xs text-slate-500">{fr ? "Synchronisez d’abord votre catalogue Shopify." : "Sync your Shopify catalog first."}</p>
+          <Button variant="outline" className="mt-4 rounded-xl" onClick={() => void fetchProducts()}>
+            <RefreshCw className="mr-2 h-4 w-4" />{fr ? "Actualiser" : "Refresh"}
           </Button>
         </Card>
       )}
