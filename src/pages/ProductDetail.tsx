@@ -2,13 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  CalendarClock,
   Check,
   Code2,
   ExternalLink,
+  Eye,
   FileText,
   Loader2,
   Package,
   Save,
+  Sparkles,
   Store,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,10 +21,20 @@ import { useTranslation } from "@/lib/language";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { LandingPagePreviewDialog } from "@/components/seo/LandingPagePreviewDialog";
+import RegenerateLanding from "@/components/seo/RegenerateLanding";
+import type { LandingConfig } from "@/components/seo/LandingConfigDialog";
 import { toast } from "sonner";
 
 type Product = {
@@ -42,10 +55,34 @@ type Product = {
   status: string;
   landing_page: string | null;
   landing_page_html: string | null;
+  has_landing_page: boolean | null;
+  last_landing_generation_at: string | null;
+  seo_title?: string | null;
   tags: string | null;
 };
 
 type LandingMode = "preview" | "html";
+
+const DEFAULT_LANDING_CONFIG: LandingConfig = {
+  layout: "2 colonnes",
+  colorScheme: {
+    paletteId: "modern",
+    primary: "#000000",
+    secondary: "#333333",
+    background: "#FFFFFF",
+    surface: "#F5F5F5",
+    text: "#000000",
+    textMuted: "#666666",
+  },
+  contentLength: "moyenne (800 mots)",
+  vendorSource: "shopify",
+  customHighlights: "",
+  designStyle: "modern",
+  theme: "light",
+  regenerateTitle: true,
+  activeOnly: true,
+  redoExisting: false,
+};
 
 export default function ProductDetail() {
   const { id, handle } = useParams<{ id?: string; handle?: string }>();
@@ -60,6 +97,8 @@ export default function ProductDetail() {
   const [savingCommerce, setSavingCommerce] = useState(false);
   const [savingHtml, setSavingHtml] = useState(false);
   const [landingMode, setLandingMode] = useState<LandingMode>("preview");
+  const [showLandingGenerator, setShowLandingGenerator] = useState(false);
+  const [showLandingPreview, setShowLandingPreview] = useState(false);
 
   const [statusActive, setStatusActive] = useState(true);
   const [price, setPrice] = useState("");
@@ -116,6 +155,9 @@ export default function ProductDetail() {
   const currentPrice = Number(price || 0);
   const currentCompare = Number(compareAtPrice || 0);
   const hasComparePrice = currentCompare > currentPrice && currentCompare > 0;
+  const hasLanding = Boolean(
+    landingHtml.trim() || product?.has_landing_page || product?.landing_page || product?.landing_page_html,
+  );
 
   const formattedPrice = useMemo(() => {
     try {
@@ -127,6 +169,18 @@ export default function ProductDetail() {
       return `${currentPrice.toFixed(2)} ${currency}`;
     }
   }, [currentPrice, currency, fr]);
+
+  const formattedLandingDate = useMemo(() => {
+    if (!product?.last_landing_generation_at) return null;
+    try {
+      return new Intl.DateTimeFormat(fr ? "fr-FR" : "en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date(product.last_landing_generation_at));
+    } catch {
+      return null;
+    }
+  }, [product?.last_landing_generation_at, fr]);
 
   const saveCommerce = async () => {
     if (!product) return;
@@ -172,17 +226,50 @@ export default function ProductDetail() {
     if (!product) return;
     try {
       setSavingHtml(true);
+      const hasHtml = Boolean(landingHtml.trim());
+      const patch = {
+        landing_page: landingHtml,
+        landing_page_html: landingHtml,
+        has_landing_page: hasHtml,
+        updated_at: new Date().toISOString(),
+      };
       const { error } = await supabase
         .from("shopify_products")
-        .update({ landing_page_html: landingHtml, updated_at: new Date().toISOString() } as any)
+        .update(patch as any)
         .eq("id", product.id);
       if (error) throw error;
-      setProduct((current) => current ? { ...current, landing_page_html: landingHtml } : current);
+      setProduct((current) => current ? { ...current, ...patch } as Product : current);
       toast.success(fr ? "HTML de la landing page enregistré" : "Landing page HTML saved");
     } catch (error: any) {
       toast.error(error?.message || (fr ? "Enregistrement HTML impossible" : "Could not save HTML"));
     } finally {
       setSavingHtml(false);
+    }
+  };
+
+  const handleLandingGenerated = async (html: string) => {
+    if (!product) return;
+    const generatedAt = new Date().toISOString();
+    const patch = {
+      landing_page: html,
+      landing_page_html: html,
+      has_landing_page: true,
+      last_landing_generation_at: generatedAt,
+      updated_at: generatedAt,
+    };
+
+    setLandingHtml(html);
+    setLandingMode("preview");
+    setProduct((current) => current ? { ...current, ...patch } as Product : current);
+
+    try {
+      const { error } = await supabase
+        .from("shopify_products")
+        .update(patch as any)
+        .eq("id", product.id);
+      if (error) throw error;
+    } catch (error) {
+      console.warn("Landing generated but product metadata could not be refreshed:", error);
     }
   };
 
@@ -212,14 +299,32 @@ export default function ProductDetail() {
       </div>
 
       <Card className="overflow-hidden rounded-2xl border-violet-100 bg-gradient-to-r from-violet-50/60 via-white to-slate-50/70 shadow-none">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+        <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center">
           <div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white bg-white shadow-sm">
             {product.image_url ? <img src={product.image_url} alt={product.title} className="h-full w-full object-cover" /> : <Package className="h-7 w-7 text-slate-300" />}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500"><span>{product.vendor || product.product_type || "Catalog"}</span>{product.sku && <><span>•</span><span>SKU {product.sku}</span></>}</div>
             <h1 className="mt-1 max-w-4xl text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">{product.title}</h1>
-            <div className="mt-3 flex flex-wrap items-center gap-3"><span className="text-xl font-semibold text-slate-950">{formattedPrice}</span><span className={inventoryManaged && Number(inventoryQuantity) <= 0 ? "text-sm font-medium text-red-600" : "text-sm text-slate-500"}>{inventoryManaged ? `${inventoryQuantity || 0} ${fr ? "en stock" : "in stock"}` : (fr ? "Stock non géré" : "Inventory not tracked")}</span></div>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <span className="text-xl font-semibold text-slate-950">{formattedPrice}</span>
+              <span className={inventoryManaged && Number(inventoryQuantity) <= 0 ? "text-sm font-medium text-red-600" : "text-sm text-slate-500"}>{inventoryManaged ? `${inventoryQuantity || 0} ${fr ? "en stock" : "in stock"}` : (fr ? "Stock non géré" : "Inventory not tracked")}</span>
+              <Badge variant="outline" className={hasLanding ? "rounded-full border-violet-200 bg-violet-50 text-violet-700" : "rounded-full border-slate-200 bg-white text-slate-500"}>
+                {hasLanding ? (fr ? "Landing prête" : "Landing ready") : (fr ? "Landing à générer" : "Landing not generated")}
+              </Badge>
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Button className="rounded-xl bg-violet-600 hover:bg-violet-700" onClick={() => setShowLandingGenerator(true)}>
+              <Sparkles className="mr-1.5 h-4 w-4" />
+              {hasLanding ? (fr ? "Régénérer landing" : "Regenerate landing") : (fr ? "Générer landing page" : "Generate landing page")}
+            </Button>
+            {hasLanding && (
+              <Button variant="outline" className="rounded-xl" onClick={() => setShowLandingPreview(true)}>
+                <Eye className="mr-1.5 h-4 w-4" />
+                {fr ? "Voir landing" : "View landing"}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -229,12 +334,24 @@ export default function ProductDetail() {
           <CardContent className="space-y-5 p-5">
             <div className="flex items-center justify-between"><div><h2 className="font-semibold text-slate-950">Commerce</h2><p className="mt-0.5 text-xs text-slate-500">{fr ? "Prix, disponibilité et inventaire du catalogue." : "Catalog price, availability, and inventory."}</p></div><Store className="h-5 w-5 text-violet-500" /></div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-xl border border-slate-200 p-3">
                 <div className="flex items-center justify-between gap-3"><div><Label>{fr ? "Statut" : "Status"}</Label><p className="mt-1 text-xs text-slate-500">{statusActive ? (fr ? "Visible / actif" : "Visible / active") : (fr ? "Brouillon / inactif" : "Draft / inactive")}</p></div><Switch checked={statusActive} onCheckedChange={setStatusActive} /></div>
               </div>
               <div className="rounded-xl border border-slate-200 p-3">
                 <div className="flex items-center justify-between gap-3"><div><Label>{fr ? "Stock géré" : "Track inventory"}</Label><p className="mt-1 text-xs text-slate-500">{inventoryManaged ? (fr ? "Quantité suivie" : "Quantity tracked") : (fr ? "Stock non géré" : "Inventory not tracked")}</p></div><Switch checked={inventoryManaged} onCheckedChange={setInventoryManaged} /></div>
+              </div>
+              <div className="rounded-xl border border-violet-100 bg-violet-50/40 p-3">
+                <div className="flex items-start gap-2">
+                  <CalendarClock className="mt-0.5 h-4 w-4 text-violet-600" />
+                  <div className="min-w-0">
+                    <Label>Landing page</Label>
+                    <p className={`mt-1 text-xs font-medium ${hasLanding ? "text-violet-700" : "text-slate-500"}`}>
+                      {hasLanding ? (fr ? "Générée" : "Generated") : (fr ? "Non générée" : "Not generated")}
+                    </p>
+                    {formattedLandingDate && <p className="mt-1 truncate text-[11px] text-slate-500">{formattedLandingDate}</p>}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -261,7 +378,12 @@ export default function ProductDetail() {
         <CardContent className="space-y-4 p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div><h2 className="font-semibold text-slate-950">Landing Page</h2><p className="mt-0.5 text-xs text-slate-500">{fr ? "Prévisualisez ou modifiez le HTML généré pour ce produit." : "Preview or edit the generated HTML for this product."}</p></div>
-            <div className="flex flex-wrap gap-2"><div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1"><Button size="sm" variant={landingMode === "preview" ? "secondary" : "ghost"} className="h-8 rounded-lg" onClick={() => setLandingMode("preview")}><FileText className="mr-1.5 h-3.5 w-3.5" />Preview</Button><Button size="sm" variant={landingMode === "html" ? "secondary" : "ghost"} className="h-8 rounded-lg" onClick={() => setLandingMode("html")}><Code2 className="mr-1.5 h-3.5 w-3.5" />HTML</Button></div><Button asChild size="sm" variant="outline" className="rounded-xl"><a href={`/product-landing/${product.id}`}><ExternalLink className="mr-1.5 h-3.5 w-3.5" />{fr ? "Éditeur landing" : "Landing editor"}</a></Button></div>
+            <div className="flex flex-wrap gap-2">
+              <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1"><Button size="sm" variant={landingMode === "preview" ? "secondary" : "ghost"} className="h-8 rounded-lg" onClick={() => setLandingMode("preview")}><FileText className="mr-1.5 h-3.5 w-3.5" />Preview</Button><Button size="sm" variant={landingMode === "html" ? "secondary" : "ghost"} className="h-8 rounded-lg" onClick={() => setLandingMode("html")}><Code2 className="mr-1.5 h-3.5 w-3.5" />HTML</Button></div>
+              <Button size="sm" className="rounded-xl bg-violet-600 hover:bg-violet-700" onClick={() => setShowLandingGenerator(true)}><Sparkles className="mr-1.5 h-3.5 w-3.5" />{hasLanding ? (fr ? "Régénérer" : "Regenerate") : (fr ? "Générer landing" : "Generate landing")}</Button>
+              {hasLanding && <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setShowLandingPreview(true)}><Eye className="mr-1.5 h-3.5 w-3.5" />{fr ? "Voir landing" : "View landing"}</Button>}
+              <Button asChild size="sm" variant="ghost" className="rounded-xl"><a href={`/product-landing/${product.id}`}><ExternalLink className="mr-1.5 h-3.5 w-3.5" />{fr ? "Vue complète" : "Full view"}</a></Button>
+            </div>
           </div>
 
           {landingMode === "html" ? (
@@ -269,10 +391,50 @@ export default function ProductDetail() {
           ) : landingHtml.trim() ? (
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white"><iframe title="Landing page preview" srcDoc={landingHtml} sandbox="" className="h-[620px] w-full bg-white" /></div>
           ) : (
-            <div className="grid min-h-64 place-items-center rounded-xl border border-dashed border-slate-200 bg-slate-50/40 p-8 text-center"><div><Code2 className="mx-auto mb-3 h-8 w-8 text-slate-300" /><p className="font-medium text-slate-700">{fr ? "Aucune landing page HTML" : "No landing page HTML"}</p><p className="mt-1 text-sm text-slate-500">{fr ? "Générez une landing page ou passez en mode HTML pour coller votre code." : "Generate a landing page or switch to HTML mode to paste your code."}</p><Button className="mt-4 rounded-xl" variant="outline" onClick={() => navigate(`/product-landing/${product.id}`)}>{fr ? "Créer / ouvrir la landing" : "Create / open landing"}</Button></div></div>
+            <div className="grid min-h-64 place-items-center rounded-xl border border-dashed border-violet-200 bg-violet-50/30 p-8 text-center"><div><Sparkles className="mx-auto mb-3 h-8 w-8 text-violet-500" /><p className="font-medium text-slate-700">{fr ? "Aucune landing page" : "No landing page yet"}</p><p className="mt-1 text-sm text-slate-500">{fr ? "Générez-la directement depuis ce produit. Le popup démarre la génération automatiquement." : "Generate it directly from this product. The popup starts generation automatically."}</p><Button className="mt-4 rounded-xl bg-violet-600 hover:bg-violet-700" onClick={() => setShowLandingGenerator(true)}><Sparkles className="mr-1.5 h-4 w-4" />{fr ? "Générer landing page" : "Generate landing page"}</Button></div></div>
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={showLandingGenerator} onOpenChange={setShowLandingGenerator}>
+        <DialogContent className="max-h-[92vh] max-w-6xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-violet-600" />{fr ? "Générer la landing page" : "Generate landing page"}</DialogTitle>
+            <DialogDescription>{fr ? `Génération IA pour ${product.title}.` : `AI generation for ${product.title}.`}</DialogDescription>
+          </DialogHeader>
+          {showLandingGenerator && (
+            <RegenerateLanding
+              product={{
+                id: product.id,
+                title: product.title,
+                seo_title: product.seo_title || undefined,
+                handle: product.handle || undefined,
+                description: product.description || undefined,
+                image_url: product.image_url || undefined,
+              }}
+              config={DEFAULT_LANDING_CONFIG}
+              autoGenerate
+              onGenerated={(html) => void handleLandingGenerated(html)}
+              onClose={() => setShowLandingGenerator(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <LandingPagePreviewDialog
+        open={showLandingPreview}
+        onOpenChange={setShowLandingPreview}
+        productId={product.id}
+        productTitle={product.title}
+        productHandle={product.handle || ""}
+        currentLandingPage={landingHtml || product.landing_page || product.landing_page_html || undefined}
+        seoTitle={product.seo_title || undefined}
+        onGenerateClick={() => {
+          setShowLandingPreview(false);
+          setShowLandingGenerator(true);
+        }}
+        onLandingPageGenerated={(html) => void handleLandingGenerated(html)}
+      />
     </div>
   );
 }
