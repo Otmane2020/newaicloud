@@ -1,0 +1,75 @@
+name: Fix Studio direct Product Shot flow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-studio-direct-product-shot.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch Studio direct flow
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/pages/studio/StudioSmart.tsx')
+          source = path.read_text()
+
+          old_picker = '''  const openProductImagePicker = (productId: string) => {\n    // Radix Dialog is more reliable when the product list is fully unmounted\n    // before the gallery view is mounted. This prevents the blank/empty state\n    // that could occur when swapping both views inside the same open dialog.\n    setShowSelection(false);\n    setPickerProductId(productId);\n    window.requestAnimationFrame(() => setShowSelection(true));\n  };\n'''
+          new_picker = '''  const openProductImagePicker = (productId: string) => {\n    // Keep the controlled Dialog open and switch its keyed content directly.\n    // Closing it here fired onOpenChange(false), which cleared pickerProductId\n    // before the gallery could render.\n    setPickerProductId(productId);\n    setShowSelection(true);\n  };\n'''
+
+          old_select = '''    // Image source is confirmed: return to Studio instead of silently\n    // switching back to the product list inside the same modal.\n    setShowSelection(false);\n    setPickerProductId(null);\n    setSearch(\"\");\n  };\n'''
+          new_select = '''    // The source image is confirmed. Close product selection and continue\n    // directly into the active generation tool instead of making the user\n    // click a second CTA on the Studio page.\n    setShowSelection(false);\n    setPickerProductId(null);\n    setSearch(\"\");\n    window.requestAnimationFrame(() => {\n      if (activeMode === \"shots\") setShowProductShot(true);\n      if (activeMode === \"backgrounds\") setShowBackground(true);\n    });\n  };\n'''
+
+          for label, old, new in [
+            ('openProductImagePicker', old_picker, new_picker),
+            ('selectProductSource', old_select, new_select),
+          ]:
+            count = source.count(old)
+            if count != 1:
+              raise SystemExit(f'{label}: expected exactly one match, found {count}')
+            source = source.replace(old, new, 1)
+
+          path.write_text(source)
+          PY
+
+          git diff --check
+          git diff -- src/pages/studio/StudioSmart.tsx
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Commit and push latest main
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/studio/StudioSmart.tsx
+          git commit -m "fix(studio): open image gallery then Product Shot directly"
+
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Concurrent main update detected; retrying ($attempt/3)"
+          done
+
+          exit 1
