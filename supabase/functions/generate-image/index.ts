@@ -1,10 +1,16 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import {
+  creditErrorResponse,
+  refundCredits,
+  reserveCredits,
+  type CreditReservation,
+} from "../_shared/credit-billing.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-idempotency-key",
 };
 
 // ===== MAIN FUNCTION =====
@@ -12,6 +18,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  let creditReservation: CreditReservation | null = null;
 
   try {
     const {
@@ -36,6 +44,15 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY non configurée");
     }
+
+    // Reserve before making the paid provider call. Failed generations are
+    // automatically refunded below, so users never pay for an unusable result.
+    creditReservation = await reserveCredits(req, "image", {
+      feature: "generate-image",
+      article_id: article_id || null,
+      collection_id: collection_id || null,
+      product_type: product_type || null,
+    });
 
     console.log("🧠 Generating image for:", prompt);
 
@@ -82,10 +99,14 @@ Requirements:
       const errorText = await response.text();
       console.error("Lovable AI Error:", response.status, errorText);
 
+      await refundCredits(creditReservation, `provider_http_${response.status}`);
+      creditReservation = null;
+
       if (response.status === 429) {
         return new Response(
           JSON.stringify({
             error: "Limite de taux dépassée. Réessayez dans quelques secondes.",
+            credits_refunded: true,
           }),
           {
             status: 429,
@@ -97,10 +118,11 @@ Requirements:
       if (response.status === 402) {
         return new Response(
           JSON.stringify({
-            error: "Crédits insuffisants. Veuillez recharger votre compte.",
+            error: "Le fournisseur d'image est temporairement indisponible. Aucun crédit Nexora n'a été consommé.",
+            credits_refunded: true,
           }),
           {
-            status: 402,
+            status: 503,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           },
         );
@@ -163,6 +185,8 @@ Requirements:
       JSON.stringify({
         success: true,
         image_url: publicUrl || imageUrl,
+        credit_cost: creditReservation.cost,
+        credit_balance: creditReservation.balanceAfter,
         metadata: {
           model: "google/gemini-2.5-flash-image-preview",
           product_type,
@@ -179,11 +203,23 @@ Requirements:
       },
     );
   } catch (error) {
+    const creditResponse = creditErrorResponse(error, corsHeaders);
+    if (creditResponse) return creditResponse;
+
+    if (creditReservation) {
+      await refundCredits(
+        creditReservation,
+        error instanceof Error ? error.message.slice(0, 180) : "image_generation_failed",
+      );
+      creditReservation = null;
+    }
+
     console.error("❌ Image generation error:", error);
     return new Response(
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : String(error),
+        credits_refunded: true,
         suggestion: "Vérifiez votre prompt ou essayez un texte plus précis (couleur, matériau, ambiance).",
       }),
       {
