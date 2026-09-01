@@ -93,7 +93,6 @@ export function CatalogOptimizeSidebar() {
           label: fr ? "Opportunités GEO" : "GEO Opportunities",
           href: "/aeo?tab=opportunities",
           icon: Sparkles,
-          aliases: ["/aeo"],
         },
         {
           label: fr ? "Assistant GEO" : "GEO Assistant",
@@ -113,9 +112,21 @@ export function CatalogOptimizeSidebar() {
           badge: "AI",
         },
         {
+          label: "Perplexity",
+          href: "/aeo?tab=opportunities&platform=perplexity",
+          icon: Sparkles,
+          badge: "AI",
+        },
+        {
           label: "Copilot",
           href: "/aeo-copilot",
           icon: Bot,
+          badge: "AI",
+        },
+        {
+          label: "Claude",
+          href: "/aeo?tab=opportunities&platform=claude",
+          icon: Sparkles,
           badge: "AI",
         },
         {
