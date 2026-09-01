@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { routeAI } from "../_shared/ai-router.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,12 +15,6 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-
-    if (!lovableApiKey) {
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
-
     const supabase = createClient(supabaseUrl!, supabaseKey!);
     const { productIds, collectionName } = await req.json();
 
@@ -29,7 +24,6 @@ Deno.serve(async (req) => {
       throw new Error("No products provided");
     }
 
-    // Fetch product details
     const { data: products, error: productsError } = await supabase
       .from("shopify_products")
       .select("title, tags, body_html, category, seo_title, seo_description")
@@ -39,7 +33,6 @@ Deno.serve(async (req) => {
 
     console.log("📦 Products fetched:", products?.length);
 
-    // Prepare context for AI
     const productsContext = products
       .map((p, i) => `
 Produit ${i + 1}:
@@ -50,7 +43,6 @@ Produit ${i + 1}:
 `)
       .join("\n");
 
-    // Call Lovable AI to generate intelligent keywords
     const prompt = `Tu es un expert SEO e-commerce. Génère des mots-clés ULTRA-CIBLÉS et PERTINENTS pour un article de blog sur ces produits de la collection "${collectionName}".
 
 PRODUITS:
@@ -85,43 +77,23 @@ Réponds UNIQUEMENT au format JSON strict suivant:
   "articleTitle": "Titre d'article SEO"
 }`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: "Tu es un expert SEO e-commerce. Réponds UNIQUEMENT en JSON valide, sans markdown ni texte supplémentaire.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-      }),
+    const aiResult = await routeAI({
+      messages: [
+        {
+          role: "system",
+          content: "Tu es un expert SEO e-commerce. Réponds UNIQUEMENT en JSON valide, sans markdown ni texte supplémentaire.",
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+      maxTokens: 3000,
     });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("AI API error:", aiResponse.status, errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
+    const aiContent = aiResult.content;
+    console.log(`🤖 AI provider: ${aiResult.provider} (${aiResult.model})`);
 
-    const aiData = await aiResponse.json();
-    const aiContent = aiData.choices?.[0]?.message?.content;
-
-    console.log("🤖 AI response:", aiContent);
-
-    // Parse AI response
     let parsedKeywords;
     try {
-      // Remove markdown code blocks if present
       const cleanContent = aiContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       parsedKeywords = JSON.parse(cleanContent);
     } catch (parseError) {
@@ -135,6 +107,8 @@ Réponds UNIQUEMENT au format JSON strict suivant:
         shortKeywords: parsedKeywords.shortKeywords || [],
         longKeywords: parsedKeywords.longKeywords || [],
         articleTitle: parsedKeywords.articleTitle || "",
+        ai_provider: aiResult.provider,
+        ai_model: aiResult.model,
       }),
       {
         status: 200,
