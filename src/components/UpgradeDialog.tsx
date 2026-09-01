@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,9 +8,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CreditCard, Tag, Loader2 } from 'lucide-react';
+import { CreditCard, Loader2, Tag } from 'lucide-react';
 import { useTranslation } from '@/lib/language';
-import { getCurrencySymbol } from '@/lib/formatUtils';
 import { useShopifyBilling } from '@/hooks/useShopifyBilling';
 import { ShopifyUpgradeDialog } from '@/components/shopify/ShopifyUpgradeDialog';
 
@@ -29,150 +28,112 @@ interface Plan {
   id: string;
   name: string;
   price_monthly: number;
-  stripe_price_id_monthly?: string;
-  stripe_price_id_yearly?: string;
   max_products: number;
   max_optimizations_monthly: number;
   max_articles_monthly: number;
   max_chat_responses_monthly: number;
   max_shopify_stores: number;
+  max_campaigns?: number;
 }
 
-export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, currentPlan = "Trial", currentPlanId, onUpgradeComplete }: UpgradeDialogProps) {
+export function UpgradeDialog({
+  open,
+  onOpenChange,
+  limitType,
+  usage = 0,
+  limit = 0,
+  currentPlan = 'Trial',
+  currentPlanId,
+  onUpgradeComplete,
+}: UpgradeDialogProps) {
+  const { language } = useTranslation();
+  const fr = language === 'fr';
+  const checkoutCurrency = fr ? 'eur' : 'usd';
   const [loading, setLoading] = useState(false);
-  const [currentPlanData, setCurrentPlanData] = useState<Plan | null>(null);
+  const [plansLoading, setPlansLoading] = useState(false);
   const [availablePlans, setAvailablePlans] = useState<Plan[]>([]);
-  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
-  const [subscriptionChannel, setSubscriptionChannel] = useState<any>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState('');
   const [planTier, setPlanTier] = useState<'pro' | 'enterprise'>('pro');
   const [useManualPromo, setUseManualPromo] = useState(false);
-  const { t, tf, language } = useTranslation();
-  
-  // Check if user is Shopify billing user
+
   const { isShopifyUser, billingProvider, shopDomain, loading: shopifyLoading } = useShopifyBilling();
 
-  // ✅ ALL HOOKS MUST BE BEFORE ANY EARLY RETURNS
-  // Cleanup subscription listener when dialog closes
   useEffect(() => {
-    if (!open && subscriptionChannel) {
-      subscriptionChannel.unsubscribe();
-      setSubscriptionChannel(null);
-    }
-  }, [open, subscriptionChannel]);
+    if (!open || shopifyLoading || (billingProvider === 'shopify' && isShopifyUser)) return;
 
-  // Load plan data when dialog opens
-  useEffect(() => {
-    const loadPlanData = async () => {
-      // Skip for Shopify users (they use ShopifyUpgradeDialog)
-      if (billingProvider === 'shopify' && isShopifyUser) return;
-      
+    const loadPlans = async () => {
+      setPlansLoading(true);
       try {
-        const { data: userData } = await supabase.auth.getUser();
-        if (!userData.user) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('current_plan_id')
-          .eq('id', userData.user.id)
-          .single();
+        const [{ data: usageData }, { data: plans, error: plansError }] = await Promise.all([
+          supabase
+            .from('usage_tracking')
+            .select('products_count')
+            .eq('seller_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('subscription_plans')
+            .select('id, name, price_monthly, max_products, max_optimizations_monthly, max_articles_monthly, max_chat_responses_monthly, max_shopify_stores, max_campaigns, display_order')
+            .eq('is_active', true)
+            .order('display_order', { ascending: true }),
+        ]);
 
-        const { data: usageData } = await supabase
-          .from('usage_tracking')
-          .select('products_count')
-          .eq('seller_id', userData.user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        if (plansError) throw plansError;
+        const productCount = Number(usageData?.products_count || 0);
+        const eligible = (plans || []).filter((plan: any) =>
+          (plan.max_products === -1 || plan.max_products >= productCount) &&
+          plan.id !== currentPlanId,
+        ) as Plan[];
 
-        const productCount = usageData?.products_count || 0;
-        console.log('📊 UpgradeDialog: User has', productCount, 'products');
-
-        const { data: allPlans } = await supabase
-          .from('subscription_plans')
-          .select('id, name, price_monthly, stripe_price_id_monthly, stripe_price_id_yearly, max_products, max_optimizations_monthly, max_articles_monthly, max_chat_responses_monthly, max_shopify_stores')
-          .eq('is_active', true)
-          .order('price_monthly', { ascending: true });
-
-        if (!allPlans || allPlans.length === 0) return;
-
-        const validPlans = allPlans.filter(plan => 
-          plan.max_products === -1 || plan.max_products >= productCount
-        );
-
-        const currentPlanIdValue = profile?.current_plan_id || 'trial';
-        let current = validPlans.find(p => p.id === currentPlanIdValue);
-        
-        if (!current || currentPlanIdValue === 'trial') {
-          current = validPlans[0];
-          setCurrentPlanData({ 
-            id: 'trial',
-            name: 'Trial',
-            price_monthly: 0,
-            max_products: 100,
-            max_optimizations_monthly: 10,
-            max_articles_monthly: 5,
-            max_chat_responses_monthly: 20,
-            max_shopify_stores: 1
-          });
-          setAvailablePlans(validPlans as Plan[]);
-          setSelectedPlanId(validPlans[0].id);
-        } else {
-          setCurrentPlanData(current as Plan);
-          const currentIndex = validPlans.findIndex(p => p.id === currentPlanIdValue);
-          const upgradePlans = validPlans.slice(currentIndex + 1);
-          
-          if (upgradePlans.length > 0) {
-            setAvailablePlans(upgradePlans as Plan[]);
-            setSelectedPlanId(upgradePlans[0].id);
-          } else {
-            setAvailablePlans([current] as Plan[]);
-            setSelectedPlanId(current.id);
-          }
+        setAvailablePlans(eligible);
+        if (eligible.length) {
+          const firstPro = eligible.find((plan) => plan.name.toLowerCase().includes('pro') && !plan.name.toLowerCase().includes('enterprise'));
+          const first = firstPro || eligible[0];
+          setSelectedPlanId(first.id);
+          setPlanTier(first.name.toLowerCase().includes('enterprise') ? 'enterprise' : 'pro');
         }
       } catch (error) {
-        console.error('Error loading plan data:', error);
+        console.error('Unable to load upgrade plans', error);
+        toast.error(fr ? 'Impossible de charger les offres.' : 'Unable to load plans.');
+      } finally {
+        setPlansLoading(false);
       }
     };
 
-    if (open && !shopifyLoading) {
-      loadPlanData();
-    }
-  }, [open, shopifyLoading, billingProvider, isShopifyUser]);
+    void loadPlans();
+  }, [open, shopifyLoading, billingProvider, isShopifyUser, currentPlanId, fr]);
 
-  // Filter plans by selected tier
-  const filteredPlans = availablePlans.filter(plan => {
-    const planName = plan.name.toLowerCase();
-    if (planTier === 'pro') {
-      return planName.includes('pro') && !planName.includes('enterprise');
-    } else {
-      return planName.includes('enterprise');
-    }
-  });
+  const filteredPlans = useMemo(() => availablePlans.filter((plan) => {
+    const name = plan.name.toLowerCase();
+    return planTier === 'enterprise'
+      ? name.includes('enterprise')
+      : !name.includes('enterprise');
+  }), [availablePlans, planTier]);
 
-  // Auto-select first plan when tier changes
   useEffect(() => {
-    if (filteredPlans.length > 0 && !filteredPlans.find(p => p.id === selectedPlanId)) {
+    if (!filteredPlans.length) return;
+    if (!filteredPlans.some((plan) => plan.id === selectedPlanId)) {
       setSelectedPlanId(filteredPlans[0].id);
     }
-  }, [planTier, filteredPlans, selectedPlanId]);
+  }, [filteredPlans, selectedPlanId]);
 
-  // ⚡ CRITICAL: Show loader while detecting Shopify user to prevent race condition
   if (open && shopifyLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-[95vw] sm:max-w-md">
-          <div className="flex flex-col items-center justify-center py-12 gap-4">
+          <div className="flex flex-col items-center justify-center gap-4 py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground text-sm">
-              {language === 'fr' ? 'Chargement...' : 'Loading...'}
-            </p>
+            <p className="text-sm text-muted-foreground">{fr ? 'Chargement…' : 'Loading…'}</p>
           </div>
         </DialogContent>
       </Dialog>
     );
   }
 
-  // If Shopify user, render ShopifyUpgradeDialog instead
   if (billingProvider === 'shopify' && isShopifyUser && shopDomain) {
     return (
       <ShopifyUpgradeDialog
@@ -188,327 +149,187 @@ export function UpgradeDialog({ open, onOpenChange, limitType, usage, limit, cur
     );
   }
 
-  const limitTitle = t.dialogs.limit.limitTypes[limitType];
-  const currentLimitMessage = tf('dialogs.limit.usageMessage', { 
-    usage: usage || 0, 
-    limit: limit || 0, 
-    type: limitTitle 
-  });
+  const selectedPlan = availablePlans.find((plan) => plan.id === selectedPlanId);
+
+  const finishUpgrade = async (planId: string) => {
+    const { data, error } = await supabase.functions.invoke('update-subscription', {
+      body: { new_plan_id: planId, billing_period: 'monthly' },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    if (data?.payment?.required && data?.payment?.invoiceUrl) {
+      // Do not use window.open after an awaited request: browsers can block it as a popup.
+      window.location.assign(data.payment.invoiceUrl);
+      return true;
+    }
+
+    if (data?.success) {
+      toast.success(fr ? 'Votre offre a été mise à niveau.' : 'Your plan was upgraded.');
+      onUpgradeComplete?.();
+      onOpenChange(false);
+      return true;
+    }
+
+    if (data?.paymentPending) {
+      throw new Error(fr ? 'Un paiement est requis pour finaliser la mise à niveau.' : 'A payment is required to finalize the upgrade.');
+    }
+
+    return false;
+  };
 
   const handleActivate = async () => {
     if (!selectedPlanId) {
-      toast.error(t.forms.validation.selectOption);
+      toast.error(fr ? 'Sélectionnez une offre.' : 'Select a plan.');
       return;
     }
 
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) throw new Error(fr ? 'Session expirée.' : 'Session expired.');
 
-      // CRITICAL: Check if user is in trial FIRST
       const { data: profile } = await supabase
         .from('profiles')
-        .select('subscription_status, trial_ends_at, stripe_customer_id, current_plan_id')
+        .select('subscription_status, stripe_customer_id')
         .eq('id', user.id)
         .single();
 
-      const isInTrial = profile?.subscription_status === 'trialing' || (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
+      const canUpdateExisting = Boolean(profile?.stripe_customer_id) &&
+        ['active', 'trialing', 'past_due'].includes(profile?.subscription_status || '');
 
-      console.log('🔍 Trial check:', { 
-        subscription_status: profile?.subscription_status, 
-        trial_ends_at: profile?.trial_ends_at,
-        isInTrial 
-      });
-
-      // If user is in trial, FORCE checkout with immediate payment
-      if (isInTrial) {
-        console.log('⚠️ User is in trial - forcing checkout with immediate payment');
-        
-        const { data, error } = await supabase.functions.invoke('create-checkout', {
-          body: {
-            plan_id: selectedPlanId,
-            billing_period: 'monthly',
-            force_immediate_payment: true,
-            use_manual_promo: useManualPromo,
-          },
-        });
-
-        if (error) throw error;
-
-        if (data?.url) {
-          // Setup realtime listener for subscription updates
-          if (onUpgradeComplete) {
-            const channel = supabase
-              .channel(`subscription-updates-${user.id}`)
-              .on('postgres_changes', {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'profiles',
-              filter: `id=eq.${user.id}`
-            }, (payload) => {
-              if (payload.new.subscription_status === 'active') {
-                toast.success(t.dialogs.upgrade.planUpgraded);
-                onUpgradeComplete();
-                channel.unsubscribe();
-              }
-            })
-              .subscribe();
-            
-            setSubscriptionChannel(channel);
-            
-            // Auto cleanup after 5 minutes
-            setTimeout(() => {
-              channel.unsubscribe();
-              setSubscriptionChannel(null);
-            }, 5 * 60 * 1000);
-          }
-          
-          window.open(data.url, '_blank');
-          onOpenChange(false);
-        } else {
-          throw new Error('No checkout URL returned');
-        }
+      if (canUpdateExisting) {
+        await finishUpgrade(selectedPlanId);
         return;
       }
 
-      // Check if user has PAID active subscription (not trialing)
-      const hasPaidSubscription =
-        profile?.subscription_status === 'active' ||
-        profile?.subscription_status === 'past_due';
-      const hasStripeCustomer = !!profile?.stripe_customer_id;
-
-      // Use update-subscription + Stripe proration whenever we detect a paid subscription
-      if (hasPaidSubscription && hasStripeCustomer && !isInTrial) {
-        console.log('✅ User has paid subscription - using update-subscription for proration');
-        
-        const { data, error } = await supabase.functions.invoke('update-subscription', {
-          body: {
-            new_plan_id: selectedPlanId,
-            billing_period: 'monthly',
-          },
-        });
-
-        if (error) throw error;
-
-        // Handle response format with payment info (prorated invoice)
-        if (data?.payment?.required && data?.payment?.invoiceUrl) {
-          window.open(data.payment.invoiceUrl, '_blank');
-          toast.info(t.dialogs.upgrade.finalizePayment, { duration: 6000 });
-        } else if (data?.success) {
-          const upgradeInfo = data?.upgrade;
-          if (upgradeInfo?.daysIntoCycle > 3) {
-            toast.success(t.dialogs.upgrade.planUpgradedNewCycle, { duration: 6000 });
-          } else {
-            toast.success(t.dialogs.upgrade.planUpgraded, { duration: 5000 });
-          }
-        }
-
-        if (onUpgradeComplete) onUpgradeComplete();
-        onOpenChange(false);
-        return;
-      }
-
-      // Otherwise, create new checkout session
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           plan_id: selectedPlanId,
           billing_period: 'monthly',
-          force_immediate_payment: true
+          use_manual_promo: useManualPromo,
+          currency: checkoutCurrency,
+          language,
         },
       });
 
       if (error) throw error;
-
-      if (data?.url) {
-        // Setup realtime listener for subscription updates
-        if (onUpgradeComplete) {
-          const channel = supabase
-            .channel(`subscription-updates-${user.id}`)
-            .on('postgres_changes', {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'profiles',
-              filter: `id=eq.${user.id}`
-            }, (payload) => {
-              if (payload.new.subscription_status === 'active') {
-                toast.success(t.dialogs.upgrade.planUpgraded);
-                onUpgradeComplete();
-                channel.unsubscribe();
-              }
-            })
-            .subscribe();
-          
-          setSubscriptionChannel(channel);
-          
-          // Auto cleanup after 5 minutes
-          setTimeout(() => {
-            channel.unsubscribe();
-            setSubscriptionChannel(null);
-          }, 5 * 60 * 1000);
-        }
-        
-        window.open(data.url, '_blank');
-        onOpenChange(false);
-      } else {
-        throw new Error('No checkout URL returned');
+      if (data?.error && data?.redirect_to_upgrade) {
+        const upgraded = await finishUpgrade(selectedPlanId);
+        if (upgraded) return;
       }
-    } catch (error) {
-      console.error('Error creating payment:', error);
-      toast.error(t.toasts.error.payment);
+      if (data?.error) throw new Error(data.error);
+      if (!data?.url) throw new Error(fr ? 'Stripe n’a retourné aucune URL de paiement.' : 'Stripe did not return a checkout URL.');
+
+      // Same-tab redirect reliably survives async edge-function calls.
+      window.location.assign(data.url);
+    } catch (error: any) {
+      console.error('Upgrade payment failed', error);
+      toast.error(error?.message || (fr ? 'Impossible d’ouvrir le paiement Stripe.' : 'Unable to open Stripe checkout.'));
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedPlan = filteredPlans.find(p => p.id === selectedPlanId);
-  
-  // Get the limit for the selected NEW plan based on limitType
-  const getSelectedPlanLimit = () => {
-    if (!selectedPlan) return limit || 0;
-    
-    switch (limitType) {
-      case 'optimizations':
-        return selectedPlan.max_optimizations_monthly;
-      case 'articles':
-        return selectedPlan.max_articles_monthly;
-      case 'chat':
-        return selectedPlan.max_chat_responses_monthly;
-      default:
-        return limit || 0;
-    }
+  const limitLabel: Record<UpgradeDialogProps['limitType'], string> = {
+    optimizations: fr ? 'optimisations' : 'optimizations',
+    articles: fr ? 'articles' : 'articles',
+    chat: fr ? 'réponses IA' : 'AI responses',
+    shopifySearch: fr ? 'recherches Shopify' : 'Shopify searches',
+    campaigns: fr ? 'campagnes' : 'campaigns',
   };
-  
-  // Message for SELECTED plan (to show what they'll get)
-  const selectedPlanLimitMessage = tf('dialogs.limit.usageMessage', { 
-    usage: 0, // New plan starts at 0
-    limit: getSelectedPlanLimit(), 
-    type: limitTitle 
-  });
+
+  const nextLimit = selectedPlan
+    ? limitType === 'optimizations' ? selectedPlan.max_optimizations_monthly
+      : limitType === 'articles' ? selectedPlan.max_articles_monthly
+        : limitType === 'chat' ? selectedPlan.max_chat_responses_monthly
+          : limitType === 'campaigns' ? (selectedPlan.max_campaigns ?? limit)
+            : limit
+    : limit;
+
+  const formattedPrice = new Intl.NumberFormat(fr ? 'fr-FR' : 'en-US', {
+    style: 'currency',
+    currency: checkoutCurrency.toUpperCase(),
+    maximumFractionDigits: 2,
+  }).format(Number(selectedPlan?.price_monthly || 0));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="max-h-[90vh] max-w-[95vw] overflow-y-auto rounded-2xl sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-base sm:text-lg md:text-xl">{t.dialogs.limit.upgradeRequired}</DialogTitle>
+          <DialogTitle>{fr ? 'Mettre à niveau votre offre' : 'Upgrade your plan'}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 sm:space-y-4">
-          <div className="bg-orange-50 dark:bg-orange-950/20 p-3 rounded-lg">
-            <p className="font-medium text-orange-900 dark:text-orange-100 mb-1">
-              {t.dialogs.upgrade.youReachedLimit}: <span className="font-bold">{currentPlanData?.name || currentPlan}</span>
-            </p>
-            <p className="text-sm text-orange-800 dark:text-orange-200">
-              {limitTitle}: {currentLimitMessage}
+
+        <div className="space-y-4">
+          <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-950">
+            <p className="font-semibold">{fr ? 'Limite atteinte' : 'Limit reached'} · {currentPlan}</p>
+            <p className="mt-1 text-xs text-orange-800">
+              {usage}/{limit} {limitLabel[limitType]}
             </p>
           </div>
-          
-          <Separator />
-          
-          {availablePlans.length > 0 && (
-            <>
-              <Tabs value={planTier} onValueChange={(value) => setPlanTier(value as 'pro' | 'enterprise')} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="pro">Pro</TabsTrigger>
-                  <TabsTrigger value="enterprise">Enterprise</TabsTrigger>
-                </TabsList>
-              </Tabs>
 
-              <div className="space-y-3">
-                <p className="text-muted-foreground font-medium text-sm sm:text-base">
-                  {t.dialogs.upgrade.chooseOptimizations}
-                </p>
-                
+          <Separator />
+
+          <Tabs value={planTier} onValueChange={(value) => setPlanTier(value as 'pro' | 'enterprise')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="pro">Pro</TabsTrigger>
+              <TabsTrigger value="enterprise">Enterprise</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {plansLoading ? (
+            <div className="grid min-h-28 place-items-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : filteredPlans.length ? (
+            <>
+              <div className="space-y-2">
+                <Label>{fr ? 'Nouvelle offre' : 'New plan'}</Label>
                 <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
-                  <SelectTrigger className="w-full bg-background">
-                    <SelectValue placeholder={t.dialogs.upgrade.selectPlan} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
                     {filteredPlans.map((plan) => (
-                      <SelectItem key={plan.id} value={plan.id}>
-                        <span className="text-xs sm:text-sm">
-                          {tf('dashboard.plans.optimizationsCount', { count: plan.max_optimizations_monthly })} - {plan.price_monthly}{getCurrencySymbol(language)}/mois
-                        </span>
-                      </SelectItem>
+                      <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               {selectedPlan && (
-                <div className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 p-3 sm:p-4 rounded-lg border border-primary/30">
-                  <h3 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base md:text-lg">
-                    {selectedPlan.name} - {selectedPlan.price_monthly}{getCurrencySymbol(language)}/{t.dashboard.plans.perMonth.replace('/', '')}
-                  </h3>
-                  <ul className="space-y-1.5 sm:space-y-2">
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-xs sm:text-sm">
-                        {selectedPlan.max_products === -1 ? t.dashboard.plans.features.unlimitedProducts : `${selectedPlan.max_products} ${t.dashboard.plans.features.products}`}
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-xs sm:text-sm">{selectedPlan.max_optimizations_monthly} {t.dashboard.plans.features.optimizationsPerMonth}</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-xs sm:text-sm">{selectedPlan.max_articles_monthly} {t.dashboard.plans.features.articlesPerMonth}</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-xs sm:text-sm">{selectedPlan.max_chat_responses_monthly} {t.dashboard.plans.features.chatResponsesPerMonth}</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-xs sm:text-sm">{selectedPlan.max_shopify_stores} {t.dashboard.plans.features.shopifyStores}</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-xs sm:text-sm">{t.dashboard.plans.features.seoAutomation}</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 dark:text-green-500 mt-0.5">✅</span>
-                      <span className="text-xs sm:text-sm">{t.dashboard.plans.features.prioritySupport}</span>
-                    </li>
-                  </ul>
+                <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-4">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-slate-500">{selectedPlan.name}</p>
+                      <p className="mt-1 text-2xl font-bold text-slate-950">{formattedPrice}<span className="text-xs font-normal text-slate-500">/{fr ? 'mois' : 'mo'}</span></p>
+                    </div>
+                    <div className="text-right text-xs text-slate-600">
+                      <p className="font-semibold">{nextLimit === -1 ? (fr ? 'Illimité' : 'Unlimited') : nextLimit}</p>
+                      <p>{limitLabel[limitType]}</p>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              <div className="flex items-center justify-between rounded-xl border p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Tag className="h-4 w-4 text-violet-600" />
+                  <Label htmlFor="manual-promo">{fr ? 'J’ai un code promo' : 'I have a promo code'}</Label>
+                </div>
+                <Switch id="manual-promo" checked={useManualPromo} onCheckedChange={setUseManualPromo} />
+              </div>
+
+              <Button className="w-full rounded-xl" onClick={handleActivate} disabled={loading || !selectedPlanId}>
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                {fr ? 'Continuer vers le paiement' : 'Continue to payment'}
+              </Button>
+
+              <p className="text-center text-[11px] text-muted-foreground">
+                {fr ? 'Devise du nouveau checkout : EUR. Les abonnements existants conservent leur devise Stripe.' : 'New checkout currency: USD. Existing subscriptions keep their Stripe currency.'}
+              </p>
             </>
+          ) : (
+            <p className="rounded-xl border p-4 text-sm text-muted-foreground">
+              {fr ? 'Aucune offre supérieure disponible pour votre catalogue.' : 'No higher plan is available for your catalog.'}
+            </p>
           )}
-          
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Tag className="w-4 h-4 text-muted-foreground" />
-            <Label htmlFor="upgrade-manual-promo" className="text-sm cursor-pointer flex-1">
-              {t.subscription.useManualPromo}
-            </Label>
-            <Switch
-              id="upgrade-manual-promo"
-              checked={useManualPromo}
-              onCheckedChange={setUseManualPromo}
-            />
-          </div>
-          
-          <Button 
-            onClick={handleActivate} 
-            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-            size="lg"
-            disabled={loading || !selectedPlanId}
-          >
-            {loading ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-            ) : (
-              <CreditCard className="w-5 h-5 mr-2" />
-            )}
-            {loading ? t.dialogs.upgrade.loading : t.dialogs.upgrade.activateThisPlan}
-          </Button>
-          
-          <Button 
-            onClick={() => onOpenChange(false)} 
-            variant="ghost" 
-            className="w-full"
-          >
-            {t.dialogs.limit.maybeLater}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
