@@ -169,6 +169,9 @@ interface ProductVariant {
 
 // Check if product has rich HTML description or landing page
 const hasRichHtmlDescription = (product: Product): boolean => {
+  // Fast path: the persisted flag avoids loading duplicate heavy HTML fields just to render status.
+  if (product.has_landing_page) return true;
+
   // Check landing_page first (AI-generated content)
   if (product.landing_page) {
     const hasHtmlTags =
@@ -338,15 +341,9 @@ export default function ProductTitleDescription() {
     }
   };
 
-  // Rafraîchir les limites au montage et toutes les 10 secondes
-  useEffect(() => {
-    refreshLimits();
-    const interval = setInterval(() => {
-      refreshLimits();
-    }, 10000); // 10 secondes
-
-    return () => clearInterval(interval);
-  }, [refreshLimits]);
+  // useUsageLimits already loads entitlements on mount.
+  // Do not poll the Edge Function from this catalog screen: product rendering must stay independent
+  // from billing/usage availability. refreshLimits is still called after billable actions.
 
   const fetchProducts = async () => {
     console.log("🚨🚨🚨 [PRODUCT_TITLE] selectedStore:", selectedStore);
@@ -390,7 +387,7 @@ export default function ProductTitleDescription() {
         const { data: pageData, error: pageError } = await supabase
           .from("shopify_products")
           .select(
-            "id, title, description, landing_page, landing_page_html, has_landing_page, last_landing_generation_at, seo_title, seo_description, optimized_title, regenerated_title, optimized_description, body_html, image_url, shopify_id, vendor, handle, status, tags, product_type, category, sub_category, price, compare_at_price, cost_price, currency, inventory_quantity, ai_color, ai_material, ai_pattern, ai_shape, ai_texture, ai_finish, style, room, height, height_unit, width, width_unit, length, length_unit, ai_weight, ai_weight_unit, store_id, collection_ids",
+            "id, title, description, landing_page, has_landing_page, last_landing_generation_at, seo_title, seo_description, optimized_title, regenerated_title, optimized_description, image_url, shopify_id, vendor, handle, status, tags, product_type, category, sub_category, price, compare_at_price, cost_price, currency, inventory_quantity, store_id, collection_ids",
           )
           .eq("seller_id", user.id)
           .eq("store_id", selectedStore.id)
@@ -422,6 +419,10 @@ export default function ProductTitleDescription() {
 
       // Charger les variantes et images pour ces produits par batch
       if (rawProductsData && rawProductsData.length > 0) {
+        // Render the base catalog immediately. Variants and gallery images are optional enrichment
+        // and must never keep Product content blank while their secondary queries are running.
+        setProducts(rawProductsData as Product[]);
+
         const productIds = rawProductsData.map((p) => p.id);
         console.log("🔍 [PRODUCT_TITLE] Loading variants & images for products:", productIds.length);
 
@@ -485,7 +486,10 @@ export default function ProductTitleDescription() {
       }
     } catch (error) {
       console.error("Error fetching products:", error);
-      toast.error("Erreur lors du chargement des produits");
+      // Keep any already-loaded base products visible; only show a catalog-specific error.
+      if (products.length === 0) {
+        toast.error(language === "fr" ? "Impossible de charger le catalogue produit" : "Unable to load product catalog");
+      }
     } finally {
       setLoading(false);
     }
