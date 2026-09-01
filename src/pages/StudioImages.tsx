@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Camera, Check, ChevronLeft, ChevronRight, History, Image as ImageIcon, Images, Palette, Search, Sparkles, Star } from "lucide-react";
 import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
@@ -37,6 +37,8 @@ export default function StudioImages() {
   const { selectedStore } = useStore();
   const { language } = useTranslation();
   const fr = language === "fr";
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedProductId = searchParams.get("product");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<StudioProduct | null>(null);
@@ -83,6 +85,24 @@ export default function StudioImages() {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
+  useEffect(() => {
+    if (!requestedProductId || products.length === 0) return;
+    const requested = products.find((product) => product.id === requestedProductId);
+    if (requested && requested.id !== selectedProduct?.id) {
+      setSelectedProduct(requested);
+      const index = filteredProducts.findIndex((product) => product.id === requested.id);
+      if (index >= 0) setPage(Math.floor(index / PAGE_SIZE) + 1);
+    }
+  }, [filteredProducts, products, requestedProductId, selectedProduct?.id]);
+
+  const chooseProduct = (product: StudioProduct) => {
+    setSelectedProduct(product);
+    const next = new URLSearchParams(searchParams);
+    next.set("product", product.id);
+    if (!next.get("tool")) next.set("tool", "images");
+    setSearchParams(next, { replace: true });
+  };
+
   const openProductShot = () => {
     if (!selectedProduct?.image_url) return;
     setShowProductShot(true);
@@ -110,7 +130,7 @@ export default function StudioImages() {
         <Button size="sm" variant="ghost" asChild><Link to="/products/title-description?view=images"><ImageIcon className="mr-1.5 h-4 w-4" />{fr ? "Fond blanc" : "White background"}</Link></Button>
         <Button size="sm" variant="ghost" asChild><Link to="/products/title-description?view=images"><Palette className="mr-1.5 h-4 w-4" />{fr ? "Décor IA" : "AI scene"}</Link></Button>
         <Button size="sm" variant="ghost" asChild><Link to="/seo?tab=alt"><Sparkles className="mr-1.5 h-4 w-4" />ALT</Link></Button>
-        <Button size="sm" variant="ghost" asChild><Link to="/studio?tool=library"><History className="mr-1.5 h-4 w-4" />{fr ? "Historique" : "History"}</Link></Button>
+        <Button size="sm" variant="ghost" asChild><Link to={`/studio?tool=library${selectedProduct ? `&product=${encodeURIComponent(selectedProduct.id)}` : ""}`}><History className="mr-1.5 h-4 w-4" />{fr ? "Historique" : "History"}</Link></Button>
       </section>
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -133,7 +153,7 @@ export default function StudioImages() {
               <button
                 key={product.id}
                 type="button"
-                onClick={() => setSelectedProduct(product)}
+                onClick={() => chooseProduct(product)}
                 className={`overflow-hidden rounded-xl border bg-white text-left transition ${selected ? "border-violet-400 ring-2 ring-violet-100" : "border-slate-200 hover:border-slate-300"}`}
               >
                 <div className="relative aspect-square bg-slate-50">
