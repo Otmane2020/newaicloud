@@ -1,0 +1,145 @@
+body[data-ai-image-studio-route] [data-ai-image-studio-page] {
+  --studio-border: rgb(226 232 240);
+  --studio-muted: rgb(100 116 139);
+  --studio-ink: rgb(15 23 42);
+  --studio-accent: rgb(124 58 237);
+  max-width: 1500px;
+  gap: 14px;
+}
+
+/* The image workspace is intentionally list-first: remove dashboard-like noise. */
+body[data-ai-image-studio-route] [data-studio-tools],
+body[data-ai-image-studio-route] [data-studio-total],
+body[data-ai-image-studio-route] [data-studio-kpis],
+body[data-ai-image-studio-route] [data-studio-actions],
+body[data-ai-image-studio-route] [data-studio-help] {
+  display: none !important;
+}
+
+body[data-ai-image-studio-route] [data-studio-filters] {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--studio-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px -22px rgba(15, 23, 42, 0.35);
+}
+
+body[data-ai-image-studio-route] [data-studio-filters] input,
+body[data-ai-image-studio-route] [data-studio-filters] button {
+  min-height: 38px;
+}
+
+body[data-ai-image-studio-route] [data-studio-table-card] {
+  border: 1px solid var(--studio-border) !important;
+  border-radius: 16px !important;
+  background: white;
+  box-shadow: 0 14px 34px -28px rgba(15, 23, 42, 0.5);
+}
+
+body[data-ai-image-studio-route] [data-studio-table-scroll] {
+  max-height: calc(100vh - 250px) !important;
+  min-height: 420px;
+  overflow: auto;
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] thead {
+  background: linear-gradient(180deg, rgb(250 250 252), rgb(248 250 252));
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] thead th {
+  height: 44px;
+  border-bottom: 1px solid var(--studio-border);
+  color: rgb(71 85 105);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] tbody tr {
+  transition: background-color 140ms ease, box-shadow 140ms ease;
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] tbody tr:hover {
+  background: rgb(248 250 252) !important;
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] tbody td {
+  min-height: 72px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-bottom-color: rgb(241 245 249);
+  vertical-align: middle;
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] tbody td:nth-child(2) img,
+body[data-ai-image-studio-route] [data-studio-product-table] tbody td:nth-child(2) > div {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgb(226 232 240);
+  background: rgb(248 250 252);
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] tbody td:nth-child(3) p:first-child {
+  color: var(--studio-ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] tbody td:nth-child(4) p {
+  max-width: 420px;
+  color: var(--studio-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* Row actions become the visual focus: compact, obvious icon buttons. */
+body[data-ai-image-studio-route] [data-studio-product-table] tbody td:last-child > div {
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] tbody td:last-child button,
+body[data-ai-image-studio-route] [data-studio-product-table] tbody td:nth-last-child(2) button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+}
+
+body[data-ai-image-studio-route] [data-studio-product-table] tbody td:last-child button:hover,
+body[data-ai-image-studio-route] [data-studio-product-table] tbody td:nth-last-child(2) button:hover {
+  border-color: rgb(221 214 254);
+  background: rgb(245 243 255);
+  color: var(--studio-accent);
+}
+
+body[data-ai-image-studio-route] [data-studio-cleaned="true"] {
+  color: rgb(100 116 139) !important;
+  font-style: normal !important;
+}
+
+@media (max-width: 1024px) {
+  body[data-ai-image-studio-route] [data-studio-product-table] th:nth-child(4),
+  body[data-ai-image-studio-route] [data-studio-product-table] td:nth-child(4) {
+    display: none;
+  }
+
+  body[data-ai-image-studio-route] [data-studio-table-scroll] {
+    max-height: none !important;
+  }
+}
+
+.dark body[data-ai-image-studio-route] [data-studio-filters],
+.dark body[data-ai-image-studio-route] [data-studio-table-card] {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border)) !important;
+}
