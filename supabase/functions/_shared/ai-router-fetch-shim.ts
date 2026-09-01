@@ -1,4 +1,5 @@
 import { routeAI, type AIMessage } from "./ai-router.ts";
+import { routeImage } from "./image-router.ts";
 
 declare global {
   // deno-lint-ignore no-var
@@ -27,37 +28,13 @@ function legacyEndpointKind(urlString: string): "openai-compatible" | "gemini" |
     if (OPENAI_COMPATIBLE_HOSTS.has(url.hostname) && url.pathname.includes("/chat/completions")) {
       return "openai-compatible";
     }
-    if (
-      url.hostname === "generativelanguage.googleapis.com" &&
-      url.pathname.includes(":generateContent")
-    ) {
+    if (url.hostname === "generativelanguage.googleapis.com" && url.pathname.includes(":generateContent")) {
       return "gemini";
     }
     return null;
   } catch {
     return null;
   }
-}
-
-function containsMultimodalContent(messages: any[]): boolean {
-  return messages.some((message) => {
-    if (!Array.isArray(message?.content)) return false;
-    return message.content.some((part: any) =>
-      part?.type === "image_url" ||
-      part?.type === "input_image" ||
-      part?.image_url ||
-      part?.inline_data ||
-      part?.file_data
-    );
-  });
-}
-
-function containsGeminiMultimodalContent(body: any): boolean {
-  const parts = [
-    ...(body?.system_instruction?.parts || []),
-    ...(body?.contents || []).flatMap((item: any) => item?.parts || []),
-  ];
-  return parts.some((part: any) => part?.inline_data || part?.inlineData || part?.file_data || part?.fileData);
 }
 
 function normalizeMessages(messages: any[]): AIMessage[] {
@@ -81,16 +58,63 @@ function normalizeGeminiMessages(body: any): AIMessage[] {
   const messages: AIMessage[] = [];
   const systemText = geminiPartsText(body?.system_instruction?.parts || body?.systemInstruction?.parts || []);
   if (systemText) messages.push({ role: "system", content: systemText });
-
   for (const item of body?.contents || []) {
     const text = geminiPartsText(item?.parts || []);
     if (!text) continue;
-    messages.push({
-      role: item?.role === "model" ? "assistant" : "user",
-      content: text,
-    });
+    messages.push({ role: item?.role === "model" ? "assistant" : "user", content: text });
   }
   return messages;
+}
+
+function extractOpenAIImageRequest(body: any): { prompt: string; imageUrls: string[]; aspectRatio?: string } | null {
+  const messages = Array.isArray(body?.messages) ? body.messages : [];
+  const wantsImage = Array.isArray(body?.modalities) && body.modalities.includes("image");
+  if (!wantsImage) return null;
+
+  const texts: string[] = [];
+  const imageUrls: string[] = [];
+  for (const message of messages) {
+    if (typeof message?.content === "string") {
+      texts.push(message.content);
+      continue;
+    }
+    if (!Array.isArray(message?.content)) continue;
+    for (const part of message.content) {
+      if (part?.type === "text" && typeof part.text === "string") texts.push(part.text);
+      const url = part?.image_url?.url || part?.image_url || part?.url;
+      if (typeof url === "string" && url) imageUrls.push(url);
+    }
+  }
+
+  return {
+    prompt: texts.join("\n").trim() || "Create a professional e-commerce image.",
+    imageUrls,
+    aspectRatio: body?.generationConfig?.aspectRatio,
+  };
+}
+
+function extractGeminiImageRequest(body: any): { prompt: string; imageUrls: string[] } | null {
+  const modalities = body?.generationConfig?.responseModalities || body?.generationConfig?.response_modalities || [];
+  if (!Array.isArray(modalities) || !modalities.some((value: any) => String(value).toUpperCase() === "IMAGE")) return null;
+
+  const texts: string[] = [];
+  const imageUrls: string[] = [];
+  for (const item of body?.contents || []) {
+    for (const part of item?.parts || []) {
+      if (typeof part?.text === "string") texts.push(part.text);
+      const inline = part?.inlineData || part?.inline_data;
+      if (inline?.data) {
+        imageUrls.push(`data:${inline.mimeType || inline.mime_type || "image/jpeg"};base64,${inline.data}`);
+      }
+      const file = part?.fileData || part?.file_data;
+      if (file?.fileUri || file?.file_uri) imageUrls.push(file.fileUri || file.file_uri);
+    }
+  }
+
+  return {
+    prompt: texts.join("\n").trim() || "Create a professional e-commerce image.",
+    imageUrls,
+  };
 }
 
 function openAICompatibleResponse(content: string, provider: string, model: string, stream = false): Response {
@@ -105,12 +129,7 @@ function openAICompatibleResponse(content: string, provider: string, model: stri
     };
     return new Response(`data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`, {
       status: 200,
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "X-AI-Provider": provider,
-        "X-AI-Model": model,
-      },
+      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "X-AI-Provider": provider, "X-AI-Model": model },
     });
   }
 
@@ -120,28 +139,73 @@ function openAICompatibleResponse(content: string, provider: string, model: stri
     created: Math.floor(Date.now() / 1000),
     model,
     provider,
+    choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }],
+  }), {
+    status: 200,
+    headers: { "Content-Type": "application/json", "X-AI-Provider": provider, "X-AI-Model": model },
+  });
+}
+
+function openAIImageCompatibleResponse(imageUrl: string, provider: string, model: string): Response {
+  return new Response(JSON.stringify({
+    id: `strict-image-router-${crypto.randomUUID()}`,
+    object: "chat.completion",
+    created: Math.floor(Date.now() / 1000),
+    model,
+    provider,
     choices: [{
       index: 0,
-      message: { role: "assistant", content },
+      message: {
+        role: "assistant",
+        content: "Image generated successfully.",
+        images: [{ image_url: { url: imageUrl } }],
+      },
       finish_reason: "stop",
     }],
   }), {
     status: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "X-AI-Provider": provider,
-      "X-AI-Model": model,
-    },
+    headers: { "Content-Type": "application/json", "X-AI-Provider": provider, "X-AI-Model": model },
   });
 }
 
 function geminiCompatibleResponse(content: string, provider: string, model: string): Response {
   return new Response(JSON.stringify({
+    candidates: [{ content: { role: "model", parts: [{ text: content }] }, finishReason: "STOP", index: 0 }],
+    modelVersion: model,
+    provider,
+  }), {
+    status: 200,
+    headers: { "Content-Type": "application/json", "X-AI-Provider": provider, "X-AI-Model": model },
+  });
+}
+
+async function geminiImageCompatibleResponse(imageUrl: string, provider: string, model: string): Promise<Response> {
+  let inlineData: any = null;
+  const match = imageUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s);
+  if (match) {
+    inlineData = { mimeType: match[1], data: match[2] };
+  } else {
+    const nativeFetch = globalThis.__STRICT_AI_NATIVE_FETCH__ || fetch;
+    const response = await nativeFetch(imageUrl);
+    if (response.ok) {
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      inlineData = { mimeType: response.headers.get("content-type")?.split(";")[0] || "image/png", data: btoa(binary) };
+    }
+  }
+
+  if (!inlineData) {
+    return new Response(JSON.stringify({ error: { message: "Generated image could not be normalized", type: "strict_image_router_error" } }), {
+      status: 502,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  return new Response(JSON.stringify({
     candidates: [{
-      content: {
-        role: "model",
-        parts: [{ text: content }],
-      },
+      content: { role: "model", parts: [{ inlineData }] },
       finishReason: "STOP",
       index: 0,
     }],
@@ -149,19 +213,14 @@ function geminiCompatibleResponse(content: string, provider: string, model: stri
     provider,
   }), {
     status: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "X-AI-Provider": provider,
-      "X-AI-Model": model,
-    },
+    headers: { "Content-Type": "application/json", "X-AI-Provider": provider, "X-AI-Model": model },
   });
 }
 
 /**
- * Compatibility layer for older Edge Functions that still call an LLM endpoint
- * directly. Pure text generation is transparently re-routed through:
- * OpenAI -> Gemini -> Kimi -> DeepSeek -> OpenRouter (final rescue only).
- * Multimodal/image calls are intentionally left untouched.
+ * Compatibility layer for legacy Edge Functions.
+ * Text calls are routed through the shared text router.
+ * Image generation/edit calls are routed through Cloudflare -> Gemini -> OpenAI -> Lovable.
  */
 export function installAIRouterFetchShim(): void {
   if (globalThis.__STRICT_AI_FETCH_SHIM_INSTALLED__) return;
@@ -179,55 +238,49 @@ export function installAIRouterFetchShim(): void {
       const rawBody = typeof init?.body === "string" ? init.body : "";
       const body = rawBody ? JSON.parse(rawBody) : {};
 
-      let normalizedMessages: AIMessage[] = [];
-      let maxTokens = 4096;
-      let temperature = 0.3;
-      let stream = false;
-
       if (endpointKind === "gemini") {
-        if (containsGeminiMultimodalContent(body)) return nativeFetch(input, init);
-        normalizedMessages = normalizeGeminiMessages(body);
-        maxTokens = body?.generationConfig?.maxOutputTokens || 4096;
-        temperature = typeof body?.generationConfig?.temperature === "number"
-          ? body.generationConfig.temperature
-          : 0.3;
-      } else {
-        const messages = Array.isArray(body?.messages) ? body.messages : [];
-        if (
-          containsMultimodalContent(messages) ||
-          (Array.isArray(body?.modalities) && body.modalities.includes("image"))
-        ) {
-          return nativeFetch(input, init);
+        const imageRequest = extractGeminiImageRequest(body);
+        if (imageRequest) {
+          console.log(`[ai-router-shim] Intercepting legacy Gemini image generation`);
+          const result = await routeImage(imageRequest);
+          console.log(`[ai-router-shim] Image routed to ${result.provider} (${result.model})`);
+          return geminiImageCompatibleResponse(result.imageUrl, result.provider, result.model);
         }
-        normalizedMessages = normalizeMessages(messages);
-        maxTokens = body?.max_tokens || body?.max_completion_tokens || 4096;
-        temperature = typeof body?.temperature === "number" ? body.temperature : 0.3;
-        stream = body?.stream === true;
+
+        const normalizedMessages = normalizeGeminiMessages(body);
+        if (!normalizedMessages.length) return nativeFetch(input, init);
+        const result = await routeAI({
+          messages: normalizedMessages,
+          maxTokens: body?.generationConfig?.maxOutputTokens || 4096,
+          temperature: typeof body?.generationConfig?.temperature === "number" ? body.generationConfig.temperature : 0.3,
+        });
+        return geminiCompatibleResponse(result.content, result.provider, result.model);
       }
 
+      const imageRequest = extractOpenAIImageRequest(body);
+      if (imageRequest) {
+        console.log(`[ai-router-shim] Intercepting legacy image generation: ${new URL(url).hostname}`);
+        const result = await routeImage(imageRequest);
+        console.log(`[ai-router-shim] Image routed to ${result.provider} (${result.model})`);
+        return openAIImageCompatibleResponse(result.imageUrl, result.provider, result.model);
+      }
+
+      const messages = Array.isArray(body?.messages) ? body.messages : [];
+      const normalizedMessages = normalizeMessages(messages);
       if (!normalizedMessages.length) return nativeFetch(input, init);
 
-      console.log(`[ai-router-shim] Intercepting legacy text generation: ${new URL(url).hostname}`);
       const result = await routeAI({
         messages: normalizedMessages,
-        maxTokens,
-        temperature,
+        maxTokens: body?.max_tokens || body?.max_completion_tokens || 4096,
+        temperature: typeof body?.temperature === "number" ? body.temperature : 0.3,
         preferredFreeModel: body?.openrouter_model,
       });
 
-      console.log(`[ai-router-shim] Routed to ${result.provider} (${result.model})`);
-      return endpointKind === "gemini"
-        ? geminiCompatibleResponse(result.content, result.provider, result.model)
-        : openAICompatibleResponse(result.content, result.provider, result.model, stream);
+      return openAICompatibleResponse(result.content, result.provider, result.model, body?.stream === true);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error("[ai-router-shim] Strict routing failed:", message);
-      return new Response(JSON.stringify({
-        error: {
-          message,
-          type: "strict_ai_router_error",
-        },
-      }), {
+      return new Response(JSON.stringify({ error: { message, type: "strict_ai_router_error" } }), {
         status: 502,
         headers: { "Content-Type": "application/json" },
       });
