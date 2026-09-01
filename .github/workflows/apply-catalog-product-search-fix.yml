@@ -37,6 +37,7 @@ jobs:
       - name: Commit validated product search fix
         shell: bash
         run: |
+          set -euo pipefail
           git config user.name "catalog-optimize-bot"
           git config user.email "actions@github.com"
           git add src/pages/Products.tsx
@@ -46,6 +47,17 @@ jobs:
             exit 0
           fi
           git commit -m "fix: search complete product catalog"
-          git push origin HEAD:main
 
-# trigger: catalog-search-fix-v3
+          # Preserve any concurrent main updates instead of force-pushing over them.
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Main moved during push; retrying safely (${attempt}/3)"
+          done
+          echo "Could not push after preserving concurrent main changes"
+          exit 1
+
+# trigger: catalog-search-fix-v4
