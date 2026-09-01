@@ -1,15 +1,40 @@
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Package, Layers3, Database, FileText,
-  Sparkles, Store, ShoppingCart, Settings,
-  User, CreditCard, ChevronDown, LogOut, Bot,
-  Newspaper, Activity, Camera, Tags, Images, Home, Wand2, Megaphone,
+  Activity,
+  Bot,
+  Camera,
+  ChevronDown,
+  CreditCard,
+  Database,
+  FileText,
+  LayoutDashboard,
+  Layers3,
+  LogOut,
+  Megaphone,
+  Newspaper,
+  Package,
+  PanelsTopLeft,
+  Settings,
+  ShoppingCart,
+  Sparkles,
+  Store,
+  User,
+  Wand2,
 } from "lucide-react";
 import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
-  SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -19,8 +44,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/lib/language";
 import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
 
-type NavItem = { label: string; href: string; icon: typeof Package; badge?: string; aliases?: string[] };
-type NavSection = { label: string; icon: typeof Package; items: NavItem[] };
+type NavItem = {
+  label: string;
+  href: string;
+  icon: typeof Package;
+  badge?: string;
+  aliases?: string[];
+};
+
+type NavSection = {
+  label: string;
+  icon: typeof Package;
+  items: NavItem[];
+};
 
 export function CatalogOptimizeSidebar() {
   const { state, isMobile, openMobile, toggleSidebar } = useSidebar();
@@ -28,18 +64,6 @@ export function CatalogOptimizeSidebar() {
   const { signOut } = useAuth();
   const { language } = useTranslation();
   const fr = language === "fr";
-
-  const productOptimizationItem: NavItem = useMemo(() => ({
-    label: "Product Optimization",
-    href: "/content",
-    icon: FileText,
-    aliases: [
-      "/products/title-description",
-      "/products/title-description?view=content",
-      "/products/title-description?view=landing",
-      "/products/title-description?view=bulk",
-    ],
-  }), []);
 
   const sections: NavSection[] = useMemo(() => [
     {
@@ -52,26 +76,33 @@ export function CatalogOptimizeSidebar() {
       ],
     },
     {
-      label: "Studio",
-      icon: Camera,
+      label: "Product Optimization",
+      icon: Wand2,
       items: [
         {
+          label: "Landing Pages",
+          href: "/content?tool=landing",
+          icon: PanelsTopLeft,
+          aliases: ["/products/title-description?view=landing"],
+        },
+        {
           label: "Product Shot AI",
-          href: "/studio?mode=shots",
+          href: "/content?tool=shots",
           icon: Camera,
           badge: "AI",
+          aliases: ["/studio?mode=shots"],
+        },
+        {
+          label: fr ? "Catalogue" : "Catalog",
+          href: "/content?tool=catalog",
+          icon: Database,
+          aliases: ["/products/title-description?view=content", "/products/title-description"],
         },
         {
           label: "Background",
-          href: "/studio?mode=backgrounds",
+          href: "/content?tool=background",
           icon: Wand2,
-          badge: "Ambience / White",
-        },
-        {
-          label: "Ads Assets",
-          href: "/studio?mode=creative",
-          icon: Megaphone,
-          aliases: ["/ai-creative-studio"],
+          aliases: ["/studio?mode=backgrounds"],
         },
       ],
     },
@@ -80,21 +111,23 @@ export function CatalogOptimizeSidebar() {
       icon: Sparkles,
       items: [
         {
+          label: fr ? "SEO Workspace" : "SEO Workspace",
+          href: "/seo?tab=collections",
+          icon: Sparkles,
+          aliases: [
+            "/seo?tab=pages",
+            "/seo?tab=articles",
+            "/seo?tab=tags",
+            "/seo?tab=alt",
+            "/seo?tab=homepage",
+          ],
+        },
+        {
           label: "Blog",
           href: "/blog/management",
           icon: Newspaper,
-          aliases: ["/blog-monitoring"],
+          aliases: ["/blog-monitoring", "/blog/management?new=1"],
         },
-        {
-          label: fr ? "Collections & pages" : "Collections & pages",
-          href: "/seo?tab=collections",
-          icon: Layers3,
-          aliases: ["/seo?tab=pages"],
-        },
-        { label: "Tags", href: "/seo?tab=tags", icon: Tags },
-        { label: fr ? "ALT Images" : "Image ALT", href: "/seo?tab=alt", icon: Images },
-        { label: fr ? "SEO accueil" : "Homepage SEO", href: "/seo?tab=homepage", icon: Home },
-        { label: fr ? "Nouvel article" : "New article", href: "/blog/management?new=1", icon: Newspaper },
       ],
     },
     {
@@ -107,29 +140,59 @@ export function CatalogOptimizeSidebar() {
           icon: Activity,
         },
         {
-          label: fr ? "Historique publications" : "Publication history",
+          label: fr ? "Publications" : "Publications",
           href: "/aeo?tab=history",
           icon: FileText,
         },
       ],
     },
     {
-      label: fr ? "Canaux" : "Channels",
+      label: fr ? "Vente & canaux" : "Sales & Channels",
       icon: Store,
       items: [
-        { label: fr ? "Assistant vendeur IA" : "AI Sales Assistant", href: "/storefront-assistant", icon: Bot, badge: "AI" },
-        { label: "Google Shopping", href: "/shopping", icon: ShoppingCart },
-        { label: "Merchant Center", href: "/merchant?tab=feed", icon: Store },
+        {
+          label: fr ? "Assistant vendeur IA" : "AI Sales Assistant",
+          href: "/storefront-assistant",
+          icon: Bot,
+          badge: "AI",
+        },
+        {
+          label: "Google Shopping",
+          href: "/shopping",
+          icon: ShoppingCart,
+        },
+        {
+          label: "Merchant Center",
+          href: "/merchant?tab=feed",
+          icon: Store,
+        },
+        {
+          label: "Ads Assets",
+          href: "/studio?mode=creative",
+          icon: Megaphone,
+          aliases: ["/ai-creative-studio"],
+        },
       ],
     },
     {
       label: fr ? "Paramètres" : "Settings",
       icon: Settings,
       items: [
-        { label: fr ? "Boutiques & intégrations" : "Stores & Integrations", href: "/account?tab=integrations", icon: Store },
-        { label: fr ? "Compte & utilisation" : "Account & Usage", href: "/account?tab=profile", icon: User },
-        { label: fr ? "Tâches" : "Jobs", href: "/cron-monitoring", icon: Activity },
-        { label: fr ? "Abonnement" : "Subscription", href: "/subscription", icon: CreditCard },
+        {
+          label: fr ? "Boutiques & intégrations" : "Stores & Integrations",
+          href: "/account?tab=integrations",
+          icon: Store,
+        },
+        {
+          label: fr ? "Compte & utilisation" : "Account & Usage",
+          href: "/account?tab=profile",
+          icon: User,
+        },
+        {
+          label: fr ? "Abonnement" : "Subscription",
+          href: "/subscription",
+          icon: CreditCard,
+        },
       ],
     },
   ], [fr]);
@@ -142,6 +205,7 @@ export function CatalogOptimizeSidebar() {
     const [path, query] = href.split("?");
     if (pathname !== path) return false;
     if (!query) return true;
+
     const current = new URLSearchParams(search);
     const expected = new URLSearchParams(query);
     return Array.from(expected.entries()).every(([key, value]) => current.get(key) === value);
@@ -155,7 +219,11 @@ export function CatalogOptimizeSidebar() {
         <NavLink to={item.href} onClick={closeMobile}>
           <item.icon className="h-4 w-4" />
           <span>{item.label}</span>
-          {item.badge && <Badge variant="secondary" className="ml-auto px-1.5 text-[9px]">{item.badge}</Badge>}
+          {item.badge && (
+            <Badge variant="secondary" className="ml-auto rounded-md px-1.5 text-[9px]">
+              {item.badge}
+            </Badge>
+          )}
         </NavLink>
       </SidebarMenuSubButton>
     </SidebarMenuSubItem>
@@ -185,36 +253,21 @@ export function CatalogOptimizeSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {sections.map((section, index) => (
-                <Fragment key={section.label}>
-                  <Collapsible
-                    defaultOpen={section.items.some(active) || (section.label === "Studio" && pathname === "/studio")}
-                  >
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton>
-                          <section.icon className="h-4 w-4" />
-                          <span>{section.label}</span>
-                          <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>{section.items.map(navItem)}</SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-
-                  {index === 0 && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={active(productOptimizationItem)}>
-                        <NavLink to={productOptimizationItem.href} onClick={closeMobile}>
-                          <productOptimizationItem.icon className="h-4 w-4" />
-                          <span>{productOptimizationItem.label}</span>
-                        </NavLink>
+              {sections.map((section) => (
+                <Collapsible key={section.label} defaultOpen={section.items.some(active)}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton>
+                        <section.icon className="h-4 w-4" />
+                        <span>{section.label}</span>
+                        <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
                       </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                </Fragment>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>{section.items.map(navItem)}</SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
