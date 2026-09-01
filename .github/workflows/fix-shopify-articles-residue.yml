@@ -25,31 +25,6 @@ jobs:
           from pathlib import Path
           path = Path('supabase/functions/import-shopify-articles/index.ts')
           source = path.read_text()
-          old = """    if (!accessToken) {
-                  accessToken = connection.access_token;
-                  console.log('✅ [ARTICLES] Using OAuth token from database (length:', accessToken?.length, ')');
-                }
-                
-                console.log('✅ [ARTICLES] Shop name extracted from database:', shopName);
-              }
-              
-              if (!accessToken) {
-          """
-          # Normalize indentation in the literal so it matches the current file exactly.
-          old = old.replace('              accessToken', '        accessToken').replace('              console.log', '        console.log').replace('            }\n            \n            console.log', '      }\n      \n      console.log').replace('          }\n          \n          if (!accessToken)', '    }\n    \n    if (!accessToken)')
-          # Prefer an exact explicit fallback matching the current file.
-          exact = """    if (!accessToken) {
-                  accessToken = connection.access_token;
-                  console.log('✅ [ARTICLES] Using OAuth token from database (length:', accessToken?.length, ')');
-                }
-                
-                console.log('✅ [ARTICLES] Shop name extracted from database:', shopName);
-              }
-              
-              if (!accessToken) {
-          """
-          exact = exact.replace('        accessToken', '        accessToken')
-          # Safer marker-based removal: the stale block starts immediately after the authoritative OAuth block.
           stale_start = source.find("    if (!accessToken) {\n        accessToken = connection.access_token;\n        console.log('✅ [ARTICLES] Using OAuth token from database (length:', accessToken?.length, ')');")
           if stale_start == -1:
               raise SystemExit('Stale article OAuth residue not found; refusing broad edit')
@@ -68,10 +43,8 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Type-check patched Edge Functions
-        run: |
-          deno check supabase/functions/import-products/index.ts
-          deno check supabase/functions/import-shopify-articles/index.ts
+      - name: Type-check patched article function
+        run: deno check supabase/functions/import-shopify-articles/index.ts
 
       - name: Commit validated fix
         shell: bash
