@@ -723,9 +723,12 @@ export function SeoAltImageList() {
                               className="w-16 h-16 object-cover rounded flex-shrink-0"
                             />
                           )}
-                          <div className="text-left">
-                            <h3 className="font-semibold">{product.title}</h3>
-                            <p className="text-sm text-muted-foreground">
+                          <div className="min-w-0 text-left">
+                            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                              Product title
+                            </p>
+                            <h3 className="truncate font-semibold leading-tight text-foreground">{product.title}</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">
                               {product.images.length} image(s)
                             </p>
                           </div>
