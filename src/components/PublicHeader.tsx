@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { Menu, X, Sparkles, Play } from "lucide-react";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "@/lib/language";
 
 export const PublicHeader = () => {
@@ -66,7 +65,6 @@ export const PublicHeader = () => {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <LanguageSwitcher />
             <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/10" onClick={() => window.open('https://cal.com/new-ai-isgo1m/30min?overlayCalendar=true', '_blank')}>
               <Play className="w-4 h-4 mr-1" />
               {t.landing.header.demo}
@@ -117,9 +115,6 @@ export const PublicHeader = () => {
                 {t.landing.header.pricing}
               </button>
               <div className="flex flex-col gap-2 pt-4 border-t">
-                <div className="pb-2">
-                  <LanguageSwitcher />
-                </div>
                 <Button variant="outline" className="w-full border-primary/50 text-primary" onClick={() => window.open('https://cal.com/new-ai-isgo1m/30min?overlayCalendar=true', '_blank')}>
                   <Play className="w-4 h-4 mr-1" />
                   {t.landing.header.demo}
