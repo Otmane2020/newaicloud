@@ -3,10 +3,12 @@ import { useSearchParams } from "react-router-dom";
 import { FileText, Home, Images, Layers3, Tags } from "lucide-react";
 import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { Button } from "@/components/ui/button";
-import { CollectionOptimization } from "@/components/seo/CollectionOptimization";
-import { PageOptimization } from "@/components/seo/PageOptimization";
-import { TagOptimization } from "@/components/seo/TagOptimization";
-import { SeoAltImage } from "@/components/seo/SeoAltImage";
+import {
+  MinimalAltWorkspace,
+  MinimalCollectionsWorkspace,
+  MinimalPagesWorkspace,
+  MinimalTagsWorkspace,
+} from "@/components/seo/MinimalMetadataWorkspaces";
 import { HomePageSeo } from "@/components/seo/HomePageSeo";
 import { useTranslation } from "@/lib/language";
 
@@ -28,17 +30,12 @@ export default function SEO() {
   }, [searchParams]);
 
   const tabs = [
-    { id: "collections" as const, label: fr ? "Collections" : "Collections", icon: Layers3 },
-    { id: "pages" as const, label: fr ? "Pages" : "Pages", icon: FileText },
+    { id: "collections" as const, label: "Collections", icon: Layers3 },
+    { id: "pages" as const, label: "Pages", icon: FileText },
     { id: "tags" as const, label: "Tags", icon: Tags },
     { id: "alt" as const, label: fr ? "ALT images" : "Image ALT", icon: Images },
     { id: "homepage" as const, label: fr ? "Accueil" : "Homepage", icon: Home },
   ];
-
-  const openTab = (tab: WorkspaceTab) => {
-    setActiveTab(tab);
-    setSearchParams({ tab });
-  };
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-4">
@@ -47,8 +44,8 @@ export default function SEO() {
         page={fr ? "Collections & pages" : "Collections & pages"}
         title={fr ? "Collections & pages" : "Collections & pages"}
         description={fr
-          ? "Optimisez les métadonnées essentielles sans multiplier les écrans."
-          : "Optimize essential metadata without jumping between multiple screens."}
+          ? "Collections, pages, tags et ALT dans un espace simple et cohérent."
+          : "Collections, pages, tags, and ALT in one simple workspace."}
       />
 
       <nav className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1.5" aria-label={fr ? "Outils SEO" : "SEO tools"}>
@@ -59,7 +56,10 @@ export default function SEO() {
             size="sm"
             variant={activeTab === id ? "secondary" : "ghost"}
             className="h-8 gap-1.5"
-            onClick={() => openTab(id)}
+            onClick={() => {
+              setActiveTab(id);
+              setSearchParams({ tab: id });
+            }}
           >
             <Icon className="h-3.5 w-3.5" />
             {label}
@@ -68,10 +68,10 @@ export default function SEO() {
       </nav>
 
       <section className="min-w-0">
-        {activeTab === "collections" && <CollectionOptimization />}
-        {activeTab === "pages" && <PageOptimization />}
-        {activeTab === "tags" && <TagOptimization />}
-        {activeTab === "alt" && <SeoAltImage />}
+        {activeTab === "collections" && <MinimalCollectionsWorkspace />}
+        {activeTab === "pages" && <MinimalPagesWorkspace />}
+        {activeTab === "tags" && <MinimalTagsWorkspace />}
+        {activeTab === "alt" && <MinimalAltWorkspace />}
         {activeTab === "homepage" && <HomePageSeo />}
       </section>
     </div>
