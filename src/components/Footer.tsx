@@ -1,16 +1,9 @@
-import { Sparkles } from "lucide-react";
 import { useTranslation } from "@/lib/language";
-import { Button } from "@/components/ui/button";
-import { Globe } from "lucide-react";
 import { CatalogOptimizeLogo } from "@/components/CatalogOptimizeLogo";
 
 export function Footer() {
-  const { t, language, setLanguage } = useTranslation();
-  
-  const toggleLanguage = () => {
-    setLanguage(language === 'fr' ? 'en' : 'fr');
-  };
-  
+  const { t } = useTranslation();
+
   return (
     <footer className="bg-background border-t border-border">
       <div className="container mx-auto px-4 py-12">
@@ -27,7 +20,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><a href="/#features" className="hover:text-primary transition-colors">{t.footer.features}</a></li>
               <li><a href="/#pricing" className="hover:text-primary transition-colors">{t.footer.pricing}</a></li>
-              <li><a href="/auth" className="hover:text-primary transition-colors">{t.footer.demo}</a></li>
+              <li><a href="/demo" className="hover:text-primary transition-colors">{t.footer.demo}</a></li>
             </ul>
           </div>
 
@@ -62,20 +55,9 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground text-center sm:text-left">
-              © 2026 CatalogueOptimize AI. {t.footer.allRightsReserved}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleLanguage}
-              className="gap-2"
-            >
-              <Globe className="h-4 w-4" />
-              {t.common.switchLanguage}
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground text-center sm:text-left">
+            © 2026 CatalogueOptimize AI. {t.footer.allRightsReserved}
+          </p>
         </div>
       </div>
     </footer>
