@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreativeStyleGrid } from "@/components/social/creative/CreativeStyleGrid";
 import {
   AdCreativeWizard,
+  type AdCreativeFormat,
   type AdCreativeWizardStep,
   type AdGenerationMode,
   type AdPostType,
@@ -54,14 +55,16 @@ const resolveGeneratedImage = (payload: any): string | null => {
   return `data:${payload?.mimeType || "image/png"};base64,${raw}`;
 };
 
-const readFunctionError = async (error: any): Promise<string> => {
+const readFunctionError = async (error: any, data?: any): Promise<string> => {
+  if (data?.error || data?.details) return [data.error, data.details].filter(Boolean).join(" — ");
+
   let message = error?.message || "Creative generation failed";
   const context = error?.context;
   if (!context || typeof context.clone !== "function") return message;
 
   try {
     const payload = await context.clone().json();
-    if (payload?.error) message = payload.error;
+    if (payload?.error || payload?.details) message = [payload.error, payload.details].filter(Boolean).join(" — ");
   } catch {
     // Keep the original Supabase error message when the response is not JSON.
   }
@@ -84,6 +87,8 @@ export default function AiCreativeStudioV2() {
   const [generationMode, setGenerationMode] = useState<AdGenerationMode>("showcase");
   const [showPrice, setShowPrice] = useState(true);
   const [tagline, setTagline] = useState("");
+  const [creativeFormat, setCreativeFormat] = useState<AdCreativeFormat>("square");
+  const [creativePrompt, setCreativePrompt] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [postType, setPostType] = useState<AdPostType>("withLink");
   const [socialCaption, setSocialCaption] = useState("");
@@ -210,6 +215,8 @@ export default function AiCreativeStudioV2() {
     setGeneratedImage(null);
     setSocialCaption("");
     setTagline("");
+    setCreativeFormat((style.size === "story" || style.size === "landscape") ? style.size : "square");
+    setCreativePrompt(style.aiPromptStyle || "");
     setSelectedPlatforms([]);
     setGenerationMode("showcase");
     setShowPrice(true);
@@ -241,6 +248,21 @@ export default function AiCreativeStudioV2() {
     invalidateGeneratedCreative();
   };
 
+  const changeCreativeFormat = (value: AdCreativeFormat) => {
+    setCreativeFormat(value);
+    invalidateGeneratedCreative();
+  };
+
+  const changeCreativePrompt = (value: string) => {
+    setCreativePrompt(value);
+    invalidateGeneratedCreative();
+  };
+
+  const resetCreativePrompt = () => {
+    setCreativePrompt(selectedStyle?.aiPromptStyle || "");
+    invalidateGeneratedCreative();
+  };
+
   const togglePlatform = (platform: string) => {
     setSelectedPlatforms((current) => current.includes(platform) ? current.filter((item) => item !== platform) : [...current, platform]);
   };
@@ -267,7 +289,7 @@ export default function AiCreativeStudioV2() {
           platform: selectedPlatforms.includes("instagram") ? "instagram" : "facebook",
         },
       });
-      if (error) throw new Error(await readFunctionError(error));
+      if (error) throw new Error(await readFunctionError(error, data));
       if (!data?.caption) throw new Error("The caption service returned no text.");
       setSocialCaption(data.caption);
       toast.success("Caption generated.");
@@ -289,7 +311,14 @@ export default function AiCreativeStudioV2() {
       return null;
     }
 
+    const effectivePrompt = creativePrompt.trim() || selectedStyle.aiPromptStyle?.trim();
+    if (!effectivePrompt) {
+      toast.error("This creative template has no AI prompt.");
+      return null;
+    }
+
     setGenerating(true);
+    setGeneratedImage(null);
     try {
       const productLanguage = detectLanguage(selectedProduct.title);
       const { data, error } = await supabase.functions.invoke("export-creative-image", {
@@ -303,21 +332,19 @@ export default function AiCreativeStudioV2() {
           template: {
             id: selectedStyle.id,
             name: selectedStyle.name,
-            size: selectedStyle.size,
+            size: creativeFormat,
             category: selectedStyle.category,
-            aiPromptStyle: selectedStyle.aiPromptStyle,
+            aiPromptStyle: effectivePrompt,
             accentColor: selectedStyle.accentColor,
           },
-          caption: tagline,
-          format: "png",
+          caption: tagline.trim(),
           mode: generationMode,
           showPrice,
           language: productLanguage,
         },
       });
 
-      if (error) throw new Error(await readFunctionError(error));
-      if (data?.error) throw new Error(data.error);
+      if (error || data?.error) throw new Error(await readFunctionError(error, data));
 
       const imageUrl = resolveGeneratedImage(data);
       if (!imageUrl) throw new Error("The AI service finished without returning an image. Please try again.");
@@ -339,7 +366,7 @@ export default function AiCreativeStudioV2() {
         if (historyError) console.warn("Creative generated but history save failed:", historyError);
       }
 
-      toast.success("Creative generated successfully.");
+      toast.success(`Creative generated · ${data?.ratio || creativeFormat}`);
       return imageUrl;
     } catch (error: any) {
       console.error("Error generating creative:", error);
@@ -393,10 +420,10 @@ export default function AiCreativeStudioV2() {
         .single();
 
       if (postError) throw postError;
-      const { error: publishError } = await supabase.functions.invoke("publish-social-post", {
+      const { data, error: publishError } = await supabase.functions.invoke("publish-social-post", {
         body: { postId: post.id, userId: user.id },
       });
-      if (publishError) throw new Error(await readFunctionError(publishError));
+      if (publishError || data?.error) throw new Error(await readFunctionError(publishError, data));
       toast.success("Creative published.");
     } catch (error: any) {
       console.error("Error publishing creative:", error);
@@ -419,7 +446,7 @@ export default function AiCreativeStudioV2() {
   };
 
   const canPublish = Boolean(generatedImage && selectedPlatforms.length > 0 && socialCaption.trim());
-  const gallerySubtitle = useMemo(() => "Choose a premium template, then configure the product in a guided wizard.", []);
+  const gallerySubtitle = useMemo(() => "Choose a premium template, then configure the product, prompt and output format in a guided wizard.", []);
 
   return (
     <div className="min-h-screen bg-slate-50/40">
@@ -490,6 +517,11 @@ export default function AiCreativeStudioV2() {
         onShowPriceChange={changeShowPrice}
         tagline={tagline}
         onTaglineChange={changeTagline}
+        creativeFormat={creativeFormat}
+        onCreativeFormatChange={changeCreativeFormat}
+        creativePrompt={creativePrompt}
+        onCreativePromptChange={changeCreativePrompt}
+        resetCreativePrompt={resetCreativePrompt}
         selectedPlatforms={selectedPlatforms}
         togglePlatform={togglePlatform}
         postType={postType}
