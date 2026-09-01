@@ -242,8 +242,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const body = await req.json().catch(() => ({}));
+
   try {
-    const { keyword, analysisType, maxResults = 10 }: SerpAnalysisRequest = await req.json();
+    const { keyword, analysisType, maxResults = 10 } = body as SerpAnalysisRequest;
 
     if (!keyword) {
       return new Response(
@@ -361,7 +363,7 @@ serve(async (req) => {
     // FALLBACK: Provide insights based on keyword analysis when API fails
     console.log('⚠️ DataForSEO unavailable, using fallback analysis');
     
-    const { keyword, analysisType } = await req.json();
+    const { keyword, analysisType } = body as SerpAnalysisRequest;
     
     // Generate fallback insights based on analysis type
     let fallbackInsights: any;

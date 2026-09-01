@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: product, error: productError } = await supabaseClient
       .from("shopify_products")
-      .select("id, title, description, product_type, category, sub_category, vendor, seller_id, optimization_count")
+      .select("id, title, description, product_type, category, sub_category, vendor, seller_id, optimization_count, google_product_category, google_mpn, google_condition, google_brand")
       .eq("id", productId)
       .maybeSingle();
 
@@ -103,20 +103,38 @@ IMPORTANT:
 - Default condition to "new" unless context suggests otherwise
 - Use vendor as brand if no other brand information is available`;
 
-    const categoryResponse = await routeAI({
-      messages: [
+    let categoryResponse;
+    try {
+      categoryResponse = await routeAI({
+        messages: [
+          {
+            role: "system",
+            content: "You are a Google Shopping categorization expert. Always respond with one valid JSON object only, without markdown fences.",
+          },
+          {
+            role: "user",
+            content: categoryPrompt,
+          },
+        ],
+        maxTokens: 500,
+        temperature: 0.15,
+      });
+    } catch (providerError) {
+      console.warn("Google category providers unavailable", providerError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "CATEGORY_PROVIDER_UNAVAILABLE",
+          message: "Google category generation is temporarily unavailable. No taxonomy value was fabricated.",
+          needs_review: true,
+          existing_category: product.google_product_category || null,
+        }),
         {
-          role: "system",
-          content: "You are a Google Shopping categorization expert. Always respond with one valid JSON object only, without markdown fences.",
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
-        {
-          role: "user",
-          content: categoryPrompt,
-        },
-      ],
-      maxTokens: 500,
-      temperature: 0.15,
-    });
+      );
+    }
 
     console.log(`Google category provider: ${categoryResponse.provider}/${categoryResponse.model}`);
     const categoryContent = categoryResponse.content
@@ -141,11 +159,27 @@ IMPORTANT:
       };
     } catch (e) {
       console.error("Failed to parse category JSON from AI provider", e);
-      throw new Error("AI returned an invalid Google category response");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "CATEGORY_INVALID_RESPONSE",
+          message: "The AI provider returned an invalid category response. No taxonomy value was saved.",
+          needs_review: true,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     if (!googleData.google_product_category.trim()) {
-      throw new Error("AI returned an empty Google product category");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "CATEGORY_EMPTY_RESPONSE",
+          message: "No Google product category was generated. No taxonomy value was saved.",
+          needs_review: true,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const { error: updateError } = await supabaseClient

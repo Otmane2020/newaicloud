@@ -11,13 +11,15 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { status: 200, headers: corsHeaders });
 
+  const body = await req.json().catch(() => ({}));
+  const { articleId } = body as { articleId?: string };
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { articleId } = await req.json();
     if (!articleId) {
       return new Response(JSON.stringify({ error: "Missing articleId" }), {
         status: 400,
@@ -253,7 +255,7 @@ Deno.serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
       
-      const { articleId } = await req.json();
+      if (!articleId) throw new Error("Missing articleId while restoring failed sync");
       
       await supabase
         .from("blog_articles")

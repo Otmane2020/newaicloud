@@ -119,8 +119,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-api-key, content-type",
 };
 
-async function handleOptimizeProduct(req: Request, userId: string) {
-  const body = await req.json();
+async function handleOptimizeProduct(body: any, userId: string) {
   const { product_id, store_id, optimize_title = true, optimize_description = true, language = 'fr' } = body;
 
   if (!product_id || !store_id) {
@@ -193,8 +192,7 @@ async function handleOptimizeProduct(req: Request, userId: string) {
   };
 }
 
-async function handleGenerateArticle(req: Request, userId: string) {
-  const body = await req.json();
+async function handleGenerateArticle(body: any, userId: string) {
   const { title, keywords, store_id, language = 'fr' } = body;
 
   if (!title || !store_id) {
@@ -230,8 +228,7 @@ async function handleGenerateArticle(req: Request, userId: string) {
   };
 }
 
-async function handleCreateProduct(req: Request, userId: string) {
-  const body = await req.json();
+async function handleCreateProduct(body: any, userId: string) {
   const { title, description, price, vendor, product_type, store_id } = body;
 
   if (!title || !price || !store_id) {
@@ -346,14 +343,19 @@ serve(async (req) => {
       );
     }
 
+    // Parse POST body exactly once, after authentication/authorization.
+    const requestBody = req.method === "POST"
+      ? await req.json().catch(() => ({}))
+      : {};
+
     // Router vers le bon endpoint
     let result;
     if (path === "/seo/optimize-product" && req.method === "POST") {
-      result = await handleOptimizeProduct(req, authResult.userId!);
+      result = await handleOptimizeProduct(requestBody, authResult.userId!);
     } else if (path === "/content/generate-article" && req.method === "POST") {
-      result = await handleGenerateArticle(req, authResult.userId!);
+      result = await handleGenerateArticle(requestBody, authResult.userId!);
     } else if (path === "/products/create" && req.method === "POST") {
-      result = await handleCreateProduct(req, authResult.userId!);
+      result = await handleCreateProduct(requestBody, authResult.userId!);
     } else if (path === "/products/list" && req.method === "GET") {
       result = await handleListProducts(req, authResult.userId!);
     } else {
