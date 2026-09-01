@@ -50,5 +50,11 @@ jobs:
       - name: Deploy generate-ai-product-images
         run: supabase functions deploy generate-ai-product-images --project-ref "$PROJECT_REF"
 
+      - name: Deploy generate-aeo-plan
+        run: supabase functions deploy generate-aeo-plan --project-ref "$PROJECT_REF"
+
+      - name: Deploy process-blog-campaigns
+        run: supabase functions deploy process-blog-campaigns --project-ref "$PROJECT_REF"
+
       - name: Deployment summary
-        run: echo "SEO, Shopify collections, creative image and Product Shot AI functions deployed to Supabase project $PROJECT_REF"
+        run: echo "SEO, Shopify collections, creative image, Product Shot AI and GEO automation functions deployed to Supabase project $PROJECT_REF"
