@@ -219,6 +219,76 @@ export function MinimalPagesWorkspace() {
   return <Card className="overflow-hidden border-slate-200 shadow-none"><div className="border-b p-3"><div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between"><div className="flex flex-1 flex-wrap items-center gap-2"><div className="relative min-w-[240px] flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={fr ? "Rechercher une page" : "Search pages"} className="h-9 pl-9" /></div><Select value={status} onValueChange={(v: StatusFilter) => setStatus(v)}><SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{fr ? "Toutes" : "All"}</SelectItem><SelectItem value="missing">{fr ? "À optimiser" : "Needs SEO"}</SelectItem><SelectItem value="optimized">{fr ? "Optimisées" : "Optimized"}</SelectItem></SelectContent></Select><Badge variant="outline">SEO {average}/100</Badge></div><div className="flex flex-wrap items-center gap-2"><span className="text-xs text-muted-foreground">{selected.size ? `${selected.size} sélectionnées` : `${filtered.length} pages`}</span><Button size="sm" variant="outline" disabled={!items.some((i) => !(i.optimization_count > 0)) || busy} onClick={() => optimize(items.filter((i) => !(i.optimization_count > 0)).map((i) => i.id))}><Sparkles className="mr-1.5 h-4 w-4" />Optimize All</Button><Button size="sm" disabled={!selected.size || busy} onClick={() => optimize([...selected])}>{busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1.5 h-4 w-4" />}{fr ? "Optimiser" : "Optimize"}</Button><details className="relative"><summary className="list-none cursor-pointer rounded-lg border px-3 py-2 text-sm">{fr ? "Plus" : "More"}</summary><div className="absolute right-0 z-30 mt-2 grid min-w-52 gap-1 rounded-xl border bg-white p-2 shadow-xl"><Button variant="ghost" size="sm" className="justify-start" onClick={() => optimize(items.filter((i) => !(i.optimization_count > 0)).map((i) => i.id))}><Sparkles className="mr-2 h-4 w-4" />{fr ? "Optimiser manquantes" : "Optimize missing"}</Button><Button variant="ghost" size="sm" className="justify-start" onClick={importPages}><Upload className="mr-2 h-4 w-4" />{fr ? "Importer Shopify" : "Import Shopify"}</Button><Button variant="ghost" size="sm" className="justify-start" onClick={load}><RefreshCw className="mr-2 h-4 w-4" />{fr ? "Actualiser" : "Refresh"}</Button></div></details></div></div></div>{rows.length ? <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-slate-50/70 text-xs text-muted-foreground"><tr><th className="w-10 px-3 py-2"><Checkbox checked={rows.every((r) => selected.has(r.id))} onCheckedChange={() => setSelected(rows.every((r) => selected.has(r.id)) ? new Set() : new Set(rows.map((r) => r.id)))} /></th><th className="px-3 py-2 text-left">Page</th><th className="px-3 py-2 text-left">SEO</th><th className="px-3 py-2 text-left">{fr ? "Statut" : "Status"}</th><th className="w-24 px-3 py-2"></th></tr></thead><tbody className="divide-y">{rows.map((item) => { const itemScore = score(item); return <tr key={item.id} className="hover:bg-slate-50/60"><td className="px-3 py-2"><Checkbox checked={selected.has(item.id)} onCheckedChange={() => setSelected((current) => { const next = new Set(current); next.has(item.id) ? next.delete(item.id) : next.add(item.id); return next; })} /></td><td className="px-3 py-2"><p className="font-medium">{item.title}</p><p className="text-xs text-muted-foreground">/pages/{item.handle}</p></td><td className="max-w-[520px] px-3 py-2"><p className="truncate font-medium">{item.seo_title || item.title}</p><p className="truncate text-xs text-muted-foreground">{item.seo_description || (fr ? "Description SEO manquante" : "Missing SEO description")}</p></td><td className="px-3 py-2"><div className="flex items-center gap-2"><ScoreBadge score={itemScore} />{item.optimization_count > 0 && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}</div></td><td className="px-3 py-2 text-right"><Button size="sm" variant="ghost" onClick={() => optimize([item.id])}><Sparkles className="h-4 w-4" /></Button></td></tr>; })}</tbody></table></div> : <EmptyState icon={FileText} text={fr ? "Aucune page trouvée" : "No pages found"} />}<Pager page={page} totalPages={totalPages} onChange={setPage} /></Card>;
 }
 
+function parseProductTags(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).map((tag) => tag.trim()).filter(Boolean);
+  if (typeof value !== "string" || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.map(String).map((tag) => tag.trim()).filter(Boolean);
+    if (parsed && typeof parsed === "object" && Array.isArray((parsed as any).tags)) return (parsed as any).tags.map(String).map((tag: string) => tag.trim()).filter(Boolean);
+    if (parsed && typeof parsed === "object" && typeof (parsed as any).tags === "string") return (parsed as any).tags.split(",").map((tag: string) => tag.trim()).filter(Boolean);
+  } catch {
+    // Plain Shopify tag list.
+  }
+  return value.split(/[,;\n|]+/).map((tag) => tag.trim()).filter(Boolean);
+}
+
+function normalizeProductTag(value: unknown): string {
+  return String(value ?? "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\b\d+(?:[.,]\d+)?\s*(?:cm|mm|m)\b/gi, " ")
+    .replace(/[\[\]{}"']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .split(" ")
+    .filter((word) => word && !/^\d+$/.test(word))
+    .slice(0, 3)
+    .join(" ");
+}
+
+function buildProductTagsFallback(item: any): string[] {
+  const values: string[] = [];
+  const add = (value: unknown) => {
+    const tag = normalizeProductTag(value);
+    if (tag) values.push(tag);
+  };
+
+  parseProductTags(item.tags).forEach(add);
+  [item.product_type, item.category, item.sub_category, item.ai_material, item.ai_color, item.vendor].forEach(add);
+
+  const title = String(item.title || "")
+    .replace(/\b\d+(?:[.,]\d+)?\s*(?:cm|mm|m)\b/gi, " ")
+    .replace(/[()]/g, " ");
+
+  title.split(/\s*(?:-|–|—|,|\/|\||\bavec\b|\bwith\b|\bet\b|\band\b|&)\s*/i).forEach(add);
+
+  const words = title
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !/^\d+$/.test(word));
+
+  const unique = () => [...new Set(values.map(normalizeProductTag).filter(Boolean))];
+  for (let size = 3; size >= 1; size -= 1) {
+    for (let index = 0; index <= words.length - size; index += 1) {
+      add(words.slice(index, index + size).join(" "));
+      if (unique().length >= 15) break;
+    }
+    if (unique().length >= 15) break;
+  }
+
+  const base = normalizeProductTag(item.product_type || item.category || words.slice(0, 2).join(" "));
+  if (base) {
+    for (const attribute of unique().filter((tag) => tag !== base)) {
+      add(`${base} ${attribute}`);
+      if (unique().length >= 15) break;
+    }
+  }
+
+  return unique().slice(0, 15);
+}
+
 export function MinimalTagsWorkspace() {
   const { selectedStore } = useStore();
   const { language } = useTranslation();
@@ -231,13 +301,71 @@ export function MinimalTagsWorkspace() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
 
-  const load = async () => { if (!selectedStore?.id) { setItems([]); setLoading(false); return; } try { setLoading(true); const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data, error } = await supabase.from("shopify_products").select("id,title,tags,vendor,image_url,product_type,optimization_count,seo_synced_to_shopify").eq("seller_id", user.id).eq("store_id", selectedStore.id).order("title"); if (error) throw error; setItems(data || []); } catch (error: any) { toast.error(error?.message || "Tags load failed"); } finally { setLoading(false); } };
+  const load = async () => { if (!selectedStore?.id) { setItems([]); setLoading(false); return; } try { setLoading(true); const { data: { user } } = await supabase.auth.getUser(); if (!user) return; const { data, error } = await supabase.from("shopify_products").select("id,title,tags,vendor,image_url,product_type,category,sub_category,ai_color,ai_material,optimization_count,seo_synced_to_shopify").eq("seller_id", user.id).eq("store_id", selectedStore.id).order("title"); if (error) throw error; setItems(data || []); } catch (error: any) { toast.error(error?.message || "Tags load failed"); } finally { setLoading(false); } };
   useEffect(() => { load(); setSelected(new Set()); }, [selectedStore?.id]);
   useEffect(() => { setPage(1); }, [search, status]);
   const optimized = (item: any) => Boolean(item.tags?.trim()) && calculateTagsScore(item.tags) >= 8;
   const filtered = useMemo(() => items.filter((item) => { const ok = optimized(item); if (status === "optimized" && !ok) return false; if (status === "missing" && ok) return false; return !search || `${item.title} ${item.vendor || ""}`.toLowerCase().includes(search.toLowerCase()); }), [items, search, status]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)); const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE); const missing = items.filter((item) => !optimized(item)).length;
-  const generate = async (ids: string[]) => { if (!ids.length) return; try { setBusy(true); const result = await runInBatches(ids, async (id) => { const { data, error } = await supabase.functions.invoke("generate-tags", { body: { productId: id, force: true } }); return !error && data?.success !== false; }); if (result.success) toast.success(fr ? `${result.success} produit(s) traité(s)` : `${result.success} product(s) processed`); if (result.failed) toast.error(fr ? `${result.failed} produit(s) en échec` : `${result.failed} product(s) failed`); setSelected(new Set()); await load(); } finally { setBusy(false); } };
+  const generate = async (ids: string[]) => {
+    if (!ids.length) return;
+    try {
+      setBusy(true);
+      let fallbackCount = 0;
+      const failures: string[] = [];
+      const result = await runInBatches(ids, async (id) => {
+        const item = items.find((product) => product.id === id);
+        if (!item) return false;
+
+        const { data, error } = await supabase.functions.invoke("generate-tags", {
+          body: { productId: id, force: true },
+        });
+
+        const generatedTags = parseProductTags(data?.data?.tags);
+        if (!error && data?.success !== false && generatedTags.length >= 8) return true;
+
+        const fallbackTags = buildProductTagsFallback(item);
+        if (fallbackTags.length < 8) {
+          failures.push(error?.message || data?.error || `${item.title}: insufficient tag context`);
+          return false;
+        }
+
+        const { error: fallbackError } = await supabase
+          .from("shopify_products")
+          .update({
+            tags: fallbackTags.join(", "),
+            seo_synced_to_shopify: false,
+            optimization_count: (item.optimization_count || 0) + 1,
+            last_optimization_at: new Date().toISOString(),
+            optimization_history: {
+              tags_generated: new Date().toISOString(),
+              tags_provider: "client-fallback",
+              tags_count: fallbackTags.length,
+            },
+          } as any)
+          .eq("id", id);
+
+        if (fallbackError) {
+          failures.push(fallbackError.message);
+          return false;
+        }
+
+        fallbackCount += 1;
+        await supabase.functions.invoke("sync-seo-to-shopify", {
+          body: { productId: id, syncTags: true, force: true },
+        }).catch(() => undefined);
+        return true;
+      });
+
+      if (result.success) toast.success(fr ? `${result.success} produit(s) traité(s)` : `${result.success} product(s) processed`);
+      if (fallbackCount) toast.info(fr ? `${fallbackCount} produit(s) réparé(s) avec 8–15 tags` : `${fallbackCount} product(s) repaired with 8–15 tags`);
+      if (result.failed) toast.error(fr ? `${result.failed} produit(s) en échec${failures[0] ? ` : ${failures[0]}` : ""}` : `${result.failed} product(s) failed${failures[0] ? `: ${failures[0]}` : ""}`);
+      setSelected(new Set());
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
   const tagArray = (value: string | null) => { if (!value) return []; try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed : []; } catch { return value.split(",").map((tag) => tag.trim()).filter(Boolean); } };
   if (loading) return <div className="grid min-h-64 place-items-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   return <Card className="overflow-hidden border-slate-200 shadow-none"><div className="border-b p-3"><div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between"><div className="flex flex-1 flex-wrap items-center gap-2"><div className="relative min-w-[240px] flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={fr ? "Rechercher un produit" : "Search products"} className="h-9 pl-9" /></div><Select value={status} onValueChange={(v: StatusFilter) => setStatus(v)}><SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{fr ? "Tous" : "All"}</SelectItem><SelectItem value="missing">{fr ? "À optimiser" : "Needs tags"}</SelectItem><SelectItem value="optimized">{fr ? "Optimisés" : "Optimized"}</SelectItem></SelectContent></Select><Badge variant="outline">{missing} {fr ? "à optimiser" : "missing"}</Badge></div><div className="flex flex-wrap items-center gap-2"><span className="text-xs text-muted-foreground">{selected.size ? `${selected.size} sélectionnés` : `${filtered.length} produits`}</span><Button size="sm" variant="outline" disabled={!missing || busy} onClick={() => generate(items.filter((i) => !optimized(i)).map((i) => i.id))}><Sparkles className="mr-1.5 h-4 w-4" />Optimize All</Button><Button size="sm" disabled={!selected.size || busy} onClick={() => generate([...selected])}>{busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1.5 h-4 w-4" />}{fr ? "Générer" : "Generate"}</Button><details className="relative"><summary className="list-none cursor-pointer rounded-lg border px-3 py-2 text-sm">{fr ? "Plus" : "More"}</summary><div className="absolute right-0 z-30 mt-2 grid min-w-52 gap-1 rounded-xl border bg-white p-2 shadow-xl"><Button variant="ghost" size="sm" className="justify-start" onClick={() => generate(items.filter((i) => !optimized(i)).map((i) => i.id))}><Sparkles className="mr-2 h-4 w-4" />{fr ? "Générer manquants" : "Generate missing"}</Button><Button variant="ghost" size="sm" className="justify-start" onClick={load}><RefreshCw className="mr-2 h-4 w-4" />{fr ? "Actualiser" : "Refresh"}</Button></div></details></div></div></div>{rows.length ? <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="border-b bg-slate-50/70 text-xs text-muted-foreground"><tr><th className="w-10 px-3 py-2"><Checkbox checked={rows.every((r) => selected.has(r.id))} onCheckedChange={() => setSelected(rows.every((r) => selected.has(r.id)) ? new Set() : new Set(rows.map((r) => r.id)))} /></th><th className="px-3 py-2 text-left">{fr ? "Produit" : "Product"}</th><th className="px-3 py-2 text-left">Tags</th><th className="px-3 py-2 text-left">{fr ? "Statut" : "Status"}</th><th className="w-24 px-3 py-2"></th></tr></thead><tbody className="divide-y">{rows.map((item) => { const tagsList = tagArray(item.tags); const ok = optimized(item); return <tr key={item.id} className="hover:bg-slate-50/60"><td className="px-3 py-2"><Checkbox checked={selected.has(item.id)} onCheckedChange={() => setSelected((current) => { const next = new Set(current); next.has(item.id) ? next.delete(item.id) : next.add(item.id); return next; })} /></td><td className="px-3 py-2"><div className="flex items-center gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100">{item.image_url ? <img src={item.image_url} alt="" className="h-full w-full object-cover" /> : <Package className="h-4 w-4 text-slate-400" />}</div><div><p className="font-medium">{item.title}</p><p className="text-xs text-muted-foreground">{item.vendor || item.product_type || "—"}</p></div></div></td><td className="max-w-[520px] px-3 py-2"><div className="flex flex-wrap gap-1">{tagsList.slice(0, 6).map((tag: string) => <Badge key={tag} variant="secondary" className="text-[11px]">{tag}</Badge>)}{tagsList.length > 6 && <Badge variant="outline" className="text-[11px]">+{tagsList.length - 6}</Badge>}{!tagsList.length && <span className="text-xs text-muted-foreground">{fr ? "Aucun tag" : "No tags"}</span>}</div></td><td className="px-3 py-2">{ok ? <Badge variant="outline" className="text-emerald-700"><CheckCircle2 className="mr-1 h-3 w-3" />OK</Badge> : <Badge variant="outline" className="text-amber-700">{fr ? "À optimiser" : "Needs work"}</Badge>}</td><td className="px-3 py-2 text-right"><Button size="sm" variant="ghost" onClick={() => generate([item.id])}><Sparkles className="h-4 w-4" /></Button></td></tr>; })}</tbody></table></div> : <EmptyState icon={Tags} text={fr ? "Aucun produit trouvé" : "No products found"} />}<Pager page={page} totalPages={totalPages} onChange={setPage} /></Card>;
