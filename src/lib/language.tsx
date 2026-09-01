@@ -28,6 +28,60 @@ interface LanguageProviderProps {
   children: ReactNode;
 }
 
+const LEGACY_FRENCH_UI: Record<string, string> = {
+  'Je cherche une composition TV murale moderne en bois.': 'I am looking for a modern wall-mounted wooden TV unit.',
+  'La composition SWITCH correspond à votre recherche. Elle est disponible en plusieurs finitions dans le catalogue Decora Home.': 'The SWITCH TV unit matches your search. It is available in several finishes in the Decora Home catalog.',
+  'Disponible · plusieurs finitions': 'Available · several finishes',
+  'Voir le produit': 'View product',
+  'Erreur': 'Error',
+  'Succès': 'Success',
+  'Supprimer': 'Delete',
+  'Confirmer': 'Confirm',
+  'Impossible': 'Unable',
+  'Annuler': 'Cancel',
+  'Enregistrer': 'Save',
+  'Chargement...': 'Loading...',
+  'Aucun résultat': 'No results',
+};
+
+function translateLegacyFrenchValue(value: string): string {
+  const trimmed = value.trim();
+  const translated = LEGACY_FRENCH_UI[trimmed];
+  if (!translated) return value;
+
+  const leading = value.match(/^\s*/)?.[0] ?? '';
+  const trailing = value.match(/\s*$/)?.[0] ?? '';
+  return `${leading}${translated}${trailing}`;
+}
+
+function normalizeLegacyFrenchUi(root: ParentNode) {
+  if (typeof document === 'undefined') return;
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let current = walker.nextNode();
+  while (current) {
+    const node = current as Text;
+    const parentTag = node.parentElement?.tagName;
+    if (parentTag !== 'SCRIPT' && parentTag !== 'STYLE' && parentTag !== 'NOSCRIPT') {
+      const nextValue = translateLegacyFrenchValue(node.data);
+      if (nextValue !== node.data) node.data = nextValue;
+    }
+    current = walker.nextNode();
+  }
+
+  if (root instanceof Element) {
+    const elements = [root, ...Array.from(root.querySelectorAll('*'))];
+    elements.forEach((element) => {
+      ['placeholder', 'title', 'aria-label'].forEach((attribute) => {
+        const value = element.getAttribute(attribute);
+        if (!value) return;
+        const nextValue = translateLegacyFrenchValue(value);
+        if (nextValue !== value) element.setAttribute(attribute, nextValue);
+      });
+    });
+  }
+}
+
 export function LanguageProvider({ children }: LanguageProviderProps) {
   // CatalogOptimize AI is English-only. Keep the setter for API compatibility,
   // but always resolve the active UI language to English.
@@ -72,6 +126,35 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
       document.documentElement.lang = 'en';
       document.documentElement.setAttribute('data-language', 'en');
     } catch {}
+
+    if (typeof document === 'undefined' || !document.body) return;
+
+    normalizeLegacyFrenchUi(document.body);
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'characterData' && mutation.target.parentNode) {
+          normalizeLegacyFrenchUi(mutation.target.parentNode);
+          return;
+        }
+
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.TEXT_NODE && node.parentNode) {
+            normalizeLegacyFrenchUi(node.parentNode);
+          } else if (node instanceof Element) {
+            normalizeLegacyFrenchUi(node);
+          }
+        });
+      });
+    });
+
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
+
+    return () => observer.disconnect();
   }, []);
 
   return (
