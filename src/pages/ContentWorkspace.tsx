@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Camera, FileText, Layers3, Newspaper, PanelsTopLeft, Sparkles, Star, Tags, Images } from "lucide-react";
+import { ArrowRight, Camera, FileText, Images, Layers3, Newspaper, PanelsTopLeft, Sparkles, Star, Tags } from "lucide-react";
 import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export default function ContentWorkspace() {
     { good: 0, medium: 0, bad: 0 },
   );
 
-  const primaryTools = [
+  const tools = [
     {
       title: fr ? "Contenu produit" : "Product content",
       note: fr ? "Titres, descriptions, SEO" : "Titles, descriptions, SEO",
@@ -61,7 +61,7 @@ export default function ContentWorkspace() {
     },
     {
       title: fr ? "Collections & pages" : "Collections & pages",
-      note: "SEO",
+      note: fr ? "SEO des collections et pages" : "Collection and page SEO",
       href: "/seo?tab=collections",
       icon: Layers3,
     },
@@ -77,12 +77,22 @@ export default function ContentWorkspace() {
       href: "/studio",
       icon: Camera,
     },
+    {
+      title: fr ? "ALT images" : "Image ALT",
+      note: fr ? "Textes ALT pour toutes les images" : "ALT text for catalog images",
+      href: "/seo?tab=alt",
+      icon: Images,
+    },
+    {
+      title: "Tags",
+      note: fr ? "Tags Shopify cohérents" : "Consistent Shopify tags",
+      href: "/seo?tab=tags",
+      icon: Tags,
+    },
   ];
 
   const quickTools = [
     { label: fr ? "Landing pages" : "Landing pages", href: "/products/title-description?view=landing", icon: PanelsTopLeft },
-    { label: "Tags", href: "/seo?tab=tags", icon: Tags },
-    { label: "ALT", href: "/seo?tab=alt", icon: Images },
     { label: fr ? "Actions groupées" : "Bulk actions", href: "/products/title-description?view=bulk", icon: Sparkles },
   ];
 
@@ -93,18 +103,18 @@ export default function ContentWorkspace() {
         page={fr ? "Vue d’ensemble" : "Overview"}
         count={products.length}
         title={fr ? "Contenu" : "Content"}
-        description=""
+        description={fr ? "Tous les outils de contenu et métadonnées au même endroit." : "All content and metadata tools in one place."}
       />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {primaryTools.map(({ title, note, href, icon: Icon }) => (
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {tools.map(({ title, note, href, icon: Icon }) => (
           <Link key={href} to={href} className="group block">
-            <Card className="h-full rounded-xl border-slate-200 p-4 shadow-none transition hover:border-slate-300">
+            <Card className="h-full rounded-xl border-slate-200 p-4 shadow-none transition hover:border-violet-300 hover:bg-slate-50/40">
               <div className="flex items-center justify-between gap-4">
-                <span className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700">
+                <span className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 bg-white text-slate-700">
                   <Icon className="h-4 w-4" />
                 </span>
-                <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:text-slate-600" />
+                <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:text-violet-600" />
               </div>
               <h2 className="mt-4 text-sm font-semibold text-slate-950">{title}</h2>
               <p className="mt-1 text-xs text-slate-400">{note}</p>
