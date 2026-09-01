@@ -6,77 +6,60 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+type DecorType = "living_room" | "bedroom" | "office" | "dining_room";
+
 interface RequestBody {
   productId: string;
   productTitle: string;
   productType: string;
   sourceImageUrl: string;
+  galleryImages?: string[];
   imageTypes: string[];
   includeDecor: boolean;
-  decorType: 'living_room' | 'bedroom' | 'office' | 'dining_room';
+  decorType: DecorType;
   language: string;
-  // Enhanced context for better AI understanding
   productDescription?: string;
-  galleryImages?: string[]; // URLs of existing product images for context
-  variantLabel?: string; // Label if generating for a variant
+  customPrompt?: string;
+  variantLabel?: string;
 }
 
 const IMAGE_TYPE_PROMPTS: Record<string, { fr: string; en: string }> = {
   front: {
-    fr: "Vue de face du produit, angle frontal direct, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping). IMPORTANT: Image CARRÉE 1:1, produit CENTRÉ au milieu avec une petite marge (10-15%) sur tous les côtés pour que le produit ne touche pas les bords",
-    en: "Front view of the product, direct frontal angle, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style). IMPORTANT: SQUARE 1:1 image, product CENTERED in the middle with small margin (10-15%) on all sides so the product doesn't touch the edges"
+    fr: "vue de face parfaitement frontale, produit centré, fond blanc pur #FFFFFF, ombre studio douce et réaliste",
+    en: "perfect straight-on front view, centered product, pure white #FFFFFF background, soft realistic studio shadow",
   },
   angle45: {
-    fr: "Vue à 45 degrés du produit (vue trois-quarts), montrant profondeur et dimension, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping)",
-    en: "45 degree angle view of the product (three-quarter view), showing depth and dimension, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style)"
+    fr: "vue trois-quarts à 45°, profondeur et proportions fidèles, fond blanc pur #FFFFFF, ombre studio douce",
+    en: "45° three-quarter view, faithful depth and proportions, pure white #FFFFFF background, soft studio shadow",
   },
   profile: {
-    fr: "Vue de profil du produit (côté gauche ou droit), angle 90 degrés, fond blanc pur (#FFFFFF), AVEC une ombre portée douce et réaliste sous le produit (style Google Shopping). IMPORTANT: Image CARRÉE 1:1, produit CENTRÉ au milieu avec une petite marge (10-15%) sur tous les côtés pour que le produit ne touche pas les bords",
-    en: "Profile view of the product (left or right side), 90 degree angle, pure white background (#FFFFFF), WITH a soft realistic drop shadow under the product (Google Shopping style). IMPORTANT: SQUARE 1:1 image, product CENTERED in the middle with small margin (10-15%) on all sides so the product doesn't touch the edges"
+    fr: "vue de profil à 90°, côté gauche ou droit, proportions exactes, fond blanc pur #FFFFFF",
+    en: "90° profile view, left or right side, exact proportions, pure white #FFFFFF background",
   },
   back: {
-    fr: "Vue arrière du produit, montrant le dos/arrière, fond blanc pur avec ombre portée légère",
-    en: "Back view of the product, showing the rear, pure white background with light drop shadow"
+    fr: "vue arrière réaliste du même produit, géométrie et finitions cohérentes avec toutes les références, fond blanc pur",
+    en: "realistic back view of the same product, geometry and finishes consistent with all references, pure white background",
   },
   top: {
-    fr: "Vue du dessus (vue plongeante) du produit, montrant le produit vu d'en haut à 90 degrés, fond blanc pur (#FFFFFF), éclairage studio professionnel",
-    en: "Top-down view of the product, showing the product from directly above at 90 degrees, pure white background (#FFFFFF), professional studio lighting"
+    fr: "vue du dessus à 90°, géométrie exacte du produit, éclairage studio, fond blanc pur #FFFFFF",
+    en: "90° top-down view, exact product geometry, studio lighting, pure white #FFFFFF background",
   },
   low_angle: {
-    fr: "Vue en contre-plongée du produit (angle bas vers le haut), donnant une perspective dramatique et imposante, fond blanc pur (#FFFFFF), éclairage studio",
-    en: "Low angle view of the product (from below looking up), giving a dramatic and imposing perspective, pure white background (#FFFFFF), studio lighting"
+    fr: "vue légère en contre-plongée, perspective réaliste sans déformer le produit, fond blanc pur #FFFFFF",
+    en: "slight low-angle view, realistic perspective without distorting the product, pure white #FFFFFF background",
   },
   zoom_fabric: {
-    fr: "Gros plan macro sur le tissu/matière du produit, montrant la texture détaillée, fond blanc",
-    en: "Macro close-up on the fabric/material of the product, showing detailed texture, white background"
+    fr: "macro réaliste sur la matière ou le tissu réellement visible dans les références, texture et couleur strictement fidèles",
+    en: "realistic macro of the material or fabric actually visible in the references, strictly faithful texture and color",
   },
   zoom_legs: {
-    fr: "Gros plan sur les pieds/structure du produit, montrant les détails de finition, fond blanc",
-    en: "Close-up on the legs/structure of the product, showing finish details, white background"
+    fr: "gros plan réaliste sur les pieds ou la structure, forme, matériau et finition strictement fidèles",
+    en: "realistic close-up of the legs or structure, strictly faithful shape, material and finish",
   },
   zoom_detail: {
-    fr: "Gros plan sur un détail caractéristique du produit (accoudoir, couture, assemblage), fond blanc",
-    en: "Close-up on a characteristic detail of the product (armrest, stitching, assembly), white background"
-  }
-};
-
-const DECOR_PROMPTS: Record<string, { fr: string; en: string }> = {
-  living_room: {
-    fr: "dans un salon moderne et lumineux, avec parquet clair, murs blancs, grande baie vitrée, plantes vertes, ambiance cosy et élégante",
-    en: "in a modern bright living room, with light wood flooring, white walls, large window, green plants, cozy and elegant atmosphere"
+    fr: "gros plan sur un détail réellement présent dans les références, sans inventer de couture, poignée, motif ou assemblage",
+    en: "close-up of a detail actually present in the references, without inventing stitching, handles, patterns or assembly",
   },
-  dining_room: {
-    fr: "dans une salle à manger élégante et conviviale, avec grande table en bois, chaises design, luminaire suspendu, vaisselle décorative, ambiance chaleureuse",
-    en: "in an elegant and welcoming dining room, with large wooden table, designer chairs, pendant lighting, decorative tableware, warm atmosphere"
-  },
-  bedroom: {
-    fr: "dans une chambre moderne et apaisante, avec lit confortable, lumière douce, tons neutres, décoration minimaliste",
-    en: "in a modern soothing bedroom, with comfortable bed, soft lighting, neutral tones, minimalist decoration"
-  },
-  office: {
-    fr: "dans un bureau moderne et professionnel, avec bureau en bois, éclairage naturel, plantes, ambiance productive",
-    en: "in a modern professional office, with wooden desk, natural lighting, plants, productive atmosphere"
-  }
 };
 
 const IMAGE_TYPE_LABELS: Record<string, { fr: string; en: string }> = {
@@ -86,11 +69,36 @@ const IMAGE_TYPE_LABELS: Record<string, { fr: string; en: string }> = {
   back: { fr: "Arrière", en: "Back" },
   top: { fr: "Dessus", en: "Top" },
   low_angle: { fr: "Contre-plongée", en: "Low angle" },
-  zoom_fabric: { fr: "Zoom tissu", en: "Fabric zoom" },
-  zoom_legs: { fr: "Zoom pieds", en: "Legs zoom" },
+  zoom_fabric: { fr: "Zoom matière", en: "Material zoom" },
+  zoom_legs: { fr: "Zoom structure", en: "Structure zoom" },
   zoom_detail: { fr: "Zoom détail", en: "Detail zoom" },
-  decor: { fr: "En décor", en: "In decor" }
+  decor: { fr: "En décor", en: "In decor" },
 };
+
+const DECOR_PROMPTS: Record<DecorType, { fr: string; en: string }> = {
+  living_room: {
+    fr: "salon contemporain haut de gamme, lumière naturelle, parquet clair, murs neutres, composition réaliste et éditoriale",
+    en: "premium contemporary living room, natural light, light wood floor, neutral walls, realistic editorial composition",
+  },
+  dining_room: {
+    fr: "salle à manger élégante et chaleureuse, lumière naturelle, matériaux premium, composition réaliste",
+    en: "elegant warm dining room, natural light, premium materials, realistic composition",
+  },
+  bedroom: {
+    fr: "chambre contemporaine apaisante, lumière douce, palette neutre, intérieur premium et réaliste",
+    en: "calm contemporary bedroom, soft light, neutral palette, premium realistic interior",
+  },
+  office: {
+    fr: "bureau contemporain premium, lumière naturelle, lignes épurées et environnement réaliste",
+    en: "premium contemporary office, natural light, clean lines and realistic environment",
+  },
+};
+
+const uniqueReferences = (sourceImageUrl: string, galleryImages?: string[]) =>
+  Array.from(new Set([sourceImageUrl, ...(galleryImages || [])].filter(Boolean))).slice(0, 5);
+
+const cleanText = (value?: string) =>
+  (value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 800);
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -99,276 +107,212 @@ serve(async (req) => {
 
   try {
     const body: RequestBody = await req.json();
-    const { 
-      productId, 
-      productTitle, 
-      productType, 
-      sourceImageUrl, 
-      imageTypes, 
-      includeDecor, 
-      decorType, 
+    const {
+      productId,
+      productTitle,
+      productType,
+      sourceImageUrl,
+      galleryImages,
+      imageTypes = [],
+      includeDecor = false,
+      decorType = "living_room",
       language,
       productDescription,
-      galleryImages,
-      variantLabel
+      customPrompt,
+      variantLabel,
     } = body;
 
     if (!sourceImageUrl) {
-      return new Response(
-        JSON.stringify({ error: "Source image URL is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Source image URL is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const lang = language === 'fr' ? 'fr' : 'en';
+    const lang = language === "fr" ? "fr" : "en";
+    const references = uniqueReferences(sourceImageUrl, galleryImages);
+    const description = cleanText(productDescription);
+    const userInstructions = cleanText(customPrompt);
     const generatedImages: Array<{ url: string; type: string; label: string }> = [];
 
-    // Build enhanced context string for AI
-    const contextParts: string[] = [];
-    if (productDescription) {
-      // Clean HTML tags from description
-      const cleanDescription = productDescription.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-      if (cleanDescription.length > 10) {
-        contextParts.push(lang === 'fr' 
-          ? `Description du produit: ${cleanDescription.substring(0, 500)}` 
-          : `Product description: ${cleanDescription.substring(0, 500)}`);
+    console.log(`Product Shot AI: ${productTitle}`);
+    console.log(`References used: ${references.length}`);
+    console.log(`Requested types: ${imageTypes.join(", ")}`);
+
+    const referenceRule = lang === "fr"
+      ? `Les ${references.length} image(s) jointe(s) montrent LE MÊME PRODUIT sous différentes vues. La première image est la référence principale. Les autres servent de références géométriques et matière. Analyse-les ENSEMBLE. Ne mélange jamais des caractéristiques incompatibles et n'invente aucun élément absent des références.`
+      : `The ${references.length} attached image(s) show THE SAME PRODUCT from different views. The first image is the primary reference. The others are geometry and material references. Analyze them TOGETHER. Never mix incompatible characteristics and never invent elements that are absent from the references.`;
+
+    const context = [
+      description ? (lang === "fr" ? `Description catalogue: ${description}` : `Catalog description: ${description}`) : "",
+      variantLabel ? (lang === "fr" ? `Variante: ${variantLabel}` : `Variant: ${variantLabel}`) : "",
+      userInstructions ? (lang === "fr" ? `Instructions utilisateur: ${userInstructions}` : `User instructions: ${userInstructions}`) : "",
+    ].filter(Boolean).join("\n");
+
+    const callImageModel = async (prompt: string) => {
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image-preview",
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                ...references.map((url) => ({ type: "image_url", image_url: { url } })),
+              ],
+            },
+          ],
+          modalities: ["image", "text"],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Image model ${response.status}: ${errorText.slice(0, 500)}`);
       }
-    }
-    if (variantLabel) {
-      contextParts.push(lang === 'fr' 
-        ? `Variante: ${variantLabel}` 
-        : `Variant: ${variantLabel}`);
-    }
-    const enhancedContext = contextParts.length > 0 ? `\n\nCONTEXTE PRODUIT:\n${contextParts.join('\n')}` : '';
 
-    console.log(`🖼️ Generating AI images for product: ${productTitle}`);
-    console.log(`📷 Source image: ${sourceImageUrl}`);
-    console.log(`🎯 Image types requested: ${imageTypes.join(', ')}`);
-    console.log(`🏠 Include decor: ${includeDecor} (${decorType})`);
-    console.log(`📝 Has description: ${!!productDescription}`);
-    console.log(`🖼️ Gallery images count: ${galleryImages?.length || 0}`);
+      const data = await response.json();
+      return data.choices?.[0]?.message?.images?.[0]?.image_url?.url as string | undefined;
+    };
 
-    // Prioritize profile view as primary image
-    const sortedImageTypes = [...imageTypes].sort((a, b) => {
-      if (a === 'profile') return -1;
-      if (b === 'profile') return 1;
-      if (a === 'front') return -1;
-      if (b === 'front') return 1;
-      return 0;
-    });
+    for (const imageType of imageTypes) {
+      const shotInstruction = IMAGE_TYPE_PROMPTS[imageType]?.[lang] || IMAGE_TYPE_PROMPTS[imageType]?.en;
+      if (!shotInstruction) continue;
 
-    console.log(`🎯 Sorted image types (profile priority): ${sortedImageTypes.join(', ')}`);
+      const prompt = lang === "fr"
+        ? `PRODUCT SHOT E-COMMERCE — FIDÉLITÉ PRODUIT PRIORITAIRE
 
-    // Generate white background variant images using Lovable AI
-    for (const imageType of sortedImageTypes) {
-      const typePrompt = IMAGE_TYPE_PROMPTS[imageType]?.[lang] || IMAGE_TYPE_PROMPTS[imageType]?.en;
-      if (!typePrompt) continue;
+Produit: ${productTitle}
+Type: ${productType || "produit"}
+${context ? `${context}\n` : ""}
+${referenceRule}
 
-      console.log(`🎨 Generating ${imageType} image via Lovable AI...`);
+RENDU DEMANDÉ:
+- ${shotInstruction}
+- Image carrée 1:1, qualité e-commerce premium, produit entièrement visible sauf pour les zooms
+- Éclairage studio réaliste, détails nets, proportions naturelles
 
-      const prompt = lang === 'fr'
-        ? `À partir de cette image de produit (${productTitle}, type: ${productType}), génère une image professionnelle e-commerce ULTRA HAUTE RÉSOLUTION pour zoom e-commerce.
-${enhancedContext}
+RÈGLES ABSOLUES:
+1. Le produit doit rester IDENTIQUE: même silhouette, dimensions relatives, matériaux, couleurs, motifs, coutures, pieds, poignées et accessoires.
+2. Utilise les vues secondaires uniquement pour comprendre les parties non visibles sur la référence principale.
+3. Ne redesign pas, ne simplifie pas, n'ajoute aucune caractéristique.
+4. Aucun texte, logo inventé, watermark ou accessoire parasite.
+5. Les instructions utilisateur ne peuvent jamais contredire l'identité réelle du produit.`
+        : `E-COMMERCE PRODUCT SHOT — PRODUCT FIDELITY FIRST
 
-INSTRUCTIONS CRITIQUES:
-- ${typePrompt}
-- Le produit doit être identique à l'image source, même design, même couleur, même style
-- Fond blanc pur (#FFFFFF), éclairage studio professionnel
-- Image carrée HAUTE RÉSOLUTION 2048x2048 pixels minimum pour permettre le zoom e-commerce
-- Détails nets et précis, textures visibles même en zoom
-- Qualité professionnelle pour catalogue produit haut de gamme
-- Pas de texte, pas de watermark
-- Ultra haute résolution`
-        : `From this product image (${productTitle}, type: ${productType}), generate a professional ULTRA HIGH RESOLUTION e-commerce image for zoom capability.
-${enhancedContext}
+Product: ${productTitle}
+Type: ${productType || "product"}
+${context ? `${context}\n` : ""}
+${referenceRule}
 
-CRITICAL INSTRUCTIONS:
-- ${typePrompt}
-- The product must be identical to the source image, same design, same color, same style
-- Pure white background (#FFFFFF), professional studio lighting
-- HIGH RESOLUTION square image 2048x2048 pixels minimum for e-commerce zoom capability
-- Sharp details and visible textures even when zoomed
-- Professional quality for premium product catalog
-- No text, no watermark
-- Ultra high resolution`;
+REQUESTED OUTPUT:
+- ${shotInstruction}
+- Square 1:1 image, premium e-commerce quality, full product visible except for zoom shots
+- Realistic studio lighting, sharp details, natural proportions
+
+ABSOLUTE RULES:
+1. The product must stay IDENTICAL: same silhouette, relative dimensions, materials, colors, patterns, stitching, legs, handles and accessories.
+2. Use secondary views only to understand parts not visible in the primary reference.
+3. Do not redesign, simplify, or add any characteristic.
+4. No invented text, logos, watermark or distracting props.
+5. User instructions can never override the product's real identity.`;
 
       try {
-        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image-preview",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: prompt },
-                  { type: "image_url", image_url: { url: sourceImageUrl } }
-                ]
-              }
-            ],
-            modalities: ["image", "text"]
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ Error generating ${imageType}:`, response.status, errorText);
-          continue;
-        }
-
-        const data = await response.json();
-        const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
+        const imageUrl = await callImageModel(prompt);
         if (imageUrl) {
           generatedImages.push({
             url: imageUrl,
             type: imageType,
-            label: IMAGE_TYPE_LABELS[imageType]?.[lang] || imageType
+            label: IMAGE_TYPE_LABELS[imageType]?.[lang] || imageType,
           });
-          console.log(`✅ Generated ${imageType} image via Lovable AI`);
-        } else {
-          console.log(`⚠️ No image returned for ${imageType}`);
         }
       } catch (error) {
-        console.error(`❌ Error generating ${imageType}:`, error);
+        console.error(`Product Shot ${imageType} failed:`, error);
       }
 
-      // Small delay between requests to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 350));
     }
 
-    // Generate decor image using the ORIGINAL source image to preserve product fidelity
     if (includeDecor) {
-      console.log(`🏠 Generating decor image (${decorType}) from ORIGINAL source image to preserve product...`);
+      const decorInstruction = DECOR_PROMPTS[decorType]?.[lang] || DECOR_PROMPTS.living_room[lang];
+      const prompt = lang === "fr"
+        ? `ÉDITION PRODUCT SHOT LIFESTYLE — CONSERVER LE PRODUIT
 
-      const decorPrompt = DECOR_PROMPTS[decorType]?.[lang] || DECOR_PROMPTS[decorType]?.en;
-      
-      const prompt = lang === 'fr'
-        ? `ÉDITION D'IMAGE - NE PAS RÉGÉNÉRER LE PRODUIT
-${enhancedContext}
+Produit: ${productTitle}
+${context ? `${context}\n` : ""}
+${referenceRule}
 
-TÂCHE: Prends CE produit EXACT de l'image et place-le dans un décor réaliste.
+TÂCHE:
+Place le produit exact dans un ${decorInstruction}.
 
 RÈGLES ABSOLUES:
-1. COPIE le produit PIXEL PAR PIXEL - même forme, même couleur, même texture, même proportions
-2. NE MODIFIE RIEN du produit - pas de redesign, pas de changement de couleur, pas de simplification
-3. SUPPRIME uniquement le fond et REMPLACE par: ${decorPrompt}
-4. Le produit doit être la COPIE EXACTE de celui dans l'image source
+- Le produit reste strictement identique aux références: forme, couleurs, proportions, matières et détails.
+- Ne remplace pas le produit par un objet similaire et ne le redesign pas.
+- Détourage et intégration photoréalistes, ombres cohérentes, échelle crédible.
+- Format paysage 16:9, qualité publicitaire premium.
+- Aucun texte ou watermark.`
+        : `LIFESTYLE PRODUCT SHOT EDIT — PRESERVE THE PRODUCT
 
-TECHNIQUE:
-- Détourage précis du produit original
-- Placement naturel dans l'environnement
-- Ajout d'ombres cohérentes avec l'éclairage de la pièce
-- Le produit (${productTitle}) reste au centre de l'image
-- Format paysage 16:9, haute qualité
+Product: ${productTitle}
+${context ? `${context}\n` : ""}
+${referenceRule}
 
-INTERDIT:
-- Modifier le design du produit
-- Changer les couleurs
-- Simplifier ou styliser le produit
-- Générer un produit "similaire" - il doit être IDENTIQUE`
-        : `IMAGE EDITING - DO NOT REGENERATE THE PRODUCT
-${enhancedContext}
-
-TASK: Take THIS EXACT product from the image and place it in a realistic decor.
+TASK:
+Place the exact product in a ${decorInstruction}.
 
 ABSOLUTE RULES:
-1. COPY the product PIXEL BY PIXEL - same shape, same color, same texture, same proportions
-2. DO NOT MODIFY anything on the product - no redesign, no color change, no simplification
-3. ONLY REMOVE the background and REPLACE with: ${decorPrompt}
-4. The product must be the EXACT COPY of the one in the source image
-
-TECHNIQUE:
-- Precise cutout of the original product
-- Natural placement in the environment
-- Add shadows coherent with room lighting
-- The product (${productTitle}) stays in the center of the image
-- 16:9 landscape format, high quality
-
-FORBIDDEN:
-- Modifying product design
-- Changing colors
-- Simplifying or stylizing the product
-- Generating a "similar" product - it must be IDENTICAL`;
+- The product remains strictly identical to the references: shape, colors, proportions, materials and details.
+- Do not replace it with a similar object and do not redesign it.
+- Photorealistic cutout and integration, coherent shadows, believable scale.
+- 16:9 landscape format, premium advertising quality.
+- No text or watermark.`;
 
       try {
-        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image-preview",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: prompt },
-                  // Use ORIGINAL source image to preserve product fidelity
-                  { type: "image_url", image_url: { url: sourceImageUrl } }
-                ]
-              }
-            ],
-            modalities: ["image", "text"]
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-          if (imageUrl) {
-            generatedImages.push({
-              url: imageUrl,
-              type: 'decor',
-              label: IMAGE_TYPE_LABELS.decor[lang]
-            });
-            console.log(`✅ Generated decor image via Lovable AI (using original source)`);
-          }
-        } else {
-          console.error(`❌ Error generating decor:`, response.status, await response.text());
+        const imageUrl = await callImageModel(prompt);
+        if (imageUrl) {
+          generatedImages.push({
+            url: imageUrl,
+            type: "decor",
+            label: IMAGE_TYPE_LABELS.decor[lang],
+          });
         }
       } catch (error) {
-        console.error(`❌ Error generating decor image:`, error);
+        console.error("Product Shot decor failed:", error);
       }
     }
 
-    console.log(`📦 Total images generated: ${generatedImages.length}`);
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        images: generatedImages,
-        metadata: {
-          productId,
-          productTitle,
-          totalGenerated: generatedImages.length,
-          requestedTypes: imageTypes,
-          includeDecor,
-          decorType
-        }
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
+    return new Response(JSON.stringify({
+      success: generatedImages.length > 0,
+      images: generatedImages,
+      metadata: {
+        productId,
+        productTitle,
+        totalGenerated: generatedImages.length,
+        requestedTypes: imageTypes,
+        includeDecor,
+        decorType,
+        referenceImagesUsed: references.length,
+      },
+      ...(generatedImages.length === 0 ? { error: "No images generated" } : {}),
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error("❌ Generate AI product images error:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : String(error)
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("Generate AI product images error:", error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
