@@ -14,7 +14,6 @@ import {
   Megaphone,
   Newspaper,
   Package,
-  PanelsTopLeft,
   Settings,
   ShoppingCart,
   Sparkles,
@@ -65,137 +64,140 @@ export function CatalogOptimizeSidebar() {
   const { language } = useTranslation();
   const fr = language === "fr";
 
-  const sections: NavSection[] = useMemo(() => [
-    {
-      label: fr ? "Catalogue" : "Catalog",
-      icon: Package,
-      items: [
-        { label: fr ? "Produits" : "Products", href: "/products", icon: Package },
-        { label: "Collections", href: "/collections", icon: Layers3 },
-        { label: fr ? "Données enrichies" : "Enriched Data", href: "/product-source", icon: Database },
-      ],
-    },
-    {
-      label: "Product Optimization",
-      icon: Wand2,
-      items: [
-        {
-          label: "Landing Pages",
-          href: "/content?tool=landing",
-          icon: PanelsTopLeft,
-          aliases: ["/products/title-description?view=landing"],
-        },
-        {
-          label: "Product Shot AI",
-          href: "/content?tool=shots",
-          icon: Camera,
-          badge: "AI",
-          aliases: ["/studio?mode=shots"],
-        },
-        {
-          label: fr ? "Catalogue" : "Catalog",
-          href: "/content?tool=catalog",
-          icon: Database,
-          aliases: ["/products/title-description?view=content", "/products/title-description"],
-        },
-        {
-          label: "Background",
-          href: "/content?tool=background",
-          icon: Wand2,
-          aliases: ["/studio?mode=backgrounds"],
-        },
-      ],
-    },
-    {
-      label: "SEO",
-      icon: Sparkles,
-      items: [
-        {
-          label: fr ? "SEO Workspace" : "SEO Workspace",
-          href: "/seo?tab=collections",
-          icon: Sparkles,
-          aliases: [
-            "/seo?tab=pages",
-            "/seo?tab=articles",
-            "/seo?tab=tags",
-            "/seo?tab=alt",
-            "/seo?tab=homepage",
-          ],
-        },
-        {
-          label: "Blog",
-          href: "/blog/management",
-          icon: Newspaper,
-          aliases: ["/blog-monitoring", "/blog/management?new=1"],
-        },
-      ],
-    },
-    {
-      label: "GEO & AI Search",
-      icon: Bot,
-      items: [
-        {
-          label: fr ? "Plan 30 jours" : "30-day plan",
-          href: "/aeo?tab=planning",
-          icon: Activity,
-        },
-        {
-          label: fr ? "Publications" : "Publications",
-          href: "/aeo?tab=history",
-          icon: FileText,
-        },
-      ],
-    },
-    {
-      label: fr ? "Vente & canaux" : "Sales & Channels",
-      icon: Store,
-      items: [
-        {
-          label: fr ? "Assistant vendeur IA" : "AI Sales Assistant",
-          href: "/storefront-assistant",
-          icon: Bot,
-          badge: "AI",
-        },
-        {
-          label: "Google Shopping",
-          href: "/shopping",
-          icon: ShoppingCart,
-        },
-        {
-          label: "Merchant Center",
-          href: "/merchant?tab=feed",
-          icon: Store,
-        },
-        {
-          label: "Ads Assets",
-          href: "/studio?mode=creative",
-          icon: Megaphone,
-          aliases: ["/ai-creative-studio"],
-        },
-      ],
-    },
-    {
-      label: fr ? "Paramètres" : "Settings",
-      icon: Settings,
-      items: [
-        {
-          label: fr ? "Boutiques & intégrations" : "Stores & Integrations",
-          href: "/account?tab=integrations",
-          icon: Store,
-        },
-        {
-          label: fr ? "Compte & utilisation" : "Account & Usage",
-          href: "/account?tab=profile",
-          icon: User,
-        },
-        {
-          label: fr ? "Abonnement" : "Subscription",
-          href: "/subscription",
-          icon: CreditCard,
-        },
-      ],
-    },
-  ], [fr]);
+  const productOptimization: NavItem = {
+    label: "Product Optimization",
+    href: "/content?tool=catalog",
+    icon: Wand2,
+    aliases: [
+      "/content?tool=landing",
+      "/products/title-description",
+      "/products/title-description?view=content",
+      "/products/title-description?view=landing",
+    ],
+  };
+
+  const sections: NavSection[] = useMemo(
+    () => [
+      {
+        label: fr ? "Catalogue" : "Catalog",
+        icon: Package,
+        items: [
+          { label: fr ? "Produits" : "Products", href: "/products", icon: Package },
+          { label: "Collections", href: "/collections", icon: Layers3 },
+          { label: fr ? "Données enrichies" : "Enriched Data", href: "/product-source", icon: Database },
+        ],
+      },
+      {
+        label: "Studio",
+        icon: Sparkles,
+        items: [
+          {
+            label: "Background",
+            href: "/studio?mode=backgrounds",
+            icon: Wand2,
+            aliases: ["/content?tool=background"],
+          },
+          {
+            label: "Product Shot",
+            href: "/studio?mode=shots",
+            icon: Camera,
+            badge: "AI",
+            aliases: ["/content?tool=shots"],
+          },
+          {
+            label: "Ads creatives",
+            href: "/studio?mode=creative",
+            icon: Megaphone,
+            aliases: ["/ai-creative-studio"],
+          },
+        ],
+      },
+      {
+        label: "SEO",
+        icon: Sparkles,
+        items: [
+          {
+            label: "SEO Workspace",
+            href: "/seo?tab=collections",
+            icon: Sparkles,
+            aliases: [
+              "/seo?tab=pages",
+              "/seo?tab=articles",
+              "/seo?tab=tags",
+              "/seo?tab=alt",
+              "/seo?tab=homepage",
+            ],
+          },
+          {
+            label: "Blog",
+            href: "/blog/management",
+            icon: Newspaper,
+            aliases: ["/blog-monitoring", "/blog/management?new=1"],
+          },
+        ],
+      },
+      {
+        label: "GEO & AI Search",
+        icon: Bot,
+        items: [
+          {
+            label: fr ? "Plan 30 jours" : "30-day plan",
+            href: "/aeo?tab=planning",
+            icon: Activity,
+          },
+          {
+            label: "Publications",
+            href: "/aeo?tab=history",
+            icon: FileText,
+          },
+        ],
+      },
+      {
+        label: fr ? "Vente & canaux" : "Sales & Channels",
+        icon: Store,
+        items: [
+          {
+            label: fr ? "Assistant vendeur IA" : "AI Sales Assistant",
+            href: "/storefront-assistant",
+            icon: Bot,
+            badge: "AI",
+          },
+          {
+            label: "Google Shopping",
+            href: "/shopping",
+            icon: ShoppingCart,
+          },
+          {
+            label: "Merchant Center",
+            href: "/merchant?tab=feed",
+            icon: Store,
+          },
+        ],
+      },
+      {
+        label: fr ? "Paramètres" : "Settings",
+        icon: Settings,
+        items: [
+          {
+            label: fr ? "Boutiques & intégrations" : "Stores & Integrations",
+            href: "/account?tab=integrations",
+            icon: Store,
+          },
+          {
+            label: fr ? "Compte & utilisation" : "Account & Usage",
+            href: "/account?tab=profile",
+            icon: User,
+          },
+          {
+            label: fr ? "Abonnement" : "Subscription",
+            href: "/subscription",
+            icon: CreditCard,
+          },
+        ],
+      },
+    ],
+    [fr],
+  );
 
   const closeMobile = () => {
     if (isMobile && openMobile) toggleSidebar();
@@ -249,6 +251,15 @@ export function CatalogOptimizeSidebar() {
                   <NavLink to="/dashboard" onClick={closeMobile}>
                     <LayoutDashboard className="h-4 w-4" />
                     <span>{fr ? "Tableau de bord" : "Dashboard"}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={active(productOptimization)}>
+                  <NavLink to={productOptimization.href} onClick={closeMobile}>
+                    <Wand2 className="h-4 w-4" />
+                    <span>Product Optimization</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
