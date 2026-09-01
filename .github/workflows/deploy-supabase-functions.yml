@@ -47,5 +47,8 @@ jobs:
       - name: Deploy export-creative-image
         run: supabase functions deploy export-creative-image --project-ref "$PROJECT_REF"
 
+      - name: Deploy generate-ai-product-images
+        run: supabase functions deploy generate-ai-product-images --project-ref "$PROJECT_REF"
+
       - name: Deployment summary
-        run: echo "SEO, Shopify collections and creative image functions deployed to Supabase project $PROJECT_REF"
+        run: echo "SEO, Shopify collections, creative image and Product Shot AI functions deployed to Supabase project $PROJECT_REF"
