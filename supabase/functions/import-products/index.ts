@@ -46,8 +46,24 @@ interface ShopifyProduct {
   metafields_global_description_tag?: string;
 }
 
+/**
+ * Normalize a stored Shopify store_url into a bare "<shop>.myshopify.com" domain.
+ * Safe against protocols, paths and trailing slashes.
+ */
+function normalizeShopDomain(storeUrl: string | null | undefined): string | null {
+  if (!storeUrl) return null;
+  const cleaned = storeUrl
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .split('/')[0]
+    .replace(/\/+$/, '')
+    .toLowerCase();
+  if (!cleaned) return null;
+  return cleaned.endsWith('.myshopify.com') ? cleaned : `${cleaned}.myshopify.com`;
+}
+
 interface RequestBody {
-  shopName: string;
+  shopName?: string;
   apiKey?: string;
   apiSecret?: string;
   storeId?: string;
@@ -232,8 +248,8 @@ Deno.serve(async (req: Request) => {
     // 📥 Log detailed request information
     console.log('📥 Request body received:', {
       shopName: body.shopName ? `✅ Present (${body.shopName})` : '❌ Missing',
-      apiKey: body.apiKey ? `✅ Present (length: ${body.apiKey.length})` : '⚠️  Not provided (OAuth)',
-      apiSecret: body.apiSecret ? `✅ Present (length: ${body.apiSecret.length}, starts with: ${body.apiSecret.substring(0, 10)}...)` : '❌ Missing or empty',
+      apiKey: body.apiKey ? '✅ Present' : '⚠️  Not provided (OAuth)',
+      apiSecret: body.apiSecret ? '✅ Present' : '❌ Missing or empty',
       storeId: body.storeId ? `✅ Present (${body.storeId})` : '⚠️  Not provided',
       allKeys: Object.keys(body)
     });
@@ -271,32 +287,33 @@ Deno.serve(async (req: Request) => {
     console.log('🔄 Sync mode:', syncMode);
     
     // Determine authentication method and get access token
-    const isManualAuth = !!apiKey;
-    let authToken = apiSecret || '';
-    
-    // If using OAuth (storeId provided), fetch access token from database
-    if (storeId && !authToken) {
+    const isManualAuth = !!apiKey && !storeId;
+    let authToken = storeId ? '' : (apiSecret || '');
+    let oauthShopDomain: string | null = null;
+    const isOAuthMode = !!storeId;
+
+    // OAuth mode: the server-side connection row is ALWAYS authoritative
+    if (storeId) {
       console.log('🔍 Fetching access token from database for storeId:', storeId);
-      
+
       const supabaseServiceClient = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
       );
-      
+
       const { data: connection, error: connectionError } = await supabaseServiceClient
         .from('shopify_connections')
         .select('access_token, store_url, user_id')
         .eq('id', storeId)
         .single();
-      
+
       console.log('📊 Connection query result:', {
         found: !!connection,
         error: connectionError?.message,
-        userId: connection?.user_id,
-        expectedUserId: user.id,
+        matchesUser: connection?.user_id === user.id,
         hasToken: !!connection?.access_token
       });
-      
+
       if (connectionError) {
         console.error('❌ Database error fetching connection:', connectionError);
         return new Response(
@@ -307,7 +324,7 @@ Deno.serve(async (req: Request) => {
           }
         );
       }
-      
+
       if (!connection) {
         console.error('❌ No connection found with storeId:', storeId);
         return new Response(
@@ -318,7 +335,7 @@ Deno.serve(async (req: Request) => {
           }
         );
       }
-      
+
       if (connection.user_id !== user.id) {
         console.error('❌ Store does not belong to user');
         return new Response(
@@ -329,11 +346,26 @@ Deno.serve(async (req: Request) => {
           }
         );
       }
-      
+
+      if (!connection.access_token) {
+        return new Response(
+          JSON.stringify({
+            error: 'Shopify authorization expired. Please reconnect your Shopify store.',
+            code: 'SHOPIFY_REAUTH_REQUIRED'
+          }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      // Server token/domain always win over anything sent by the browser
       authToken = connection.access_token;
-      console.log('✅ Using OAuth access token from database (length:', authToken?.length, ')');
+      oauthShopDomain = normalizeShopDomain(connection.store_url);
+      console.log('✅ Using OAuth access token from database (authoritative)');
     }
-    
+
     if (!authToken) {
       console.error('No access token available');
       return new Response(
@@ -422,7 +454,14 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const cleanShopName = shopName.replace(".myshopify.com", "");
+    const cleanShopName = (oauthShopDomain || shopName || '').replace(".myshopify.com", "");
+
+    if (!cleanShopName) {
+      return new Response(
+        JSON.stringify({ error: 'Missing shop domain' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     const startTime = new Date().toISOString();
     
     // 🔥 FIX: Initial sync_history update to show progress has started
@@ -440,6 +479,7 @@ Deno.serve(async (req: Request) => {
 
     // Fetch shop details to get currency using GraphQL
     let shopCurrency = 'USD';
+    let shopAuthRejected = false;
     try {
       const shopQuery = `
         query {
@@ -461,13 +501,29 @@ Deno.serve(async (req: Request) => {
         }
       );
 
-      if (shopResponse.ok) {
+      if (shopResponse.status === 401) {
+        shopAuthRejected = true;
+      } else if (shopResponse.ok) {
         const shopData: any = await shopResponse.json();
         shopCurrency = shopData.data?.shop?.currencyCode || 'USD';
         console.log(`Shop currency detected: ${shopCurrency}`);
       }
     } catch (error) {
       console.log('Could not fetch shop currency, using USD as default');
+    }
+
+    // The authoritative Shopify token was rejected → user must reconnect
+    if (shopAuthRejected) {
+      console.error('❌ Shopify rejected the stored access token (401)');
+      return new Response(
+        JSON.stringify({
+          error: isOAuthMode
+            ? 'Shopify authorization expired. Please reconnect your Shopify store.'
+            : 'Shopify rejected the provided credentials. Please check your API token.',
+          code: 'SHOPIFY_REAUTH_REQUIRED'
+        }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Update store currency if storeId is provided

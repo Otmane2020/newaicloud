@@ -14,14 +14,22 @@ interface ValidationResult<T> {
 
 // Simple validation for import-products
 export function validateImportProducts(data: any): ValidationResult<{
-  shopName: string;
+  shopName?: string;
   apiKey?: string;
   apiSecret?: string;
   storeId?: string;
 }> {
   const errors: ValidationError[] = [];
 
-  if (!data.shopName || typeof data.shopName !== 'string') {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isOAuth = typeof data.storeId === 'string' && uuidRegex.test(data.storeId);
+
+  // In OAuth mode the shop domain comes from the server-side connection row.
+  if (data.shopName === undefined || data.shopName === null || data.shopName === '') {
+    if (!isOAuth) {
+      errors.push({ path: ['shopName'], message: 'Shop name is required' });
+    }
+  } else if (typeof data.shopName !== 'string') {
     errors.push({ path: ['shopName'], message: 'Shop name is required' });
   } else {
     const trimmed = data.shopName.trim();
@@ -29,22 +37,20 @@ export function validateImportProducts(data: any): ValidationResult<{
       errors.push({ path: ['shopName'], message: 'Shop name must be at least 3 characters' });
     } else if (trimmed.length > 100) {
       errors.push({ path: ['shopName'], message: 'Shop name must be less than 100 characters' });
-    } else if (!/^[a-zA-Z0-9-_]+$/.test(trimmed)) {
-      errors.push({ path: ['shopName'], message: 'Shop name can only contain letters, numbers, hyphens, and underscores' });
+    } else if (!/^[a-zA-Z0-9-_.]+$/.test(trimmed)) {
+      errors.push({ path: ['shopName'], message: 'Shop name can only contain letters, numbers, hyphens, underscores, and dots' });
     }
   }
 
-  // Check for either apiKey+apiSecret (manual) or storeId (OAuth)
   const hasApiKey = data.apiKey && typeof data.apiKey === 'string' && data.apiKey.trim().length > 0;
   const hasApiSecret = data.apiSecret && typeof data.apiSecret === 'string' && data.apiSecret.trim().length > 0;
   const hasStoreId = data.storeId && typeof data.storeId === 'string';
 
-  // For manual auth, require apiSecret. For OAuth, storeId is enough (token will be fetched from DB)
   if (!hasApiSecret && !hasStoreId) {
     errors.push({ path: ['apiSecret'], message: 'API Secret or Store ID is required' });
   }
-  
-  if (hasApiSecret) {
+
+  if (hasApiSecret && !isOAuth) {
     const trimmed = data.apiSecret.trim();
     if (trimmed.length < 20) {
       errors.push({ path: ['apiSecret'], message: 'API Secret appears to be invalid' });
@@ -53,8 +59,7 @@ export function validateImportProducts(data: any): ValidationResult<{
     }
   }
 
-  // Validate apiKey if present
-  if (hasApiKey) {
+  if (hasApiKey && !isOAuth) {
     const trimmed = data.apiKey.trim();
     if (trimmed.length < 20) {
       errors.push({ path: ['apiKey'], message: 'API Key appears to be invalid' });
@@ -66,12 +71,8 @@ export function validateImportProducts(data: any): ValidationResult<{
   if (data.storeId !== undefined && data.storeId !== null) {
     if (typeof data.storeId !== 'string') {
       errors.push({ path: ['storeId'], message: 'Store ID must be a string' });
-    } else {
-      // Simple UUID validation
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(data.storeId)) {
-        errors.push({ path: ['storeId'], message: 'Store ID must be a valid UUID' });
-      }
+    } else if (!uuidRegex.test(data.storeId)) {
+      errors.push({ path: ['storeId'], message: 'Store ID must be a valid UUID' });
     }
   }
 
@@ -82,7 +83,7 @@ export function validateImportProducts(data: any): ValidationResult<{
   return {
     success: true,
     data: {
-      shopName: data.shopName.trim(),
+      shopName: typeof data.shopName === 'string' && data.shopName.trim() ? data.shopName.trim() : undefined,
       apiKey: hasApiKey ? data.apiKey.trim() : undefined,
       apiSecret: hasApiSecret ? data.apiSecret.trim() : undefined,
       storeId: data.storeId
