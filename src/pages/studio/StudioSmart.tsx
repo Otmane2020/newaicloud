@@ -174,6 +174,15 @@ export default function StudioSmart() {
     clearSelection();
   };
 
+  const openProductImagePicker = (productId: string) => {
+    // Radix Dialog is more reliable when the product list is fully unmounted
+    // before the gallery view is mounted. This prevents the blank/empty state
+    // that could occur when swapping both views inside the same open dialog.
+    setShowSelection(false);
+    setPickerProductId(productId);
+    window.requestAnimationFrame(() => setShowSelection(true));
+  };
+
   const selectProductSource = (productId: string, imageUrl: string) => {
     setSelectedIds((current) => {
       const next = new Set(current);
@@ -185,7 +194,11 @@ export default function StudioSmart() {
       next.set(productId, imageUrl);
       return next;
     });
+    // Image source is confirmed: return to Studio instead of silently
+    // switching back to the product list inside the same modal.
+    setShowSelection(false);
     setPickerProductId(null);
+    setSearch("");
   };
 
   const removeProductSelection = (productId: string) => {
@@ -273,10 +286,7 @@ export default function StudioSmart() {
                     <button
                       key={product.id}
                       type="button"
-                      onClick={() => {
-                        setPickerProductId(product.id);
-                        setShowSelection(true);
-                      }}
+                      onClick={() => openProductImagePicker(product.id)}
                       className="group overflow-hidden rounded-2xl border border-violet-200 bg-white text-left shadow-sm transition hover:border-violet-300 hover:shadow-md"
                     >
                       <div className="relative aspect-[4/3] overflow-hidden bg-slate-50">
@@ -347,7 +357,10 @@ export default function StudioSmart() {
         </div>
 
         <Dialog open={showSelection} onOpenChange={handleSelectionOpenChange}>
-          <DialogContent className="max-h-[88vh] max-w-5xl overflow-hidden p-0">
+          <DialogContent
+            key={pickerProduct ? `gallery-${pickerProduct.id}` : "product-list"}
+            className="max-h-[88vh] max-w-5xl overflow-hidden p-0"
+          >
             {pickerProduct ? (
               <>
                 <DialogHeader className="border-b border-slate-100 px-6 py-5 text-left">
@@ -458,7 +471,7 @@ export default function StudioSmart() {
                             key={product.id}
                             type="button"
                             disabled={sourceImages.length === 0}
-                            onClick={() => setPickerProductId(product.id)}
+                            onClick={() => openProductImagePicker(product.id)}
                             className={`group overflow-hidden rounded-2xl border text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${selected ? "border-violet-400 bg-violet-50/30 ring-2 ring-violet-100" : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"}`}
                           >
                             <div className="relative aspect-[4/3] overflow-hidden bg-slate-50">
