@@ -1,0 +1,285 @@
+export type ImageRouteResult = {
+  imageUrl: string;
+  provider: string;
+  model: string;
+};
+
+export type ImageRouteOptions = {
+  prompt: string;
+  imageUrls?: string[];
+  aspectRatio?: string;
+  size?: string;
+};
+
+const STRICT_AI_PLACEHOLDER = "__STRICT_AI_ROUTER_PLACEHOLDER__";
+
+function envSecret(...names: string[]): string | undefined {
+  for (const name of names) {
+    const value = Deno.env.get(name);
+    if (value && value !== STRICT_AI_PLACEHOLDER) return value;
+  }
+  return undefined;
+}
+
+async function providerFetch(input: any, init?: RequestInit): Promise<Response> {
+  const nativeFetch = (globalThis as any).__STRICT_AI_NATIVE_FETCH__ as typeof fetch | undefined;
+  return nativeFetch ? nativeFetch(input, init) : fetch(input, init);
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+async function fetchImage(url: string): Promise<{ bytes: Uint8Array; mimeType: string }> {
+  const dataMatch = url.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/s);
+  if (dataMatch) {
+    const binary = atob(dataMatch[2]);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return { bytes, mimeType: dataMatch[1] };
+  }
+
+  const response = await providerFetch(url);
+  if (!response.ok) throw new Error(`Source image fetch failed: ${response.status}`);
+  const mimeType = response.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+  if (!mimeType.startsWith("image/")) throw new Error("Source image is not an image");
+  return { bytes: new Uint8Array(await response.arrayBuffer()), mimeType };
+}
+
+function aspectToOpenAISize(aspectRatio?: string, explicitSize?: string): string {
+  if (explicitSize && ["1024x1024", "1024x1536", "1536x1024"].includes(explicitSize)) return explicitSize;
+  if (aspectRatio === "3:4" || aspectRatio === "9:16" || aspectRatio === "portrait") return "1024x1536";
+  if (aspectRatio === "4:3" || aspectRatio === "16:9" || aspectRatio === "landscape") return "1536x1024";
+  return "1024x1024";
+}
+
+async function tryCloudflare(options: ImageRouteOptions): Promise<ImageRouteResult | null> {
+  const accountId = envSecret("CLOUDFLARE_ACCOUNT_ID");
+  const apiToken = envSecret("CLOUDFLARE_AI_API_TOKEN");
+  const sourceUrl = options.imageUrls?.[0];
+  if (!accountId || !apiToken || !sourceUrl) return null;
+
+  try {
+    const source = await fetchImage(sourceUrl);
+    const model = Deno.env.get("CLOUDFLARE_IMAGE_MODEL") || "@cf/stabilityai/stable-diffusion-xl-base-1.0";
+    const response = await providerFetch(
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: options.prompt,
+          negative_prompt: "different product, altered product, wrong shape, wrong color, text, watermark, low quality",
+          image_b64: bytesToBase64(source.bytes),
+          strength: 0.3,
+          guidance: 9,
+          num_steps: 24,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      console.warn(`[image-router] Cloudflare ${model} failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
+      return null;
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+      const image = data?.result?.image || data?.image;
+      if (!image) return null;
+      return { imageUrl: `data:image/png;base64,${image}`, provider: "cloudflare", model };
+    }
+
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return { imageUrl: `data:image/png;base64,${bytesToBase64(bytes)}`, provider: "cloudflare", model };
+  } catch (error) {
+    console.warn("[image-router] Cloudflare failed", error);
+    return null;
+  }
+}
+
+async function tryGemini(options: ImageRouteOptions): Promise<ImageRouteResult | null> {
+  const apiKey = envSecret("GOOGLE_GEMINI_API_KEY", "GEMINI_API_KEY");
+  if (!apiKey) return null;
+
+  const models = Array.from(new Set([
+    Deno.env.get("GEMINI_IMAGE_MODEL"),
+    "gemini-2.5-flash-image-preview",
+    "gemini-2.0-flash-exp-image-generation",
+  ].filter(Boolean))) as string[];
+
+  const parts: any[] = [{ text: options.prompt }];
+  for (const url of (options.imageUrls || []).slice(0, 4)) {
+    try {
+      const image = await fetchImage(url);
+      parts.push({ inlineData: { mimeType: image.mimeType, data: bytesToBase64(image.bytes) } });
+    } catch (error) {
+      console.warn("[image-router] Gemini source image skipped", error);
+    }
+  }
+
+  for (const model of models) {
+    try {
+      const response = await providerFetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts }],
+            generationConfig: {
+              responseModalities: ["IMAGE", "TEXT"],
+            },
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        console.warn(`[image-router] Gemini ${model} failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
+        continue;
+      }
+
+      const data = await response.json();
+      const outputParts = data?.candidates?.[0]?.content?.parts || [];
+      const imagePart = outputParts.find((part: any) => part?.inlineData?.data || part?.inline_data?.data);
+      const inline = imagePart?.inlineData || imagePart?.inline_data;
+      if (!inline?.data) continue;
+      return {
+        imageUrl: `data:${inline.mimeType || inline.mime_type || "image/png"};base64,${inline.data}`,
+        provider: "gemini",
+        model,
+      };
+    } catch (error) {
+      console.warn(`[image-router] Gemini ${model} failed`, error);
+    }
+  }
+  return null;
+}
+
+async function tryOpenAI(options: ImageRouteOptions): Promise<ImageRouteResult | null> {
+  const apiKey = envSecret("OPENAI_API_KEY");
+  if (!apiKey) return null;
+
+  const model = Deno.env.get("OPENAI_IMAGE_MODEL") || "gpt-image-1";
+  const size = aspectToOpenAISize(options.aspectRatio, options.size);
+
+  try {
+    let response: Response;
+    const sourceUrl = options.imageUrls?.[0];
+
+    if (sourceUrl) {
+      const source = await fetchImage(sourceUrl);
+      const form = new FormData();
+      const ext = source.mimeType.includes("png") ? "png" : source.mimeType.includes("webp") ? "webp" : "jpg";
+      form.append("model", model);
+      form.append("image", new File([source.bytes], `source.${ext}`, { type: source.mimeType }));
+      form.append("prompt", options.prompt.slice(0, 16000));
+      form.append("size", size);
+      form.append("quality", "high");
+      form.append("n", "1");
+      response = await providerFetch("https://api.openai.com/v1/images/edits", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: form,
+      });
+    } else {
+      response = await providerFetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          prompt: options.prompt.slice(0, 16000),
+          size,
+          quality: "high",
+          n: 1,
+        }),
+      });
+    }
+
+    if (!response.ok) {
+      console.warn(`[image-router] OpenAI ${model} failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const first = data?.data?.[0];
+    const imageUrl = first?.b64_json ? `data:image/png;base64,${first.b64_json}` : first?.url;
+    return imageUrl ? { imageUrl, provider: "openai", model } : null;
+  } catch (error) {
+    console.warn(`[image-router] OpenAI ${model} failed`, error);
+    return null;
+  }
+}
+
+async function tryLovable(options: ImageRouteOptions): Promise<ImageRouteResult | null> {
+  const apiKey = envSecret("LOVABLE_API_KEY");
+  if (!apiKey) return null;
+
+  const model = Deno.env.get("LOVABLE_IMAGE_MODEL") || "google/gemini-2.5-flash-image-preview";
+  try {
+    const content: any[] = [{ type: "text", text: options.prompt }];
+    for (const url of (options.imageUrls || []).slice(0, 4)) {
+      content.push({ type: "image_url", image_url: { url } });
+    }
+    const response = await providerFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content }],
+        modalities: ["image", "text"],
+        generationConfig: options.aspectRatio ? { aspectRatio: options.aspectRatio } : undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`[image-router] Lovable ${model} failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
+      return null;
+    }
+    const data = await response.json();
+    const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    return imageUrl ? { imageUrl, provider: "lovable", model } : null;
+  } catch (error) {
+    console.warn(`[image-router] Lovable ${model} failed`, error);
+    return null;
+  }
+}
+
+/**
+ * Resilient image generation / editing route.
+ * A provider failure never stops the chain.
+ */
+export async function routeImage(options: ImageRouteOptions): Promise<ImageRouteResult> {
+  const attempts = [
+    () => tryCloudflare(options),
+    () => tryGemini(options),
+    () => tryOpenAI(options),
+    () => tryLovable(options),
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const result = await attempt();
+      if (result?.imageUrl) return result;
+    } catch (error) {
+      console.warn("[image-router] provider attempt failed", error);
+    }
+  }
+
+  throw new Error("No configured image provider succeeded. Check Cloudflare/Gemini/OpenAI/Lovable image credentials and models.");
+}
