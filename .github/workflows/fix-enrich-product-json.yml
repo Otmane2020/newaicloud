@@ -1,0 +1,48 @@
+name: Fix enrich-product JSON fallback
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-enrich-product-json.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Patch enrich-product fail-soft JSON handling
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('supabase/functions/enrich-product/index.ts')
+          source = path.read_text()
+          old = """    const parsedData = parseAIResponse(routedAI.content);\n\n    if (!parsedData) {\n      throw new Error('Failed to parse AI response');\n    }\n\n    console.log('📝 Parsed attributes:', parsedData);\n"""
+          new = """    const parsedData = parseAIResponse(routedAI.content) ?? {};\n\n    if (Object.keys(parsedData).length === 0) {\n      console.warn('⚠️ AI response was empty or invalid JSON; continuing with safe fallbacks', {\n        provider: routedAI.provider,\n        model: routedAI.model,\n      });\n    }\n\n    console.log('📝 Parsed attributes:', parsedData);\n"""
+
+          if old not in source:
+              raise SystemExit('Expected enrich-product parsing block not found; refusing broad edit')
+
+          path.write_text(source.replace(old, new, 1))
+          PY
+
+          git diff --check
+          git diff --exit-code --quiet && { echo 'No change produced'; exit 1; } || true
+
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/functions/enrich-product/index.ts
+          git commit -m "Fix enrich-product invalid AI JSON fallback"
+          git push origin HEAD:main
