@@ -3,9 +3,11 @@ export type AIMessage = {
   content: string | Array<Record<string, unknown>>;
 };
 
+type AIProvider = "openai" | "openrouter-free" | "gemini" | "kimi" | "deepseek";
+
 export type AIRouteResult = {
   content: string;
-  provider: "openai" | "openrouter-free" | "gemini" | "kimi" | "deepseek";
+  provider: AIProvider;
   model: string;
 };
 
@@ -37,14 +39,71 @@ function toGeminiParts(content: AIMessage["content"]): any[] {
   });
 }
 
+function requestExpectsJson(options: RouteOptions): boolean {
+  const text = options.messages
+    .map((message) => typeof message.content === "string" ? message.content : JSON.stringify(message.content))
+    .join("\n")
+    .toLowerCase();
+
+  return (
+    text.includes("valid json") ||
+    text.includes("only in json") ||
+    text.includes("only json") ||
+    text.includes("json object") ||
+    text.includes("format json")
+  );
+}
+
+function canParseJsonResponse(content: string): boolean {
+  if (!content || !content.trim()) return false;
+
+  const trimmed = content.trim();
+  const candidates: string[] = [trimmed];
+
+  const jsonFence = trimmed.match(/```json\s*([\s\S]*?)\s*```/i);
+  if (jsonFence?.[1]) candidates.push(jsonFence[1].trim());
+
+  const genericFence = trimmed.match(/```\s*([\s\S]*?)\s*```/);
+  if (genericFence?.[1]) candidates.push(genericFence[1].trim());
+
+  const objectStart = trimmed.indexOf("{");
+  const objectEnd = trimmed.lastIndexOf("}");
+  if (objectStart >= 0 && objectEnd > objectStart) {
+    candidates.push(trimmed.slice(objectStart, objectEnd + 1));
+  }
+
+  const cleaned = trimmed
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
+    .trim();
+  if (cleaned !== trimmed) candidates.push(cleaned);
+
+  for (const candidate of candidates) {
+    try {
+      JSON.parse(candidate);
+      return true;
+    } catch {
+      // Try the next representation.
+    }
+  }
+
+  return false;
+}
+
 async function tryOpenAI(options: RouteOptions): Promise<AIRouteResult | null> {
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey || options.vision) return null;
   const model = Deno.env.get("OPENAI_TEXT_MODEL") || "gpt-4o-mini";
+  const expectsJson = requestExpectsJson(options);
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages: options.messages, max_tokens: options.maxTokens || 4096, temperature: options.temperature ?? 0.3 }),
+    body: JSON.stringify({
+      model,
+      messages: options.messages,
+      max_tokens: options.maxTokens || 4096,
+      temperature: options.temperature ?? 0.3,
+      ...(expectsJson ? { response_format: { type: "json_object" } } : {}),
+    }),
   });
   if (!response.ok) {
     console.warn(`[ai-router] OpenAI ${model} failed: ${response.status}`);
@@ -140,6 +199,7 @@ async function tryGemini(options: RouteOptions): Promise<AIRouteResult | null> {
   const contents = options.messages
     .filter((m) => m.role !== "system")
     .map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: toGeminiParts(m.content) }));
+  const expectsJson = requestExpectsJson(options);
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -149,7 +209,11 @@ async function tryGemini(options: RouteOptions): Promise<AIRouteResult | null> {
       body: JSON.stringify({
         ...(system ? { system_instruction: { parts: [{ text: system }] } } : {}),
         contents,
-        generationConfig: { maxOutputTokens: options.maxTokens || 4096, temperature: options.temperature ?? 0.3 },
+        generationConfig: {
+          maxOutputTokens: options.maxTokens || 4096,
+          temperature: options.temperature ?? 0.3,
+          ...(expectsJson ? { responseMimeType: "application/json" } : {}),
+        },
       }),
     },
   );
@@ -216,7 +280,12 @@ async function tryDeepSeek(options: RouteOptions): Promise<AIRouteResult | null>
   return content ? { content, provider: "deepseek", model } : null;
 }
 
-/** Text remains cost-first. Vision is direct Kimi-only by design. */
+/**
+ * Text routing prioritizes OpenAI for reliability, then Gemini, Kimi and DeepSeek.
+ * OpenRouter free is kept as a last-resort fallback. For JSON requests, a provider
+ * response is accepted only if it can actually be parsed as JSON.
+ * Vision remains direct Kimi-only by design.
+ */
 export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
   if (options.vision) {
     const result = await tryKimiVision(options);
@@ -224,24 +293,36 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
     throw new Error("Kimi direct vision is unavailable. Configure MOONSHOT_API_KEY or KIMI_API_KEY for the official Moonshot API.");
   }
 
-  const attempts = [
-    () => tryOpenRouter(options),
-    () => tryGemini(options),
-    () => tryKimi(options),
-    () => tryDeepSeek(options),
-    () => tryOpenAI(options),
+  const expectsJson = requestExpectsJson(options);
+  const attempts: Array<{ provider: AIProvider; run: () => Promise<AIRouteResult | null> }> = [
+    { provider: "openai", run: () => tryOpenAI(options) },
+    { provider: "gemini", run: () => tryGemini(options) },
+    { provider: "kimi", run: () => tryKimi(options) },
+    { provider: "deepseek", run: () => tryDeepSeek(options) },
+    { provider: "openrouter-free", run: () => tryOpenRouter(options) },
   ];
 
   for (const attempt of attempts) {
     try {
-      const result = await attempt();
-      if (result) return result;
+      const result = await attempt.run();
+      if (!result) continue;
+
+      if (expectsJson && !canParseJsonResponse(result.content)) {
+        console.warn(`[ai-router] ${result.provider} (${result.model}) returned invalid JSON; trying next provider`);
+        continue;
+      }
+
+      return result;
     } catch (error) {
-      console.warn("[ai-router] provider failed", error);
+      console.warn(`[ai-router] ${attempt.provider} failed`, error);
     }
   }
 
-  throw new Error("No AI provider is available. Configure OPENROUTER_API_KEY, GOOGLE_GEMINI_API_KEY, KIMI_API_KEY/MOONSHOT_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY.");
+  throw new Error(
+    expectsJson
+      ? "No AI provider returned valid JSON. Check provider API keys/models and Edge Function logs."
+      : "No AI provider is available. Configure OPENAI_API_KEY, GOOGLE_GEMINI_API_KEY, KIMI_API_KEY/MOONSHOT_API_KEY, DEEPSEEK_API_KEY, or OPENROUTER_API_KEY.",
+  );
 }
 
 export async function routeVision(messages: AIMessage[], maxTokens = 600): Promise<AIRouteResult> {
