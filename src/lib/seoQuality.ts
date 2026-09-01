@@ -282,19 +282,32 @@ export function calculateTagsScore(tags: string | null | undefined): number {
   let tagArray: string[] = [];
   try {
     const parsed = JSON.parse(tags);
-    if (Array.isArray(parsed)) tagArray = parsed.map(String).map(t => t.trim()).filter(Boolean);
+    if (Array.isArray(parsed)) {
+      tagArray = parsed.map(String).map(t => t.trim()).filter(Boolean);
+    } else if (parsed && typeof parsed === 'object' && Array.isArray((parsed as any).tags)) {
+      tagArray = (parsed as any).tags.map(String).map((t: string) => t.trim()).filter(Boolean);
+    } else if (parsed && typeof parsed === 'object' && typeof (parsed as any).tags === 'string') {
+      tagArray = (parsed as any).tags.split(',').map((t: string) => t.trim()).filter(Boolean);
+    }
   } catch {
-    tagArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+    tagArray = tags.split(/[,;\n|]+/).map(t => t.trim()).filter(Boolean);
   }
 
   if (!tagArray.length) return 0;
-  let score = 5; // presence
 
-  if (tagArray.length >= 3 && tagArray.length <= 10) score += 10;
-  else score += 5;
+  const uniqueTags = [...new Set(tagArray.map(t => t.toLowerCase()))];
+  const count = uniqueTags.length;
+  let score = 2; // Presence alone is not enough to mark a product optimized.
 
-  const qualityTags = tagArray.filter(t => t.length > 3);
-  if (qualityTags.length >= tagArray.length * 0.7) score += 5;
+  // Tag generation explicitly targets 8-15 relevant tags.
+  if (count >= 8 && count <= 15) score += 12;
+  else if (count >= 5 && count <= 20) score += 4;
+  else if (count >= 2) score += 2;
+
+  const qualityTags = uniqueTags.filter(t => t.length > 3 && t.split(/\s+/).length <= 3);
+  const qualityRatio = qualityTags.length / count;
+  if (count >= 8 && qualityRatio >= 0.7) score += 6;
+  else if (count >= 5 && qualityRatio >= 0.7) score += 1;
 
   return Math.min(score, 20);
 }
