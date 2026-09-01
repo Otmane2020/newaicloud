@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, FileText, Image, CreditCard, Store,
   Zap, FlaskConical, Settings, LogOut, ChevronRight, ShoppingCart,
-  MessageSquare, RefreshCw, Database, Tags, History, Bot, User, Key
+  MessageSquare, Database, Tags, History, Bot, User, Key
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -42,11 +42,6 @@ const groups: NavGroup[] = [
     { label: "Merchant Center", to: "/merchant?tab=integration", icon: Store },
     { label: "Sales Assistant", to: "/storefront-assistant", icon: MessageSquare },
   ]},
-  { label: "Automation", icon: Zap, items: [
-    { label: "Rules", to: "/seo?tab=automation", icon: Zap },
-    { label: "Sync", to: "/merchant?tab=sync", icon: RefreshCw },
-    { label: "Tasks & history", to: "/cron-monitoring", icon: History },
-  ]},
   { label: "Labs", icon: FlaskConical, items: [
     { label: "AEO & AI answers", to: "/aeo-chatgpt", icon: Bot },
     { label: "Blog & campaigns", to: "/blog", icon: FileText },
@@ -57,6 +52,7 @@ const groups: NavGroup[] = [
 const settings: NavItem[] = [
   { label: "Stores & integrations", to: "/account?tab=integrations", icon: Store },
   { label: "Account", to: "/account?tab=profile", icon: User },
+  { label: "Jobs", to: "/cron-monitoring", icon: History },
   { label: "Plan & billing", to: "/subscription", icon: CreditCard },
   { label: "Usage", to: "/account?tab=usage", icon: Zap },
   { label: "API", to: "/api-keys", icon: Key },
