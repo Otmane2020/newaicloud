@@ -1,24 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  Loader2,
-  Eye,
-  Monitor,
-  Smartphone,
-  Download,
-  Send,
-  CheckCircle2,
   AlertCircle,
-  Sparkles,
-  Scan,
-  Brain,
-  Wand2,
-  Layout,
+  CheckCircle2,
+  Download,
   ExternalLink,
-  Zap,
-  Target,
-  Palette,
-  FileCode,
-  LucideIcon,
+  Eye,
+  Loader2,
+  Monitor,
+  Send,
+  Smartphone,
+  Sparkles,
+  Wand2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,16 +18,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { LandingConfig } from "./LandingConfigDialog";
+import type { LandingConfig } from "./LandingConfigDialog";
 import { useTranslation } from "@/lib/language";
 
-// 🛡️ Template de fallback pour mode dégradé
+type LandingProductSource = {
+  title: string;
+  description: string;
+  seoTitle?: string;
+  imageUrl?: string;
+  vendor?: string;
+  handle?: string;
+};
+
+const clean = (value?: string | null) => value?.trim() || "";
+
 const generateFallbackLandingPage = (
   title: string,
   description: string | undefined,
-  imageUrl: string | undefined
-): string => {
-  return `<!DOCTYPE html>
+  imageUrl: string | undefined,
+): string => `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -43,43 +44,24 @@ const generateFallbackLandingPage = (
   <title>${title}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.6; color: #333; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;
-    }
-    .container { max-width: 800px; width: 100%; background: white; border-radius: 20px; 
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
-    .hero { padding: 3rem 2rem; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-      color: white; }
-    h1 { font-size: 2.5rem; margin-bottom: 1rem; font-weight: 700; }
-    .description { font-size: 1.125rem; opacity: 0.95; margin-bottom: 2rem; }
-    .image { width: 100%; height: 400px; object-fit: cover; }
-    .content { padding: 2rem; }
-    .cta { display: inline-block; margin-top: 1.5rem; padding: 1rem 2.5rem; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; 
-      text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 1.125rem;
-      transition: transform 0.2s; }
-    .cta:hover { transform: translateY(-2px); }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #222; background: #f8fafc; padding: 24px; }
+    .container { max-width: 980px; margin: 0 auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(15,23,42,.08); }
+    .hero { padding: 48px 32px; text-align: center; }
+    h1 { font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.05; margin-bottom: 18px; }
+    .description { max-width: 720px; margin: 0 auto; color: #64748b; font-size: 1.05rem; }
+    .image { width: 100%; max-height: 620px; object-fit: contain; background: #fff; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="hero">
+  <main class="container">
+    <section class="hero">
       <h1>${title}</h1>
-      ${description ? `<p class="description">${description.slice(0, 200)}...</p>` : ''}
-      <a href="#" class="cta">Découvrir →</a>
-    </div>
-    ${imageUrl ? `<img src="${imageUrl}" alt="${title}" class="image" />` : ''}
-    <div class="content">
-      <p style="color: #666; text-align: center;">
-        ⚡ Landing page générée en mode simplifié
-      </p>
-    </div>
-  </div>
+      ${description ? `<div class="description">${description}</div>` : ""}
+    </section>
+    ${imageUrl ? `<img src="${imageUrl}" alt="${title}" class="image" />` : ""}
+  </main>
 </body>
 </html>`;
-};
 
 interface RegenerateLandingProps {
   product: {
@@ -103,7 +85,8 @@ export default function RegenerateLanding({
   onGenerated,
   onClose,
 }: RegenerateLandingProps) {
-  const { t, tf, language } = useTranslation();
+  const { language } = useTranslation();
+  const fr = language === "fr";
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
@@ -115,294 +98,245 @@ export default function RegenerateLanding({
   const [syncedProductUrl, setSyncedProductUrl] = useState<string | null>(null);
   const [optimizedTitle, setOptimizedTitle] = useState<string | null>(null);
   const [titleNeedsSync, setTitleNeedsSync] = useState(false);
+  const [currentSource, setCurrentSource] = useState<LandingProductSource | null>(null);
 
-  // Charger la landing page existante directement depuis shopify_products
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadExistingLanding = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("shopify_products")
-          .select("landing_page")
-          .eq("id", product.id)
-          .single();
-
-        if (error) throw error;
-
-        if (data?.landing_page && isMounted) {
-          setHtmlContent(data.landing_page);
-        }
-      } catch (error) {
-        console.error("Erreur chargement landing:", error);
-      } finally {
-        if (isMounted) {
-          setLoadingExisting(false);
-        }
-      }
-    };
-
-    loadExistingLanding();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [product.id]);
-
-  // Ref pour éviter les générations multiples
   const hasGeneratedRef = useRef(false);
   const isGeneratingRef = useRef(false);
 
-  // Reset le ref quand le produit change
+  const getLatestProductSource = async (): Promise<LandingProductSource> => {
+    const { data, error: sourceError } = await supabase
+      .from("shopify_products")
+      .select(
+        "title, description, body_html, seo_title, optimized_title, regenerated_title, optimized_description, image_url, vendor, handle",
+      )
+      .eq("id", product.id)
+      .single();
+
+    if (sourceError) {
+      console.warn("[Landing] Could not refresh product source, using provided product:", sourceError);
+    }
+
+    const row = data as any;
+    const title =
+      clean(row?.optimized_title) ||
+      clean(row?.regenerated_title) ||
+      clean(row?.seo_title) ||
+      clean(row?.title) ||
+      clean(product.seo_title) ||
+      product.title;
+
+    const description =
+      clean(row?.optimized_description) ||
+      clean(row?.body_html) ||
+      clean(row?.description) ||
+      clean(product.description);
+
+    return {
+      title,
+      description,
+      seoTitle: clean(row?.seo_title) || clean(product.seo_title) || undefined,
+      imageUrl: clean(row?.image_url) || clean(product.image_url) || undefined,
+      vendor: clean(row?.vendor) || undefined,
+      handle: clean(row?.handle) || clean(product.handle) || undefined,
+    };
+  };
+
+  const persistLanding = async (html: string) => {
+    const generatedAt = new Date().toISOString();
+    const { error: persistError } = await supabase
+      .from("shopify_products")
+      .update({
+        landing_page: html,
+        landing_page_html: html,
+        has_landing_page: true,
+        last_landing_generation_at: generatedAt,
+        updated_at: generatedAt,
+      } as any)
+      .eq("id", product.id);
+
+    if (persistError) {
+      console.warn("[Landing] Generated HTML could not be fully persisted:", persistError);
+    }
+  };
+
   useEffect(() => {
-    console.log(`🔄 [Landing] Product changed to: ${product.id}, resetting refs`);
-    hasGeneratedRef.current = false;
-    isGeneratingRef.current = false;
+    let active = true;
+
+    const load = async () => {
+      setLoadingExisting(true);
+      setHtmlContent("");
+      setError(null);
+      setSyncedProductUrl(null);
+      hasGeneratedRef.current = false;
+      isGeneratingRef.current = false;
+
+      try {
+        const [{ data, error: landingError }, source] = await Promise.all([
+          supabase
+            .from("shopify_products")
+            .select("landing_page, landing_page_html")
+            .eq("id", product.id)
+            .single(),
+          getLatestProductSource(),
+        ]);
+
+        if (landingError) throw landingError;
+        if (!active) return;
+
+        setCurrentSource(source);
+        const existing = clean((data as any)?.landing_page_html) || clean((data as any)?.landing_page);
+        setHtmlContent(existing);
+      } catch (loadError) {
+        console.error("[Landing] Existing landing load failed:", loadError);
+        if (active) {
+          setCurrentSource({
+            title: product.seo_title || product.title,
+            description: product.description || "",
+            seoTitle: product.seo_title,
+            imageUrl: product.image_url,
+            handle: product.handle,
+          });
+        }
+      } finally {
+        if (active) setLoadingExisting(false);
+      }
+    };
+
+    void load();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
 
-  // Auto-generate simplifié avec double protection
-  useEffect(() => {
-    console.log(
-      `🔍 [Landing] Auto-generate check: autoGenerate=${autoGenerate}, loading=${loading}, hasContent=${!!htmlContent}, hasGenerated=${hasGeneratedRef.current}, isGenerating=${isGeneratingRef.current}`,
-    );
-
-    if (autoGenerate && !loading && !htmlContent && !hasGeneratedRef.current && !isGeneratingRef.current) {
-      console.log("🚀 [Landing] Starting generation...");
-      hasGeneratedRef.current = true;
-      isGeneratingRef.current = true;
-      handleGenerate(false).finally(() => {
-        console.log("✅ [Landing] Generation completed, releasing lock");
-        isGeneratingRef.current = false;
-      });
+  const resolveVendor = async (source: LandingProductSource): Promise<string> => {
+    if (config.vendorSource === "shopify") {
+      return source.vendor || (fr ? "Marque inconnue" : "Unknown brand");
     }
-  }, [autoGenerate, loading]);
 
-  /** ----------------------------
-   * 🏷️ Resolve Vendor based on config
-   -----------------------------*/
-  const resolveVendor = async (): Promise<string> => {
-    switch (config.vendorSource) {
-      case "shopify":
-        const { data: productData } = await supabase
-          .from("shopify_products")
-          .select("vendor")
-          .eq("id", product.id)
-          .single();
-        return productData?.vendor || "Marque inconnue";
-
-      case "extract":
-        const words = product.title.split(" ");
-        const capitalizedWord = words.find(
+    if (config.vendorSource === "extract") {
+      const words = source.title.split(/\s+/).filter(Boolean);
+      return (
+        words.find(
           (word) =>
-            word.length > 2 && word[0] === word[0].toUpperCase() && word.slice(1) === word.slice(1).toLowerCase(),
-        );
-
-        if (capitalizedWord) {
-          return capitalizedWord;
-        }
-
-        const fallback = words.find((w) => w.length > 3) || "Marque";
-        return fallback;
-
-      case "generate":
-        try {
-          const { data: aiData } = await supabase.functions.invoke("generate-vendor-name", {
-            body: {
-              productTitle: product.title,
-              productDescription: product.description,
-            },
-          });
-
-          if (aiData?.vendor) {
-            return aiData.vendor;
-          }
-        } catch (err) {
-          console.error("[Vendor] AI generation failed:", err);
-        }
-
-        return "Marque générée";
-
-      default:
-        return "Marque inconnue";
-    }
-  };
-
-  /** ----------------------------
-   * 🖼️ Analyze Image with AI Vision
-   -----------------------------*/
-  const analyzeImageWithAI = async (imageUrl: string): Promise<string> => {
-    if (!imageUrl) {
-      console.log("[Vision] No image URL provided");
-      return "";
+            word.length > 2 &&
+            word[0] === word[0].toUpperCase() &&
+            word.slice(1) === word.slice(1).toLowerCase(),
+        ) ||
+        words.find((word) => word.length > 3) ||
+        (fr ? "Marque" : "Brand")
+      );
     }
 
-    try {
-      setProgressMessage(t.landingGeneration.analyzing);
-      setProgress(25);
-
-      const { data, error } = await supabase.functions.invoke("analyze-image-with-vision", {
-        body: {
-          imageUrl: imageUrl,
-          productContext: `${product.title} ${config.vendorSource === "shopify" ? "" : ""}`,
-        },
-      });
-
-      if (error) {
-        console.error("[Vision] Image analysis failed:", error);
-        return "";
+    if (config.vendorSource === "generate") {
+      try {
+        const { data } = await supabase.functions.invoke("generate-vendor-name", {
+          body: {
+            productTitle: source.title,
+            productDescription: source.description,
+          },
+        });
+        if (data?.vendor) return data.vendor;
+      } catch (vendorError) {
+        console.warn("[Landing] Vendor generation failed:", vendorError);
       }
+    }
 
-      console.log("[Vision] Image analysis completed");
+    return source.vendor || (fr ? "Marque inconnue" : "Unknown brand");
+  };
+
+  const analyzeImageWithAI = async (imageUrl: string, title: string): Promise<string> => {
+    try {
+      setProgress(35);
+      setProgressMessage(fr ? "Analyse du produit et de ses visuels…" : "Analyzing product and visuals…");
+      const { data, error: visionError } = await supabase.functions.invoke("analyze-image-with-vision", {
+        body: { imageUrl, productContext: title },
+      });
+      if (visionError) throw visionError;
       return data?.attributes ? JSON.stringify(data.attributes) : "";
-    } catch (err) {
-      console.error("[Vision] Image analysis error:", err);
+    } catch (visionError) {
+      console.warn("[Landing] Vision analysis skipped:", visionError);
       return "";
     }
   };
 
-  /** ----------------------------
-   * 📏 Calculate Content Length Parameters
-   -----------------------------*/
-  const getContentLengthParams = () => {
-    switch (config.contentLength) {
-      case "short":
-        return {
-          maxTokens: 800,
-          wordCount: "150-200 mots",
-          sections: 2,
-          description: "Contenu concis et impactant",
-        };
-      case "medium":
-        return {
-          maxTokens: 1200,
-          wordCount: "300-400 mots",
-          sections: 3,
-          description: "Contenu équilibré avec détails modérés",
-        };
-      case "long":
-        return {
-          maxTokens: 2000,
-          wordCount: "500-700 mots",
-          sections: 4,
-          description: "Contenu détaillé et complet",
-        };
-      default:
-        return {
-          maxTokens: 1200,
-          wordCount: "300-400 mots",
-          sections: 3,
-          description: "Contenu équilibré",
-        };
-    }
-  };
-
-  /** ----------------------------
-   * ✨ Generate Landing via AI with Progress
-   -----------------------------*/
   const handleGenerate = async (forceFastMode = false) => {
-    // ⏱️ Client-side timeout (90 seconds max)
-    const timeoutId = setTimeout(() => {
-      setError(t.landingGeneration.timeout.tooLong);
+    if (isGeneratingRef.current) return;
+    isGeneratingRef.current = true;
+
+    const timeoutId = window.setTimeout(() => {
+      setError(fr ? "La génération prend trop de temps." : "Generation is taking too long.");
       setLoading(false);
-      setProgress(0);
-      toast.error(t.landingGeneration.timeout.timeoutError, {
-        description: t.landingGeneration.timeout.timeoutDesc
-      });
     }, 90000);
+
+    let source: LandingProductSource =
+      currentSource || {
+        title: product.seo_title || product.title,
+        description: product.description || "",
+        seoTitle: product.seo_title,
+        imageUrl: product.image_url,
+        handle: product.handle,
+      };
 
     try {
       setLoading(true);
       setError(null);
-      setProgress(0);
-      setProgressMessage(t.landingGeneration.preparing);
+      setProgress(5);
+      setProgressMessage(fr ? "Actualisation du contenu produit…" : "Refreshing product content…");
 
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setProgress(10);
-      setProgressMessage(t.landingGeneration.progressMessages.resolvingVendor);
+      // Always refresh here so /product and Titles & Descriptions use the exact same latest data.
+      source = await getLatestProductSource();
+      setCurrentSource(source);
 
-      // ✅ ÉTAPE 1 : Résoudre le vendor
-      const resolvedVendor = await resolveVendor();
-      console.log("[Landing] Resolved vendor:", resolvedVendor);
+      setProgress(15);
+      setProgressMessage(fr ? "Préparation de la Landing Page…" : "Preparing landing page…");
+      const resolvedVendor = await resolveVendor(source);
 
-      // ✅ ÉTAPE 1.1 : Mettre à jour le vendor dans la DB si généré par IA
-      if (config.vendorSource === "generate" && resolvedVendor !== "Marque générée") {
-        await supabase
-          .from("shopify_products")
-          .update({ vendor: resolvedVendor })
-          .eq("id", product.id);
-        console.log("[Landing] Vendor updated in database:", resolvedVendor);
-        toast.success(`Marque "${resolvedVendor}" créée et sauvegardée`);
+      if (config.vendorSource === "generate" && resolvedVendor) {
+        await supabase.from("shopify_products").update({ vendor: resolvedVendor } as any).eq("id", product.id);
       }
 
-      setProgress(20);
-      setProgressMessage(t.landingGeneration.progressMessages.optimizingTitle);
+      let generationTitle = source.title;
 
-      // ✅ ÉTAPE 1.5 : Optimiser le titre avec Smart Title (Vision + AI) - seulement si activé
       if (config.regenerateTitle !== false) {
         try {
+          setProgress(25);
+          setProgressMessage(fr ? "Optimisation du titre…" : "Optimizing title…");
           const { data: smartTitleData, error: smartTitleError } = await supabase.functions.invoke("smart-title", {
-            body: {
-              productId: product.id,
-              language: language,
-            },
+            body: { productId: product.id, language },
           });
 
-          if (smartTitleError) {
-            console.warn("[Landing] Smart title optimization failed:", smartTitleError);
-          } else if (smartTitleData?.success && smartTitleData?.optimizedTitle) {
-            console.log("[Landing] Title optimized with Vision AI:", smartTitleData.optimizedTitle);
-            setOptimizedTitle(smartTitleData.optimizedTitle);
+          if (smartTitleError) throw smartTitleError;
+          if (smartTitleData?.success && clean(smartTitleData?.optimizedTitle)) {
+            generationTitle = clean(smartTitleData.optimizedTitle);
+            setOptimizedTitle(generationTitle);
             setTitleNeedsSync(true);
-            toast.success(tf("landingGeneration.progressMessages.titleOptimized", { title: smartTitleData.optimizedTitle }), {
-              description: t.landingGeneration.progressMessages.titleBasedOnVision,
-            });
           }
-        } catch (err) {
-          console.warn("[Landing] Smart title error:", err);
-          // Continue even if smart title fails
+        } catch (smartTitleError) {
+          console.warn("[Landing] Smart title optimization skipped:", smartTitleError);
         }
-      } else {
-        console.log("[Landing] Title regeneration skipped (disabled in config)");
       }
 
-      setProgress(35);
-      setProgressMessage(t.landingGeneration.progressMessages.analyzingImages);
+      const imageAnalysis = source.imageUrl
+        ? await analyzeImageWithAI(source.imageUrl, generationTitle)
+        : "";
 
-      // ✅ ÉTAPE 2 : Analyser l'image avec vision IA
-      let imageAnalysis = "";
-      if (product.image_url) {
-        imageAnalysis = await analyzeImageWithAI(product.image_url);
-      } else {
-        setProgress(40); // Skip to same progress if no image
-      }
+      setProgress(55);
+      setProgressMessage(fr ? "Génération du contenu et du design…" : "Generating content and design…");
 
-      setProgress(50);
-      setProgressMessage("Génération du contenu HTML...");
-
-      // ✅ ÉTAPE 3 : Obtenir les paramètres de longueur
-      const contentParams = getContentLengthParams();
-
-      console.log("[Landing] Content parameters:", {
-        length: config.contentLength,
-        maxTokens: contentParams.maxTokens,
-        sections: contentParams.sections,
-        hasImageAnalysis: !!imageAnalysis,
-      });
-
-      // ✅ ÉTAPE 4 : Générer le landing avec tous les paramètres
-      const { data, error } = await supabase.functions.invoke("generate-landing-ai", {
+      const { data, error: generationError } = await supabase.functions.invoke("generate-landing-ai", {
         body: {
           productId: product.id,
-          productTitle: optimizedTitle || product.title,
-          seo_title: product.seo_title, // ✅ Pass SEO title for landing page sync
-          imageUrl: product.image_url,
-          description: product.description,
+          productTitle: generationTitle,
+          seo_title: source.seoTitle,
+          imageUrl: source.imageUrl,
+          description: source.description,
           vendor: resolvedVendor,
-          imageAnalysis: imageAnalysis,
-          language: language,
-          fastMode: forceFastMode || config.contentLength === "short", // ⚡ Enable fast mode for short content or if forced
+          imageAnalysis,
+          language,
+          fastMode: forceFastMode || config.contentLength === "short",
           options: {
-            colorScheme: config.colorScheme, // Can be string (key) or object (values)
+            colorScheme: config.colorScheme,
             layout: config.layout,
             designStyle: config.designStyle || "modern",
             contentLength: config.contentLength,
@@ -412,451 +346,226 @@ export default function RegenerateLanding({
         },
       });
 
-      setProgress(80);
-      setProgressMessage("Finalisation du HTML...");
+      if (generationError) throw generationError;
+      if (!data?.html?.trim()) throw new Error(fr ? "Aucun HTML généré." : "No HTML generated.");
 
-      if (data?.html?.trim()) {
-        const wordCount = data.html.split(/\s+/).length;
-        console.log(`[Landing] Generated content: ${wordCount} words (mobile-optimized by backend)`);
+      const html = data.html.trim();
+      setProgress(90);
+      setProgressMessage(fr ? "Enregistrement de la Landing Page…" : "Saving landing page…");
+      await persistLanding(html);
 
-        setHtmlContent(data.html);
-        setProgress(100);
-        setProgressMessage(`✅ ${t.landingGeneration.success.generated}`);
+      setHtmlContent(html);
+      setProgress(100);
+      setProgressMessage(fr ? "Landing Page prête" : "Landing page ready");
+      setError(null);
+      onGenerated?.(html);
+      toast.success(fr ? "Landing Page régénérée avec le dernier contenu produit" : "Landing page regenerated from the latest product content");
+    } catch (generationError: any) {
+      console.error("[Landing] Generation failed:", generationError);
+      const message = generationError?.message || (fr ? "La génération a échoué." : "Generation failed.");
+      setError(message);
 
-        toast.success(t.landingGeneration.success.generated);
-        onGenerated?.(data.html);
-      } else {
-        throw new Error(t.landingGeneration.errors.noGenerated);
-      }
-    } catch (err: any) {
-      console.error("Error generating landing:", err);
-      const errorMsg = err?.message || t.landingGeneration.errors.generation;
-      setError(errorMsg);
-      
-      // 🛡️ Mode dégradé : générer un template basique de fallback
-      const fallbackHtml = generateFallbackLandingPage(product.title, product.description, product.image_url);
+      const fallbackHtml = generateFallbackLandingPage(source.title, source.description, source.imageUrl);
       setHtmlContent(fallbackHtml);
       setProgress(100);
-      
-      toast.error("Génération partielle", {
-        description: (
-          <>
-            La génération complète a échoué. Un template basique a été créé.{" "}
-            <button
-              onClick={() => handleGenerate(true)}
-              className="underline font-semibold hover:text-primary"
-            >
-              Réessayer en mode rapide
-            </button>
-          </>
-        ),
-        duration: 10000,
-      });
-      
+      await persistLanding(fallbackHtml);
       onGenerated?.(fallbackHtml);
+
+      toast.error(fr ? "Génération partielle" : "Partial generation", {
+        description: fr
+          ? "Le moteur complet a échoué. Une version de secours basée sur le dernier contenu produit a été créée."
+          : "The full engine failed. A fallback based on the latest product content was created.",
+      });
     } finally {
-      clearTimeout(timeoutId); // ⏱️ Clear timeout
+      window.clearTimeout(timeoutId);
       setLoading(false);
+      isGeneratingRef.current = false;
     }
   };
 
-  /** ----------------------------
-   * 💾 Download HTML
-   -----------------------------*/
-  const handleDownloadHTML = () => {
-    if (!htmlContent) return toast.error(t.landingGeneration.errors.noContent);
+  // A generator dialog must regenerate even when a previous landing already exists.
+  useEffect(() => {
+    if (
+      autoGenerate &&
+      !loadingExisting &&
+      !loading &&
+      !hasGeneratedRef.current &&
+      !isGeneratingRef.current
+    ) {
+      hasGeneratedRef.current = true;
+      void handleGenerate(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoGenerate, loadingExisting, product.id]);
 
+  const handleDownloadHTML = () => {
+    if (!htmlContent) return;
     const blob = new Blob([htmlContent], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${product.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_landing.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${(currentSource?.title || product.title).replace(/[^a-z0-9]/gi, "_").toLowerCase()}_landing.html`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
     URL.revokeObjectURL(url);
-
-    toast.success(t.landingGeneration.preview.downloaded);
   };
 
-  /** ----------------------------
-   * 🔄 Sync to Shopify
-   -----------------------------*/
   const handleSyncToShopify = async () => {
-    if (!htmlContent) return toast.error(t.landingGeneration.errors.noContentSync);
+    if (!htmlContent) return;
 
     try {
       setSyncing(true);
-      toast.info(t.landingGeneration.preview.syncInProgress);
-
-      const { data, error } = await supabase.functions.invoke("sync-landing-to-shopify", {
+      const source = await getLatestProductSource();
+      const { data, error: syncError } = await supabase.functions.invoke("sync-landing-to-shopify", {
         body: {
           productId: product.id,
-          productTitle: product.title,
-          productHandle: product.handle,
+          productTitle: source.title,
+          productHandle: source.handle,
           htmlContent,
         },
       });
 
-      if (error) throw error;
-      if (data?.error) {
-        // Check if it's a "needs import" error
-        if (data?.needsImport || data.error.includes("non synchronisé") || data.error.includes("not synchronized")) {
-          toast.error("Ce produit doit d'abord être importé depuis Shopify", {
-            description: "Rendez-vous sur la page Intégration pour importer vos produits Shopify.",
-          });
-        } else {
-          toast.error(data.error);
-        }
-        return;
-      }
+      if (syncError) throw syncError;
+      if (data?.error) throw new Error(data.error);
 
-      toast.success(t.landingGeneration.success.synced);
-      setTitleNeedsSync(false); // Title is now synced
-      if (data?.productUrl) {
-        setSyncedProductUrl(data.productUrl);
-      }
-    } catch (err: any) {
-      console.error("Error syncing to Shopify:", err);
-      toast.error(err?.message || t.landingGeneration.errors.sync);
+      setTitleNeedsSync(false);
+      if (data?.productUrl) setSyncedProductUrl(data.productUrl);
+      toast.success(fr ? "Landing Page synchronisée avec Shopify" : "Landing page synced to Shopify");
+    } catch (syncError: any) {
+      toast.error(syncError?.message || (fr ? "Synchronisation impossible" : "Could not sync"));
     } finally {
       setSyncing(false);
     }
   };
 
-  /** ----------------------------
-   * 🧠 UI Render
-   -----------------------------*/
+  if (loadingExisting && !loading) {
+    return (
+      <div className="grid min-h-56 place-items-center rounded-xl border border-slate-200 bg-slate-50/40">
+        <div className="text-center text-sm text-slate-500">
+          <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" />
+          {fr ? "Chargement du produit…" : "Loading product…"}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Optimized Title Alert */}
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-violet-600" />
+            <p className="font-medium text-slate-900">{fr ? "Flux Landing Page unifié" : "Unified landing page flow"}</p>
+            <Badge variant="outline" className="rounded-full bg-white text-[11px]">
+              {fr ? "Contenu produit à jour" : "Latest product content"}
+            </Badge>
+          </div>
+          <p className="mt-1 truncate text-xs text-slate-500">
+            {currentSource?.title || product.title}
+          </p>
+        </div>
+        <Button
+          size="sm"
+          className="rounded-xl"
+          onClick={() => void handleGenerate(false)}
+          disabled={loading}
+        >
+          {loading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Wand2 className="mr-1.5 h-4 w-4" />}
+          {fr ? "Régénérer" : "Regenerate"}
+        </Button>
+      </div>
+
       {optimizedTitle && titleNeedsSync && (
-        <div className="flex items-center justify-between p-4 bg-accent/10 rounded-lg border border-accent">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent animate-pulse" />
-            <div>
-              <p className="font-medium text-sm">Titre optimisé SEO</p>
-              <p className="text-xs text-muted-foreground mb-1">{optimizedTitle}</p>
-              <p className="text-xs text-accent font-medium">
-                ⚠️ Synchronisez avec Shopify pour appliquer le nouveau titre
-              </p>
-            </div>
-          </div>
+        <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-4">
+          <p className="text-sm font-medium text-violet-900">{fr ? "Titre optimisé utilisé pour cette Landing" : "Optimized title used for this landing"}</p>
+          <p className="mt-1 text-xs text-violet-700">{optimizedTitle}</p>
         </div>
       )}
 
-      {/* Existing Landing Page Status */}
-      {!loadingExisting && htmlContent && (
-        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-primary" />
-            <div>
-              <p className="font-medium text-sm">Landing page existante</p>
-              <p className="text-xs text-muted-foreground">Dernière modification • {product.title}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Progress Section */}
       {loading && (
-        <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-6 rounded-2xl border border-primary/20 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.08),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(59,130,246,0.02)_50%,transparent_75%)] bg-[length:250%_250%] animate-[gradient_8s_ease_infinite]" />
-
-          {/* Animated Title */}
-          <div className="flex items-center gap-4 mb-5 relative z-10">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
-              <Sparkles className="w-8 h-8 text-accent animate-pulse relative z-10" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-lg text-foreground">AI-Powered Landing Generation</h3>
-                <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                  <Zap className="w-3 h-3 mr-1" />
-                  Vision AI
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                {progress < 10 && (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-                    <span className="text-sm text-muted-foreground">Initializing AI models...</span>
-                  </>
-                )}
-                {progress >= 10 && progress < 20 && (
-                  <>
-                    <Scan className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span className="text-sm text-muted-foreground">Analyzing product image with Vision AI</span>
-                  </>
-                )}
-                {progress >= 20 && progress < 30 && (
-                  <>
-                    <Eye className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Extracting visual attributes & styling</span>
-                  </>
-                )}
-                {progress >= 30 && progress < 40 && (
-                  <>
-                    <Target className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Market positioning analysis</span>
-                  </>
-                )}
-                {progress >= 40 && progress < 50 && (
-                  <>
-                    <Brain className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span className="text-sm text-muted-foreground">Generating persuasive copy</span>
-                  </>
-                )}
-                {progress >= 50 && progress < 60 && (
-                  <>
-                    <Wand2 className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Crafting hero sections</span>
-                  </>
-                )}
-                {progress >= 60 && progress < 70 && (
-                  <>
-                    <Layout className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Building responsive structure</span>
-                  </>
-                )}
-                {progress >= 70 && progress < 80 && (
-                  <>
-                    <Palette className="w-3.5 h-3.5 text-primary animate-pulse" />
-                    <span className="text-sm text-muted-foreground">Applying design patterns</span>
-                  </>
-                )}
-                {progress >= 80 && progress < 90 && (
-                  <>
-                    <Smartphone className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Mobile optimization</span>
-                  </>
-                )}
-                {progress >= 90 && progress < 100 && (
-                  <>
-                    <FileCode className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm text-muted-foreground">Final optimization</span>
-                  </>
-                )}
-                {progress >= 100 && (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                    <span className="text-sm text-green-600 font-medium">Landing page ready!</span>
-                  </>
-                )}
-              </div>
+        <div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50/30 p-5">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-violet-600" />
+            <div>
+              <p className="text-sm font-medium text-slate-900">{progressMessage}</p>
+              <p className="text-xs text-slate-500">{fr ? "Titre, description, images et données catalogue sont relus avant génération." : "Title, description, images and catalog data are refreshed before generation."}</p>
             </div>
           </div>
-
-          {/* Progress bar */}
-          <div className="relative mt-4 z-10 space-y-3">
-            <Progress value={progress} showPercentage className="h-2" />
-
-            {/* Stage indicator */}
-            <div className="flex justify-center">
-              <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-background/95 border-2 border-primary/30 shadow-lg backdrop-blur-sm">
-                {progress < 15 && (
-                  <>
-                    <Loader2 className="w-5 h-5 text-primary animate-spin flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">AI Initialization</span>
-                  </>
-                )}
-                {progress >= 15 && progress < 30 && (
-                  <>
-                    <Scan className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Vision Analysis</span>
-                  </>
-                )}
-                {progress >= 30 && progress < 45 && (
-                  <>
-                    <Brain className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Context Processing</span>
-                  </>
-                )}
-                {progress >= 45 && progress < 65 && (
-                  <>
-                    <Wand2 className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Content Generation</span>
-                  </>
-                )}
-                {progress >= 65 && progress < 85 && (
-                  <>
-                    <Layout className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Layout Optimization</span>
-                  </>
-                )}
-                {progress >= 85 && progress < 100 && (
-                  <>
-                    <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm font-semibold text-primary">Final Assembly</span>
-                  </>
-                )}
-                {progress >= 100 && (
-                  <>
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <span className="text-sm font-semibold text-green-600">Complete</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Feature badges */}
-          <div className="flex flex-wrap gap-2 mt-5 relative z-10">
-            <div
-              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 20 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
-            >
-              <Scan className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Vision AI</span>
-            </div>
-            <div
-              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 50 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
-            >
-              <Brain className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">UX Optimized</span>
-            </div>
-            <div
-              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 70 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
-            >
-              <Smartphone className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Mobile First</span>
-            </div>
-            <div
-              className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg border transition-all duration-500 ${progress >= 90 ? "bg-primary/10 border-primary/30 text-primary shadow-sm" : "bg-muted/50 border-border text-muted-foreground"}`}
-            >
-              <Target className="w-4 h-4 flex-shrink-0" />
-              <span className="font-medium">Conversion Focused</span>
-            </div>
-          </div>
+          <Progress value={progress} showPercentage className="h-2" />
         </div>
       )}
 
-      {/* Error Section */}
       {error && !loading && (
-        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-destructive mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-destructive">{t.landingGeneration.errors.generation}</p>
-              <p className="text-sm text-destructive/90 mt-1">{error}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => handleGenerate(false)}>
-              {t.landingConfig.buttons.confirm}
-            </Button>
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <AlertCircle className="mt-0.5 h-4 w-4 text-amber-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-900">{fr ? "Le moteur complet a rencontré une erreur" : "The full engine encountered an error"}</p>
+            <p className="mt-1 text-xs text-amber-700">{error}</p>
           </div>
         </div>
       )}
 
-      {/* Success State */}
-      {htmlContent && !loading && !error && (
+      {htmlContent && !loading && (
         <div className="space-y-4">
-          <div className="bg-gradient-to-br from-green-500/5 to-green-500/10 border border-green-500/20 rounded-xl p-3 sm:p-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-              <div className="flex-1">
-                <p className="font-semibold text-green-700 text-sm sm:text-base">
-                  {t.landingGeneration.success.generated} • {getContentLengthParams().wordCount}
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  {t.landingGeneration.preview.description} • {t.landingGeneration.preview.mobileOptimized}
-                </p>
-              </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm text-emerald-700">
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="font-medium">{fr ? "Landing Page disponible" : "Landing page available"}</span>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
-                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                <span className="hidden sm:inline">{t.landingGeneration.preview.title}</span>
-                <span className="sm:hidden">{t.landingGeneration.preview.title}</span>
-              </h3>
-              <Tabs
-                value={previewMode}
-                onValueChange={(v) => setPreviewMode(v as "desktop" | "mobile")}
-                className="w-auto"
-              >
-                <TabsList className="h-8">
-                  <TabsTrigger value="desktop" className="text-xs sm:text-sm px-2 sm:px-3">
-                    <Monitor className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">{t.landingGeneration.preview.desktop}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="mobile" className="text-xs sm:text-sm px-2 sm:px-3">
-                    <Smartphone className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">{t.landingGeneration.preview.mobile}</span>
-                  </TabsTrigger>
+            <div className="flex flex-wrap gap-2">
+              <Tabs value={previewMode} onValueChange={(value) => setPreviewMode(value as "desktop" | "mobile")}>
+                <TabsList className="h-9">
+                  <TabsTrigger value="desktop" className="px-2.5"><Monitor className="h-4 w-4" /></TabsTrigger>
+                  <TabsTrigger value="mobile" className="px-2.5"><Smartphone className="h-4 w-4" /></TabsTrigger>
                 </TabsList>
               </Tabs>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button
-                onClick={handleDownloadHTML}
-                variant="outline"
-                size="sm"
-                className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
-              >
-                <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">{t.landingGeneration.preview.download}</span>
-                <span className="sm:hidden">{t.landingGeneration.preview.download}</span>
+              <Button size="sm" variant="outline" className="rounded-xl" onClick={handleDownloadHTML}>
+                <Download className="mr-1.5 h-4 w-4" />HTML
               </Button>
-
               {!syncedProductUrl ? (
-                <Button
-                  onClick={handleSyncToShopify}
-                  disabled={syncing}
-                  size="sm"
-                  className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
-                >
-                  {syncing ? (
-                    <>
-                      <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
-                      <span className="hidden sm:inline">{t.landingGeneration.preview.synchronizing}</span>
-                      <span className="sm:hidden">{t.landingGeneration.preview.synchronizing}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">{t.landingGeneration.preview.syncShopify}</span>
-                      <span className="sm:hidden">{t.landingGeneration.preview.syncShopify}</span>
-                    </>
-                  )}
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => void handleSyncToShopify()} disabled={syncing}>
+                  {syncing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
+                  Shopify
                 </Button>
               ) : (
-                <Button
-                  onClick={() => window.open(syncedProductUrl, "_blank")}
-                  size="sm"
-                  className="gap-2 w-full sm:w-auto text-xs sm:text-sm bg-green-600 hover:bg-green-700"
-                >
-                  <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Visualiser en ligne</span>
-                  <span className="sm:hidden">Voir en ligne</span>
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => window.open(syncedProductUrl, "_blank")}>
+                  <ExternalLink className="mr-1.5 h-4 w-4" />{fr ? "Voir" : "View"}
+                </Button>
+              )}
+              {onClose && (
+                <Button size="sm" variant="ghost" className="rounded-xl" onClick={onClose}>
+                  {fr ? "Fermer" : "Close"}
                 </Button>
               )}
             </div>
           </div>
 
           <div
-            className={`border rounded-xl overflow-hidden bg-white shadow-inner transition-all duration-300 ${
-              previewMode === "mobile" ? "max-w-[375px] mx-auto h-[600px] sm:h-[650px]" : "h-[500px] sm:h-[650px]"
+            className={`overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${
+              previewMode === "mobile" ? "mx-auto h-[650px] max-w-[390px]" : "h-[650px] w-full"
             }`}
           >
             <iframe
-              srcDoc={htmlContent}
-              className="w-full h-full border-0"
-              sandbox="allow-same-origin allow-scripts"
               title="Landing Page Preview"
+              srcDoc={htmlContent}
+              sandbox="allow-same-origin allow-scripts"
+              className="h-full w-full border-0 bg-white"
             />
           </div>
         </div>
       )}
 
-      {/* Initial State */}
-      {!loading && !htmlContent && !error && (
-        <div className="text-center py-10 text-muted-foreground border rounded-xl bg-muted/10">
-          <Loader2 className="w-6 h-6 mx-auto mb-2 text-primary/70 animate-pulse" />
-          <p className="text-sm">{t.landingGeneration.initializing}</p>
+      {!htmlContent && !loading && !error && (
+        <div className="grid min-h-56 place-items-center rounded-xl border border-dashed border-violet-200 bg-violet-50/20 p-6 text-center">
+          <div>
+            <Eye className="mx-auto mb-2 h-6 w-6 text-violet-500" />
+            <p className="text-sm font-medium text-slate-700">{fr ? "Aucune Landing Page" : "No landing page yet"}</p>
+            <Button className="mt-4 rounded-xl" onClick={() => void handleGenerate(false)}>
+              <Sparkles className="mr-1.5 h-4 w-4" />{fr ? "Générer" : "Generate"}
+            </Button>
+          </div>
         </div>
       )}
     </div>
