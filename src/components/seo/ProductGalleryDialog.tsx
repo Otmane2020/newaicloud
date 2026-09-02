@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,21 +8,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
+  GripVertical,
+  Loader2,
+  Save,
+  Image as ImageIcon,
+  X,
+  Trash2,
+  ZoomIn,
   ChevronLeft,
   ChevronRight,
-  GripVertical,
-  Image as ImageIcon,
-  Loader2,
-  Sparkles,
-  Square,
-  Trash2,
-  Upload,
-  X,
-  ZoomIn,
 } from "lucide-react";
 import { useTranslation } from "@/lib/language";
 import { useQueryClient } from "@tanstack/react-query";
@@ -63,168 +60,42 @@ interface ProductGalleryDialogProps {
   onMainImageChange?: (productId: string, newMainImageUrl: string) => void;
 }
 
-type ProcessingAction = "white" | "ambiance" | "delete" | "upload" | null;
-
 export function ProductGalleryDialog({
   open,
   onOpenChange,
-  product: controlledProduct,
+  product,
   storeId,
   onMainImageChange,
 }: ProductGalleryDialogProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const uploadInputRef = useRef<HTMLInputElement | null>(null);
-
-  const [autoProduct, setAutoProduct] = useState<Product | null>(null);
-  const product = controlledProduct ?? autoProduct;
-
   const [images, setImages] = useState<ProductImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [processingImageId, setProcessingImageId] = useState<string | null>(null);
-  const [processingAction, setProcessingAction] = useState<ProcessingAction>(null);
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [ambianceTarget, setAmbianceTarget] = useState<ProductImage | null>(null);
-  const [ambiancePrompt, setAmbiancePrompt] = useState(
-    "Create a premium realistic lifestyle scene around the product. Preserve the product exactly: same shape, color, proportions, materials and details. Natural editorial lighting, elegant interior, ecommerce quality.",
-  );
-
-  const normalizeUrl = (url?: string | null) => {
-    if (!url) return "";
-    const withoutQuery = url.split("?")[0];
-    let filename = withoutQuery;
-    try {
-      filename = new URL(withoutQuery).pathname.split("/").pop() || withoutQuery;
-    } catch {
-      filename = withoutQuery.split("/").pop() || withoutQuery;
-    }
-    filename = decodeURIComponent(filename);
-    filename = filename.replace(
-      /_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.[a-zA-Z0-9]+$)/i,
-      "",
-    );
-    filename = filename.replace(/_\d+x\d+(?=\.[a-zA-Z0-9]+$)/i, "");
-    filename = filename.replace(/_\d+(?=\.[a-zA-Z0-9]+$)/i, "");
-    return filename.toLowerCase();
-  };
-
-  const invalidateProductQueries = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["product-images"] }),
-      queryClient.invalidateQueries({ queryKey: ["products-with-images"] }),
-      queryClient.invalidateQueries({ queryKey: ["shopify-products"] }),
-      queryClient.invalidateQueries({ queryKey: ["products"] }),
-    ]);
-  };
-
-  // The grid already opens the gallery directly. This capture listener makes the
-  // thumbnail in the table view behave exactly the same way without triggering
-  // the row-level product preview first.
-  useEffect(() => {
-    const handleTableThumbnailClick = async (event: MouseEvent) => {
-      if (window.location.pathname !== "/products/title-description") return;
-
-      const target = event.target as HTMLElement | null;
-      const image = target?.closest("table img") as HTMLImageElement | null;
-      if (!image) return;
-
-      const source = image.getAttribute("src") || image.currentSrc || image.src;
-      if (!source) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      try {
-        let query = supabase
-          .from("shopify_products")
-          .select("id, title, shopify_id")
-          .eq("image_url", source);
-
-        if (storeId) query = query.eq("store_id", storeId);
-
-        const { data, error } = await query.maybeSingle();
-        if (error || !data) {
-          console.warn("[Gallery] Could not resolve table thumbnail product", error);
-          return;
-        }
-
-        setAutoProduct(data as Product);
-        onOpenChange(true);
-      } catch (error) {
-        console.error("[Gallery] Failed to open gallery from table thumbnail", error);
-      }
-    };
-
-    document.addEventListener("click", handleTableThumbnailClick, true);
-    return () => document.removeEventListener("click", handleTableThumbnailClick, true);
-  }, [onOpenChange, storeId]);
-
-  const loadImages = async () => {
-    if (!product?.id) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("product_images")
-        .select("id, src, alt_text, position, shopify_image_id")
-        .eq("product_id", product.id)
-        .order("position", { ascending: true })
-        .limit(100);
-
-      if (error) throw error;
-
-      const uniqueImages = data
-        ? Object.values(
-            data.reduce<Record<string, ProductImage>>((acc, img) => {
-              const key = normalizeUrl(img.src) || img.id;
-              const existing = acc[key];
-              if (!existing) {
-                acc[key] = img;
-                return acc;
-              }
-              if (!!img.shopify_image_id && !existing.shopify_image_id) {
-                acc[key] = img;
-                return acc;
-              }
-              if (!img.shopify_image_id && !!existing.shopify_image_id) return acc;
-              if ((img.position ?? 999) < (existing.position ?? 999)) acc[key] = img;
-              return acc;
-            }, {}),
-          ).sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
-        : [];
-
-      setImages(uniqueImages);
-    } catch (error) {
-      console.error("Error loading images:", error);
-      toast.error(t.toasts.error.loading || "Error loading images");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (open && product?.id) {
-      loadImages();
-    } else if (!open) {
-      setImages([]);
-      setAmbianceTarget(null);
-      setLightboxOpen(false);
-      if (!controlledProduct) setAutoProduct(null);
-    }
-  }, [open, product?.id, controlledProduct]);
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
     setLightboxOpen(true);
   };
 
-  const closeLightbox = () => setLightboxOpen(false);
-  const goToPrevious = () => setLightboxIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-  const goToNext = () => setLightboxIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
 
+  const goToPrevious = () => {
+    setLightboxIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+  };
+
+  const goToNext = () => {
+    setLightboxIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+  };
+
+  // Handle keyboard navigation in lightbox
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!lightboxOpen) return;
@@ -236,35 +107,170 @@ export function ProductGalleryDialog({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [lightboxOpen, images.length]);
 
-  const handleDragStart = (index: number) => setDraggedIndex(index);
+  useEffect(() => {
+    if (open && product?.id) {
+      loadImages();
+    } else if (!open) {
+      setImages([]);
+    }
+  }, [open, product?.id]);
+
+  const normalizeUrl = (url?: string | null) => {
+    if (!url) return "";
+
+    const withoutQuery = url.split("?")[0];
+
+    // Prefer dedupe by filename so that the same image hosted on different domains
+    // (e.g., generated-images storage vs Shopify CDN) is treated as identical.
+    let filename = withoutQuery;
+    try {
+      filename = new URL(withoutQuery).pathname.split("/").pop() || withoutQuery;
+    } catch {
+      filename = withoutQuery.split("/").pop() || withoutQuery;
+    }
+
+    filename = decodeURIComponent(filename);
+
+    // Shopify sometimes appends a UUID to filenames when duplicating uploads.
+    filename = filename.replace(
+      /_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\.[a-zA-Z0-9]+$)/i,
+      ""
+    );
+
+    // Shopify CDN variants often use _WIDTHxHEIGHT suffixes.
+    filename = filename.replace(/_\d+x\d+(?=\.[a-zA-Z0-9]+$)/i, "");
+
+    // Remove numeric suffixes like _1, _2, _3 etc. (Shopify duplicates)
+    // e.g., FT204-CTEC_1.jpg -> FT204-CTEC.jpg
+    filename = filename.replace(/_\d+(?=\.[a-zA-Z0-9]+$)/i, "");
+
+    return filename.toLowerCase();
+  };
+
+  const loadImages = async () => {
+    if (!product?.id) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("product_images")
+        .select("id, src, alt_text, position, shopify_image_id")
+        .eq("product_id", product.id)
+        .order("position", { ascending: true })
+        .limit(50); // Limit to 50 images for performance
+
+      if (error) throw error;
+      
+      // Deduplicate images by a normalized key (filename-based) to avoid visual duplicates
+      // across different hosts (generated-images storage vs Shopify CDN).
+      // Prefer the Shopify-backed entry (shopify_image_id) when both exist.
+      const uniqueImages = data
+        ? Object.values(
+            data.reduce<Record<string, ProductImage>>((acc, img) => {
+              const key = normalizeUrl(img.src);
+              const existing = acc[key];
+
+              if (!existing) {
+                acc[key] = img;
+                return acc;
+              }
+
+              // Prefer entries with Shopify id.
+              if (!!img.shopify_image_id && !existing.shopify_image_id) {
+                acc[key] = img;
+                return acc;
+              }
+              if (!img.shopify_image_id && !!existing.shopify_image_id) {
+                return acc;
+              }
+
+              // Otherwise prefer the lowest position (closer to main image).
+              const existingPos = existing.position ?? 999;
+              const imgPos = img.position ?? 999;
+              if (imgPos < existingPos) acc[key] = img;
+
+              return acc;
+            }, {})
+          ).sort((a, b) => (a.position || 999) - (b.position || 999))
+        : [];
+
+      setImages(uniqueImages);
+    } catch (error) {
+      console.error("Error loading images:", error);
+      toast.error(t.toasts.error.loading || "Error loading images");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    if (draggedIndex !== null && draggedIndex !== index) setDragOverIndex(index);
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragEnd = async () => {
+    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+      const newImages = [...images];
+      const [draggedItem] = newImages.splice(draggedIndex, 1);
+      newImages.splice(dragOverIndex, 0, draggedItem);
+      
+      // Update positions
+      const reorderedImages = newImages.map((img, idx) => ({
+        ...img,
+        position: idx + 1,
+      }));
+      
+      setImages(reorderedImages);
+      
+      // Auto-save immediately
+      await saveOrderToShopify(reorderedImages);
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   const saveOrderToShopify = async (imagesToSave: ProductImage[]) => {
-    if (!product) return;
+    if (!product || !storeId) return;
     setSaving(true);
     try {
-      await Promise.all(
-        imagesToSave.map((img) =>
-          supabase.from("product_images").update({ position: img.position }).eq("id", img.id),
-        ),
+      // Update local database positions
+      const updates = imagesToSave.map(img => 
+        supabase
+          .from("product_images")
+          .update({ position: img.position })
+          .eq("id", img.id)
       );
+      
+      await Promise.all(updates);
 
+      // 🆕 FIX: Update shopify_products.image_url with new main image
       if (imagesToSave.length > 0) {
         const newMainImage = imagesToSave[0].src;
+        console.log('[Gallery] Updating main image to:', newMainImage);
+        
         await supabase
-          .from("shopify_products")
-          .update({ image_url: newMainImage, updated_at: new Date().toISOString() })
-          .eq("id", product.id);
-        onMainImageChange?.(product.id, newMainImage);
+          .from('shopify_products')
+          .update({ 
+            image_url: newMainImage,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', product.id);
+        
+        // Notify parent about main image change
+        if (onMainImageChange) {
+          onMainImageChange(product.id, newMainImage);
+        }
       }
 
+      // Sync to Shopify if connected
       if (product.shopify_id) {
         const shopifyImages = imagesToSave
-          .filter((img) => img.shopify_image_id)
+          .filter(img => img.shopify_image_id)
           .map((img, idx) => ({
             id: img.shopify_image_id,
             shopify_image_id: img.shopify_image_id,
@@ -272,22 +278,35 @@ export function ProductGalleryDialog({
             src: img.src,
             alt: img.alt_text,
           }));
-
-        if (shopifyImages.length > 1) {
-          const { data, error } = await supabase.functions.invoke("sync-product-images-to-shopify", {
-            body: {
-              productId: product.id,
-              shopifyProductId: product.shopify_id,
-              storeId,
-              images: shopifyImages,
-              isReorderOnly: true,
-            },
-          });
-          if (error || data?.error) throw new Error(data?.error || error?.message || "Shopify reorder failed");
+        
+        console.log('[Gallery] Auto-saving order with', shopifyImages.length, 'images');
+        
+        const { error, data } = await supabase.functions.invoke("sync-product-images-to-shopify", {
+          body: {
+            productId: product.id,
+            shopifyProductId: product.shopify_id,
+            storeId,
+            images: shopifyImages,
+            isReorderOnly: true,
+          },
+        });
+        
+        if (error) {
+          console.error("Shopify sync error:", error);
+          toast.warning(t.toasts.success.saved);
+        } else {
+          toast.success(t.toasts.success.synchronized);
         }
+      } else {
+        toast.success(t.toasts.success.saved);
       }
-
-      await invalidateProductQueries();
+      
+      // 🆕 FIX: Invalidate all product-related queries to refresh ALL tabs
+      await queryClient.invalidateQueries({ queryKey: ['product-images'] });
+      await queryClient.invalidateQueries({ queryKey: ['products-with-images'] });
+      await queryClient.invalidateQueries({ queryKey: ['shopify-products'] });
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
+      
     } catch (error) {
       console.error("Error saving order:", error);
       toast.error(t.toasts.error.saving);
@@ -296,486 +315,195 @@ export function ProductGalleryDialog({
     }
   };
 
-  const handleDragEnd = async () => {
-    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
-      const reordered = [...images];
-      const [draggedItem] = reordered.splice(draggedIndex, 1);
-      reordered.splice(dragOverIndex, 0, draggedItem);
-      const normalized = reordered.map((img, idx) => ({ ...img, position: idx + 1 }));
-      setImages(normalized);
-      await saveOrderToShopify(normalized);
-      toast.success(t.toasts.success.synchronized || "Gallery order synchronized");
-    }
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const syncNewImageToShopify = async () => {
-    if (!product?.shopify_id) return;
-    const { data, error } = await supabase.functions.invoke("sync-product-images-to-shopify", {
-      body: { productId: product.id, allowCreateReplace: true },
-    });
-    if (error || data?.error) {
-      throw new Error(data?.error || error?.message || "Shopify image sync failed");
-    }
-  };
-
-  const addImageToGallery = async (
-    src: string,
-    altText: string,
-    isAiGenerated: boolean,
-  ) => {
-    if (!product) throw new Error("Product missing");
-    const nextPosition = images.reduce((max, image) => Math.max(max, image.position || 0), 0) + 1;
-
-    const { data, error } = await supabase
-      .from("product_images")
-      .insert({
-        product_id: product.id,
-        src,
-        alt_text: altText,
-        position: nextPosition,
-        is_ai_generated: isAiGenerated,
-      } as any)
-      .select("id, src, alt_text, position, shopify_image_id")
-      .single();
-
-    if (error || !data) throw error || new Error("Could not save image");
-    setImages((prev) => [...prev, data]);
-
+  const handleDeleteImage = async (imageId: string, imagePosition: number) => {
+    if (!product || !storeId) return;
+    
+    setDeletingImageId(imageId);
     try {
-      await syncNewImageToShopify();
-      await loadImages();
-      toast.success(product.shopify_id ? "Image ajoutée et synchronisée avec Shopify" : "Image ajoutée à la galerie");
-    } catch (syncError: any) {
-      console.error("Image saved locally but Shopify sync failed:", syncError);
-      toast.warning("Image ajoutée à la galerie, mais la synchronisation Shopify a échoué", {
-        description: syncError?.message,
-      });
-    }
-
-    await invalidateProductQueries();
-  };
-
-  const handleGenerateWhiteBackground = async (image: ProductImage) => {
-    if (!product) return;
-    setProcessingImageId(image.id);
-    setProcessingAction("white");
-    const toastId = toast.loading("Génération du fond blanc...");
-
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-white-background", {
-        body: {
-          imageUrl: image.src,
-          productTitle: product.title,
-          imageType: "secondary",
-          product_id: product.id,
-          format: "square",
-          mode: "standard",
-        },
-      });
-
-      if (error) throw error;
-      if (!data?.success || !data?.imageUrl) throw new Error(data?.error || "Aucune image générée");
-
-      await addImageToGallery(data.imageUrl, `${product.title} - Fond blanc IA`, true);
-      toast.success("Fond blanc généré", { id: toastId });
-    } catch (error: any) {
-      console.error("White background generation failed:", error);
-      toast.error("Impossible de générer le fond blanc", { id: toastId, description: error?.message });
-    } finally {
-      setProcessingImageId(null);
-      setProcessingAction(null);
-    }
-  };
-
-  const handleGenerateAmbiance = async () => {
-    if (!product || !ambianceTarget) return;
-    if (!ambiancePrompt.trim()) {
-      toast.error("Ajoutez une description d’ambiance");
-      return;
-    }
-
-    const target = ambianceTarget;
-    setProcessingImageId(target.id);
-    setProcessingAction("ambiance");
-    const toastId = toast.loading("Création de l’ambiance IA...");
-
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-ai-product-background", {
-        body: {
-          imageUrl: target.src,
-          productTitle: product.title,
-          productId: product.id,
-          imageId: target.id,
-          prompt: ambiancePrompt.trim(),
-          enrichedPrompt: ambiancePrompt.trim(),
-          style: "lifestyle",
-          format: "square",
-          targetType: "variant",
-        },
-      });
-
-      if (error) throw error;
-      if (!data?.success || !data?.imageUrl) throw new Error(data?.error || data?.message || "Aucune image générée");
-
-      await addImageToGallery(data.imageUrl, `${product.title} - Ambiance IA`, true);
-      setAmbianceTarget(null);
-      toast.success("Ambiance générée", { id: toastId });
-    } catch (error: any) {
-      console.error("AI ambiance generation failed:", error);
-      toast.error("Impossible de générer l’ambiance", { id: toastId, description: error?.message });
-    } finally {
-      setProcessingImageId(null);
-      setProcessingAction(null);
-    }
-  };
-
-  const handleUpload = async (file?: File) => {
-    if (!product || !file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Sélectionnez un fichier image");
-      return;
-    }
-    if (file.size > 12 * 1024 * 1024) {
-      toast.error("L’image ne doit pas dépasser 12 Mo");
-      return;
-    }
-
-    setProcessingAction("upload");
-    const toastId = toast.loading("Upload de l’image...");
-    try {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-      const path = `manual-uploads/${product.id}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("generated-images")
-        .upload(path, file, { contentType: file.type, upsert: false });
-      if (uploadError) throw uploadError;
-
-      const { data: publicData } = supabase.storage.from("generated-images").getPublicUrl(path);
-      const publicUrl = publicData.publicUrl;
-      if (!publicUrl) throw new Error("Public URL unavailable");
-
-      await addImageToGallery(publicUrl, `${product.title} - ${safeName}`, false);
-      toast.success("Image uploadée", { id: toastId });
-    } catch (error: any) {
-      console.error("Upload failed:", error);
-      toast.error("Upload impossible", { id: toastId, description: error?.message });
-    } finally {
-      setProcessingAction(null);
-      if (uploadInputRef.current) uploadInputRef.current.value = "";
-    }
-  };
-
-  const handleDeleteImage = async (imageId: string) => {
-    if (!product) return;
-    const imageToDelete = images.find((img) => img.id === imageId);
-    if (!imageToDelete) return;
-
-    setProcessingImageId(imageId);
-    setProcessingAction("delete");
-    const toastId = toast.loading(product.shopify_id ? "Suppression dans Shopify..." : "Suppression de l’image...");
-
-    try {
-      // Shopify is always checked first when the product exists there. The Edge
-      // Function can resolve the media either by shopify_image_id OR by URL, so
-      // old rows with a missing local Shopify image ID are handled correctly too.
-      if (product.shopify_id) {
-        const { data, error } = await supabase.functions.invoke("delete-product-image-from-shopify", {
+      const imageToDelete = images.find(img => img.id === imageId);
+      
+      // Delete from database FIRST (fast operation)
+      const { error: dbError } = await supabase
+        .from("product_images")
+        .delete()
+        .eq("id", imageId);
+      
+      if (dbError) throw dbError;
+      
+      // Update positions of remaining images in a single batch call
+      const remainingImages = images.filter(img => img.id !== imageId);
+      const reorderedImages = remainingImages.map((img, idx) => ({
+        ...img,
+        position: idx + 1,
+      }));
+      
+      // Batch update positions using Promise.all (parallel, not sequential)
+      if (reorderedImages.length > 0) {
+        await Promise.all(
+          reorderedImages.map(img =>
+            supabase
+              .from("product_images")
+              .update({ position: img.position })
+              .eq("id", img.id)
+          )
+        );
+      }
+      
+      setImages(reorderedImages);
+      toast.success(t.toasts.success.deleted);
+      
+      // Delete from Shopify in background (non-blocking)
+      if (product.shopify_id && imageToDelete?.shopify_image_id) {
+        supabase.functions.invoke("sync-product-images-to-shopify", {
           body: {
             productId: product.id,
-            shopifyImageId: imageToDelete.shopify_image_id ?? null,
-            imageUrl: imageToDelete.src,
+            shopifyProductId: product.shopify_id,
+            storeId,
+            deleteImageIds: [imageToDelete.shopify_image_id],
           },
-        });
-
-        const deletionConfirmed = data?.success && (data?.deletedCount === 1 || data?.alreadyAbsent === true);
-        if (error || !deletionConfirmed) {
-          throw new Error(data?.error || error?.message || "Shopify n’a pas confirmé la suppression");
-        }
+        }).catch(err => console.error("Background Shopify delete error:", err));
       }
-
-      const { error: dbError } = await supabase.from("product_images").delete().eq("id", imageId);
-      if (dbError) throw dbError;
-
-      const remainingImages = images
-        .filter((img) => img.id !== imageId)
-        .map((img, idx) => ({ ...img, position: idx + 1 }));
-
-      if (remainingImages.length > 0) {
-        await Promise.all(
-          remainingImages.map((img) =>
-            supabase.from("product_images").update({ position: img.position }).eq("id", img.id),
-          ),
-        );
-
-        const newMainImage = remainingImages[0].src;
-        await supabase
-          .from("shopify_products")
-          .update({ image_url: newMainImage, updated_at: new Date().toISOString() })
-          .eq("id", product.id);
-        onMainImageChange?.(product.id, newMainImage);
-
-        if (product.shopify_id) {
-          const reorderImages = remainingImages
-            .filter((img) => img.shopify_image_id)
-            .map((img, idx) => ({
-              id: img.shopify_image_id,
-              shopify_image_id: img.shopify_image_id,
-              position: idx + 1,
-              src: img.src,
-              alt: img.alt_text,
-            }));
-
-          if (reorderImages.length > 1) {
-            const { data: reorderData, error: reorderError } = await supabase.functions.invoke(
-              "sync-product-images-to-shopify",
-              {
-                body: {
-                  productId: product.id,
-                  storeId,
-                  images: reorderImages,
-                  isReorderOnly: true,
-                },
-              },
-            );
-            if (reorderError || reorderData?.error) {
-              console.warn("Image deleted but reorder failed:", reorderData?.error || reorderError);
-            }
-          }
-        }
-      } else {
-        await supabase
-          .from("shopify_products")
-          .update({ image_url: null, updated_at: new Date().toISOString() })
-          .eq("id", product.id);
-      }
-
-      setImages(remainingImages);
-      if (lightboxIndex >= remainingImages.length) setLightboxIndex(Math.max(0, remainingImages.length - 1));
-      await invalidateProductQueries();
-      toast.success(product.shopify_id
-        ? "Image supprimée de Shopify et de la galerie"
-        : "Image supprimée de la galerie", { id: toastId });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting image:", error);
-      toast.error("Suppression annulée : l’image est conservée", {
-        id: toastId,
-        description: error?.message || t.toasts.error.deleting,
-      });
+      toast.error(t.toasts.error.deleting);
     } finally {
-      setProcessingImageId(null);
-      setProcessingAction(null);
+      setDeletingImageId(null);
     }
   };
+
+  // Remove hasChanges state since we auto-save now
 
   const hasVariants = product?.variants && product.variants.length > 1;
   const mainImageUrlSet = new Set(images.map((img) => normalizeUrl(img.src)).filter(Boolean));
-  const busy = processingAction !== null || saving;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[92vh] flex flex-col gap-0 overflow-hidden p-0">
-        <DialogHeader className="shrink-0 border-b bg-white px-6 py-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <DialogTitle className="flex items-center gap-2 text-lg">
-                <ImageIcon className="h-5 w-5 text-violet-600" />
-                Galerie produit
-              </DialogTitle>
-              <p className="mt-1 max-w-2xl truncate text-sm text-muted-foreground" data-no-translate>
-                {product?.title}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="rounded-lg px-2.5 py-1">
-                {images.length} image{images.length > 1 ? "s" : ""}
-              </Badge>
-              <input
-                ref={uploadInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => handleUpload(event.target.files?.[0])}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => uploadInputRef.current?.click()}
-                disabled={busy}
-                className="gap-2"
-              >
-                {processingAction === "upload" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                Uploader
-              </Button>
-            </div>
-          </div>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="shrink-0">
+          <DialogTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            {t.productGallery?.title || "Gallery"} - <span data-no-translate>{product?.title}</span>
+          </DialogTitle>
         </DialogHeader>
 
-        {ambianceTarget && (
-          <div className="shrink-0 border-b bg-violet-50/60 px-6 py-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-              <div className="min-w-0 flex-1">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900">
-                  <Sparkles className="h-4 w-4 text-violet-600" />
-                  Générer une ambiance depuis l’image #{images.findIndex((img) => img.id === ambianceTarget.id) + 1}
-                </div>
-                <Textarea
-                  value={ambiancePrompt}
-                  onChange={(event) => setAmbiancePrompt(event.target.value)}
-                  rows={2}
-                  className="resize-none bg-white"
-                  placeholder="Ex. salon parisien élégant, lumière naturelle, parquet chevrons..."
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => setAmbianceTarget(null)} disabled={processingAction === "ambiance"}>
-                  Annuler
-                </Button>
-                <Button onClick={handleGenerateAmbiance} disabled={processingAction === "ambiance"} className="gap-2">
-                  {processingAction === "ambiance" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  Générer l’ambiance
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <ScrollArea className="flex-1 min-h-0 bg-slate-50/70">
-          <div className="p-5 sm:p-6">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="pr-4">
             {loading ? (
-              <div className="flex items-center justify-center py-16">
+              <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : images.length === 0 ? (
-              <div className="mx-auto flex max-w-md flex-col items-center rounded-2xl border border-dashed bg-white px-6 py-12 text-center">
-                <div className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-violet-50 text-violet-600">
-                  <ImageIcon className="h-6 w-6" />
-                </div>
-                <h3 className="font-semibold">Aucune image</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Ajoutez une image pour démarrer la galerie produit.</p>
-                <Button className="mt-4 gap-2" onClick={() => uploadInputRef.current?.click()}>
-                  <Upload className="h-4 w-4" /> Uploader une image
-                </Button>
+              <div className="text-center py-12 text-muted-foreground">
+                {t.productGallery?.noImages || "No images for this product"}
               </div>
             ) : (
-              <div className="space-y-7">
+              <div className="space-y-4">
+                {/* Main product images */}
                 <div>
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-950">Toutes les images</h3>
-                      <p className="text-xs text-slate-500">Cliquez sur une image pour l’agrandir. Glissez les cartes pour changer l’ordre.</p>
-                    </div>
-                    <Badge variant="secondary" className="font-normal">La première image est l’image principale</Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {images.map((image, index) => {
-                      const isProcessing = processingImageId === image.id;
-                      return (
-                        <div
-                          key={image.id}
-                          draggable={!busy}
-                          onDragStart={() => handleDragStart(index)}
-                          onDragOver={(e) => handleDragOver(e, index)}
-                          onDragEnd={handleDragEnd}
-                          className={`group overflow-hidden rounded-2xl border bg-white shadow-sm transition-all ${
-                            draggedIndex === index ? "scale-[0.98] opacity-50" : ""
-                          } ${dragOverIndex === index ? "border-violet-500 ring-2 ring-violet-200" : "border-slate-200 hover:border-violet-200 hover:shadow-md"}`}
-                        >
-                          <div className="relative aspect-square overflow-hidden bg-slate-100">
-                            <button type="button" onClick={() => openLightbox(index)} className="h-full w-full" disabled={busy}>
-                              <img
-                                src={image.src}
-                                alt={image.alt_text || `Image ${index + 1}`}
-                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                                loading="lazy"
-                              />
-                            </button>
-
-                            <div className="absolute left-2 top-2 flex items-center gap-1.5">
-                              <Badge className="bg-slate-950/80 text-white hover:bg-slate-950/80">#{index + 1}</Badge>
-                              {index === 0 && <Badge className="bg-violet-600 text-white hover:bg-violet-600">Principale</Badge>}
-                            </div>
-                            {image.shopify_image_id && (
-                              <Badge variant="secondary" className="absolute right-2 top-2 bg-white/90 text-[10px] shadow-sm backdrop-blur">
-                                Shopify
-                              </Badge>
-                            )}
-                            <div className="absolute bottom-2 right-2 flex items-center gap-1">
-                              <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/90 text-slate-700 opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100">
-                                <ZoomIn className="h-4 w-4" />
-                              </span>
-                              <span className="grid h-8 w-8 cursor-grab place-items-center rounded-lg bg-white/90 text-slate-700 opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100">
-                                <GripVertical className="h-4 w-4" />
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-1.5 p-2.5">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-9 gap-1.5 px-2 text-xs"
-                              disabled={busy}
-                              onClick={() => handleGenerateWhiteBackground(image)}
-                              title="Générer un fond blanc"
-                            >
-                              {isProcessing && processingAction === "white" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Square className="h-3.5 w-3.5" />}
-                              <span className="hidden 2xl:inline">Fond blanc</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-9 gap-1.5 px-2 text-xs"
-                              disabled={busy}
-                              onClick={() => setAmbianceTarget(image)}
-                              title="Générer une ambiance IA"
-                            >
-                              {isProcessing && processingAction === "ambiance" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-violet-600" />}
-                              <span className="hidden 2xl:inline">Ambiance</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-9 gap-1.5 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                              disabled={busy}
-                              onClick={() => handleDeleteImage(image.id)}
-                              title="Supprimer l’image de Shopify et de la galerie"
-                            >
-                              {isProcessing && processingAction === "delete" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                              <span className="hidden 2xl:inline">Supprimer</span>
-                            </Button>
-                          </div>
+                  <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                    {t.productGallery?.mainImages || "Main images"}
+                    <Badge variant="outline" className="text-xs">
+                      {t.productGallery?.dragToReorder || "Drag to reorder"}
+                    </Badge>
+                  </h3>
+                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                    {images.map((image, index) => (
+                      <div
+                        key={image.id}
+                        draggable
+                        onDragStart={() => handleDragStart(index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragEnd={handleDragEnd}
+                        className={`
+                          relative aspect-square rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing
+                          transition-all duration-200 group
+                          ${draggedIndex === index ? "opacity-50 scale-95" : ""}
+                          ${dragOverIndex === index ? "border-primary ring-2 ring-primary/20" : "border-border"}
+                          hover:border-primary/50
+                        `}
+                      >
+                        <img
+                          src={image.src}
+                          alt={image.alt_text || `Image ${index + 1}`}
+                          className="w-full h-full object-cover pointer-events-none"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent && !parent.querySelector('.img-error-fallback')) {
+                              const fallback = document.createElement('div');
+                              fallback.className = 'img-error-fallback w-full h-full flex items-center justify-center bg-muted text-muted-foreground';
+                              fallback.innerHTML = '<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+                              parent.appendChild(fallback);
+                            }
+                          }}
+                        />
+                        <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded font-medium">
+                          {index + 1}
                         </div>
-                      );
-                    })}
+                        {/* Zoom button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openLightbox(index);
+                          }}
+                          className="absolute bottom-1 left-1 bg-black/60 text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80"
+                          title="Zoom"
+                        >
+                          <ZoomIn className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteImage(image.id, image.position || index + 1);
+                          }}
+                          disabled={deletingImageId === image.id}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/90 disabled:opacity-50"
+                          title={t.productGallery?.deleteImage || "Delete image"}
+                        >
+                          {deletingImageId === image.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </button>
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors pointer-events-none">
+                          <GripVertical className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 drop-shadow-lg" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
+                {/* Variant images section (only show variants not already in main images, ignoring ?v=...) */}
                 {hasVariants && (
-                  <div className="border-t pt-6">
-                    <h3 className="mb-3 text-sm font-semibold">Images de variantes non présentes dans la galerie</h3>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                  <div className="mt-6 pt-6 border-t">
+                    <h3 className="text-sm font-medium mb-3">{t.productGallery?.variantImages || "Variant images"}</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                       {Array.from(
                         new Map(
                           (product?.variants || [])
-                            .filter((variant) => variant.image_url)
-                            .filter((variant) => !mainImageUrlSet.has(normalizeUrl(variant.image_url)))
-                            .map((variant) => [normalizeUrl(variant.image_url!), variant]),
-                        ).values(),
+                            .filter(v => v.image_url)
+                            .filter(v => !mainImageUrlSet.has(normalizeUrl(v.image_url)))
+                            .map(v => [normalizeUrl(v.image_url!), v])
+                        ).values()
                       ).map((variant) => (
-                        <div key={variant.id} className="overflow-hidden rounded-xl border bg-white">
-                          <div className="aspect-square overflow-hidden bg-slate-100">
-                            <img src={variant.image_url!} alt={variant.title} className="h-full w-full object-cover" loading="lazy" />
-                          </div>
-                          <div className="p-2">
-                            <p className="truncate text-xs font-medium">{variant.option1 || variant.title}</p>
+                        <div
+                          key={variant.id}
+                          className="relative aspect-square rounded-lg overflow-hidden border border-border"
+                        >
+                          <img
+                            src={variant.image_url!}
+                            alt={variant.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                            <p className="text-white text-xs truncate">
+                              {variant.option1}
+                              {variant.option2 && ` / ${variant.option2}`}
+                            </p>
                           </div>
                         </div>
                       ))}
@@ -787,75 +515,78 @@ export function ProductGalleryDialog({
           </div>
         </ScrollArea>
 
-        {(saving || processingAction) && (
-          <div className="flex shrink-0 items-center justify-center gap-2 border-t bg-white px-4 py-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {processingAction === "delete"
-              ? "Synchronisation de la suppression avec Shopify..."
-              : processingAction === "white"
-                ? "Génération du fond blanc..."
-                : processingAction === "ambiance"
-                  ? "Génération de l’ambiance..."
-                  : processingAction === "upload"
-                    ? "Upload et synchronisation..."
-                    : "Synchronisation de la galerie..."}
+        {saving && (
+          <div className="flex items-center justify-center gap-2 pt-4 border-t shrink-0 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm">{t.productGallery?.syncing || "Syncing..."}</span>
           </div>
         )}
+
       </DialogContent>
 
+      {/* Lightbox - OUTSIDE DialogContent to avoid z-index conflicts */}
       {lightboxOpen && images[lightboxIndex] && (
-        <div
-          className="fixed inset-0 z-[9999] flex cursor-pointer items-center justify-center bg-black/95"
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center cursor-pointer"
           onClick={closeLightbox}
+          style={{ margin: 0, padding: 0 }}
         >
+          {/* Close button */}
           <button
             onClick={closeLightbox}
-            className="absolute right-6 top-6 z-10 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+            className="absolute top-6 right-6 z-10 text-white hover:text-white/80 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
           >
             <X className="h-8 w-8" />
           </button>
 
+          {/* Navigation - Previous */}
           {images.length > 1 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 goToPrevious();
               }}
-              className="absolute left-6 z-10 rounded-full bg-black/50 p-4 text-white transition-colors hover:bg-black/70"
+              className="absolute left-6 z-10 text-white hover:text-white/80 p-4 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
             >
               <ChevronLeft className="h-10 w-10" />
             </button>
           )}
 
-          <div className="relative flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          {/* Image container - dynamic size based on image */}
+          <div 
+            className="relative flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
             <img
               key={lightboxIndex}
               src={images[lightboxIndex].src}
               alt={images[lightboxIndex].alt_text || `Image ${lightboxIndex + 1}`}
               className="block rounded-lg shadow-2xl"
               style={{
-                maxWidth: "calc(100vw - 160px)",
-                maxHeight: "calc(100vh - 120px)",
-                width: "auto",
-                height: "auto",
-                objectFit: "contain",
+                maxWidth: 'calc(100vw - 160px)',
+                maxHeight: 'calc(100vh - 120px)',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
               }}
             />
           </div>
 
+          {/* Navigation - Next */}
           {images.length > 1 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 goToNext();
               }}
-              className="absolute right-6 z-10 rounded-full bg-black/50 p-4 text-white transition-colors hover:bg-black/70"
+              className="absolute right-6 z-10 text-white hover:text-white/80 p-4 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
             >
               <ChevronRight className="h-10 w-10" />
             </button>
           )}
 
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-5 py-2.5 text-base font-medium text-white">
+          {/* Image counter */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white text-base bg-black/60 px-5 py-2.5 rounded-full font-medium">
             {lightboxIndex + 1} / {images.length}
           </div>
         </div>
