@@ -60,13 +60,30 @@ function aspectToOpenAISize(aspectRatio?: string, explicitSize?: string): string
 
 async function tryCloudflare(options: ImageRouteOptions): Promise<ImageRouteResult | null> {
   const accountId = envSecret("CLOUDFLARE_ACCOUNT_ID");
-  const apiToken = envSecret("CLOUDFLARE_AI_API_TOKEN");
+  const apiToken = envSecret("CLOUDFLARE_AI_API_TOKEN", "CLOUDFLARE_API_TOKEN");
+  if (!accountId || !apiToken) {
+    console.warn("[image-router] Cloudflare skipped: CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN not configured");
+
+    return null;
+  }
   const sourceUrl = options.imageUrls?.[0];
-  if (!accountId || !apiToken || !sourceUrl) return null;
 
   try {
-    const source = await fetchImage(sourceUrl);
     const model = Deno.env.get("CLOUDFLARE_IMAGE_MODEL") || "@cf/stabilityai/stable-diffusion-xl-base-1.0";
+    const payload: Record<string, unknown> = {
+      prompt: options.prompt,
+      negative_prompt: "different product, altered product, wrong shape, wrong color, text, watermark, low quality",
+      guidance: 9,
+      num_steps: 20,
+    };
+
+    // img2img only when a source image is provided; otherwise pure text-to-image.
+    if (sourceUrl) {
+      const source = await fetchImage(sourceUrl);
+      payload.image_b64 = bytesToBase64(source.bytes);
+      payload.strength = 0.3;
+    }
+
     const response = await providerFetch(
       `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
       {
@@ -75,14 +92,7 @@ async function tryCloudflare(options: ImageRouteOptions): Promise<ImageRouteResu
           Authorization: `Bearer ${apiToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          prompt: options.prompt,
-          negative_prompt: "different product, altered product, wrong shape, wrong color, text, watermark, low quality",
-          image_b64: bytesToBase64(source.bytes),
-          strength: 0.3,
-          guidance: 9,
-          num_steps: 24,
-        }),
+        body: JSON.stringify(payload),
       },
     );
 
@@ -90,6 +100,7 @@ async function tryCloudflare(options: ImageRouteOptions): Promise<ImageRouteResu
       console.warn(`[image-router] Cloudflare ${model} failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
       return null;
     }
+
 
     const contentType = response.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
@@ -113,9 +124,12 @@ async function tryGemini(options: ImageRouteOptions): Promise<ImageRouteResult |
 
   const models = Array.from(new Set([
     Deno.env.get("GEMINI_IMAGE_MODEL"),
+    "gemini-2.5-flash-image",
+    "gemini-3-pro-image-preview",
     "gemini-2.5-flash-image-preview",
     "gemini-2.0-flash-exp-image-generation",
   ].filter(Boolean))) as string[];
+
 
   const parts: any[] = [{ text: options.prompt }];
   for (const url of (options.imageUrls || []).slice(0, 4)) {
