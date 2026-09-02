@@ -1,5 +1,6 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { generateCloudflareImage } from "../_shared/cloudflare-image.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -152,35 +153,19 @@ serve(async (req) => {
       userInstructions ? (lang === "fr" ? `Instructions utilisateur: ${userInstructions}` : `User instructions: ${userInstructions}`) : "",
     ].filter(Boolean).join("\n");
 
-    const callImageModel = async (prompt: string) => {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: prompt },
-                ...references.map((url) => ({ type: "image_url", image_url: { url } })),
-              ],
-            },
-          ],
-          modalities: ["image", "text"],
-        }),
+    const callImageModel = async (prompt: string, landscape = false) => {
+      const generated = await generateCloudflareImage({
+        prompt,
+        imageUrl: sourceImageUrl,
+        width: landscape ? 1344 : 1024,
+        height: landscape ? 768 : 1024,
+        strength: 0.28,
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Image model ${response.status}: ${errorText.slice(0, 500)}`);
+      if (!generated?.imageUrl) {
+        throw new Error("Cloudflare image generation failed");
       }
-
-      const data = await response.json();
-      return data.choices?.[0]?.message?.images?.[0]?.image_url?.url as string | undefined;
+      console.log(`[Product Shot AI] Cloudflare used primary reference; ${Math.max(0, references.length - 1)} secondary reference(s) kept as context only.`);
+      return generated.imageUrl;
     };
 
     for (const imageType of imageTypes) {
@@ -276,7 +261,7 @@ ABSOLUTE RULES:
 - No text or watermark.`;
 
       try {
-        const imageUrl = await callImageModel(prompt);
+        const imageUrl = await callImageModel(prompt, true);
         if (imageUrl) {
           generatedImages.push({
             url: imageUrl,

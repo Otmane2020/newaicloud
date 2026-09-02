@@ -1,5 +1,6 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { generateCloudflareImage } from "../_shared/cloudflare-image.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
@@ -135,10 +136,6 @@ serve(async (req) => {
       console.error("Authentication error:", userError);
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
 
     // 🆕 Build enriched context from SERP and Vision data
     let enrichedContext = productTitle;
@@ -315,119 +312,29 @@ FINAL CHECK:
 RESULT: A stunning, professional ${isMainImage ? "main product photo with centered, clear product" : "lifestyle/ambiance photo"} that looks like it was shot by a top e-commerce photographer.
     `.trim();
 
-    // Call Lovable AI
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: contextualPrompt },
-              { type: "image_url", image_url: { url: imageUrl } },
-            ],
-          },
-        ],
-        modalities: ["image", "text"],
-        generationConfig: {
-          aspectRatio: "1:1",
-        },
-      }),
+    // Cloudflare Workers AI image editing.
+    const cloudflareResult = await generateCloudflareImage({
+      prompt: contextualPrompt,
+      imageUrl,
+      width: targetDims.width,
+      height: targetDims.height,
+      strength: 0.28,
     });
 
-    let generatedImageUrl: string | null = null;
-    let usedModel = "google/gemini-2.5-flash-image-preview";
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Lovable AI error:", response.status, errorText);
-
-      // Handle rate limiting or payment required - try Gemini Direct fallback
-      if (response.status === 429 || response.status === 402) {
-        console.log("⚠️ Lovable AI limit reached, trying Gemini Direct fallback...");
-        
-        const GOOGLE_GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-        if (GOOGLE_GEMINI_API_KEY) {
-          try {
-            // Fetch image and convert to base64
-            const imageResponse = await fetch(imageUrl);
-            const imageArrayBuffer = await imageResponse.arrayBuffer();
-            const imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imageArrayBuffer)));
-            const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
-            
-            // Call Gemini Direct API
-            const geminiResponse = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  contents: [{
-                    parts: [
-                      { text: contextualPrompt },
-                      { inline_data: { mime_type: mimeType, data: imageBase64 } }
-                    ]
-                  }],
-                  generationConfig: {
-                    responseModalities: ["TEXT", "IMAGE"]
-                  }
-                })
-              }
-            );
-            
-            if (geminiResponse.ok) {
-              const geminiData = await geminiResponse.json();
-              const imagePart = geminiData.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
-              if (imagePart?.inlineData?.data) {
-                generatedImageUrl = `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
-                usedModel = "gemini-2.0-flash-exp (direct fallback)";
-                console.log("✅ Gemini Direct fallback succeeded!");
-              }
-            } else {
-              console.error("❌ Gemini Direct also failed:", await geminiResponse.text());
-            }
-          } catch (geminiError) {
-            console.error("❌ Gemini Direct fallback error:", geminiError);
-          }
-        }
-        
-        // If fallback also failed, return appropriate error
-        if (!generatedImageUrl) {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: response.status === 429 
-                ? "Rate limit exceeded. Please try again in a few moments."
-                : "AI credits exhausted. Please check your Lovable AI credits.",
-              rateLimited: response.status === 429,
-              paymentRequired: response.status === 402,
-            }),
-            { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
-        }
-      } else {
-        throw new Error(`Lovable AI error ${response.status}: ${errorText}`);
-      }
+    if (!cloudflareResult?.imageUrl) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "CLOUDFLARE_IMAGE_GENERATION_FAILED",
+          message: "Cloudflare Workers AI image generation failed or is not configured.",
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    // If Lovable AI succeeded, extract image
-    if (!generatedImageUrl) {
-      const data = await response.json();
-      console.log("✅ Lovable AI response received");
-      generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    }
-
-    if (!generatedImageUrl) {
-      console.error("⚠️ No image returned from any provider");
-      throw new Error("No image generated - unexpected response format");
-    }
-
-    console.log(`🎨 Background generated successfully via ${usedModel}`);
+    const generatedImageUrl = cloudflareResult.imageUrl;
+    const usedModel = `${cloudflareResult.model} (Cloudflare Workers AI)`;
+    console.log(`Background generated successfully via ${usedModel}`);
 
     // 🆕 POST-PROCESSING: Force exact format dimensions
     let processedImageUrl = generatedImageUrl;
@@ -494,7 +401,7 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
           productTitle,
           style,
           imageType,
-          model: "google/gemini-2.5-flash-image-preview",
+          model: usedModel,
           generatedAt: new Date().toISOString(),
         },
       }),
@@ -506,7 +413,7 @@ RESULT: A stunning, professional ${isMainImage ? "main product photo with center
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : String(error),
-        suggestion: "Try with a higher-quality product photo or check your Lovable AI credits.",
+        suggestion: "Try with a higher-quality product photo or verify Cloudflare Workers AI configuration.",
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

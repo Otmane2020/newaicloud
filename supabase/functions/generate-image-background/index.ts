@@ -1,5 +1,6 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { generateCloudflareImage } from "../_shared/cloudflare-image.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
 import { autoSyncImageToShopify } from "../_shared/auto-sync-to-shopify.ts";
@@ -182,10 +183,6 @@ Le produit doit être présenté dans son orientation NATURELLE comme chez les c
       console.error("Authentication error:", userError);
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
 
     // 🆕 Format dimensions mapping with DALL-E size
     const formatDimensions: Record<string, { width: number; height: number; ratio: string; dalleSize: string }> = {
@@ -333,57 +330,16 @@ ${
 RESULT: A stunning ${isMainImage ? "main product photo" : "lifestyle photo"} at EXACTLY ${targetDims.width}x${targetDims.height} resolution.
     `.trim();
 
-    // Helper function to try Lovable AI with format-aware generation
-    async function tryLovableAI(): Promise<{ imageUrl: string; model: string } | null> {
-      try {
-        console.log(`📝 Trying Lovable AI with format: ${format} (${targetDims.width}x${targetDims.height})`);
-        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image-preview",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: photographyPrompt },
-                  { type: "image_url", image_url: { url: imageUrl } },
-                ],
-              },
-            ],
-            modalities: ["image", "text"],
-            // Note: Gemini ignores generationConfig.aspectRatio, format enforced via prompt
-          }),
-        });
-
-        if (response.status === 402 || response.status === 429) {
-          console.log(`⚠️ Lovable AI unavailable (${response.status}), trying fallback...`);
-          return null;
-        }
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ Lovable AI error (${response.status}):`, errorText);
-          return null;
-        }
-
-        const data = await response.json();
-        const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-        if (!generatedImageUrl) {
-          console.error("⚠️ No image in Lovable AI response");
-          return null;
-        }
-
-        console.log("✅ Lovable AI succeeded");
-        return { imageUrl: generatedImageUrl, model: "google/gemini-2.5-flash-image-preview (Lovable AI)" };
-      } catch (error) {
-        console.error("❌ Lovable AI exception:", error);
-        return null;
-      }
+    // Cloudflare Workers AI image editing.
+    async function tryCloudflareAI(): Promise<{ imageUrl: string; model: string } | null> {
+      const generated = await generateCloudflareImage({
+        prompt: photographyPrompt,
+        imageUrl,
+        width: targetDims.width,
+        height: targetDims.height,
+        strength: 0.28,
+      });
+      return generated ? { imageUrl: generated.imageUrl, model: `${generated.model} (Cloudflare Workers AI)` } : null;
     }
 
     // Helper function to try OpenAI DALL-E
@@ -473,11 +429,11 @@ RESULT: A stunning ${isMainImage ? "main product photo" : "lifestyle photo"} at 
       }
     }
 
-    // Try providers in order: Lovable AI → OpenAI
-    let result = await tryLovableAI();
+    // Try providers in order: Cloudflare Workers AI → OpenAI.
+    let result = await tryCloudflareAI();
 
     if (!result) {
-      console.log("🔄 Lovable AI failed, trying OpenAI...");
+      console.log("Cloudflare failed, trying OpenAI image fallback...");
       result = await tryOpenAI();
     }
 

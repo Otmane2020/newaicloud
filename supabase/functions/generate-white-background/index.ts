@@ -1,5 +1,6 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { generateCloudflareImage } from "../_shared/cloudflare-image.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
@@ -141,128 +142,6 @@ function buildPrompt(body: Record<string, any>, format: ImageFormat): string {
   return `${preserveInstruction}\n${layoutInstruction}\n${context}\nReplace only the background with: ${styleInstructions[backgroundStyle] || styleInstructions.lifestyle}. Keep the product itself unchanged and photorealistic. No text or watermark. ${customPrompt}`.trim();
 }
 
-async function tryGeminiDirect(
-  prompt: string,
-  source: ImagePayload,
-  galleryImages: string[],
-): Promise<ProviderResult | null> {
-  const apiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-  if (!apiKey) {
-    console.log("[white-bg] GOOGLE_GEMINI_API_KEY not configured; skipping Gemini Direct");
-    return null;
-  }
-
-  const configuredModel = Deno.env.get("GEMINI_IMAGE_MODEL");
-  const models = Array.from(new Set([
-    configuredModel,
-    "gemini-2.5-flash-image-preview",
-    "gemini-2.0-flash-exp-image-generation",
-  ].filter(Boolean))) as string[];
-
-  const parts: any[] = [
-    { text: prompt },
-    { inlineData: { mimeType: source.mimeType, data: bytesToBase64(source.bytes) } },
-  ];
-
-  for (const galleryUrl of galleryImages.slice(0, 3)) {
-    try {
-      const gallery = await fetchImagePayload(galleryUrl);
-      parts.push({ inlineData: { mimeType: gallery.mimeType, data: bytesToBase64(gallery.bytes) } });
-    } catch (error) {
-      console.warn("[white-bg] Gallery context image skipped", error);
-    }
-  }
-
-  for (const model of models) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts }],
-            generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        console.warn(`[white-bg] Gemini ${model} failed (${response.status}):`, (await response.text()).slice(0, 800));
-        continue;
-      }
-
-      const data = await response.json();
-      const responseParts = data?.candidates?.[0]?.content?.parts || [];
-      const imagePart = responseParts.find((part: any) =>
-        part?.inlineData?.data || part?.inline_data?.data
-      );
-      const inline = imagePart?.inlineData || imagePart?.inline_data;
-      if (!inline?.data) continue;
-
-      return {
-        imageUrl: `data:${inline.mimeType || inline.mime_type || "image/png"};base64,${inline.data}`,
-        model,
-        provider: "gemini-direct",
-      };
-    } catch (error) {
-      console.warn(`[white-bg] Gemini ${model} exception`, error);
-    }
-  }
-
-  return null;
-}
-
-async function tryLovableAI(
-  prompt: string,
-  imageUrl: string,
-  galleryImages: string[],
-): Promise<ProviderResult | null> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) {
-    console.log("[white-bg] LOVABLE_API_KEY not configured; skipping Lovable AI");
-    return null;
-  }
-
-  try {
-    const content: any[] = [
-      { type: "text", text: prompt },
-      { type: "image_url", image_url: { url: imageUrl } },
-      ...galleryImages.slice(0, 3).map((url) => ({ type: "image_url", image_url: { url } })),
-    ];
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image-preview",
-        messages: [{ role: "user", content }],
-        modalities: ["image", "text"],
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn(`[white-bg] Lovable AI failed (${response.status}):`, (await response.text()).slice(0, 800));
-      return null;
-    }
-
-    const data = await response.json();
-    const generatedUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    if (!generatedUrl) return null;
-
-    return {
-      imageUrl: generatedUrl,
-      model: "google/gemini-2.5-flash-image-preview",
-      provider: "lovable-ai",
-    };
-  } catch (error) {
-    console.warn("[white-bg] Lovable AI exception", error);
-    return null;
-  }
-}
 
 async function tryOpenAI(
   prompt: string,
@@ -314,7 +193,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const body = await req.json().catch(() => ({}));
-  if (body?.healthCheck === true) return jsonResponse(200, { ok: true, version: 2 });
+  if (body?.healthCheck === true) return jsonResponse(200, { ok: true, version: 3 });
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -410,8 +289,14 @@ serve(async (req) => {
       usage: `${currentUsage}/${maxOptimizations}`,
     });
 
-    let result = await tryGeminiDirect(prompt, source, galleryImages);
-    if (!result) result = await tryLovableAI(prompt, imageUrl, galleryImages);
+    let result: ProviderResult | null = await generateCloudflareImage({
+      prompt,
+      imageBytes: source.bytes,
+      mimeType: source.mimeType,
+      width: formatDimensions[format].width,
+      height: formatDimensions[format].height,
+      strength: 0.28,
+    });
     if (!result) result = await tryOpenAI(prompt, source, format);
 
     if (!result) {

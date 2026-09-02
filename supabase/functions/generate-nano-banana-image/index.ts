@@ -1,5 +1,6 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { generateCloudflareImage } from "../_shared/cloudflare-image.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,10 +28,6 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
 
     const { prompt, aspectRatio = "16:9", style } = body;
 
@@ -57,53 +54,23 @@ serve(async (req) => {
 
     const finalPrompt = `${enhancedPrompt}. ${aspectInstructions[aspectRatio] || ""}. High quality, professional, visually stunning, suitable for advertising.`;
 
-    // Use Lovable AI Gateway with Nano Banana model
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-pro-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: finalPrompt
-          }
-        ],
-        modalities: ["image", "text"]
-      }),
+    const dimensions: Record<string, { width: number; height: number }> = {
+      "1:1": { width: 1024, height: 1024 },
+      "16:9": { width: 1344, height: 768 },
+      "9:16": { width: 768, height: 1344 },
+      "4:3": { width: 1024, height: 768 },
+      "3:4": { width: 768, height: 1024 },
+    };
+    const dims = dimensions[aspectRatio] || dimensions["16:9"];
+    const generated = await generateCloudflareImage({
+      prompt: finalPrompt,
+      width: dims.width,
+      height: dims.height,
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[Nano Banana Pro] API error:", response.status, errorText);
-      
-      if (response.status === 429) {
-        throw new Error("Rate limit exceeded. Please try again later.");
-      }
-      if (response.status === 402) {
-        throw new Error("Insufficient credits. Please add credits to your workspace.");
-      }
-      
-      throw new Error(`API error: ${response.status}`);
+    if (!generated?.imageUrl) {
+      throw new Error("Cloudflare Workers AI image generation failed or is not configured");
     }
-
-    const data = await response.json();
-    console.log("[Nano Banana Pro] Response received");
-
-    // Extract image from Lovable AI response format
-    let imageUrl: string | null = null;
-
-    if (data.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
-      imageUrl = data.choices[0].message.images[0].image_url.url;
-    }
-
-    if (!imageUrl) {
-      console.error("[Nano Banana Pro] No image in response:", JSON.stringify(data).slice(0, 500));
-      throw new Error("No image generated in response");
-    }
+    const imageUrl = generated.imageUrl;
 
     console.log("[Nano Banana Pro] Image generated successfully");
 

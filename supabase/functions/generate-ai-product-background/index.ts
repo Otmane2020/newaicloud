@@ -224,10 +224,6 @@ Si c'est une table → légère vue plongeante montrant la surface
     const lifestylePromptSection = generateLifestylePromptSection(productTitle);
     console.log(`🏠 Lifestyle context: ${lifestyleContext.slice(0, 100)}...`);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
 
     // Build comprehensive prompt based on configuration
     const isMainImage = targetType === "main";
@@ -539,87 +535,6 @@ Qualité = OBLIGATOIRE.
     
     console.log("🎯 Final prompt preview (first 500 chars):", finalPrompt.substring(0, 500) + "...");
 
-    // Helper function to try Lovable AI
-    async function tryLovableAI(): Promise<{ imageUrl: string; model: string; error?: string } | null> {
-      try {
-        console.log("📝 Trying Lovable AI...");
-
-        // First, verify the image is accessible
-        console.log("🔍 Verifying image URL:", imageUrl.substring(0, 100) + "...");
-        try {
-          const imageCheck = await fetch(imageUrl, { method: "HEAD" });
-          if (!imageCheck.ok) {
-            const errorMsg = `Image inaccessible (HTTP ${imageCheck.status})`;
-            console.error("❌", errorMsg);
-            return { imageUrl: "", model: "", error: errorMsg };
-          }
-          console.log("✅ Image accessible");
-        } catch (e) {
-          const errorMsg = `Impossible d'accéder à l'image: ${e instanceof Error ? e.message : "Erreur inconnue"}`;
-          console.error("❌", errorMsg);
-          return { imageUrl: "", model: "", error: errorMsg };
-        }
-
-        const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image-preview",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: finalPrompt },
-                  { type: "image_url", image_url: { url: imageUrl } },
-                ],
-              },
-            ],
-            modalities: ["image", "text"],
-            generationConfig: {
-              aspectRatio: format === "portrait" ? "3:4" : format === "landscape" ? "4:3" : "1:1"
-            },
-          }),
-        });
-
-        if (response.status === 402) {
-          const errorMsg = "Pas de crédits Lovable AI disponibles";
-          console.error("❌", errorMsg);
-          return { imageUrl: "", model: "", error: errorMsg };
-        }
-
-        if (response.status === 429) {
-          const errorMsg = "Limite de taux atteinte, réessayez plus tard";
-          console.error("❌", errorMsg);
-          return { imageUrl: "", model: "", error: errorMsg };
-        }
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: { message: "Unknown error" } }));
-          const errorMsg = errorData.error?.message || `Erreur API (${response.status})`;
-          console.error(`❌ Lovable AI error (${response.status}):`, errorMsg);
-          return { imageUrl: "", model: "", error: errorMsg };
-        }
-
-        const data = await response.json();
-        const generatedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-        if (!generatedImageUrl) {
-          const errorMsg = "Aucune image générée dans la réponse";
-          console.error("⚠️", errorMsg);
-          return { imageUrl: "", model: "", error: errorMsg };
-        }
-
-        console.log("✅ Lovable AI succeeded");
-        return { imageUrl: generatedImageUrl, model: "google/gemini-2.5-flash-image-preview (Lovable AI)" };
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : "Erreur inconnue";
-        console.error("❌ Lovable AI exception:", errorMsg);
-        return { imageUrl: "", model: "", error: errorMsg };
-      }
-    }
 
     // Cloudflare Workers AI img2img. This route is used first when credentials exist.
     async function tryCloudflareAI(): Promise<{ imageUrl: string; model: string; error?: string } | null> {
@@ -685,9 +600,8 @@ Qualité = OBLIGATOIRE.
       }
     }
 
-    // Prefer Cloudflare's low/zero-cost route, then use Gemini image editing.
-    const cloudflareResult = await tryCloudflareAI();
-    const result = cloudflareResult?.imageUrl ? cloudflareResult : await tryLovableAI();
+    // Cloudflare is the image-generation provider for this path.
+    const result = await tryCloudflareAI();
 
     if (!result || !result.imageUrl || result.error) {
       const errorMsg = result?.error || "Service indisponible";
@@ -707,7 +621,7 @@ Qualité = OBLIGATOIRE.
                 "Vérifiez que l'URL de l'image est valide et publique",
               ]
             : errorMsg.includes("crédits")
-              ? ["Ajoutez des crédits à votre workspace Lovable AI"]
+              ? ["Vérifiez la configuration Cloudflare Workers AI"]
               : errorMsg.includes("taux")
                 ? ["Attendez quelques minutes avant de réessayer"]
                 : [

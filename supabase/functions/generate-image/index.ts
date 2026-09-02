@@ -1,5 +1,6 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { generateCloudflareImage } from "../_shared/cloudflare-image.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
@@ -32,10 +33,6 @@ serve(async (req) => {
     }
 
     // --- CONFIG ---
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY non configurée");
-    }
 
     console.log("🧠 Generating image for:", prompt);
 
@@ -56,70 +53,22 @@ Requirements:
 - Professional lighting and composition
 - No text, watermarks, or borders`.trim();
 
-    // --- LOVABLE AI IMAGE GENERATION ---
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image-preview",
-          messages: [
-            {
-              role: "user",
-              content: enhancedPrompt
-            }
-          ],
-          modalities: ["image", "text"]
-        }),
-      },
-    );
+    // --- CLOUDFLARE WORKERS AI IMAGE GENERATION ---
+    const targetDims = isArticle ? { width: 1344, height: 768 } : { width: 1024, height: 1024 };
+    const generated = await generateCloudflareImage({
+      prompt: enhancedPrompt,
+      width: targetDims.width,
+      height: targetDims.height,
+    });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Lovable AI Error:", response.status, errorText);
-
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({
-            error: "Limite de taux dépassée. Réessayez dans quelques secondes.",
-          }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({
-            error: "Crédits insuffisants. Veuillez recharger votre compte.",
-          }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      throw new Error(`Erreur Lovable AI: ${response.status}`);
+    if (!generated?.imageUrl) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Cloudflare Workers AI image generation failed or is not configured." }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    const data = await response.json();
-    console.log("✅ Lovable AI response received");
-
-    // --- EXTRACT IMAGE BASE64 FROM LOVABLE AI RESPONSE ---
-    // Lovable AI returns the image in data.choices[0].message.images[0].image_url.url
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-    if (!imageUrl) {
-      console.error("❌ Aucune image détectée :", JSON.stringify(data, null, 2));
-      throw new Error("Aucune image générée - format inattendu.");
-    }
+    const imageUrl = generated.imageUrl;
 
     // Extract base64 from data URL (format: data:image/png;base64,...)
     const base64Match = imageUrl.match(/data:image\/[^;]+;base64,(.+)/);
@@ -164,7 +113,7 @@ Requirements:
         success: true,
         image_url: publicUrl || imageUrl,
         metadata: {
-          model: "google/gemini-2.5-flash-image-preview",
+          model: generated.model,
           product_type,
           style,
           aspect_ratio: finalAspectRatio,

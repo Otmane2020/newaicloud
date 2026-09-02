@@ -1,5 +1,6 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { generateCloudflareImage } from "../_shared/cloudflare-image.ts";
 import { generateLifestyleContext, generateLifestylePromptSection } from "../_shared/lifestyle-context.ts";
 
 const corsHeaders = {
@@ -130,14 +131,6 @@ VISUAL QUALITY ENHANCEMENT - PROFESSIONAL E-COMMERCE PHOTOGRAPHY:
 - Think: IKEA catalog, West Elm, Roche Bobois photography quality
 `;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY not configured");
-      return new Response(JSON.stringify({ success: false, error: "API key not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     console.log("🎨 Creating 5 background variants from text prompt for:", productTitle, "Format:", format);
 
@@ -251,54 +244,25 @@ Stylish city-inspired atmosphere, premium lifestyle shot.`,
         try {
           console.log(`🧠 Generating variant ${i + 1}/5: ${variant.style}`);
 
-          const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash-image-preview",
-              messages: [
-                {
-                  role: "user",
-                  content: [
-                    { type: "text", text: variant.prompt },
-                    { type: "image_url", image_url: { url: productImageUrl } }
-                  ],
-                },
-              ],
-              modalities: ["image", "text"],
-            }),
+          const generated = await generateCloudflareImage({
+            prompt: variant.prompt,
+            imageUrl: productImageUrl,
+            width: 1024,
+            height: 1024,
+            strength: 0.28,
           });
 
-          if (!res.ok) {
-            const errText = await res.text();
-            console.error(`❌ Gemini API error (${res.status}) for variant ${variant.style}:`, errText);
-
-            if (res.status === 429) {
-              console.error(`⏳ Rate limit exceeded for ${variant.style}`);
-            } else if (res.status === 403) {
-              console.error(`🔑 Invalid API key for ${variant.style}`);
-            } else if (res.status === 400) {
-              console.error(`📝 Invalid request for ${variant.style}: ${errText}`);
-            }
+          if (!generated?.imageUrl) {
+            console.error(`Cloudflare image generation failed for ${variant.style}`);
             return null;
           }
 
-          const data = await res.json();
-          const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-          if (!imageUrl) {
-            console.error(
-              `⚠️ No image in response for variant ${variant.style}. Response structure:`,
-              JSON.stringify(data, null, 2),
-            );
+          const imageUrl = generated.imageUrl;
+          const base64 = imageUrl.includes(",") ? imageUrl.split(",")[1] : "";
+          if (!base64) {
+            console.error(`Cloudflare returned an unsupported image payload for ${variant.style}`);
             return null;
           }
-
-          // Extract base64 from data URL
-          const base64 = imageUrl.split(",")[1];
 
           const qualityScore = Math.floor(85 + Math.random() * 15);
 
