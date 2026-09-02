@@ -72,7 +72,6 @@ export function CatalogOptimizeSidebar() {
         label: fr ? "Catalogue" : "Catalog",
         icon: Package,
         items: [
-          { label: fr ? "Produits" : "Products", href: "/products", icon: Package },
           {
             label: fr ? "Titres & descriptions" : "Titles & Descriptions",
             href: "/products/title-description?view=content",
