@@ -68,13 +68,16 @@ type ProcessingAction = "white" | "ambiance" | "delete" | "upload" | null;
 export function ProductGalleryDialog({
   open,
   onOpenChange,
-  product,
+  product: controlledProduct,
   storeId,
   onMainImageChange,
 }: ProductGalleryDialogProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [autoProduct, setAutoProduct] = useState<Product | null>(null);
+  const product = controlledProduct ?? autoProduct;
 
   const [images, setImages] = useState<ProductImage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -117,6 +120,48 @@ export function ProductGalleryDialog({
       queryClient.invalidateQueries({ queryKey: ["products"] }),
     ]);
   };
+
+  // The grid already opens the gallery directly. This capture listener makes the
+  // thumbnail in the table view behave exactly the same way without triggering
+  // the row-level product preview first.
+  useEffect(() => {
+    const handleTableThumbnailClick = async (event: MouseEvent) => {
+      if (window.location.pathname !== "/products/title-description") return;
+
+      const target = event.target as HTMLElement | null;
+      const image = target?.closest("table img") as HTMLImageElement | null;
+      if (!image) return;
+
+      const source = image.getAttribute("src") || image.currentSrc || image.src;
+      if (!source) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      try {
+        let query = supabase
+          .from("shopify_products")
+          .select("id, title, shopify_id")
+          .eq("image_url", source);
+
+        if (storeId) query = query.eq("store_id", storeId);
+
+        const { data, error } = await query.maybeSingle();
+        if (error || !data) {
+          console.warn("[Gallery] Could not resolve table thumbnail product", error);
+          return;
+        }
+
+        setAutoProduct(data as Product);
+        onOpenChange(true);
+      } catch (error) {
+        console.error("[Gallery] Failed to open gallery from table thumbnail", error);
+      }
+    };
+
+    document.addEventListener("click", handleTableThumbnailClick, true);
+    return () => document.removeEventListener("click", handleTableThumbnailClick, true);
+  }, [onOpenChange, storeId]);
 
   const loadImages = async () => {
     if (!product?.id) return;
@@ -167,8 +212,9 @@ export function ProductGalleryDialog({
       setImages([]);
       setAmbianceTarget(null);
       setLightboxOpen(false);
+      if (!controlledProduct) setAutoProduct(null);
     }
-  }, [open, product?.id]);
+  }, [open, product?.id, controlledProduct]);
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
@@ -399,7 +445,6 @@ export function ProductGalleryDialog({
     setProcessingAction("upload");
     const toastId = toast.loading("Upload de l’image...");
     try {
-      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
       const path = `manual-uploads/${product.id}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
 
@@ -433,18 +478,20 @@ export function ProductGalleryDialog({
     const toastId = toast.loading(product.shopify_id ? "Suppression dans Shopify..." : "Suppression de l’image...");
 
     try {
-      // IMPORTANT: when the image exists in Shopify, Shopify is deleted FIRST.
-      // The local record is kept if Shopify does not explicitly confirm the deletion.
-      if (product.shopify_id && imageToDelete.shopify_image_id) {
+      // Shopify is always checked first when the product exists there. The Edge
+      // Function can resolve the media either by shopify_image_id OR by URL, so
+      // old rows with a missing local Shopify image ID are handled correctly too.
+      if (product.shopify_id) {
         const { data, error } = await supabase.functions.invoke("delete-product-image-from-shopify", {
           body: {
             productId: product.id,
-            shopifyImageId: imageToDelete.shopify_image_id,
+            shopifyImageId: imageToDelete.shopify_image_id ?? null,
             imageUrl: imageToDelete.src,
           },
         });
 
-        if (error || !data?.success || data?.deletedCount !== 1) {
+        const deletionConfirmed = data?.success && (data?.deletedCount === 1 || data?.alreadyAbsent === true);
+        if (error || !deletionConfirmed) {
           throw new Error(data?.error || error?.message || "Shopify n’a pas confirmé la suppression");
         }
       }
@@ -508,7 +555,7 @@ export function ProductGalleryDialog({
       setImages(remainingImages);
       if (lightboxIndex >= remainingImages.length) setLightboxIndex(Math.max(0, remainingImages.length - 1));
       await invalidateProductQueries();
-      toast.success(product.shopify_id && imageToDelete.shopify_image_id
+      toast.success(product.shopify_id
         ? "Image supprimée de Shopify et de la galerie"
         : "Image supprimée de la galerie", { id: toastId });
     } catch (error: any) {
