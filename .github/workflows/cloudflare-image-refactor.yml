@@ -16,13 +16,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Repair final Cloudflare image migration
-        run: python3 .github/scripts/refactor_cloudflare_images_pass3.py
+      - name: Clean creative export handler
+        run: python3 .github/scripts/repair_export_creative_cloudflare.py
 
       - name: Show source diff
         run: git diff -- src supabase/functions
 
-      - name: Commit migration
+      - name: Commit repair
         run: |
           git config user.name "Otmane2020"
           git config user.email "61626050+Otmane2020@users.noreply.github.com"
@@ -30,7 +30,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No source changes to commit"
           else
-            git commit -m "fix: complete Cloudflare image generation migration"
+            git commit -m "fix: clean Cloudflare creative image export"
             git push origin HEAD:main
           fi
 
