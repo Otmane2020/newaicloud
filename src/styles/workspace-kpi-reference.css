@@ -1,0 +1,402 @@
+/* Unified top-of-page KPI treatment.
+   Visual reference: Enriched Catalog summary strip.
+   This stylesheet intentionally targets summary metrics only, not content cards. */
+
+:root {
+  --kpi-violet: 124 58 237;
+  --kpi-amber: 245 158 11;
+  --kpi-emerald: 16 185 129;
+  --kpi-sky: 14 165 233;
+  --kpi-border: 226 232 240;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Enriched Catalog — canonical reference                                     */
+/* -------------------------------------------------------------------------- */
+
+.product-source-page > section:first-of-type {
+  overflow: hidden;
+  border-radius: 12px;
+  border-color: rgb(var(--kpi-border));
+  background: rgb(255 255 255);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.025);
+}
+
+.product-source-page > section:first-of-type > .grid > div {
+  min-height: 64px;
+  padding: 12px 16px;
+}
+
+.product-source-page > section:first-of-type > .grid > div::before {
+  inset: 0 auto 0 0;
+  width: 3px;
+  height: auto;
+  border-radius: 999px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Google Shopping — same horizontal strip                                    */
+/* -------------------------------------------------------------------------- */
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div {
+  min-height: 64px;
+  padding: 12px 16px !important;
+}
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div::before {
+  inset: 0 auto 0 0 !important;
+  width: 3px !important;
+  height: auto !important;
+  border-radius: 999px;
+}
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(1) {
+  background: linear-gradient(135deg, rgb(245 243 255 / 0.92), rgb(255 255 255) 76%);
+}
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(1)::before { background: rgb(var(--kpi-violet)); }
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(2) {
+  background: linear-gradient(135deg, rgb(255 251 235 / 0.94), rgb(255 255 255) 76%);
+}
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(2)::before { background: rgb(var(--kpi-amber)); }
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(3) {
+  background: linear-gradient(135deg, rgb(236 253 245 / 0.94), rgb(255 255 255) 76%);
+}
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(3)::before { background: rgb(var(--kpi-emerald)); }
+
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(4) {
+  background: linear-gradient(135deg, rgb(240 249 255 / 0.96), rgb(255 255 255) 76%);
+}
+section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div:nth-child(4)::before { background: rgb(var(--kpi-sky)); }
+
+/* -------------------------------------------------------------------------- */
+/* Product Enrichment — convert three separate stat cards into one strip      */
+/* -------------------------------------------------------------------------- */
+
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] {
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid rgb(var(--kpi-border));
+  border-radius: 12px;
+  background: white;
+}
+
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div {
+  position: relative;
+  display: grid;
+  min-height: 64px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 12px 16px !important;
+  box-shadow: none !important;
+}
+
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 999px;
+}
+
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div:nth-child(1) {
+  background: linear-gradient(135deg, rgb(245 243 255 / 0.92), white 78%);
+}
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div:nth-child(1)::before { background: rgb(var(--kpi-violet)); }
+
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div:nth-child(2) {
+  background: linear-gradient(135deg, rgb(236 253 245 / 0.94), white 78%);
+}
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div:nth-child(2)::before { background: rgb(var(--kpi-emerald)); }
+
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div:nth-child(3) {
+  background: linear-gradient(135deg, rgb(255 251 235 / 0.94), white 78%);
+}
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div:nth-child(3)::before { background: rgb(var(--kpi-amber)); }
+
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div > p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(100 116 139);
+}
+
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div > div {
+  margin: 0 !important;
+  gap: 0 !important;
+}
+
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div > div > svg {
+  display: none;
+}
+
+.mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div strong {
+  font-size: 18px !important;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Collections — join the three top counters into the same KPI family         */
+/* -------------------------------------------------------------------------- */
+
+div.grid:has(> [class~="border-violet-200/70"][class~="bg-violet-50/40"]):has(> [class~="border-sky-200/70"]):has(> [class~="border-emerald-200/70"]) {
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid rgb(var(--kpi-border));
+  border-radius: 12px;
+  background: white;
+}
+
+div.grid:has(> [class~="border-violet-200/70"][class~="bg-violet-50/40"]) > [class~="p-5"] {
+  min-height: 64px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 12px 16px !important;
+  box-shadow: none !important;
+}
+
+div.grid:has(> [class~="border-violet-200/70"][class~="bg-violet-50/40"]) > [class~="p-5"]::before {
+  inset: 0 auto 0 0 !important;
+  width: 3px !important;
+  height: auto !important;
+  border-radius: 999px;
+}
+
+div.grid:has(> [class~="border-violet-200/70"][class~="bg-violet-50/40"]) > [class~="p-5"] > .flex > div:first-child {
+  display: none;
+}
+
+div.grid:has(> [class~="border-violet-200/70"][class~="bg-violet-50/40"]) > [class~="p-5"] > .flex > div:last-child {
+  display: flex;
+  width: 100%;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+div.grid:has(> [class~="border-violet-200/70"][class~="bg-violet-50/40"]) > [class~="p-5"] p.text-2xl {
+  font-size: 18px !important;
+  line-height: 1.25;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+div.grid:has(> [class~="border-violet-200/70"][class~="bg-violet-50/40"]) > [class~="p-5"] p.text-sm {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(100 116 139);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Product Optimizer — preserve clickable filters, adopt KPI visual language  */
+/* -------------------------------------------------------------------------- */
+
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) {
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid rgb(var(--kpi-border));
+  border-radius: 12px;
+  background: white;
+}
+
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer {
+  position: relative;
+  min-height: 64px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 12px 16px !important;
+  box-shadow: none !important;
+}
+
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 999px;
+}
+
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer:nth-child(1) {
+  background: linear-gradient(135deg, rgb(236 253 245 / 0.94), white 78%) !important;
+}
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer:nth-child(1)::before { background: rgb(var(--kpi-emerald)); }
+
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer:nth-child(2) {
+  background: linear-gradient(135deg, rgb(255 251 235 / 0.94), white 78%) !important;
+}
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer:nth-child(2)::before { background: rgb(var(--kpi-amber)); }
+
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer:nth-child(3) {
+  background: linear-gradient(135deg, rgb(240 249 255 / 0.96), white 78%) !important;
+}
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer:nth-child(3)::before { background: rgb(var(--kpi-sky)); }
+
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer > .flex > div:first-child {
+  display: none;
+}
+
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer > .flex > div:last-child {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) p.text-2xl {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The standalone Total Products counter uses the violet reference treatment. */
+.min-h-screen > .mx-auto > div.flex.items-center.gap-3.mb-4:has(+ div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]) {
+  position: relative;
+  min-height: 64px;
+  margin-bottom: 8px !important;
+  overflow: hidden;
+  border: 1px solid rgb(var(--kpi-border));
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgb(245 243 255 / 0.92), white 78%);
+}
+
+.min-h-screen > .mx-auto > div.flex.items-center.gap-3.mb-4:has(+ div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"])::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 999px;
+  background: rgb(var(--kpi-violet));
+}
+
+.min-h-screen > .mx-auto > div.flex.items-center.gap-3.mb-4:has(+ div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]) > svg {
+  display: none;
+}
+
+.min-h-screen > .mx-auto > div.flex.items-center.gap-3.mb-4:has(+ div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]) > div {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.min-h-screen > .mx-auto > div.flex.items-center.gap-3.mb-4:has(+ div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]) p.text-3xl {
+  font-size: 18px !important;
+  line-height: 1.25;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------------------- */
+/* SEO — color the top score tiles without changing the main score gauge       */
+/* -------------------------------------------------------------------------- */
+
+section[aria-label="Global SEO score"] .grid > button {
+  position: relative;
+  overflow: hidden;
+  border-color: rgb(var(--kpi-border)) !important;
+  background: white !important;
+  padding-left: 14px !important;
+}
+
+section[aria-label="Global SEO score"] .grid > button::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 999px;
+}
+
+section[aria-label="Global SEO score"] .grid > button:nth-child(4n + 1) {
+  background: linear-gradient(135deg, rgb(245 243 255 / 0.92), white 82%) !important;
+}
+section[aria-label="Global SEO score"] .grid > button:nth-child(4n + 1)::before { background: rgb(var(--kpi-violet)); }
+
+section[aria-label="Global SEO score"] .grid > button:nth-child(4n + 2) {
+  background: linear-gradient(135deg, rgb(255 251 235 / 0.94), white 82%) !important;
+}
+section[aria-label="Global SEO score"] .grid > button:nth-child(4n + 2)::before { background: rgb(var(--kpi-amber)); }
+
+section[aria-label="Global SEO score"] .grid > button:nth-child(4n + 3) {
+  background: linear-gradient(135deg, rgb(236 253 245 / 0.94), white 82%) !important;
+}
+section[aria-label="Global SEO score"] .grid > button:nth-child(4n + 3)::before { background: rgb(var(--kpi-emerald)); }
+
+section[aria-label="Global SEO score"] .grid > button:nth-child(4n + 4) {
+  background: linear-gradient(135deg, rgb(240 249 255 / 0.96), white 82%) !important;
+}
+section[aria-label="Global SEO score"] .grid > button:nth-child(4n + 4)::before { background: rgb(var(--kpi-sky)); }
+
+/* -------------------------------------------------------------------------- */
+/* Dashboard — top numeric cards keep their function, gain reference accents  */
+/* -------------------------------------------------------------------------- */
+
+.mx-auto.max-w-7xl.space-y-6 > section.grid[class~="lg:grid-cols-[1.25fr_.75fr]"] > div.grid.grid-cols-2.gap-3 {
+  gap: 0 !important;
+  overflow: hidden;
+  border: 1px solid rgb(var(--kpi-border));
+  border-radius: 12px;
+  background: white;
+}
+
+.mx-auto.max-w-7xl.space-y-6 > section.grid[class~="lg:grid-cols-[1.25fr_.75fr]"] > div.grid.grid-cols-2.gap-3 > div {
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.mx-auto.max-w-7xl.space-y-6 > section.grid[class~="lg:grid-cols-[1.25fr_.75fr]"] > div.grid.grid-cols-2.gap-3 > div::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 999px;
+}
+
+.mx-auto.max-w-7xl.space-y-6 > section.grid[class~="lg:grid-cols-[1.25fr_.75fr]"] > div.grid.grid-cols-2.gap-3 > div:nth-child(1) {
+  background: linear-gradient(135deg, rgb(245 243 255 / 0.92), white 80%);
+}
+.mx-auto.max-w-7xl.space-y-6 > section.grid[class~="lg:grid-cols-[1.25fr_.75fr]"] > div.grid.grid-cols-2.gap-3 > div:nth-child(1)::before { background: rgb(var(--kpi-violet)); }
+
+.mx-auto.max-w-7xl.space-y-6 > section.grid[class~="lg:grid-cols-[1.25fr_.75fr]"] > div.grid.grid-cols-2.gap-3 > div:nth-child(2) {
+  background: linear-gradient(135deg, rgb(255 251 235 / 0.94), white 80%) !important;
+}
+.mx-auto.max-w-7xl.space-y-6 > section.grid[class~="lg:grid-cols-[1.25fr_.75fr]"] > div.grid.grid-cols-2.gap-3 > div:nth-child(2)::before { background: rgb(var(--kpi-amber)); }
+
+.mx-auto.max-w-7xl.space-y-6 > section.grid[class~="lg:grid-cols-[1.25fr_.75fr]"] > div.grid.grid-cols-2.gap-3 > div:nth-child(3) {
+  background: linear-gradient(135deg, rgb(240 249 255 / 0.96), white 80%);
+}
+.mx-auto.max-w-7xl.space-y-6 > section.grid[class~="lg:grid-cols-[1.25fr_.75fr]"] > div.grid.grid-cols-2.gap-3 > div:nth-child(3)::before { background: rgb(var(--kpi-sky)); }
+
+/* -------------------------------------------------------------------------- */
+/* Responsive + dark mode                                                     */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+  .product-source-page > section:first-of-type > .grid > div,
+  section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div,
+  .mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div {
+    min-height: 58px;
+  }
+}
+
+.dark .product-source-page > section:first-of-type,
+.dark section.overflow-hidden.rounded-2xl.border.border-slate-200.bg-white > .grid.divide-y.divide-slate-100 > div,
+.dark .mx-auto.max-w-7xl.space-y-6 > header + section.grid[class~="sm:grid-cols-3"] > div,
+.dark div.grid:has(> [class~="border-violet-200/70"][class~="bg-violet-50/40"]) > [class~="p-5"],
+.dark .min-h-screen > .mx-auto > div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]:has(> .cursor-pointer) > .cursor-pointer,
+.dark .min-h-screen > .mx-auto > div.flex.items-center.gap-3.mb-4:has(+ div.grid[class~="sm:grid-cols-2"][class~="lg:grid-cols-3"]),
+.dark section[aria-label="Global SEO score"] .grid > button,
+.dark .mx-auto.max-w-7xl.space-y-6 > section.grid[class~="lg:grid-cols-[1.25fr_.75fr]"] > div.grid.grid-cols-2.gap-3 > div {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
