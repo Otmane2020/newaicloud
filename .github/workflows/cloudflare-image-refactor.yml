@@ -16,13 +16,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Replace Gemini image generation with Cloudflare
-        run: python3 .github/scripts/refactor_cloudflare_images.py
+      - name: Finish Gemini image migration
+        run: python3 .github/scripts/refactor_cloudflare_images_pass2.py
 
       - name: Show source diff
         run: git diff -- supabase/functions
 
-      - name: Commit refactor
+      - name: Commit migration
         run: |
           git config user.name "Otmane2020"
           git config user.email "61626050+Otmane2020@users.noreply.github.com"
@@ -30,11 +30,11 @@ jobs:
           if git diff --cached --quiet; then
             echo "No source changes to commit"
           else
-            git commit -m "refactor: replace Gemini image generation with Cloudflare"
+            git commit -m "refactor: remove remaining Gemini image generation"
             git push origin HEAD:main
           fi
 
-      - name: Final Gemini image audit
+      - name: Audit entire repository for Gemini image generation
         run: |
-          echo "Searching for Gemini image-generation markers..."
-          grep -RniE 'gemini-[^" ]*image|google/gemini-[^" ]*image|GEMINI_IMAGE_MODEL|responseModalities.*IMAGE' supabase/functions || true
+          echo "Potential Gemini image-generation markers across repository:"
+          grep -RniE --exclude-dir=.git --exclude='*.md' --exclude='*.lock' 'gemini-[^" ]*image|google/gemini-[^" ]*image|GEMINI_IMAGE_MODEL|responseModalities.*IMAGE|modalities.*\[.*image' . || true
