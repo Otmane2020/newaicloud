@@ -1,5 +1,6 @@
 import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { generateCloudflareImage } from "../_shared/cloudflare-image.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -150,42 +151,6 @@ const buildFormat = (size: string) => {
   };
 };
 
-const callGateway = async ({
-  apiKey,
-  model,
-  prompt,
-  sourceDataUrl,
-}: {
-  apiKey: string;
-  model: string;
-  prompt: string;
-  sourceDataUrl: string;
-}) => {
-  return await withTimeout(
-    "https://ai.gateway.lovable.dev/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Lovable-API-Key": apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        modalities: ["image", "text"],
-        messages: [{
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "image_url", image_url: { url: sourceDataUrl } },
-          ],
-        }],
-      }),
-    },
-    120_000,
-  );
-};
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -234,8 +199,6 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const sourceDataUrl = await downloadImageAsDataUrl(productImageUrl);
     const output = buildFormat(template.size);
@@ -432,7 +395,55 @@ QUALITY:
       }
     }
 
-    throw new Error(`The available AI image models did not return a valid image. ${attempts.join(" | ")}`);
+    throw new Error(`The available AI image models did not return a valid image. ${attempts.join(" |    const cloudflareDimensions: Record<string, { width: number; height: number }> = {
+      square: { width: 1024, height: 1024 },
+      portrait: { width: 1024, height: 1280 },
+      story: { width: 768, height: 1360 },
+      landscape: { width: 1344, height: 768 },
+    };
+    const aiDimensions = cloudflareDimensions[output.id] || cloudflareDimensions.square;
+
+    console.log("Ad creative generation", {
+      product: product.title,
+      template: template.id,
+      size: output.id,
+      ratio: output.ratio,
+      mode,
+      showPrice: Boolean(showPrice),
+      provider: "cloudflare-workers-ai",
+    });
+
+    const generated = await generateCloudflareImage({
+      prompt,
+      imageUrl: sourceDataUrl,
+      width: aiDimensions.width,
+      height: aiDimensions.height,
+      strength: 0.28,
+      negativePrompt: "different product, altered product shape, wrong color, changed material, added parts, removed parts, fake logo, watermark, gibberish, low quality",
+    });
+
+    if (!generated?.imageUrl) {
+      throw new Error("Cloudflare Workers AI did not return a valid creative image. Check Cloudflare image credentials and model configuration.");
+    }
+
+    const generatedDataUrl = await resolveGeneratedDataUrl(generated.imageUrl);
+    const parsed = dataUrlParts(generatedDataUrl);
+    if (!parsed) {
+      throw new Error("Cloudflare Workers AI returned an unsupported image payload.");
+    }
+
+    return new Response(JSON.stringify({
+      base64: parsed.base64,
+      mimeType: parsed.mimeType,
+      outputFormat: output.id,
+      ratio: output.ratio,
+      dimensions: output.dimensions,
+      model: generated.model,
+      provider: generated.provider,
+      generatedByAI: true,
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error: any) {
     const message = error?.name === "AbortError"
       ? "AI image generation timed out. Please try again."

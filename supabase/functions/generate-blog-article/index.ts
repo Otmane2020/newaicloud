@@ -1,6 +1,7 @@
 import "../_shared/strict-ai-generation.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveLanguage, getLanguageInstructions, getLanguageName, getGenerationLanguage } from "../_shared/language-detector.ts";
+import { generateCloudflareImage } from "../_shared/cloudflare-image.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -499,54 +500,33 @@ Réponds UNIQUEMENT avec le titre optimisé, sans guillemets, sans formatage, sa
       }
     }
 
-    // Étape 4: Générer l'image de couverture avec Lovable AI
+    // Étape 4: Générer l'image de couverture avec Cloudflare Workers AI
     let featuredImage = "";
     if (generateFeaturedImage) {
       try {
-        console.log("🎨 Generating featured image with Lovable AI...");
-        
-        const imagePrompt = `Créez une image de couverture moderne et professionnelle pour un article sur "${articleTitle}". 
+        console.log("Generating featured image with Cloudflare Workers AI...");
+
+        const imagePrompt = `Créez une image de couverture moderne et professionnelle pour un article sur "${articleTitle}".
 Style: photographie de haute qualité, minimaliste, épurée, professionnelle.
 Thème: ${category} - ${keywords.slice(0, 3).join(', ')}
 Couleurs: harmonieuses et élégantes.
 Format: 1200x630px (format Open Graph).
 Aucun texte, juste une représentation visuelle du sujet.`;
 
-        const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash-image",
-            messages: [
-              {
-                role: "user",
-                content: imagePrompt
-              }
-            ],
-            modalities: ["image", "text"]
-          }),
+        const generatedImage = await generateCloudflareImage({
+          prompt: imagePrompt,
+          width: 1200,
+          height: 630,
         });
 
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.json();
-          console.log("🖼️ Image API response:", JSON.stringify(imageData).substring(0, 200));
-          
-          const base64Image = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-          if (base64Image) {
-            featuredImage = base64Image;
-            console.log("✅ Featured image generated successfully (base64 length:", base64Image.length, ")");
-          } else {
-            console.warn("⚠️ No image in API response:", imageData);
-          }
+        if (generatedImage?.imageUrl) {
+          featuredImage = generatedImage.imageUrl;
+          console.log("Featured image generated with Cloudflare:", generatedImage.model);
         } else {
-          const errorText = await imageResponse.text();
-          console.error("❌ Image generation failed:", imageResponse.status, errorText);
+          console.warn("Cloudflare did not return a featured image");
         }
       } catch (err) {
-        console.error("❌ Featured image generation error:", err);
+        console.error("Featured image generation error:", err);
         // Ne pas bloquer la génération d'article si l'image échoue
       }
     }
