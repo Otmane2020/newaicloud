@@ -51,12 +51,7 @@ async function fetchImage(url: string): Promise<{ bytes: Uint8Array; mimeType: s
   return { bytes: new Uint8Array(await response.arrayBuffer()), mimeType };
 }
 
-function aspectToOpenAISize(aspectRatio?: string, explicitSize?: string): string {
-  if (explicitSize && ["1024x1024", "1024x1536", "1536x1024"].includes(explicitSize)) return explicitSize;
-  if (aspectRatio === "3:4" || aspectRatio === "9:16" || aspectRatio === "portrait") return "1024x1536";
-  if (aspectRatio === "4:3" || aspectRatio === "16:9" || aspectRatio === "landscape") return "1536x1024";
-  return "1024x1024";
-}
+
 
 async function tryCloudflare(options: ImageRouteOptions): Promise<ImageRouteResult | null> {
   const accountId = envSecret("CLOUDFLARE_ACCOUNT_ID");
@@ -179,101 +174,6 @@ async function tryGemini(options: ImageRouteOptions): Promise<ImageRouteResult |
   return null;
 }
 
-async function tryOpenAI(options: ImageRouteOptions): Promise<ImageRouteResult | null> {
-  const apiKey = envSecret("OPENAI_API_KEY");
-  if (!apiKey) return null;
-
-  const model = Deno.env.get("OPENAI_IMAGE_MODEL") || "gpt-image-1";
-  const size = aspectToOpenAISize(options.aspectRatio, options.size);
-
-  try {
-    let response: Response;
-    const sourceUrl = options.imageUrls?.[0];
-
-    if (sourceUrl) {
-      const source = await fetchImage(sourceUrl);
-      const form = new FormData();
-      const ext = source.mimeType.includes("png") ? "png" : source.mimeType.includes("webp") ? "webp" : "jpg";
-      form.append("model", model);
-      form.append("image", new File([source.bytes as unknown as BlobPart], `source.${ext}`, { type: source.mimeType }));
-      form.append("prompt", options.prompt.slice(0, 16000));
-      form.append("size", size);
-      form.append("quality", "high");
-      form.append("n", "1");
-      response = await providerFetch("https://api.openai.com/v1/images/edits", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}` },
-        body: form,
-      });
-    } else {
-      response = await providerFetch("https://api.openai.com/v1/images/generations", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          prompt: options.prompt.slice(0, 16000),
-          size,
-          quality: "high",
-          n: 1,
-        }),
-      });
-    }
-
-    if (!response.ok) {
-      console.warn(`[image-router] OpenAI ${model} failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
-      return null;
-    }
-
-    const data = await response.json();
-    const first = data?.data?.[0];
-    const imageUrl = first?.b64_json ? `data:image/png;base64,${first.b64_json}` : first?.url;
-    return imageUrl ? { imageUrl, provider: "openai", model } : null;
-  } catch (error) {
-    console.warn(`[image-router] OpenAI ${model} failed`, error);
-    return null;
-  }
-}
-
-async function tryLovable(options: ImageRouteOptions): Promise<ImageRouteResult | null> {
-  const apiKey = envSecret("LOVABLE_API_KEY");
-  if (!apiKey) return null;
-
-  const model = Deno.env.get("LOVABLE_IMAGE_MODEL") || "google/gemini-2.5-flash-image-preview";
-  try {
-    const content: any[] = [{ type: "text", text: options.prompt }];
-    for (const url of (options.imageUrls || []).slice(0, 4)) {
-      content.push({ type: "image_url", image_url: { url } });
-    }
-    const response = await providerFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content }],
-        modalities: ["image", "text"],
-        generationConfig: options.aspectRatio ? { aspectRatio: options.aspectRatio } : undefined,
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn(`[image-router] Lovable ${model} failed: ${response.status} ${(await response.text()).slice(0, 300)}`);
-      return null;
-    }
-    const data = await response.json();
-    const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    return imageUrl ? { imageUrl, provider: "lovable", model } : null;
-  } catch (error) {
-    console.warn(`[image-router] Lovable ${model} failed`, error);
-    return null;
-  }
-}
-
 /**
  * Resilient image generation / editing route.
  * A provider failure never stops the chain.
@@ -282,8 +182,6 @@ export async function routeImage(options: ImageRouteOptions): Promise<ImageRoute
   const attempts = [
     () => tryCloudflare(options),
     () => tryGemini(options),
-    () => tryLovable(options),
-    () => tryOpenAI(options),
   ];
 
 
@@ -296,5 +194,5 @@ export async function routeImage(options: ImageRouteOptions): Promise<ImageRoute
     }
   }
 
-  throw new Error("No configured image provider succeeded. Check Cloudflare/Gemini/OpenAI/Lovable image credentials and models.");
+  throw new Error("No configured image provider succeeded. Check Cloudflare/Gemini image credentials and models.");
 }
