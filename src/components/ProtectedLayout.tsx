@@ -8,6 +8,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NoStoreConnectedPrompt } from "@/components/NoStoreConnectedPrompt";
 import { CreditWallet } from "@/components/CreditWallet";
+import { ProductContentQuickAction } from "@/components/products/ProductContentQuickAction";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
@@ -160,6 +161,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
               </div>
             )}
             <div className="catalog-workspace mx-auto max-w-[1600px] p-3 sm:p-4 md:p-5 lg:p-6">
+              <ProductContentQuickAction pathname={pathname} />
               {children}
             </div>
           </main>
