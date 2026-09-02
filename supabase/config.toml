@@ -1,5 +1,9 @@
 project_id = "xkrrcusvmxifbiejxker"
 
 # Edge Functions are deployed from GitHub Actions on changes under supabase/functions/.
+# Stripe calls webhook endpoints directly, so Supabase JWT verification must be disabled.
 [functions.stripe-credit-webhook]
+verify_jwt = false
+
+[functions.stripe-webhook]
 verify_jwt = false
