@@ -29,6 +29,7 @@ interface LanguageProviderProps {
 }
 
 const LEGACY_FRENCH_UI: Record<string, string> = {
+  'Titles & Descriptions': 'Product Optimizer',
   'Je cherche une composition TV murale moderne en bois.': 'I am looking for a modern wall-mounted wooden TV unit.',
   'La composition SWITCH correspond à votre recherche. Elle est disponible en plusieurs finitions dans le catalogue Decora Home.': 'The SWITCH TV unit matches your search. It is available in several finishes in the Decora Home catalog.',
   'Disponible · plusieurs finitions': 'Available · several finishes',
