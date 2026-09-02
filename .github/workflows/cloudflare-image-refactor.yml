@@ -16,25 +16,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Finish Gemini image migration
-        run: python3 .github/scripts/refactor_cloudflare_images_pass2.py
+      - name: Repair final Cloudflare image migration
+        run: python3 .github/scripts/refactor_cloudflare_images_pass3.py
 
       - name: Show source diff
-        run: git diff -- supabase/functions
+        run: git diff -- src supabase/functions
 
       - name: Commit migration
         run: |
           git config user.name "Otmane2020"
           git config user.email "61626050+Otmane2020@users.noreply.github.com"
-          git add supabase/functions
+          git add src supabase/functions
           if git diff --cached --quiet; then
             echo "No source changes to commit"
           else
-            git commit -m "refactor: remove remaining Gemini image generation"
+            git commit -m "fix: complete Cloudflare image generation migration"
             git push origin HEAD:main
           fi
 
-      - name: Audit entire repository for Gemini image generation
+      - name: Audit application code for Gemini image generation
         run: |
-          echo "Potential Gemini image-generation markers across repository:"
-          grep -RniE --exclude-dir=.git --exclude='*.md' --exclude='*.lock' 'gemini-[^" ]*image|google/gemini-[^" ]*image|GEMINI_IMAGE_MODEL|responseModalities.*IMAGE|modalities.*\[.*image' . || true
+          echo "Potential Gemini image-generation markers in application code:"
+          grep -RniE --exclude='*.md' --exclude='*.lock' 'gemini-[^" ]*image|google/gemini-[^" ]*image|GEMINI_IMAGE_MODEL|responseModalities.*IMAGE|modalities.*\[.*image' src supabase/functions || true
