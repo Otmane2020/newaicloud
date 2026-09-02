@@ -73,7 +73,7 @@ export function CatalogOptimizeSidebar() {
         icon: Package,
         items: [
           {
-            label: fr ? "Titres & descriptions" : "Titles & Descriptions",
+            label: "Product Optimizer",
             href: "/products/title-description?view=content",
             icon: Wand2,
             badge: "AI",
