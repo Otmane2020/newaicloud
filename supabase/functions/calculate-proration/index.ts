@@ -1,4 +1,3 @@
-import "../_shared/strict-ai-generation.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
@@ -8,53 +7,44 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+const logStep = (step: string, details?: unknown) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[CALCULATE-PRORATION] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: { ...corsHeaders, "Content-Type": "application/json" },
+});
 
-  // Safe HealthCheck handler
-  const bodyCheck = await req.json().catch(() => ({}));
-  if (bodyCheck?.healthCheck === true) {
-    return new Response(JSON.stringify({ ok: true }), { 
-      status: 200, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  }
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const body = await req.json().catch(() => ({}));
+  if (body?.healthCheck === true) return json({ ok: true });
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
 
   try {
-    logStep("Function started");
-
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (!stripeKey) return json({ error: "Stripe is not configured on the server." }, 503);
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
+    if (!authHeader) return json({ error: "Authentication required." }, 401);
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw userError;
-    if (!userData.user) throw new Error("User not found");
+    if (userError || !userData.user) return json({ error: "Invalid or expired session." }, 401);
 
-    logStep("User authenticated", { userId: userData.user.id });
+    const { new_plan_id, new_price_id: requestedPriceId, billing_period } = body;
+    if (!new_plan_id && !requestedPriceId) {
+      return json({ error: "new_plan_id or new_price_id is required" }, 400);
+    }
 
-    const { new_plan_id, billing_period } = bodyCheck;
-    if (!new_plan_id) throw new Error("new_plan_id is required");
-
-    logStep("Request body parsed", { new_plan_id, billing_period });
-
-    // Get user profile
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")
       .select("stripe_customer_id, current_plan_id, subscription_status, trial_ends_at")
@@ -63,55 +53,43 @@ serve(async (req) => {
 
     if (profileError) throw profileError;
 
-    // Check if user is in trial
-    const isInTrial = profile?.subscription_status === 'trialing' || 
+    const isInTrial = profile?.subscription_status === "trialing" ||
       (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
 
     if (isInTrial) {
-      logStep("User is in trial - no proration calculation needed");
-      return new Response(JSON.stringify({
+      return json({
         proration_needed: false,
         is_trial: true,
-        message: "En trial, passage direct au plan payant sans prorata"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+        prorationAmount: 0,
+        amount_to_pay_now: 0,
+        breakdown: null,
+        message: "Trial subscription: no proration is due now.",
       });
     }
 
-    // Get active subscription
     const { data: subscriptionFromDB, error: subscriptionError } = await supabaseClient
       .from("subscriptions")
       .select("stripe_subscription_id, status, current_period_start, current_period_end")
       .eq("seller_id", userData.user.id)
-      .eq("status", "active")
+      .in("status", ["active", "trialing"])
       .maybeSingle();
 
     if (subscriptionError) throw subscriptionError;
 
     if (!subscriptionFromDB?.stripe_subscription_id) {
-      logStep("No active paid subscription found");
-      return new Response(JSON.stringify({
+      return json({
         proration_needed: false,
         is_new_customer: true,
-        message: "Nouveau client, pas de prorata"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+        prorationAmount: 0,
+        amount_to_pay_now: 0,
+        breakdown: null,
+        message: "No active paid subscription found. Checkout is required instead.",
       });
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    // Get current subscription from Stripe
     const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionFromDB.stripe_subscription_id);
-    logStep("Current subscription retrieved from Stripe", { 
-      status: stripeSubscription.status,
-      periodStart: stripeSubscription.current_period_start,
-      periodEnd: stripeSubscription.current_period_end
-    });
 
-    // Get period dates
     let periodStart = stripeSubscription.current_period_start;
     let periodEnd = stripeSubscription.current_period_end;
 
@@ -119,116 +97,125 @@ serve(async (req) => {
       if (subscriptionFromDB.current_period_start && subscriptionFromDB.current_period_end) {
         periodStart = Math.floor(new Date(subscriptionFromDB.current_period_start).getTime() / 1000);
         periodEnd = Math.floor(new Date(subscriptionFromDB.current_period_end).getTime() / 1000);
-        logStep("Using period dates from DB", { periodStart, periodEnd });
       } else {
-        throw new Error("Impossible de déterminer les dates de période");
+        throw new Error("Unable to determine the current billing period.");
       }
     }
 
-    // Get current price
     const currentPrice = stripeSubscription.items.data[0]?.price;
-    const currentCurrency = currentPrice?.currency?.toUpperCase() || 'EUR';
-    logStep("Current subscription currency detected", { currency: currentCurrency });
+    if (!currentPrice) throw new Error("Current Stripe subscription price was not found.");
 
-    // Get the new plan details
-    const { data: newPlan, error: planError } = await supabaseClient
-      .from("subscription_plans")
-      .select("*")
-      .eq("id", new_plan_id)
-      .single();
+    const currentCurrency = currentPrice.currency?.toUpperCase() || "EUR";
+    const actualBillingPeriod = billing_period || (currentPrice.recurring?.interval === "year" ? "yearly" : "monthly");
 
-    if (planError || !newPlan) {
-      throw new Error("New plan not found");
-    }
+    let newPriceId = requestedPriceId as string | undefined;
+    let newPlanName = new_plan_id || "Selected plan";
 
-    // Determine billing period
-    const actualBillingPeriod = billing_period || (
-      currentPrice?.recurring?.interval === 'year' ? 'yearly' : 'monthly'
-    );
+    if (!newPriceId) {
+      const { data: newPlan, error: planError } = await supabaseClient
+        .from("subscription_plans")
+        .select("*")
+        .eq("id", new_plan_id)
+        .single();
 
-    // Select appropriate price_id
-    let new_price_id;
-    if (actualBillingPeriod === 'yearly') {
-      new_price_id = currentCurrency === 'EUR' && newPlan.stripe_price_id_yearly_eur
-        ? newPlan.stripe_price_id_yearly_eur
-        : newPlan.stripe_price_id_yearly;
+      if (planError || !newPlan) throw new Error("New plan not found");
+      newPlanName = newPlan.name || new_plan_id;
+
+      if (actualBillingPeriod === "yearly") {
+        newPriceId = currentCurrency === "EUR" && newPlan.stripe_price_id_yearly_eur
+          ? newPlan.stripe_price_id_yearly_eur
+          : newPlan.stripe_price_id_yearly;
+      } else {
+        newPriceId = currentCurrency === "EUR" && newPlan.stripe_price_id_monthly_eur
+          ? newPlan.stripe_price_id_monthly_eur
+          : (newPlan.stripe_price_id_monthly || newPlan.stripe_price_id);
+      }
     } else {
-      new_price_id = currentCurrency === 'EUR' && newPlan.stripe_price_id_monthly_eur
-        ? newPlan.stripe_price_id_monthly_eur
-        : (newPlan.stripe_price_id_monthly || newPlan.stripe_price_id);
+      const { data: matchingPlan } = await supabaseClient
+        .from("subscription_plans")
+        .select("id, name")
+        .or([
+          `stripe_price_id_monthly.eq.${newPriceId}`,
+          `stripe_price_id_yearly.eq.${newPriceId}`,
+          `stripe_price_id_monthly_eur.eq.${newPriceId}`,
+          `stripe_price_id_yearly_eur.eq.${newPriceId}`,
+        ].join(","))
+        .maybeSingle();
+      if (matchingPlan) newPlanName = matchingPlan.name || matchingPlan.id;
     }
 
-    if (!new_price_id) {
-      throw new Error(`No price ID found for plan ${newPlan.name}`);
+    if (!newPriceId) throw new Error("No Stripe price ID found for the selected plan.");
+
+    const newPriceObj = await stripe.prices.retrieve(newPriceId);
+    const newCurrency = newPriceObj.currency?.toUpperCase() || currentCurrency;
+    if (newCurrency !== currentCurrency) {
+      return json({
+        error: `Cannot change a ${currentCurrency} subscription to a ${newCurrency} price.`,
+      }, 400);
     }
 
-    // Get new price from Stripe
-    const newPriceObj = await stripe.prices.retrieve(new_price_id);
-
-    // Calculate proration
     const now = Math.floor(Date.now() / 1000);
-    const daysIntoCycle = Math.floor((now - periodStart) / (24 * 60 * 60));
-    const totalCycleDays = Math.floor((periodEnd - periodStart) / (24 * 60 * 60));
-    const daysRemaining = Math.max(0, totalCycleDays - daysIntoCycle);
+    const totalCycleSeconds = Math.max(1, periodEnd - periodStart);
+    const remainingSeconds = Math.max(0, periodEnd - now);
+    const totalCycleDays = Math.max(1, Math.ceil(totalCycleSeconds / 86400));
+    const daysRemaining = Math.max(0, Math.ceil(remainingSeconds / 86400));
+    const daysIntoCycle = Math.max(0, totalCycleDays - daysRemaining);
 
-    const oldPriceAmount = currentPrice?.unit_amount || 0;
+    const oldPriceAmount = currentPrice.unit_amount || 0;
     const newPriceAmount = newPriceObj.unit_amount || 0;
     const priceDifference = newPriceAmount - oldPriceAmount;
+    const prorationNeeded = priceDifference > 0 && remainingSeconds > 0;
+    const proratedAmountCents = prorationNeeded
+      ? Math.max(0, Math.round(priceDifference * (remainingSeconds / totalCycleSeconds)))
+      : 0;
 
-    // Always calculate proration if there's a price difference
-    const prorationNeeded = priceDifference > 0;
+    const oldPlanPrice = oldPriceAmount / 100;
+    const newPlanPrice = newPriceAmount / 100;
+    const amountToPayNow = proratedAmountCents / 100;
+    const unusedCurrentPlanAmount = Math.max(0, Math.round(oldPriceAmount * (remainingSeconds / totalCycleSeconds)) / 100);
 
-    let prorationDetails: any = {
+    const result = {
       proration_needed: prorationNeeded,
       old_plan_name: profile.current_plan_id,
-      new_plan_name: newPlan.name,
-      old_plan_price: oldPriceAmount / 100,
-      new_plan_price: newPriceAmount / 100,
+      new_plan_name: newPlanName,
+      old_plan_price: oldPlanPrice,
+      new_plan_price: newPlanPrice,
       price_difference: priceDifference / 100,
-      currency: currentCurrency,
+      currency: currentCurrency.toLowerCase(),
       billing_period: actualBillingPeriod,
       days_into_cycle: daysIntoCycle,
       days_remaining: daysRemaining,
       total_cycle_days: totalCycleDays,
       period_start: new Date(periodStart * 1000).toISOString(),
       period_end: new Date(periodEnd * 1000).toISOString(),
+      prorated_amount: amountToPayNow,
+      amount_to_pay_now: amountToPayNow,
+      next_billing_amount: newPlanPrice,
+      next_billing_date: new Date(periodEnd * 1000).toISOString(),
+      explanation: prorationNeeded
+        ? `Estimated prorated charge for the remaining ${daysRemaining} day(s). Stripe calculates the final amount at checkout.`
+        : "No immediate charge is expected for this change.",
+      // Backward-compatible fields currently consumed by SubscriptionPlans.tsx.
+      prorationAmount: amountToPayNow,
+      breakdown: {
+        currentPlanAmount: oldPlanPrice,
+        newPlanAmount: newPlanPrice,
+        unusedAmount: unusedCurrentPlanAmount,
+        proratedAmount: amountToPayNow,
+      },
     };
 
-    if (prorationNeeded) {
-      const proratedAmount = Math.round((priceDifference * daysRemaining) / totalCycleDays);
-      
-      prorationDetails = {
-        ...prorationDetails,
-        prorated_amount: proratedAmount / 100,
-        amount_to_pay_now: proratedAmount / 100,
-        explanation: `(${newPriceAmount / 100}${currentCurrency} - ${oldPriceAmount / 100}${currentCurrency}) × ${daysRemaining}j / ${totalCycleDays}j = ${proratedAmount / 100}${currentCurrency}`,
-        next_billing_amount: newPriceAmount / 100,
-        next_billing_date: new Date(periodEnd * 1000).toISOString(),
-      };
-    } else if (priceDifference <= 0) {
-      prorationDetails = {
-        ...prorationDetails,
-        prorated_amount: 0,
-        amount_to_pay_now: 0,
-        explanation: "Downgrade ou prix identique, pas de paiement immédiat",
-        next_billing_amount: newPriceAmount / 100,
-        next_billing_date: new Date(periodEnd * 1000).toISOString(),
-      };
-    }
-
-    logStep("Proration calculated", prorationDetails);
-
-    return new Response(JSON.stringify(prorationDetails), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
+    logStep("Proration calculated", {
+      userId: userData.user.id,
+      newPriceId,
+      amountToPayNow,
+      currency: result.currency,
     });
 
+    return json(result);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in calculate-proration", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    logStep("ERROR", { message: errorMessage });
+    return json({ error: errorMessage }, 500);
   }
 });
