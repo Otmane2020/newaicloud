@@ -39,35 +39,46 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy scheduled-sync
-        run: supabase functions deploy scheduled-sync --project-ref "$PROJECT_REF"
+      - name: Deploy catalog and automation functions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for fn in \
+            scheduled-sync \
+            import-products \
+            import-shopify-collections \
+            import-shopify-pages \
+            import-shopify-articles \
+            generate-page-seo \
+            export-creative-image \
+            generate-ai-product-images \
+            generate-aeo-plan \
+            process-blog-campaigns
+          do
+            echo "Deploying $fn"
+            supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
+          done
 
-      - name: Deploy import-products
-        run: supabase functions deploy import-products --project-ref "$PROJECT_REF"
-
-      - name: Deploy import-shopify-collections
-        run: supabase functions deploy import-shopify-collections --project-ref "$PROJECT_REF"
-
-      - name: Deploy import-shopify-pages
-        run: supabase functions deploy import-shopify-pages --project-ref "$PROJECT_REF"
-
-      - name: Deploy import-shopify-articles
-        run: supabase functions deploy import-shopify-articles --project-ref "$PROJECT_REF"
-
-      - name: Deploy generate-page-seo
-        run: supabase functions deploy generate-page-seo --project-ref "$PROJECT_REF"
-
-      - name: Deploy export-creative-image
-        run: supabase functions deploy export-creative-image --project-ref "$PROJECT_REF"
-
-      - name: Deploy generate-ai-product-images
-        run: supabase functions deploy generate-ai-product-images --project-ref "$PROJECT_REF"
-
-      - name: Deploy generate-aeo-plan
-        run: supabase functions deploy generate-aeo-plan --project-ref "$PROJECT_REF"
-
-      - name: Deploy process-blog-campaigns
-        run: supabase functions deploy process-blog-campaigns --project-ref "$PROJECT_REF"
+      - name: Deploy Stripe billing and credit functions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for fn in \
+            create-checkout \
+            force-payment \
+            calculate-proration \
+            create-upgrade-invoice \
+            update-subscription \
+            sync-stripe-subscription \
+            customer-portal \
+            create-credit-checkout \
+            verify-credit-checkout \
+            stripe-credit-webhook \
+            stripe-webhook
+          do
+            echo "Deploying $fn"
+            supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
+          done
 
       - name: Deployment summary
-        run: echo "Synchronization, catalog import, SEO, creative image, Product Shot AI and GEO automation functions deployed to Supabase project $PROJECT_REF"
+        run: echo "Catalog, automation, Stripe subscription, upgrade and credit top-up functions deployed to Supabase project $PROJECT_REF"
