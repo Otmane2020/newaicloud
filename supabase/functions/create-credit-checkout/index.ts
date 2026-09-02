@@ -1,4 +1,3 @@
-import "../_shared/strict-ai-generation.ts";
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import Stripe from 'https://esm.sh/stripe@18.5.0';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
@@ -20,7 +19,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    if (!stripeSecret) throw new Error('Stripe is not configured');
+    if (!stripeSecret) return json({ error: 'Stripe is not configured on the server.' }, 503);
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return json({ error: 'Authentication required' }, 401);
@@ -48,7 +47,10 @@ serve(async (req) => {
       .eq('active', true)
       .single();
 
-    if (packageError || !creditPackage) return json({ error: 'Credit package not found' }, 404);
+    if (packageError || !creditPackage) {
+      console.error('Credit package lookup failed', packageError);
+      return json({ error: 'Credit package not found. Make sure the billing migration is applied.' }, 404);
+    }
 
     const amountCents = Number(creditPackage.amount_cents);
     if (!Number.isInteger(amountCents) || amountCents <= 0) {
@@ -58,8 +60,8 @@ serve(async (req) => {
     let productId = creditPackage.stripe_product_id as string | null;
     if (!productId || !productId.startsWith('prod_')) {
       const product = await stripe.products.create({
-        name: `Nexora AI — ${creditPackage.name}`,
-        description: `${creditPackage.credits} AI credits for Nexora AI`,
+        name: `CatalogueOptimize AI — ${creditPackage.name}`,
+        description: `${creditPackage.credits} AI credits for CatalogueOptimize AI`,
         metadata: {
           billing_type: 'credit_topup',
           package_id: creditPackage.id,
@@ -113,8 +115,6 @@ serve(async (req) => {
       priceId = price.id;
     }
 
-    // Keep the legacy DB price pointer aligned only with the package's native currency.
-    // Alternate-language prices are resolved from Stripe by product/currency and never overwrite it.
     if ((creditPackage.currency || 'eur').toLowerCase() === desiredCurrency && priceId !== storedPriceId) {
       await supabase
         .from('credit_packages')
