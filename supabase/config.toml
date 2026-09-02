@@ -7,3 +7,5 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Keep deployment configuration synchronized with the production project.
