@@ -592,7 +592,7 @@ export const SmartBackgroundDialog = ({
             optimizedUrl: generatedImageUrl,
             originalUrl: originalUrl,
             optimizationType: 'white_background',
-            aiModel: 'gemini-2.5-flash-image-preview',
+            aiModel: '@cf/stabilityai/stable-diffusion-xl-base-1.0',
             resolution: '2000x2000',
             qualityScore: 95,
             applyAsMain: applyPosition === 'main',
@@ -700,7 +700,7 @@ export const SmartBackgroundDialog = ({
           optimizedUrl: historyItem.optimized_url,
           originalUrl: historyItem.original_url || '',
           optimizationType: 'white_background',
-          aiModel: 'gemini-2.5-flash-image-preview',
+          aiModel: '@cf/stabilityai/stable-diffusion-xl-base-1.0',
           resolution: '2000x2000',
           qualityScore: 95,
           applyAsMain: applyPosition === 'main', // 🆕 Use position choice

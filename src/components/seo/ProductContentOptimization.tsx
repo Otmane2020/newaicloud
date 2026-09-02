@@ -284,7 +284,7 @@ export const ProductContentOptimization = () => {
         optimizedUrl: generatedBgUrl,
         originalUrl: image.src,
         optimizationType: 'white_background', // Always use white_background type
-        aiModel: 'gemini-2.5-flash-image-preview',
+        aiModel: '@cf/stabilityai/stable-diffusion-xl-base-1.0',
         resolution: '2000x2000',
         qualityScore: 95
       });

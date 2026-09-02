@@ -1437,7 +1437,7 @@ export default function ProductTitleDescription() {
                 optimizationType: "white_background",
                 originalUrl: preview.originalUrl,
                 optimizedUrl: preview.generatedUrl,
-                aiModel: "gemini-2.5-flash-image-preview",
+                aiModel: "@cf/stabilityai/stable-diffusion-xl-base-1.0",
                 aiPrompt: `White background generation - ${format} format`,
                 resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
                 qualityScore: 95
@@ -1469,7 +1469,7 @@ export default function ProductTitleDescription() {
                 optimizationType: "white_background",
                 originalUrl: preview.originalUrl,
                 optimizedUrl: preview.generatedUrl,
-                aiModel: "gemini-2.5-flash-image-preview",
+                aiModel: "@cf/stabilityai/stable-diffusion-xl-base-1.0",
                 aiPrompt: `White background generation - ${format} format`,
                 resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
                 qualityScore: 95
@@ -1523,7 +1523,7 @@ export default function ProductTitleDescription() {
               optimizationType: "white_background",
               originalUrl: preview.originalUrl,
               optimizedUrl: preview.generatedUrl,
-              aiModel: "gemini-2.5-flash-image-preview",
+              aiModel: "@cf/stabilityai/stable-diffusion-xl-base-1.0",
               aiPrompt: `White background generation - ${format} format - Variant: ${preview.variantTitle}`,
               resolution: format === 'square' ? '1024x1024' : format === 'portrait' ? '768x1024' : '1024x768',
               qualityScore: 95

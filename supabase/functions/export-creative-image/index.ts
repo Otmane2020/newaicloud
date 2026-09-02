@@ -293,35 +293,56 @@ QUALITY:
 - Ready for Facebook/Instagram publishing.
 - Product fidelity is more important than visual spectacle.`;
 
-    const configuredModel = Deno.env.get("LOVABLE_IMAGE_MODEL")?.trim();
-    const models = Array.from(new Set([
-      configuredModel,
-      "google/gemini-3.1-flash-image-preview",
-      "google/gemini-2.5-flash-image-preview",
-    ].filter((value): value is string => Boolean(value))));
+    const cloudflareDimensions: Record<string, { width: number; height: number }> = {
+      square: { width: 1024, height: 1024 },
+      portrait: { width: 1024, height: 1280 },
+      story: { width: 768, height: 1360 },
+      landscape: { width: 1344, height: 768 },
+    };
+    const aiDimensions = cloudflareDimensions[output.id] || cloudflareDimensions.square;
 
-    console.log("🎨 Ad creative generation", {
+    console.log("Ad creative generation", {
       product: product.title,
       template: template.id,
       size: output.id,
       ratio: output.ratio,
       mode,
       showPrice: Boolean(showPrice),
-      models,
+      provider: "cloudflare-workers-ai",
     });
 
-    const attempts: string[] = [];
+    const generated = await generateCloudflareImage({
+      prompt,
+      imageUrl: sourceDataUrl,
+      width: aiDimensions.width,
+      height: aiDimensions.height,
+      strength: 0.28,
+      negativePrompt: "different product, altered product shape, wrong color, changed material, added parts, removed parts, fake logo, watermark, gibberish, low quality",
+    });
 
-    for (const model of models) {
-      let response: Response;
-      try {
-        response = await callGateway({
-          apiKey: LOVABLE_API_KEY,
-          model,
-          prompt,
-          sourceDataUrl,
-        });
-      } catch (error: any) {
+    if (!generated?.imageUrl) {
+      throw new Error("Cloudflare Workers AI did not return a valid creative image. Check Cloudflare image credentials and model configuration.");
+    }
+
+    const generatedDataUrl = await resolveGeneratedDataUrl(generated.imageUrl);
+    const parsed = dataUrlParts(generatedDataUrl);
+    if (!parsed) {
+      throw new Error("Cloudflare Workers AI returned an unsupported image payload.");
+    }
+
+    return new Response(JSON.stringify({
+      base64: parsed.base64,
+      mimeType: parsed.mimeType,
+      outputFormat: output.id,
+      ratio: output.ratio,
+      dimensions: output.dimensions,
+      model: generated.model,
+      provider: generated.provider,
+      generatedByAI: true,
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error: any) {
         if (error?.name === "AbortError") {
           attempts.push(`${model}: timed out`);
           continue;

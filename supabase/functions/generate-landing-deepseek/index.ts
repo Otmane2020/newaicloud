@@ -285,7 +285,7 @@ Retourne uniquement du JSON valide.
             ],
           },
         ],
-        modalities: ["image", "text"],
+        modalities: ["text"],
         temperature: 0.1,
       }),
     });
