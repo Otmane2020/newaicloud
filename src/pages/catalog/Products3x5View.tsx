@@ -122,10 +122,12 @@ export default function Products3x5View() {
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id);
 
+      // `sku` lives on product_variants, not shopify_products. Selecting it here
+      // makes PostgREST reject the whole request with "column ... sku does not exist".
       let dataQuery = supabase
         .from("shopify_products")
         .select(
-          "id, title, description, vendor, product_type, status, price, cost_price, compare_at_price, currency, image_url, inventory_quantity, inventory_managed, handle, sku, created_at, updated_at, seo_title, seo_description",
+          "id, title, description, vendor, product_type, status, price, cost_price, compare_at_price, currency, image_url, inventory_quantity, inventory_managed, handle, created_at, updated_at, seo_title, seo_description",
         )
         .eq("seller_id", user.id)
         .eq("store_id", selectedStore.id);
@@ -143,7 +145,8 @@ export default function Products3x5View() {
         .slice(0, 8);
 
       for (const keyword of keywords) {
-        const filter = ["title", "vendor", "product_type", "sku", "handle"]
+        // Do not filter shopify_products by `sku`: that field belongs to product_variants.
+        const filter = ["title", "vendor", "product_type", "handle"]
           .map((column) => `${column}.ilike.%${keyword}%`)
           .join(",");
         countQuery = countQuery.or(filter);
@@ -171,7 +174,9 @@ export default function Products3x5View() {
       setProducts((data || []) as Product[]);
     } catch (error: any) {
       console.error("[CATALOG_3X5] Failed to load products:", error);
-      toast.error(fr ? "Impossible de charger les produits" : "Could not load products");
+      toast.error(fr ? "Impossible de charger les produits" : "Could not load products", {
+        description: error?.message,
+      });
     } finally {
       setLoading(false);
     }
@@ -238,7 +243,7 @@ export default function Products3x5View() {
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder={fr ? "Rechercher par produit, marque ou SKU…" : "Search product, brand or SKU…"}
+              placeholder={fr ? "Rechercher par produit, marque ou référence…" : "Search product, brand or handle…"}
               className="h-10 rounded-xl border-0 bg-slate-50 pl-9 shadow-none focus-visible:ring-1"
             />
           </div>
