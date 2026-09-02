@@ -370,9 +370,37 @@ export default function ProductDetail() {
         </Card>
 
         <Card className="rounded-2xl border-slate-200 shadow-none">
-          <CardContent className="p-5">
-            <div className="mb-4 flex items-center gap-2"><FileText className="h-4 w-4 text-sky-600" /><div><h2 className="font-semibold text-slate-950">{fr ? "Contenu produit" : "Product content"}</h2><p className="text-xs text-slate-500">{fr ? "Description actuellement enregistrée dans le catalogue." : "Current catalog description."}</p></div></div>
+          <CardContent className="space-y-4 p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-sky-600" />
+                <div>
+                  <h2 className="font-semibold text-slate-950">{fr ? "Contenu produit" : "Product content"}</h2>
+                  <p className="text-xs text-slate-500">{fr ? "Description actuellement enregistrée dans le catalogue." : "Current catalog description."}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+                  <Button size="sm" variant={landingMode === "preview" ? "secondary" : "ghost"} className="h-8 rounded-lg" onClick={() => setLandingMode("preview")}><FileText className="mr-1.5 h-3.5 w-3.5" />Preview</Button>
+                  <Button size="sm" variant={landingMode === "html" ? "secondary" : "ghost"} className="h-8 rounded-lg" onClick={() => setLandingMode("html")}><Code2 className="mr-1.5 h-3.5 w-3.5" />HTML</Button>
+                </div>
+                <Button size="sm" className="rounded-xl bg-violet-600 hover:bg-violet-700" onClick={() => setShowLandingGenerator(true)}><Sparkles className="mr-1.5 h-3.5 w-3.5" />{hasLanding ? (fr ? "Régénérer" : "Regenerate") : (fr ? "Générer landing" : "Generate landing")}</Button>
+                {hasLanding && <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setShowLandingPreview(true)}><Eye className="mr-1.5 h-3.5 w-3.5" />{fr ? "Voir landing" : "View landing"}</Button>}
+                <Button asChild size="sm" variant="ghost" className="rounded-xl"><a href={`/product-landing/${product.id}`}><ExternalLink className="mr-1.5 h-3.5 w-3.5" />{fr ? "Vue complète" : "Full view"}</a></Button>
+              </div>
+            </div>
+
             {contentHtml ? <div className="prose prose-sm max-h-[370px] max-w-none overflow-auto rounded-xl border border-slate-200 bg-slate-50/50 p-4" dangerouslySetInnerHTML={{ __html: contentHtml }} /> : <div className="grid min-h-48 place-items-center rounded-xl border border-dashed border-slate-200 text-sm text-slate-400">{fr ? "Aucune description" : "No description"}</div>}
+
+            <div className="border-t border-slate-200 pt-4">
+              {landingMode === "html" ? (
+                <div className="space-y-3"><Textarea value={landingHtml} onChange={(event) => setLandingHtml(event.target.value)} rows={18} spellCheck={false} placeholder={fr ? "Le HTML de la landing page apparaîtra ici…" : "Landing page HTML will appear here…"} className="min-h-[360px] rounded-xl bg-slate-950 font-mono text-xs leading-5 text-slate-100" /><div className="flex justify-end"><Button size="sm" className="rounded-xl" onClick={saveLandingHtml} disabled={savingHtml}>{savingHtml ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}{fr ? "Enregistrer HTML" : "Save HTML"}</Button></div></div>
+              ) : landingHtml.trim() ? (
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white"><iframe title="Landing page preview" srcDoc={landingHtml} sandbox="" className="h-[620px] w-full bg-white" /></div>
+              ) : (
+                <div className="grid min-h-64 place-items-center rounded-xl border border-dashed border-violet-200 bg-violet-50/30 p-8 text-center"><div><Sparkles className="mx-auto mb-3 h-8 w-8 text-violet-500" /><p className="font-medium text-slate-700">{fr ? "Aucune landing page" : "No landing page yet"}</p><p className="mt-1 text-sm text-slate-500">{fr ? "Générez-la directement depuis ce produit. Le popup démarre la génération automatiquement." : "Generate it directly from this product. The popup starts generation automatically."}</p><Button className="mt-4 rounded-xl bg-violet-600 hover:bg-violet-700" onClick={() => setShowLandingGenerator(true)}><Sparkles className="mr-1.5 h-4 w-4" />{fr ? "Générer landing page" : "Generate landing page"}</Button></div></div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -383,28 +411,6 @@ export default function ProductDetail() {
         fr={fr}
         onMainImageChange={(imageUrl) => setProduct((current) => current ? { ...current, image_url: imageUrl } : current)}
       />
-
-      <Card className="rounded-2xl border-slate-200 shadow-none">
-        <CardContent className="space-y-4 p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div><h2 className="font-semibold text-slate-950">Landing Page</h2><p className="mt-0.5 text-xs text-slate-500">{fr ? "Prévisualisez ou modifiez le HTML généré pour ce produit." : "Preview or edit the generated HTML for this product."}</p></div>
-            <div className="flex flex-wrap gap-2">
-              <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1"><Button size="sm" variant={landingMode === "preview" ? "secondary" : "ghost"} className="h-8 rounded-lg" onClick={() => setLandingMode("preview")}><FileText className="mr-1.5 h-3.5 w-3.5" />Preview</Button><Button size="sm" variant={landingMode === "html" ? "secondary" : "ghost"} className="h-8 rounded-lg" onClick={() => setLandingMode("html")}><Code2 className="mr-1.5 h-3.5 w-3.5" />HTML</Button></div>
-              <Button size="sm" className="rounded-xl bg-violet-600 hover:bg-violet-700" onClick={() => setShowLandingGenerator(true)}><Sparkles className="mr-1.5 h-3.5 w-3.5" />{hasLanding ? (fr ? "Régénérer" : "Regenerate") : (fr ? "Générer landing" : "Generate landing")}</Button>
-              {hasLanding && <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setShowLandingPreview(true)}><Eye className="mr-1.5 h-3.5 w-3.5" />{fr ? "Voir landing" : "View landing"}</Button>}
-              <Button asChild size="sm" variant="ghost" className="rounded-xl"><a href={`/product-landing/${product.id}`}><ExternalLink className="mr-1.5 h-3.5 w-3.5" />{fr ? "Vue complète" : "Full view"}</a></Button>
-            </div>
-          </div>
-
-          {landingMode === "html" ? (
-            <div className="space-y-3"><Textarea value={landingHtml} onChange={(event) => setLandingHtml(event.target.value)} rows={18} spellCheck={false} placeholder={fr ? "Le HTML de la landing page apparaîtra ici…" : "Landing page HTML will appear here…"} className="min-h-[360px] rounded-xl bg-slate-950 font-mono text-xs leading-5 text-slate-100" /><div className="flex justify-end"><Button size="sm" className="rounded-xl" onClick={saveLandingHtml} disabled={savingHtml}>{savingHtml ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}{fr ? "Enregistrer HTML" : "Save HTML"}</Button></div></div>
-          ) : landingHtml.trim() ? (
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white"><iframe title="Landing page preview" srcDoc={landingHtml} sandbox="" className="h-[620px] w-full bg-white" /></div>
-          ) : (
-            <div className="grid min-h-64 place-items-center rounded-xl border border-dashed border-violet-200 bg-violet-50/30 p-8 text-center"><div><Sparkles className="mx-auto mb-3 h-8 w-8 text-violet-500" /><p className="font-medium text-slate-700">{fr ? "Aucune landing page" : "No landing page yet"}</p><p className="mt-1 text-sm text-slate-500">{fr ? "Générez-la directement depuis ce produit. Le popup démarre la génération automatiquement." : "Generate it directly from this product. The popup starts generation automatically."}</p><Button className="mt-4 rounded-xl bg-violet-600 hover:bg-violet-700" onClick={() => setShowLandingGenerator(true)}><Sparkles className="mr-1.5 h-4 w-4" />{fr ? "Générer landing page" : "Generate landing page"}</Button></div></div>
-          )}
-        </CardContent>
-      </Card>
 
       <Dialog open={showLandingGenerator} onOpenChange={setShowLandingGenerator}>
         <DialogContent className="max-h-[92vh] max-w-6xl overflow-y-auto">
