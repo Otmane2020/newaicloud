@@ -51,12 +51,7 @@ async function fetchImage(url: string): Promise<{ bytes: Uint8Array; mimeType: s
   return { bytes: new Uint8Array(await response.arrayBuffer()), mimeType };
 }
 
-function aspectToOpenAISize(aspectRatio?: string, explicitSize?: string): string {
-  if (explicitSize && ["1024x1024", "1024x1536", "1536x1024"].includes(explicitSize)) return explicitSize;
-  if (aspectRatio === "3:4" || aspectRatio === "9:16" || aspectRatio === "portrait") return "1024x1536";
-  if (aspectRatio === "4:3" || aspectRatio === "16:9" || aspectRatio === "landscape") return "1536x1024";
-  return "1024x1024";
-}
+
 
 async function tryCloudflare(options: ImageRouteOptions): Promise<ImageRouteResult | null> {
   const accountId = envSecret("CLOUDFLARE_ACCOUNT_ID");
