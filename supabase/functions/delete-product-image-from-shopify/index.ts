@@ -151,14 +151,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Idempotent delete: if a complete read of Shopify media confirms that the
+    // requested image is no longer there, the caller can safely remove its local row.
     if (!target) {
       return new Response(JSON.stringify({
-        success: false,
-        error: "Shopify image not found. Local image was not deleted.",
-        code: "SHOPIFY_IMAGE_NOT_FOUND",
+        success: true,
+        deletedCount: 0,
+        alreadyAbsent: true,
+        message: "Image is already absent from Shopify",
         mediaCount: media.length,
       }), {
-        status: 404,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -197,6 +200,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       deletedCount: 1,
+      alreadyAbsent: false,
       deletedMediaId: target.id,
       deletedProductImageIds: payload?.deletedProductImageIds || [],
     }), {
