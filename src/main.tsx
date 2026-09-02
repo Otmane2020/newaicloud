@@ -3,6 +3,7 @@ import App from "./App.tsx";
 import PublicGeoBlog from "./pages/PublicGeoBlog";
 import "./index.css";
 import "./styles/workspace-stat-colors.css";
+import "./styles/workspace-kpi-reference.css";
 import "./styles/ai-image-studio.css";
 import "./styles/auth-social-hide.css";
 import "./styles/mobile-popups.css";
