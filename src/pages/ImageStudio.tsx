@@ -1,1 +1,1 @@
-export { default } from "./studio/StudioSmart";
+export { default } from "./studio/StudioBridge";
