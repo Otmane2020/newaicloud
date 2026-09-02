@@ -3,7 +3,7 @@ export type AIMessage = {
   content: string | Array<Record<string, unknown>>;
 };
 
-type AIProvider = "openai" | "gemini" | "kimi" | "deepseek" | "openrouter-free";
+type AIProvider = "gemini" | "kimi" | "deepseek" | "openrouter-free";
 
 export type AIRouteResult = {
   content: string;
@@ -109,38 +109,6 @@ function canParseJsonResponse(content: string): boolean {
   }
 
   return false;
-}
-
-async function tryOpenAI(options: RouteOptions): Promise<AIRouteResult | null> {
-  const apiKey = envSecret("OPENAI_API_KEY");
-  if (!apiKey || options.vision) return null;
-
-  const model = Deno.env.get("OPENAI_TEXT_MODEL") || "gpt-4o-mini";
-  const expectsJson = requestExpectsJson(options);
-  const response = await providerFetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages: options.messages,
-      max_tokens: options.maxTokens || 4096,
-      temperature: options.temperature ?? 0.3,
-      ...(expectsJson ? { response_format: { type: "json_object" } } : {}),
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = (await response.text().catch(() => "")).slice(0, 300);
-    console.warn(`[ai-router] OpenAI ${model} failed: ${response.status}${detail ? ` ${detail}` : ""}`);
-    return null;
-  }
-
-  const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content?.trim();
-  return content ? { content, provider: "openai", model: data?.model || model } : null;
 }
 
 async function tryGemini(options: RouteOptions): Promise<AIRouteResult | null> {
@@ -285,7 +253,7 @@ async function tryOpenRouter(options: RouteOptions): Promise<AIRouteResult | nul
 
 /**
  * Text generation order is STRICT and must not be changed locally:
- * OpenRouter (free) -> Gemini -> Kimi (direct key) -> DeepSeek -> OpenAI (last resort).
+ * OpenRouter (free) -> Gemini -> Kimi (direct key) -> DeepSeek.
  *
  * For JSON prompts, a provider is accepted only if its response can be parsed
  * as JSON; otherwise the router automatically tries the next provider.
@@ -301,7 +269,6 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
     { provider: "gemini", run: () => tryGemini(options) },
     { provider: "kimi", run: () => tryKimi(options) },
     { provider: "deepseek", run: () => tryDeepSeek(options) },
-    { provider: "openai", run: () => tryOpenAI(options) },
   ];
 
 
@@ -324,14 +291,13 @@ export async function routeAI(options: RouteOptions): Promise<AIRouteResult> {
   throw new Error(
     expectsJson
       ? "No AI provider returned valid JSON. Check provider API keys/models and Edge Function logs."
-      : "No AI provider is available. Configure OPENAI_API_KEY, GOOGLE_GEMINI_API_KEY/GEMINI_API_KEY, KIMI_API_KEY/MOONSHOT_API_KEY, DEEPSEEK_API_KEY, or OPENROUTER_API_KEY.",
+      : "No AI provider is available. Configure OPENROUTER_API_KEY, GOOGLE_GEMINI_API_KEY/GEMINI_API_KEY, KIMI_API_KEY/MOONSHOT_API_KEY or DEEPSEEK_API_KEY.",
   );
 }
 
 /**
  * Vision remains a specialised route because not every text provider supports
- * the same multimodal payload. It uses the direct Moonshot/Kimi vision API and
- * never consumes the OpenRouter text fallback.
+ * the same multimodal payload. It uses the direct Moonshot/Kimi vision API.
  */
 export async function routeVision(messages: AIMessage[], maxTokens = 600): Promise<AIRouteResult> {
   const baseOptions: RouteOptions = {
@@ -342,7 +308,7 @@ export async function routeVision(messages: AIMessage[], maxTokens = 600): Promi
 
   // Gemini accepts the same multimodal message structures used by this project
   // and is free-tier friendly, so it leads the vision chain. A failure simply
-  // falls through to the next provider (Kimi direct, then OpenRouter, then OpenAI).
+  // falls through to the next provider (Kimi direct, then OpenRouter).
   try {
     const result = await tryGemini(baseOptions);
     if (result?.content) return result;
@@ -416,17 +382,10 @@ export async function routeVision(messages: AIMessage[], maxTokens = 600): Promi
     }
   }
 
-  // OpenAI vision is the paid last resort.
-  try {
-    const result = await tryOpenAI(baseOptions);
-    if (result?.content) return result;
-  } catch (error) {
-    console.warn("[ai-router] OpenAI vision failed", error);
-  }
 
 
 
   throw new Error(
-    "No vision provider succeeded. Configure a working OpenAI, Gemini, Kimi/Moonshot, or OPENROUTER_VISION_MODEL provider.",
+    "No vision provider succeeded. Configure a working Gemini, Kimi/Moonshot, or OPENROUTER_VISION_MODEL provider.",
   );
 }
