@@ -79,8 +79,8 @@ export function SeoWorkspaceExecutionBridge() {
       const rowTitle = row?.querySelector<HTMLElement>("p.font-medium")?.textContent?.trim() || "";
       const selectedRows = Array.from(workspace.querySelectorAll<HTMLTableRowElement>("tbody tr")).filter(isSelectedRow);
 
-      // Never borrow media from unrelated rows. A row-level action gets only that row's
-      // images. A bulk action gets only selected rows. If neither applies, show no media.
+      // Only media belonging to the processed item(s): one row => that row only;
+      // bulk selection => selected rows only. Never borrow images from unrelated rows.
       const relatedRows = row ? [row] : selectedRows;
       const imageUrls = uniqueUrls(relatedRows.flatMap(imagesFromRow));
       const tabLabel = tabLabels[tab] || "SEO";
@@ -169,7 +169,6 @@ export function SeoWorkspaceExecutionBridge() {
         productTitle={execution.productTitle}
         lookupTitle={execution.productTitle}
         imageUrls={execution.imageUrls}
-        hideMediaWhenEmpty
         className="shadow-lg"
       />
     </div>
