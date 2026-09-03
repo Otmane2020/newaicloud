@@ -223,7 +223,7 @@ export default function ProductTitleDescription() {
   const [searchTerm, setSearchTerm] = useState("");
   const [generating, setGenerating] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 50;
+  const ITEMS_PER_PAGE = 12;
   const [generatingWhiteBg, setGeneratingWhiteBg] = useState(false);
   const [generatingAiBg, setGeneratingAiBg] = useState(false);
   const [loadingGallery, setLoadingGallery] = useState(false);
@@ -274,7 +274,7 @@ export default function ProductTitleDescription() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [pendingApplyProductIds, setPendingApplyProductIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
-  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(2);
+  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);
   // White background variant states
   const [whiteBgApplyTo, setWhiteBgApplyTo] = useState<"simple" | "variants">("simple");
   const [whiteBgSelectedVariants, setWhiteBgSelectedVariants] = useState<Map<string, string[]>>(new Map());
