@@ -15,6 +15,7 @@ interface MinimizableProgressDialogProps {
   onComplete?: () => void;
   title: string;
   children?: React.ReactNode;
+  processingContent?: React.ReactNode;
 }
 
 export function MinimizableProgressDialog({
@@ -26,6 +27,7 @@ export function MinimizableProgressDialog({
   onComplete,
   title,
   children,
+  processingContent,
 }: MinimizableProgressDialogProps) {
   const [isMinimized, setIsMinimized] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -162,31 +164,33 @@ export function MinimizableProgressDialog({
                 {isProcessing && <Sparkles className="h-5 w-5 text-primary animate-spin" style={{ animationDuration: "3s" }} />}
                 {title}
               </h2>
-            <div className="flex items-center gap-2">
-              {!isProcessing && (
-                <Button variant="outline" size="sm" onClick={() => setIsMinimized(true)} className="gap-2">
-                  <Minimize2 className="h-4 w-4" />
-                  Réduire
-                </Button>
-              )}
-              {isProcessing && (
-                <>
+              <div className="flex items-center gap-2">
+                {!isProcessing && (
                   <Button variant="outline" size="sm" onClick={() => setIsMinimized(true)} className="gap-2">
                     <Minimize2 className="h-4 w-4" />
                     Réduire
                   </Button>
-                  {onCancel && (
-                    <Button variant="ghost" size="sm" onClick={onCancel} className="gap-2">
-                      <X className="h-4 w-4" />
-                      Annuler
+                )}
+                {isProcessing && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setIsMinimized(true)} className="gap-2">
+                      <Minimize2 className="h-4 w-4" />
+                      Réduire
                     </Button>
-                  )}
-                </>
-              )}
+                    {onCancel && (
+                      <Button variant="ghost" size="sm" onClick={onCancel} className="gap-2">
+                        <X className="h-4 w-4" />
+                        Annuler
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
 
-          {isProcessing && currentProcessing ? (
+            {isProcessing && processingContent ? (
+              processingContent
+            ) : isProcessing && currentProcessing ? (
               <div className="py-6 space-y-4">
                 <div className="flex items-center justify-center">
                   <div className="relative">
