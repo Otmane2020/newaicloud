@@ -13,6 +13,13 @@ import { toast } from "sonner";
 
 const PAGE_SIZE = 30;
 
+const scoreTone = (score: number) =>
+  score >= 85
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : score >= 60
+      ? "border-amber-200 bg-amber-50 text-amber-700"
+      : "border-red-200 bg-red-50 text-red-600";
+
 type Article = {
   id: string;
   title: string;
@@ -82,6 +89,7 @@ export function ArticleSeoWorkspace() {
     article.id,
   ).score;
 
+  // Optimization behavior stays unchanged; only score colors use the 85 green threshold.
   const needsSeo = (article: Article) => score(article) < 80 || !article.meta_description || !article.seo_title;
   const filtered = useMemo(() => items.filter((article) => !search || `${article.title} ${article.seo_title || ""} ${article.meta_description || ""}`.toLowerCase().includes(search.toLowerCase())), [items, search]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -116,7 +124,7 @@ export function ArticleSeoWorkspace() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={fr ? "Rechercher un article" : "Search articles"} className="h-9 pl-9" />
             </div>
-            <Badge variant="outline">SEO {average}/100</Badge>
+            <Badge variant="outline" className={scoreTone(average)}>SEO {average}/100</Badge>
             <Badge variant="outline">{missing} {fr ? "à optimiser" : "need SEO"}</Badge>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -158,7 +166,7 @@ export function ArticleSeoWorkspace() {
                       </div>
                     </td>
                     <td className="max-w-[600px] px-3 py-2"><p className="truncate font-medium">{article.seo_title || article.title}</p><p className="truncate text-xs text-muted-foreground">{article.meta_description || (fr ? "Meta description manquante" : "Missing meta description")}</p></td>
-                    <td className="px-3 py-2"><Badge variant="outline" className={articleScore >= 80 ? "text-emerald-700" : articleScore >= 60 ? "text-amber-700" : "text-red-600"}>{Math.round(articleScore)}%</Badge>{articleScore >= 80 && <CheckCircle2 className="ml-2 inline h-4 w-4 text-emerald-600" />}</td>
+                    <td className="px-3 py-2"><Badge variant="outline" className={scoreTone(articleScore)}>{Math.round(articleScore)}%</Badge>{articleScore >= 85 && <CheckCircle2 className="ml-2 inline h-4 w-4 text-emerald-600" />}</td>
                     <td className="px-3 py-2 text-right"><Button size="icon" variant="ghost" disabled={busy} onClick={() => optimize([article.id])}><Sparkles className="h-4 w-4" /></Button></td>
                   </tr>
                 );
