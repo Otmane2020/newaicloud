@@ -78,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [serverStatus, setServerStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   const navigate = useNavigate();
   const manualSignOutRef = useRef(false);
+  const forceLoginAfterSignupRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -97,6 +98,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
 
         console.log('[Auth] Event:', event, 'Session:', !!session);
+
+        // During account creation Supabase may immediately emit SIGNED_IN.
+        // Do not expose that temporary signup session to the app, otherwise
+        // Auth.tsx can race and redirect the new user to /dashboard.
+        if (event === 'SIGNED_IN' && session && forceLoginAfterSignupRef.current) {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
 
         // Handle session expiration and sign-out events
         if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
@@ -179,6 +190,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ? `/onboarding?${redirectParams.toString()}`
       : '/dashboard';
     const redirectUrl = `${window.location.origin}${redirectPath}`;
+
+    // A successful signup must land on Login, never inside the authenticated app.
+    // Set this before supabase.auth.signUp because SIGNED_IN can be emitted before
+    // the promise resolves when email confirmation is disabled.
+    forceLoginAfterSignupRef.current = true;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -193,9 +209,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
+      forceLoginAfterSignupRef.current = false;
       const lang = (localStorage.getItem('app-language') || 'en') === 'fr' ? 'fr' : 'en';
       showFriendlyAuthError(error, lang, (title, options) => toast.error(title, options));
     } else {
+      // Supabase can automatically create a logged-in session at signup.
+      // Explicitly remove it so the user always has to sign in after registration.
+      try {
+        manualSignOutRef.current = true;
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.warn('[Auth] Failed to sign out temporary signup session:', signOutError);
+      } finally {
+        clearSupabaseAuthStorage();
+        forceLoginAfterSignupRef.current = false;
+      }
+
       // Send welcome email with user's language preference
       try {
         const language = (localStorage.getItem('app-language') || 'en') as 'fr' | 'en';
@@ -209,7 +238,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const lang = localStorage.getItem('app-language') || 'en';
       const message = lang === 'fr' ? fr.auth.registrationSuccess : en.auth.registrationSuccess;
       toast.success(message);
-      // L'utilisateur connecté sera redirigé vers le dashboard par la page Auth.
+
+      // Registration is complete: always show the Login form next.
+      window.location.replace('/auth');
     }
 
     return { error };
