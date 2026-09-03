@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from '@/lib/language';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { SeoExecutionBanner } from '@/components/seo/SeoExecutionBanner';
 
 interface LandingPreviewItem {
   productId: string;
@@ -142,7 +143,7 @@ export function BulkLandingProgressDialog({
   storeId,
   onComplete,
 }: BulkLandingProgressDialogProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [previews, setPreviews] = useState<LandingPreviewItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [syncingToShopify, setSyncingToShopify] = useState(false);
@@ -275,181 +276,181 @@ export function BulkLandingProgressDialog({
 
         const product = batch[i];
       
-      // Update status to generating
-      setPreviews(prev => prev.map(p => 
-        p.productId === product.id ? { ...p, status: 'generating' } : p
-      ));
+        // Update status to generating
+        setPreviews(prev => prev.map(p => 
+          p.productId === product.id ? { ...p, status: 'generating' } : p
+        ));
 
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error('Session non trouvée');
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) throw new Error('Session non trouvée');
 
-        // Fetch product details
-        const { data: productData, error: productError } = await supabase
-          .from('shopify_products')
-          .select('*')
-          .eq('id', product.id)
-          .single();
+          // Fetch product details
+          const { data: productData, error: productError } = await supabase
+            .from('shopify_products')
+            .select('*')
+            .eq('id', product.id)
+            .single();
 
-        if (productError) throw productError;
+          if (productError) throw productError;
 
-        // Fetch product images
-        const { data: productImages } = await supabase
-          .from('product_images')
-          .select('src, alt_text')
-          .eq('product_id', product.id)
-          .order('position', { ascending: true })
-          .limit(5);
+          // Fetch product images
+          const { data: productImages } = await supabase
+            .from('product_images')
+            .select('src, alt_text')
+            .eq('product_id', product.id)
+            .order('position', { ascending: true })
+            .limit(5);
 
-        const images = productImages?.map(img => img.src) || [];
-        if (productData.image_url && !images.includes(productData.image_url)) {
-          images.unshift(productData.image_url);
-        }
+          const images = productImages?.map(img => img.src) || [];
+          if (productData.image_url && !images.includes(productData.image_url)) {
+            images.unshift(productData.image_url);
+          }
 
-        // 🏷️ Resolve vendor based on config (with AI generation if needed)
-        const resolvedVendor = await resolveVendorForProduct(productData);
-        console.log(`[Bulk Landing] Resolved vendor for "${productData.title}": ${resolvedVendor}`);
+          // 🏷️ Resolve vendor based on config (with AI generation if needed)
+          const resolvedVendor = await resolveVendorForProduct(productData);
+          console.log(`[Bulk Landing] Resolved vendor for "${productData.title}": ${resolvedVendor}`);
 
-        // ✅ Update vendor in database if it was generated/extracted and different from current
-        if (config.vendorSource !== "shopify" && resolvedVendor && resolvedVendor !== "Marque générée" && resolvedVendor !== "Marque" && resolvedVendor !== productData.vendor) {
-          await supabase
-            .from("shopify_products")
-            .update({ vendor: resolvedVendor })
-            .eq("id", product.id);
-          console.log(`[Bulk Landing] Vendor "${resolvedVendor}" saved for product ${product.id}`);
-        }
+          // ✅ Update vendor in database if it was generated/extracted and different from current
+          if (config.vendorSource !== "shopify" && resolvedVendor && resolvedVendor !== "Marque générée" && resolvedVendor !== "Marque" && resolvedVendor !== productData.vendor) {
+            await supabase
+              .from("shopify_products")
+              .update({ vendor: resolvedVendor })
+              .eq("id", product.id);
+            console.log(`[Bulk Landing] Vendor "${resolvedVendor}" saved for product ${product.id}`);
+          }
 
-        // 🏷️ Handle title regeneration if enabled (with 20s timeout)
-        let productTitle = productData.seo_title || productData.title;
-        let titleWasRegenerated = false;
-        
-        if (config.regenerateTitle !== false) { // ✅ Default to true
-          try {
-            console.log(`[Bulk Landing] 🎯 Regenerating title with smart-title for "${productData.title}"`);
-            
-            // Update status to show title regeneration
-            setPreviews(prev => prev.map(p => 
-              p.productId === product.id 
-                ? { ...p, status: 'generating' as const } 
-                : p
-            ));
-            
-            const { data: smartData, error: smartError } = await supabase.functions.invoke("smart-title", {
-              body: {
-                productId: product.id,
-              },
-            });
-            
-            if (smartError) {
-              console.warn(`[Bulk Landing] ⚠️ smart-title error:`, smartError);
-            } else if (smartData?.optimizedTitle) {
-              productTitle = smartData.optimizedTitle;
-              titleWasRegenerated = true;
+          // 🏷️ Handle title regeneration if enabled (with 20s timeout)
+          let productTitle = productData.seo_title || productData.title;
+          let titleWasRegenerated = false;
+          
+          if (config.regenerateTitle !== false) { // ✅ Default to true
+            try {
+              console.log(`[Bulk Landing] 🎯 Regenerating title with smart-title for "${productData.title}"`);
               
-              // Update in database
-              await supabase
-                .from("shopify_products")
-                .update({ seo_title: smartData.optimizedTitle })
-                .eq("id", product.id);
-              
-              // ✅ Update title in previews
+              // Update status to show title regeneration
               setPreviews(prev => prev.map(p => 
                 p.productId === product.id 
-                  ? { ...p, productTitle: smartData.optimizedTitle } 
+                  ? { ...p, status: 'generating' as const } 
                   : p
               ));
-              console.log(`[Bulk Landing] ✅ New title "${smartData.optimizedTitle}" saved for product ${product.id}`);
-            } else {
-              console.warn(`[Bulk Landing] ⚠️ No optimizedTitle in response:`, smartData);
-            }
-          } catch (err) {
-            console.warn(`[Bulk Landing] ❌ Title regeneration failed for ${product.id}:`, err);
-          }
-        } else {
-          console.log(`[Bulk Landing] ⏭️ Title regeneration disabled, using: "${productTitle}"`);
-        }
-        // Use AbortController with longer timeout for AI generation (5 minutes)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
-
-        const result = await callWithRetry<{ html: string }>(
-          async () => {
-            const response = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-landing-bulk`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session.access_token}`,
-                  'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              
+              const { data: smartData, error: smartError } = await supabase.functions.invoke("smart-title", {
+                body: {
+                  productId: product.id,
                 },
-                body: JSON.stringify({
-                  product_id: product.id,
-                  productTitle: productTitle,
-                  productDescription: productData.seo_description || productData.body_html,
-                  productImages: images.slice(0, 4),
-                  vendor: resolvedVendor,
-                  designStyle: config.designStyle,
-                  colorScheme: config.colorScheme,
-                  theme: config.theme,
-                  layout: config.layout,
-                  contentLength: config.contentLength,
-                  language: 'fr',
-                  customHighlights: config.customHighlights,
-                  isRegeneratedTitle: config.regenerateTitle !== false && titleWasRegenerated, // ✅ Tell server not to clean this title
-                }),
-                signal: controller.signal,
+              });
+              
+              if (smartError) {
+                console.warn(`[Bulk Landing] ⚠️ smart-title error:`, smartError);
+              } else if (smartData?.optimizedTitle) {
+                productTitle = smartData.optimizedTitle;
+                titleWasRegenerated = true;
+                
+                // Update in database
+                await supabase
+                  .from("shopify_products")
+                  .update({ seo_title: smartData.optimizedTitle })
+                  .eq("id", product.id);
+                
+                // ✅ Update title in previews
+                setPreviews(prev => prev.map(p => 
+                  p.productId === product.id 
+                    ? { ...p, productTitle: smartData.optimizedTitle } 
+                    : p
+                ));
+                console.log(`[Bulk Landing] ✅ New title "${smartData.optimizedTitle}" saved for product ${product.id}`);
+              } else {
+                console.warn(`[Bulk Landing] ⚠️ No optimizedTitle in response:`, smartData);
               }
-            );
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) {
-              const errorText = await response.text();
-              return { data: null, error: `HTTP ${response.status}: ${errorText}` };
+            } catch (err) {
+              console.warn(`[Bulk Landing] ❌ Title regeneration failed for ${product.id}:`, err);
             }
-            
-            const data = await response.json();
-            return { data, error: null };
-          },
-          3,
-          2000
-        );
+          } else {
+            console.log(`[Bulk Landing] ⏭️ Title regeneration disabled, using: "${productTitle}"`);
+          }
+          // Use AbortController with longer timeout for AI generation (5 minutes)
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
 
-        // Increment local counter
-        localSuccessCount++;
-        totalProcessed++;
-        setProcessedCount(totalProcessed);
+          const result = await callWithRetry<{ html: string }>(
+            async () => {
+              const response = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-landing-bulk`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                  },
+                  body: JSON.stringify({
+                    product_id: product.id,
+                    productTitle: productTitle,
+                    productDescription: productData.seo_description || productData.body_html,
+                    productImages: images.slice(0, 4),
+                    vendor: resolvedVendor,
+                    designStyle: config.designStyle,
+                    colorScheme: config.colorScheme,
+                    theme: config.theme,
+                    layout: config.layout,
+                    contentLength: config.contentLength,
+                    language: 'fr',
+                    customHighlights: config.customHighlights,
+                    isRegeneratedTitle: config.regenerateTitle !== false && titleWasRegenerated, // ✅ Tell server not to clean this title
+                  }),
+                  signal: controller.signal,
+                }
+              );
+              clearTimeout(timeoutId);
+              
+              if (!response.ok) {
+                const errorText = await response.text();
+                return { data: null, error: `HTTP ${response.status}: ${errorText}` };
+              }
+              
+              const data = await response.json();
+              return { data, error: null };
+            },
+            3,
+            2000
+          );
 
-        // ✅ Check result has html before marking success
-        if (!result || !result.html) {
-          throw new Error((result as { error?: string })?.error || 'Pas de HTML reçu du serveur');
+          // Increment local counter
+          localSuccessCount++;
+          totalProcessed++;
+          setProcessedCount(totalProcessed);
+
+          // ✅ Check result has html before marking success
+          if (!result || !result.html) {
+            throw new Error((result as { error?: string })?.error || 'Pas de HTML reçu du serveur');
+          }
+
+          // Update status to success
+          setPreviews(prev => prev.map(p => 
+            p.productId === product.id 
+              ? { ...p, status: 'success', landingHtml: result.html } 
+              : p
+          ));
+
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error 
+            ? error.message 
+            : typeof error === 'string' 
+              ? error 
+              : 'Erreur lors de la génération';
+          console.error(`Error generating landing for ${product.title}:`, errorMessage, error);
+          
+          totalProcessed++;
+          setProcessedCount(totalProcessed);
+          
+          setPreviews(prev => prev.map(p => 
+            p.productId === product.id 
+              ? { ...p, status: 'error', error: errorMessage } 
+              : p
+          ));
         }
-
-        // Update status to success
-        setPreviews(prev => prev.map(p => 
-          p.productId === product.id 
-            ? { ...p, status: 'success', landingHtml: result.html } 
-            : p
-        ));
-
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error 
-          ? error.message 
-          : typeof error === 'string' 
-            ? error 
-            : 'Erreur lors de la génération';
-        console.error(`Error generating landing for ${product.title}:`, errorMessage, error);
-        
-        totalProcessed++;
-        setProcessedCount(totalProcessed);
-        
-        setPreviews(prev => prev.map(p => 
-          p.productId === product.id 
-            ? { ...p, status: 'error', error: errorMessage } 
-            : p
-        ));
-      }
-    } // end batch loop
+      } // end batch loop
 
       // ⏱ Pause between batches (10s) to avoid rate limits - except for last batch
       if (batchIndex < batches.length - 1 && !cancelledRef.current) {
@@ -543,6 +544,7 @@ export function BulkLandingProgressDialog({
   const displayCount = isProcessing ? processedCount : completedCount;
   const successCount = previews.filter(p => p.status === 'success').length;
   const progressPercent = products.length > 0 ? (displayCount / products.length) * 100 : 0;
+  const activePreview = previews.find((preview) => preview.status === 'generating') || null;
 
   return (
     <>
@@ -564,6 +566,26 @@ export function BulkLandingProgressDialog({
               </div>
             </div>
           </DialogHeader>
+
+          <SeoExecutionBanner
+            active={isProcessing}
+            title={language === 'fr' ? 'Génération SEO des Landing Pages' : 'SEO landing page generation'}
+            message={
+              activePreview
+                ? language === 'fr'
+                  ? `Optimisation et génération de « ${activePreview.productTitle} »…`
+                  : `Optimizing and generating “${activePreview.productTitle}”…`
+                : language === 'fr'
+                  ? 'Préparation du prochain produit…'
+                  : 'Preparing the next product…'
+            }
+            progress={progressPercent}
+            current={currentProductIndex || 1}
+            total={products.length}
+            productId={activePreview?.productId}
+            productTitle={activePreview?.productTitle}
+            imageUrls={[activePreview?.imageUrl]}
+          />
 
           {/* Progress Bar */}
           <div className="space-y-2">
