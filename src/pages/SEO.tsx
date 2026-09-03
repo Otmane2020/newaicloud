@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { FileText, Home, Images, Layers3, Newspaper, Tags } from "lucide-react";
 import { WorkspacePageHeader } from "@/components/layout/WorkspacePageHeader";
@@ -76,11 +76,45 @@ const globalScoreTone = (score: number | null) => {
   };
 };
 
+const SCORE_TEXT_CLASSES = ["text-emerald-700", "text-green-700", "text-amber-700", "text-red-600", "text-red-700"];
+const SCORE_SURFACE_CLASSES = [
+  "border-emerald-200", "bg-emerald-50", "border-green-200", "bg-green-50",
+  "border-amber-200", "bg-amber-50", "border-red-200", "bg-red-50",
+];
+
+const readDisplayedScore = (text: string) => {
+  const normalized = text.trim();
+  const percent = normalized.match(/^(\d{1,3})%$/);
+  const outOfHundred = normalized.match(/^(?:SEO\s*)?(\d{1,3})\s*\/\s*100$/i);
+  const value = Number(percent?.[1] ?? outOfHundred?.[1]);
+  return Number.isFinite(value) && value >= 0 && value <= 100 ? value : null;
+};
+
+const applyDisplayedScoreTone = (element: HTMLElement, score: number) => {
+  const hadSurface = SCORE_SURFACE_CLASSES.some((className) => element.classList.contains(className));
+  SCORE_TEXT_CLASSES.forEach((className) => element.classList.remove(className));
+  SCORE_SURFACE_CLASSES.forEach((className) => element.classList.remove(className));
+
+  if (score >= 85) {
+    element.classList.add("text-emerald-700");
+    if (hadSurface) element.classList.add("border-emerald-200", "bg-emerald-50");
+    return;
+  }
+  if (score >= 60) {
+    element.classList.add("text-amber-700");
+    if (hadSurface) element.classList.add("border-amber-200", "bg-amber-50");
+    return;
+  }
+  element.classList.add("text-red-600");
+  if (hadSurface) element.classList.add("border-red-200", "bg-red-50");
+};
+
 export default function SEO() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { selectedStore } = useStore();
   const { language } = useTranslation();
   const fr = language === "fr";
+  const scoreScopeRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(() => normalizeTab(searchParams.get("tab")));
   const [tabScores, setTabScores] = useState<TabScores>(EMPTY_SCORES);
   const [scoresLoading, setScoresLoading] = useState(false);
@@ -170,6 +204,27 @@ export default function SEO() {
     void loadTabScores();
   }, [activeTab, loadTabScores]);
 
+  // Some nested SEO workspaces own their badge styling. Normalize only score-looking text
+  // after each render/generation so the visual rule is consistent without touching score logic.
+  useEffect(() => {
+    const root = scoreScopeRef.current;
+    if (!root) return;
+
+    const normalizeDisplayedScores = () => {
+      root.querySelectorAll<HTMLElement>("span,div,strong").forEach((element) => {
+        if (element.children.length > 0) return;
+        const score = readDisplayedScore(element.textContent || "");
+        if (score === null) return;
+        applyDisplayedScoreTone(element, score);
+      });
+    };
+
+    normalizeDisplayedScores();
+    const observer = new MutationObserver(normalizeDisplayedScores);
+    observer.observe(root, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, [activeTab, scoresLoading, tabScores]);
+
   const tabs = [
     { id: "collections" as const, label: "Collections", icon: Layers3 },
     { id: "pages" as const, label: "Pages", icon: FileText },
@@ -195,7 +250,7 @@ export default function SEO() {
           : (fr ? "Faible" : "Poor");
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-4">
+    <div ref={scoreScopeRef} className="mx-auto w-full max-w-[1500px] space-y-4">
       <WorkspacePageHeader
         section="SEO"
         page="SEO"
