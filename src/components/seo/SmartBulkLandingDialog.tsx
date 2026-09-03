@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from '@/lib/language';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { SeoExecutionBanner } from '@/components/seo/SeoExecutionBanner';
 import { LandingConfig } from './LandingConfigDialog';
 
 interface ProductItem {
@@ -208,16 +209,13 @@ export function SmartBulkLandingDialog({
           body: {
             productTitle: product.title,
             optimizedTitle: optimizedTitle,
-            vendor: vendor, // Le nouveau vendor (généré ou extrait)
-            originalVendor: product.vendor, // L'ancien vendor Shopify à retirer du titre
+            vendor: vendor,
+            originalVendor: product.vendor,
             imageUrl: product.image_url,
             description: product.body_html,
             highlights: config.customHighlights,
-            // Do NOT couple generation language to UI language.
-            // If not provided, the backend defaults to FR.
             theme: config.theme,
             designStyle: config.designStyle,
-            // AUTO-SYNC: Passer les IDs pour synchronisation automatique vers Shopify
             productId: product.id,
             shopifyId: product.shopify_id,
             storeId: product.store_id || storeId,
@@ -352,6 +350,9 @@ export function SmartBulkLandingDialog({
   const progress = products.length > 0 ? Math.round((processedCount / products.length) * 100) : 0;
   const successCount = items.filter(i => i.status === 'success').length;
   const errorCount = items.filter(i => i.status === 'error').length;
+  const currentItemIndex = items.findIndex((item) => item.status === 'generating');
+  const currentItem = currentItemIndex >= 0 ? items[currentItemIndex] : null;
+  const currentProduct = currentItem ? products.find((product) => product.id === currentItem.productId) : null;
 
   return (
     <>
@@ -368,6 +369,26 @@ export function SmartBulkLandingDialog({
           </DialogHeader>
 
           <div className="space-y-3 sm:space-y-4">
+            <SeoExecutionBanner
+              active={isProcessing}
+              title={language === 'fr' ? 'Optimisation SEO Smart Bulk' : 'Smart Bulk SEO optimization'}
+              message={
+                currentItem
+                  ? language === 'fr'
+                    ? `Analyse et génération de « ${currentItem.productTitle} »…`
+                    : `Analyzing and generating “${currentItem.productTitle}”…`
+                  : language === 'fr'
+                    ? 'Préparation du traitement SEO par lot…'
+                    : 'Preparing bulk SEO processing…'
+              }
+              progress={progress}
+              current={currentItemIndex >= 0 ? currentItemIndex + 1 : processedCount || 1}
+              total={products.length}
+              productId={currentItem?.productId}
+              productTitle={currentItem?.productTitle}
+              imageUrls={[currentProduct?.image_url]}
+            />
+
             {/* Progress */}
             <div className="space-y-1.5 sm:space-y-2">
               <div className="flex justify-between text-xs sm:text-sm">
