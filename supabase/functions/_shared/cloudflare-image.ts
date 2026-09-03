@@ -38,6 +38,12 @@ async function resolveSource(input: CloudflareImageInput): Promise<string | unde
   return bytesToBase64(new Uint8Array(await response.arrayBuffer()));
 }
 
+function extractJsonImage(data: any): string | null {
+  const raw = data?.result?.image ?? data?.image ?? (typeof data?.result === "string" ? data.result : undefined);
+  if (typeof raw !== "string" || !raw) return null;
+  return raw.startsWith("data:image/") ? raw : `data:image/png;base64,${raw}`;
+}
+
 export async function generateCloudflareImage(
   input: CloudflareImageInput,
 ): Promise<CloudflareImageResult | null> {
@@ -48,7 +54,12 @@ export async function generateCloudflareImage(
     return null;
   }
 
-  const model = Deno.env.get("CLOUDFLARE_IMAGE_MODEL") || "@cf/stabilityai/stable-diffusion-xl-base-1.0";
+  const configuredModel = Deno.env.get("CLOUDFLARE_IMAGE_MODEL");
+  const models = Array.from(new Set([
+    configuredModel,
+    "@cf/stabilityai/stable-diffusion-xl-base-1.0",
+    "@cf/runwayml/stable-diffusion-v1-5-img2img",
+  ].filter((value): value is string => Boolean(value))));
 
   try {
     const imageB64 = await resolveSource(input);
@@ -67,47 +78,55 @@ export async function generateCloudflareImage(
       payload.strength = input.strength ?? 0.28;
     }
 
-    const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      },
-    );
+    for (const model of models) {
+      try {
+        const response = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          },
+        );
 
-    if (!response.ok) {
-      const details = await response.text();
-      console.error(`[cloudflare-image] ${model} failed (${response.status}): ${details.slice(0, 600)}`);
-      return null;
-    }
+        if (!response.ok) {
+          const details = await response.text();
+          console.warn(`[cloudflare-image] ${model} failed (${response.status}): ${details.slice(0, 600)}`);
+          continue;
+        }
 
-    const contentType = response.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      const data = await response.json();
-      const raw = data?.result?.image ?? data?.image ?? (typeof data?.result === "string" ? data.result : undefined);
-      if (typeof raw !== "string" || !raw) {
-        console.error("[cloudflare-image] JSON response did not contain an image");
-        return null;
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+          const data = await response.json();
+          const imageUrl = extractJsonImage(data);
+          if (!imageUrl) {
+            console.warn(`[cloudflare-image] ${model} JSON response did not contain an image`);
+            continue;
+          }
+          return { imageUrl, model, provider: "cloudflare-workers-ai" };
+        }
+
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        if (!bytes.length) {
+          console.warn(`[cloudflare-image] ${model} returned an empty image response`);
+          continue;
+        }
+        const mime = contentType.startsWith("image/") ? contentType.split(";")[0] : "image/png";
+        return {
+          imageUrl: `data:${mime};base64,${bytesToBase64(bytes)}`,
+          model,
+          provider: "cloudflare-workers-ai",
+        };
+      } catch (modelError) {
+        console.warn(`[cloudflare-image] ${model} exception`, modelError);
       }
-      const imageUrl = raw.startsWith("data:image/") ? raw : `data:image/png;base64,${raw}`;
-      return { imageUrl, model, provider: "cloudflare-workers-ai" };
     }
 
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    if (!bytes.length) {
-      console.error("[cloudflare-image] Empty image response");
-      return null;
-    }
-    const mime = contentType.startsWith("image/") ? contentType.split(";")[0] : "image/png";
-    return {
-      imageUrl: `data:${mime};base64,${bytesToBase64(bytes)}`,
-      model,
-      provider: "cloudflare-workers-ai",
-    };
+    console.error("[cloudflare-image] All Cloudflare image models failed");
+    return null;
   } catch (error) {
     console.error("[cloudflare-image] generation exception", error);
     return null;

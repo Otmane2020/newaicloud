@@ -1102,6 +1102,12 @@ export default function ProductTitleDescription() {
 
         if (error) throw error;
 
+        if (!data?.success || !data?.imageUrl) {
+          throw new Error(data?.message || (language === "fr"
+            ? "Les fournisseurs d’images IA sont temporairement indisponibles. Réessayez dans quelques instants."
+            : "AI image providers are temporarily unavailable. Please try again shortly."));
+        }
+
         if (data.success && data.imageUrl) {
           setWhiteBgPreviews((prev) =>
             prev.map((p) => {
@@ -1809,6 +1815,12 @@ export default function ProductTitleDescription() {
       });
 
       if (error) throw error;
+
+      if (!data?.success || !data?.imageUrl) {
+        throw new Error(data?.message || (language === "fr"
+          ? "Les fournisseurs d’images IA sont temporairement indisponibles. Réessayez dans quelques instants."
+          : "AI image providers are temporarily unavailable. Please try again shortly."));
+      }
 
       if (data.success && data.imageUrl) {
         setWhiteBgPreviews((prev) =>

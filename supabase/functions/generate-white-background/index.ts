@@ -74,6 +74,39 @@ async function fetchImagePayload(url: string): Promise<ImagePayload> {
   };
 }
 
+async function prepareProviderSource(payload: ImagePayload): Promise<ImagePayload> {
+  const MAX_DIMENSION = 1024;
+  const MAX_SOURCE_BYTES = 4 * 1024 * 1024;
+
+  if (payload.bytes.length <= MAX_SOURCE_BYTES) {
+    try {
+      const probe = await Image.decode(payload.bytes);
+      if (Math.max(probe.width, probe.height) <= MAX_DIMENSION) return payload;
+    } catch {
+      return payload;
+    }
+  }
+
+  try {
+    const source = await Image.decode(payload.bytes);
+    const scale = Math.min(1, MAX_DIMENSION / Math.max(source.width, source.height));
+    const width = Math.max(1, Math.round(source.width * scale));
+    const height = Math.max(1, Math.round(source.height * scale));
+    const resized = source.resize(width, height);
+    const bytes = await resized.encode();
+    console.log("[white-bg] Prepared provider source", {
+      originalBytes: payload.bytes.length,
+      preparedBytes: bytes.length,
+      width,
+      height,
+    });
+    return { bytes, mimeType: "image/png" };
+  } catch (error) {
+    console.warn("[white-bg] Source normalization failed; using original image", error);
+    return payload;
+  }
+}
+
 async function enforceImageFormat(
   payload: ImagePayload,
   targetWidth: number,
@@ -193,7 +226,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const body = await req.json().catch(() => ({}));
-  if (body?.healthCheck === true) return jsonResponse(200, { ok: true, version: 3 });
+  if (body?.healthCheck === true) return jsonResponse(200, { ok: true, version: 4 });
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -278,6 +311,7 @@ serve(async (req) => {
     }
 
     const source = await fetchImagePayload(imageUrl);
+    const providerSource = await prepareProviderSource(source);
     const prompt = buildPrompt(body, format);
 
     console.log("[white-bg] Starting provider fallback", {
@@ -291,19 +325,20 @@ serve(async (req) => {
 
     let result: ProviderResult | null = await generateCloudflareImage({
       prompt,
-      imageBytes: source.bytes,
-      mimeType: source.mimeType,
+      imageBytes: providerSource.bytes,
+      mimeType: providerSource.mimeType,
       width: formatDimensions[format].width,
       height: formatDimensions[format].height,
       strength: 0.28,
     });
-    if (!result) result = await tryOpenAI(prompt, source, format);
+    if (!result) result = await tryOpenAI(prompt, providerSource, format);
 
     if (!result) {
-      return jsonResponse(503, {
+      return jsonResponse(200, {
         success: false,
         error: "ALL_PROVIDERS_FAILED",
-        message: "All configured AI image providers failed",
+        message: "AI image providers are temporarily unavailable. Please try again.",
+        retryable: true,
       });
     }
 
