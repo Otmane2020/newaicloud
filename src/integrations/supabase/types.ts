@@ -2033,6 +2033,81 @@ export type Database = {
           },
         ]
       }
+      credit_packages: {
+        Row: {
+          active: boolean
+          amount_cents: number
+          created_at: string
+          credits: number
+          currency: string
+          id: string
+          name: string
+          sort_order: number
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          amount_cents: number
+          created_at?: string
+          credits: number
+          currency?: string
+          id: string
+          name: string
+          sort_order?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          amount_cents?: number
+          created_at?: string
+          credits?: number
+          currency?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          id: string
+          metadata: Json
+          reference_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reference_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          reference_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       decora_home_backup_metadata: {
         Row: {
           completed_at: string | null
@@ -7170,6 +7245,16 @@ export type Database = {
           metadata: Json
           type: string
         }[]
+      }
+      apply_credit_transaction: {
+        Args: {
+          p_amount: number
+          p_metadata?: Json
+          p_reference_id?: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: number
       }
       calculate_next_execution: {
         Args: { p_frequency: string; p_last_execution: string }
