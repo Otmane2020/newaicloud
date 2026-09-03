@@ -7,12 +7,23 @@ type ExecutionState = {
   title: string;
   message: string;
   imageUrls: string[];
+  productTitle?: string | null;
 };
 
 const hasSparklesIcon = (button: HTMLButtonElement) =>
   Boolean(button.querySelector('svg.lucide-sparkles, svg[class*="lucide-sparkles"]'));
 
 const uniqueUrls = (urls: string[]) => Array.from(new Set(urls.filter(Boolean))).slice(0, 8);
+
+const imagesFromRow = (row: HTMLTableRowElement | null) =>
+  uniqueUrls(Array.from(row?.querySelectorAll<HTMLImageElement>("img") || []).map((image) => image.src));
+
+const isSelectedRow = (row: HTMLTableRowElement) =>
+  Boolean(
+    row.querySelector(
+      'input[type="checkbox"]:checked, [role="checkbox"][data-state="checked"], button[data-state="checked"]',
+    ),
+  );
 
 export function SeoWorkspaceExecutionBridge() {
   const { pathname, search } = useLocation();
@@ -64,14 +75,17 @@ export function SeoWorkspaceExecutionBridge() {
             homepage: "Homepage",
           };
 
-      const row = button.closest("tr");
+      const row = button.closest("tr") as HTMLTableRowElement | null;
       const rowTitle = row?.querySelector<HTMLElement>("p.font-medium")?.textContent?.trim() || "";
-      const rowImage = row?.querySelector<HTMLImageElement>("img")?.src || "";
-      const visibleImages = Array.from(workspace.querySelectorAll<HTMLImageElement>("tbody img"))
-        .map((image) => image.src)
-        .filter(Boolean);
-      const imageUrls = uniqueUrls([rowImage, ...visibleImages]);
+      const selectedRows = Array.from(workspace.querySelectorAll<HTMLTableRowElement>("tbody tr")).filter(isSelectedRow);
+
+      // Never borrow media from unrelated rows. A row-level action gets only that row's
+      // images. A bulk action gets only selected rows. If neither applies, show no media.
+      const relatedRows = row ? [row] : selectedRows;
+      const imageUrls = uniqueUrls(relatedRows.flatMap(imagesFromRow));
       const tabLabel = tabLabels[tab] || "SEO";
+      const selectedCount = !row ? selectedRows.length : 0;
+      const singleProductTitle = tab === "tags" && rowTitle ? rowTitle : null;
 
       setExecution({
         title: fr ? `Optimisation SEO — ${tabLabel}` : `SEO optimization — ${tabLabel}`,
@@ -79,10 +93,15 @@ export function SeoWorkspaceExecutionBridge() {
           ? fr
             ? `Analyse et optimisation de « ${rowTitle} »…`
             : `Analyzing and optimizing “${rowTitle}”…`
-          : fr
-            ? `Traitement ${tabLabel} en cours…`
-            : `${tabLabel} processing in progress…`,
+          : selectedCount > 0
+            ? fr
+              ? `Traitement de ${selectedCount} élément(s) sélectionné(s) dans ${tabLabel}…`
+              : `Processing ${selectedCount} selected item(s) in ${tabLabel}…`
+            : fr
+              ? `Traitement ${tabLabel} en cours…`
+              : `${tabLabel} processing in progress…`,
         imageUrls,
+        productTitle: singleProductTitle,
       });
 
       let sawBusyState = false;
@@ -147,7 +166,10 @@ export function SeoWorkspaceExecutionBridge() {
         title={execution.title}
         message={execution.message}
         progress={null}
+        productTitle={execution.productTitle}
+        lookupTitle={execution.productTitle}
         imageUrls={execution.imageUrls}
+        hideMediaWhenEmpty
         className="shadow-lg"
       />
     </div>
