@@ -8,4 +8,9 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+# Google redirects back without a Supabase JWT. The function performs its own auth
+# for start/status/disconnect and validates a single-use OAuth state on callback.
+[functions.google-business-oauth]
+verify_jwt = false
+
 # Keep deployment configuration synchronized with the production project.

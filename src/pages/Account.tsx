@@ -4,6 +4,7 @@ import { AccountSettings } from '@/components/dashboard/AccountSettings';
 import { CurrentPlanCard } from '@/components/dashboard/CurrentPlanCard';
 import { BillingPortal } from '@/components/dashboard/BillingPortal';
 import { ShopifyIntegrationTabs } from '@/components/integration/ShopifyIntegrationTabs';
+import { GoogleBusinessIntegration } from '@/components/integration/GoogleBusinessIntegration';
 import { UsageLimits } from '@/components/dashboard/UsageLimits';
 import { SubscriptionPlans } from '@/components/dashboard/SubscriptionPlans';
 import { UsageWidget } from '@/components/dashboard/UsageWidget';
@@ -12,7 +13,7 @@ import { ReferralSystem } from '@/components/dashboard/ReferralSystem';
 import { Badge } from '@/components/ui/badge';
 import { WorkspacePageHeader } from '@/components/layout/WorkspacePageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Activity, CreditCard, ReceiptText, Settings, Sparkles, Store, User } from 'lucide-react';
+import { Activity, CreditCard, ReceiptText, Sparkles, Store, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/lib/language';
@@ -28,7 +29,6 @@ export default function Account() {
   const [planName, setPlanName] = useState<string | null>(null);
   const [isTrialing, setIsTrialing] = useState(false);
 
-  // Check if user has full access
   const hasFullAccess = user?.email === FULL_ACCESS_EMAIL;
 
   useEffect(() => {
@@ -60,8 +60,8 @@ export default function Account() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['profile', 'integrations', 'subscription', 'billing'].includes(tab)) {
-      // Valid tab from URL
+    if (tab && ['profile', 'integrations', 'subscription', 'billing', 'usage'].includes(tab)) {
+      // Valid tab from URL.
     }
   }, [searchParams]);
 
@@ -101,7 +101,10 @@ export default function Account() {
 
         <TabsContent value="profile" className="mt-6"><AccountSettings /></TabsContent>
         <TabsContent value="integrations" className="mt-6">
-          <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><ShopifyIntegrationTabs /></section>
+          <div className="space-y-5">
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><ShopifyIntegrationTabs /></section>
+            <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6"><GoogleBusinessIntegration /></section>
+          </div>
         </TabsContent>
         <TabsContent value="subscription" className="mt-6">
           <div className="space-y-5">
