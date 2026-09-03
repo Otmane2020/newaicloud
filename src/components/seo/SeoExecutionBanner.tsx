@@ -55,7 +55,9 @@ export function SeoExecutionBanner({
       if (!active) return;
 
       if (productId) {
-        setResolvedProduct({ id: productId, image_url: uniqueUrls(imageUrls)[0] || null });
+        setResolvedProduct((previous) =>
+          previous?.id === productId ? previous : { id: productId, image_url: null },
+        );
         return;
       }
 
@@ -91,7 +93,7 @@ export function SeoExecutionBanner({
     return () => {
       cancelled = true;
     };
-  }, [active, imageUrls, lookupTitle, productId, productTitle, selectedStore?.id]);
+  }, [active, lookupTitle, productId, productTitle, selectedStore?.id]);
 
   const resolvedProductId = productId || resolvedProduct?.id || null;
 
