@@ -40,9 +40,10 @@ const normalizeTab = (tab: string | null): WorkspaceTab => {
   return "collections";
 };
 
+// Display-only thresholds. Score calculations and optimization rules are unchanged.
 const scoreClassName = (score: number | null) => {
   if (score === null) return "border-slate-200 bg-white/70 text-slate-400";
-  if (score >= 80) return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (score >= 85) return "border-emerald-200 bg-emerald-50 text-emerald-700";
   if (score >= 60) return "border-amber-200 bg-amber-50 text-amber-700";
   return "border-red-200 bg-red-50 text-red-600";
 };
@@ -58,12 +59,12 @@ const globalScoreTone = (score: number | null) => {
     ring: "border-emerald-200 bg-emerald-50 text-emerald-700",
     badge: "border-emerald-200 bg-emerald-50 text-emerald-700",
   };
-  if (score >= 75) return {
+  if (score >= 85) return {
     label: "Good",
-    ring: "border-green-200 bg-green-50 text-green-700",
-    badge: "border-green-200 bg-green-50 text-green-700",
+    ring: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    badge: "border-emerald-200 bg-emerald-50 text-emerald-700",
   };
-  if (score >= 50) return {
+  if (score >= 60) return {
     label: "Needs improvement",
     ring: "border-amber-200 bg-amber-50 text-amber-700",
     badge: "border-amber-200 bg-amber-50 text-amber-700",
@@ -187,9 +188,9 @@ export default function SEO() {
     ? (fr ? "Indisponible" : "Unavailable")
     : globalSeoScore >= 90
       ? "Excellent"
-      : globalSeoScore >= 75
+      : globalSeoScore >= 85
         ? (fr ? "Bon" : "Good")
-        : globalSeoScore >= 50
+        : globalSeoScore >= 60
           ? (fr ? "À améliorer" : "Needs improvement")
           : (fr ? "Faible" : "Poor");
 
@@ -249,7 +250,7 @@ export default function SEO() {
                   className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-left transition hover:border-slate-300 hover:bg-slate-50"
                 >
                   <span className="block truncate text-[11px] font-medium text-slate-500">{label}</span>
-                  <span className="mt-1 block text-lg font-bold text-slate-900">
+                  <span className={`mt-1 block text-lg font-bold ${scoreClassName(score).includes("emerald") ? "text-emerald-700" : scoreClassName(score).includes("amber") ? "text-amber-700" : scoreClassName(score).includes("red") ? "text-red-600" : "text-slate-900"}`}>
                     {scoresLoading ? "…" : score === null ? "—" : `${score}%`}
                   </span>
                 </button>
