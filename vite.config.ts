@@ -62,9 +62,8 @@ const productGalleryEnglishGrid = () => ({
 
     // Only replace inside string/template literals so identifiers
     // (e.g. setAmbianceTarget) are never rewritten.
-    const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
     const transformed = code.replace(
+
       /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g,
       (literal) => {
         let next = literal;
