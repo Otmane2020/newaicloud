@@ -236,9 +236,14 @@ export function CatalogOptimizeSidebar() {
   const activeHref = (href: string) => {
     const [path, query] = href.split("?");
     if (pathname !== path) return false;
-    if (!query) return true;
 
     const current = new URLSearchParams(search);
+    if (!query) {
+      // Keep the Blog list and Add GEO Articles as two distinct submenu states.
+      if (path === "/blog/management" && current.get("new") === "1") return false;
+      return true;
+    }
+
     const expected = new URLSearchParams(query);
     return Array.from(expected.entries()).every(([key, value]) => current.get(key) === value);
   };
