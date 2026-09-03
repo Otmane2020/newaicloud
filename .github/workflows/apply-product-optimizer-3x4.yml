@@ -1,0 +1,53 @@
+name: Apply Product Optimizer 3x4
+
+on:
+  push:
+    branches:
+      - chatgpt/product-optimizer-3x4
+    paths:
+      - .github/workflows/apply-product-optimizer-3x4.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-product-optimizer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: chatgpt/product-optimizer-3x4
+          fetch-depth: 0
+
+      - name: Set Product Optimizer to 3x4
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/pages/ProductTitleDescription.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          replacements = {
+              '  const ITEMS_PER_PAGE = 50;': '  const ITEMS_PER_PAGE = 12;',
+              '  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(2);': '  const [gridColumns, setGridColumns] = useState<2 | 3 | 4>(3);',
+          }
+
+          for old, new in replacements.items():
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one occurrence of {old!r}, found {count}')
+              text = text.replace(old, new)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "OpenAI Codex"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/ProductTitleDescription.tsx
+          git commit -m "Set Product Optimizer to 3x4 grid"
+          git push origin HEAD:chatgpt/product-optimizer-3x4
