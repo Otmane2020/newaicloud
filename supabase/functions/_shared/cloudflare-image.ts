@@ -1,3 +1,5 @@
+import { routeImage } from "./image-router.ts";
+
 export type CloudflareImageInput = {
   prompt: string;
   imageUrl?: string;
@@ -14,7 +16,7 @@ export type CloudflareImageInput = {
 export type CloudflareImageResult = {
   imageUrl: string;
   model: string;
-  provider: "cloudflare-workers-ai";
+  provider: string;
 };
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -26,109 +28,58 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-async function resolveSource(input: CloudflareImageInput): Promise<string | undefined> {
-  if (input.imageBytes?.length) return bytesToBase64(input.imageBytes);
-  if (!input.imageUrl) return undefined;
-
-  const dataMatch = input.imageUrl.match(/^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/s);
-  if (dataMatch) return dataMatch[1];
-
-  const response = await fetch(input.imageUrl);
-  if (!response.ok) throw new Error(`Source image HTTP ${response.status}`);
-  return bytesToBase64(new Uint8Array(await response.arrayBuffer()));
+function inferAspectRatio(width?: number, height?: number): string | undefined {
+  if (!width || !height) return undefined;
+  const ratio = width / height;
+  const candidates = [
+    { id: "1:1", value: 1 },
+    { id: "4:5", value: 4 / 5 },
+    { id: "5:4", value: 5 / 4 },
+    { id: "9:16", value: 9 / 16 },
+    { id: "16:9", value: 16 / 9 },
+    { id: "3:4", value: 3 / 4 },
+    { id: "4:3", value: 4 / 3 },
+    { id: "2:3", value: 2 / 3 },
+    { id: "3:2", value: 3 / 2 },
+  ];
+  candidates.sort((a, b) => Math.abs(a.value - ratio) - Math.abs(b.value - ratio));
+  return candidates[0]?.id;
 }
 
-function extractJsonImage(data: any): string | null {
-  const raw = data?.result?.image ?? data?.image ?? (typeof data?.result === "string" ? data.result : undefined);
-  if (typeof raw !== "string" || !raw) return null;
-  return raw.startsWith("data:image/") ? raw : `data:image/png;base64,${raw}`;
-}
-
+/**
+ * Legacy compatibility wrapper.
+ *
+ * Existing callers still import generateCloudflareImage, but generation is now
+ * routed through the shared resilient image router: Cloudflare first, then
+ * Gemini image generation when Cloudflare is unavailable or fails.
+ */
 export async function generateCloudflareImage(
   input: CloudflareImageInput,
 ): Promise<CloudflareImageResult | null> {
-  const accountId = Deno.env.get("CLOUDFLARE_ACCOUNT_ID");
-  const apiToken = Deno.env.get("CLOUDFLARE_AI_API_TOKEN");
-  if (!accountId || !apiToken) {
-    console.warn("[cloudflare-image] CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_AI_API_TOKEN not configured");
-    return null;
-  }
-
-  const configuredModel = Deno.env.get("CLOUDFLARE_IMAGE_MODEL");
-  const models = Array.from(new Set([
-    configuredModel,
-    "@cf/stabilityai/stable-diffusion-xl-base-1.0",
-    "@cf/runwayml/stable-diffusion-v1-5-img2img",
-  ].filter((value): value is string => Boolean(value))));
-
   try {
-    const imageB64 = await resolveSource(input);
-    const payload: Record<string, unknown> = {
+    let sourceImage = input.imageUrl;
+    if (!sourceImage && input.imageBytes?.length) {
+      sourceImage = `data:${input.mimeType || "image/png"};base64,${bytesToBase64(input.imageBytes)}`;
+    }
+
+    const width = input.width ? Math.round(input.width) : undefined;
+    const height = input.height ? Math.round(input.height) : undefined;
+    const size = width && height ? `${width}x${height}` : undefined;
+
+    const generated = await routeImage({
       prompt: input.prompt,
-      negative_prompt: input.negativePrompt ||
-        "different product, altered product shape, wrong color, changed material, added parts, removed parts, text, watermark, logo, low quality",
-      guidance: input.guidance ?? 8,
-      num_steps: input.numSteps ?? 20,
-      width: input.width ?? 1024,
-      height: input.height ?? 1024,
+      imageUrls: sourceImage ? [sourceImage] : [],
+      aspectRatio: inferAspectRatio(width, height),
+      size,
+    });
+
+    return {
+      imageUrl: generated.imageUrl,
+      model: generated.model,
+      provider: generated.provider,
     };
-
-    if (imageB64) {
-      payload.image_b64 = imageB64;
-      payload.strength = input.strength ?? 0.28;
-    }
-
-    for (const model of models) {
-      try {
-        const response = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          },
-        );
-
-        if (!response.ok) {
-          const details = await response.text();
-          console.warn(`[cloudflare-image] ${model} failed (${response.status}): ${details.slice(0, 600)}`);
-          continue;
-        }
-
-        const contentType = response.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) {
-          const data = await response.json();
-          const imageUrl = extractJsonImage(data);
-          if (!imageUrl) {
-            console.warn(`[cloudflare-image] ${model} JSON response did not contain an image`);
-            continue;
-          }
-          return { imageUrl, model, provider: "cloudflare-workers-ai" };
-        }
-
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        if (!bytes.length) {
-          console.warn(`[cloudflare-image] ${model} returned an empty image response`);
-          continue;
-        }
-        const mime = contentType.startsWith("image/") ? contentType.split(";")[0] : "image/png";
-        return {
-          imageUrl: `data:${mime};base64,${bytesToBase64(bytes)}`,
-          model,
-          provider: "cloudflare-workers-ai",
-        };
-      } catch (modelError) {
-        console.warn(`[cloudflare-image] ${model} exception`, modelError);
-      }
-    }
-
-    console.error("[cloudflare-image] All Cloudflare image models failed");
-    return null;
   } catch (error) {
-    console.error("[cloudflare-image] generation exception", error);
+    console.error("[cloudflare-image] resilient image routing failed", error);
     return null;
   }
 }
