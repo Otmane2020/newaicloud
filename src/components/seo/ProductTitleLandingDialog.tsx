@@ -66,6 +66,13 @@ const calculateQualityScore = (title: string, description: string): number => {
   return Math.min(100, score);
 };
 
+const qualityScoreTone = (score: number) =>
+  score >= 85
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : score >= 60
+      ? "border-amber-200 bg-amber-50 text-amber-700"
+      : "border-red-200 bg-red-50 text-red-600";
+
 // Generate rich HTML preview from product description or fallback to simple version
 const generateHtmlPreview = (product: Product): string => {
   const title = product.seo_title || product.title;
@@ -216,18 +223,15 @@ export function ProductTitleLandingDialog({
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">Score Qualité</span>
-                <Badge
-                  variant={qualityScore >= 80 ? "default" : qualityScore >= 60 ? "secondary" : "outline"}
-                  className="gap-1"
-                >
+                <Badge variant="outline" className={`gap-1 ${qualityScoreTone(qualityScore)}`}>
                   <CheckCircle2 className="h-3 w-3" />
                   {qualityScore}/100
                 </Badge>
               </div>
               <Progress value={qualityScore} className="h-2" />
               <p className="text-xs text-muted-foreground mt-1">
-                {qualityScore >= 80 && "Excellent - Contenu riche avec structure optimale et médias"}
-                {qualityScore >= 60 && qualityScore < 80 && "Bon - Contenu structuré avec potentiel d'amélioration"}
+                {qualityScore >= 85 && "Excellent - Contenu riche avec structure optimale et médias"}
+                {qualityScore >= 60 && qualityScore < 85 && "Bon - Contenu structuré avec potentiel d'amélioration"}
                 {qualityScore < 60 && "À améliorer - Enrichir le contenu et la structure"}
               </p>
             </div>
