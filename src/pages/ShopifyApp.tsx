@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -54,10 +54,13 @@ export default function ShopifyApp() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "error" | "processed" | "server_offline">("loading");
   const { t, language } = useTranslation();
+  const processingRef = useRef(false);
 
   useEffect(() => {
-    // Éviter les exécutions multiples
-    if (status === "processed") return;
+    // The search params and translation objects can change identity between renders.
+    // Guard the complete setup flow so an OAuth failure cannot create a retry/toast storm.
+    if (processingRef.current) return;
+    processingRef.current = true;
 
     const processPendingToken = async () => {
       const rawShop = params.get("shop");
