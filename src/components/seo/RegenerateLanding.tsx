@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
+import { SeoExecutionBanner } from "@/components/seo/SeoExecutionBanner";
 import type { LandingConfig } from "./LandingConfigDialog";
 import { useTranslation } from "@/lib/language";
 
@@ -483,18 +483,15 @@ export default function RegenerateLanding({
         </div>
       )}
 
-      {loading && (
-        <div className="space-y-3 rounded-xl border border-violet-200 bg-violet-50/30 p-5">
-          <div className="flex items-center gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-violet-600" />
-            <div>
-              <p className="text-sm font-medium text-slate-900">{progressMessage}</p>
-              <p className="text-xs text-slate-500">{fr ? "Titre, description, images et données catalogue sont relus avant génération." : "Title, description, images and catalog data are refreshed before generation."}</p>
-            </div>
-          </div>
-          <Progress value={progress} showPercentage className="h-2" />
-        </div>
-      )}
+      <SeoExecutionBanner
+        active={loading}
+        title={fr ? "Génération SEO de la Landing Page" : "SEO landing page generation"}
+        message={progressMessage}
+        progress={progress}
+        productId={product.id}
+        productTitle={currentSource?.title || product.title}
+        imageUrls={[currentSource?.imageUrl, product.image_url]}
+      />
 
       {error && !loading && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
