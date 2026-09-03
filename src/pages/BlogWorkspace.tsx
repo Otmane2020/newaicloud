@@ -62,6 +62,13 @@ const getPaginationItems = (currentPage: number, totalPages: number): Pagination
   return [1, "ellipsis-left", currentPage - 1, currentPage, currentPage + 1, "ellipsis-right", totalPages];
 };
 
+const scoreTone = (score: number) =>
+  score >= 85
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : score >= 60
+      ? "border-amber-200 bg-amber-50 text-amber-700"
+      : "border-red-200 bg-red-50 text-red-600";
+
 export default function BlogWorkspace() {
   const { selectedStore } = useStore();
   const { language } = useTranslation();
@@ -316,7 +323,7 @@ export default function BlogWorkspace() {
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={articleScore >= 80 ? "text-emerald-700" : articleScore >= 60 ? "text-amber-700" : "text-red-600"}>{Math.round(articleScore)}%</Badge>
+                          <Badge variant="outline" className={scoreTone(articleScore)}>{Math.round(articleScore)}%</Badge>
                           {article.status === "published" && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
                         </div>
                       </td>
