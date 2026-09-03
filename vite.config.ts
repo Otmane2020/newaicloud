@@ -60,10 +60,20 @@ const productGalleryEnglishGrid = () => ({
       ["grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"],
     ];
 
-    let transformed = code;
-    for (const [from, to] of replacements) {
-      transformed = transformed.split(from).join(to);
-    }
+    // Only replace inside string/template literals so identifiers
+    // (e.g. setAmbianceTarget) are never rewritten.
+    const transformed = code.replace(
+
+      /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g,
+      (literal) => {
+        let next = literal;
+        for (const [from, to] of replacements) {
+          next = next.split(from).join(to);
+        }
+        return next;
+      },
+    );
+
 
     return transformed === code ? null : { code: transformed, map: null };
   },
