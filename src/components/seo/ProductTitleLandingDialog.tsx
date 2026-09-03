@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Monitor, Smartphone, Eye, CheckCircle2, Loader2 } from "lucide-react";
 import { MinimizableProgressDialog } from "@/components/seo/MinimizableProgressDialog";
+import { SeoExecutionBanner } from "@/components/seo/SeoExecutionBanner";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/lib/language";
 
 interface Product {
   id: string;
@@ -134,6 +136,8 @@ export function ProductTitleLandingDialog({
   onSync,
   syncLoading = false,
 }: ProductTitleLandingDialogProps) {
+  const { language } = useTranslation();
+  const fr = language === "fr";
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "360">("desktop");
   const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   const [showFullPreview, setShowFullPreview] = useState(false);
@@ -152,6 +156,10 @@ export function ProductTitleLandingDialog({
       : 0;
 
   const htmlPreview = selectedProduct ? generateHtmlPreview(selectedProduct) : "";
+  const processingProgress =
+    currentProcessing?.total && currentProcessing.total > 0
+      ? (currentProcessing.index / currentProcessing.total) * 100
+      : null;
 
   return (
     <MinimizableProgressDialog
@@ -161,7 +169,28 @@ export function ProductTitleLandingDialog({
       currentProcessing={currentProcessing}
       onCancel={onCancel}
       onComplete={() => setShowFullPreview(true)}
-      title="Aperçu Contenu Produit Optimisé"
+      title={fr ? "Aperçu du contenu produit optimisé" : "Optimized product content preview"}
+      processingContent={
+        <SeoExecutionBanner
+          active={isGenerating}
+          title={fr ? "Optimisation SEO du catalogue" : "Catalog SEO optimization"}
+          message={
+            currentProcessing?.title
+              ? fr
+                ? `Analyse de l’image, du titre et de la description de « ${currentProcessing.title} »…`
+                : `Analyzing image, title and description for “${currentProcessing.title}”…`
+              : fr
+                ? "Préparation des produits sélectionnés…"
+                : "Preparing selected products…"
+          }
+          progress={processingProgress}
+          current={currentProcessing?.index}
+          total={currentProcessing?.total}
+          productTitle={currentProcessing?.title}
+          lookupTitle={currentProcessing?.title}
+          imageUrls={products.filter((product) => product.title === currentProcessing?.title).map((product) => product.image_url)}
+        />
+      }
     >
       {!isGenerating && showFullPreview && (
         <div className="space-y-4">
