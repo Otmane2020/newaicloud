@@ -8,12 +8,43 @@ const corsHeaders = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const PAGE_SIZE = 1000;
+
+type PlanItem = {
+  title: string;
+  topic: string;
+  keywords: string[];
+  day_offset?: number;
+  meta_description?: string;
+};
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object") {
+    const value = error as Record<string, unknown>;
+    const parts = [value.message, value.details, value.hint, value.code]
+      .filter((part) => typeof part === "string" && part.trim())
+      .map((part) => String(part).trim());
+    if (parts.length) return Array.from(new Set(parts)).join(" | ");
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return "Unserializable error object";
+    }
+  }
+  return "Unknown error";
+}
+
+function dbError(context: string, error: unknown): Error {
+  return new Error(`${context}: ${errorMessage(error)}`);
 }
 
 function stripHtml(value: unknown) {
@@ -41,7 +72,9 @@ function keywordsFromTitle(title: string, topic?: string) {
     "avec", "pour", "dans", "des", "les", "une", "sur", "votre", "vos", "guide", "comment", "choisir",
     "with", "for", "the", "and", "your", "guide", "how", "choose", "best", "meilleurs", "meilleur",
   ]);
-  return Array.from(new Set(normalize(`${title} ${topic || ""}`).split(" ").filter((w) => w.length > 2 && !stop.has(w)))).slice(0, 8);
+  return Array.from(
+    new Set(normalize(`${title} ${topic || ""}`).split(" ").filter((word) => word.length > 2 && !stop.has(word))),
+  ).slice(0, 8);
 }
 
 function targetArticleCount(productCount: number, collectionCount: number) {
@@ -55,44 +88,91 @@ function representativeSample<T>(items: T[], max: number) {
   if (items.length <= max) return items;
   const result: T[] = [];
   const step = items.length / max;
-  for (let i = 0; i < max; i += 1) result.push(items[Math.floor(i * step)]);
+  for (let index = 0; index < max; index += 1) result.push(items[Math.floor(index * step)]);
   return result;
 }
 
-async function fetchAllProducts(supabase: any, storeId: string) {
-  const rows: any[] = [];
-  const pageSize = 1000;
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
-      .from("shopify_products")
-      .select("id,title,handle,description,body_html,category,product_type,tags,collection_ids,characteristics,status")
+async function fetchPagedWithFallback(
+  supabase: any,
+  table: string,
+  storeId: string,
+  selectors: string[],
+) {
+  let lastError: unknown = null;
+
+  for (const selector of selectors) {
+    const first = await supabase
+      .from(table)
+      .select(selector)
       .eq("store_id", storeId)
-      .range(from, from + pageSize - 1);
-    if (error) throw error;
-    rows.push(...(data || []));
-    if (!data || data.length < pageSize) break;
+      .range(0, PAGE_SIZE - 1);
+
+    if (first.error) {
+      lastError = first.error;
+      console.warn(`[generate-aeo-plan] ${table} selector failed`, selector, errorMessage(first.error));
+      continue;
+    }
+
+    const rows: any[] = [...(first.data || [])];
+    if (!first.data || first.data.length < PAGE_SIZE) return rows;
+
+    for (let from = PAGE_SIZE; ; from += PAGE_SIZE) {
+      const page = await supabase
+        .from(table)
+        .select(selector)
+        .eq("store_id", storeId)
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (page.error) throw dbError(`Could not continue scanning ${table}`, page.error);
+      rows.push(...(page.data || []));
+      if (!page.data || page.data.length < PAGE_SIZE) break;
+    }
+    return rows;
   }
-  return rows;
+
+  throw dbError(`Could not scan ${table}`, lastError);
+}
+
+async function fetchAllProducts(supabase: any, storeId: string) {
+  return await fetchPagedWithFallback(supabase, "shopify_products", storeId, [
+    "id,title,handle,description,body_html,category,product_type,tags,collection_ids,characteristics,status,store_id",
+    "id,title,handle,body_html,product_type,tags,status,store_id",
+    "id,title,handle,store_id",
+  ]);
 }
 
 async function fetchAllCollections(supabase: any, storeId: string) {
-  const rows: any[] = [];
-  const pageSize = 1000;
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await supabase
-      .from("shopify_collections")
-      .select("id,title,handle,body_html,products_count")
-      .eq("store_id", storeId)
-      .range(from, from + pageSize - 1);
-    if (error) throw error;
-    rows.push(...(data || []));
-    if (!data || data.length < pageSize) break;
-  }
-  return rows;
+  return await fetchPagedWithFallback(supabase, "shopify_collections", storeId, [
+    "id,title,handle,body_html,products_count,store_id",
+    "id,title,handle,body_html,store_id",
+    "id,title,handle,store_id",
+  ]);
 }
 
-async function ensureCalendar(supabase: any, userId: string, storeId: string) {
-  const { data: existing, error } = await supabase
+async function loadStore(supabase: any, storeId: string, userId: string) {
+  const selectors = [
+    "id,user_id,store_name,store_url,public_domain",
+    "id,user_id,store_name,store_url",
+    "id,user_id,store_url",
+  ];
+  let lastError: unknown = null;
+
+  for (const selector of selectors) {
+    const result = await supabase
+      .from("shopify_connections")
+      .select(selector)
+      .eq("id", storeId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!result.error) return result.data;
+    lastError = result.error;
+  }
+
+  throw dbError("Could not load Shopify connection", lastError);
+}
+
+async function readCalendar(supabase: any, userId: string, storeId: string) {
+  return await supabase
     .from("aeo_publication_calendar")
     .select("*")
     .eq("user_id", userId)
@@ -100,24 +180,47 @@ async function ensureCalendar(supabase: any, userId: string, storeId: string) {
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error) throw error;
-  if (existing) return existing;
+}
 
-  const { data, error: insertError } = await supabase
+async function ensureCalendar(supabase: any, userId: string, storeId: string) {
+  const existingResult = await readCalendar(supabase, userId, storeId);
+  if (!existingResult.error && existingResult.data) return existingResult.data;
+
+  if (existingResult.error) {
+    console.warn("[generate-aeo-plan] calendar read failed; continuing with idempotent upsert", errorMessage(existingResult.error));
+  }
+
+  const defaults = {
+    user_id: userId,
+    store_id: storeId,
+    is_active: true,
+    pillar_frequency: "adaptive_ai",
+    publication_hour: 10,
+    qa_per_day: 1,
+    link_qa_to_pillar: true,
+  };
+
+  // The table has UNIQUE(user_id, store_id). Upsert prevents two simultaneous
+  // planner calls from racing on SELECT -> INSERT and producing a 23505 error.
+  const upsertResult = await supabase
     .from("aeo_publication_calendar")
-    .insert({
-      user_id: userId,
-      store_id: storeId,
-      is_active: true,
-      pillar_frequency: "adaptive_ai",
-      publication_hour: 10,
-      qa_per_day: 1,
-      link_qa_to_pillar: true,
-    })
-    .select()
-    .single();
-  if (insertError) throw insertError;
-  return data;
+    .upsert(defaults, { onConflict: "user_id,store_id", ignoreDuplicates: true })
+    .select("*")
+    .maybeSingle();
+
+  if (!upsertResult.error && upsertResult.data) return upsertResult.data;
+  if (upsertResult.error) {
+    console.warn("[generate-aeo-plan] calendar upsert did not return a row", errorMessage(upsertResult.error));
+  }
+
+  const reread = await readCalendar(supabase, userId, storeId);
+  if (!reread.error && reread.data) return reread.data;
+
+  // Calendar configuration should never prevent a valid content plan from being
+  // generated. Use a safe default hour and keep going; the plan table remains the
+  // source of truth for the created articles.
+  console.warn("[generate-aeo-plan] calendar unavailable; using default publication hour 10");
+  return { id: null, publication_hour: 10 };
 }
 
 function buildFallbackPlan(params: {
@@ -130,12 +233,13 @@ function buildFallbackPlan(params: {
   existingTitles: Set<string>;
 }) {
   const { needed, fr, opportunities, collections, categories, products, existingTitles } = params;
-  const candidates: Array<{ title: string; topic: string; keywords: string[]; day_offset?: number }> = [];
+  const candidates: PlanItem[] = [];
 
   const add = (title: string, topic: string) => {
     const key = normalize(title);
-    if (!key || existingTitles.has(key) || candidates.some((item) => normalize(item.title) === key)) return;
+    if (!key || existingTitles.has(key) || candidates.some((item) => normalize(item.title) === key)) return false;
     candidates.push({ title: title.slice(0, 110), topic, keywords: keywordsFromTitle(title, topic) });
+    return true;
   };
 
   for (const opportunity of opportunities) {
@@ -163,7 +267,7 @@ function buildFallbackPlan(params: {
     if (candidates.length >= needed) return candidates;
   }
 
-  for (const product of representativeSample(products, needed * 2)) {
+  for (const product of representativeSample(products, Math.max(needed * 3, 12))) {
     const name = stripHtml(product.title);
     if (!name) continue;
     add(
@@ -173,14 +277,31 @@ function buildFallbackPlan(params: {
     if (candidates.length >= needed) return candidates;
   }
 
-  while (candidates.length < needed) {
-    const number = candidates.length + 1;
+  // Increment the seed independently from candidates.length so an already existing
+  // generic title can never cause the old infinite loop.
+  let seed = 1;
+  let guard = 0;
+  while (candidates.length < needed && guard < 500) {
     add(
-      fr ? `Guide expert de la boutique : bien choisir ses produits #${number}` : `Store expert guide: how to choose products #${number}`,
+      fr ? `Guide expert de la boutique : bien choisir ses produits #${seed}` : `Store expert guide: how to choose products #${seed}`,
       fr ? "Guide expert" : "Expert guide",
     );
+    seed += 1;
+    guard += 1;
   }
+
   return candidates;
+}
+
+async function reloadUpcomingPlan(supabase: any, userId: string, storeId: string, start: string, end: string) {
+  return await supabase
+    .from("aeo_pillar_articles")
+    .select("id,title,topic,keywords,scheduled_for,status")
+    .eq("user_id", userId)
+    .eq("store_id", storeId)
+    .gte("scheduled_for", start)
+    .lte("scheduled_for", end)
+    .order("scheduled_for", { ascending: true });
 }
 
 Deno.serve(async (req) => {
@@ -188,9 +309,14 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return jsonResponse({ success: false, error: "Method not allowed" }, 405);
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+
+    if (!supabaseUrl || !serviceKey) {
+      throw new Error("Supabase server credentials are not configured");
+    }
+
     const supabase = createClient(supabaseUrl, serviceKey);
     const body = await req.json();
     const storeId = String(body.store_id || "");
@@ -213,51 +339,49 @@ Deno.serve(async (req) => {
 
     if (!userId) return jsonResponse({ success: false, error: "user_id is required" }, 400);
 
-    const { data: store, error: storeError } = await supabase
-      .from("shopify_connections")
-      .select("id,user_id,store_name,store_url,public_domain")
-      .eq("id", storeId)
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (storeError) throw storeError;
+    const store = await loadStore(supabase, storeId, userId);
     if (!store) return jsonResponse({ success: false, error: "Store not found for user" }, 404);
 
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
     const end = new Date(today.getTime() + 29 * DAY_MS);
     end.setUTCHours(23, 59, 59, 999);
+    const startIso = today.toISOString();
+    const endIso = end.toISOString();
 
-    const [calendar, productCountResult, collectionCountResult, existingResult] = await Promise.all([
+    const [calendar, existingResult, products, collections] = await Promise.all([
       ensureCalendar(supabase, userId, storeId),
-      supabase.from("shopify_products").select("id", { count: "exact", head: true }).eq("store_id", storeId),
-      supabase.from("shopify_collections").select("id", { count: "exact", head: true }).eq("store_id", storeId),
-      supabase
-        .from("aeo_pillar_articles")
-        .select("id,title,topic,keywords,scheduled_for,status")
-        .eq("user_id", userId)
-        .eq("store_id", storeId)
-        .gte("scheduled_for", today.toISOString())
-        .lte("scheduled_for", end.toISOString())
-        .order("scheduled_for", { ascending: true }),
+      reloadUpcomingPlan(supabase, userId, storeId, startIso, endIso),
+      fetchAllProducts(supabase, storeId),
+      fetchAllCollections(supabase, storeId),
     ]);
 
-    if (productCountResult.error) throw productCountResult.error;
-    if (collectionCountResult.error) throw collectionCountResult.error;
-    if (existingResult.error) throw existingResult.error;
+    if (existingResult.error) throw dbError("Could not read existing AEO plan", existingResult.error);
 
-    const productCount = productCountResult.count || 0;
-    const collectionCount = collectionCountResult.count || 0;
+    const productCount = products.length;
+    const collectionCount = collections.length;
     const target = targetArticleCount(productCount, collectionCount);
     const existing = existingResult.data || [];
     const needed = Math.max(0, target - existing.length);
 
     if (needed === 0) {
-      return jsonResponse({ success: true, created: 0, target, existing: existing.length, plan: existing, source: "native_aeo" });
+      return jsonResponse({
+        success: true,
+        created: 0,
+        target,
+        existing: existing.length,
+        products_scanned: productCount,
+        collections_scanned: collectionCount,
+        plan: existing,
+        source: "native_aeo",
+      });
     }
 
-    const [products, collections, opportunitiesResult, historyResult, olderPillarsResult] = await Promise.all([
-      fetchAllProducts(supabase, storeId),
-      fetchAllCollections(supabase, storeId),
+    if (products.length === 0 && collections.length === 0) {
+      return jsonResponse({ success: true, created: 0, target, existing: existing.length, reason: "catalog_empty" });
+    }
+
+    const [opportunitiesResult, historyResult, olderPillarsResult] = await Promise.all([
       supabase
         .from("ai_opportunities")
         .select("question,suggested_title,keywords,product_ids,query_type,citation_potential,difficulty")
@@ -281,13 +405,9 @@ Deno.serve(async (req) => {
         .limit(150),
     ]);
 
-    if (opportunitiesResult.error) console.warn("Could not load GEO opportunities", opportunitiesResult.error.message);
-    if (historyResult.error) console.warn("Could not load article history", historyResult.error.message);
-    if (olderPillarsResult.error) console.warn("Could not load older GEO pillars", olderPillarsResult.error.message);
-
-    if (products.length === 0 && collections.length === 0) {
-      return jsonResponse({ success: true, created: 0, target, existing: existing.length, reason: "catalog_empty" });
-    }
+    if (opportunitiesResult.error) console.warn("Could not load GEO opportunities", errorMessage(opportunitiesResult.error));
+    if (historyResult.error) console.warn("Could not load article history", errorMessage(historyResult.error));
+    if (olderPillarsResult.error) console.warn("Could not load older GEO pillars", errorMessage(olderPillarsResult.error));
 
     const opportunities = opportunitiesResult.data || [];
     const existingTitles = new Set<string>();
@@ -318,45 +438,46 @@ Deno.serve(async (req) => {
       };
     });
 
-    const productContext = representativeSample(products, 240).map((product) => ({
+    const productContext = representativeSample(products, 180).map((product) => ({
       title: stripHtml(product.title),
       category: stripHtml(product.category || product.product_type),
       description: stripHtml(product.description || product.body_html || product.characteristics).slice(0, 180),
     }));
 
-    const fr = requestedLanguage === "fr" || (!requestedLanguage && /\b(le|la|les|de|du|des|pour|avec)\b/i.test(products.slice(0, 20).map((p) => p.title).join(" ")));
+    const fr = requestedLanguage === "fr" ||
+      (!requestedLanguage && /\b(le|la|les|de|du|des|pour|avec)\b/i.test(products.slice(0, 20).map((product) => product.title).join(" ")));
     const languageName = fr ? "French" : "English";
 
-    let generatedItems: Array<{ title: string; topic: string; keywords: string[]; day_offset?: number; meta_description?: string }> = [];
+    let generatedItems: PlanItem[] = [];
+    let aiSucceeded = false;
 
     if (lovableApiKey) {
       try {
         const prompt = `You are the autonomous GEO/AEO content planner for an ecommerce store.
 Create exactly ${needed} NEW pillar-article ideas for the next 30 days, in ${languageName}.
 
-The system scanned the ENTIRE local store before building this brief:
-- Store: ${store.store_name || store.public_domain || store.store_url}
-- Products scanned: ${products.length}
-- Collections scanned: ${collections.length}
-- Target total plan size: ${target} articles
-- Existing upcoming GEO articles: ${existing.length}
+Store: ${store.store_name || store.public_domain || store.store_url}
+Products scanned: ${products.length}
+Collections scanned: ${collections.length}
+Target total plan size: ${target}
+Existing upcoming GEO articles: ${existing.length}
 
-CATALOG CATEGORY COVERAGE (computed from every product):
+CATALOG CATEGORY COVERAGE:
 ${categories.slice(0, 60).map(([name, count]) => `- ${name}: ${count}`).join("\n")}
 
-COLLECTIONS (all local collections, with representative products):
-${JSON.stringify(collectionContext.slice(0, 120))}
+COLLECTIONS:
+${JSON.stringify(collectionContext.slice(0, 100))}
 
-REPRESENTATIVE PRODUCT SAMPLE (selected across the full catalog after full-catalog aggregation):
+REPRESENTATIVE PRODUCTS:
 ${JSON.stringify(productContext)}
 
-HIGH-VALUE GEO/AI SEARCH OPPORTUNITIES ALREADY FOUND LOCALLY:
-${JSON.stringify(opportunities.slice(0, 50).map((o: any) => ({
-  question: o.question,
-  suggested_title: o.suggested_title,
-  keywords: o.keywords,
-  query_type: o.query_type,
-  citation_potential: o.citation_potential,
+HIGH-VALUE GEO/AI SEARCH OPPORTUNITIES:
+${JSON.stringify(opportunities.slice(0, 50).map((opportunity: any) => ({
+  question: opportunity.question,
+  suggested_title: opportunity.suggested_title,
+  keywords: opportunity.keywords,
+  query_type: opportunity.query_type,
+  citation_potential: opportunity.citation_potential,
 })))}
 
 EXISTING/PREVIOUS TITLES TO AVOID:
@@ -364,13 +485,11 @@ ${Array.from(existingTitles).slice(0, 220).join(" | ")}
 
 Rules:
 1. Ground every topic in the real catalog/collections above. Never invent a product or collection.
-2. Diversify the plan: collection/category guides, comparisons, buying criteria, problem/solution queries, product-use expertise, and citation-friendly answer-first topics.
-3. Prefer questions and intents that AI search engines can quote/cite.
-4. Cover different parts of the catalog instead of repeating the same best-selling theme.
-5. No prices, fake claims, fake reviews, fake statistics, or invented specifications.
-6. Titles should be natural and useful, not keyword-stuffed.
-7. day_offset must be an integer from 0 to 29 and spread ideas across the period.
-8. Return strict JSON only in this exact shape:
+2. Diversify the plan across categories, comparisons, buying criteria, problem/solution queries and citation-friendly answer-first topics.
+3. No prices, fake claims, fake reviews, fake statistics or invented specifications.
+4. Titles must be natural and useful, not keyword-stuffed.
+5. day_offset must be an integer from 0 to 29 and ideas must be spread across the period.
+6. Return strict JSON only in this shape:
 {"articles":[{"title":"...","topic":"...","keywords":["..."],"day_offset":3,"meta_description":"..."}]}`;
 
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -382,36 +501,43 @@ Rules:
           body: JSON.stringify({
             model: "google/gemini-2.5-flash",
             messages: [
-              { role: "system", content: "Return only valid JSON. Build grounded ecommerce GEO/AEO plans from supplied local catalog data." },
+              { role: "system", content: "Return only valid JSON. Build grounded ecommerce GEO/AEO plans from supplied catalog data." },
               { role: "user", content: prompt },
             ],
             temperature: 0.45,
             max_tokens: 4200,
           }),
         });
-        if (!response.ok) throw new Error(`AI planner returned ${response.status}`);
+
+        if (!response.ok) throw new Error(`AI planner returned ${response.status}: ${(await response.text()).slice(0, 300)}`);
         const aiData = await response.json();
         const raw = String(aiData.choices?.[0]?.message?.content || "");
         const jsonMatch = raw.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error("AI planner returned no JSON");
         const parsed = JSON.parse(jsonMatch[0]);
+
         if (Array.isArray(parsed.articles)) {
           generatedItems = parsed.articles
             .filter((item: any) => item && stripHtml(item.title) && stripHtml(item.topic))
             .map((item: any) => ({
               title: stripHtml(item.title).slice(0, 110),
               topic: stripHtml(item.topic).slice(0, 140),
-              keywords: Array.isArray(item.keywords) ? item.keywords.map(stripHtml).filter(Boolean).slice(0, 10) : keywordsFromTitle(item.title, item.topic),
-              day_offset: Number.isFinite(Number(item.day_offset)) ? Math.max(0, Math.min(29, Math.round(Number(item.day_offset)))) : undefined,
+              keywords: Array.isArray(item.keywords)
+                ? item.keywords.map(stripHtml).filter(Boolean).slice(0, 10)
+                : keywordsFromTitle(item.title, item.topic),
+              day_offset: Number.isFinite(Number(item.day_offset))
+                ? Math.max(0, Math.min(29, Math.round(Number(item.day_offset))))
+                : undefined,
               meta_description: stripHtml(item.meta_description).slice(0, 300),
             }));
+          aiSucceeded = generatedItems.length > 0;
         }
       } catch (error) {
-        console.warn("GEO AI planning failed, using deterministic local fallback", error);
+        console.warn("GEO AI planning failed, using deterministic local fallback", errorMessage(error));
       }
     }
 
-    const uniqueGenerated: typeof generatedItems = [];
+    const uniqueGenerated: PlanItem[] = [];
     for (const item of generatedItems) {
       const key = normalize(item.title);
       if (!key || existingTitles.has(key) || uniqueGenerated.some((row) => normalize(row.title) === key)) continue;
@@ -430,6 +556,17 @@ Rules:
         existingTitles: new Set([...existingTitles, ...uniqueGenerated.map((item) => normalize(item.title))]),
       });
       uniqueGenerated.push(...fallback);
+    }
+
+    if (!uniqueGenerated.length) {
+      return jsonResponse({
+        success: true,
+        created: 0,
+        target,
+        existing: existing.length,
+        reason: "no_new_topics",
+        plan: existing,
+      });
     }
 
     const usedDates = new Set(
@@ -464,36 +601,62 @@ Rules:
       };
     });
 
-    const { data: inserted, error: insertError } = await supabase
+    const insertResult = await supabase
       .from("aeo_pillar_articles")
       .insert(rowsToInsert)
       .select("id,title,topic,keywords,scheduled_for,status");
-    if (insertError) throw insertError;
 
-    const allPlanned = [...existing, ...(inserted || [])].sort((a: any, b: any) =>
+    if (insertResult.error) {
+      // If two planner calls overlapped, another request may already have created
+      // the plan. Re-read before returning an error so generation is idempotent.
+      if (String((insertResult.error as any)?.code || "") === "23505") {
+        const concurrent = await reloadUpcomingPlan(supabase, userId, storeId, startIso, endIso);
+        if (!concurrent.error && (concurrent.data?.length || 0) > existing.length) {
+          return jsonResponse({
+            success: true,
+            created: 0,
+            target,
+            existing: concurrent.data?.length || 0,
+            products_scanned: productCount,
+            collections_scanned: collectionCount,
+            plan: concurrent.data || [],
+            source: "concurrent_plan_reused",
+          });
+        }
+      }
+      throw dbError("Could not save generated AEO plan", insertResult.error);
+    }
+
+    const inserted = insertResult.data || [];
+    const allPlanned = [...existing, ...inserted].sort((a: any, b: any) =>
       String(a.scheduled_for || "").localeCompare(String(b.scheduled_for || "")),
     );
+
     const firstScheduled = allPlanned.find((row: any) => row.scheduled_for)?.scheduled_for || null;
     if (calendar?.id && firstScheduled) {
-      await supabase
+      const calendarUpdate = await supabase
         .from("aeo_publication_calendar")
         .update({ next_pillar_scheduled_at: firstScheduled, updated_at: new Date().toISOString() })
         .eq("id", calendar.id);
+      if (calendarUpdate.error) {
+        console.warn("Could not update next pillar date", errorMessage(calendarUpdate.error));
+      }
     }
 
     return jsonResponse({
       success: true,
-      created: inserted?.length || 0,
+      created: inserted.length,
       target,
       existing: existing.length,
       products_scanned: products.length,
       collections_scanned: collections.length,
       opportunities_used: opportunities.length,
       plan: allPlanned,
-      source: lovableApiKey ? "ai_with_local_fallback" : "local_fallback",
+      source: aiSucceeded ? "ai_with_local_fallback" : "local_fallback",
     });
   } catch (error) {
-    console.error("generate-aeo-plan failed", error);
-    return jsonResponse({ success: false, error: error instanceof Error ? error.message : "Unknown error" }, 500);
+    const message = errorMessage(error);
+    console.error("generate-aeo-plan failed", message, error);
+    return jsonResponse({ success: false, error: message }, 500);
   }
 });
