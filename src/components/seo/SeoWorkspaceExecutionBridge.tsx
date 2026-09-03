@@ -91,16 +91,22 @@ export function SeoWorkspaceExecutionBridge() {
       const getSparklesButtons = () =>
         Array.from(workspace.querySelectorAll<HTMLButtonElement>("button")).filter(hasSparklesIcon);
 
+      const hasButtonLoader = () =>
+        Array.from(workspace.querySelectorAll<SVGElement>("button svg.animate-spin")).some(
+          (icon) => !icon.closest('[data-seo-execution-banner="true"]'),
+        );
+
       const intervalId = window.setInterval(() => {
         const actionButtons = getSparklesButtons();
         const clickedStillMounted = document.documentElement.contains(button);
         const anyEnabledAction = actionButtons.some((actionButton) => !actionButton.disabled);
+        const loaderActive = hasButtonLoader();
 
-        if (button.disabled || (actionButtons.length > 0 && !anyEnabledAction)) {
+        if (button.disabled || loaderActive || (actionButtons.length > 0 && !anyEnabledAction)) {
           sawBusyState = true;
         }
 
-        if (sawBusyState && anyEnabledAction && Date.now() - startedAt > 350) {
+        if (sawBusyState && !loaderActive && anyEnabledAction && Date.now() - startedAt > 350) {
           stopCurrentWatch();
           return;
         }
@@ -135,7 +141,7 @@ export function SeoWorkspaceExecutionBridge() {
   if (pathname !== "/seo" || !execution) return null;
 
   return (
-    <div className="sticky top-14 z-40 mb-4 sm:top-16">
+    <div data-seo-execution-banner="true" className="sticky top-14 z-40 mb-4 sm:top-16">
       <SeoExecutionBanner
         active
         title={execution.title}
